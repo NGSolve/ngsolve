@@ -301,6 +301,21 @@ namespace ngfem
     virtual shared_ptr<CoefficientFunction> Operator (shared_ptr<class DifferentialOperator> diffop) const;
     
     virtual void TraverseTree (const function<void(CoefficientFunction&)> & func);
+
+    typedef std::set<CoefficientFunction*> T_Visited;
+    // like TraverseTree, but visits every node of the expression DAG once.
+    void TraverseDAG (const function<void(CoefficientFunction&)> & func)
+    {
+      T_Visited visited;
+      TraverseDAG (func, visited);
+    }
+    void TraverseDAG (const function<void(CoefficientFunction&)> & func, T_Visited & visited)
+    {
+      if (!visited.insert(this).second) return;
+      for (auto & incf : InputCoefficientFunctions())
+        if (incf) incf->TraverseDAG (func, visited);
+      func(*this);
+    }
     virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const
     { return Array<shared_ptr<CoefficientFunction>>(); }
     virtual bool StoreUserData() const { return false; }

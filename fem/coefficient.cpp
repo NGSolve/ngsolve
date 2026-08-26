@@ -6699,7 +6699,7 @@ class CompiledCoefficientFunction : public CompiledCoefficientFunctionInterface 
 
 
       SetDimensions (cf->Dimensions());
-      cf -> TraverseTree
+      cf -> TraverseDAG
         ([&] (CoefficientFunction & stepcf)
          {
            if (handled_functions.count(getKey(stepcf))==0)
@@ -6722,18 +6722,13 @@ class CompiledCoefficientFunction : public CompiledCoefficientFunctionInterface 
       inputs = DynamicTable<int> (steps.Size());
       max_inputsize = 0;
       
-      cf -> TraverseTree
-        ([&] (CoefficientFunction & stepcf)
-         {
-           int mypos = getIndex(stepcf);
-           if (!inputs[mypos].Size())
-             {
-               Array<shared_ptr<CoefficientFunction>> in = stepcf.InputCoefficientFunctions();
-               max_inputsize = max2(in.Size(), max_inputsize);
-               for (auto incf : in)
-                 inputs.Add (mypos, getIndex(*incf.get()));
-             }
-         });
+      for (auto i : Range(steps))
+        {
+          Array<shared_ptr<CoefficientFunction>> in = steps[i]->InputCoefficientFunctions();
+          max_inputsize = max2(in.Size(), max_inputsize);
+          for (auto incf : in)
+            inputs.Add (i, getIndex(*incf.get()));
+        }
       cout << IM(3) << "inputs = " << endl << inputs << endl;
 
     }
