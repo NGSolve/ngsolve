@@ -555,11 +555,13 @@ namespace ngla
     if (auto spa = dynamic_pointer_cast<SparseMatrixTM<float>> (sa))
       if (auto spb = dynamic_pointer_cast<SparseMatrixTM<float>> (sb))
         return MatMult (*spa, *spb);
-
+    
+    auto sap = sa.get(); // avoids warning
+    auto sbp = sb.get(); 
     throw Exception ("ProductMatrix::CreateSparseMatrix: factors must both be "
                      "real sparse matrices of the same precision, got "
-                     + string(sa ? typeid(*sa).name() : "null") + " and "
-                     + string(sb ? typeid(*sb).name() : "null"));
+                     + string(sa ? typeid(*sap).name() : "null") + " and "
+                     + string(sb ? typeid(*sbp).name() : "null"));
   }
   
 
