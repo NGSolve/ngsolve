@@ -180,6 +180,23 @@ def test_bspline_diff(unit_mesh_2d):
     assert jac(ip) == approx((dspline(values[0]), 0, 0, dspline(values[1])))
 
 
+
+def test_bspline_integrate():
+    knots, vals = [0, 1, 2, 3, 4], [0, 1, 4, 9, 16]
+    for order in [1, 2, 3, 4]:
+        b = BSpline(order, knots, vals)
+        F = b.Integrate()
+        assert F(knots[0]) == approx(0)
+        dF = F.Differentiate()
+        for xx in [0.3, 1.2, 1.9, 2.5, 3.1, 3.7]:
+            assert dF(xx) == approx(b(xx))
+
+    b = BSpline(1, knots, vals)
+    F = b.Integrate()
+    for xx, exact in [(1.0, 0.0), (2.0, 1.0), (3.0, 5.0), (4.0, 14.0), (2.5, 3.0)]:
+        assert F(xx) == approx(exact)
+
+
 def test_bspline2d_diff(unit_mesh_2d):
     spline = BSpline2D([0, 1], [0, 1], [0, 3, 2, 5])
     x = CF(0.2).MakeVariable()

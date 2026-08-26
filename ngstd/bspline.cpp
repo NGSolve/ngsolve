@@ -64,31 +64,19 @@ namespace ngstd
     return BSpline (order+1, move(text), move(ci));
     */
 
-    //we should create text and ci WITHOUT padding on the leftmost elements
-    const auto tsize = t.Size()-order+1;   // one past the last user knot
-    const auto origsize = tsize - order;
-    Array<double> text(origsize+order+1);
-    text.Range(0, origsize) = t.Range(order,tsize);
-    for (int j = origsize; j < text.Size(); j++)
-      text[j] = t[tsize-1];
+    const auto nuser = t.Size()-2*order+1;
+    Array<double> text(nuser);
+    text.Range(0, nuser) = t.Range(order, order+nuser);
 
-    Array<double> ci(origsize+1);
+    Array<double> ci(nuser);
     ci = 0;
     double sum = 0;
-    for (int j = order; j < tsize-order; j++)
+    for (int j = order; j+order < t.Size(); j++)
       {
         sum += c[j] * (t[j+order] - t[j]) / order;
         ci[j-order] = sum;
       }
 
-    for (int j = tsize-order; j < tsize; j++)
-      {
-        sum += c[tsize-order] * (t[tsize-1] - t[j]) / order;
-        ci[j-order] = sum;
-      }
-    ci[origsize] = ci[origsize-1];
-    
-    // cout << "integral, c = " << c << endl << "ci = " << ci << endl;
     return BSpline (order+1, std::move(text), std::move(ci));
   }
 
@@ -105,12 +93,13 @@ namespace ngstd
 
     // for (int m = order-1; m < t.Size()-order+1; m++)
     // for (int m = 0; m < t.Size()-order+1; m++)
-    const int mlast = t.Size()-order-1;
-    for (int m = order; m <= mlast; m++)
+    int mend = t.Size()-order-1;                    // last non-empty interval
+    while (mend > order && !(t[mend] < t[mend+1])) mend--;
+    for (int m = order; m <= mend; m++)
       {
         // cout << "m = " << m << endl;
-        
-        if ( (t[m] <= x) && (x < t[m+1] || m == mlast))
+
+        if ( (t[m] <= x) && (x < t[m+1] || m == mend))
           {
             if(order < 6)
               {
