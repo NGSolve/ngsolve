@@ -280,7 +280,7 @@ namespace ngfem
 
   void CoefficientFunction :: SetSpaceDim (int adim)
   {
-    TraverseTree ([adim](CoefficientFunction & cf) { cf.spacedim = adim; });
+    TraverseDAG ([adim](CoefficientFunction & cf) { cf.spacedim = adim; });
   }
   
   shared_ptr<CoefficientFunction> CoefficientFunctionNoDerivative ::
@@ -6044,7 +6044,7 @@ public:
 shared_ptr<CoefficientFunction>
 MakeOtherCoefficientFunction (shared_ptr<CoefficientFunction> me)
 {
-  me->TraverseTree
+  me->TraverseDAG
     ( [&] (CoefficientFunction & nodecf)
       {
         if (dynamic_cast<const ProxyFunction*> (&nodecf))
@@ -6789,7 +6789,7 @@ class CompiledCoefficientFunction : public CompiledCoefficientFunctionInterface 
       ar.Shallow(cf);
       if(ar.Input())
         {
-          cf -> TraverseTree
+          cf -> TraverseDAG
             ([&] (CoefficientFunction & stepcf)
              {
                if (!steps.Contains(&stepcf))
@@ -6805,18 +6805,13 @@ class CompiledCoefficientFunction : public CompiledCoefficientFunctionInterface 
           inputs = DynamicTable<int> (steps.Size());
           max_inputsize = 0;
 
-          cf -> TraverseTree
-            ([&] (CoefficientFunction & stepcf)
-             {
-               int mypos = steps.Pos (&stepcf);
-               if (!inputs[mypos].Size())
-                 {
-                   Array<shared_ptr<CoefficientFunction>> in = stepcf.InputCoefficientFunctions();
-                   max_inputsize = max2(in.Size(), max_inputsize);
-                   for (auto incf : in)
-                     inputs.Add (mypos, steps.Pos(incf.get()));
-                 }
-             });
+          for (auto i : Range(steps))
+            {
+              Array<shared_ptr<CoefficientFunction>> in = steps[i]->InputCoefficientFunctions();
+              max_inputsize = max2(in.Size(), max_inputsize);
+              for (auto incf : in)
+                inputs.Add (i, steps.Pos(incf.get()));
+            }
         }
     }
 
@@ -7800,7 +7795,7 @@ shared_ptr<CoefficientFunction> CacheCF(shared_ptr<CoefficientFunction> func)
 Array<CoefficientFunction*> FindCacheCF (CoefficientFunction & func)
 {
   Array<CoefficientFunction*> cachecf;
-  func.TraverseTree
+  func.TraverseDAG
     ( [&] (CoefficientFunction & nodecf)
       {
         if (dynamic_cast<CacheCoefficientFunction*> (&nodecf))
@@ -7886,7 +7881,7 @@ void PrecomputeCacheCF (CoefficientFunction & func, SIMD_BaseMappedIntegrationRu
   // cout << "precompute cachecf" << endl;
   // first we cnt number of Caches:
   ArrayMem<CacheCoefficientFunction*,10> cachecf;
-  func.TraverseTree
+  func.TraverseDAG
     ( [&] (CoefficientFunction & nodecf)
       {
         if (auto ccf = dynamic_cast<CacheCoefficientFunction*> (&nodecf))

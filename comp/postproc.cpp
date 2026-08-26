@@ -1638,7 +1638,7 @@ namespace ngfem
     if (dx.element_vb == BND)
       {
         bool has_other = false;
-        cf->TraverseTree ([&has_other] (CoefficientFunction & cf)
+        cf->TraverseDAG ([&has_other] (CoefficientFunction & cf)
                           {
                             if (IsOtherCoefficientFunction (cf)) has_other = true;
                             /*
