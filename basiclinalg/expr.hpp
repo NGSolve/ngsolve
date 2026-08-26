@@ -126,6 +126,7 @@ namespace ngbla
   template<> struct is_scalar_type<int> { static constexpr bool value = true; };  
   template<> struct is_scalar_type<double> { static constexpr bool value = true; };
   template<> struct is_scalar_type<float> { static constexpr bool value = true; };
+  template<> struct is_scalar_type<Complex32> { static constexpr bool value = true; };
   template<> struct is_scalar_type<Complex> { static constexpr bool value = true; };
   
 
@@ -234,6 +235,13 @@ namespace ngbla
     typedef double TSCAL_REAL;    
   };
 
+  template <> class scal_traits<Complex32>
+  {
+  public:
+    typedef Complex TSCAL64;
+    typedef float TSCAL_REAL;
+  };
+
   
   /// Height of matrix
   template <class TM> 
@@ -251,9 +259,11 @@ namespace ngbla
 
   template <> inline constexpr auto Height<double> (const double&) { return 1; }
   template <> inline constexpr auto Height<float> (const float&) { return 1; }  
+  template <> inline constexpr auto Height<Complex32> (const Complex32&) { return 1; }
   template <> inline constexpr auto Height<Complex> (const Complex&) { return 1; }
   template <> inline constexpr auto Width<double> (const double&) { return 1; }
   template <> inline constexpr auto Width<float> (const float&) { return 1; }
+  template <> inline constexpr auto Width<Complex32> (const Complex32&) { return 1; }
   template <> inline constexpr auto Width<Complex> (const Complex&) { return 1; }
 
   /*
@@ -270,9 +280,11 @@ namespace ngbla
 
   template <> inline constexpr auto Height<double> () { return 1; }
   template <> inline constexpr auto Height<float> () { return 1; }  
+  template <> inline constexpr auto Height<Complex32> () { return 1; }
   template <> inline constexpr auto Height<Complex> () { return 1; }
   template <> inline constexpr auto Width<double> () { return 1; }
   template <> inline constexpr auto Width<float> () { return 1; }
+  template <> inline constexpr auto Width<Complex32> () { return 1; }
   template <> inline constexpr auto Width<Complex> () { return 1; }
 
   
@@ -280,6 +292,7 @@ namespace ngbla
   inline constexpr bool IsComplex () { return IsComplex<typename mat_traits<TM>::TSCAL>(); }
   template <> inline constexpr bool IsComplex<double> () { return false; }
   template <> inline constexpr bool IsComplex<float> () { return false; }
+  template <> inline constexpr bool IsComplex<Complex32> () { return true; }
   template <> inline constexpr bool IsComplex<Complex> () { return true; }  
 
   
@@ -1208,6 +1221,9 @@ namespace ngbla
   INLINE double Real(double a) { return a; }
   INLINE double Imag(double a) { return 0; }
 
+  INLINE float Real(Complex32 a) { return a.real(); }
+  INLINE float Imag(Complex32 a) { return a.imag(); }
+
   INLINE double Real(Complex a) { return a.real(); }
   INLINE double Imag(Complex a) { return a.imag(); }
   
@@ -1455,6 +1471,11 @@ namespace ngbla
   INLINE double Conj (double a)
   {
     return a;
+  }
+
+  INLINE Complex32 Conj (Complex32 a)
+  {
+    return conj(a);
   }
 
   INLINE Complex Conj (Complex a)
