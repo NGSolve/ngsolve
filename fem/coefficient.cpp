@@ -7066,6 +7066,13 @@ class CompiledCoefficientFunction : public CompiledCoefficientFunctionInterface 
       cf->Evaluate (ip, result);      
     }
 
+    void NonZeroPattern (const class ProxyUserData & ud,
+                         FlatArray<FlatVector<AutoDiffDiff<1,NonZero>>> input,
+                         FlatVector<AutoDiffDiff<1,NonZero>> values) const override
+    {
+      values = input[0];
+    }
+
     void Evaluate(const BaseMappedIntegrationPoint & ip,
                   FlatVector<Complex> result) const override
     {
@@ -7786,6 +7793,34 @@ public:
   {
     func->TraverseTree(func_);
     func_(*this);
+  }
+
+  shared_ptr<CoefficientFunction>
+  Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const override
+  {
+    if (this == var) return dir;
+    auto d = func->Diff(var, dir);
+    if (d->IsZeroCF()) return d;
+    return make_shared<CacheCoefficientFunction>(d);
+  }
+
+  shared_ptr<CoefficientFunction>
+  DiffJacobi (const CoefficientFunction * var, T_DJC & cache) const override
+  {
+    auto thisptr = const_pointer_cast<CoefficientFunction>(this->shared_from_this());
+    if (cache.find(thisptr) != cache.end())
+      return cache[thisptr];
+    if (this == var)
+      {
+        if (this->Dimensions().Size() == 0)
+          return make_shared<ConstantCoefficientFunction>(1);
+        return IdentityCF(this->Dimensions());
+      }
+    auto d = func->DiffJacobi(var, cache);
+    shared_ptr<CoefficientFunction> res =
+      d->IsZeroCF() ? d : make_shared<CacheCoefficientFunction>(d);
+    cache[thisptr] = res;
+    return res;
   }
 };
 
