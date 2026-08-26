@@ -944,7 +944,7 @@ namespace ngfem
     
     if (cf->Dimension() != 1)
       throw Exception ("SymbolicLFI needs scalar-valued CoefficientFunction");
-    cf->TraverseTree
+    cf->TraverseDAG
       ([&] (CoefficientFunction & nodecf)
        {
          if (auto proxy = dynamic_cast<ProxyFunction*> (&nodecf))
@@ -1242,7 +1242,7 @@ namespace ngfem
     trial_cum.Append(0);
     test_cum.Append(0);
     has_interpolate = false;
-    cf->TraverseTree
+    cf->TraverseDAG
       ( [&] (CoefficientFunction & nodecf)
         {
           auto proxy = dynamic_cast<ProxyFunction*> (&nodecf);
@@ -3687,7 +3687,7 @@ namespace ngfem
     if (cf->Dimension() != 1)
       throw Exception ("SymbolicLFI needs scalar-valued CoefficientFunction");
     test_cum.Append(0);    
-    cf->TraverseTree
+    cf->TraverseDAG
       ( [&] (CoefficientFunction & nodecf)
         {
           auto proxy = dynamic_cast<ProxyFunction*> (&nodecf);
@@ -3897,7 +3897,7 @@ namespace ngfem
         throw Exception ("SymbolicBFI needs scalar-valued CoefficientFunction");
     trial_cum.Append(0);
     test_cum.Append(0);    
-    cf->TraverseTree
+    cf->TraverseDAG
       ( [&] (CoefficientFunction & nodecf)
         {
           auto proxy = dynamic_cast<ProxyFunction*> (&nodecf);
@@ -5098,7 +5098,7 @@ namespace ngfem
       throw Exception ("SymbolicEnergy needs scalar-valued CoefficientFunction");
     
     trial_cum.Append(0);
-    cf->TraverseTree
+    cf->TraverseDAG
       ( [&] (CoefficientFunction & nodecf)
         {
           auto proxy = dynamic_cast<ProxyFunction*> (&nodecf);
@@ -5999,7 +5999,7 @@ namespace ngfem
   {
     // check for DG terms
     bool has_other = false;
-    cf->TraverseTree ([&has_other] (CoefficientFunction & cf)
+    cf->TraverseDAG ([&has_other] (CoefficientFunction & cf)
                       {
                         if (dynamic_cast<ProxyFunction*> (&cf))
                           if (dynamic_cast<ProxyFunction&> (cf).IsOther())
@@ -6041,7 +6041,7 @@ namespace ngfem
 
   shared_ptr<LinearFormIntegrator> Integral :: MakeLinearFormIntegrator() const
   {
-    cf -> TraverseTree ([&] (CoefficientFunction& cf) {
+    cf -> TraverseDAG ([&] (CoefficientFunction& cf) {
                           if (auto * proxy = dynamic_cast<ProxyFunction*>(&cf))
                             {
                               if (proxy->IsTrialFunction())

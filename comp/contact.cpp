@@ -452,7 +452,7 @@ namespace ngcomp
                                bool _deformed)
     : cf(_cf), deformed(_deformed)
   {
-    cf->TraverseTree
+    cf->TraverseDAG
       ([&](CoefficientFunction& nodecf)
        {
          auto proxy = dynamic_cast<ProxyFunction*>(&nodecf);
@@ -680,7 +680,7 @@ namespace ngcomp
                                        bool _deformed)
     : cf(_cf), deformed(_deformed)
   {
-    cf->TraverseTree
+    cf->TraverseDAG
       ([&](CoefficientFunction& nodecf)
        {
          auto proxy = dynamic_cast<ProxyFunction*>(&nodecf);

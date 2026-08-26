@@ -2759,7 +2759,7 @@ space : ngsolve.FESpace
                     shared_ptr<FESpace> trial_space, test_space;
                     bool found_trial=false, found_test=false;
                     for (auto igl : *igls)
-                      igl->cf -> TraverseTree ([&] (CoefficientFunction& cf) {
+                      igl->cf -> TraverseDAG ([&] (CoefficientFunction& cf) {
                           if (auto * proxy = dynamic_cast<ProxyFunction*>(&cf))
                             {
                               if (proxy->IsTrialFunction())
@@ -2879,7 +2879,7 @@ integrator : ngsolve.fem.BFI
 
                // check for DG terms
                bool has_other = false;
-               icf->cf->TraverseTree ([&has_other] (CoefficientFunction & cf)
+               icf->cf->TraverseDAG ([&has_other] (CoefficientFunction & cf)
                                       {
                                         if (dynamic_cast<ProxyFunction*> (&cf))
                                           if (dynamic_cast<ProxyFunction&> (cf).IsOther())
@@ -3182,7 +3182,7 @@ flags : dict
                     shared_ptr<FESpace> test_space;
                     bool found = false;
                     for (auto igl : *igls)
-                      igl->cf -> TraverseTree ([&] (CoefficientFunction& cf) {
+                      igl->cf -> TraverseDAG ([&] (CoefficientFunction& cf) {
                           if (auto * proxy = dynamic_cast<ProxyFunction*>(&cf))
                             {
                               if (proxy->IsTrialFunction())
@@ -3735,7 +3735,7 @@ integrator : ngsolve.fem.LFI
           if((region_wise || element_wise) && dim != 1)
             throw Exception("region_wise and element_wise only implemented for 1 dimensional coefficientfunctions");
 
-          cf -> TraverseTree
+          cf -> TraverseDAG
             ([&] (CoefficientFunction & stepcf)
              {
                if (dynamic_cast<ProxyFunction*>(&stepcf))
@@ -4143,7 +4143,7 @@ deformation : ngsolve.comp.GridFunction
              // check for DG terms
              bool has_other = false;
 
-             cf->TraverseTree ([&has_other] (CoefficientFunction & cf)
+             cf->TraverseDAG ([&has_other] (CoefficientFunction & cf)
                                {
                                  if (dynamic_cast<ProxyFunction*> (&cf))
                                    if (dynamic_cast<ProxyFunction&> (cf).IsOther())
@@ -4250,7 +4250,7 @@ deformation : ngsolve.comp.GridFunction
              // check for DG terms
              bool has_other = false;
 
-             cf->TraverseTree ([&has_other] (CoefficientFunction & cf)
+             cf->TraverseDAG ([&has_other] (CoefficientFunction & cf)
                                {
                                  if (dynamic_cast<ProxyFunction*> (&cf))
                                    if (dynamic_cast<ProxyFunction&> (cf).IsOther())
