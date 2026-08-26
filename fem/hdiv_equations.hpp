@@ -596,11 +596,11 @@ public:
 
     static string GenerateTransformationCode (string invar, string outvar, bool trans) 
     {
-      // return outvar+ "=" + invar +".Range<0,9>();\n";
+      // grad gives transpose jacobi matrix
       if (!trans)
-        return outvar+ "= 1/J*F * (ToMat<3,3>("+invar+".Range<0,9>()) * Inv(F));\n";
+        return outvar+ "= ToVec(1/J*Trans(Inv(F)) * (ToMat<3,3>("+invar+".Range<0,9>()) * Trans(F)));\n";
       else
-        throw Exception("Transform back not implemented for Grad(HDiv)");
+        return outvar+ "= 0.0; "+outvar+".SetRange<0,9>(ToVec(1/J*Inv(F) * (ToMat<3,3>("+invar+") * F)));\n";
     }
     
     
