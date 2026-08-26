@@ -8,7 +8,7 @@ namespace ngstd
   BSpline :: BSpline (int aorder, 
                       Array<double> at,
                       Array<double> ac)
-    : order(aorder), t(at.Size() + order), c(ac.Size() + order) 
+    : order(aorder), t(at.Size() + 2*order-1), c(ac.Size() + order)
   {
     int j = 0;
     for ( ; j < order ; j++)
@@ -18,6 +18,8 @@ namespace ngstd
       }
     c.Range(order,ac.Size()+order) = ac;
     t.Range(order,at.Size()+order) = at;
+    for (j = at.Size()+order; j < t.Size(); j++)
+      t[j] = at.Last() + (j - (at.Size()+order-1));
 
     if(order >= 2)
       diff = make_shared<BSpline>(Differentiate());
@@ -28,9 +30,9 @@ namespace ngstd
   {
     if (order <= 1) throw Exception ("cannot differentiate B-spline of order <= 1");
     //we should create td and cd WITHOUT padding on the leftmost elements
-    Array<double> td(t.Size()-order);
+    Array<double> td(t.Size()-2*order+1);
     Array<double> cd(c.Size()-order);
-    td = t.Range(order,t.Size());
+    td = t.Range(order,t.Size()-order+1);
     for (int j = 0; j < cd.Size(); j++)
       {
         double denom = t[order+j + order-1] - t[order+j];
@@ -62,30 +64,19 @@ namespace ngstd
     return BSpline (order+1, move(text), move(ci));
     */
 
-    //we should create text and ci WITHOUT padding on the leftmost elements
-    const auto origsize = t.Size() - order;
-    Array<double> text(origsize+order+1);
-    text.Range(0, origsize) = t.Range(order,t.Size());
-    for (int j = origsize; j < text.Size(); j++)
-      text[j] = t[t.Size()-1];
+    const auto nuser = t.Size()-2*order+1;
+    Array<double> text(nuser);
+    text.Range(0, nuser) = t.Range(order, order+nuser);
 
-    Array<double> ci(origsize+1);
+    Array<double> ci(nuser);
     ci = 0;
     double sum = 0;
-    for (int j = order; j < t.Size()-order; j++)
+    for (int j = order; j+order < t.Size(); j++)
       {
         sum += c[j] * (t[j+order] - t[j]) / order;
         ci[j-order] = sum;
       }
 
-    for (int j = t.Size()-order; j < t.Size(); j++)
-      {
-        sum += c[t.Size()-order] * (t[t.Size()-1] - t[j]) / order;
-        ci[j-order] = sum;
-      }
-    ci[origsize] = ci[origsize-1];
-    
-    // cout << "integral, c = " << c << endl << "ci = " << ci << endl;
     return BSpline (order+1, std::move(text), std::move(ci));
   }
 
@@ -93,8 +84,8 @@ namespace ngstd
   double BSpline :: Evaluate (double x) const
   {
 #ifdef NETGEN_ENABLE_CHECK_RANGE
-    if (x < t[order] || x > t[t.Size()-1])
-      throw Exception("BSpline::Evaluate: x out of range: " + ToString(x) + "\t[" + ToString(t[order]) + "," + ToString(t[t.Size()-1]) + "]");
+    if (x < t[order] || x > t[t.Size()-order])
+      throw Exception("BSpline::Evaluate: x out of range: " + ToString(x) + "\t[" + ToString(t[order]) + "," + ToString(t[t.Size()-order]) + "]");
 #endif
     // static Timer timer_bspline("BSpline::Evaluate");
     // timer_bspline.AddFlops(1);
@@ -102,11 +93,13 @@ namespace ngstd
 
     // for (int m = order-1; m < t.Size()-order+1; m++)
     // for (int m = 0; m < t.Size()-order+1; m++)
-    for (int m = order; m < t.Size()-1; m++)
+    int mend = t.Size()-order-1;                    // last non-empty interval
+    while (mend > order && !(t[mend] < t[mend+1])) mend--;
+    for (int m = order; m <= mend; m++)
       {
         // cout << "m = " << m << endl;
-        
-        if ( (t[m] <= x) && (x < t[m+1]))
+
+        if ( (t[m] <= x) && (x < t[m+1] || m == mend))
           {
             if(order < 6)
               {
