@@ -44,6 +44,21 @@ namespace ngfem
 #endif
   
 
+  shared_ptr<CoefficientFunction>
+  GenericASinh::Diff (shared_ptr<CoefficientFunction> x) const
+  {
+    auto one = OneVectorCF(x->Dimensions());
+    return one / sqrt(one+CWMult(x,x));
+  }
+
+  shared_ptr<CoefficientFunction>
+  GenericACosh::Diff (shared_ptr<CoefficientFunction> x) const
+  {
+    auto one = OneVectorCF(x->Dimensions());
+    return one / CWMult(sqrt(x-one),sqrt(x+one));
+  }
+
+
   template <> shared_ptr<CoefficientFunction>
   cl_UnaryOpCF<GenericSqrt>::Diff(const CoefficientFunction * var,
                                   shared_ptr<CoefficientFunction> dir) const
