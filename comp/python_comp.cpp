@@ -1763,7 +1763,7 @@ used_idnrs : list of int = None
                     if(phase.has_value() && py::len(*phase) > 0)
                       {
                         auto lphase = *phase;
-                        if(py::isinstance<py::float_>(lphase[0]))
+                        if(py::isinstance<py::float_>(lphase[0]) || py::isinstance<py::int_>(lphase[0]))                          
                           {
                             auto a_phase = make_shared<Array<double>>(py::len(*phase));
                             for (auto i : Range(a_phase->Size()))
