@@ -25,6 +25,10 @@ FUNCTIONS = [
                  lambda x: -2*x/(1+x*x)**2, id="atan"),
     pytest.param(sinh, 0.4, math.cosh, math.sinh, id="sinh"),
     pytest.param(cosh, 0.4, math.sinh, math.cosh, id="cosh"),
+    pytest.param(asinh, 0.4, lambda x: 1/math.sqrt(1+x*x),
+                 lambda x: -x/(1+x*x)**1.5, id="asinh"),
+    pytest.param(acosh, 1.7, lambda x: 1/math.sqrt(x*x-1),
+                 lambda x: -x/(x*x-1)**1.5, id="acosh"),
     pytest.param(exp, 0.4, math.exp, math.exp, id="exp"),
     pytest.param(log, 1.7, lambda x: 1/x, lambda x: -1/x**2, id="log"),
     pytest.param(erf, 0.4,
@@ -160,6 +164,17 @@ def test_pow_vector_diff(unit_mesh_2d):
     assert tuple(jac.dims) == (2, 2)
     assert jac(ip) == approx((baseval[0]**exponentval[0]*math.log(baseval[0]), 0,
                               0, baseval[1]**exponentval[1]*math.log(baseval[1])))
+
+
+@pytest.mark.parametrize("fun,shift", [(asinh, 0), (acosh, 1.3)])
+def test_math_second_variation(unit_mesh_2d, fun, shift):
+    fes = H1(unit_mesh_2d, order=1)
+    gf = GridFunction(fes)
+    gf.Set(0.4)
+    u = fes.TrialFunction()
+    energy = BilinearForm(fes)
+    energy += SymbolicEnergy(fun(u+shift))
+    energy.AssembleLinearization(gf.vec)
 
 
 def test_bspline_diff(unit_mesh_2d):
