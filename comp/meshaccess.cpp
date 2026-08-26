@@ -2540,7 +2540,7 @@ namespace ngcomp
                      FlatArray<BareSliceMatrix<T,ORD>> input,                       
                      BareSliceMatrix<T,ORD> values) const
     {
-      throw Exception ("Surface-from-Volume inout not implemented");
+      T_Evaluate (ir, values);
     }
   };
 
