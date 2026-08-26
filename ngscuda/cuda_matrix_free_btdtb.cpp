@@ -239,7 +239,7 @@ namespace ngla
       if (!only_loadstore)
         computeblock <<
           "      tinybla::Mat<SDIM,SDIM,SCAL> F;\n"
-          "      SCAL J;\n"
+          "      [[maybe_unused]] SCAL J;\n"
           "      {\n"
           "      DeviceRegionTracer rt(brt, 2);\n"
           "      for (int i = 0; i < SDIM*SDIM; i++)\n"
