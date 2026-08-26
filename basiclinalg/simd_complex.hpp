@@ -99,6 +99,56 @@ namespace ngcore
     }
   };
 
+
+  template <int N>
+  class SIMD<Complex32,N>
+  {
+    SIMD<float,N> re, im;
+  public:
+    SIMD () = default;
+    SIMD (SIMD<float,N> _r, SIMD<float,N> _i = 0.0f) : re(_r), im(_i) { ; }
+    SIMD (Complex32 c) : re(c.real()), im(c.imag()) { ; }
+    SIMD (float d) : re(d), im(0.0f) { ; }
+    SIMD (double d) : SIMD(float(d)) { ; }
+    static constexpr int Size() { return N; }
+
+    auto real() const { return re; }
+    auto imag() const { return im; }
+    auto & real() { return re; }
+    auto & imag() { return im; }
+
+  };
+
+
+  template <int N>
+  inline SIMD<float,N> Real(SIMD<Complex32,N> a) { return a.real(); }
+  template <int N>
+  inline SIMD<float,N> Imag(SIMD<Complex32,N> a) { return a.imag(); }
+
+  template <int N> INLINE auto operator+ (SIMD<Complex32,N> a, SIMD<Complex32,N> b)
+  { return SIMD<Complex32,N> (a.real()+b.real(), a.imag()+b.imag()); }
+  template <int N> INLINE auto operator+ (SIMD<Complex32,N> a, SIMD<float,N> b)
+  { return SIMD<Complex32,N> (a.real()+b, a.imag()); }
+
+  template <int N> INLINE auto operator* (SIMD<Complex32,N> a, SIMD<Complex32,N> b)
+  { return SIMD<Complex32,N> (a.real()*b.real()-a.imag()*b.imag(), a.real()*b.imag()+a.imag()*b.real()); }
+  template <int N> INLINE auto operator* (SIMD<float,N> a, SIMD<Complex32,N> b)
+  { return SIMD<Complex32,N> (a*b.real(), a*b.imag()); }
+  template <int N> INLINE auto operator* (SIMD<Complex32,N> b, SIMD<float,N> a)
+  { return SIMD<Complex32,N> (a*b.real(), a*b.imag()); }
+  template <int N> INLINE auto operator* (float a, SIMD<Complex32,N> b)
+  { return SIMD<Complex32,N> (a*b.real(), a*b.imag()); }
+  template <int N> INLINE auto operator* (SIMD<Complex32,N> b, float a)
+  { return SIMD<Complex32,N> (a*b.real(), a*b.imag()); }
+
+  template <int N>
+  INLINE SIMD<Complex32,N> & operator+= (SIMD<Complex32,N> & a, SIMD<Complex32,N> b)
+  { a.real()+=b.real(); a.imag()+=b.imag(); return a; }
+
+  template <int N>
+  INLINE Complex32 HSum (SIMD<Complex32,N> sc)
+  { return Complex32(HSum(sc.real()), HSum(sc.imag())); }
+
   // templatize all with N ???
   template <int N>
   inline SIMD<double, N> Real(SIMD<Complex, N> a) { return a.real(); }
@@ -317,6 +367,25 @@ namespace ngcore
       return SIMD<Complex,S> (MakeSimd(ar), MakeSimd(ai));
     }
   };
+
+  template <size_t S>
+  class MakeSimdCl<Complex32,S>
+  {
+    std::array<Complex32,S> a;
+  public:
+    MakeSimdCl (std::array<Complex32,S> aa) : a(aa)  { ; }
+    auto Get() const
+    {
+      std::array<float,S> ar, ai;
+      for (int j = 0; j < S; j++)
+        {
+          ar[j] = ngbla::Real(a[j]);
+          ai[j] = ngbla::Imag(a[j]);
+        }
+
+      return SIMD<Complex32,S> (MakeSimd(ar), MakeSimd(ai));
+    }
+  };
   
   
 }
@@ -332,6 +401,8 @@ namespace ngbla
   template <typename T> struct is_scalar_type;
   template <int N>
   struct is_scalar_type<ngcore::SIMD<ngcore::Complex,N>> { static constexpr bool value = true; };
+  template <int N>
+  struct is_scalar_type<ngcore::SIMD<ngcore::Complex32,N>> { static constexpr bool value = true; };
 }
 
 
