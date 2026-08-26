@@ -1313,12 +1313,14 @@ public:
   virtual shared_ptr<CoefficientFunction>
   DiffJacobi (const CoefficientFunction * var, T_DJC & cache) const override
   {
-    if (this == var) return make_shared<ConstantCoefficientFunction> (1);
+    if (this == var) return BASE::DiffJacobi(var, cache);
     if (this->Dimensions().Size() == 0)
       return lam.Diff(c1) * c1->DiffJacobi(var, cache);
-    else
+    else if (this->Dimensions().Size() == 1)
       return MakeMultDiagMatCoefficientFunction (lam.Diff(c1), 
                                              c1->DiffJacobi(var, cache));
+    else
+      return BASE::DiffJacobi(var, cache);
     // return BASE::DiffJacobi(var, cache);
   }
 
