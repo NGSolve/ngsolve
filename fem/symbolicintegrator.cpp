@@ -5586,6 +5586,7 @@ namespace ngfem
                     {
                       HeapReset hr(lh);
                       FlatMatrix<AutoDiff<1,SIMD<double>>> dval(dim_proxy1, mir.Size(), lh);
+                      ud.testfunction = nullptr;
                       for (int l = 0; l < dim_proxy2; l++)
                         {
                           ud.trialfunction = proxy2;
