@@ -1,12 +1,13 @@
 string code_tinybla = R"(
 
-#include <metal_stdlib>
-using namespace metal;
-
 #ifdef __CUDACC__
 #define TB_HD __host__ __device__
 #define thread
+#define constant
+template <typename T> using remove_addrspace_t = T;
 #else
+#include <metal_stdlib>
+using namespace metal;
 #define TB_HD
 #endif
 
@@ -647,6 +648,15 @@ namespace tinybla {
 
   template <int H, int W, typename T>
   TB_HD auto ToMat(Vec<H*W,T> vec) { return Mat<H,W,T>(vec); }
+
+  template <int H, int W, typename T>
+  TB_HD auto ToVec(Mat<H,W,T> mat) {
+    Vec<H*W,T> vec;
+    for (int i = 0; i < H; i++)
+      for (int j = 0; j < W; j++)
+        vec(i*W+j) = mat(i,j);
+    return vec;
+  }
 
   enum ORDERING { ColMajor, RowMajor };
   constexpr ORDERING operator! (ORDERING o) { return (o==RowMajor) ? ColMajor : RowMajor; }
