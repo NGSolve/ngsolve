@@ -7758,7 +7758,7 @@ public:
                    FlatArray<BareSliceMatrix<T,ORD>> input,
                    BareSliceMatrix<T,ORD> values) const
   {
-    func->Evaluate(ir, input, values);
+    values.AddSize(Dimension(), ir.Size()) = input[0];
   }
 
   Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
@@ -7786,7 +7786,7 @@ public:
                        FlatArray<FlatVector<AutoDiffDiff<1,NonZero>>> input,
                        FlatVector<AutoDiffDiff<1,NonZero>> values) const override
   {
-    func->NonZeroPattern(ud, input, values);
+    values = input[0];
   }
   
   void TraverseTree (const function<void(CoefficientFunction&)> & func_) override
