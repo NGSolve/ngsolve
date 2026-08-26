@@ -7070,7 +7070,7 @@ class CompiledCoefficientFunction : public CompiledCoefficientFunctionInterface 
                          FlatArray<FlatVector<AutoDiffDiff<1,NonZero>>> input,
                          FlatVector<AutoDiffDiff<1,NonZero>> values) const override
     {
-      NonZeroPattern (ud, values);
+      values = input[0];
     }
 
     void Evaluate(const BaseMappedIntegrationPoint & ip,
