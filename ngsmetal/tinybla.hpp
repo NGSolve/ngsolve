@@ -15,6 +15,15 @@ using namespace metal;
 namespace tinybla {
 
 
+  template <uint N>
+  struct ic {
+      using value_type = uint;
+      static constant constexpr uint value = N;
+      constexpr operator uint() const { return N; }
+      constexpr uint operator()() const { return N; }
+  };
+
+
 
   template <int S, typename T>
   class HTVec {
@@ -133,8 +142,8 @@ namespace tinybla {
   public:
     HTMat () { }
     HTMat (HTMat<H-1,W,T> _tail, HTVec<W,T> _head) : tail(_tail), head(_head) {}
-    template <typename TP>
-    HTMat (TP data, unsigned dist) { Load(data, dist); }
+    template <typename TP, typename TD=uint>
+    HTMat (TP data, TD dist) { Load(data, dist); }
 
     auto Head() const { return head; } 
     auto Tail() const { return tail; } 
@@ -159,19 +168,19 @@ namespace tinybla {
       head.Load(data+(H-1)*dist);
     }
     
-    template <typename TP>
-    void Store(TP data, unsigned dist) {
+    template <typename TP, typename TD>
+    void Store(TP data, TD dist) {
       tail.Store(data,dist);
       head.Store(data+(H-1)*dist);
     }
 
-    template <int DIST, typename TP>
-    void LoadSlice(TP data, unsigned dist) {
+    template <int DIST, typename TP, typename TD=uint>
+    void LoadSlice(TP data, TD dist) {
       tail.template LoadSlice<DIST>(data,dist);
       head.template LoadSlice<DIST>(data+(H-1)*dist);
     }
 
-    template <int DIST, typename TP>
+    template <int DIST, typename TP, typename TD=uint>
     void StoreSlice(TP data, unsigned dist) {
       tail.template StoreSlice<DIST>(data,dist);
       head.template StoreSlice<DIST>(data+(H-1)*dist);
@@ -662,15 +671,15 @@ namespace tinybla {
   constexpr ORDERING operator! (ORDERING o) { return (o==RowMajor) ? ColMajor : RowMajor; }
 
 
-  template <ORDERING ORD, typename Tp>
+  template <ORDERING ORD, typename Tp, typename Tld = uint>
   class BareMatrix
   {
      Tp data;
-     uint ld;
+     Tld ld;
      using ElementType = remove_addrspace_t<remove_cv_t<remove_reference_t<decltype(*data)>>>;
 
   public:
-     BareMatrix (Tp _data, unsigned _ld) : data(_data), ld(_ld) { }
+     BareMatrix (Tp _data, Tld _ld) : data(_data), ld(_ld) { }
 
      unsigned Offset (unsigned r, unsigned c) const {
        if constexpr (ORD==RowMajor) return r*ld+c;
@@ -766,21 +775,21 @@ namespace tinybla {
 
 
 
-     auto SubMatrix (unsigned r, unsigned c) const { return BareMatrix<ORD,Tp> { data+Offset(r,c), ld }; }
-     auto Transpose() const { return BareMatrix<!ORD, Tp> { data, ld }; }
-     unsigned LD() const { return ld; }
+     auto SubMatrix (unsigned r, unsigned c) const { return BareMatrix { data+Offset(r,c), ld }; }
+     auto Transpose() const { return BareMatrix<!ORD, Tp,Tld> { data, ld }; }
+     auto LD() const { return ld; }
      Tp Data() const { return data; }
      bool IsColMajor() const { return ORD==ColMajor; }
   };
 
-  template <ORDERING ORD, typename Tp>
-  inline auto MakeBareMatrix (Tp data, int ld) {
-    return BareMatrix<ORD,Tp> (data, ld);
+  template <ORDERING ORD, typename Tp, typename Tld>
+  inline auto MakeBareMatrix (Tp data, Tld ld) {
+    return BareMatrix<ORD,Tp,Tld> (data, ld);
   }
 
-  template <ORDERING ORD, typename Tp, int W>
+  template <ORDERING ORD, typename Tp, uint W>
   inline auto MakeBareMatrix (Tp data[][W]) {
-    return MakeBareMatrix<ORD> (&(data[0][0]), W);
+    return MakeBareMatrix<ORD> (&(data[0][0]), ic<W>());
   }
 
 
@@ -800,8 +809,8 @@ namespace tinybla {
 
     WarpMatrix(T val) { myvals = val; }
 
-    template <ORDERING ORD, typename Tp>
-    WarpMatrix(BareMatrix<ORD,Tp> mat, uint tid) {
+    template <ORDERING ORD, typename Tp, typename Tld>
+    WarpMatrix(BareMatrix<ORD,Tp,Tld> mat, uint tid) {
       myvals = mat.template GetTile<BH,BW>(MyRow(tid),MyCol(tid));
     }
 
@@ -810,8 +819,8 @@ namespace tinybla {
     WarpMatrix (HTMat<BH,BW,T> amyvals) : myvals(amyvals) { } 
     auto GetValues() const { return myvals; }
 
-    template <uint K, ORDERING ORD1, typename Tp1, ORDERING ORD2, typename Tp2>
-    void AddMM(BareMatrix<ORD1,Tp1> m1, BareMatrix<ORD2,Tp2> m2, uint tid)
+    template <uint K, ORDERING ORD1, typename Tp1, typename Tld1, ORDERING ORD2, typename Tp2, typename Tld2>
+    void AddMM(BareMatrix<ORD1,Tp1,Tld1> m1, BareMatrix<ORD2,Tp2,Tld2> m2, uint tid)
     {
       auto r = MyRow(tid);
       auto c = MyCol(tid);
@@ -1142,8 +1151,8 @@ namespace tinybla {
     }
 
 
-    template <ORDERING ORD, typename Tp>
-    void Store(BareMatrix<ORD,Tp> mat, unsigned tid) {
+    template <ORDERING ORD, typename Tp, typename Tld>
+    void Store(BareMatrix<ORD,Tp,Tld> mat, unsigned tid) {
       mat.template SetTile<BH,BW>(MyRow(tid),MyCol(tid), myvals);
     }
 
@@ -1152,8 +1161,8 @@ namespace tinybla {
   };
 
 
-  template <uint K, uint H, uint W, ORDERING ORD1, typename Tp1, ORDERING ORD2, typename Tp2>
-  inline auto AddMM(WarpMatrix<H,W,float> m, BareMatrix<ORD1,Tp1> m1, BareMatrix<ORD2,Tp2> m2, uint tid)
+  template <uint K, uint H, uint W, ORDERING ORD1, typename Tp1, typename Tld1,  ORDERING ORD2, typename Tp2, typename Tld2>
+  inline auto AddMM(WarpMatrix<H,W,float> m, BareMatrix<ORD1,Tp1,Tld1> m1, BareMatrix<ORD2,Tp2,Tld2> m2, uint tid)
   {
     static_assert(H%8==0);
     static_assert(W%4==0);
@@ -1170,6 +1179,7 @@ namespace tinybla {
       if constexpr (ORD2==RowMajor) {
        constexpr int KTILE = 1;
        uint k = 0;
+#pragma unroll 2
        for ( ; k+4 <= K; k+=4)
           {
             auto ATileQuad = m1.template GetTile<BH,KTILE>(r,k + (tid&3));
@@ -1313,7 +1323,7 @@ namespace tinybla {
 
 
 
-/*
+
   template <>
   class WarpMatrix<8,8,float>
   {
@@ -1355,7 +1365,6 @@ namespace tinybla {
       metal::simdgroup_store(m, mat.Data(), mat.LD(), ulong2(0,0), mat.IsColMajor());
     }
   };
-*/
 
 
 } // namespace tinybla
