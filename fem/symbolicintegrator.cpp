@@ -1603,8 +1603,11 @@ namespace ngfem
           SIMD_BaseMappedIntegrationRule & mir = trafo(ir, lh);
           // NgProfiler::StopThreadTimer (timer_SymbBFIstart, TaskManager::GetThreadId());
 
-          ProxyUserData ud;
+          ProxyUserData ud(0, gridfunction_cfs.Size(), lh);
           const_cast<ElementTransformation&>(trafo).userdata = &ud;
+          for (CoefficientFunction * cfgf : gridfunction_cfs)
+            ud.AssignMemory (cfgf, ir.GetNIP(), cfgf->Dimension(), lh,
+                             cfgf->IsComplex());
           PrecomputeCacheCF(cache_cfs, mir, lh);
 
           // bool symmetric_so_far = true;
@@ -1861,8 +1864,11 @@ namespace ngfem
     const IntegrationRule& ir = GetIntegrationRule (fel, lh);
     BaseMappedIntegrationRule & mir = trafo(ir, lh);
     
-    ProxyUserData ud;
+    ProxyUserData ud(0, gridfunction_cfs.Size(), lh);
     const_cast<ElementTransformation&>(trafo).userdata = &ud;
+    for (CoefficientFunction * cfgf : gridfunction_cfs)
+      ud.AssignMemory (cfgf, ir.GetNIP(), cfgf->Dimension(), lh,
+                       cfgf->IsComplex());
     PrecomputeCacheCF(cache_cfs, mir, lh);
     
     // tstart.Stop();
