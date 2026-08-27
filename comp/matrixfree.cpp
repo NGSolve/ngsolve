@@ -3,6 +3,7 @@
 
 
 #include "bilinearform.hpp"
+#include "reorderedfespace.hpp"
 #include <diagonalmatrix.hpp>
 
 #include "../fem/h1lofe.hpp"
@@ -1107,9 +1108,14 @@ namespace ngcomp
            + (curved ? 1 : 0);
        });
         
+    // fill class tables in Morton (SFC) element order: elements consecutive in
+    // a class row are spatial neighbours -> compact dof windows per batch.
+    // same order as ReorderedFESpace uses for its first-touch dof numbering.
+    Array<int> elorder = LocalityElementOrder (ma);
+
     TableCreator<size_t> creator;
     for ( ; !creator.Done(); creator++)
-      for (auto i : Range(classnr))
+      for (auto i : elorder)
         creator.Add (classnr[i], i);
     Table<size_t> table = creator.MoveTable();
     
@@ -1504,9 +1510,15 @@ namespace ngcomp
        });
     tclass.Stop();
         
+    // fill class tables in Morton (SFC) element order: elements consecutive in
+    // a class row are spatial neighbours -> compact dof windows per batch.
+    // same order as ReorderedFESpace uses for its first-touch dof numbering.
+    // Array<int> elorder = LocalityElementOrder (ma);
+    Array<int> elorder = RCMElementOrder (ma);
+
     TableCreator<size_t> creator;
     for ( ; !creator.Done(); creator++)
-      for (auto i : Range(classnr))
+      for (auto i : elorder)
         creator.Add (classnr[i], i);
     Table<size_t> table = creator.MoveTable();
     

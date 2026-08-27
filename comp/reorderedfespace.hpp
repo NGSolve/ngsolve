@@ -12,12 +12,22 @@
 namespace ngcomp
 {
 
- // A reordered wrapper class for fespaces 
+  // element orderings for locality: geometric (Morton curve of centroids) and
+  // topological (reverse Cuthill-McKee on the vertex-sharing element graph).
+  // LocalityElementOrder is the common entry point used for first-touch dof
+  // numbering and locality-aware element batching -- keep all users on it so
+  // dof numbering and batching stay consistent.
+  NGS_DLL_HEADER Array<int> MortonElementOrder (const shared_ptr<MeshAccess> & ma);
+  NGS_DLL_HEADER Array<int> RCMElementOrder (const shared_ptr<MeshAccess> & ma);
+  NGS_DLL_HEADER Array<int> LocalityElementOrder (const shared_ptr<MeshAccess> & ma);
+
+ // A reordered wrapper class for fespaces
 
   class ReorderedFESpace : public FESpace
   {
   protected:
     Array<DofId> dofmap;
+    Array<int> elorder;   // space-filling-curve element order used for first-touch numbering
     shared_ptr<FESpace> space;
     shared_ptr<Table<DofId>> clusters;
     
@@ -33,7 +43,17 @@ namespace ngcomp
     ProxyNode MakeProxyFunction (bool testfunction,
                                  const function<shared_ptr<ProxyFunction>(shared_ptr<ProxyFunction>)> & addblock) const override
     {
-      return GetBaseSpace()->MakeProxyFunction (testfunction, addblock);
+      // build the proxy (tree) via the base space (keeps compound structure),
+      // but bind every proxy to this wrapper space, so that assembly uses the
+      // reordered dof numbering (same pattern as PeriodicFESpace)
+      return GetBaseSpace()->MakeProxyFunction
+        (testfunction,
+         [&] (shared_ptr<ProxyFunction> proxy)
+         {
+           shared_ptr<FESpace> fes = dynamic_pointer_cast<FESpace> (const_cast<ReorderedFESpace*>(this)->shared_from_this());
+           proxy->SetFESpace(fes);
+           return addblock (proxy);
+         });
     }
     
     virtual string GetClassName() const override { return "Reordered" + space->GetClassName(); }
@@ -45,6 +65,10 @@ namespace ngcomp
     virtual void GetDofNrs (NodeId ni, Array<DofId> & dnums) const override;
 
     auto GetClusters() const { return clusters; }
+
+    // element processing order (Morton curve); process elements in this order
+    // to profit from the first-touch dof numbering
+    FlatArray<int> GetElementOrder() const { return elorder; }
 
     
     virtual SymbolTable<shared_ptr<DifferentialOperator>> GetAdditionalEvaluators () const override
