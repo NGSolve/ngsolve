@@ -19,6 +19,14 @@ namespace ngcomp
   // dof numbering and batching stay consistent.
   NGS_DLL_HEADER Array<int> MortonElementOrder (const shared_ptr<MeshAccess> & ma);
   NGS_DLL_HEADER Array<int> RCMElementOrder (const shared_ptr<MeshAccess> & ma);
+  // RCM on the dof-sharing element graph of the space (falls back to the
+  // mesh-vertex graph for discontinuous spaces); follows the space's dof
+  // connectivity, so batching stays consistent with e.g. ReorderedFESpace
+  NGS_DLL_HEADER Array<int> RCMElementOrder (const FESpace & fes);
+  // in-place RCM reorder of an element subset (e.g. one element class),
+  // adjacency = sharing a dof of el2dof; disconnected components keep the
+  // relative input order via seeding
+  NGS_DLL_HEADER void RCMReorderSubset (FlatArray<size_t> els, const Table<int> & el2dof, size_t ndof);
   NGS_DLL_HEADER Array<int> LocalityElementOrder (const shared_ptr<MeshAccess> & ma);
 
  // A reordered wrapper class for fespaces

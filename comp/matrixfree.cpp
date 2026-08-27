@@ -1108,21 +1108,26 @@ namespace ngcomp
            + (curved ? 1 : 0);
        });
         
-    // fill class tables in Morton (SFC) element order: elements consecutive in
-    // a class row are spatial neighbours -> compact dof windows per batch.
-    // same order as ReorderedFESpace uses for its first-touch dof numbering.
-    Array<int> elorder = LocalityElementOrder (ma);
-
+    // reorder each class individually by RCM on its induced dof-sharing
+    // subgraph: batches of consecutive elements within a class row share dofs
+    // -> compact dof windows, consistent with the space's dof numbering
+    // (e.g. first-touch numbering of ReorderedFESpace).
+    // no global pre-ordering needed: the per-class RCM finds the connectivity
+    // itself, and mesh order is a good enough seed order for its components
     TableCreator<size_t> creator;
     for ( ; !creator.Done(); creator++)
-      for (auto i : elorder)
+      for (size_t i = 0; i < classnr.Size(); i++)
         creator.Add (classnr[i], i);
     Table<size_t> table = creator.MoveTable();
-    
+
+    Table<int> doftablex = fesx->CreateDofTable(VOL);
+    for (auto elclass_inds : table)
+      RCMReorderSubset (elclass_inds, doftablex, fesx->GetNDof());
+
 
     shared_ptr<BaseMatrix> sum;
 
-    
+
     for (auto part : parts)
       {
         auto bfi = dynamic_pointer_cast<SymbolicBilinearFormIntegrator> (part);
@@ -1510,18 +1515,22 @@ namespace ngcomp
        });
     tclass.Stop();
         
-    // fill class tables in Morton (SFC) element order: elements consecutive in
-    // a class row are spatial neighbours -> compact dof windows per batch.
-    // same order as ReorderedFESpace uses for its first-touch dof numbering.
-    // Array<int> elorder = LocalityElementOrder (ma);
-    Array<int> elorder = RCMElementOrder (ma);
-
+    // reorder each class individually by RCM on its induced dof-sharing
+    // subgraph: batches of consecutive elements within a class row share dofs
+    // -> compact dof windows, consistent with the space's dof numbering
+    // (e.g. first-touch numbering of ReorderedFESpace).
+    // no global pre-ordering needed: the per-class RCM finds the connectivity
+    // itself, and mesh order is a good enough seed order for its components
     TableCreator<size_t> creator;
     for ( ; !creator.Done(); creator++)
-      for (auto i : elorder)
+      for (size_t i = 0; i < classnr.Size(); i++)
         creator.Add (classnr[i], i);
     Table<size_t> table = creator.MoveTable();
-    
+
+    Table<int> doftablex = fesx->CreateDofTable(VOL);
+    for (auto elclass_inds : table)
+      RCMReorderSubset (elclass_inds, doftablex, fesx->GetNDof());
+
 
     shared_ptr<BaseMatrix> sum;
 

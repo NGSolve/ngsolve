@@ -86,21 +86,23 @@ namespace ngcomp {
   }
 
 
-  Array<int> RCMElementOrder (const shared_ptr<MeshAccess> & ma)
+  // reverse Cuthill-McKee on the graph with nodes 0..ne-1, two nodes adjacent
+  // iff they share a key in el2key (keys: mesh vertices, or dofs of a space;
+  // negative keys are skipped)
+  static Array<int> RCMOrderFromTable (const Table<int> & el2key, size_t nkeys)
   {
-    static Timer t("RCMElementOrder"); RegionTimer reg(t);
-    size_t ne = ma->GetNE(VOL);
-    size_t nv = ma->GetNV();
+    size_t ne = el2key.Size();
 
-    // vertex -> element table
-    TableCreator<int> vecreator(nv);
-    for ( ; !vecreator.Done(); vecreator++)
+    // key -> element table
+    TableCreator<int> kecreator(nkeys);
+    for ( ; !kecreator.Done(); kecreator++)
       for (size_t i = 0; i < ne; i++)
-        for (auto v : ma->GetElement(ElementId(VOL,i)).Vertices())
-          vecreator.Add (v, i);
-    Table<int> v2el = vecreator.MoveTable();
+        for (auto k : el2key[i])
+          if (k >= 0)
+            kecreator.Add (k, i);
+    Table<int> k2el = kecreator.MoveTable();
 
-    // neighbours = elements sharing a vertex (deduplicated via stamps)
+    // neighbours = elements sharing a key (deduplicated via stamps)
     Array<int> stamp(ne);
     stamp = -1;
     int stampcnt = 0;
@@ -109,13 +111,14 @@ namespace ngcomp {
     {
       nbs.SetSize0();
       stampcnt++;
-      for (auto v : ma->GetElement(ElementId(VOL,elnr)).Vertices())
-        for (auto nb : v2el[v])
-          if (nb != elnr && stamp[nb] != stampcnt)
-            {
-              stamp[nb] = stampcnt;
-              nbs.Append(nb);
-            }
+      for (auto k : el2key[elnr])
+        if (k >= 0)
+          for (auto nb : k2el[k])
+            if (nb != elnr && stamp[nb] != stampcnt)
+              {
+                stamp[nb] = stampcnt;
+                nbs.Append(nb);
+              }
     };
 
     Array<int> degree(ne);
@@ -176,6 +179,68 @@ namespace ngcomp {
     for (size_t i = 0; i < ne/2; i++)
       Swap (order[i], order[ne-1-i]);
     return order;
+  }
+
+
+  Array<int> RCMElementOrder (const shared_ptr<MeshAccess> & ma)
+  {
+    static Timer t("RCMElementOrder"); RegionTimer reg(t);
+    size_t ne = ma->GetNE(VOL);
+
+    TableCreator<int> creator(ne);
+    for ( ; !creator.Done(); creator++)
+      for (size_t i = 0; i < ne; i++)
+        for (auto v : ma->GetElement(ElementId(VOL,i)).Vertices())
+          creator.Add (i, v);
+    Table<int> el2vert = creator.MoveTable();
+
+    return RCMOrderFromTable (el2vert, ma->GetNV());
+  }
+
+
+  Array<int> RCMElementOrder (const FESpace & fes)
+  {
+    static Timer t("RCMElementOrder space"); RegionTimer reg(t);
+
+    Table<int> doftable = fes.CreateDofTable(VOL);
+
+    // a discontinuous space has no shared dofs -> edgeless graph;
+    // fall back to the mesh-vertex graph
+    bool connected = false;
+    Array<int> cnt(fes.GetNDof());
+    cnt = 0;
+    for (auto dofs : doftable)
+      for (auto d : dofs)
+        if (IsRegularDof(d) && ++cnt[d] > 1)
+          { connected = true; break; }
+    if (!connected)
+      return RCMElementOrder (fes.GetMeshAccess());
+
+    return RCMOrderFromTable (doftable, fes.GetNDof());
+  }
+
+
+  void RCMReorderSubset (FlatArray<size_t> els, const Table<int> & el2dof, size_t ndof)
+  {
+    if (els.Size() <= 2) return;
+
+    // induced sub-table: row i = dofs of element els[i]
+    TableCreator<int> creator(els.Size());
+    for ( ; !creator.Done(); creator++)
+      for (auto i : Range(els))
+        for (auto d : el2dof[els[i]])
+          creator.Add (i, d);
+    Table<int> sub = creator.MoveTable();
+
+    // disconnected components are seeded in the current order of els,
+    // so a locality-aware input order is preserved across components
+    Array<int> perm = RCMOrderFromTable (sub, ndof);
+
+    Array<size_t> tmp(els.Size());
+    for (auto i : Range(els))
+      tmp[i] = els[perm[i]];
+    for (auto i : Range(els))
+      els[i] = tmp[i];
   }
 
 
