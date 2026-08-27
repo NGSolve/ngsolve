@@ -98,6 +98,56 @@ namespace ngcomp
 
     min_lam = 1./(DIMS+1);
 
+    if constexpr (DIMS==1)
+    {
+      auto trueDist2 = [&] (double l)
+      {
+        Vec<DIMR> pt;
+        trafo.CalcPoint(IntegrationPoint(l), pt);
+        return L2Norm2(pt - pmaster);
+      };
+
+      double lam = 0.0, d_lam = trueDist2(0.0);
+      for (int k = 1; k <= 4; k++)
+        {
+          double l = k / 4.0, d = trueDist2(l);
+          if (d < d_lam) { d_lam = d; lam = l; }
+        }
+      for (int it = 0; it < 12; it++)
+        {
+          IntegrationPoint ipl(lam);
+          MappedIntegrationPoint<1, DIMR> mip{ipl, trafo};
+          T2<1> t2{mip, pmaster};
+          double nl = t2.CalcMinimum()(0);
+          nl = min(1.0, max(0.0, nl));               // stay inside the segment
+          double step = nl - lam;
+          double d_new = trueDist2(nl);
+          int cnt = 0;
+          while (d_new > d_lam && cnt++ < 10)        // safeguard: no ascent
+            {
+              step *= 0.5;
+              nl = lam + step;
+              d_new = trueDist2(nl);
+            }
+          lam = nl;
+          d_lam = d_new;
+          if (fabs(step) < 1e-10) break;
+        }
+
+      for (double l : { lam, 0.0, 1.0 })
+        {
+          IntegrationPoint ipl(l);
+          MappedIntegrationPoint<1, DIMR> mip{ipl, trafo};
+          bool is_front = both_sides || InnerProduct(n, mip.GetNV()) < 0;
+          double d = L2Norm2(mip.GetPoint() - pmaster);
+          if (is_front && d < min_dist)
+            {
+              min_dist = d;
+              min_lam = l;
+            }
+        }
+    }
+    else
     // Todo: line search, stop criterion
     for([[maybe_unused]] auto i : Range(4) )
     {
@@ -108,27 +158,6 @@ namespace ngcomp
       if(both_sides)
         is_front = true;
 
-      if constexpr (DIMS==1)
-      {
-        // check end points
-        for(double lam : {0.,1.})
-        {
-          auto dist = t2(lam);
-          if(is_front && dist<min_dist)
-          {
-            min_dist = dist;
-            min_lam = lam;
-          }
-        }
-
-        auto lam = t2.CalcMinimum();
-        auto dist = t2(lam);
-        if(is_front && lam[0]>0 && lam[0] < 1)
-        {
-          min_dist = dist;
-          min_lam = lam;
-        }
-      }
       if constexpr (DIMS==2)
       {
         auto getDist = [&] ( auto l )
