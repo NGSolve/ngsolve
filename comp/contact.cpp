@@ -359,8 +359,8 @@ namespace ngcomp
     double inv_fac = GetDomIn(*ma, el1) == 0 ? -1. : 1.;
 
     auto & ip1 = ip.IP();
-    Vec<DIM> p1;
-    trafo1_def.CalcPoint(ip1, p1);
+    auto & mip = static_cast<const MappedIntegrationPoint<DIM-1, DIM>&>(trafo1_def(ip1, lh));
+    Vec<DIM> p1 = mip.GetPoint();
 
     double mindist = 1e99;
     // result = std::numeric_limits<double>::infinity();
@@ -370,8 +370,6 @@ namespace ngcomp
     netgen::Point<DIM> ngp1;
     for (int j = 0; j < DIM; j++)
       ngp1(j) = p1(j);
-
-    auto & mip = static_cast<const DimMappedIntegrationPoint<DIM>&>(ip);
 
     auto hcurrent = h/(1024.*1024.);
     int found = 2;
