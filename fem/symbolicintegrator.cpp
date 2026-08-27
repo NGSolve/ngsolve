@@ -4282,9 +4282,13 @@ namespace ngfem
                              LocalHeap & lh) const
   {
 
+    const MixedFiniteElement * mixedfe1 = dynamic_cast<const MixedFiniteElement*> (&fel1);
+    const FiniteElement & fel1_trial = mixedfe1 ? mixedfe1->FETrial() : fel1;
+    const FiniteElement & fel1_test = mixedfe1 ? mixedfe1->FETest() : fel1;
+
     elmat = 0.0;
 
-    int maxorder = fel1.Order();
+    int maxorder = max2 (fel1_trial.Order(), fel1_test.Order());
 
     auto eltype1 = trafo1.GetElementType();
     auto etfacet = ElementTopology::GetFacetType (eltype1, LocalFacetNr1);
@@ -4302,14 +4306,14 @@ namespace ngfem
     // new 
     ProxyUserData ud(trial_proxies.Size(), lh);
     const_cast<ElementTransformation&>(trafo1).userdata = &ud;
-    ud.fel = &fel1;
+    ud.fel = &fel1_trial;
 
     // ud.elx = &elveclin;
     // ud.lh = &lh;
     for (ProxyFunction * proxy : trial_proxies)
       {
         ud.AssignMemory (proxy, ir_facet_vol1.Size(), proxy->Dimension(), lh);
-        proxy->Evaluator()->Apply(fel1, mir1, elveclin, ud.GetMemory(proxy), lh);
+        proxy->Evaluator()->Apply(fel1_trial, mir1, elveclin, ud.GetMemory(proxy), lh);
       }
     
     // FlatMatrix<> val(mir1.Size(), 1, lh), deriv(mir1.Size(), 1, lh);
@@ -4366,14 +4370,14 @@ namespace ngfem
                 {
                   int ii = i+j;
                   IntRange r2 = proxy2->Dimension() * IntRange(j,j+1);
-                  proxy1->Evaluator()->CalcMatrix(fel1, mir1[ii], bmat1, lh);
-                  proxy2->Evaluator()->CalcMatrix(fel1, mir1[ii], bmat2, lh);
+                  proxy1->Evaluator()->CalcMatrix(fel1_trial, mir1[ii], bmat1, lh);
+                  proxy2->Evaluator()->CalcMatrix(fel1_test, mir1[ii], bmat2, lh);
                   bdbmat1.Rows(r2) = proxyvalues(ii,STAR,STAR) * bmat1;
                   bbmat2.Rows(r2) = bmat2;
                 }
 
-              IntRange r1 = proxy1->Evaluator()->UsedDofs(fel1);
-              IntRange r2 = proxy2->Evaluator()->UsedDofs(fel1);
+              IntRange r1 = proxy1->Evaluator()->UsedDofs(fel1_trial);
+              IntRange r2 = proxy2->Evaluator()->UsedDofs(fel1_test);
               elmat.Rows(r2).Cols(r1) += Trans (bbmat2.Cols(r2)) * bdbmat1.Cols(r1) | Lapack;
             }
         }
@@ -4498,9 +4502,8 @@ namespace ngfem
                   }
                 // tcoef.Stop();
                 // tapplyt.Start();
-                IntRange test_range  = proxy->IsOther() ? IntRange(fel1_test.GetNDof(), elx.Size()) : IntRange(0, fel1_test.GetNDof());
                 int blockdim = proxy->Evaluator()->BlockDim();
-                test_range = blockdim * test_range;
+                IntRange test_range = proxy->IsOther() ? IntRange(blockdim*fel1_test.GetNDof(), ely.Size()) : IntRange(0, blockdim*fel1_test.GetNDof());
                 
                 if (proxy->IsOther())
                   proxy->Evaluator()->AddTrans(fel2_test, simd_mir2, simd_proxyvalues, ely.Range(test_range));
@@ -4548,7 +4551,7 @@ namespace ngfem
     
     FlatVector<> ely1(ely.Size(), lh);
 
-    int maxorder = max2 (fel1.Order(), fel2.Order());
+    int maxorder = max2(max2 (fel1_trial.Order(), fel1_test.Order()), max2 (fel2_trial.Order(), fel2_test.Order()));
 
     auto eltype1 = trafo1.GetElementType();
     auto eltype2 = trafo2.GetElementType();
@@ -4574,7 +4577,7 @@ namespace ngfem
     // evaluate proxy-values
     ProxyUserData ud(trial_proxies.Size(), lh);
     const_cast<ElementTransformation&>(trafo1).userdata = &ud;
-    ud.fel = &fel1;   // necessary to check remember-map
+    ud.fel = &fel1_trial;   // necessary to check remember-map
 
     PrecomputeCacheCF(cache_cfs, mir1, lh);
 
@@ -4583,11 +4586,11 @@ namespace ngfem
 
     for (ProxyFunction * proxy : trial_proxies)
       {
-	IntRange trial_range  = proxy->IsOther() ? IntRange(proxy->Evaluator()->BlockDim()*fel1.GetNDof(), elx.Size()) : IntRange(0, proxy->Evaluator()->BlockDim()*fel1.GetNDof());
+	IntRange trial_range  = proxy->IsOther() ? IntRange(proxy->Evaluator()->BlockDim()*fel1_trial.GetNDof(), elx.Size()) : IntRange(0, proxy->Evaluator()->BlockDim()*fel1_trial.GetNDof());
 	if (proxy->IsOther()) 
-          proxy->Evaluator()->Apply(fel2, mir2, elx.Range(trial_range), ud.GetMemory(proxy), lh);
+          proxy->Evaluator()->Apply(fel2_trial, mir2, elx.Range(trial_range), ud.GetMemory(proxy), lh);
         else
-          proxy->Evaluator()->Apply(fel1, mir1, elx.Range(trial_range), ud.GetMemory(proxy), lh);
+          proxy->Evaluator()->Apply(fel1_trial, mir1, elx.Range(trial_range), ud.GetMemory(proxy), lh);
       }
 
     // ts2.Stop();
@@ -4624,11 +4627,11 @@ namespace ngfem
           proxyvalues.Row(i) *= mir1[i].GetMeasure() * ir_facet[i].Weight();
         
         ely1 = 0.0;
-	IntRange test_range  = proxy->IsOther() ? IntRange(proxy->Evaluator()->BlockDim()*fel1.GetNDof(), elx.Size()) : IntRange(0, proxy->Evaluator()->BlockDim()*fel1.GetNDof());
+	IntRange test_range  = proxy->IsOther() ? IntRange(proxy->Evaluator()->BlockDim()*fel1_test.GetNDof(), ely.Size()) : IntRange(0, proxy->Evaluator()->BlockDim()*fel1_test.GetNDof());
 	if (proxy->IsOther())
-	  proxy->Evaluator()->ApplyTrans(fel2, mir2, proxyvalues, ely1.Range(test_range), lh);
+	  proxy->Evaluator()->ApplyTrans(fel2_test, mir2, proxyvalues, ely1.Range(test_range), lh);
         else
-          proxy->Evaluator()->ApplyTrans(fel1, mir1, proxyvalues, ely1.Range(test_range), lh);
+          proxy->Evaluator()->ApplyTrans(fel1_test, mir1, proxyvalues, ely1.Range(test_range), lh);
         
         ely += ely1;
         // t3.Stop();
@@ -5081,7 +5084,7 @@ namespace ngfem
         if (proxy->IsOther() && proxy->BoundaryValues())
           ;  // nothing to do 
         else
-          proxy->Evaluator()->ApplyTrans(fel1_trial, mir1, proxyvalues, ely1, lh);
+          proxy->Evaluator()->ApplyTrans(fel1_test, mir1, proxyvalues, ely1, lh);
         ely += ely1;
       }
   }
