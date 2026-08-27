@@ -30,66 +30,9 @@ namespace ngcomp {
     */
     }
     
-  Array<int> MortonElementOrder (const shared_ptr<MeshAccess> & ma)
-  {
-    size_t ne = ma->GetNE(VOL);
-
-    // element order along Morton (Z-)curve of element centroids
-    Array<uint64_t> code(ne);
-    Vec<3> pmin(0.0), pmax(0.0);
-    Array<Vec<3>> cent(ne);
-    for (size_t elnr = 0; elnr < ne; elnr++)
-      {
-        auto vs = ma->GetElement(ElementId(VOL, elnr)).Vertices();
-        Vec<3> c(0.0);
-        for (auto v : vs)
-          c += ma->GetPoint<3>(v);
-        c *= 1.0 / vs.Size();
-        cent[elnr] = c;
-        if (elnr == 0) { pmin = c; pmax = c; }
-        for (int j = 0; j < 3; j++)
-          {
-            pmin(j) = min2(pmin(j), c(j));
-            pmax(j) = max2(pmax(j), c(j));
-          }
-      }
-
-    // spread lower 21 bits with 2-bit gaps
-    auto spreadbits = [](uint64_t x)
-      {
-        x &= 0x1fffff;
-        x = (x | x << 32) & 0x001f00000000ffffULL;
-        x = (x | x << 16) & 0x001f0000ff0000ffULL;
-        x = (x | x << 8)  & 0x100f00f00f00f00fULL;
-        x = (x | x << 4)  & 0x10c30c30c30c30c3ULL;
-        x = (x | x << 2)  & 0x1249249249249249ULL;
-        return x;
-      };
-
-    for (size_t elnr = 0; elnr < ne; elnr++)
-      {
-        uint64_t q[3];
-        for (int j = 0; j < 3; j++)
-          {
-            double h = pmax(j) - pmin(j);
-            double rel = (h > 0) ? (cent[elnr](j) - pmin(j)) / h : 0.0;
-            q[j] = uint64_t(min2(rel, 1.0) * 2097151.0);   // 21 bits
-          }
-        code[elnr] = spreadbits(q[0]) | (spreadbits(q[1]) << 1) | (spreadbits(q[2]) << 2);
-      }
-
-    Array<int> elorder(ne);
-    for (auto i : Range(ne))
-      elorder[i] = i;
-    QuickSortI (code, elorder);
-    return elorder;
-  }
-
-
   // reverse Cuthill-McKee on the graph with nodes 0..ne-1, two nodes adjacent
-  // iff they share a key in el2key (keys: mesh vertices, or dofs of a space;
-  // negative keys are skipped)
-  static Array<int> RCMOrderFromTable (const Table<int> & el2key, size_t nkeys)
+  // iff they share a key in el2key; negative keys are skipped
+  static Array<int> RCMOrderFromTable (FlatTable<int> el2key, size_t nkeys)
   {
     size_t ne = el2key.Size();
 
@@ -102,30 +45,31 @@ namespace ngcomp {
             kecreator.Add (k, i);
     Table<int> k2el = kecreator.MoveTable();
 
-    // neighbours = elements sharing a key (deduplicated via stamps)
+    // call func for every element sharing a key with elnr (each one once,
+    // deduplicated via stamps; elnr itself is stamped out)
     Array<int> stamp(ne);
     stamp = -1;
     int stampcnt = 0;
-    Array<int> nbs;
-    auto GetNeighbours = [&] (int elnr, Array<int> & nbs)
+    auto IterateNeighbours = [&] (int elnr, auto func)
     {
-      nbs.SetSize0();
       stampcnt++;
+      stamp[elnr] = stampcnt;
       for (auto k : el2key[elnr])
         if (k >= 0)
           for (auto nb : k2el[k])
-            if (nb != elnr && stamp[nb] != stampcnt)
+            if (stamp[nb] != stampcnt)
               {
                 stamp[nb] = stampcnt;
-                nbs.Append(nb);
+                func(nb);
               }
     };
 
     Array<int> degree(ne);
     for (size_t i = 0; i < ne; i++)
       {
-        GetNeighbours(i, nbs);
-        degree[i] = nbs.Size();
+        int cnt = 0;
+        IterateNeighbours (i, [&cnt] (int nb) { cnt++; });
+        degree[i] = cnt;
       }
 
     // Cuthill-McKee: BFS, children by ascending degree; reversed at the end
@@ -145,14 +89,18 @@ namespace ngcomp {
       mark[start] = epoch;
       for (size_t qi = 0; qi < workq.Size(); qi++)
         {
-          GetNeighbours(workq[qi], nbs);
-          QuickSort (nbs, [&] (int a, int b) { return degree[a] < degree[b]; });
-          for (auto nb : nbs)
-            if (!done[nb] && mark[nb] != epoch)
-              {
-                mark[nb] = epoch;
-                workq.Append(nb);
-              }
+          size_t first = workq.Size();
+          IterateNeighbours (workq[qi], [&] (int nb)
+                             {
+                               if (!done[nb] && mark[nb] != epoch)
+                                 {
+                                   mark[nb] = epoch;
+                                   workq.Append(nb);
+                                 }
+                             });
+          // children in ascending degree
+          QuickSort (workq.Range(first, workq.Size()),
+                     [&degree] (int a, int b) { return degree[a] < degree[b]; });
         }
     };
 
@@ -182,45 +130,38 @@ namespace ngcomp {
   }
 
 
-  Array<int> RCMElementOrder (const shared_ptr<MeshAccess> & ma)
+  // element ordering for locality: RCM on the element graph of the space.
+  // Two elements are adjacent if they share a mesh vertex or a dof: the dof
+  // part sees identifications the mesh does not (periodic spaces), the vertex
+  // part keeps the graph connected for discontinuous spaces
+  static Array<int> RCMElementOrder (const FESpace & fes)
   {
     static Timer t("RCMElementOrder"); RegionTimer reg(t);
+
+    auto ma = fes.GetMeshAccess();
     size_t ne = ma->GetNE(VOL);
+    size_t nv = ma->GetNV();
+    Array<DofId> dofs;
 
     TableCreator<int> creator(ne);
     for ( ; !creator.Done(); creator++)
       for (size_t i = 0; i < ne; i++)
-        for (auto v : ma->GetElement(ElementId(VOL,i)).Vertices())
-          creator.Add (i, v);
-    Table<int> el2vert = creator.MoveTable();
+        {
+          ElementId ei(VOL, i);
+          for (auto v : ma->GetElement(ei).Vertices())
+            creator.Add (i, v);
+          fes.GetDofNrs (ei, dofs);
+          for (auto d : dofs)
+            if (IsRegularDof(d))
+              creator.Add (i, nv+d);
+        }
+    Table<int> el2key = creator.MoveTable();
 
-    return RCMOrderFromTable (el2vert, ma->GetNV());
+    return RCMOrderFromTable (el2key, nv + fes.GetNDof());
   }
 
 
-  Array<int> RCMElementOrder (const FESpace & fes)
-  {
-    static Timer t("RCMElementOrder space"); RegionTimer reg(t);
-
-    Table<int> doftable = fes.CreateDofTable(VOL);
-
-    // a discontinuous space has no shared dofs -> edgeless graph;
-    // fall back to the mesh-vertex graph
-    bool connected = false;
-    Array<int> cnt(fes.GetNDof());
-    cnt = 0;
-    for (auto dofs : doftable)
-      for (auto d : dofs)
-        if (IsRegularDof(d) && ++cnt[d] > 1)
-          { connected = true; break; }
-    if (!connected)
-      return RCMElementOrder (fes.GetMeshAccess());
-
-    return RCMOrderFromTable (doftable, fes.GetNDof());
-  }
-
-
-  void RCMReorderSubset (FlatArray<size_t> els, const Table<int> & el2dof, size_t ndof)
+  void RCMReorderSubset (FlatArray<size_t> els, FlatTable<int> el2dof, size_t ndof)
   {
     if (els.Size() <= 2) return;
 
@@ -244,13 +185,6 @@ namespace ngcomp {
   }
 
 
-  Array<int> LocalityElementOrder (const shared_ptr<MeshAccess> & ma)
-  {
-    // topological (RCM) default; MortonElementOrder is the geometric alternative
-    return RCMElementOrder (ma);
-  }
-
-
   void ReorderedFESpace :: Update()
   {
     space->Update();
@@ -261,9 +195,9 @@ namespace ngcomp {
     size_t ne = ma->GetNE(VOL);
     Array<DofId> dofs;
 
-    elorder = LocalityElementOrder (ma);
+    elorder = RCMElementOrder (*space);
 
-    // first-touch dof numbering along the Morton element order;
+    // first-touch dof numbering along the element order;
     // record cluster boundaries every 'step' elements (contiguous dof ranges)
     constexpr size_t step = 20;
     dofmap.SetSize(ndof);

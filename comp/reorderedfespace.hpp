@@ -12,22 +12,10 @@
 namespace ngcomp
 {
 
-  // element orderings for locality: geometric (Morton curve of centroids) and
-  // topological (reverse Cuthill-McKee on the vertex-sharing element graph).
-  // LocalityElementOrder is the common entry point used for first-touch dof
-  // numbering and locality-aware element batching -- keep all users on it so
-  // dof numbering and batching stay consistent.
-  NGS_DLL_HEADER Array<int> MortonElementOrder (const shared_ptr<MeshAccess> & ma);
-  NGS_DLL_HEADER Array<int> RCMElementOrder (const shared_ptr<MeshAccess> & ma);
-  // RCM on the dof-sharing element graph of the space (falls back to the
-  // mesh-vertex graph for discontinuous spaces); follows the space's dof
-  // connectivity, so batching stays consistent with e.g. ReorderedFESpace
-  NGS_DLL_HEADER Array<int> RCMElementOrder (const FESpace & fes);
   // in-place RCM reorder of an element subset (e.g. one element class),
   // adjacency = sharing a dof of el2dof; disconnected components keep the
   // relative input order via seeding
-  NGS_DLL_HEADER void RCMReorderSubset (FlatArray<size_t> els, const Table<int> & el2dof, size_t ndof);
-  NGS_DLL_HEADER Array<int> LocalityElementOrder (const shared_ptr<MeshAccess> & ma);
+  NGS_DLL_HEADER void RCMReorderSubset (FlatArray<size_t> els, FlatTable<int> el2dof, size_t ndof);
 
  // A reordered wrapper class for fespaces
 
@@ -35,7 +23,7 @@ namespace ngcomp
   {
   protected:
     Array<DofId> dofmap;
-    Array<int> elorder;   // space-filling-curve element order used for first-touch numbering
+    Array<int> elorder;   // element order used for first-touch numbering
     shared_ptr<FESpace> space;
     shared_ptr<Table<DofId>> clusters;
     
@@ -74,8 +62,7 @@ namespace ngcomp
 
     auto GetClusters() const { return clusters; }
 
-    // element processing order (Morton curve); process elements in this order
-    // to profit from the first-touch dof numbering
+    // process elements in this order to profit from the first-touch dof numbering
     FlatArray<int> GetElementOrder() const { return elorder; }
 
     
