@@ -1117,7 +1117,11 @@ namespace ngcomp
     TableCreator<size_t> creator;
     for ( ; !creator.Done(); creator++)
       for (size_t i = 0; i < classnr.Size(); i++)
-        creator.Add (classnr[i], i);
+        {
+          ElementId ei(VOL, i);
+          if (fesx->DefinedOn(ei) && fesy->DefinedOn(ei))
+            creator.Add (classnr[i], i);
+        }
     Table<size_t> table = creator.MoveTable();
 
     Table<int> doftablex = fesx->CreateDofTable(VOL);
@@ -1534,7 +1538,11 @@ namespace ngcomp
     TableCreator<size_t> creator;
     for ( ; !creator.Done(); creator++)
       for (size_t i = 0; i < classnr.Size(); i++)
-        creator.Add (classnr[i], i);
+        {
+          ElementId ei(VOL, i);
+          if (fesx->DefinedOn(ei) && fesy->DefinedOn(ei))
+            creator.Add (classnr[i], i);
+        }
     Table<size_t> table = creator.MoveTable();
 
     Table<int> doftablex = fesx->CreateDofTable(VOL);
