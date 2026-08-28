@@ -1155,8 +1155,18 @@ namespace ngcomp
         // cout << "dimx = " << dimx << ", dimxref = " << dimxref << endl;
         // cout << "dimy = " << dimy << ", dimyref = " << dimyref << endl;
         
-        for (auto elclass_inds : table)
+        for (auto elclass_inds_all : table)
           {
+            if (elclass_inds_all.Size() == 0) continue;
+            Array<size_t> elclass_inds;
+            for (auto elnr : elclass_inds_all)
+              {
+                ElementId el(VOL, elnr);
+                if (bfi->DefinedOn (ma->GetElIndex(el)) &&
+                    bfi->DefinedOnElement (elnr) &&
+                    fesx->DefinedOn (el) && fesy->DefinedOn (el))
+                  elclass_inds.Append (elnr);
+              }
             if (elclass_inds.Size() == 0) continue;
             ElementId ei(VOL,elclass_inds[0]);
 
@@ -1555,12 +1565,22 @@ namespace ngcomp
         
 
 
-        for (auto elclass_inds : table)
+        for (auto elclass_inds_all : table)
           {
-            if (elclass_inds.Size() == 0) continue;
-            
+            if (elclass_inds_all.Size() == 0) continue;
+
             RegionTimer rgroup(tgroup);
-            
+
+            Array<size_t> elclass_inds;
+            for (auto elnr : elclass_inds_all)
+              {
+                ElementId el(VOL, elnr);
+                if (bfi->DefinedOn (ma->GetElIndex(el)) &&
+                    bfi->DefinedOnElement (elnr) &&
+                    fesx->DefinedOn (el) && fesy->DefinedOn (el))
+                  elclass_inds.Append (elnr);
+              }
+            if (elclass_inds.Size() == 0) continue;
             ElementId ei(VOL,elclass_inds[0]);
             auto & felx = GetTrialSpace()->GetFE (ei, lh);
             auto & fely = GetTestSpace()->GetFE (ei, lh);
