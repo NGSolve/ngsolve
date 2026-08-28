@@ -1,11 +1,13 @@
 string code_tinybla = R"(
 
 #ifdef __CUDACC__
+#define TB_CUDA
 #define TB_HD __host__ __device__
 #define thread
 #define constant
 template <typename T> using remove_addrspace_t = T;
 #else
+#define TB_METAL
 #include <metal_stdlib>
 using namespace metal;
 #define TB_HD
@@ -1380,6 +1382,7 @@ namespace tinybla {
 
 
 
+#ifdef TB_METAL
   template <>
   class WarpMatrix<8,8,float>
   {
@@ -1421,6 +1424,7 @@ namespace tinybla {
       metal::simdgroup_store(m, mat.Data(), mat.LD(), ulong2(0,0), mat.IsColMajor());
     }
   };
+#endif // TB_METAL
 
 
 } // namespace tinybla
