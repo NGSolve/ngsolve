@@ -447,6 +447,62 @@ namespace tinybla {
 
 
 
+  // tensor stuff 
+
+
+
+  // Contract:   R_ab = w_i H_iab
+  // contracts the Vec index i with a weight vector.
+  // covariant (H1-Hessian / HCurl-gradient) correction:  w = F^{-T} uhat = uhat*Finv
+  // generic in the element type: works for elements float (-> inner product),
+  // HTVec (-> weighted vector sum), HTMat (-> weighted matrix sum)
+  template <int S, typename TW, typename TE>
+  auto Contract (HTVec<S,TW> w, HTVec<S,TE> H) -> TE
+  {
+    if constexpr (S==1)
+      return w.Head() * H.Head();
+    else
+      return Contract(w.Tail(), H.Tail()) + w.Head() * H.Head();
+  }
+
+
+  // RowContract:   R_ib = H_iab u_a
+  // contracts one matrix index with the bare reference vector u,
+  // the Vec index i becomes the row index of the result.
+  // Piola (HDiv-gradient) correction, before mixing with F^{-1}:
+  //     grad-correction = Finv * RowContract(H, uhat) - Outer(uhat, d)
+  // NOTE: implemented as  u * H(i)  ( = (H_i^T u)^T ),
+  //       correct only for symmetric H_i !
+  template <int S, int D, typename T>
+  auto RowContract (HTVec<S, HTMat<D,D,T>> H, HTVec<D,T> u) -> HTMat<S,D,T>
+  {
+    auto row = u * H.Head();          // row i = (H_i u)^T   (H_i symmetric)
+    if constexpr (S==1)
+      return HTMat<1,D,T> (row);
+    else
+      return { RowContract(H.Tail(), u), row };
+  }
+
+
+  // TraceContract:   d_b = (F^{-1})_ai H_iab  =  FinvT_ia H_iab   ( = d^_b ln J )
+  // double contraction: Vec index i and matrix index a against F^{-1}.
+  // pass FinvT = Trans(Finv), so row i of FinvT (= column i of F^{-1})
+  // pairs index-aligned with H(i)  (both Head() = index S-1)
+  template <int S, int D, typename T>
+  auto TraceContract (HTVec<S, HTMat<D,D,T>> H, HTMat<S,D,T> FinvT) -> HTVec<D,T>
+  {
+    auto term = FinvT.Head() * H.Head();
+    if constexpr (S==1)
+      return term;
+    else
+      return TraceContract(H.Tail(), FinvT.Tail()) + term;
+  }
+
+
+
+
+
+
 
 
   template <int S, typename T>

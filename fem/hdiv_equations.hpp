@@ -601,6 +601,17 @@ public:
         return outvar+ "= ToVec(1/J*Trans(Inv(F)) * (ToMat<3,3>("+invar+".Range<0,9>()) * Trans(F)));\n";
       else
         return outvar+ "= 0.0; "+outvar+".SetRange<0,9>(ToVec(1/J*Inv(F) * (ToMat<3,3>("+invar+") * F)));\n";
+
+
+      /*
+         for curved elements:  (att: row-wise gradients)
+      // H(div), u = 1/J F uhat:
+      //   (grad u)_ij = 1/J F_ig [ d^_b uhat_g + (F^{-1})_gk H_kab uhat_a
+      //                                        - uhat_g (F^{-1})_ak H_kab ] (F^{-1})_bj
+      
+      auto R     = Finv * RowContract(H, uhat) - Outer(uhat, d);
+      auto gradd = (1.0f/J) * (F * (duhat + R) * Finv);
+      */
     }
     
     
