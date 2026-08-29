@@ -5,7 +5,7 @@
 #include "cuda_linalg.hpp"
 #include "cuda_profiler.hpp"
 
-#include "../ngsmetal/tinybla.hpp"
+#include "tinybla.hpp"
 
 using namespace ngcomp;
 

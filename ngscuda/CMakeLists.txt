@@ -21,7 +21,7 @@ add_library(${lib_name} SHARED
     cuda_linalg.cpp unifiedvector.cpp cuda_tasks.cpp
     cuda_ngstd.cpp cuda_ngbla.hpp cuda_applyIR.cpp
     linalg_kernels.cu dev_sparsecholesky.cpp dev_blockjacobi.cpp cuda_profiler.cu
-    cuda_krylov.cpp cuda_matrix_free_btdtb.cpp
+    cuda_krylov.cpp cuda_matrix_free_btdtb.cpp cuda_device.cpp
 )
 
 set_source_files_properties(cuda_linalg.cpp unifiedvector.cpp cuda_tasks.cpp dev_sparsecholesky.cpp dev_blockjacobi.cpp cuda_krylov.cpp PROPERTIES LANGUAGE CUDA)
@@ -42,7 +42,7 @@ set(nvcc_flags
 )
 target_compile_options(${lib_name} PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:${nvcc_flags}>)
 
-target_link_libraries(${lib_name} PUBLIC CUDA::cusparse CUDA::cublas CUDA::cudart ngsolve $<BUILD_INTERFACE:netgen_python>)
+target_link_libraries(${lib_name} PUBLIC CUDA::cusparse CUDA::cublas CUDA::cudart CUDA::nvrtc CUDA::cuda_driver ngsolve $<BUILD_INTERFACE:netgen_python>)
 set_target_properties(${lib_name} PROPERTIES POSITION_INDEPENDENT_CODE ON CUDA_SEPARABLE_COMPILATION ON)
 if(CMAKE_PROJECT_NAME STREQUAL "NGSolve")
   install( TARGETS ${lib_name} ${ngs_install_dir} )
@@ -100,6 +100,7 @@ install( FILES
         cuda_ngstd.hpp
         cuda_ngbla.hpp
         linalg_kernels.hpp
+        cuda_device.hpp
         DESTINATION ${NGSOLVE_INSTALL_DIR_INCLUDE}
         COMPONENT ngsolve_devel
 )

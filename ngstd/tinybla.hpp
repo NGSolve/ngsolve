@@ -1,20 +1,50 @@
-string code_tinybla = R"(
+inline string code_tinybla = R"(
 
 #ifdef __CUDACC__
 #define TB_CUDA
 #define TB_HD __host__ __device__
 #define thread
 #define constant
-template <typename T> using remove_addrspace_t = T;
+#define threadgroup
+
+#elif defined(NGS_GPU_CPU)
+
+#define TB_CPU
+#define TB_HD
+#define thread
+#define constant
+#define threadgroup
+
 #else
-#define TB_METAL
 #include <metal_stdlib>
 using namespace metal;
+#define TB_METAL
 #define TB_HD
+
 #endif
 
 
 namespace tinybla {
+
+#ifndef TB_METAL
+  // metal supplies these, elsewhere tinybla has to be self-contained
+  // (nvrtc cannot include <bla.hpp>). Declared inside the namespace so a
+  // global "using namespace std" cannot make them ambiguous.
+  typedef unsigned int   uint;
+  typedef unsigned short ushort;
+
+  template <typename T> struct tb_remove_reference     { using type = T; };
+  template <typename T> struct tb_remove_reference<T&> { using type = T; };
+  template <typename T> using remove_reference_t = typename tb_remove_reference<T>::type;
+
+  template <typename T> struct tb_remove_cv                   { using type = T; };
+  template <typename T> struct tb_remove_cv<const T>          { using type = T; };
+  template <typename T> struct tb_remove_cv<volatile T>       { using type = T; };
+  template <typename T> struct tb_remove_cv<const volatile T> { using type = T; };
+  template <typename T> using remove_cv_t = typename tb_remove_cv<T>::type;
+
+  template <typename T> using remove_addrspace_t = T;
+#endif
 
 
   template <uint N>
@@ -1383,6 +1413,8 @@ namespace tinybla {
 
 
 #ifdef TB_METAL
+  // simdgroup matrices exist only in metal. This is an explicit
+  // specialisation, so it must be guarded - it is parsed even if unused.
   template <>
   class WarpMatrix<8,8,float>
   {

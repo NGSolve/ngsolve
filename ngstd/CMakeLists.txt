@@ -2,6 +2,7 @@ include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_library( ngstd ${NGS_LIB_TYPE}
         blockalloc.cpp evalfunc.cpp templates.cpp
+        gpuwrapper.cpp gpu_cpu.cpp
         stringops.cpp statushandler.cpp
         python_ngstd.cpp
         bspline.cpp
@@ -25,7 +26,7 @@ install( FILES
         stringops.hpp
         statushandler.hpp ngsstream.hpp 
         mycomplex.hpp python_ngstd.hpp ngs_utils.hpp
-        bspline.hpp sample_sort.hpp
+        bspline.hpp sample_sort.hpp gpuwrapper.hpp gpukernel.hpp tinybla.hpp
         DESTINATION ${NGSOLVE_INSTALL_DIR_INCLUDE}
         COMPONENT ngsolve_devel
        )

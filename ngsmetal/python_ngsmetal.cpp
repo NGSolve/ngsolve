@@ -9,6 +9,7 @@
 #include "metal_btdtb.hpp"
 
 #include "metal_benchmarks.hpp"
+#include "metal_device.hpp"
 
 using namespace ngsmetal;
 
@@ -94,6 +95,8 @@ namespace
 
 PYBIND11_MODULE(libngsmetal, m)
 {
+  InitMetalDevice();      // register as ngs_gpu backend
+
   py::class_<MetalCaptureContext> (m, "MetalCaptureManager", R"doc(
 Capture Metal commands submitted inside a Python ``with`` block.
 

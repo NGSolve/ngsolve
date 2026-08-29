@@ -1,6 +1,8 @@
 #ifdef NGS_PYTHON
 
 #include "python_ngstd.hpp"
+#include "gpuwrapper.hpp"
+#include "gpukernel.hpp"
 #include <Python.h>
 #include <pybind11/numpy.h>
 
@@ -61,6 +63,106 @@ void PyDefVecBuffer( TCLASS & c )
 
 
 
+
+static void ExportGPU (py::module & m)
+{
+  using namespace ngs_gpu;
+
+  py::enum_<MemType> (m, "MemType")
+    .value("Device", MemType::Device)
+    .value("Shared", MemType::Shared)
+    ;
+
+  py::class_<Buffer, shared_ptr<Buffer>> (m, "GPUBuffer")
+    .def_property_readonly("size", &Buffer::Size)
+    .def_property_readonly("memtype", &Buffer::GetMemType)
+    .def_property_readonly("host_visible",
+                           [](Buffer & self) { return self.HostPtr() != nullptr; })
+    .def("H2D", [](Buffer & self, py::array_t<float, py::array::c_style> a, size_t offset)
+         {
+           if (offset + a.nbytes() > self.Size())
+             throw Exception("GPUBuffer.H2D: does not fit");
+           self.H2D (static_cast<const void*>(a.data()), (size_t)a.nbytes(), offset);
+         }, py::arg("array"), py::arg("offset")=0)
+    .def("D2H", [](Buffer & self, size_t n, size_t offset)
+         {
+           if (offset + n*sizeof(float) > self.Size())
+             throw Exception("GPUBuffer.D2H: does not fit");
+           py::array_t<float> a(n);
+           self.D2H (static_cast<void*>(a.mutable_data()), n*sizeof(float), offset);
+           return a;
+         }, py::arg("n"), py::arg("offset")=0)
+    .def("__str__", [](Buffer & self)
+         { return "GPUBuffer, size = " + ToString(self.Size()) + " bytes"; })
+    ;
+
+  py::class_<Kernel, shared_ptr<Kernel>> (m, "GPUKernel")
+    .def_property_readonly("name", &Kernel::Name)
+    .def("__str__", [](Kernel & self) { return "GPUKernel " + self.Name(); })
+    ;
+
+  py::class_<Library, shared_ptr<Library>> (m, "GPULibrary")
+    .def("GetKernel", &Library::GetKernel, py::arg("name"))
+    ;
+
+  py::class_<Queue, shared_ptr<Queue>> (m, "GPUQueue")
+    .def("Launch", [](Queue & self, shared_ptr<Kernel> kernel,
+                      std::vector<unsigned> groups, std::vector<unsigned> groupsize,
+                      py::list args, size_t group_memory)
+         {
+           auto dim = [](std::vector<unsigned> & v, const char * what)
+           {
+             if (v.empty() || v.size() > 3)
+               throw Exception(string("GPUQueue.Launch: ")+what+" needs 1 to 3 entries");
+             v.resize(3, 1);
+             return Dim3(v[0], v[1], v[2]);
+           };
+
+           std::vector<KernelArg> kargs;
+           for (auto arg : args)
+             {
+               if (py::isinstance<Buffer>(arg))
+                 kargs.push_back (KernelArg(py::cast<shared_ptr<Buffer>>(arg)));
+               else if (py::isinstance<py::float_>(arg))
+                 kargs.push_back (KernelArg(py::cast<float>(arg)));   // Metal is fp32
+               else if (py::isinstance<py::int_>(arg))
+                 kargs.push_back (KernelArg(py::cast<int32_t>(arg)));
+               else
+                 throw Exception("GPUQueue.Launch: argument must be GPUBuffer, float or int");
+             }
+
+           self.Launch (*kernel, dim(groups, "groups"), dim(groupsize, "groupsize"),
+                        kargs, group_memory);
+         },
+         py::arg("kernel"), py::arg("groups"), py::arg("groupsize"),
+         py::arg("args")=py::list(), py::arg("group_memory")=0)
+    .def("Finish", &Queue::Finish)
+    ;
+
+  py::class_<Device, shared_ptr<Device>> (m, "GPUDevice")
+    .def_property_readonly("name", &Device::Name)
+    .def_property_readonly("has_float64", &Device::HasFloat64)
+    .def_property_readonly("unified_memory", &Device::IsUnifiedMemory)
+    .def_property_readonly("max_threads_per_group", &Device::MaxThreadsPerGroup)
+    .def_property_readonly("simd_width", &Device::SimdWidth)
+    .def("NewBuffer", &Device::NewBuffer,
+         py::arg("bytes"), py::arg("memtype")=MemType::Shared)
+    .def("CompileSource", &Device::CompileSource, py::arg("source"))
+    .def("DefaultQueue", &Device::DefaultQueue)
+    .def("__str__", [](Device & self) { return "GPUDevice " + self.Name(); })
+    ;
+
+  m.def("GetGPUDevice", &GetDevice,
+        "the GPU device, None if no backend (ngsmetal / ngscuda) is loaded");
+  m.def("HasGPUDevice", &HasDevice);
+  m.def("GetCPUDevice", &GetCpuDevice,
+        "host reference backend, kernels compiled with the host c++ compiler");
+
+  // common kernel syntax, prepend to the source given to CompileSource
+  m.attr("GPUKernelPrelude") = code_gpukernel;
+}
+
+
 void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
   try {
       auto numpy = py::module::import("numpy");
@@ -70,6 +172,8 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
 
   
   std::string nested_name = "ngstd";
+
+  ExportGPU (m);
 
   py::class_<DummyArgument>(m, "DummyArgument")
     .def("__bool__", []( DummyArgument &self ) { return false; } )

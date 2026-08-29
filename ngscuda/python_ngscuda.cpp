@@ -3,6 +3,7 @@
 #include "../ngstd/python_ngstd.hpp"
 #include "cuda_linalg.hpp"
 #include "cuda_profiler.hpp"
+#include "cuda_device.hpp"
 
 // TODO: always use ngs_cuda?
 using namespace ngbla;
@@ -20,6 +21,7 @@ namespace ngla {
 PYBIND11_MODULE(_ngscuda, m) {
 
   InitCUDA(1);
+  InitCudaDevice();      // register as ngs_gpu backend
   InitCuLinalg();
   InitApplyIntegrationPoints();
   InitBTDTB();
