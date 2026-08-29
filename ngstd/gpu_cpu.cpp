@@ -91,7 +91,7 @@ namespace ngs_gpu
         return f;
       }
 
-      shared_ptr<Kernel> GetKernel (const string & name) override
+      shared_ptr<Kernel> DoGetKernel (const string & name) override
       {
         auto f = (thunk_function) dlsym (handle, (name+"_ngsthunk").c_str());
         if (!f) Err ("no kernel '" + name + "' in library"

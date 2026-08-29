@@ -123,19 +123,32 @@ namespace ngs_gpu
   };
 
 
+  class Library;
+
   class Kernel
   {
+    friend class Library;
+    shared_ptr<Library> library;   // the raw handle points into the module
   public:
     virtual ~Kernel() = default;
     virtual string Name() const = 0;
+    const shared_ptr<Library> & GetLibrary() const { return library; }
   };
 
 
-  class Library
+  class Library : public std::enable_shared_from_this<Library>
   {
+  protected:
+    virtual shared_ptr<Kernel> DoGetKernel (const string & name) = 0;
   public:
     virtual ~Library() = default;
-    virtual shared_ptr<Kernel> GetKernel (const string & name) = 0;
+
+    shared_ptr<Kernel> GetKernel (const string & name)
+    {
+      auto kernel = DoGetKernel (name);
+      kernel->library = shared_from_this();
+      return kernel;
+    }
   };
 
 

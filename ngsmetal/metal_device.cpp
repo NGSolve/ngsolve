@@ -112,7 +112,7 @@ namespace ngsmetal
     MetalLibrary (MTL::Device * adev, MTL::Library * alib) : dev(adev), lib(alib) { }
     ~MetalLibrary() { lib->release(); }
 
-    shared_ptr<Kernel> GetKernel (const string & name) override
+    shared_ptr<Kernel> DoGetKernel (const string & name) override
     {
       auto func = lib->newFunction (Str(name));
       if (!func) Err ("no kernel '" + name + "' in library");
