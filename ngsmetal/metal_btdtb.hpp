@@ -2,7 +2,8 @@
 #define FILE_METAL_BTDTB_HPP
 
 #include <comp.hpp>
-#include "metal_vector.hpp"
+#include <gpuwrapper.hpp>
+#include <devicevector.hpp>
 
 using namespace ngcomp;
 
@@ -13,23 +14,16 @@ namespace ngsmetal
   class MetalBTDTBMatrix : public BaseMatrix
   {
     int h, w;
-    MTL::Function* ApplyBTDTB_Func = nullptr;
+    int ne, warps;
 
-    MTL::Buffer* buffer_dofx;
-    MTL::Buffer* buffer_dofy;
-    MTL::Buffer* buffer_bmatx;
-    MTL::Buffer* buffer_bmaty;
+    shared_ptr<ngs_gpu::Library> library;
+    shared_ptr<ngs_gpu::Kernel> kernel;
+    shared_ptr<ngs_gpu::Queue> queue;
 
-    MTL::Buffer* buffer_weights;
-    MTL::Buffer* buffer_Jacobi;
-    MTL::Buffer* buffer_JacobiDets;
-    MTL::Buffer* debug;
+    shared_ptr<ngs_gpu::Buffer> buffer_dofx, buffer_dofy;
+    shared_ptr<ngs_gpu::Buffer> buffer_bmatx, buffer_bmaty;
+    shared_ptr<ngs_gpu::Buffer> buffer_weights, buffer_Jacobi, buffer_JacobiDets;
 
-
-    MTL::ComputePipelineState* pipelineState;
- 
-    int ne, BS_els, BS_ipts, warps;
-    
   public:
     MetalBTDTBMatrix (const BaseMatrix& mat);
 
@@ -37,10 +31,10 @@ namespace ngsmetal
     
     
     AutoVector CreateRowVector() const override {
-      return make_unique<MetalVector>(w, false);
+      return make_unique<DeviceVector<float>>(w, PreferredMemType());
     }
     AutoVector CreateColVector() const override {
-      return make_unique<MetalVector>(h, false);
+      return make_unique<DeviceVector<float>>(h, PreferredMemType());
     }
 
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;

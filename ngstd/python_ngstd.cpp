@@ -157,6 +157,9 @@ static void ExportGPU (py::module & m)
   m.def("HasGPUDevice", &HasDevice);
   m.def("GetCPUDevice", &GetCpuDevice,
         "host reference backend, kernels compiled with the host c++ compiler");
+  m.def("SetGPUDevice", [] (shared_ptr<Device> dev)
+        { SetDeviceCreator ([dev]() { return dev; }); }, py::arg("device"),
+        "run gpu vectors and matrices on this device, e.g. GetCPUDevice()");
 
   // common kernel syntax, prepend to the source given to CompileSource
   m.attr("GPUKernelPrelude") = code_gpukernel;

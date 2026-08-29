@@ -229,6 +229,14 @@ namespace ngsmetal
   };
 
 
+  MTL::Buffer * GetMTLBuffer (const ngs_gpu::Buffer & buf)
+  {
+    auto mb = dynamic_cast<const MetalBuffer*> (&buf);
+    if (!mb) Err ("buffer was not created by the metal device");
+    return mb->Get();
+  }
+
+
   void InitMetalDevice()
   {
     ngs_gpu::SetDeviceCreator ([]() -> shared_ptr<ngs_gpu::Device>

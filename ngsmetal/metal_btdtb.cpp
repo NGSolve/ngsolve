@@ -1,13 +1,10 @@
-#include <Foundation/Foundation.hpp>
-#include <Metal/Metal.hpp>
-
-
-
 #include "metal_btdtb.hpp"
+#include "gpukernel.hpp"
 #include "tinybla.hpp"
 
 namespace ngsmetal
 {
+  using namespace ngs_gpu;
 
   static std::string Substitute(std::string src, const std::string &token,
                                 const std::string &value)
@@ -36,6 +33,10 @@ namespace ngsmetal
     if (!pmat)
       throw Exception("Expected MatrixFreeBTDTB matrix");
 
+    auto device = ngs_gpu::GetDevice();
+    if (!device)
+      throw Exception("MetalBTDTBMatrix: no gpu device");
+    queue = device->DefaultQueue();
 
     auto [locdofsx, dimxref, nip] = pmat->Bx.Shape();
     auto [locdofsy, dimyref, nip_] = pmat->By.Shape();
@@ -43,23 +44,25 @@ namespace ngsmetal
     auto [numels2,dimr,dims,nipJ] = pmat->Jacobi.Shape();
 
     // cout << "nip = " << nip << endl;
-    BS_els = pmat->opts.BS_els;
-    BS_ipts = pmat->opts.BS_ipts;  
+    int BS_ipts = pmat->opts.BS_ipts;
     ne = numels;
+
+    auto NewSharedBuffer = [&] (size_t nfloats)
+    { return device->NewBuffer (nfloats*sizeof(float), MemType::Shared); };
     
     FlatArray<int> hdofx = pmat->dofx.AsArray();
-    buffer_dofx = GetDevice()->newBuffer(hdofx.Size()*sizeof(int), MTL::ResourceStorageModeShared);
-    FlatArray<int> ddofx(hdofx.Size(), (int*)buffer_dofx->contents());
+    buffer_dofx = device->NewBuffer(hdofx.Size()*sizeof(int), MemType::Shared);
+    FlatArray<int> ddofx(hdofx.Size(), buffer_dofx->HostData<int>());
     ddofx = hdofx;
 
     FlatArray<int> hdofy = pmat->dofy.AsArray();
-    buffer_dofy = GetDevice()->newBuffer(hdofy.Size()*sizeof(int), MTL::ResourceStorageModeShared);
-    FlatArray<int> ddofy(hdofy.Size(), (int*)buffer_dofy->contents());
+    buffer_dofy = device->NewBuffer(hdofy.Size()*sizeof(int), MemType::Shared);
+    FlatArray<int> ddofy(hdofy.Size(), buffer_dofy->HostData<int>());
     ddofy = hdofy;
 
     // for the remainder, store the compressed tensor in the last rows of buffer_bmatx
-    buffer_bmatx = GetDevice()->newBuffer(dimxref*(RoundUp(nip,BS_ipts)+BS_ipts)*RoundUp<8>(locdofsx)*sizeof(float), MTL::ResourceStorageModeShared);
-    FlatTensor<3,float> dbmatx(dimxref,RoundUp(nip,BS_ipts),RoundUp<8>(locdofsx), (float*)buffer_bmatx->contents());
+    buffer_bmatx = NewSharedBuffer(dimxref*(RoundUp(nip,BS_ipts)+BS_ipts)*RoundUp<8>(locdofsx));
+    FlatTensor<3,float> dbmatx(dimxref,RoundUp(nip,BS_ipts),RoundUp<8>(locdofsx), buffer_bmatx->HostData<float>());
     for (int j = 0; j < dimxref; j++)
       for (int i = 0; i < RoundUp(nip,BS_ipts); i++)
         for (int k = 0; k < RoundUp<8>(locdofsx); k++)
@@ -67,7 +70,7 @@ namespace ngsmetal
 
     int bmatx_rem_rows = dimxref*RoundUp(nip,BS_ipts);
     int nip_rem = nip - RoundDown(nip, BS_ipts);
-    FlatTensor<3,float> dbmatx_rem(dimxref,nip_rem,RoundUp<8>(locdofsx), ((float*)buffer_bmatx->contents()) + bmatx_rem_rows*RoundUp<8>(locdofsx));
+    FlatTensor<3,float> dbmatx_rem(dimxref,nip_rem,RoundUp<8>(locdofsx), buffer_bmatx->HostData<float>() + bmatx_rem_rows*RoundUp<8>(locdofsx));
     dbmatx_rem = 0;
     for (int j = 0; j < dimxref; j++)
       for (int i = 0; i < nip_rem; i++)
@@ -75,15 +78,15 @@ namespace ngsmetal
           dbmatx_rem(j,i,k) = (k < locdofsx) ? pmat->Bx(k,j,i+RoundDown(nip,BS_ipts)) : 0;
 
     
-    buffer_bmaty = GetDevice()->newBuffer(dimyref*(RoundUp(nip,BS_ipts)+BS_ipts)*RoundUp<8>(locdofsy)*sizeof(float), MTL::ResourceStorageModeShared);
-    FlatTensor<3,float> dbmaty(dimyref,RoundUp(nip,BS_ipts),RoundUp<8>(locdofsy), (float*)buffer_bmaty->contents());
+    buffer_bmaty = NewSharedBuffer(dimyref*(RoundUp(nip,BS_ipts)+BS_ipts)*RoundUp<8>(locdofsy));
+    FlatTensor<3,float> dbmaty(dimyref,RoundUp(nip,BS_ipts),RoundUp<8>(locdofsy), buffer_bmaty->HostData<float>());
     for (int j = 0; j < dimyref; j++)
       for (int i = 0; i < RoundUp(nip,BS_ipts); i++)
         for (int k = 0; k < RoundUp<8>(locdofsy); k++)
           dbmaty(j,i,k) = (i<nip && k < locdofsy) ? pmat->By(k,j,i) : 0;
 
     int bmaty_rem_rows = dimyref*RoundUp(nip,BS_ipts);    
-    FlatTensor<3,float> dbmaty_rem(dimyref,nip_rem,RoundUp<8>(locdofsy), ((float*)buffer_bmaty->contents()) + bmaty_rem_rows*RoundUp<8>(locdofsy));
+    FlatTensor<3,float> dbmaty_rem(dimyref,nip_rem,RoundUp<8>(locdofsy), buffer_bmaty->HostData<float>() + bmaty_rem_rows*RoundUp<8>(locdofsy));
     dbmaty_rem = 0;
     for (int j = 0; j < dimyref; j++)
       for (int i = 0; i < nip_rem; i++)
@@ -92,31 +95,25 @@ namespace ngsmetal
     
 
 
-    buffer_weights = GetDevice()->newBuffer(RoundUp<8>(nip)*sizeof(float), MTL::ResourceStorageModeShared);
+    buffer_weights = NewSharedBuffer(RoundUp<8>(nip));
     for (int i = 0; i < RoundUp<8>(nip); i++)
-      ((float*)buffer_weights->contents())[i] = i < nip ? pmat->weights[i] : 0;
+      buffer_weights->HostData<float>()[i] = i < nip ? pmat->weights[i] : 0;
     
-    buffer_JacobiDets = GetDevice()->newBuffer(ne*sizeof(float), MTL::ResourceStorageModeShared);    
+    buffer_JacobiDets = NewSharedBuffer(ne);
     for (int i = 0; i < ne; i++)
-      ((float*)buffer_JacobiDets->contents())[i] = Det(pmat->Jacobi(i,STAR,STAR,0));
+      buffer_JacobiDets->HostData<float>()[i] = Det(pmat->Jacobi(i,STAR,STAR,0));
 
 
     int ne8 = RoundUp<8>(ne);
-    buffer_Jacobi = GetDevice()->newBuffer(dimr*dims*ne8*sizeof(float), MTL::ResourceStorageModeShared);    
+    buffer_Jacobi = NewSharedBuffer(dimr*dims*ne8);
     for (int i = 0; i < ne; i++)
       for (int j = 0; j < dimr; j++)
         for (int k = 0; k < dims; k++)
-          ((float*)buffer_Jacobi->contents())[i+k*ne8+j*dims*ne8] = pmat->Jacobi(i,j,k,0);
-
-    auto debug = GetDevice()->newBuffer(1000*sizeof(float), MTL::ResourceStorageModeShared);
-    FlatVector<float> debugvec(1000, (float*)debug->contents());
-    debugvec = 0.;
+          buffer_Jacobi->HostData<float>()[i+k*ne8+j*dims*ne8] = pmat->Jacobi(i,j,k,0);
 
     
-    string code = code_tinybla +
+    string code = code_gpukernel + code_tinybla +
       R"(
-      #include <metal_stdlib>
-      using namespace metal;
       using namespace tinybla;
 
       template <uint N>
@@ -128,28 +125,22 @@ namespace ngsmetal
       auto MyMin (T a, T b) { return (a < b) ? a : b; }
 
 
-      kernel void apply_btdtb(
-      device const float*  x            [[buffer(0)]],
-#if ($ATOMIC==1)
-      device atomic_float* y            [[buffer(1)]],
-#else
-      device float* y            [[buffer(1)]],
-#endif
-      device const int*    dofx         [[buffer(2)]],
-      device const int*    dofy         [[buffer(3)]],
-      device const float* bmatx         [[buffer(4)]],
-      device const float* bmaty         [[buffer(5)]],
-      device const float* weights       [[buffer(6)]],
-      device const float* Jacobi        [[buffer(7)]],
-      device const float* JacobiDets    [[buffer(8)]],
-      device float *    debug           [[buffer(9)]],
-
-      uint   blockIdx           [[threadgroup_position_in_grid]],
-      uint   threadIdx          [[thread_position_in_threadgroup]],
-      uint   blockDim           [[threads_per_threadgroup]],
-      uint   gridDim            [[threadgroups_per_grid]]
-      )
+      KERNEL(apply_btdtb,
+             GLOBAL_IN(float, x),
+             $YARG,
+             GLOBAL_IN(int,   dofx),
+             GLOBAL_IN(int,   dofy),
+             GLOBAL_IN(float, bmatx),
+             GLOBAL_IN(float, bmaty),
+             GLOBAL_IN(float, weights),
+             GLOBAL_IN(float, Jacobi),
+             GLOBAL_IN(float, JacobiDets))
       {
+      uint threadIdx = LOCAL_ID_X;
+      uint blockIdx  = GROUP_ID_X;
+      uint blockDim  = GROUP_SIZE_X;
+      uint gridDim   = NUM_GROUPS_X;
+
       int warpIdx = threadIdx/32;
       constexpr uint ne = $NE;
       constexpr uint ne8 = RoundUp<8>(ne);
@@ -163,11 +154,11 @@ namespace ngsmetal
       constexpr uint locdofsx_roundup = RoundUp<8> (locdofsx);
       constexpr uint locdofsy_roundup = RoundUp<8> (locdofsy);
 
-      alignas(16) threadgroup float elvecx[$BS_ELS][locdofsx_roundup];
-      alignas(16) threadgroup float elvecy[$BS_ELS][locdofsy_roundup];
+      SHARED_2D(float, elvecx, $BS_ELS, locdofsx_roundup);
+      SHARED_2D(float, elvecy, $BS_ELS, locdofsy_roundup);
 
       constexpr int MAXDIMREF = ($DIMXREF>$DIMYREF) ? $DIMXREF : $DIMYREF;
-      alignas(16) threadgroup float pointvalsref[MAXDIMREF*$BS_IPTS][$BS_ELS];
+      SHARED_2D(float, pointvalsref, MAXDIMREF*$BS_IPTS, $BS_ELS);
 
       auto mat_elvecx = MakeBareMatrix<RowMajor>(elvecx); 
       auto mat_elvecy = MakeBareMatrix<RowMajor>(elvecy);
@@ -185,11 +176,11 @@ namespace ngsmetal
           elvecx[r][c] = 0;
         }
 
-      threadgroup_barrier(mem_flags::mem_threadgroup);
+      BARRIER();
 
       for (uint baseelem = blockIdx*$BS_ELS; baseelem < $NE; baseelem += gridDim*$BS_ELS) { 
 
-      threadgroup_barrier(mem_flags::mem_threadgroup);
+      BARRIER();
 
       // load element vectors
       for (uint i = threadIdx; i < $BS_ELS*locdofsx; i += blockDim)
@@ -209,7 +200,7 @@ namespace ngsmetal
         }
 
 
-      threadgroup_barrier(mem_flags::mem_threadgroup);
+      BARRIER();
 
 #if ($ONLY_LOADSTORE==1)
 
@@ -249,7 +240,7 @@ namespace ngsmetal
               pointvalsrefxi.Store(mat_pointvalsref.SubMatrix(TS_IPTS*iptile+bs_ipts*comp, TS_ELS*eltile), threadIdx);
             }
 
-          threadgroup_barrier(mem_flags::mem_threadgroup);
+          BARRIER();
   
           // work on integration points
           for (uint ip = threadIdx; ip < bs_ipts*bs_els ; ip += blockDim)
@@ -288,7 +279,7 @@ namespace ngsmetal
             }
 
 
-          threadgroup_barrier(mem_flags::mem_threadgroup);
+          BARRIER();
 
           // multiply with By.trans
           for (uint blocknr = warpIdx; blocknr < BSTS_ELS * $DOFY_TILES; blocknr += $WARPS)
@@ -308,7 +299,7 @@ namespace ngsmetal
               sum.Store(mat_elvecy.SubMatrix(8*eltile, 8*ydoftile), threadIdx);
            }
 
-          threadgroup_barrier(mem_flags::mem_threadgroup);
+          BARRIER();
 
          } // end base_ip
 
@@ -329,24 +320,14 @@ namespace ngsmetal
 
              WarpMatrix<8,8> pointvalsrefxi = 0;
 
-#ifdef OLD
-             for (uint xdoftile = 0; xdoftile < $DOFX_TILES; xdoftile++)
-                {
-                  auto mb = mat_elvecx.SubMatrix(8*eltile, 8*xdoftile);
-                  auto ma = mat_bmatx.SubMatrix($BMATX_REM_ROWS+8*iptile, 8*xdoftile);
-                  pointvalsrefxi.AddMM<8>(ma, mb.Transpose(), threadIdx);
-                }
-#endif
-
               // slower for convection -> now good!
               auto mb = mat_elvecx.SubMatrix(8*eltile, 0);
               auto ma = mat_bmatx.SubMatrix($BMATX_REM_ROWS+8*iptile, 0);
               pointvalsrefxi.AddMM<RoundUp<8>(locdofsx)>(ma, mb.Transpose(), threadIdx);
-              // pointvalsrefxi = AddMM<RoundUp<8>(locdofsx)> (pointvalsrefxi, ma, mb.Transpose(), threadIdx);
               pointvalsrefxi.Store(mat_pointvalsref.SubMatrix(8*iptile,8*eltile), threadIdx);
             }
 
-          threadgroup_barrier(mem_flags::mem_threadgroup);
+          BARRIER();
   
           // work on integration points
           for (uint ip = threadIdx; ip < numips*bs_els; ip += blockDim)
@@ -390,7 +371,7 @@ namespace ngsmetal
             }
 
 
-          threadgroup_barrier(mem_flags::mem_threadgroup);
+          BARRIER();
 
           // multiply with By.trans
           for (uint blocknr = warpIdx; blocknr < $EL_TILES * $DOFY_TILES; blocknr += $WARPS)
@@ -408,25 +389,15 @@ namespace ngsmetal
                 }
 
               sum.Store(mat_elvecy.SubMatrix(8*eltile, 8*ydoftile), threadIdx);
-
-
-#ifdef NEW
-              WarpMatrixV2<8,8,float> sum(mat_elvecy.SubMatrix(8*eltile, 8*ydoftile), threadIdx);
-              auto ma = mat_pointvalsref.SubMatrix(0, 8*eltile);
-              auto mb = mat_bmaty.SubMatrix($BMATY_REM_ROWS+0, 8*ydoftile);
-              // sum.AddMM (RoundUp<4>(numips*$DIMYREF), ma.Transpose(), mb, threadIdx);
-              sum.AddMM (numips*$DIMYREF, ma.Transpose(), mb, threadIdx);
-              sum.Store(mat_elvecy.SubMatrix(8*eltile, 8*ydoftile), threadIdx);
-#endif
            }
 
-          threadgroup_barrier(mem_flags::mem_threadgroup);
+          BARRIER();
 
       }  // if (numips_remainder > 0)
 
 #endif
 
-      threadgroup_barrier(mem_flags::mem_threadgroup);
+      BARRIER();
 
 
 
@@ -439,7 +410,7 @@ namespace ngsmetal
            uint elnr = baseelem + locelnr;
            if (elnr < ne)
 #if ($ATOMIC==1)
-             atomic_fetch_add_explicit(&y[dofy[elnr*locdofsy+dofnr]], elvecy[locelnr][dofnr], memory_order_relaxed);
+             ATOMIC_ADD(&y[dofy[elnr*locdofsy+dofnr]], elvecy[locelnr][dofnr]);
 #else
              y[dofy[elnr*locdofsy+dofnr]] += elvecy[locelnr][dofnr];
 #endif
@@ -505,6 +476,9 @@ namespace ngsmetal
 
     warps = pmat->opts.warps;
 
+    // y is accumulated atomically only if elements may share dofs
+    code = Substitute(code, "$YARG", pmat->opts.atomic
+                      ? "GLOBAL_ATOMIC(float, y)" : "GLOBAL(float, y)");
     
     code = Substitute(code, "$NE", ToString(ne)+" /*ne*/ ");
     code = Substitute(code, "$NIP", ToString(nip)+" /*nip*/ ");
@@ -565,67 +539,28 @@ namespace ngsmetal
     code = Substitute(code, "$TRANSFORMY", transycode);    
 
     
-    ofstream codefile("applybtdtb.metal");
+    ofstream codefile("applybtdtb.gpu");
     codefile << code;
     codefile.close();
-    
-    NS::Error* error = nullptr;
-    NS::String* mslCode = NS::String::string(code.c_str(), NS::UTF8StringEncoding);
 
-    
-    MTL::Library* library = GetDevice()->newLibrary(mslCode, nullptr, &error);
-
-    if (!library)
-      throw Exception("Shader compile error: " 
-                      +string(error->localizedDescription()->utf8String()));
-
-    NS::String* funcName = NS::String::string("apply_btdtb", NS::UTF8StringEncoding);
-    ApplyBTDTB_Func = library->newFunction(funcName);
-
-    pipelineState = GetDevice()->newComputePipelineState(ApplyBTDTB_Func, &error);
-    NS::UInteger staticBytes = pipelineState->staticThreadgroupMemoryLength();
-    // cout << "shared memory = " << staticBytes << endl;
-    // cout << "maxtotalthreads = " << pipelineState->maxTotalThreadsPerThreadgroup() << endl;
-    
-    if (error)
-      {
-        std::cerr << "Metal Error: " << error->localizedDescription()->utf8String() << std::endl;
-        throw Exception (error->localizedDescription()->utf8String());
-      }
+    library = device->CompileSource (code);
+    kernel = library->GetKernel ("apply_btdtb");
   }
 
   
   void MetalBTDTBMatrix ::
   MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
-    static Timer tfull("MetalBTDTBMNatrix::MultAll"); RegionTimer rfull(tfull);
-        
-    static Timer t("MultBTDTB-GPU");
-      
-    const MetalVector & mvx = dynamic_cast<const MetalVector&>(x);
-    MetalVector & mvy = dynamic_cast<MetalVector&>(y);
+    static Timer tfull("MetalBTDTBMatrix::MultAdd"); RegionTimer rfull(tfull);
 
+    DeviceVectorWrapper<float> dvx(x);
+    DeviceVectorWrapper<float> dvy(y);
 
-    MTL::CommandBuffer* commandBuffer = GetCommandQueue()->commandBuffer();
-    MTL::ComputeCommandEncoder* encoder = commandBuffer->computeCommandEncoder();
-    
-    encoder->setComputePipelineState(pipelineState);
-    encoder->setBuffer(mvx.GetBuffer(), 0, 0);
-    encoder->setBuffer(mvy.GetBuffer(), 0, 1);
-    encoder->setBuffer(buffer_dofx, 0, 2);
-    encoder->setBuffer(buffer_dofy, 0, 3);
-    encoder->setBuffer(buffer_bmatx, 0, 4);
-    encoder->setBuffer(buffer_bmaty, 0, 5);
-    encoder->setBuffer(buffer_weights, 0, 6);
-    encoder->setBuffer(buffer_Jacobi, 0, 7);
-    encoder->setBuffer(buffer_JacobiDets, 0, 8);
-    encoder->setBuffer(debug, 0, 9);      
-    
-    encoder->dispatchThreadgroups(MTL::Size(200,1,1), MTL::Size(warps*32, 1, 1));
-    encoder->endEncoding();
-    
-
-    mvy.CommitAsync(commandBuffer);
+    queue->Launch (*kernel, Dim3(200), Dim3(warps*32),
+                   { dvx.DevArgRO(), dvy.DevArgRW(),
+                     buffer_dofx, buffer_dofy,
+                     buffer_bmatx, buffer_bmaty,
+                     buffer_weights, buffer_Jacobi, buffer_JacobiDets });
   }
   
 }

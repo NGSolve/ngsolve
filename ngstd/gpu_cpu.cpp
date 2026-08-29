@@ -61,11 +61,14 @@ namespace ngs_gpu
     {
       std::string name;
       thunk_function thunk;
+      launch_function launch;   // of the library the kernel came from
     public:
-      CpuKernel (const std::string & aname, thunk_function athunk)
-        : name(aname), thunk(athunk) { }
+      CpuKernel (const std::string & aname, thunk_function athunk,
+                 launch_function alaunch)
+        : name(aname), thunk(athunk), launch(alaunch) { }
       string Name() const override { return name; }
       thunk_function Get() const { return thunk; }
+      launch_function Launcher() const { return launch; }
     };
 
 
@@ -96,16 +99,14 @@ namespace ngs_gpu
         auto f = (thunk_function) dlsym (handle, (name+"_ngsthunk").c_str());
         if (!f) Err ("no kernel '" + name + "' in library"
                      " (entry points must be declared with KERNEL(...))");
-        return std::make_shared<CpuKernel> (name, f);
+        return std::make_shared<CpuKernel> (name, f, Launcher());
       }
     };
 
 
     class CpuQueue : public Queue
     {
-      launch_function launch;
     public:
-      CpuQueue (launch_function alaunch) : launch(alaunch) { }
       void Finish() override { }     // launches run synchronously
 
     protected:
@@ -130,7 +131,8 @@ namespace ngs_gpu
               argv[i] = const_cast<void*> (a.Data());
           }
 
-        launch (ck.Get(), argv.data(),
+        // the thread-local work-item indices live in the kernel's own library
+        ck.Launcher() (ck.Get(), argv.data(),
                 groups.x, groups.y, groups.z,
                 groupsize.x, groupsize.y, groupsize.z,
                 dynamic_group_memory);
@@ -140,7 +142,7 @@ namespace ngs_gpu
 
     class CpuDevice : public Device
     {
-      shared_ptr<Queue> defqueue;     // created with the first library
+      shared_ptr<Queue> defqueue;
       std::vector<shared_ptr<Library>> libs;
     public:
       string Name() const override { return "CPU reference"; }
@@ -154,7 +156,7 @@ namespace ngs_gpu
 
       shared_ptr<Queue> DefaultQueue() override
       {
-        if (!defqueue) Err ("compile a source first, the cpu queue needs its runtime");
+        if (!defqueue) defqueue = std::make_shared<CpuQueue>();
         return defqueue;
       }
 
@@ -190,7 +192,6 @@ namespace ngs_gpu
         if (!handle) Err (std::string("dlopen failed: ") + dlerror());
 
         auto res = std::make_shared<CpuLibrary> (handle, dir);
-        if (!defqueue) defqueue = std::make_shared<CpuQueue> (res->Launcher());
         libs.push_back (res);
         return res;
       }

@@ -3,6 +3,7 @@
 
 
 
+#include "ngsmetal.hpp"
 #include "metal_btdtb.hpp"
 #include "metal_benchmarks.hpp"
 // #include "tinybla.hpp"

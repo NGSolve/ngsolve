@@ -57,8 +57,13 @@ namespace ngs_gpu
   #define NUM_GROUPS_Y  gridDim.y
   #define NUM_GROUPS_Z  gridDim.z
 
-  #define SHARED(T,name,N)  __shared__ T name[N]
-  #define BARRIER()         __syncthreads()
+  #define SHARED(T,name,N)       alignas(16) __shared__ T name[N]
+  #define SHARED_2D(T,name,N,M)  alignas(16) __shared__ T name[N][M]
+  #define BARRIER()              __syncthreads()
+
+  #define GLOBAL_ATOMIC(T,name)  T * name
+  #define ATOMIC_PTR(T)          T *
+  #define ATOMIC_ADD(p,val)      atomicAdd(p, val)
 
 #elif defined(NGS_GPU_CPU)
 
@@ -76,6 +81,7 @@ namespace ngs_gpu
   #undef constant
   #undef threadgroup
 
+  #include <atomic>
   #include <cstddef>
   #include <thread>
   #include <vector>
@@ -135,6 +141,10 @@ namespace ngs_gpu
       g.barrier.Wait();
       return g.last;
     }
+
+    // plain float has no fetch_add, atomic_ref gives the gpu's atomicAdd
+    template <typename T> inline void AtomicAdd (T * p, T val)
+    { std::atomic_ref<T>(*p).fetch_add (val, std::memory_order_relaxed); }
 
     // unpack void** using the static kernel signature - no libffi needed
     template <typename T> inline T Get (void * p)
@@ -213,8 +223,13 @@ namespace ngs_gpu
   #define NUM_GROUPS_Y  ngs_cpu::ngr[1]
   #define NUM_GROUPS_Z  ngs_cpu::ngr[2]
 
-  #define SHARED(T,name,N)  T * name = (T*) ngs_cpu::SharedAlloc(sizeof(T)*(N))
-  #define BARRIER()         ngs_cpu::group->barrier.Wait()
+  #define SHARED(T,name,N)       T * name = (T*) ngs_cpu::SharedAlloc(sizeof(T)*(N))
+  #define SHARED_2D(T,name,N,M)  T (*name)[M] = (T(*)[M]) ngs_cpu::SharedAlloc(sizeof(T)*(N)*(M))
+  #define BARRIER()              ngs_cpu::group->barrier.Wait()
+
+  #define GLOBAL_ATOMIC(T,name)  T * name
+  #define ATOMIC_PTR(T)          T *
+  #define ATOMIC_ADD(p,val)      ngs_cpu::AtomicAdd(p, val)
 
 #else   // metal
 
@@ -254,8 +269,13 @@ namespace ngs_gpu
   #define NUM_GROUPS_Y  _ngs_ngrps.y
   #define NUM_GROUPS_Z  _ngs_ngrps.z
 
-  #define SHARED(T,name,N)  threadgroup T name[N]
-  #define BARRIER()         threadgroup_barrier(mem_flags::mem_threadgroup)
+  #define SHARED(T,name,N)       alignas(16) threadgroup T name[N]
+  #define SHARED_2D(T,name,N,M)  alignas(16) threadgroup T name[N][M]
+  #define BARRIER()              threadgroup_barrier(mem_flags::mem_threadgroup)
+
+  #define GLOBAL_ATOMIC(T,name)  device metal::atomic<T> * name
+  #define ATOMIC_PTR(T)          device metal::atomic<T> *
+  #define ATOMIC_ADD(p,val)      metal::atomic_fetch_add_explicit(p, val, metal::memory_order_relaxed)
 
 #endif
 
