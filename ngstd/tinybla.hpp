@@ -1333,8 +1333,8 @@ namespace tinybla {
 
     void operator= (T val) { myvals = val; }
 
-    template <ORDERING ORD1, typename Tp1, typename Tld1, typename Tp2, typename Tld2>
-    void AddMM(uint K, BareMatrix<ORD1,Tp1,Tld1> m1, BareMatrix<RowMajor,Tp2,Tld2> m2, uint tid)
+    template <uint K, ORDERING ORD1, typename Tp1, typename Tld1, typename Tp2, typename Tld2>
+    void AddMM(BareMatrix<ORD1,Tp1,Tld1> m1, BareMatrix<RowMajor,Tp2,Tld2> m2, uint tid)
     {
       auto r = MyRow(tid);
 
