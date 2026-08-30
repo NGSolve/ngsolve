@@ -97,7 +97,7 @@ namespace ngs_cuda
     CudaLibrary (CUmodule amodule) : module(amodule) { }
     ~CudaLibrary() { cuModuleUnload (module); }
 
-    shared_ptr<Kernel> GetKernel (const string & name) override
+    shared_ptr<Kernel> DoGetKernel (const string & name) override
     {
       CUfunction func;
       auto res = cuModuleGetFunction (&func, module, name.c_str());
@@ -200,9 +200,9 @@ namespace ngs_cuda
 
       std::string arch = "--gpu-architecture=compute_"
         + std::to_string(ccmajor) + std::to_string(ccminor);
-      const char * opts[] = { arch.c_str(), "--std=c++17", "--extended-lambda" };
+      const char * opts[] = { arch.c_str(), "--std=c++17" };
 
-      auto res = nvrtcCompileProgram (prog, 3, opts);
+      auto res = nvrtcCompileProgram (prog, 2, opts);
       if (res != NVRTC_SUCCESS)
         {
           size_t logsize = 0;
