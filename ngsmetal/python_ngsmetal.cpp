@@ -8,15 +8,9 @@
 #include "metal_vector.hpp"
 #include "metal_btdtb.hpp"
 
-#include "metal_benchmarks.hpp"
 #include "metal_device.hpp"
 
 using namespace ngsmetal;
-
-namespace ngsmetal
-{
-  extern double Metal_Shared_Benchmark ();
-}
 
 namespace
 {
@@ -154,11 +148,4 @@ Xcode.
                                             return make_shared<MetalBTDTBMatrix>(bmat);
                                           });
 
-  py::class_<Metal_MM_Benchmark> (m, "Metal_MM_Benchmark")
-    .def(py::init<int,int,int,int,int>(), py::arg("n"), py::arg("m"), py::arg("k"), py::arg("lda"), py::arg("ldb"))
-    .def("Run", &Metal_MM_Benchmark::Run, py::arg("timing")=true)
-    ;
-                                  
-  
-  m.def("Metal_Shared_Benchmark", Metal_Shared_Benchmark);
 }

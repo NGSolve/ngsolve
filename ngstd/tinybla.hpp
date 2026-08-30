@@ -1327,14 +1327,14 @@ namespace tinybla {
     WarpMatrixV2() { }
     WarpMatrixV2(T val) { myvals = val; }
 
-    template <typename Tp>
-    WarpMatrixV2(BareMatrix<RowMajor,Tp> mat, uint tid)
+    template <typename Tp, typename Tld>
+    WarpMatrixV2(BareMatrix<RowMajor,Tp,Tld> mat, uint tid)
       : myvals { mat.template GetTileSlice<BH,BW,4>(MyRow(tid), tid&3) } { }
 
     void operator= (T val) { myvals = val; }
 
-    template <ORDERING ORD1, typename Tp1, typename Tp2>
-    void AddMM(uint K, BareMatrix<ORD1,Tp1> m1, BareMatrix<RowMajor,Tp2> m2, uint tid)
+    template <ORDERING ORD1, typename Tp1, typename Tld1, typename Tp2, typename Tld2>
+    void AddMM(uint K, BareMatrix<ORD1,Tp1,Tld1> m1, BareMatrix<RowMajor,Tp2,Tld2> m2, uint tid)
     {
       auto r = MyRow(tid);
 
@@ -1364,8 +1364,8 @@ namespace tinybla {
 
     }
 
-    template <typename Tp>
-    void Store(BareMatrix<RowMajor,Tp> mat, unsigned tid) {
+    template <typename Tp, typename Tld>
+    void Store(BareMatrix<RowMajor,Tp,Tld> mat, unsigned tid) {
       mat.template SetTileSlice<BH,BW,4> (MyRow(tid), tid&3, myvals);
     }
 
@@ -1387,14 +1387,14 @@ namespace tinybla {
     WarpMatrixV2() { }
     WarpMatrixV2(float val) { myvals = val; }
 
-    template <typename Tp>
-    WarpMatrixV2(BareMatrix<RowMajor,Tp> mat, uint tid)
+    template <typename Tp, typename Tld>
+    WarpMatrixV2(BareMatrix<RowMajor,Tp,Tld> mat, uint tid)
       : myvals { mat.template GetTileSlice<BH,BW,8>(MyRow(tid), tid&7) } { }
 
     void operator= (T val) { myvals = val; }
 
-    template <ORDERING ORD1, typename Tp1, typename Tp2>
-    void AddMM(uint K, BareMatrix<ORD1,Tp1> m1, BareMatrix<RowMajor,Tp2> m2, uint tid)
+    template <ORDERING ORD1, typename Tp1, typename Tld1, typename Tp2, typename Tld2>
+    void AddMM(uint K, BareMatrix<ORD1,Tp1,Tld1> m1, BareMatrix<RowMajor,Tp2,Tld2> m2, uint tid)
     {
       auto r = MyRow(tid);
 
@@ -1411,8 +1411,8 @@ namespace tinybla {
 
     }
 
-    template <typename Tp>
-    void Store(BareMatrix<RowMajor,Tp> mat, unsigned tid) {
+    template <typename Tp, typename Tld>
+    void Store(BareMatrix<RowMajor,Tp,Tld> mat, unsigned tid) {
       mat.template SetTileSlice<BH,BW,8> (MyRow(tid), tid&7, myvals);
     }
 
