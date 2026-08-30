@@ -3,6 +3,7 @@
 #include "python_ngstd.hpp"
 #include "gpuwrapper.hpp"
 #include "gpukernel.hpp"
+#include "tinybla.hpp"
 #include <Python.h>
 #include <pybind11/numpy.h>
 
@@ -163,6 +164,9 @@ static void ExportGPU (py::module & m)
 
   // common kernel syntax, prepend to the source given to CompileSource
   m.attr("GPUKernelPrelude") = code_gpukernel;
+
+  // small linear algebra inside a kernel, prepend after GPUKernelPrelude
+  m.attr("TinyBlaPrelude") = code_tinybla;
 }
 
 

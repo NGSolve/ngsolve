@@ -2,12 +2,7 @@
 # and compared - this is the intended shape of a gpu test
 
 import numpy as np
-from ngsolve.ngstd import *
-
-try:
-    from ngsolve.ngsmetal import *
-except ImportError:
-    from ngsolve.ngscuda import *
+from ngsolve.gpu import *
 
 src = """
 KERNEL(saxpy, GLOBAL_IN(float,x), GLOBAL(float,y), VALUE(float,a), VALUE(int,n))
