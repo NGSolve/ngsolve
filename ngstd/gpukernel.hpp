@@ -41,6 +41,9 @@ namespace ngs_gpu
   #define LOCAL_PTR(T)        T *
   #define GPU_FUNC            __device__
 
+  typedef unsigned int   uint;
+  typedef unsigned short ushort;
+
   #define GLOBAL_ID_X   (blockIdx.x*blockDim.x + threadIdx.x)
   #define GLOBAL_ID_Y   (blockIdx.y*blockDim.y + threadIdx.y)
   #define GLOBAL_ID_Z   (blockIdx.z*blockDim.z + threadIdx.z)
@@ -206,6 +209,9 @@ namespace ngs_gpu
   #define GLOBAL_PTR(T)       T *
   #define LOCAL_PTR(T)        T *
   #define GPU_FUNC
+
+  typedef unsigned int   uint;
+  typedef unsigned short ushort;
 
   #define GLOBAL_ID_X   (ngs_cpu::gid[0]*ngs_cpu::gsz[0] + ngs_cpu::lid[0])
   #define GLOBAL_ID_Y   (ngs_cpu::gid[1]*ngs_cpu::gsz[1] + ngs_cpu::lid[1])
