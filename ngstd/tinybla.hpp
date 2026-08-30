@@ -1,4 +1,7 @@
-inline string code_tinybla = R"(
+// MSVC truncates a string literal above 16380 bytes (C2026), and the limit
+// applies to adjacent literals after concatenation - so join them at run time
+inline string code_tinybla =
+string(R"(
 
 #ifdef __CUDACC__
 #define TB_CUDA
@@ -475,6 +478,8 @@ namespace tinybla {
 
 
 
+)")
++ R"(
 
 
 
@@ -496,7 +501,6 @@ namespace tinybla {
     else
       return Contract(w.Tail(), H.Tail()) + w.Head() * H.Head();
   }
-
 
   // RowContract:   R_ib = H_iab u_a
   // contracts one matrix index with the bare reference vector u,
@@ -757,6 +761,10 @@ namespace tinybla {
 
   enum ORDERING { ColMajor, RowMajor };
   constexpr ORDERING operator! (ORDERING o) { return (o==RowMajor) ? ColMajor : RowMajor; }
+
+
+)"
++ R"(
 
 
   template <ORDERING ORD, typename Tp, typename Tld = uint>
@@ -1298,9 +1306,12 @@ namespace tinybla {
             myvals = FMA (m1.template GetTile<BH,KTILE>(r,k), m2.template GetTile<KTILE,BW>(k,c), myvals);
       }
 
-
      return WarpMatrix<H,W,float> (myvals);
   }
+
+
+)"
++ R"(
 
 
   // interleaved accumulator entries and B, B-mat must be RowMajor (by now)
