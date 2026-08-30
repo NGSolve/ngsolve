@@ -22,8 +22,9 @@ namespace ngsmetal
   
   constexpr uint RoundUp (uint i, uint N) { return N * ( (i+N-1) / N ); }
   constexpr uint RoundDown (uint i, uint N) { return N * ( i / N ); }
-  
-  MetalBTDTBMatrix :: MetalBTDTBMatrix (const BaseMatrix& bmat)
+
+  template <typename REAL>
+  MetalBTDTBMatrix<REAL> :: MetalBTDTBMatrix (const BaseMatrix& bmat)
   {
     h = bmat.Height();
     w = bmat.Width();
@@ -124,17 +125,19 @@ namespace ngsmetal
       template <typename T>
       auto MyMin (T a, T b) { return (a < b) ? a : b; }
 
+      typedef $REAL real;
+
 
       KERNEL(apply_btdtb,
-             GLOBAL_IN(float, x),
+             GLOBAL_IN(real, x),
              $YARG,
              GLOBAL_IN(int,   dofx),
              GLOBAL_IN(int,   dofy),
-             GLOBAL_IN(float, bmatx),
-             GLOBAL_IN(float, bmaty),
-             GLOBAL_IN(float, weights),
-             GLOBAL_IN(float, Jacobi),
-             GLOBAL_IN(float, JacobiDets))
+             GLOBAL_IN(real, bmatx),
+             GLOBAL_IN(real, bmaty),
+             GLOBAL_IN(real, weights),
+             GLOBAL_IN(real, Jacobi),
+             GLOBAL_IN(real, JacobiDets))
       {
       uint threadIdx = LOCAL_ID_X;
       uint blockIdx  = GROUP_ID_X;
@@ -154,11 +157,11 @@ namespace ngsmetal
       constexpr uint locdofsx_roundup = RoundUp<8> (locdofsx);
       constexpr uint locdofsy_roundup = RoundUp<8> (locdofsy);
 
-      SHARED_2D(float, elvecx, $BS_ELS, locdofsx_roundup);
-      SHARED_2D(float, elvecy, $BS_ELS, locdofsy_roundup);
+      SHARED_2D(real, elvecx, $BS_ELS, locdofsx_roundup);
+      SHARED_2D(real, elvecy, $BS_ELS, locdofsy_roundup);
 
       constexpr int MAXDIMREF = ($DIMXREF>$DIMYREF) ? $DIMXREF : $DIMYREF;
-      SHARED_2D(float, pointvalsref, MAXDIMREF*$BS_IPTS, $BS_ELS);
+      SHARED_2D(real, pointvalsref, MAXDIMREF*$BS_IPTS, $BS_ELS);
 
       auto mat_elvecx = MakeBareMatrix<RowMajor>(elvecx); 
       auto mat_elvecy = MakeBareMatrix<RowMajor>(elvecy);
@@ -250,16 +253,16 @@ namespace ngsmetal
                uint elnr = baseelem + locelnr;
 
 #if ($ONLY_LOADSTOREB==0)
-               Vec<$DIMXREF,float> xrefvals;
-               Vec<$DIMYREF,float> yrefvals;
-               Vec<$DIMX,float> xvals;
-               Vec<$DIMY,float> yvals;
+               Vec<$DIMXREF,real> xrefvals;
+               Vec<$DIMYREF,real> yrefvals;
+               Vec<$DIMX,real> xvals;
+               Vec<$DIMY,real> yvals;
 
-               Mat<$DIMR,$DIMS,float> F;
+               Mat<$DIMR,$DIMS,real> F;
                for (int i = 0; i < $DIMR; i++)
                   for (int j = 0; j < $DIMS; j++)
                      F(i,j) = Jacobi[elnr + ne8 * (j + $DIMS*i)];
-               float J = (elnr < ne) ?  JacobiDets[elnr] : 0;
+               real J = (elnr < ne) ?  JacobiDets[elnr] : 0;
 
                for (int comp = 0; comp < $DIMXREF; comp++)
                   xrefvals(comp) = pointvalsref[locipnr+comp*bs_ipts][locelnr];
@@ -287,7 +290,7 @@ namespace ngsmetal
               int eltile = blocknr % BSTS_ELS;  // which els
               int ydoftile = blocknr / BSTS_ELS;  // which dofs
 
-              WarpMatrix<TS_ELS,8,float> sum(mat_elvecy.SubMatrix(TS_ELS*eltile, 8*ydoftile), threadIdx);
+              WarpMatrix<TS_ELS,8,real> sum(mat_elvecy.SubMatrix(TS_ELS*eltile, 8*ydoftile), threadIdx);
 
               for (int comp = 0; comp < $DIMYREF; comp++)
                 {
@@ -337,18 +340,18 @@ namespace ngsmetal
                uint elnr = baseelem + locelnr;
 
 #if ($ONLY_LOADSTOREB==0)
-               Vec<$DIMXREF,float> xrefvals;
-               Vec<$DIMYREF,float> yrefvals;
-               Vec<$DIMX,float> xvals;
-               Vec<$DIMY,float> yvals;
+               Vec<$DIMXREF,real> xrefvals;
+               Vec<$DIMYREF,real> yrefvals;
+               Vec<$DIMX,real> xvals;
+               Vec<$DIMY,real> yvals;
 
-               Mat<$DIMR,$DIMS,float> F;
+               Mat<$DIMR,$DIMS,real> F;
 #pragma unroll
                for (uint i = 0; i < $DIMR; i++)
 #pragma unroll
                   for (uint j = 0; j < $DIMS; j++)
                      F(i,j) = Jacobi[elnr + ne8 * (j + $DIMS*i)];
-               float J = (elnr < ne) ?  JacobiDets[elnr] : 0;
+               real J = (elnr < ne) ?  JacobiDets[elnr] : 0;
 
                for (uint j = 0; j < $DIMXREF; j++)
                   xrefvals(j) = pointvalsref[locipnr+j*numips][locelnr];
@@ -379,7 +382,7 @@ namespace ngsmetal
               uint eltile = blocknr % $EL_TILES;  // which els
               uint ydoftile = blocknr / $EL_TILES;  // which dofs
 
-              WarpMatrix<8,8,float> sum(mat_elvecy.SubMatrix(8*eltile, 8*ydoftile), threadIdx);
+              WarpMatrix<8,8,real> sum(mat_elvecy.SubMatrix(8*eltile, 8*ydoftile), threadIdx);
 
               for (uint ipcomp = 0; ipcomp < numips*$DIMYREF; ipcomp += 8)
                 {
@@ -469,7 +472,7 @@ namespace ngsmetal
       
     phys += "} // END PHYSICS \n";
 
-    phys = Substitute(phys, "double", "float");
+    phys = Substitute(phys, "double", "real");
     code = Substitute(code, "$PHYSICS", phys);
 
     
@@ -478,7 +481,7 @@ namespace ngsmetal
 
     // y is accumulated atomically only if elements may share dofs
     code = Substitute(code, "$YARG", pmat->opts.atomic
-                      ? "GLOBAL_ATOMIC(float, y)" : "GLOBAL(float, y)");
+                      ? "GLOBAL_ATOMIC(real, y)" : "GLOBAL(real, y)");
     
     code = Substitute(code, "$NE", ToString(ne)+" /*ne*/ ");
     code = Substitute(code, "$NIP", ToString(nip)+" /*nip*/ ");
@@ -514,7 +517,7 @@ namespace ngsmetal
         IntRange rangexref = pmat->ranges_xref[i];
         IntRange rangex = pmat->ranges_x[i];
         transxcode += "{\n";
-        transxcode += "Vec<" + ToString(rangex.Size()) + ",float> res;\n";
+        transxcode += "Vec<" + ToString(rangex.Size()) + ",real> res;\n";
         transxcode += pmat->diffopsx[i] -> GenerateTransformationCode("xrefvals.Range<"+ToString(rangexref.First())+","+ToString(rangexref.Next())+">()",
                                                                       "res", false);
         transxcode += "xvals.SetRange<" + ToString(rangex.First()) +"," + ToString(rangex.Next()) + ">(res);\n";
@@ -530,7 +533,7 @@ namespace ngsmetal
         IntRange rangeyref = pmat->ranges_yref[i];
         IntRange rangey = pmat->ranges_y[i];
         transycode += "{\n";
-        transycode += "Vec<" + ToString(rangeyref.Size()) + ",float> res;\n";
+        transycode += "Vec<" + ToString(rangeyref.Size()) + ",real> res;\n";
         transycode += pmat->diffopsy[i] -> GenerateTransformationCode("yvals.Range<"+ToString(rangey.First())+","+ToString(rangey.Next())+">()",
                                                                       "res", true);
         transycode += "yrefvals.SetRange<" + ToString(rangeyref.First()) +"," + ToString(rangeyref.Next()) + ">(res);\n";
@@ -538,6 +541,10 @@ namespace ngsmetal
       }
     code = Substitute(code, "$TRANSFORMY", transycode);    
 
+    if constexpr (std::is_same_v<REAL,float>)
+      code = Substitute(code, "$REAL", "float");
+    else
+      code = Substitute(code, "$REAL", "double");
     
     ofstream codefile("applybtdtb.gpu");
     codefile << code;
@@ -547,14 +554,15 @@ namespace ngsmetal
     kernel = library->GetKernel ("apply_btdtb");
   }
 
-  
-  void MetalBTDTBMatrix ::
+
+  template <typename REAL>
+  void MetalBTDTBMatrix<REAL> ::
   MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
     static Timer tfull("MetalBTDTBMatrix::MultAdd"); RegionTimer rfull(tfull);
 
-    DeviceVectorWrapper<float> dvx(x);
-    DeviceVectorWrapper<float> dvy(y);
+    DeviceVectorWrapper<REAL> dvx(x);
+    DeviceVectorWrapper<REAL> dvy(y);
 
     queue->Launch (*kernel, Dim3(200), Dim3(warps*32),
                    { dvx.DevArgRO(), dvy.DevArgRW(),
@@ -562,5 +570,8 @@ namespace ngsmetal
                      buffer_bmatx, buffer_bmaty,
                      buffer_weights, buffer_Jacobi, buffer_JacobiDets });
   }
-  
+
+
+  template class MetalBTDTBMatrix<float>;
+  template class MetalBTDTBMatrix<double>;
 }

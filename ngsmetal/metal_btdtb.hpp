@@ -11,6 +11,7 @@ using namespace ngcomp;
 
 namespace ngsmetal
 {
+  template <typename REAL>
   class MetalBTDTBMatrix : public BaseMatrix
   {
     int h, w;
@@ -23,7 +24,7 @@ namespace ngsmetal
     shared_ptr<ngs_gpu::Buffer> buffer_dofx, buffer_dofy;
     shared_ptr<ngs_gpu::Buffer> buffer_bmatx, buffer_bmaty;
     shared_ptr<ngs_gpu::Buffer> buffer_weights, buffer_Jacobi, buffer_JacobiDets;
-
+    
   public:
     MetalBTDTBMatrix (const BaseMatrix& mat);
 

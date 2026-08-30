@@ -138,14 +138,14 @@ Xcode.
   
 
 
-  py::class_<MetalBTDTBMatrix, BaseMatrix, shared_ptr<MetalBTDTBMatrix>> (m, "MetalBTDTBMatrix")
+  py::class_<MetalBTDTBMatrix<float>, BaseMatrix, shared_ptr<MetalBTDTBMatrix<float>>> (m, "MetalBTDTBMatrix")
     .def(py::init<const BaseMatrix&>(), py::arg("mat"))
     ;
 
   BaseMatrix::RegisterDeviceMatrixCreator(typeid(MatrixFreeBTDTB),
                                           [] (const BaseMatrix & bmat) -> shared_ptr<BaseMatrix>
                                           {
-                                            return make_shared<MetalBTDTBMatrix>(bmat);
+                                            return make_shared<MetalBTDTBMatrix<float>>(bmat);
                                           });
 
 }
