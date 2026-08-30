@@ -1,12 +1,20 @@
-#include "metal_btdtb.hpp"
-#include "gpukernel.hpp"
-#include "tinybla.hpp"
+#ifndef FILE_GPU_BTDTB_HPP
+#define FILE_GPU_BTDTB_HPP
 
-namespace ngsmetal
+#include <comp.hpp>
+#include <gpuwrapper.hpp>
+#include <gpukernel.hpp>
+#include <tinybla.hpp>
+#include <devicevector.hpp>
+
+using namespace ngcomp;
+
+
+
+namespace ngcomp
 {
-  using namespace ngs_gpu;
 
-  static std::string Substitute(std::string src, const std::string &token,
+  inline std::string Substitute(std::string src, const std::string &token,
                                 const std::string &value)
   {
     for (size_t p = src.find(token); p != std::string::npos; p = src.find(token, p))
@@ -23,9 +31,43 @@ namespace ngsmetal
   constexpr uint RoundUp (uint i, uint N) { return N * ( (i+N-1) / N ); }
   constexpr uint RoundDown (uint i, uint N) { return N * ( i / N ); }
 
+
   template <typename REAL>
-  MetalBTDTBMatrix<REAL> :: MetalBTDTBMatrix (const BaseMatrix& bmat)
+  class GPU_BTDTBMatrix : public BaseMatrix
   {
+    int h, w;
+    int ne, warps;
+
+    shared_ptr<ngs_gpu::Library> library;
+    shared_ptr<ngs_gpu::Kernel> kernel;
+    shared_ptr<ngs_gpu::Queue> queue;
+
+    shared_ptr<ngs_gpu::Buffer> buffer_dofx, buffer_dofy;
+    shared_ptr<ngs_gpu::Buffer> buffer_bmatx, buffer_bmaty;
+    shared_ptr<ngs_gpu::Buffer> buffer_weights, buffer_Jacobi, buffer_JacobiDets;
+    
+  public:
+    GPU_BTDTBMatrix (const BaseMatrix& mat);
+
+
+    
+    
+    AutoVector CreateRowVector() const override {
+      return make_unique<DeviceVector<float>>(w, PreferredMemType());
+    }
+    AutoVector CreateColVector() const override {
+      return make_unique<DeviceVector<float>>(h, PreferredMemType());
+    }
+
+    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
+    
+  };
+
+
+  template <typename REAL>
+  GPU_BTDTBMatrix<REAL> :: GPU_BTDTBMatrix (const BaseMatrix& bmat)
+  {
+    using namespace ngs_gpu;
     h = bmat.Height();
     w = bmat.Width();
 
@@ -36,7 +78,7 @@ namespace ngsmetal
 
     auto device = ngs_gpu::GetDevice();
     if (!device)
-      throw Exception("MetalBTDTBMatrix: no gpu device");
+      throw Exception("GPU_BTDTBMatrix: no gpu device");
     queue = device->DefaultQueue();
 
     auto [locdofsx, dimxref, nip] = pmat->Bx.Shape();
@@ -556,10 +598,11 @@ namespace ngsmetal
 
 
   template <typename REAL>
-  void MetalBTDTBMatrix<REAL> ::
+  void GPU_BTDTBMatrix<REAL> ::
   MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
-    static Timer tfull("MetalBTDTBMatrix::MultAdd"); RegionTimer rfull(tfull);
+    using namespace ngs_gpu;
+    static Timer tfull("GPU_BTDTBMatrix::MultAdd"); RegionTimer rfull(tfull);
 
     DeviceVectorWrapper<REAL> dvx(x);
     DeviceVectorWrapper<REAL> dvy(y);
@@ -570,8 +613,7 @@ namespace ngsmetal
                      buffer_bmatx, buffer_bmaty,
                      buffer_weights, buffer_Jacobi, buffer_JacobiDets });
   }
-
-
-  template class MetalBTDTBMatrix<float>;
-  template class MetalBTDTBMatrix<double>;
 }
+
+
+#endif

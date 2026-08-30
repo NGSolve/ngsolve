@@ -6,7 +6,7 @@
 
 #include "ngsmetal.hpp"
 #include "metal_vector.hpp"
-#include "metal_btdtb.hpp"
+#include "gpu_btdtb.hpp"
 
 #include "metal_device.hpp"
 
@@ -138,14 +138,14 @@ Xcode.
   
 
 
-  py::class_<MetalBTDTBMatrix<float>, BaseMatrix, shared_ptr<MetalBTDTBMatrix<float>>> (m, "MetalBTDTBMatrix")
+  py::class_<GPU_BTDTBMatrix<float>, BaseMatrix, shared_ptr<GPU_BTDTBMatrix<float>>> (m, "GPU_BTDTBMatrix")
     .def(py::init<const BaseMatrix&>(), py::arg("mat"))
     ;
 
   BaseMatrix::RegisterDeviceMatrixCreator(typeid(MatrixFreeBTDTB),
                                           [] (const BaseMatrix & bmat) -> shared_ptr<BaseMatrix>
                                           {
-                                            return make_shared<MetalBTDTBMatrix<float>>(bmat);
+                                            return make_shared<GPU_BTDTBMatrix<float>>(bmat);
                                           });
 
 }
