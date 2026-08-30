@@ -1087,6 +1087,8 @@ namespace tinybla {
 
 
 
+)"
++ R"(
 /*
       // lane info inside simdgroup
       uint lane  = tid & 31;
