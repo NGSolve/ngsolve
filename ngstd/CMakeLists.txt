@@ -1,11 +1,24 @@
 include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 
+# kernel source files embedded as C++ strings
+add_custom_command(
+        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/tinybla_code.cpp
+        COMMAND ${CMAKE_COMMAND}
+                -DINPUT=${CMAKE_CURRENT_SOURCE_DIR}/tinybla.h
+                -DOUTPUT=${CMAKE_CURRENT_BINARY_DIR}/tinybla_code.cpp
+                -DSYMBOL=code_tinybla
+                -P ${CMAKE_CURRENT_SOURCE_DIR}/embed_source.cmake
+        DEPENDS tinybla.h embed_source.cmake
+        COMMENT "Embedding tinybla.h"
+        )
+
 add_library( ngstd ${NGS_LIB_TYPE}
         blockalloc.cpp evalfunc.cpp templates.cpp
         gpuwrapper.cpp gpu_cpu.cpp
         stringops.cpp statushandler.cpp
         python_ngstd.cpp
         bspline.cpp
+        ${CMAKE_CURRENT_BINARY_DIR}/tinybla_code.cpp
         )
 
 target_compile_definitions(ngstd PUBLIC ${NGSOLVE_COMPILE_DEFINITIONS})
@@ -26,7 +39,7 @@ install( FILES
         stringops.hpp
         statushandler.hpp ngsstream.hpp 
         mycomplex.hpp python_ngstd.hpp ngs_utils.hpp
-        bspline.hpp sample_sort.hpp gpuwrapper.hpp gpukernel.hpp tinybla.hpp
+        bspline.hpp sample_sort.hpp gpuwrapper.hpp gpukernel.hpp tinybla.hpp tinybla.h
         DESTINATION ${NGSOLVE_INSTALL_DIR_INCLUDE}
         COMPONENT ngsolve_devel
        )
