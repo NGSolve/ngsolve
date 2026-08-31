@@ -3,18 +3,43 @@
 /* Date:   29. Aug. 2025                                             */
 /*********************************************************************/
 
+#define NS_PRIVATE_IMPLEMENTATION
+#define MTL_PRIVATE_IMPLEMENTATION
+#define CA_PRIVATE_IMPLEMENTATION
 #include <Foundation/Foundation.hpp>
 #include <Metal/Metal.hpp>
 
+#include <iostream>
 #include <stdexcept>
 #include <string>
 
-#include "ngsmetal.hpp"
 #include "metal_device.hpp"
 
 namespace ngsmetal
 {
   using namespace ngs_gpu;
+
+  static MTL::Device * device = nullptr;
+  static MTL::CommandQueue * commandQueue = nullptr;
+
+  MTL::Device * GetDevice()
+  {
+    if (!device)
+      {
+        device = MTL::CreateSystemDefaultDevice();
+        if (device)
+          commandQueue = device->newCommandQueue();
+        else
+          std::cerr << "Metal is not supported on this system.\n";
+      }
+    return device;
+  }
+
+  MTL::CommandQueue * GetCommandQueue()
+  {
+    GetDevice();
+    return commandQueue;
+  }
 
   static void Err (const std::string & msg)
   { throw std::runtime_error ("ngsmetal: " + msg); }
@@ -241,7 +266,7 @@ namespace ngsmetal
   {
     ngs_gpu::SetDeviceCreator ([]() -> shared_ptr<ngs_gpu::Device>
     {
-      auto dev = GetDevice();               // ngsmetal::GetDevice, MTL::Device*
+      auto dev = GetDevice();
       if (!dev) return nullptr;
       return std::make_shared<MetalDevice> (dev, GetCommandQueue());
     });

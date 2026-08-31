@@ -7,12 +7,16 @@
 
 #include <gpuwrapper.hpp>
 
-namespace MTL { class Buffer; }
+namespace MTL { class Buffer; class Device; class CommandQueue; }
 
 namespace ngsmetal
 {
   // installs the ngs_gpu device creator
   void InitMetalDevice();
+
+  // raw Metal handles (lazily created singletons)
+  MTL::Device * GetDevice();
+  MTL::CommandQueue * GetCommandQueue();
 
   // the MTL buffer behind an ngs_gpu buffer of this backend
   MTL::Buffer * GetMTLBuffer (const ngs_gpu::Buffer & buf);

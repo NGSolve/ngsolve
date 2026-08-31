@@ -4,7 +4,6 @@
 #include <comp.hpp>
 #include <python_comp.hpp>
 
-#include "ngsmetal.hpp"
 #include "metal_vector.hpp"
 #include "gpu_btdtb.hpp"
 
