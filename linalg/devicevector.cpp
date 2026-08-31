@@ -629,7 +629,7 @@ namespace ngla
   }
 
 
-  void EvalScalarExpr (const std::string & params, const std::string & expr,
+  void EvalScalarExpr (const std::string & params, const std::string & body,
                        const std::vector<ngs_gpu::KernelArg> & args)
   {
     struct Entry
@@ -642,7 +642,7 @@ namespace ngla
     static std::map<string, Entry> cache;
 
     auto dev = GetGpuDevice();
-    string key = params + "|" + expr;
+    string key = params + "|" + body;
 
     shared_ptr<Kernel> kernel;
     {
@@ -651,8 +651,8 @@ namespace ngla
       if (!e.kernel || e.device != dev)
         {
           string src = string(code_gpukernel) +
-            "\nKERNEL(sc_expr, GLOBAL(double,r)" + params + ")\n" +
-            "{ r[0] = " + expr + "; }\n";
+            "\nKERNEL(sc_expr" + params + ")\n" +
+            "{ " + body + " }\n";
           e.device = dev;
           e.library = dev->CompileSource (src);
           e.kernel = e.library->GetKernel ("sc_expr");
@@ -680,7 +680,7 @@ namespace ngla
   DeviceScalar & DeviceScalar :: operator= (const DeviceScalar & s2)
   {
     std::vector<KernelArg> args = { DevArg(), KernelArg(*s2.devbuffer) };
-    EvalScalarExpr (", GLOBAL_IN(double,s1)", "s1[0]", args);
+    EvalScalarExpr (", GLOBAL(double,s0), GLOBAL_IN(double,s1)", "s0[0] = s1[0];", args);
     return *this;
   }
 

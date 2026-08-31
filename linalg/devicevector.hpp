@@ -36,9 +36,9 @@ namespace ngla
   template <typename T> class DeviceVectorWrapper;
 
 
-  // compiles (once per expression shape) and launches the one-thread
-  // kernel  r[0] = <expr>;  - the backend of the scalar expressions below
-  NGS_DLL_HEADER void EvalScalarExpr (const std::string & params, const std::string & expr,
+  // compiles (once per shape) and launches the one-thread kernel
+  // { <body> } - the backend of the scalar expressions below
+  NGS_DLL_HEADER void EvalScalarExpr (const std::string & params, const std::string & body,
                                       const std::vector<ngs_gpu::KernelArg> & args);
 
   template <typename T>
@@ -83,10 +83,11 @@ namespace ngla
     DeviceScalar & operator= (const Expr & e)
     {
       std::vector<ngs_gpu::KernelArg> args;
+      std::string body = "s0[0] = ", params = ", GLOBAL(double,s0)";
       args.push_back (DevArg());
-      std::string code, params;
-      e.Emit (code, params, args);
-      EvalScalarExpr (params, code, args);
+      e.Emit (body, params, args);
+      body += ";";
+      EvalScalarExpr (params, body, args);
       return *this;
     }
   };
@@ -196,6 +197,43 @@ namespace ngla
   template <typename T> requires (IsDevScalarExpr<std::remove_cvref_t<T>> || IsDevScalarLike<T>)
   auto Sqrt (const T & t)
   { return DevFuncExpr<decltype(ToDevExpr(t))>{ToDevExpr(t), "sqrt"}; }
+
+
+  /*
+    Several assignments fused into one kernel launch:
+      Eval (Assign(alpha, rz/pq), Assign(neg_alpha, -alpha));
+    The statements run in order in a single thread, so a later one may
+    read a scalar a previous one wrote.
+  */
+  template <IsDevScalarExpr E>
+  struct DevScalStmt
+  {
+    DeviceScalar * dest;
+    E e;
+    void EmitStmt (std::string & body, std::string & params,
+                   std::vector<ngs_gpu::KernelArg> & args) const
+    {
+      auto name = "s" + std::to_string(args.size());
+      params += ", GLOBAL(double," + name + ")";
+      args.push_back (dest->DevArg());
+      body += name + "[0] = ";
+      e.Emit (body, params, args);
+      body += "; ";
+    }
+  };
+
+  template <typename E> requires IsDevScalarOperand<E>
+  auto Assign (DeviceScalar & d, const E & e)
+  { return DevScalStmt<decltype(ToDevExpr(e))>{&d, ToDevExpr(e)}; }
+
+  template <typename... E>
+  void Eval (const DevScalStmt<E> &... stmts)
+  {
+    std::string body, params;
+    std::vector<ngs_gpu::KernelArg> args;
+    (stmts.EmitStmt (body, params, args), ...);
+    EvalScalarExpr (params, body, args);
+  }
 
 
   template <typename T>
