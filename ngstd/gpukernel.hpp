@@ -73,6 +73,13 @@ namespace ngs_gpu
   /* host reference backend: the kernel is ordinary c++, work-items of one
      group run as threads so that BARRIER and SHARED behave like on a gpu */
 
+  /* GetProcAddress only sees exported symbols */
+  #ifdef _WIN32
+    #define NGS_KERNEL_EXPORT __declspec(dllexport)
+  #else
+    #define NGS_KERNEL_EXPORT
+  #endif
+
   /* tinybla defines "thread" as an empty address-space macro, which would
      wipe out class thread in <thread>. Hide it across the includes, and keep
      an alias so the code below never spells std::thread. Works whichever way
@@ -163,7 +170,7 @@ namespace ngs_gpu
     { CallImpl (f, a, std::index_sequence_for<A...>{}); }
   }
 
-  extern "C" void _ngs_launch (void (*thunk)(void**), void ** args,
+  extern "C" NGS_KERNEL_EXPORT void _ngs_launch (void (*thunk)(void**), void ** args,
                                unsigned gx, unsigned gy, unsigned gz,
                                unsigned sx, unsigned sy, unsigned sz,
                                std::size_t dynshared)
@@ -198,7 +205,7 @@ namespace ngs_gpu
 
   #define KERNEL(name, ...)                                             \
     static void name(__VA_ARGS__);                                      \
-    extern "C" void name##_ngsthunk (void ** _a)                        \
+    extern "C" NGS_KERNEL_EXPORT void name##_ngsthunk (void ** _a)      \
     { ngs_cpu::Call (&name, _a); }                                      \
     static void name(__VA_ARGS__)
 
