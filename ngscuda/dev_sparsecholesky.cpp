@@ -144,17 +144,20 @@ namespace ngla
                     size_t size = range.end()-i-1;
                     
                     auto vlfact = lfact.Range(firstinrow[i]-i-1, firstinrow[i]+size);
-                    
-                    __threadfence_block();   
+
+                    // barrier, not just a fence: lane reading hy(i+1) next
+                    // iteration must wait for the lane updating it now
+                    __syncwarp();
 
                     double hyi = hy(i);
                     for (int j = threadIdx.x+blocks[blocknr]; j < range.end(); j += blockDim.x)
                        if (j > i)
                           hy(j) -= vlfact[j] * hyi;
-                    __threadfence_block();   
+                    __syncwarp();
                   }
             }
-          
+          __syncwarp();   // B part reads hy(range) written by L part
+
           if ((task.type == MicroTask::B_BLOCK) || (task.type == MicroTask::LB_BLOCK))
             {
               if (extdofs.Size() != 0)
@@ -254,8 +257,9 @@ namespace ngla
                             atomicAdd ((double*)(&hy(i)), -val);
                         }
                   }
-                
+
             }
+          __syncwarp();   // L part reads hy(range) updated by B part
 
           //       
           if ((task.type == MicroTask::L_BLOCK) || (task.type == MicroTask::LB_BLOCK))
@@ -318,10 +322,10 @@ namespace ngla
                     {
                       for (int i = threadIdx.x; i < j; i += blockDim.x)
                         {
-                          auto vlfact = lfact.Data()+firstinrow[range.First()+i]-i-1; 
-                          hhy(i) -= vlfact[j] * hhy(j);                           
-                        }   
-                     __threadfence_block();   
+                          auto vlfact = lfact.Data()+firstinrow[range.First()+i]-i-1;
+                          hhy(i) -= vlfact[j] * hhy(j);
+                        }
+                     __syncwarp();   // hhy(j-1) is read next iteration
                     }
             }
           
