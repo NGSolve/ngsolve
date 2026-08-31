@@ -13,17 +13,14 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(metal_cpp)
 
-if (NOT COMMAND pybind11_add_module)
-  add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../external_dependencies/netgen/external_dependencies/pybind11 pybind11_build)
-endif()
-
-pybind11_add_module(libngsmetal python_ngsmetal.cpp metal_device.cpp )
+add_library(libngsmetal SHARED python_ngsmetal.cpp metal_device.cpp )
+set_target_properties(libngsmetal PROPERTIES PREFIX "" SUFFIX ".so")
 
 target_include_directories(libngsmetal PRIVATE ${NETGEN_PYTHON_INCLUDE_DIRS} ${metal_cpp_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/../ngstd ${CMAKE_CURRENT_SOURCE_DIR}/../linalg)
 
 target_link_libraries (libngsmetal PUBLIC ngcomp ngfem ngla ngbla ngstd ${MPI_CXX_LIBRARIES} PRIVATE "$<BUILD_INTERFACE:netgen_python>" ${HYPRE_LIBRARIES})
 target_link_libraries(libngsmetal ${LAPACK_CMAKE_LINK_INTERFACE} "$<BUILD_INTERFACE:ngs_lapack>")
-install( TARGETS libngsmetal ${ngs_install_dir} )
+install(TARGETS libngsmetal DESTINATION ${NGSOLVE_INSTALL_DIR_PYTHON}/ngsolve COMPONENT ngsolve)
 
 install( FILES
         gpu_btdtb.hpp metal_device.hpp
