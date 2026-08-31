@@ -13,8 +13,24 @@
 #include "gpuwrapper.hpp"
 #include "gpukernel.hpp"
 
-#include <dlfcn.h>
-#include <unistd.h>
+#ifdef _WIN32
+  #define WIN32_LEAN_AND_MEAN
+  #include <windows.h>
+  #include <process.h>
+  #define getpid _getpid
+  #define RTLD_NOW 0
+  #define RTLD_LOCAL 0
+  namespace {
+    void * dlopen (const char * path, int) { return (void*)LoadLibraryA (path); }
+    void * dlsym (void * handle, const char * name)
+    { return (void*)GetProcAddress ((HMODULE)handle, name); }
+    int dlclose (void * handle) { return FreeLibrary ((HMODULE)handle) ? 0 : -1; }
+    const char * dlerror () { return "LoadLibrary failed"; }
+  }
+#else
+  #include <dlfcn.h>
+  #include <unistd.h>
+#endif
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
