@@ -990,7 +990,7 @@ namespace ngla
   }
 
   template <typename SCAL>  
-  void ConstantElementByElementMatrix<SCAL> :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
+  void ConstantElementByElementMatrix<SCAL> :: MultAdd (TSCAL64 s, const BaseVector & x, BaseVector & y) const
   {
     static Timer t("ConstantEBE mult add");
     static Timer tcol("ConstantEBE mult coloring");
@@ -1101,7 +1101,7 @@ namespace ngla
   }
 
   template <typename SCAL>    
-  void ConstantElementByElementMatrix<SCAL> :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
+  void ConstantElementByElementMatrix<SCAL> :: MultTransAdd (TSCAL64 s, const BaseVector & x, BaseVector & y) const
   {
     static Timer t("ConstantEBE mult trans add");
     static Timer tcol("ConstantEBE mult trans coloring");
