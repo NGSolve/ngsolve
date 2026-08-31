@@ -144,10 +144,33 @@ namespace tinybla {
   };
 
 
+  template <typename T>
+  class HTVec<0,T> {
+  public:
+    HTVec () { }
+    void operator= (T val) { }
+    void operator+= (HTVec b) { }
+
+    template <typename TP>
+    void Load(TP data) { }
+
+    template <typename TP>
+    void Store(TP data) { }
+
+    template <int DIST, typename TP>
+    auto LoadSlice(TP ptr) { return *this; }
+
+    template <int DIST, typename TP>
+    void StoreSlice(TP ptr) { }
+  };
+
+
 
   template <int S, typename T>
   inline auto operator+ (HTVec<S,T> a, HTVec<S,T> b) -> HTVec<S,T> {
-    if constexpr (S==1)
+    if constexpr (S==0)
+      return {};
+    else if constexpr (S==1)
       return a.Head()+b.Head();
     else
       return { a.Tail()+b.Tail(), a.Head()+b.Head() };
@@ -155,7 +178,9 @@ namespace tinybla {
 
   template <int S, typename T>
   inline auto operator* (float a, HTVec<S,T> b) -> HTVec<S,T> {
-    if constexpr (S==1)
+    if constexpr (S==0)
+      return {};
+    else if constexpr (S==1)
       return a*b.Head();
     else
       return { a*b.Tail(), a*b.Head() };
@@ -272,10 +297,36 @@ namespace tinybla {
     }
   };
 
+  template <int W, typename T>
+  class HTMat<0,W,T> {
+  public:
+    HTMat () { }
+    template <typename TP, typename TD=uint>
+    HTMat (TP data, TD dist) { }
+
+    void operator= (T val) { }
+    void operator+= (HTMat b) { }
+
+    template <typename TP>
+    void Load(TP data, unsigned dist) { }
+
+    template <typename TP, typename TD>
+    void Store(TP data, TD dist) { }
+
+    template <int DIST, typename TP, typename TD=uint>
+    void LoadSlice(TP data, TD dist) { }
+
+    template <int DIST, typename TP, typename TD=uint>
+    void StoreSlice(TP data, TD dist) { }
+  };
+
+
   
   template <int H, int W, typename T>
   auto operator+ (HTMat<H,W,T> a, HTMat<H,W,T> b) -> HTMat<H,W,T> {
-    if constexpr (H==1)
+    if constexpr (H==0)
+      return {};
+    else if constexpr (H==1)
       return a.Head()+b.Head();
     else
       return { a.Tail()+b.Tail(), a.Head()+b.Head() };
@@ -285,7 +336,9 @@ namespace tinybla {
   template <int S, typename TA, typename T>
   auto FMA (TA alpha, HTVec<S,T> x, HTVec<S,T> y) -> HTVec<S,T>
   {
-    if constexpr (S==1)
+    if constexpr (S==0)
+      return {};
+    else if constexpr (S==1)
       return fma(alpha, x.Head(), y.Head());
     else
       return { FMA(alpha, x.Tail(), y.Tail()), fma(alpha, x.Head(), y.Head()) };
@@ -294,7 +347,9 @@ namespace tinybla {
 
   template <int S, int W, typename TA, typename T>
   inline auto operator* (HTVec<S,TA> a, HTMat<S,W,T> b) -> HTVec<W,T> {
-    if constexpr (S==1)
+    if constexpr (S==0)
+      return {};
+    else if constexpr (S==1)
       return a.Head()*b.Head();
     else
       // return a.Tail()*b.Tail() + a.Head()*b.Head();
@@ -303,7 +358,9 @@ namespace tinybla {
   
   template <int H, int K, int W, typename TA, typename T>
   inline auto operator* (HTMat<H,K,TA> a, HTMat<K,W,T> b) -> HTMat<H,W,T> {
-    if constexpr (H==1)
+    if constexpr (H==0)
+      return {};
+    else if constexpr (H==1)
       return a.Head()*b;
     else
       return { a.Tail()*b, a.Head()*b };
@@ -341,7 +398,9 @@ namespace tinybla {
   template <int H, int W, typename T>
   auto AddCol(HTMat<H,W,T> m, HTVec<H,T> v) -> HTMat<H,W+1,T>
   {
-    if constexpr (H==1)
+    if constexpr (H==0)
+      return {};
+    else if constexpr (H==1)
       return HTVec<W+1,T> (m.Head(), v.Head());
     else
       return { AddCol(m.Tail(), v.Tail()), HTVec<W+1,T> (m.Head(), v.Head()) };
@@ -349,7 +408,9 @@ namespace tinybla {
 
   template <int H, int W, typename T>
   auto Trans (HTMat<H,W,T> a) -> HTMat<W,H,T> {
-    if constexpr (H==1)
+    if constexpr (H==0)
+      return {};
+    else if constexpr (H==1)
       return ColVec (a.Head()); 
     else
       return AddCol (Trans(a.Tail()), a.Head() );
@@ -358,7 +419,9 @@ namespace tinybla {
   template <int H, int W, typename T>
   auto RemoveCol(HTMat<H,W,T> m) -> HTMat<H,W-1,T>
   {
-    if constexpr (H==1)
+    if constexpr (H==0)
+      return {};
+    else if constexpr (H==1)
       return m.Head().Tail();
     else
       return { RemoveCol(m.Tail()), m.Head().Tail() };
@@ -367,7 +430,9 @@ namespace tinybla {
   template <int H, int W, typename T>
   auto LastCol(HTMat<H,W,T> m) -> HTVec<H,T>
   {
-    if constexpr (H==1)
+    if constexpr (H==0)
+      return {};
+    else if constexpr (H==1)
       return m.Head().Head();
     else
       return { LastCol(m.Tail()), m.Head().Head() };
@@ -377,7 +442,9 @@ namespace tinybla {
   template <int H, int W, typename T>
   auto Outer (HTVec<H,T> a, HTVec<W,T> b) -> HTMat<H,W,T>
   {
-    if constexpr (H==1)
+    if constexpr (H==0)
+      return {};
+    else if constexpr (H==1)
       return a.Head()*b;
     else
       return { Outer(a.Tail(), b), a.Head()*b };
@@ -386,7 +453,9 @@ namespace tinybla {
   template <int H, int W, typename TA, typename T>
   auto AddOuter (HTVec<H,TA> a, HTVec<W,T> b, HTMat<H,W,T> m) -> HTMat<H,W,T>
   {
-    if constexpr (H==1)
+    if constexpr (H==0)
+      return {};
+    else if constexpr (H==1)
       // return a.Head()*b+m.Head();
       return FMA(a.Head(), b, m.Head());
     else
@@ -410,7 +479,9 @@ namespace tinybla {
   template <int S, typename T>
   auto QuadBroadcast (HTVec<S,T> m, ushort lane) -> HTVec<S,T>
   {
-    if constexpr (S==1)
+    if constexpr (S==0)
+      return {};
+    else if constexpr (S==1)
       return quad_broadcast(m.Head(), lane);
     else
       return { QuadBroadcast(m.Tail(), lane), quad_broadcast(m.Head(), lane) };
@@ -419,7 +490,9 @@ namespace tinybla {
   template <int H, int W, typename T>
   auto QuadBroadcast (HTMat<H,W,T> m, ushort lane) -> HTMat<H,W,T>
   {
-    if constexpr (H==1)
+    if constexpr (H==0)
+      return {};
+    else if constexpr (H==1)
       return QuadBroadcast(m.Head(), lane);
     else
       return { QuadBroadcast(m.Tail(), lane), QuadBroadcast(m.Head(), lane) };
@@ -449,7 +522,9 @@ namespace tinybla {
   template <int S, typename T>
   auto BroadcastQuad (HTVec<S,T> m, unsigned qlane, unsigned from) -> HTVec<S,T>
   {
-    if constexpr (S==1)
+    if constexpr (S==0)
+      return {};
+    else if constexpr (S==1)
       return simd_shuffle(m.Head(), 4*from+qlane);
     else
       return { BroadcastQuad(m.Tail(), qlane, from), simd_shuffle(m.Head(), 4*from+qlane) };
@@ -458,7 +533,9 @@ namespace tinybla {
   template <int H, int W, typename T>
   auto BroadcastQuad (HTMat<H,W,T> m, unsigned qlane, unsigned from) -> HTMat<H,W,T>
   {
-    if constexpr (H==1)
+    if constexpr (H==0)
+      return {};
+    else if constexpr (H==1)
       return BroadcastQuad(m.Head(), qlane, from);
     else
       return { BroadcastQuad(m.Tail(), qlane, from), BroadcastQuad(m.Head(), qlane, from) };
@@ -469,7 +546,9 @@ namespace tinybla {
   template <ushort mask, int S, typename T>
   auto ShuffleXor (HTVec<S,T> m) -> HTVec<S,T>
   {
-    if constexpr (S==1)
+    if constexpr (S==0)
+      return {};
+    else if constexpr (S==1)
       return simd_shuffle_xor(m.Head(), mask);
     else
       return { ShuffleXor<mask>(m.Tail()), simd_shuffle_xor(m.Head(), mask) };
@@ -478,7 +557,9 @@ namespace tinybla {
   template <ushort mask, int H, int W, typename T>
   auto ShuffleXor (HTMat<H,W,T> m) -> HTMat<H,W,T>
   {
-    if constexpr (H==1)
+    if constexpr (H==0)
+      return {};
+    else if constexpr (H==1)
       return ShuffleXor<mask> (m.Head());
     else
       return { ShuffleXor<mask>(m.Tail()), ShuffleXor<mask>(m.Head()) };
@@ -503,7 +584,9 @@ namespace tinybla {
   template <int S, typename TW, typename TE>
   auto Contract (HTVec<S,TW> w, HTVec<S,TE> H) -> TE
   {
-    if constexpr (S==1)
+    if constexpr (S==0)
+      return {};
+    else if constexpr (S==1)
       return w.Head() * H.Head();
     else
       return Contract(w.Tail(), H.Tail()) + w.Head() * H.Head();
@@ -903,8 +986,8 @@ namespace tinybla {
   {
     static_assert(H%8==0, "WarpMatrix height must be a multiple of 8");
     static_assert(W%4==0, "WarpMatrix width must be a multiple of 4");
-    static constant constexpr unsigned BW = W/4 ? W/4 : 1; // sizeof(float2)/sizeof(T);
-    static constant constexpr unsigned BH = H/8 ? H/8 : 1;
+    static constant constexpr unsigned BW = W/4; // sizeof(float2)/sizeof(T);
+    static constant constexpr unsigned BH = H/8;
     HTMat<BH,BW,T> myvals; 
   public:
     WarpMatrix() { }
@@ -1269,8 +1352,8 @@ namespace tinybla {
   {
     static_assert(H%8==0, "AddMM height must be a multiple of 8");
     static_assert(W%4==0, "AddMM width must be a multiple of 4");
-     constexpr unsigned BW = W/4 ? W/4 : 1; // sizeof(float2)/sizeof(T);
-     constexpr unsigned BH = H/8 ? H/8 : 1;
+     constexpr unsigned BW = W/4; // sizeof(float2)/sizeof(T);
+     constexpr unsigned BH = H/8;
 
 
      auto myvals = m.GetValues();
@@ -1326,8 +1409,8 @@ namespace tinybla {
   {
     static_assert(H%8==0, "WarpMatrixV2 height must be a multiple of 8");
     static_assert(W%4==0, "WarpMatrixV2 width must be a multiple of 4");
-    static constant constexpr unsigned BW = W/4 ? W/4 : 1;
-    static constant constexpr unsigned BH = H/8 ? H/8 : 1;
+    static constant constexpr unsigned BW = W/4;
+    static constant constexpr unsigned BH = H/8;
     HTMat<BH,BW,T> myvals; 
   public:
     WarpMatrixV2() { }
