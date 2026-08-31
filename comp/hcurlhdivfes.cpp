@@ -500,6 +500,7 @@ namespace ngcomp
     int nd = GetNDof();
     int nv = ma->GetNV();
     int level = ma->GetNLevels()-1;
+    auto freedofs = GetFreeDofs();
 
     Table<int> *node2edge = 0;
     //type = SB_AFW;  
@@ -520,7 +521,8 @@ namespace ngcomp
 	      for (int j = 0; j < nd; j++)
 		{
 		  if (FineLevelOfEdge(j) < level) continue;
-		
+		  if (freedofs && !freedofs->Test(j)) continue;
+
 		  int ep1 = EdgePoint1(j);
 		  int ep2 = EdgePoint2(j);
 
@@ -567,8 +569,8 @@ namespace ngcomp
 	      for (int j = 0; j < nd; j++)
 		{
 		  if (FineLevelOfEdge(j) < level) continue;
-		
-		
+		  if (freedofs && !freedofs->Test(j)) continue;
+
 		  if (k == 2)
 		    {
 		      (*node2edge)[j][0] = j;
@@ -645,6 +647,7 @@ namespace ngcomp
 	      for (int j = 0; j < nd; j++)
 		{
 		  if (FineLevelOfEdge(j) < level) continue;
+		  if (freedofs && !freedofs->Test(j)) continue;
 
 		  int ecl = ma->GetClusterRepEdge (j);
 		  if (ecl < nv)
