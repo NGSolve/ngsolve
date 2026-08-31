@@ -230,50 +230,16 @@ namespace ngla
   }
 
   // -------------------------------------------------------
-  // UnifiedScalar implementation
+  // UnifiedScalar: only the typed cuda pointer is left here
   // -------------------------------------------------------
-  UnifiedScalar :: UnifiedScalar()
+  double* UnifiedScalar :: DevPtr() const
   {
-    cudaMalloc(&dev_val, sizeof(double));
-    cudaMemset(dev_val, 0, sizeof(double));
-  }
-
-  UnifiedScalar :: ~UnifiedScalar()
-  {
-    if (dev_val) cudaFree(dev_val);
-  }
-
-  void UnifiedScalar :: Set(double d)
-  {
-    host_val = d;
-    cudaMemcpy(dev_val, &d, sizeof(double), cudaMemcpyHostToDevice);
-  }
-
-  double UnifiedScalar :: GetD() const
-  {
-    cudaMemcpy(&host_val, dev_val, sizeof(double), cudaMemcpyDeviceToHost);
-    return host_val;
+    return (double*)ngs_cuda::BufferDevPtr(*DevBuffer());
   }
 
   // -------------------------------------------------------
   // UnifiedVector overrides for BaseScalar
   // -------------------------------------------------------
-
-  BaseVector& UnifiedVector::Scale(BaseScalar& scal)
-  {
-    if (auto uscal = dynamic_cast<UnifiedScalar*>(&scal))
-      {
-        double* d_scal = uscal->DevPtr();
-        DeviceParallelFor
-          (this->size, [me=this->FVDev(), d_scal] DEVICE_LAMBDA (size_t tid)
-          {
-            me(tid) *= (*d_scal);
-          });
-      }
-    else
-      Scale(scal.GetD());  // CPU fallback
-    return *this;
-  }
 
   shared_ptr<BaseScalar> UnifiedVector :: CreateScalar() const
   {
@@ -323,26 +289,6 @@ namespace ngla
       }
   }
 
-  BaseVector& UnifiedVector :: Add(BaseScalar& scal, const BaseVector& v)
-  {
-    if (auto uscal = dynamic_cast<UnifiedScalar*>(&scal))
-      {
-        // read scalar from GPU address — graph capturable
-        UnifiedVectorWrapper uv(v);
-        double* d_scal = uscal->DevPtr();
-        DeviceParallelFor
-          (this->size, [me=this->FVDev(), other=uv.FVDevRO(), d_scal] DEVICE_LAMBDA (size_t tid)
-          {
-            me(tid) += (*d_scal) * other(tid);
-          });
-      }
-    else
-      {
-        // fallback — CPU path via GetD()
-        BaseVector::Add(scal, v);
-      }
-    return *this;
-  }
 
 
 }

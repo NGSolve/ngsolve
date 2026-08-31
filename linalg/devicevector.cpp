@@ -60,6 +60,18 @@ namespace ngla
           for ( ; i < n; i++) x[i] *= a;
       }
 
+      // scale by a value living in gpu memory (a DeviceScalar) -
+      // no host round-trip, so sequences using it can be captured
+      KERNEL(dv_scale_dev, GLOBAL(SCAL,x), GLOBAL_IN(SCAL,a), VALUE(int,n))
+      {
+        SCAL s = a[0];
+        int i = 4*int(GLOBAL_ID_X);
+        if (i+3 < n)
+          { x[i] *= s; x[i+1] *= s; x[i+2] *= s; x[i+3] *= s; }
+        else
+          for ( ; i < n; i++) x[i] *= s;
+      }
+
       KERNEL(dv_set, GLOBAL(SCAL,y), GLOBAL_IN(SCAL,x), VALUE(SCAL,a), VALUE(int,n))
       {
         int i = 4*int(GLOBAL_ID_X);
@@ -78,6 +90,17 @@ namespace ngla
           for ( ; i < n; i++) y[i] += a*x[i];
       }
 
+      // axpy with the coefficient living in gpu memory (a DeviceScalar)
+      KERNEL(dv_axpy_dev, GLOBAL(SCAL,y), GLOBAL_IN(SCAL,x), GLOBAL_IN(SCAL,a), VALUE(int,n))
+      {
+        SCAL s = a[0];
+        int i = 4*int(GLOBAL_ID_X);
+        if (i+3 < n)
+          { y[i] += s*x[i]; y[i+1] += s*x[i+1]; y[i+2] += s*x[i+2]; y[i+3] += s*x[i+3]; }
+        else
+          for ( ; i < n; i++) y[i] += s*x[i];
+      }
+
     )RAW";
 
 
@@ -92,7 +115,7 @@ namespace ngla
     public:
       shared_ptr<Device> device;
       shared_ptr<ngs_gpu::Queue> queue;
-      shared_ptr<Kernel> setscalar, scale, set, axpy;
+      shared_ptr<Kernel> setscalar, scale, scale_dev, set, axpy, axpy_dev;
       unsigned groupsize;
 
       DeviceVectorKernels (shared_ptr<Device> adevice)
@@ -108,8 +131,10 @@ namespace ngla
                                          Substitute (kernel_source, "SCAL", scal));
         setscalar = library->GetKernel ("dv_setscalar");
         scale     = library->GetKernel ("dv_scale");
+        scale_dev = library->GetKernel ("dv_scale_dev");
         set       = library->GetKernel ("dv_set");
         axpy      = library->GetKernel ("dv_axpy");
+        axpy_dev  = library->GetKernel ("dv_axpy_dev");
 
         queue = device->DefaultQueue();
         // a wide group is what saturates memory on a gpu, but the cpu
@@ -290,6 +315,22 @@ namespace ngla
   }
 
   template <typename T>
+  BaseVector & DeviceVector<T> :: Scale (BaseScalar & scal)
+  {
+    // the DeviceScalar holds a double, so the buffer types match only
+    // for T=double; float vectors read the value over the host
+    if constexpr (is_same_v<T,double>)
+      if (auto devscal = dynamic_cast<DeviceScalar*> (&scal))
+        {
+          const auto & kern = DeviceVectorKernels<T>::Get();
+          kern.Launch (kern.scale_dev, this->size,
+                       { DevArgRW(), devscal->DevArg(), KernelArg(int(this->size)) });
+          return *this;
+        }
+    return Scale (scal.GetD());
+  }
+
+  template <typename T>
   BaseVector & DeviceVector<T> :: SetScalar (double scal)
   {
     const auto & kern = DeviceVectorKernels<T>::Get();
@@ -324,6 +365,26 @@ namespace ngla
                  { DevArgRW(), dv.DevArgRO(),
                    KernelArg(T(scal)), KernelArg(int(this->size)) });
     return *this;
+  }
+
+
+  template <typename T>
+  BaseVector & DeviceVector<T> :: Add (BaseScalar & scal, const BaseVector & v)
+  {
+    // buffer types match only for T=double, see Scale
+    if constexpr (is_same_v<T,double>)
+      if (auto devscal = dynamic_cast<DeviceScalar*> (&scal))
+        {
+          if (v.Size() != this->size)
+            throw Exception("DeviceVector::Add - size mismatch");
+          DeviceVectorWrapper<T> dv(v, memtype);
+          const auto & kern = DeviceVectorKernels<T>::Get();
+          kern.Launch (kern.axpy_dev, this->size,
+                       { DevArgRW(), dv.DevArgRO(),
+                         devscal->DevArg(), KernelArg(int(this->size)) });
+          return *this;
+        }
+    return Add (scal.GetD(), v);
   }
 
 
@@ -424,6 +485,45 @@ namespace ngla
           CopyToBaseVector<T> (FlatVector<T>(this->size, this->host_data), vec);
       }
     this->host_data = nullptr;
+  }
+
+
+  template <typename T>
+  shared_ptr<BaseScalar> DeviceVector<T> :: CreateScalar () const
+  {
+    return make_shared<DeviceScalar>();
+  }
+
+
+  DeviceScalar :: DeviceScalar (double d)
+  {
+    auto dev = GetGpuDevice();
+    devbuffer = dev->NewBuffer (sizeof(double), PreferredMemType());
+    queue = dev->DefaultQueue();
+    devbuffer->H2D (&d, sizeof(double));
+  }
+
+  void DeviceScalar :: Set (double d)
+  {
+    devbuffer->H2D (&d, sizeof(double));
+  }
+
+  void DeviceScalar :: Set (Complex c)
+  {
+    throw Exception ("DeviceScalar is real-valued");
+  }
+
+  double DeviceScalar :: GetD () const
+  {
+    queue->Finish();   // kernels writing the value may still be queued
+    double d;
+    devbuffer->D2H (&d, sizeof(double));
+    return d;
+  }
+
+  Complex DeviceScalar :: GetC () const
+  {
+    throw Exception ("DeviceScalar is real-valued");
   }
 
 

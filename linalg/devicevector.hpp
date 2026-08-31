@@ -37,6 +37,32 @@ namespace ngla
   class UnifiedVectorWrapper;   // cuda wrapper (ngscuda), aliases like DeviceVectorWrapper
 
 
+  /*
+    A scalar living in gpu memory, at a fixed device address. Kernels
+    and backend libraries can read and write it without a host
+    round-trip, which is what makes operator sequences using it
+    recordable into a device graph.
+  */
+  class NGS_DLL_HEADER DeviceScalar : public BaseScalar
+  {
+  protected:
+    shared_ptr<ngs_gpu::Buffer> devbuffer;   // one double
+    shared_ptr<ngs_gpu::Queue> queue;
+
+  public:
+    DeviceScalar (double d = 0.0);
+
+    void Set (double d) override;
+    void Set (Complex c) override;
+    double GetD () const override;
+    Complex GetC () const override;
+
+    // buffer of the value, for kernel arguments and backend access
+    const shared_ptr<ngs_gpu::Buffer> & DevBuffer() const { return devbuffer; }
+    ngs_gpu::KernelArg DevArg() const { return ngs_gpu::KernelArg(*devbuffer); }
+  };
+
+
   template <typename T>
   class NGS_DLL_HEADER DeviceVector : public S_BaseVector<T>
   {
@@ -97,13 +123,16 @@ namespace ngla
     { BaseVector::operator= (v); return *this; }
 
     virtual BaseVector & Scale (double scal) override;
+    virtual BaseVector & Scale (BaseScalar & scal) override;
     virtual BaseVector & SetScalar (double scal) override;
     virtual BaseVector & Set (double scal, const BaseVector & v) override;
     virtual BaseVector & Add (double scal, const BaseVector & v) override;
+    virtual BaseVector & Add (BaseScalar & scal, const BaseVector & v) override;
 
     virtual void * Memory () const override;
     virtual FlatVector<T> FVScal () const override;
     virtual AutoVector CreateVector () const override;
+    virtual shared_ptr<BaseScalar> CreateScalar () const override;
     virtual ostream & Print (ostream & ost) const override;
   };
 

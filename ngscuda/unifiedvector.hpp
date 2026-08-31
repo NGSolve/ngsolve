@@ -42,19 +42,12 @@ namespace ngla
 
     virtual AutoVector Range (T_Range<size_t> range) const override;
 
-    // elementwise ops (Scale/SetScalar/Set/Add with double) come from
-    // DeviceVector; the BaseScalar variants stay cuda-specific
-    using DeviceVector<double>::Scale;
-    using DeviceVector<double>::Add;
-    virtual BaseVector & Scale (BaseScalar & scal) override;
-
     using BaseVector::InnerProduct;
     virtual double InnerProductD (const BaseVector & v2) const override;
     virtual double L2Norm () const override;
 
-    // BaseScalar overrides for GPU-resident scalars:
+    // BaseScalar override for the cublas dot with device-resident result:
     virtual void InnerProduct (const BaseVector & v2, BaseScalar & scal, bool conjugate = false) const override;
-    virtual BaseVector & Add (BaseScalar & scal, const BaseVector & v) override;
     virtual shared_ptr<BaseScalar> CreateScalar() const override;
 
     virtual ostream & Print (ostream & ost) const override;
@@ -92,26 +85,22 @@ namespace ngla
 
 
   // -------------------------------------------------------
-  // UnifiedScalar: GPU-resident scalar for graph capture
-  // Fixed GPU address allows CUDA graph capture.
+  // UnifiedScalar: cuda view of the backend-independent
+  // DeviceScalar (linalg/devicevector.hpp). Adds the typed
+  // device pointer and the device expression assignment
+  // used for CUDA graph capture.
   // -------------------------------------------------------
-  class UnifiedScalar : public BaseScalar
+  class UnifiedScalar : public DeviceScalar
   {
-    mutable double host_val = 0.0;
-    double* dev_val = nullptr;
-
   public:
-    UnifiedScalar();
-    virtual ~UnifiedScalar();
+    UnifiedScalar (double d = 0.0) : DeviceScalar(d) { }
 
-    void Set(double d) override;
-    double GetD() const override;
-    double* DevPtr() const { return dev_val; }
+    double* DevPtr() const;
 
     template<typename Expr>
     UnifiedScalar& operator=(const Expr& expr)
     {
-      double* d = dev_val;
+      double* d = DevPtr();
       auto kernel = [d, expr] __device__ (size_t) {
           *d = expr.Evaluate();
       };
