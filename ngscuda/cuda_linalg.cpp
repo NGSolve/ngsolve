@@ -81,6 +81,12 @@ namespace ngla
       cusparseSetStream(Get_CuSparse_Handle(), s);
     };
 
+    // with lazy module loading the first kernel launch of this library
+    // finalizes the whole fatbin (~300ms) - pay that at import, not
+    // inside the user's first operator application
+    DeviceParallelFor (1, [] DEVICE_LAMBDA (size_t) { });
+    cudaDeviceSynchronize();
+
     std::cerr << "[InitCuLinalg] callback wired, registering creators..." << std::endl;
     BaseVector::RegisterDeviceVectorCreator(typeid(S_BaseVectorPtr<double>),
                                             [] (const BaseVector & vec, bool unified) -> shared_ptr<BaseVector>

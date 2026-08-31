@@ -110,15 +110,32 @@ namespace ngs_cuda
   };
 
 
+  // the stream the runtime-API side of ngscuda launches on; the graph
+  // capture machinery (cuda_core.hpp) redirects it temporarily.
+  // cudaStream_t and CUstream are the same underlying type.
+  extern CUstream ngs_cuda_stream;
+
   class CudaQueue : public Queue
   {
-    CUstream stream;
+    CUstream stream = nullptr;
+    bool owned = false;
+    bool tracking = false;    // follow ngs_cuda_stream at launch time
+
+    CUstream Current() const { return tracking ? ngs_cuda_stream : stream; }
+
   public:
-    CudaQueue() { Check (cuStreamCreate (&stream, CU_STREAM_NON_BLOCKING), "cuStreamCreate"); }
-    ~CudaQueue() { cuStreamDestroy (stream); }
+    CudaQueue() : owned(true)
+    { Check (cuStreamCreate (&stream, CU_STREAM_NON_BLOCKING), "cuStreamCreate"); }
+
+    // launches follow the current ngs_cuda_stream, so they stay ordered
+    // with cuBLAS/cuSPARSE and are recorded during graph capture
+    struct TrackNgsStream { };
+    CudaQueue (TrackNgsStream) : tracking(true) { }
+
+    ~CudaQueue() { if (owned) cuStreamDestroy (stream); }
 
     void Finish() override
-    { Check (cuStreamSynchronize (stream), "cuStreamSynchronize"); }
+    { Check (cuStreamSynchronize (Current()), "cuStreamSynchronize"); }
 
   protected:
     void DoLaunch (Kernel & kernel, Dim3 groups, Dim3 groupsize,
@@ -149,7 +166,7 @@ namespace ngs_cuda
       Check (cuLaunchKernel (ck.Get(),
                              groups.x, groups.y, groups.z,
                              groupsize.x, groupsize.y, groupsize.z,
-                             dynamic_group_memory, stream,
+                             dynamic_group_memory, Current(),
                              params.data(), nullptr), "cuLaunchKernel");
     }
   };
@@ -169,7 +186,7 @@ namespace ngs_cuda
     {
       ccmajor = Attr (CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR);
       ccminor = Attr (CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR);
-      defqueue = std::make_shared<CudaQueue>();
+      defqueue = std::make_shared<CudaQueue> (CudaQueue::TrackNgsStream{});
     }
 
     string Name() const override
@@ -198,7 +215,10 @@ namespace ngs_cuda
       Check (nvrtcCreateProgram (&prog, source.c_str(), "ngsgpu.cu",
                                  0, nullptr, nullptr), "nvrtcCreateProgram");
 
-      std::string arch = "--gpu-architecture=compute_"
+      // sm_XY: a cubin for the exact device, so loading needs no
+      // PTX->SASS JIT (which lazy module loading would otherwise pay
+      // at the first launch of every kernel)
+      std::string arch = "--gpu-architecture=sm_"
         + std::to_string(ccmajor) + std::to_string(ccminor);
       const char * opts[] = { arch.c_str(), "--std=c++17",
                               "--device-as-default-execution-space" };
@@ -214,17 +234,35 @@ namespace ngs_cuda
           throw std::runtime_error ("ngscuda: kernel compile error:\n" + log);
         }
 
-      size_t ptxsize = 0;
-      Check (nvrtcGetPTXSize (prog, &ptxsize), "nvrtcGetPTXSize");
-      std::string ptx (ptxsize, '\0');
-      Check (nvrtcGetPTX (prog, ptx.data()), "nvrtcGetPTX");
+      std::string image;
+      size_t cubinsize = 0;
+      if (nvrtcGetCUBINSize (prog, &cubinsize) == NVRTC_SUCCESS && cubinsize > 0)
+        {
+          image.resize (cubinsize);
+          Check (nvrtcGetCUBIN (prog, image.data()), "nvrtcGetCUBIN");
+        }
+      else
+        {
+          size_t ptxsize = 0;
+          Check (nvrtcGetPTXSize (prog, &ptxsize), "nvrtcGetPTXSize");
+          image.resize (ptxsize);
+          Check (nvrtcGetPTX (prog, image.data()), "nvrtcGetPTX");
+        }
       nvrtcDestroyProgram (&prog);
 
       CUmodule module;
-      Check (cuModuleLoadData (&module, ptx.c_str()), "cuModuleLoadData");
+      Check (cuModuleLoadData (&module, image.data()), "cuModuleLoadData");
       return std::make_shared<CudaLibrary> (module);
     }
   };
+
+
+  void * BufferDevPtr (ngs_gpu::Buffer & buf)
+  {
+    auto cb = dynamic_cast<CudaBuffer*> (&buf);
+    if (!cb) throw std::runtime_error ("ngscuda: buffer is not a cuda buffer");
+    return (void*)cb->Get();
+  }
 
 
   void InitCudaDevice()

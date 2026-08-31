@@ -1,129 +1,90 @@
 #include <la.hpp>
 #include "cuda_linalg.hpp"
+#include "cuda_device.hpp"
 
 namespace ngla
 {
-  
+
   UnifiedVector :: UnifiedVector (int asize)
-  {
-    this->size = asize;
+    : DeviceVector<double> (asize, MemType::Device)
+  { }
 
-    host_data = new double[size];
-    dev_data = Dev<double>::Malloc(size);
-    /*
-    auto err = cudaMalloc((void**)&dev_data, size*sizeof(double));
-    if (err != 0)
-      throw Exception("UnifiedVector allocation error, ec="+ToString(err));
-    */
-    host_uptodate = false;
-    dev_uptodate = false;
-  }
+  UnifiedVector :: UnifiedVector (const BaseVector& vec)
+    : DeviceVector<double> (vec, MemType::Device)
+  { }
 
-  UnifiedVector :: UnifiedVector (const BaseVector& vec) : UnifiedVector(vec.Size())
-  {
-    (*this) = vec;
-    UpdateDevice();    
-  }
+  UnifiedVector :: UnifiedVector (const UnifiedVector& vec)
+    : DeviceVector<double> (vec, MemType::Device)
+  { }
 
-  UnifiedVector :: UnifiedVector (const UnifiedVector& vec) : UnifiedVector(vec.Size())
-  {
-    (*this) = vec;
-    UpdateDevice();    
-  }
-  
-  // to be improved
   UnifiedVector :: UnifiedVector (UnifiedVector && vec)
-    : UnifiedVector (vec.Size())
+    : DeviceVector<double> (vec, MemType::Device)
+  { }
+
+
+  Dev<double> * UnifiedVector :: DevData() const
   {
-    (*this) = vec;
+    return (Dev<double>*)ngs_cuda::BufferDevPtr(*devbuffer) + devoffset;
+  }
+
+  FlatVector<Dev<double>> UnifiedVector :: FVDev() const
+  {
     UpdateDevice();
+    InvalidateHost();
+    return { Size(), DevData() };
   }
-  
-  UnifiedVector :: ~UnifiedVector ()
+
+  FlatVector<Dev<double>> UnifiedVector :: FVDevRO() const
   {
-    // cudaFree(dev_data);
-    if (dev_data)
-      Dev<double>::Free(dev_data);
-    delete[] host_data;
+    UpdateDevice();
+    return { Size(), DevData() };
   }
+
+  FlatVector<Complex> UnifiedVector :: FVComplex () const
+  {
+    throw Exception ("unified complex not yet supported");
+  }
+
 
   BaseVector & UnifiedVector :: operator= (double d)
   {
-    // ::SetScalar (d, size, dev_data); 
-    // ::SetScalar (d, FlatVector<Dev<double>> (size, dev_data));
-    ngs_cuda::SetScalar (d, FVDev());
-      
-    host_uptodate = false;
-    dev_uptodate = true;
-    
-    return *this;
+    return SetScalar (d);
   }
 
   BaseVector & UnifiedVector :: operator= (const BaseVector & v2)
   {
-    if (auto uv2 = dynamic_cast<const UnifiedVector*> (&v2))
-      {
-        if (uv2->dev_uptodate)
-          {
-            cudaMemcpy (dev_data, uv2->dev_data, sizeof(double)*size, cudaMemcpyDeviceToDevice);    
-            dev_uptodate = true;
-            host_uptodate = false;
-          }
-        else if (uv2->host_uptodate)
-          {
-            FVDouble() = uv2->FVDouble();
-            host_uptodate = true;
-            dev_uptodate = false;
-            UpdateDevice();            
-          }
-        else
-          {
-            cerr << "operator= (BaseVector) : undefined vector" << endl;
-          }
-        return *this;
-      }
+    if (auto dv2 = dynamic_cast<const DeviceVector<double>*> (&v2))
+      if (dv2->IsDevUptodate())
+        {
+          auto src = (double*)ngs_cuda::BufferDevPtr(*dv2->DevBufferRO()) + dv2->DevOffset();
+          cudaMemcpy (DevData(), src, sizeof(double)*size, cudaMemcpyDeviceToDevice);
+          dev_uptodate = true;
+          InvalidateHost();
+          return *this;
+        }
 
     FVDouble() = v2.FVDouble();
-
-    host_uptodate = true;
-    dev_uptodate = false;
     UpdateDevice();
     return *this;
   }
 
   UnifiedVector & UnifiedVector :: operator= (const UnifiedVector & v2)
   {
-    if (v2.dev_uptodate)
-      {
-        cudaMemcpy (dev_data, v2.dev_data, sizeof(double)*size, cudaMemcpyDeviceToDevice);    
-        dev_uptodate = true;
-        host_uptodate = false;
-      }
-    else if (v2.host_uptodate)
-      {
-        FVDouble() = v2.FVDouble();
-        host_uptodate = true;
-        dev_uptodate = false;
-        UpdateDevice();            
-      }
-    else
-      {
-        cerr << "operator=UnifiedVector - not up to date" << endl;
-      }
+    operator= (static_cast<const BaseVector&> (v2));
     return *this;
   }
-  
+
 
   const double & UnifiedVector :: operator [] (const int ind) const
   {
-    UpdateHost(); 
+    UpdateHost();
     return host_data[ind];
   }
 
   double & UnifiedVector :: operator [] (const int ind)
   {
-    UpdateHost(); 
-    dev_uptodate = false;
+    UpdateHost();
+    InvalidateDevice();
     return host_data[ind];
   }
 
@@ -132,86 +93,7 @@ namespace ngla
     return make_unique<UnifiedVectorWrapper>(*this, range);
   }
 
-  
-  BaseVector & UnifiedVector :: Scale (double scal)
-  {
-    /*
-    UpdateDevice();
-    cublasDscal (Get_CuBlas_Handle(), size, &scal, (double*)dev_data, 1);
-    host_uptodate = false;
-    */
-    DeviceParallelFor
-      (this->size, [devvec = this->FVDev(), scal] DEVICE_LAMBDA (size_t tid)
-      {
-        devvec(tid) *= scal;
-      });
-    
-    return *this;
-  }
 
-  BaseVector & UnifiedVector :: SetScalar (double scal)
-  {
-    (*this) = scal;
-    return *this;
-  }
-  
-  BaseVector & UnifiedVector :: Set (double scal, const BaseVector & v)
-  {
-    UnifiedVectorWrapper uv(v);
-    /*
-    uv.UpdateDevice();
-    SetVector (scal, Size(), uv.DevData(), DevData());
-    host_uptodate = false;
-    dev_uptodate = true;
-    */
-    
-    DeviceParallelFor
-      (this->size, [me = this->FVDev(), other=uv.FVDevRO(), scal] DEVICE_LAMBDA (size_t tid)
-      {
-        me(tid) = scal * other(tid);
-      });
-    
-    return *this;
-  }
-  
-  
-  BaseVector & UnifiedVector :: Add (double scal, const BaseVector & v)
-  {
-#ifdef OLD
-    if (auto v2 = dynamic_cast<const UnifiedVector*> (&v))
-      {
-        UpdateDevice();
-        v2->UpdateDevice();
-        /*
-        cublasDaxpy (Get_CuBlas_Handle(), 
-                           size, &scal, v2->dev_data, 1, dev_data, 1);
-        */
-        // MyDaxpy (scal, size, v2->dev_data, dev_data);
-
-        DeviceParallelFor
-          (size, [scal, x=v2->dev_data, y=dev_data] DEVICE_LAMBDA (auto tid) 
-           {
-             y[tid] += scal*x[tid];
-           }); 
-        
-        host_uptodate = false;
-      }
-    else
-      {
-        FVDouble() += scal * v.FVDouble();
-      }
-#endif
-
-    UnifiedVectorWrapper uv(v);    
-    DeviceParallelFor
-      (this->size, [me = this->FVDev(), other=uv.FVDevRO(), scal] DEVICE_LAMBDA (size_t tid)
-      {
-        me(tid) += scal * other(tid);
-      });
-
-    return *this;
-  }
-  
   double UnifiedVector :: InnerProductD (const BaseVector & v2) const
   {
     static Timer tdot("CUDA InnerProduct");
@@ -223,11 +105,11 @@ namespace ngla
         RegionTimer reg(tdot);
         UpdateDevice();
         uv2->UpdateDevice();
-        
+
         double res;
-        ngla::SetCuBlasStream(ngs_cuda_stream);        
-        cublasDdot (Get_CuBlas_Handle(), 
-                    size, (double*)dev_data, 1, (double*)uv2->dev_data, 1, &res);
+        ngla::SetCuBlasStream(ngs_cuda_stream);
+        cublasDdot (Get_CuBlas_Handle(),
+                    size, (double*)DevData(), 1, (double*)uv2->DevData(), 1, &res);
         return res;
       }
 
@@ -240,168 +122,111 @@ namespace ngla
   {
     UpdateDevice();
     double res;
-    ngla::SetCuBlasStream(ngs_cuda_stream);    
-    cublasDnrm2(Get_CuBlas_Handle(), size, (double*)dev_data, 1, &res);
+    ngla::SetCuBlasStream(ngs_cuda_stream);
+    cublasDnrm2(Get_CuBlas_Handle(), size, (double*)DevData(), 1, &res);
     return res;
   }
 
-  
+
   ostream & UnifiedVector :: Print (ostream & ost) const
   {
     ost << "output unified vector of size " << size;
-    ost << ", host = " << host_uptodate << ", dev = " << dev_uptodate << endl;
-    if (!host_uptodate)
+    ost << ", host = " << IsHostUptodate() << ", dev = " << IsDevUptodate() << endl;
+    if (!IsHostUptodate())
       {
-        if (dev_uptodate)
+        if (IsDevUptodate())
           {
-            ost << "host not up-to-data. printing device data" << endl;
+            ost << "host not up-to-date. printing device data" << endl;
             Vector<double> tmp(size);
-            cudaMemcpy(tmp.Data(), dev_data, size * sizeof(double), cudaMemcpyDeviceToHost);
+            cudaMemcpy(tmp.Data(), DevData(), size * sizeof(double), cudaMemcpyDeviceToHost);
             ost << tmp << endl;
           }
         else
-          {
-            ost << "undefined vector" << endl;
-          }
+          ost << "undefined vector" << endl;
       }
     else
       {
-        ost << FVDouble();
+        ost << FlatVector<double>(size, (double*)host_data);
       }
     return ost;
   }
 
-  // TODO: maybe remove. mainly for testing
   ostream & UnifiedVector :: PrintStatus (ostream & ost) const
   {
     ost << "output unified vector of size " << size;
-    ost << ", host = " << host_uptodate << ", dev = " << dev_uptodate << endl;
+    ost << ", host = " << IsHostUptodate() << ", dev = " << IsDevUptodate() << endl;
     return ost;
   }
 
-  
+
   AutoVector UnifiedVector :: CreateVector () const
   {
     return make_unique<UnifiedVector> (size);
   }
 
-  void UnifiedVector :: UpdateHost () const
-  {
-    static mutex mtx;
-
-    if (host_uptodate)
-      return;
-
-    auto lock = lock_guard<mutex>(mtx);
-
-    if (host_uptodate)
-      return;
-
-    if (dev_uptodate)
-      {
-        // cudaMemcpy (host_data, dev_data, sizeof(double)*size, cudaMemcpyDeviceToHost);   
-        dev_data -> D2H ( {size, host_data} );
-        cout << IM(5) << "Device2Host copy!" << endl;        
-      }
-    
-    host_uptodate = true;
-  }
-
-  void UnifiedVector :: UpdateDevice () const
-  {
-    static mutex mtx;
-
-    if (dev_uptodate)
-      return;
-
-    auto lock = lock_guard<mutex>(mtx);
-
-    if (dev_uptodate)
-      return;
-
-    if (host_uptodate)
-      {
-        // cudaMemcpy (dev_data, host_data, sizeof(double)*size, cudaMemcpyHostToDevice);
-        dev_data -> H2D ( {size, host_data} );
-        cout << IM(5) << "Host2Device copy!" << endl;
-      }
-    
-    dev_uptodate = true;
-  }
-  
-  FlatVector<double> UnifiedVector :: FVDouble () const
-  {
-    UpdateHost();
-    dev_uptodate = false;
-    return { size, host_data };
-  }
-  
-  FlatVector<Complex> UnifiedVector :: FVComplex () const
-  {
-    throw Exception ("unified complex not yet supported");
-  }
-
-  FlatVector<Dev<double>> UnifiedVector :: FVDev() const
-  {
-    UpdateDevice();
-    InvalidateHost();
-    return { Size(), dev_data };
-  }
-
-  FlatVector<Dev<double>> UnifiedVector :: FVDevRO() const
-  {
-    UpdateDevice();
-    return { Size(), dev_data };
-  }
-  
-  void * UnifiedVector :: Memory() const throw()
-  { 
-    UpdateHost(); 
-    return host_data;
-  }
 
   UnifiedVectorWrapper :: UnifiedVectorWrapper(const BaseVector & vec_, optional<IntRange> opt_range)
     : vec(vec_)
   {
-    IntRange range = {0, vec.Size()};
-    if(opt_range)
-      range = *opt_range;
+    IntRange range = opt_range.value_or (IntRange(0, vec.Size()));
     this->size = range.Size();
 
-    auto uptr = dynamic_cast<const UnifiedVector*>(&vec_);
-    if(uptr)
-    {
-      host_data = uptr->HostData() + range.First();
-      dev_data = uptr->DevData() + range.First();
-      uptr->UpdateDevice();
-      uptr->InvalidateHost();
-      initial_host_uptodate =  uptr->IsHostUptodate();
-      initial_dev_uptodate =  uptr->IsDevUptodate();
-    }
+    if (auto p = dynamic_cast<const DeviceVector<double>*>(&vec_))
+      {
+        // alias the storage (possibly a sub-range), hand the flags back later
+        alias_of = p;
+        subrange = (range.Size() != vec.Size());
+        // a device write to a sub-range must not leave the rest of the
+        // vector stale, so bring the whole vector to the device first
+        if (subrange)
+          p->UpdateDevice();
+        this->devbuffer = p->devbuffer;
+        this->queue = p->queue;
+        this->devoffset = p->devoffset + range.First();
+        this->memtype = p->memtype;
+        this->host_data = p->host_data ? p->host_data + range.First() : nullptr;
+        this->host_uptodate = p->host_uptodate;
+        this->dev_uptodate = p->dev_uptodate;
+      }
     else
       {
-      auto err = cudaMalloc((void**)&dev_data, size*sizeof(double));
-      if (err != 0)
-        throw Exception("UnifiedVector allocation error, ec="+ToString(err));
-      initial_host_uptodate = true;
-      initial_dev_uptodate = false;
-      host_data = vec.FVDouble().Data() + range.First();
-    }
-    host_uptodate = initial_host_uptodate;
-    dev_uptodate = initial_dev_uptodate;
+        // a device buffer of our own, the host side stays with vec
+        this->memtype = MemType::Device;
+        this->AllocBuffer (this->size);
+        this->hostmem.SetSize(0);
+        this->host_data = vec.FVDouble().Data() + range.First();
+        this->host_uptodate = true;
+        this->dev_uptodate = false;
+      }
+    initial_host_uptodate = this->host_uptodate;
+    initial_dev_uptodate = this->dev_uptodate;
   }
 
   UnifiedVectorWrapper :: ~UnifiedVectorWrapper()
   {
-    if(initial_host_uptodate && !host_uptodate)
-      UpdateHost();
-    if(initial_dev_uptodate && !dev_uptodate)
-      UpdateDevice();
+    if (alias_of)
+      {
+        if (subrange)
+          {
+            // an update of the sub-range cannot validate the full
+            // vector, but staleness propagates
+            alias_of->host_uptodate &= this->host_uptodate;
+            alias_of->dev_uptodate &= this->dev_uptodate;
+          }
+        else
+          {
+            // full alias: same storage, the flags simply carry over
+            alias_of->host_uptodate = this->host_uptodate;
+            alias_of->dev_uptodate = this->dev_uptodate;
+          }
+        this->host_data = nullptr;
+        return;
+      }
 
-    host_data = nullptr;
-    auto uptr = dynamic_cast<const UnifiedVector*>(&vec);
-    if(uptr)
-      dev_data = nullptr;
+    // only pay for the copy back if a kernel actually wrote
+    if (initial_host_uptodate && !this->host_uptodate)
+      this->UpdateHost();
+    this->host_data = nullptr;
   }
 
   // -------------------------------------------------------
@@ -482,8 +307,8 @@ namespace ngla
         cublasSetPointerMode(Get_CuBlas_Handle(), CUBLAS_POINTER_MODE_DEVICE);
         cublasDdot(Get_CuBlas_Handle(),
                    size,
-                   (double*)dev_data, 1,
-                   (double*)uv2->dev_data, 1,
+                   (double*)DevData(), 1,
+                   (double*)uv2->DevData(), 1,
                    uscal->DevPtr());
         // only restore pointer mode when NOT capturing
         // during capture/replay, caller manages pointer mode

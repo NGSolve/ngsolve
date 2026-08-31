@@ -34,6 +34,7 @@ namespace ngla
   NGS_DLL_HEADER MemType PreferredMemType();
 
   template <typename T> class DeviceVectorWrapper;
+  class UnifiedVectorWrapper;   // cuda wrapper (ngscuda), aliases like DeviceVectorWrapper
 
 
   template <typename T>
@@ -54,6 +55,7 @@ namespace ngla
     void AllocBuffer (size_t asize);
 
     friend class DeviceVectorWrapper<T>;
+    friend class UnifiedVectorWrapper;
 
   public:
     DeviceVector (size_t asize, MemType amemtype = MemType::Shared, size_t aalign = 1);
