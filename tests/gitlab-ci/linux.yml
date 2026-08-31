@@ -5,7 +5,6 @@
 .template_ubuntu: &ubuntu
   tags:
     - linux
-    - docker
     - avx
     - bash
 
@@ -20,7 +19,6 @@
 
 .template_ubuntu_avx512: &ubuntu_avx512
   tags:
-    - docker
     - avx512
   variables:
     IMAGE_NAME: "avx512"
