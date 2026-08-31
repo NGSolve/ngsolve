@@ -113,28 +113,28 @@ namespace ngla
 
   void DevBlockJacobiMatrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
-    UnifiedVectorWrapper ux(x);
-    UnifiedVectorWrapper uy(y);
+    DeviceVectorWrapper<double> ux(x);
+    DeviceVectorWrapper<double> uy(y);
     
     {
       static Timer t("DevBlockJacobi::MultAdd");
       CudaRegionTimer rt(t);
 
-      BlockJacobiKernel<<<512,dim3(16,16),0,ngs_cuda_stream>>> (s, ctrstructs, ux.FVDevRO(), uy.FVDev());
+      BlockJacobiKernel<<<512,dim3(16,16),0,ngs_cuda_stream>>> (s, ctrstructs, FVDevRO(ux), FVDev(uy));
     }
     
   }
 
   void DevBlockJacobiMatrix :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
   {
-    UnifiedVectorWrapper ux(x);
-    UnifiedVectorWrapper uy(y);
+    DeviceVectorWrapper<double> ux(x);
+    DeviceVectorWrapper<double> uy(y);
     
     {
       static Timer t("DevBlockJacobi::MultAddTrans");
       CudaRegionTimer rt(t);
 
-      BlockJacobiTransKernel<<<512,dim3(16,16),0,ngs_cuda_stream>>> (s, ctrstructs, ux.FVDevRO(), uy.FVDev());
+      BlockJacobiTransKernel<<<512,dim3(16,16),0,ngs_cuda_stream>>> (s, ctrstructs, FVDevRO(ux), FVDev(uy));
     }
     
   }

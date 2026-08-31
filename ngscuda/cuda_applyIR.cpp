@@ -177,8 +177,8 @@ namespace ngla
     
     virtual void Mult (const BaseVector & x, BaseVector & y) const override
     {
-      UnifiedVectorWrapper ux(x);
-      UnifiedVectorWrapper uy(y);
+      DeviceVectorWrapper<double> ux(x);
+      DeviceVectorWrapper<double> uy(y);
       
       // const UnifiedVector & ux = dynamic_cast<const UnifiedVector&> (x);
       // UnifiedVector & uy = dynamic_cast<UnifiedVector&> (y);
@@ -186,7 +186,7 @@ namespace ngla
       // ux.UpdateDevice();
       // uy.UpdateDevice();
 
-      compiled_function(nip, ux.FVDevRO(), nip, uy.FVDev(), nip, ngs_cuda_stream);
+      compiled_function(nip, FVDevRO(ux), nip, FVDev(uy), nip, ngs_cuda_stream);
       if (synckernels) cudaDeviceSynchronize();
     }
 

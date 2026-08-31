@@ -253,8 +253,8 @@ namespace ngla
     CudaRegionTimer rt(tmv);
     // RegionTimer reg(tmv);
 
-    UnifiedVectorWrapper ux(x);
-    UnifiedVectorWrapper uy(y);
+    DeviceVectorWrapper<double> ux(x);
+    DeviceVectorWrapper<double> uy(y);
 
     ux.UpdateDevice();
     uy.UpdateDevice();
@@ -263,8 +263,8 @@ namespace ngla
     double beta = 1;
 
     cusparseDnVecDescr_t descr_x, descr_y;
-    cusparseCreateDnVec (&descr_x, ux.Size(), ux.DevData(), CUDA_R_64F);
-    cusparseCreateDnVec (&descr_y, uy.Size(), uy.DevData(), CUDA_R_64F);
+    cusparseCreateDnVec (&descr_x, ux.Size(), DevPtr(ux), CUDA_R_64F);
+    cusparseCreateDnVec (&descr_y, uy.Size(), DevPtr(uy), CUDA_R_64F);
 
     { cudaStreamCaptureStatus cap_status;
       cudaStreamIsCapturing(ngs_cuda::ngs_cuda_stream, &cap_status);
@@ -287,8 +287,8 @@ namespace ngla
     static Timer tmv("DevSparseMatrix :: MultTransAdd");
     CudaRegionTimer reg(tmv);
 
-    UnifiedVectorWrapper ux(x);
-    UnifiedVectorWrapper uy(y);
+    DeviceVectorWrapper<double> ux(x);
+    DeviceVectorWrapper<double> uy(y);
 
     ux.UpdateDevice();
     uy.UpdateDevice();
@@ -300,8 +300,8 @@ namespace ngla
     void* dBuffer = NULL;
 
     cusparseDnVecDescr_t descr_x, descr_y;
-    cusparseCreateDnVec (&descr_x, ux.Size(), ux.DevData(), CUDA_R_64F);
-    cusparseCreateDnVec (&descr_y, uy.Size(), uy.DevData(), CUDA_R_64F);
+    cusparseCreateDnVec (&descr_x, ux.Size(), DevPtr(ux), CUDA_R_64F);
+    cusparseCreateDnVec (&descr_y, uy.Size(), DevPtr(uy), CUDA_R_64F);
 
     cusparseSpMV_bufferSize(Get_CuSparse_Handle(), CUSPARSE_OPERATION_TRANSPOSE,
                             &alpha, descr, descr_x, &beta, descr_y, CUDA_R_64F,
@@ -326,17 +326,17 @@ namespace ngla
 
   void DevDiagonalMatrix :: Mult (const BaseVector & x, BaseVector & y) const
   {
-    UnifiedVectorWrapper ux(x);
-    UnifiedVectorWrapper uy(y);
+    DeviceVectorWrapper<double> ux(x);
+    DeviceVectorWrapper<double> uy(y);
     
     /*
     ux.UpdateDevice();
     uy.UpdateDevice();
 
-    // MultDiagonal (diag.Size(), diag.DevData(), ux.DevData(), uy.DevData());
+    // MultDiagonal (diag.Size(), diag.DevData(), DevPtr(ux), DevPtr(uy));
     DeviceParallelFor
       (diag.Size(),
-       [ddiag=diag.DevData(), dx=ux.DevData(), dy=uy.DevData()] DEVICE_LAMBDA (auto tid)
+       [ddiag=diag.DevData(), dx=DevPtr(ux), dy=DevPtr(uy)] DEVICE_LAMBDA (auto tid)
            {
              dy[tid] = ddiag[tid]*dx[tid];
            });
@@ -346,7 +346,7 @@ namespace ngla
 
     DeviceParallelFor
       (diag.Size(),
-       [ddiag=diag.DevData(), dx=ux.FVDevRO(), dy=uy.FVDev()] DEVICE_LAMBDA (auto tid)
+       [ddiag=diag.DevData(), dx=FVDevRO(ux), dy=FVDev(uy)] DEVICE_LAMBDA (auto tid)
            {
              dy(tid) = ddiag[tid]*dx(tid);
            });
@@ -354,16 +354,16 @@ namespace ngla
   
   void DevDiagonalMatrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
-    UnifiedVectorWrapper ux(x);
-    UnifiedVectorWrapper uy(y);
+    DeviceVectorWrapper<double> ux(x);
+    DeviceVectorWrapper<double> uy(y);
 
     ux.UpdateDevice();
     uy.UpdateDevice();
 
-    // MultAddDiagonal (diag.Size(), s, diag.DevData(), ux.DevData(), uy.DevData());
+    // MultAddDiagonal (diag.Size(), s, diag.DevData(), DevPtr(ux), DevPtr(uy));
     DeviceParallelFor
       (diag.Size(),
-       [ddiag=diag.DevData(), dx=ux.DevData(), dy=uy.DevData(), s] DEVICE_LAMBDA (auto tid)
+       [ddiag=diag.DevData(), dx=DevPtr(ux), dy=DevPtr(uy), s] DEVICE_LAMBDA (auto tid)
            {
              dy[tid] += s*ddiag[tid]*dx[tid];
            });
@@ -409,8 +409,8 @@ namespace ngla
     static Timer tcopyin("DevConstantEBEMatrix::Mult - copyin");
     static Timer tcopyout("DevConstantEBEMatrix::Mult - copyout");
     
-    UnifiedVectorWrapper ux(x);
-    UnifiedVectorWrapper uy(y);
+    DeviceVectorWrapper<double> ux(x);
+    DeviceVectorWrapper<double> uy(y);
 
     ux.UpdateDevice();
     uy.UpdateDevice();
@@ -431,10 +431,10 @@ namespace ngla
         DevStackArray<double> dev_hy(numblocks*devmat.Height());
 
         tcopyin.Start();
-        // ConstEBEKernelCopyIn (numblocks, devmat.Width(), rowdnums.DevData(), ux.DevData(), dev_hx.DevData());
+        // ConstEBEKernelCopyIn (numblocks, devmat.Width(), rowdnums.DevData(), DevPtr(ux), dev_hx.DevData());
 	DeviceParallelFor
           (numblocks*devmat.Width(),
-           [locx=dev_hx.DevData(), globx=ux.DevData(), idx=rowdnums.DevData()] DEVICE_LAMBDA (auto tid)
+           [locx=dev_hx.DevData(), globx=DevPtr(ux), idx=rowdnums.DevData()] DEVICE_LAMBDA (auto tid)
            {
              locx[tid] = globx[idx[tid]];
            });
@@ -451,10 +451,10 @@ namespace ngla
         tmult.Stop();
         
         tcopyout.Start();        
-        // ConstEBEKernelCopyOut (numblocks, devmat.Height(), coldnums.DevData(), dev_hy.DevData(), uy.DevData());
+        // ConstEBEKernelCopyOut (numblocks, devmat.Height(), coldnums.DevData(), dev_hy.DevData(), DevPtr(uy));
         DeviceParallelFor
           (numblocks*devmat.Height(),
-           [globy=uy.DevData(), locy=dev_hy.DevData(), idx=coldnums.DevData() ] DEVICE_LAMBDA (auto tid)
+           [globy=DevPtr(uy), locy=dev_hy.DevData(), idx=coldnums.DevData() ] DEVICE_LAMBDA (auto tid)
            {
              // atomicAdd((double*)globy+idx[tid], locy[tid]);
              globy[idx[tid]] = locy[tid];
@@ -477,8 +477,8 @@ namespace ngla
     static Timer tcopyin("DevConstantEBEMatrix::MultAdd - copyin");
     static Timer tcopyout("DevConstantEBEMatrix::MultAdd - copyout");
     
-    UnifiedVectorWrapper ux(x);
-    UnifiedVectorWrapper uy(y);
+    DeviceVectorWrapper<double> ux(x);
+    DeviceVectorWrapper<double> uy(y);
 
     ux.UpdateDevice();
     uy.UpdateDevice();
@@ -492,10 +492,10 @@ namespace ngla
         DevStackArray<double> dev_hy(numblocks*devmat.Height());
 
         tcopyin.Start();
-        // ConstEBEKernelCopyIn (numblocks, devmat.Width(), rowdnums.DevData(), ux.DevData(), dev_hx.DevData());
+        // ConstEBEKernelCopyIn (numblocks, devmat.Width(), rowdnums.DevData(), DevPtr(ux), dev_hx.DevData());
 	DeviceParallelFor
           (numblocks*devmat.Width(),
-           [locx=dev_hx.DevData(), globx=ux.DevData(), idx=rowdnums.DevData()] DEVICE_LAMBDA (auto tid)
+           [locx=dev_hx.DevData(), globx=DevPtr(ux), idx=rowdnums.DevData()] DEVICE_LAMBDA (auto tid)
            {
              locx[tid] = globx[idx[tid]];
            });
@@ -512,10 +512,10 @@ namespace ngla
         tmult.Stop();
         
         tcopyout.Start();        
-        // ConstEBEKernelCopyOut (numblocks, devmat.Height(), coldnums.DevData(), dev_hy.DevData(), uy.DevData());
+        // ConstEBEKernelCopyOut (numblocks, devmat.Height(), coldnums.DevData(), dev_hy.DevData(), DevPtr(uy));
         DeviceParallelFor
           (numblocks*devmat.Height(),
-           [globy=uy.DevData(), locy=dev_hy.DevData(), idx=coldnums.DevData() ] DEVICE_LAMBDA (auto tid)
+           [globy=DevPtr(uy), locy=dev_hy.DevData(), idx=coldnums.DevData() ] DEVICE_LAMBDA (auto tid)
            {
              atomicAdd((double*)globy+idx[tid], locy[tid]);
            });
@@ -531,7 +531,7 @@ namespace ngla
             DevStackArray<double> dev_hy(c.Size()*devmat.Height());
 
             tcopyin.Start();            
-            ConstEBEKernelCopyInIdx (c.Size(), (int*)c.Data(), devmat.Width(), rowdnums.DevData(), (double*)ux.DevData(), dev_hx.DevData());
+            ConstEBEKernelCopyInIdx (c.Size(), (int*)c.Data(), devmat.Width(), rowdnums.DevData(), (double*)DevPtr(ux), dev_hx.DevData());
             if (synckernels) cudaDeviceSynchronize();            
             tcopyin.Stop();
             
@@ -545,7 +545,7 @@ namespace ngla
             tmult.Stop();
 
             tcopyout.Start();
-            ConstEBEKernelCopyOutIdx (c.Size(), (int*)c.Data(), devmat.Height(), coldnums.DevData(), dev_hy.DevData(), (double*)uy.DevData());
+            ConstEBEKernelCopyOutIdx (c.Size(), (int*)c.Data(), devmat.Height(), coldnums.DevData(), dev_hy.DevData(), (double*)DevPtr(uy));
             if (synckernels) cudaDeviceSynchronize();            
             tcopyout.Stop();
           }
@@ -560,8 +560,8 @@ namespace ngla
   {
     static Timer t("DevConstantEBEMatrix::MultTransAdd"); RegionTimer reg(t);
     
-    UnifiedVectorWrapper ux(x);
-    UnifiedVectorWrapper uy(y);
+    DeviceVectorWrapper<double> ux(x);
+    DeviceVectorWrapper<double> uy(y);
     
     ux.UpdateDevice();
     uy.UpdateDevice();
@@ -574,10 +574,10 @@ namespace ngla
         DevStackArray<double> dev_hx(numblocks*hm);
         DevStackArray<double> dev_hy(numblocks*wm);
 
-        // ConstEBEKernelCopyIn (numblocks, hm, coldnums.DevData(), (double*)ux.DevData(), dev_hx.DevData());
+        // ConstEBEKernelCopyIn (numblocks, hm, coldnums.DevData(), (double*)DevPtr(ux), dev_hx.DevData());
         DeviceParallelFor
           (numblocks*hm,
-           [locx=dev_hx.DevData(), globx=ux.DevData(), idx=coldnums.DevData()] DEVICE_LAMBDA (auto tid)
+           [locx=dev_hx.DevData(), globx=DevPtr(ux), idx=coldnums.DevData()] DEVICE_LAMBDA (auto tid)
            {
              locx[tid] = globx[idx[tid]];
            });
@@ -588,10 +588,10 @@ namespace ngla
         FlatMatrix<Dev<double>> maty(numblocks, wm, dev_hy.Data());
         MultMatMat (matx, devmat, maty, s, 0);
         
-        // ConstEBEKernelCopyOut (numblocks, wm, rowdnums.DevData(), dev_hy.DevData(), (double*)uy.DevData());
+        // ConstEBEKernelCopyOut (numblocks, wm, rowdnums.DevData(), dev_hy.DevData(), (double*)DevPtr(uy));
         DeviceParallelFor
           (numblocks*wm,
-           [globy=uy.DevData(), locy=dev_hy.DevData(), idx=rowdnums.DevData()] DEVICE_LAMBDA (auto tid)
+           [globy=DevPtr(uy), locy=dev_hy.DevData(), idx=rowdnums.DevData()] DEVICE_LAMBDA (auto tid)
            {
              atomicAdd((double*)globy+idx[tid], locy[tid]);
            });
@@ -604,14 +604,14 @@ namespace ngla
             DevStackArray<double> dev_hx(c.Size()*hm);
             DevStackArray<double> dev_hy(c.Size()*wm);
 
-            ConstEBEKernelCopyInIdx (c.Size(), (int*)c.Data(), hm, coldnums.DevData(), (double*)ux.DevData(), dev_hx.DevData());
+            ConstEBEKernelCopyInIdx (c.Size(), (int*)c.Data(), hm, coldnums.DevData(), (double*)DevPtr(ux), dev_hx.DevData());
             // dev_hy = dev_hx * mat
 
             FlatMatrix<Dev<double>> matx(c.Size(), hm, dev_hx.Data());
             FlatMatrix<Dev<double>> maty(c.Size(), wm, dev_hy.Data());
             MultMatMat (matx, devmat, maty, s, 0);
            
-            ConstEBEKernelCopyOutIdx (c.Size(), (int*)c.Data(), wm, rowdnums.DevData(), dev_hy.DevData(), (double*)uy.DevData());
+            ConstEBEKernelCopyOutIdx (c.Size(), (int*)c.Data(), wm, rowdnums.DevData(), dev_hy.DevData(), (double*)DevPtr(uy));
           }
       }
     
@@ -670,14 +670,14 @@ namespace ngla
   {
     static Timer t("DevBlockDiagonalMatrixSoA::Mult"); RegionTimer reg(t);
     
-    UnifiedVectorWrapper ux(x);
-    UnifiedVectorWrapper uy(y);
+    DeviceVectorWrapper<double> ux(x);
+    DeviceVectorWrapper<double> uy(y);
     ux.UpdateDevice();
     uy.UpdateDevice();
 
     FlatMatrix<Dev<double>> a(dimx*dimy, blocks, (Dev<double>*)dev_data);
-    FlatMatrix<Dev<double>> b(dimx, blocks,  (Dev<double>*)ux.DevData());
-    FlatMatrix<Dev<double>> res(dimy, blocks,  (Dev<double>*)uy.DevData());
+    FlatMatrix<Dev<double>> b(dimx, blocks,  (Dev<double>*)DevPtr(ux));
+    FlatMatrix<Dev<double>> res(dimy, blocks,  (Dev<double>*)DevPtr(uy));
 
     {
       static Timer t("DevBlockDiagonalMatrixSoA::Mult");
@@ -728,20 +728,20 @@ namespace ngla
   {
     static Timer t("DevBlockDiagonalMatrixSoA::MultAdd"); RegionTimer reg(t);
     
-    UnifiedVectorWrapper ux(x);
-    UnifiedVectorWrapper uy(y);
+    DeviceVectorWrapper<double> ux(x);
+    DeviceVectorWrapper<double> uy(y);
     ux.UpdateDevice();
     uy.UpdateDevice();
 /*
     for (int i = 0; i < dimy; i++)
       for (int j = 0; j < dimx; j++)
         if (nonzero(i,j) != 0)
-          DevBlockDiagonalMatrixSoAMultAddVecs (s, blocks, dev_data + blocks*(i*dimx+j), ux.DevData()+blocks*j, uy.DevData()+blocks*i);
+          DevBlockDiagonalMatrixSoAMultAddVecs (s, blocks, dev_data + blocks*(i*dimx+j), DevPtr(ux)+blocks*j, DevPtr(uy)+blocks*i);
 */
 
     FlatMatrix<Dev<double>> a(dimx*dimy, blocks, (Dev<double>*)dev_data);
-    FlatMatrix<Dev<double>> b(dimx, blocks,  (Dev<double>*)ux.DevData());
-    FlatMatrix<Dev<double>> res(dimy, blocks,  (Dev<double>*)uy.DevData());
+    FlatMatrix<Dev<double>> b(dimx, blocks,  (Dev<double>*)DevPtr(ux));
+    FlatMatrix<Dev<double>> res(dimy, blocks,  (Dev<double>*)DevPtr(uy));
     // DevBlockDiagonalMatrixSoAMultAddVecs (s, indices, a, b, res);
 
     {
@@ -771,14 +771,14 @@ namespace ngla
   {
     static Timer t("DevBlockDiagonalMatrixSoA::MultTrans"); RegionTimer reg(t);
     
-    UnifiedVectorWrapper ux(x);
-    UnifiedVectorWrapper uy(y);
+    DeviceVectorWrapper<double> ux(x);
+    DeviceVectorWrapper<double> uy(y);
     ux.UpdateDevice();
     uy.UpdateDevice();
       
     FlatMatrix<Dev<double>> a(dimx*dimy, blocks, (Dev<double>*)dev_data);
-    FlatMatrix<Dev<double>> b(dimy, blocks,  (Dev<double>*)ux.DevData());
-    FlatMatrix<Dev<double>> res(dimx, blocks,  (Dev<double>*)uy.DevData());
+    FlatMatrix<Dev<double>> b(dimy, blocks,  (Dev<double>*)DevPtr(ux));
+    FlatMatrix<Dev<double>> res(dimx, blocks,  (Dev<double>*)DevPtr(uy));
 
 
     {
@@ -832,8 +832,8 @@ namespace ngla
   {
     static Timer t("DevBlockDiagonalMatrixSoA::MultTransAdd"); RegionTimer reg(t);
     
-    UnifiedVectorWrapper ux(x);
-    UnifiedVectorWrapper uy(y);
+    DeviceVectorWrapper<double> ux(x);
+    DeviceVectorWrapper<double> uy(y);
     ux.UpdateDevice();
     uy.UpdateDevice();
     
@@ -841,12 +841,12 @@ namespace ngla
     for (int i = 0; i < dimy; i++)
       for (int j = 0; j < dimx; j++)
         if (nonzero(i,j) != 0)
-          DevBlockDiagonalMatrixSoAMultAddVecs (s, blocks, dev_data + blocks*(i*dimx+j), ux.DevData()+blocks*i, uy.DevData()+blocks*j);
+          DevBlockDiagonalMatrixSoAMultAddVecs (s, blocks, dev_data + blocks*(i*dimx+j), DevPtr(ux)+blocks*i, DevPtr(uy)+blocks*j);
 */
       
     FlatMatrix<Dev<double>> a(dimx*dimy, blocks, (Dev<double>*)dev_data);
-    FlatMatrix<Dev<double>> b(dimy, blocks,  (Dev<double>*)ux.DevData());
-    FlatMatrix<Dev<double>> res(dimx, blocks,  (Dev<double>*)uy.DevData());
+    FlatMatrix<Dev<double>> b(dimy, blocks,  (Dev<double>*)DevPtr(ux));
+    FlatMatrix<Dev<double>> res(dimx, blocks,  (Dev<double>*)DevPtr(uy));
     // DevBlockDiagonalMatrixSoAMultAddVecs (s, indices_trans, a, b, res);
 
     /*
@@ -902,16 +902,16 @@ namespace ngla
     if (x.EntrySize() != 1)
       throw Exception("DevProjector :: MultAdd not implemented for EntrySize > 1");
 
-    UnifiedVectorWrapper ux(x);
-    UnifiedVectorWrapper uy(y);
+    DeviceVectorWrapper<double> ux(x);
+    DeviceVectorWrapper<double> uy(y);
     ux.UpdateDevice();
     uy.UpdateDevice();
 
-    // DevProjectorMultAdd (s, bits->Size(), ux.DevData(), uy.DevData(), bits->Data(), keep_values);
+    // DevProjectorMultAdd (s, bits->Size(), DevPtr(ux), DevPtr(uy), bits->Data(), keep_values);
     if (keep_values)
       DeviceParallelFor
         (bits->Size(),
-         [s, x=ux.DevData(), y=uy.DevData(), bits=bits->Data()] DEVICE_LAMBDA (auto i)
+         [s, x=DevPtr(ux), y=DevPtr(uy), bits=bits->Data()] DEVICE_LAMBDA (auto i)
          {
            unsigned char mask = (char(1) << (i % CHAR_BIT));
            unsigned int addr = i / CHAR_BIT;
@@ -922,7 +922,7 @@ namespace ngla
     else
       DeviceParallelFor
         (bits->Size(),
-         [s, x=ux.DevData(), y=uy.DevData(), bits=bits->Data()] DEVICE_LAMBDA (auto i)
+         [s, x=DevPtr(ux), y=DevPtr(uy), bits=bits->Data()] DEVICE_LAMBDA (auto i)
          {
            unsigned char mask = (char(1) << (i % CHAR_BIT));
            unsigned int addr = i / CHAR_BIT;
@@ -940,15 +940,15 @@ namespace ngla
     if (x.EntrySize() != 1)
       throw Exception("DevProjector :: Project not implemented for EntrySize > 1");
 
-    UnifiedVectorWrapper ux(x);
+    DeviceVectorWrapper<double> ux(x);
 
     ux.UpdateDevice();
 
-    // DevProjectorProject (bits->Size(), (double*)ux.DevData(), bits->Data(), keep_values);
+    // DevProjectorProject (bits->Size(), (double*)DevPtr(ux), bits->Data(), keep_values);
     if (keep_values)
       DeviceParallelFor
         (bits->Size(),
-         [x=ux.DevData(), bits=bits->Data()] DEVICE_LAMBDA (auto i)
+         [x=DevPtr(ux), bits=bits->Data()] DEVICE_LAMBDA (auto i)
          {
            unsigned char mask = (char(1) << (i % CHAR_BIT));
            unsigned int addr = i / CHAR_BIT;
@@ -959,7 +959,7 @@ namespace ngla
     else
       DeviceParallelFor
         (bits->Size(),
-         [x=ux.DevData(), bits=bits->Data()] DEVICE_LAMBDA (auto i)
+         [x=DevPtr(ux), bits=bits->Data()] DEVICE_LAMBDA (auto i)
          {
            unsigned char mask = (char(1) << (i % CHAR_BIT));
            unsigned int addr = i / CHAR_BIT;

@@ -394,8 +394,8 @@ namespace ngla
     
     RegionTimer rt(t);
     
-    UnifiedVectorWrapper ux(x);
-    UnifiedVectorWrapper uy(y);
+    DeviceVectorWrapper<double> ux(x);
+    DeviceVectorWrapper<double> uy(y);
     ux.UpdateDevice();
     uy.UpdateDevice();
     if (synckernels) cudaDeviceSynchronize();
@@ -404,7 +404,7 @@ namespace ngla
     FlatVector<Dev<double>> hx(x.Size(), mem_hx.Data());
 
     CudaRegionTimer rtR(tR);
-    DeviceSparseCholeskyReorderKernel<<<512,256>>> (ux.FVDev(), hx, order);
+    DeviceSparseCholeskyReorderKernel<<<512,256>>> (FVDevRO(ux), hx, order);
     rtR.Stop();
 
     // cout << "reordered[:10] = " << endl << D2H(hx.Range(10)) << endl;
@@ -455,7 +455,7 @@ namespace ngla
 
     
     CudaRegionTimer rtRA(tRA);
-    DeviceSparseCholeskyReorderAddKernel<<<512,256>>> (hx, uy.FVDev(), order, s);
+    DeviceSparseCholeskyReorderAddKernel<<<512,256>>> (hx, FVDev(uy), order, s);
     rtRA.Stop();
 
     Dev<int>::Free (pcnt);

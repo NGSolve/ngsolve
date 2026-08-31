@@ -22,14 +22,37 @@ namespace ngla
   
 #include "cuda_ngbla.hpp"
 #include "linalg_kernels.hpp"
+#include "cuda_device.hpp"
 #include "unifiedvector.hpp"
 
 
 namespace ngla
 {
   using namespace ngs_cuda;
-  
+
   void InitCuLinalg();
+
+
+  // typed device access to any DeviceVector<double> (UnifiedVector,
+  // DeviceVectorWrapper, ...), with the transfers the access implies
+
+  inline Dev<double> * DevPtr (const DeviceVector<double> & v)
+  {
+    return (Dev<double>*)ngs_cuda::BufferDevPtr(*v.DevBufferRO()) + v.DevOffset();
+  }
+
+  // kernel reads and writes
+  inline FlatVector<Dev<double>> FVDev (const DeviceVector<double> & v)
+  {
+    auto ptr = (Dev<double>*)ngs_cuda::BufferDevPtr(*v.DevBufferRW()) + v.DevOffset();
+    return { v.Size(), ptr };
+  }
+
+  // kernel only reads
+  inline FlatVector<Dev<double>> FVDevRO (const DeviceVector<double> & v)
+  {
+    return { v.Size(), DevPtr(v) };
+  }
 
 
   /* AutoVector CreateUnifiedVector(size_t size); */

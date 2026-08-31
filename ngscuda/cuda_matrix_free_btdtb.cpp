@@ -386,12 +386,12 @@ namespace ngla
     virtual void Mult (const BaseVector & x, BaseVector & y) const override
     {
       static Timer timer("DevMatrixFreeBTDTB::Mult");
-      UnifiedVectorWrapper ux(x);
-      UnifiedVectorWrapper uy(y);
+      DeviceVectorWrapper<double> ux(x);
+      DeviceVectorWrapper<double> uy(y);
 
       uy = 0.0;
       ngs_cuda::CudaRegionTimer cutimer(timer, &timer_names);
-      compiled_function(1.0, ux.FVDevRO(), uy.FVDev(), ngs_cuda_stream);
+      compiled_function(1.0, FVDevRO(ux), FVDev(uy), ngs_cuda_stream);
       if (auto err = cudaGetLastError(); err != cudaSuccess)
         throw Exception(string("MatrixFreeBTDTB kernel launch failed: ")+cudaGetErrorString(err));
       if (synckernels) cudaDeviceSynchronize();
@@ -400,11 +400,11 @@ namespace ngla
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override
     {
       static Timer timer("DevMatrixFreeBTDTB::MultAdd");
-      UnifiedVectorWrapper ux(x);
-      UnifiedVectorWrapper uy(y);
+      DeviceVectorWrapper<double> ux(x);
+      DeviceVectorWrapper<double> uy(y);
 
       ngs_cuda::CudaRegionTimer cutimer(timer, &timer_names);
-      compiled_function(s, ux.FVDevRO(), uy.FVDev(), ngs_cuda_stream);
+      compiled_function(s, FVDevRO(ux), FVDev(uy), ngs_cuda_stream);
       if (auto err = cudaGetLastError(); err != cudaSuccess)
         throw Exception(string("MatrixFreeBTDTB kernel launch failed: ")+cudaGetErrorString(err));
       if (synckernels) cudaDeviceSynchronize();
