@@ -22,8 +22,6 @@ RUN apt-get update && apt-get -y install \
         pandoc \
         python3 \
         python3-pip \
-        python3-numpy \
-        python3-scipy \
         python3-tk \
         tcl-dev \
         tk-dev \
@@ -42,7 +40,7 @@ RUN apt-get update && apt-get -y install \
         libxrandr2 \
         wget \
         zip
-RUN pip3 install --break-system-packages mpi4py cython pip setuptools wheel
+RUN pip3 install --break-system-packages mpi4py cython pip setuptools wheel numpy scipy
 
 RUN wget -qO- https://files.pythonhosted.org/packages/fb/ab/678bb037c2345ff2eab86479b89bc0103c1f8ee52cf92c923de6bccbd1ae/petsc-3.24.4.tar.gz | tar xz
 RUN sed -i "s/self.dry_run/False/" petsc-3.24.4/setup.py
