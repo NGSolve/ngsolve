@@ -85,14 +85,14 @@ void DevCGSolver::Mult(const BaseVector& rhs, BaseVector& sol) const
                 cublasSetPointerMode(Get_CuBlas_Handle(), CUBLAS_POINTER_MODE_DEVICE);
                 ga->Mult(*p, *q);
                 (*p).InnerProduct(*q, *pq);
-                ualpha     = Div(Scal(urz), Scal(upq));
-                uneg_alpha = Neg(Scal(ualpha));
+                ualpha     = urz / upq;
+                uneg_alpha = -ualpha;
                 (*x).Add(*alpha,     *p);
                 (*r).Add(*neg_alpha, *q);
                 gc->Mult(*r, *z);
                 (*r).InnerProduct(*z, *rz_new);
-                ubeta = Div(Scal(urz_new), Scal(urz));
-                urz   = Scal(urz_new);
+                ubeta = urz_new / urz;
+                urz   = urz_new;
                 (*p).Scale(*beta);
                 (*p).Add(1.0, *z);
             g_cg_for_while.EndCapture();
@@ -118,14 +118,14 @@ void DevCGSolver::Mult(const BaseVector& rhs, BaseVector& sol) const
             g_cg.BeginCapture();
                 ga->Mult(*p, *q);
                 (*p).InnerProduct(*q, *pq);
-                ualpha     = Div(Scal(urz), Scal(upq));
-                uneg_alpha = Neg(Scal(ualpha));
+                ualpha     = urz / upq;
+                uneg_alpha = -ualpha;
                 (*x).Add(*alpha,     *p);
                 (*r).Add(*neg_alpha, *q);
                 gc->Mult(*r, *z);
                 (*r).InnerProduct(*z, *rz_new);
-                ubeta = Div(Scal(urz_new), Scal(urz));
-                urz   = Scal(urz_new);
+                ubeta = urz_new / urz;
+                urz   = urz_new;
                 (*p).Scale(*beta);
                 (*p).Add(1.0, *z);
             g_cg.EndCapture();
@@ -168,14 +168,14 @@ void DevCGSolver::Mult(const BaseVector& rhs, BaseVector& sol) const
             } else {
                 ga->Mult(*p, *q);
                 (*p).InnerProduct(*q, *pq);
-                ualpha     = Div(Scal(urz),    Scal(upq));
-                uneg_alpha = Neg(Scal(ualpha));
+                ualpha     = urz / upq;
+                uneg_alpha = -ualpha;
                 (*x).Add(*alpha,     *p);
                 (*r).Add(*neg_alpha, *q);
                 gc->Mult(*r, *z);
                 (*r).InnerProduct(*z, *rz_new);
-                ubeta = Div(Scal(urz_new), Scal(urz));
-                urz   = Scal(urz_new);
+                ubeta = urz_new / urz;
+                urz   = urz_new;
                 (*p).Scale(*beta);
                 (*p).Add(1.0, *z);
                 SyncNGSStream();
@@ -264,14 +264,14 @@ void DevTFQMRSolver::Mult(const BaseVector& rhs, BaseVector& sol) const
         *uhat = *v;
         (*r).InnerProduct(*r, *s_rho);
         SyncNGSStream();
-        ualpha     = Div(Const(1.0), Const(1.0));    // 1.0
-        uneg_alpha = Neg(Const(1.0));                 // -1.0
-        utheta     = Prod(Const(0.0), Const(1.0));   // 0.0
-        ueta       = Prod(Const(0.0), Const(1.0));   // 0.0
-        ucoeff     = Prod(Const(0.0), Const(1.0));   // 0.0
-        utau       = Sqrt(Scal(urho));               // r0norm
-        utau_sq    = Scal(urho);                     // r0norm^2 = rho
-        urhoLast   = Scal(urho);
+        ualpha     = 1.0;
+        uneg_alpha = -1.0;
+        utheta     = 0.0;
+        ueta       = 0.0;
+        ucoeff     = 0.0;
+        utau       = Sqrt(urho);
+        utau_sq    = urho;
+        urhoLast   = urho;
         SyncNGSStream();
     };
 

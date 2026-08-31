@@ -7,6 +7,7 @@
 
 #include <la.hpp>
 #include <gpukernel.hpp>
+#include <map>
 
 namespace ngla
 {
@@ -101,6 +102,45 @@ namespace ngla
           for ( ; i < n; i++) y[i] += s*x[i];
       }
 
+
+      /*
+        two-stage dot product: dv_dot1 writes one partial sum per group,
+        dv_dot2 reduces the partials with a single group into res[0].
+        Both stages stay on the device, so with res pointing into a
+        DeviceScalar the reduction is graph-capturable.
+      */
+      KERNEL(dv_dot1, GLOBAL_IN(SCAL,x), GLOBAL_IN(SCAL,y), GLOBAL(SCAL,partial), VALUE(int,n))
+      {
+        SHARED(SCAL, tmp, 1024);
+        SCAL s = 0;
+        for (int i = int(GLOBAL_ID_X); i < n; i += int(GROUP_SIZE_X*NUM_GROUPS_X))
+          s += x[i]*y[i];
+        tmp[LOCAL_ID_X] = s;
+        BARRIER();
+        for (uint d = GROUP_SIZE_X/2; d > 0; d /= 2)
+          {
+            if (LOCAL_ID_X < d) tmp[LOCAL_ID_X] += tmp[LOCAL_ID_X+d];
+            BARRIER();
+          }
+        if (LOCAL_ID_X == 0) partial[GROUP_ID_X] = tmp[0];
+      }
+
+      KERNEL(dv_dot2, GLOBAL_IN(SCAL,partial), GLOBAL(SCAL,res), VALUE(int,m))
+      {
+        SHARED(SCAL, tmp, 1024);
+        SCAL s = 0;
+        for (int i = int(LOCAL_ID_X); i < m; i += int(GROUP_SIZE_X))
+          s += partial[i];
+        tmp[LOCAL_ID_X] = s;
+        BARRIER();
+        for (uint d = GROUP_SIZE_X/2; d > 0; d /= 2)
+          {
+            if (LOCAL_ID_X < d) tmp[LOCAL_ID_X] += tmp[LOCAL_ID_X+d];
+            BARRIER();
+          }
+        if (LOCAL_ID_X == 0) res[0] = tmp[0];
+      }
+
     )RAW";
 
 
@@ -116,6 +156,9 @@ namespace ngla
       shared_ptr<Device> device;
       shared_ptr<ngs_gpu::Queue> queue;
       shared_ptr<Kernel> setscalar, scale, scale_dev, set, axpy, axpy_dev;
+      shared_ptr<Kernel> dot1, dot2;
+      shared_ptr<Buffer> dot_scratch;   // dotgroups partials + one result slot
+      unsigned dotgroups, dotgroupsize;
       unsigned groupsize;
 
       DeviceVectorKernels (shared_ptr<Device> adevice)
@@ -135,11 +178,30 @@ namespace ngla
         set       = library->GetKernel ("dv_set");
         axpy      = library->GetKernel ("dv_axpy");
         axpy_dev  = library->GetKernel ("dv_axpy_dev");
+        dot1      = library->GetKernel ("dv_dot1");
+        dot2      = library->GetKernel ("dv_dot2");
 
         queue = device->DefaultQueue();
         // a wide group is what saturates memory on a gpu, but the cpu
         // reference backend runs one OS thread per work-item
         groupsize = (device->SimdWidth() > 1) ? device->MaxThreadsPerGroup() : 64;
+
+        // the reduction tree wants a power of two, at most the shared size
+        dotgroupsize = 1;
+        while (2*dotgroupsize <= groupsize && 2*dotgroupsize <= 1024)
+          dotgroupsize *= 2;
+        // enough groups to saturate a gpu, few for the cpu reference backend
+        dotgroups = (device->SimdWidth() > 1) ? 256 : 4;
+        dot_scratch = device->NewBuffer ((dotgroups+1)*sizeof(T), MemType::Device);
+      }
+
+      // res: where dv_dot2 puts the result (buffer + byte offset)
+      void LaunchDot (KernelArg x, KernelArg y, KernelArg res, int n) const
+      {
+        queue->Launch (*dot1, Dim3(dotgroups), Dim3(dotgroupsize),
+                       { x, y, KernelArg(*dot_scratch), KernelArg(int(n)) });
+        queue->Launch (*dot2, Dim3(1), Dim3(dotgroupsize),
+                       { KernelArg(*dot_scratch), res, KernelArg(int(dotgroups)) });
       }
 
       static const DeviceVectorKernels & Get()
@@ -165,13 +227,13 @@ namespace ngla
     };
 
 
-    // v -> dst, converting between the scalar types
+    // v[offset : offset+dst.Size()) -> dst, converting the scalar types
     template <typename T>
-    void CopyFromBaseVector (const BaseVector & v, FlatVector<T> dst)
+    void CopyFromBaseVector (const BaseVector & v, FlatVector<T> dst, size_t offset = 0)
     {
       std::visit ([&] (auto proto)
       {
-        auto src = v.FV<decltype(proto)>();
+        auto src = v.FV<decltype(proto)>().Range(offset, offset+dst.Size());
         if constexpr (requires { dst(0) = src(0); })
           dst = src;
         else
@@ -180,11 +242,11 @@ namespace ngla
     }
 
     template <typename T>
-    void CopyToBaseVector (FlatVector<T> src, const BaseVector & v)
+    void CopyToBaseVector (FlatVector<T> src, const BaseVector & v, size_t offset = 0)
     {
       std::visit ([&] (auto proto)
       {
-        auto dst = v.FV<decltype(proto)>();
+        auto dst = v.FV<decltype(proto)>().Range(offset, offset+src.Size());
         if constexpr (requires { dst(0) = src(0); })
           dst = src;
         else
@@ -389,6 +451,51 @@ namespace ngla
 
 
   template <typename T>
+  double DeviceVector<T> :: InnerProductD (const BaseVector & v2) const
+  {
+    if (v2.Size() != this->size)
+      throw Exception("DeviceVector::InnerProductD - size mismatch");
+    DeviceVectorWrapper<T> dv(v2, memtype);
+    const auto & kern = DeviceVectorKernels<T>::Get();
+    // the host reads back anyway, so skip the second reduction kernel:
+    // fetch the partials (2KB cost the same as 8 bytes) and sum here
+    kern.queue->Launch (*kern.dot1, Dim3(kern.dotgroups), Dim3(kern.dotgroupsize),
+                        { DevArgRO(), dv.DevArgRO(),
+                          KernelArg(*kern.dot_scratch), KernelArg(int(this->size)) });
+    kern.queue->Finish();
+    T partials[256];
+    kern.dot_scratch->D2HArray (partials, kern.dotgroups);
+    T res = 0;
+    for (unsigned i = 0; i < kern.dotgroups; i++)
+      res += partials[i];
+    return res;
+  }
+
+  template <typename T>
+  void DeviceVector<T> :: InnerProduct (const BaseVector & v2, BaseScalar & scal, bool conjugate) const
+  {
+    // result straight into the DeviceScalar - no host round-trip, capturable
+    if constexpr (is_same_v<T,double>)
+      if (auto devscal = dynamic_cast<DeviceScalar*> (&scal))
+        {
+          if (v2.Size() != this->size)
+            throw Exception("DeviceVector::InnerProduct - size mismatch");
+          DeviceVectorWrapper<T> dv(v2, memtype);
+          const auto & kern = DeviceVectorKernels<T>::Get();
+          kern.LaunchDot (DevArgRO(), dv.DevArgRO(), devscal->DevArg(), int(this->size));
+          return;
+        }
+    BaseVector::InnerProduct (v2, scal, conjugate);
+  }
+
+  template <typename T>
+  double DeviceVector<T> :: L2Norm () const
+  {
+    return sqrt (fabs (InnerProductD (*this)));
+  }
+
+
+  template <typename T>
   void * DeviceVector<T> :: Memory () const
   {
     // the caller gets a writable pointer, so the device copy may go stale
@@ -425,21 +532,28 @@ namespace ngla
 
 
   template <typename T>
-  DeviceVectorWrapper<T> :: DeviceVectorWrapper (const BaseVector & avec, MemType amemtype)
+  DeviceVectorWrapper<T> :: DeviceVectorWrapper (const BaseVector & avec, MemType amemtype,
+                                                 optional<IntRange> opt_range)
     : vec(avec)
   {
-    this->size = vec.Size();
+    IntRange range = opt_range.value_or (IntRange(0, avec.Size()));
+    this->size = range.Size();
+    subrange = (range.Size() != avec.Size());
 
     if (auto p = dynamic_cast<const DeviceVector<T>*> (&vec))
       {
         // alias the storage, take over its flags and hand them back later
         alias_of = p;
+        // a device write to a sub-range must not leave the rest of the
+        // vector stale, so bring the whole vector to the device first
+        if (subrange)
+          p->UpdateDevice();
         this->devbuffer = p->devbuffer;
         this->queue = p->queue;
-        this->devoffset = p->devoffset;
+        this->devoffset = p->devoffset + range.First();
         this->align = p->align;
         this->memtype = p->memtype;
-        this->host_data = p->host_data;
+        this->host_data = p->host_data ? p->host_data + range.First() : nullptr;
         this->host_uptodate = p->host_uptodate;
         this->dev_uptodate = p->dev_uptodate;
         return;
@@ -453,12 +567,13 @@ namespace ngla
     if (HasScalarType<T> (vec))
       {
         this->hostmem.SetSize(0);
-        this->host_data = vec.FV<T>().Data();
+        this->host_data = vec.FV<T>().Data() + range.First();
       }
     else
       {
         converting = true;
-        CopyFromBaseVector<T> (vec, FlatVector<T>(this->size, this->host_data));
+        convert_offset = range.First();
+        CopyFromBaseVector<T> (vec, FlatVector<T>(this->size, this->host_data), convert_offset);
       }
 
     initial_host_uptodate = true;
@@ -471,8 +586,19 @@ namespace ngla
   {
     if (alias_of)
       {
-        alias_of->host_uptodate = this->host_uptodate;
-        alias_of->dev_uptodate = this->dev_uptodate;
+        if (subrange)
+          {
+            // an update of the sub-range cannot validate the full
+            // vector, but staleness propagates
+            alias_of->host_uptodate &= this->host_uptodate;
+            alias_of->dev_uptodate &= this->dev_uptodate;
+          }
+        else
+          {
+            // full alias: same storage, the flags simply carry over
+            alias_of->host_uptodate = this->host_uptodate;
+            alias_of->dev_uptodate = this->dev_uptodate;
+          }
         this->host_data = nullptr;
         return;
       }
@@ -482,9 +608,17 @@ namespace ngla
       {
         this->UpdateHost();
         if (converting)
-          CopyToBaseVector<T> (FlatVector<T>(this->size, this->host_data), vec);
+          CopyToBaseVector<T> (FlatVector<T>(this->size, this->host_data), vec, convert_offset);
       }
     this->host_data = nullptr;
+  }
+
+
+  template <typename T>
+  AutoVector DeviceVector<T> :: Range (T_Range<size_t> range) const
+  {
+    return make_unique<DeviceVectorWrapper<T>>
+      (*this, memtype, IntRange(range.First(), range.Next()));
   }
 
 
@@ -495,12 +629,59 @@ namespace ngla
   }
 
 
+  void EvalScalarExpr (const std::string & params, const std::string & expr,
+                       const std::vector<ngs_gpu::KernelArg> & args)
+  {
+    struct Entry
+    {
+      shared_ptr<Device> device;
+      shared_ptr<Library> library;
+      shared_ptr<Kernel> kernel;
+    };
+    static mutex mtx;
+    static std::map<string, Entry> cache;
+
+    auto dev = GetGpuDevice();
+    string key = params + "|" + expr;
+
+    shared_ptr<Kernel> kernel;
+    {
+      auto lock = lock_guard<mutex>(mtx);
+      auto & e = cache[key];
+      if (!e.kernel || e.device != dev)
+        {
+          string src = string(code_gpukernel) +
+            "\nKERNEL(sc_expr, GLOBAL(double,r)" + params + ")\n" +
+            "{ r[0] = " + expr + "; }\n";
+          e.device = dev;
+          e.library = dev->CompileSource (src);
+          e.kernel = e.library->GetKernel ("sc_expr");
+        }
+      kernel = e.kernel;
+    }
+    dev->DefaultQueue()->Launch (*kernel, Dim3(1), Dim3(1), args);
+  }
+
+
   DeviceScalar :: DeviceScalar (double d)
   {
     auto dev = GetGpuDevice();
     devbuffer = dev->NewBuffer (sizeof(double), PreferredMemType());
     queue = dev->DefaultQueue();
     devbuffer->H2D (&d, sizeof(double));
+  }
+
+  DeviceScalar :: DeviceScalar (const DeviceScalar & s2)
+    : DeviceScalar ()
+  {
+    (*this) = s2;
+  }
+
+  DeviceScalar & DeviceScalar :: operator= (const DeviceScalar & s2)
+  {
+    std::vector<KernelArg> args = { DevArg(), KernelArg(*s2.devbuffer) };
+    EvalScalarExpr (", GLOBAL_IN(double,s1)", "s1[0]", args);
+    return *this;
   }
 
   void DeviceScalar :: Set (double d)

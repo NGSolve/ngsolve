@@ -34,7 +34,17 @@ namespace ngla
   NGS_DLL_HEADER MemType PreferredMemType();
 
   template <typename T> class DeviceVectorWrapper;
-  class UnifiedVectorWrapper;   // cuda wrapper (ngscuda), aliases like DeviceVectorWrapper
+
+
+  // compiles (once per expression shape) and launches the one-thread
+  // kernel  r[0] = <expr>;  - the backend of the scalar expressions below
+  NGS_DLL_HEADER void EvalScalarExpr (const std::string & params, const std::string & expr,
+                                      const std::vector<ngs_gpu::KernelArg> & args);
+
+  template <typename T>
+  concept IsDevScalarExpr = requires (const T & e, std::string & c, std::string & p,
+                                      std::vector<ngs_gpu::KernelArg> & a)
+  { e.Emit (c, p, a); };
 
 
   /*
@@ -52,6 +62,11 @@ namespace ngla
   public:
     DeviceScalar (double d = 0.0);
 
+    // value copy on the device, no host round-trip
+    DeviceScalar (const DeviceScalar & s2);
+    DeviceScalar & operator= (const DeviceScalar & s2);
+    DeviceScalar & operator= (double d) { Set(d); return *this; }
+
     void Set (double d) override;
     void Set (Complex c) override;
     double GetD () const override;
@@ -60,7 +75,127 @@ namespace ngla
     // buffer of the value, for kernel arguments and backend access
     const shared_ptr<ngs_gpu::Buffer> & DevBuffer() const { return devbuffer; }
     ngs_gpu::KernelArg DevArg() const { return ngs_gpu::KernelArg(*devbuffer); }
+
+    // evaluate a scalar expression on the device, e.g.
+    //   alpha = Div (Scal(rz), Scal(pq));
+    // one single-thread kernel, no host round-trip, capturable
+    template <IsDevScalarExpr Expr>
+    DeviceScalar & operator= (const Expr & e)
+    {
+      std::vector<ngs_gpu::KernelArg> args;
+      args.push_back (DevArg());
+      std::string code, params;
+      e.Emit (code, params, args);
+      EvalScalarExpr (params, code, args);
+      return *this;
+    }
   };
+
+
+  /*
+    Scalar expression templates. A node contributes its sub-expression
+    to the kernel source and its buffers/values to the argument list;
+    the assignment above compiles the collected source once per shape.
+  */
+
+  struct DevScalExpr        // leaf: a DeviceScalar
+  {
+    const DeviceScalar * s;
+    void Emit (std::string & code, std::string & params,
+               std::vector<ngs_gpu::KernelArg> & args) const
+    {
+      auto name = "s" + std::to_string(args.size());
+      params += ", GLOBAL_IN(double," + name + ")";
+      code += name + "[0]";
+      args.push_back (ngs_gpu::KernelArg(*s->DevBuffer()));
+    }
+  };
+
+  struct DevConstExpr       // leaf: a value, passed as kernel argument
+  {
+    double val;
+    void Emit (std::string & code, std::string & params,
+               std::vector<ngs_gpu::KernelArg> & args) const
+    {
+      auto name = "s" + std::to_string(args.size());
+      params += ", VALUE(double," + name + ")";
+      code += name;
+      args.push_back (ngs_gpu::KernelArg(val));
+    }
+  };
+
+  template <IsDevScalarExpr L, IsDevScalarExpr R>
+  struct DevBinExpr
+  {
+    L l; R r; char op;
+    void Emit (std::string & code, std::string & params,
+               std::vector<ngs_gpu::KernelArg> & args) const
+    {
+      code += "(";
+      l.Emit (code, params, args);
+      code += op;
+      r.Emit (code, params, args);
+      code += ")";
+    }
+  };
+
+  template <IsDevScalarExpr E>
+  struct DevFuncExpr
+  {
+    E e; const char * func;
+    void Emit (std::string & code, std::string & params,
+               std::vector<ngs_gpu::KernelArg> & args) const
+    {
+      code += std::string(func) + "(";
+      e.Emit (code, params, args);
+      code += ")";
+    }
+  };
+
+  /*
+    Operator syntax:  alpha = rz / pq;  neg_alpha = -alpha;
+                      tau = Sqrt(rho);  x = 0.5*a + b;
+    Operands are expressions, DeviceScalars or plain numbers; at least
+    one gpu-flavoured operand is required, so the templates never touch
+    ordinary arithmetic.
+  */
+
+  inline DevScalExpr ToDevExpr (const DeviceScalar & s) { return {&s}; }
+  inline DevConstExpr ToDevExpr (double v) { return {v}; }
+  template <IsDevScalarExpr E> auto ToDevExpr (const E & e) { return e; }
+
+  template <typename T>
+  concept IsDevScalarLike = std::is_base_of_v<DeviceScalar, std::remove_cvref_t<T>>;
+  template <typename T>
+  concept IsDevScalarOperand = IsDevScalarExpr<std::remove_cvref_t<T>> ||
+    IsDevScalarLike<T> || std::is_arithmetic_v<std::remove_cvref_t<T>>;
+  template <typename L, typename R>
+  concept IsDevScalarOp = IsDevScalarOperand<L> && IsDevScalarOperand<R> &&
+    !(std::is_arithmetic_v<std::remove_cvref_t<L>> && std::is_arithmetic_v<std::remove_cvref_t<R>>);
+
+  template <typename L, typename R> requires IsDevScalarOp<L,R>
+  auto operator+ (const L & l, const R & r)
+  { return DevBinExpr<decltype(ToDevExpr(l)), decltype(ToDevExpr(r))>{ToDevExpr(l), ToDevExpr(r), '+'}; }
+
+  template <typename L, typename R> requires IsDevScalarOp<L,R>
+  auto operator- (const L & l, const R & r)
+  { return DevBinExpr<decltype(ToDevExpr(l)), decltype(ToDevExpr(r))>{ToDevExpr(l), ToDevExpr(r), '-'}; }
+
+  template <typename L, typename R> requires IsDevScalarOp<L,R>
+  auto operator* (const L & l, const R & r)
+  { return DevBinExpr<decltype(ToDevExpr(l)), decltype(ToDevExpr(r))>{ToDevExpr(l), ToDevExpr(r), '*'}; }
+
+  template <typename L, typename R> requires IsDevScalarOp<L,R>
+  auto operator/ (const L & l, const R & r)
+  { return DevBinExpr<decltype(ToDevExpr(l)), decltype(ToDevExpr(r))>{ToDevExpr(l), ToDevExpr(r), '/'}; }
+
+  template <typename T> requires (IsDevScalarExpr<std::remove_cvref_t<T>> || IsDevScalarLike<T>)
+  auto operator- (const T & t)
+  { return DevFuncExpr<decltype(ToDevExpr(t))>{ToDevExpr(t), "-"}; }
+
+  template <typename T> requires (IsDevScalarExpr<std::remove_cvref_t<T>> || IsDevScalarLike<T>)
+  auto Sqrt (const T & t)
+  { return DevFuncExpr<decltype(ToDevExpr(t))>{ToDevExpr(t), "sqrt"}; }
 
 
   template <typename T>
@@ -81,7 +216,6 @@ namespace ngla
     void AllocBuffer (size_t asize);
 
     friend class DeviceVectorWrapper<T>;
-    friend class UnifiedVectorWrapper;
 
   public:
     DeviceVector (size_t asize, MemType amemtype = MemType::Shared, size_t aalign = 1);
@@ -129,9 +263,15 @@ namespace ngla
     virtual BaseVector & Add (double scal, const BaseVector & v) override;
     virtual BaseVector & Add (BaseScalar & scal, const BaseVector & v) override;
 
+    using BaseVector::InnerProduct;
+    virtual double InnerProductD (const BaseVector & v2) const override;
+    virtual void InnerProduct (const BaseVector & v2, BaseScalar & scal, bool conjugate = false) const override;
+    virtual double L2Norm () const override;
+
     virtual void * Memory () const override;
     virtual FlatVector<T> FVScal () const override;
     virtual AutoVector CreateVector () const override;
+    virtual AutoVector Range (T_Range<size_t> range) const override;
     virtual shared_ptr<BaseScalar> CreateScalar () const override;
     virtual ostream & Print (ostream & ost) const override;
   };
@@ -149,10 +289,13 @@ namespace ngla
   {
     const BaseVector & vec;
     const DeviceVector<T> * alias_of = nullptr;
+    bool subrange = false;           // wraps a sub-range of vec
     bool initial_host_uptodate = false;
     bool converting = false;         // hostmem holds a converted copy of vec
+    size_t convert_offset = 0;       // into vec, for the converted sub-range
   public:
-    DeviceVectorWrapper (const BaseVector & avec, MemType amemtype = MemType::Shared);
+    DeviceVectorWrapper (const BaseVector & avec, MemType amemtype = MemType::Shared,
+                         optional<IntRange> opt_range = nullopt);
     ~DeviceVectorWrapper();
 
     using DeviceVector<T>::operator=;
