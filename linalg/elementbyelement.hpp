@@ -129,6 +129,7 @@ namespace ngla
   template <class SCAL = double>
   class NGS_DLL_HEADER ConstantElementByElementMatrix : public BaseMatrix
   {
+    using TSCAL64 = typename scal_traits<SCAL>::TSCAL64;
     size_t h, w;
     Matrix<SCAL> matrix;
     Table<int> col_dnums;   // output
@@ -147,8 +148,8 @@ namespace ngla
 
     virtual BaseMatrix::OperatorInfo GetOperatorInfo () const override;
     
-    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
-    virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
+    virtual void MultAdd (TSCAL64 s, const BaseVector & x, BaseVector & y) const override;
+    virtual void MultTransAdd (TSCAL64 s, const BaseVector & x, BaseVector & y) const override;
     
     virtual AutoVector CreateRowVector () const override;
     virtual AutoVector CreateColVector () const override;
