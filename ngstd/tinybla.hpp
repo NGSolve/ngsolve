@@ -398,6 +398,17 @@ namespace tinybla {
   }
 
 
+#ifdef TB_CUDA
+  // the metal simd/quad primitives on top of cuda warp shuffles
+  template <typename T> __device__ T quad_broadcast (T x, unsigned lane)
+  { return __shfl_sync (0xffffffff, x, lane, 4); }
+  template <typename T> __device__ T simd_shuffle (T x, unsigned lane)
+  { return __shfl_sync (0xffffffff, x, lane); }
+  template <typename T> __device__ T simd_shuffle_xor (T x, unsigned mask)
+  { return __shfl_xor_sync (0xffffffff, x, mask); }
+#endif
+
+
   // broadcast inside quad
   template <int S, typename T>
   auto QuadBroadcast (HTVec<S,T> m, ushort lane) -> HTVec<S,T>
@@ -895,10 +906,10 @@ namespace tinybla {
   template <unsigned H, unsigned W, typename T = float>
   class WarpMatrix
   {
-    static_assert(H%8==0);
-    static_assert(W%4==0);
-    static constant constexpr unsigned BW = W/4; // sizeof(float2)/sizeof(T);
-    static constant constexpr unsigned BH = H/8;
+    static_assert(H%8==0, "WarpMatrix height must be a multiple of 8");
+    static_assert(W%4==0, "WarpMatrix width must be a multiple of 4");
+    static constant constexpr unsigned BW = W/4 ? W/4 : 1; // sizeof(float2)/sizeof(T);
+    static constant constexpr unsigned BH = H/8 ? H/8 : 1;
     HTMat<BH,BW,T> myvals; 
   public:
     WarpMatrix() { }
@@ -1262,10 +1273,10 @@ namespace tinybla {
   template <uint K, uint H, uint W, ORDERING ORD1, typename Tp1, typename Tld1,  ORDERING ORD2, typename Tp2, typename Tld2>
   inline auto AddMM(WarpMatrix<H,W,float> m, BareMatrix<ORD1,Tp1,Tld1> m1, BareMatrix<ORD2,Tp2,Tld2> m2, uint tid)
   {
-    static_assert(H%8==0);
-    static_assert(W%4==0);
-     constexpr unsigned BW = W/4; // sizeof(float2)/sizeof(T);
-     constexpr unsigned BH = H/8;
+    static_assert(H%8==0, "AddMM height must be a multiple of 8");
+    static_assert(W%4==0, "AddMM width must be a multiple of 4");
+     constexpr unsigned BW = W/4 ? W/4 : 1; // sizeof(float2)/sizeof(T);
+     constexpr unsigned BH = H/8 ? H/8 : 1;
 
 
      auto myvals = m.GetValues();
@@ -1320,10 +1331,10 @@ namespace tinybla {
   template <unsigned H, unsigned W, typename T = float>
   class WarpMatrixV2
   {
-    static_assert(H%8==0);
-    static_assert(W%4==0);
-    static constant constexpr unsigned BW = W/4;
-    static constant constexpr unsigned BH = H/8;
+    static_assert(H%8==0, "WarpMatrixV2 height must be a multiple of 8");
+    static_assert(W%4==0, "WarpMatrixV2 width must be a multiple of 4");
+    static constant constexpr unsigned BW = W/4 ? W/4 : 1;
+    static constant constexpr unsigned BH = H/8 ? H/8 : 1;
     HTMat<BH,BW,T> myvals; 
   public:
     WarpMatrixV2() { }

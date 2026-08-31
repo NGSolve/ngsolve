@@ -200,9 +200,10 @@ namespace ngs_cuda
 
       std::string arch = "--gpu-architecture=compute_"
         + std::to_string(ccmajor) + std::to_string(ccminor);
-      const char * opts[] = { arch.c_str(), "--std=c++17" };
+      const char * opts[] = { arch.c_str(), "--std=c++17",
+                              "--device-as-default-execution-space" };
 
-      auto res = nvrtcCompileProgram (prog, 2, opts);
+      auto res = nvrtcCompileProgram (prog, 3, opts);
       if (res != NVRTC_SUCCESS)
         {
           size_t logsize = 0;
