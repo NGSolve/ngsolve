@@ -5,7 +5,7 @@
 #include <python_comp.hpp>
 
 #include "metal_vector.hpp"
-#include "gpu_btdtb.hpp"
+#include <gpu_btdtb.hpp>
 
 #include "metal_device.hpp"
 

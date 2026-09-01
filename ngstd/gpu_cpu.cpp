@@ -166,6 +166,8 @@ namespace ngs_gpu
       bool IsUnifiedMemory() const override { return true; }
       size_t MaxThreadsPerGroup() const override { return 1024; }
       size_t SimdWidth() const override { return 1; }
+      size_t ComputeUnits() const override
+      { return std::max (1u, std::thread::hardware_concurrency()); }
 
       shared_ptr<Buffer> NewBuffer (size_t bytes, MemType mt) override
       { return std::make_shared<CpuBuffer> (bytes, mt); }

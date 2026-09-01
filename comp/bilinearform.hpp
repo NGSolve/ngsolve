@@ -29,8 +29,10 @@ namespace ngcomp
     bool atomic = true;           // use atomic for adding output vector
     bool only_loadstore = false;  // for timing elvec load stores
     bool only_loadstoreB = false; // for timing elvec load stores and mult with B and Bt
-    int BS_els = 4;
-    int BS_ipts = 4;
+    // measured H1o3: best on both apple gpus and cuda (the fused gpu
+    // kernel needs multiples of 8 anyway)
+    int BS_els = 16;
+    int BS_ipts = 8;
     int warps = 4;
     bool timers = false;
     bool nonlinear = false;       // evaluate the form pointwise

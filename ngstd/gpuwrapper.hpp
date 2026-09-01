@@ -190,6 +190,9 @@ namespace ngs_gpu
     virtual bool IsUnifiedMemory() const = 0;
     virtual size_t MaxThreadsPerGroup() const = 0;
     virtual size_t SimdWidth() const = 0;      // warp / simdgroup
+    // parallel processors (cuda SMs, apple gpu cores, cpu threads);
+    // metal has no query for it, the default suits apple silicon
+    virtual size_t ComputeUnits() const { return 16; }
 
     virtual shared_ptr<Buffer> NewBuffer (size_t bytes, MemType = MemType::Device) = 0;
     virtual shared_ptr<Library> CompileSource (const string & source) = 0;

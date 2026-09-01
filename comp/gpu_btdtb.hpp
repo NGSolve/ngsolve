@@ -37,6 +37,7 @@ namespace ngcomp
   {
     int h, w;
     int ne, warps;
+    int ngroups;
 
     shared_ptr<ngs_gpu::Library> library;
     shared_ptr<ngs_gpu::Kernel> kernel;
@@ -53,10 +54,10 @@ namespace ngcomp
     
     
     AutoVector CreateRowVector() const override {
-      return make_unique<DeviceVector<float>>(w, PreferredMemType());
+      return make_unique<DeviceVector<REAL>>(w, PreferredMemType());
     }
     AutoVector CreateColVector() const override {
-      return make_unique<DeviceVector<float>>(h, PreferredMemType());
+      return make_unique<DeviceVector<REAL>>(h, PreferredMemType());
     }
 
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
@@ -90,8 +91,8 @@ namespace ngcomp
     int BS_ipts = pmat->opts.BS_ipts;
     ne = numels;
 
-    auto NewSharedBuffer = [&] (size_t nfloats)
-    { return device->NewBuffer (nfloats*sizeof(float), MemType::Shared); };
+    auto NewSharedBuffer = [&] (size_t nreals)
+    { return device->NewBuffer (nreals*sizeof(REAL), MemType::Shared); };
     
     FlatArray<int> hdofx = pmat->dofx.AsArray();
     buffer_dofx = device->NewBuffer(hdofx.Size()*sizeof(int), MemType::Shared);
@@ -105,7 +106,7 @@ namespace ngcomp
 
     // for the remainder, store the compressed tensor in the last rows of buffer_bmatx
     buffer_bmatx = NewSharedBuffer(dimxref*(RoundUp(nip,BS_ipts)+BS_ipts)*RoundUp<8>(locdofsx));
-    FlatTensor<3,float> dbmatx(dimxref,RoundUp(nip,BS_ipts),RoundUp<8>(locdofsx), buffer_bmatx->HostData<float>());
+    FlatTensor<3,REAL> dbmatx(dimxref,RoundUp(nip,BS_ipts),RoundUp<8>(locdofsx), buffer_bmatx->HostData<REAL>());
     for (int j = 0; j < dimxref; j++)
       for (int i = 0; i < RoundUp(nip,BS_ipts); i++)
         for (int k = 0; k < RoundUp<8>(locdofsx); k++)
@@ -113,7 +114,7 @@ namespace ngcomp
 
     int bmatx_rem_rows = dimxref*RoundUp(nip,BS_ipts);
     int nip_rem = nip - RoundDown(nip, BS_ipts);
-    FlatTensor<3,float> dbmatx_rem(dimxref,nip_rem,RoundUp<8>(locdofsx), buffer_bmatx->HostData<float>() + bmatx_rem_rows*RoundUp<8>(locdofsx));
+    FlatTensor<3,REAL> dbmatx_rem(dimxref,nip_rem,RoundUp<8>(locdofsx), buffer_bmatx->HostData<REAL>() + bmatx_rem_rows*RoundUp<8>(locdofsx));
     dbmatx_rem = 0;
     for (int j = 0; j < dimxref; j++)
       for (int i = 0; i < nip_rem; i++)
@@ -122,14 +123,14 @@ namespace ngcomp
 
     
     buffer_bmaty = NewSharedBuffer(dimyref*(RoundUp(nip,BS_ipts)+BS_ipts)*RoundUp<8>(locdofsy));
-    FlatTensor<3,float> dbmaty(dimyref,RoundUp(nip,BS_ipts),RoundUp<8>(locdofsy), buffer_bmaty->HostData<float>());
+    FlatTensor<3,REAL> dbmaty(dimyref,RoundUp(nip,BS_ipts),RoundUp<8>(locdofsy), buffer_bmaty->HostData<REAL>());
     for (int j = 0; j < dimyref; j++)
       for (int i = 0; i < RoundUp(nip,BS_ipts); i++)
         for (int k = 0; k < RoundUp<8>(locdofsy); k++)
           dbmaty(j,i,k) = (i<nip && k < locdofsy) ? pmat->By(k,j,i) : 0;
 
     int bmaty_rem_rows = dimyref*RoundUp(nip,BS_ipts);    
-    FlatTensor<3,float> dbmaty_rem(dimyref,nip_rem,RoundUp<8>(locdofsy), buffer_bmaty->HostData<float>() + bmaty_rem_rows*RoundUp<8>(locdofsy));
+    FlatTensor<3,REAL> dbmaty_rem(dimyref,nip_rem,RoundUp<8>(locdofsy), buffer_bmaty->HostData<REAL>() + bmaty_rem_rows*RoundUp<8>(locdofsy));
     dbmaty_rem = 0;
     for (int j = 0; j < dimyref; j++)
       for (int i = 0; i < nip_rem; i++)
@@ -140,11 +141,11 @@ namespace ngcomp
 
     buffer_weights = NewSharedBuffer(RoundUp<8>(nip));
     for (int i = 0; i < RoundUp<8>(nip); i++)
-      buffer_weights->HostData<float>()[i] = i < nip ? pmat->weights[i] : 0;
+      buffer_weights->HostData<REAL>()[i] = i < nip ? pmat->weights[i] : 0;
     
     buffer_JacobiDets = NewSharedBuffer(ne);
     for (int i = 0; i < ne; i++)
-      buffer_JacobiDets->HostData<float>()[i] = Det(pmat->Jacobi(i,STAR,STAR,0));
+      buffer_JacobiDets->HostData<REAL>()[i] = Det(pmat->Jacobi(i,STAR,STAR,0));
 
 
     int ne8 = RoundUp<8>(ne);
@@ -152,7 +153,7 @@ namespace ngcomp
     for (int i = 0; i < ne; i++)
       for (int j = 0; j < dimr; j++)
         for (int k = 0; k < dims; k++)
-          buffer_Jacobi->HostData<float>()[i+k*ne8+j*dims*ne8] = pmat->Jacobi(i,j,k,0);
+          buffer_Jacobi->HostData<REAL>()[i+k*ne8+j*dims*ne8] = pmat->Jacobi(i,j,k,0);
 
     
     string code = code_gpukernel + code_tinybla +
@@ -181,12 +182,12 @@ namespace ngcomp
              GLOBAL_IN(real, Jacobi),
              GLOBAL_IN(real, JacobiDets))
       {
-      uint threadIdx = LOCAL_ID_X;
-      uint blockIdx  = GROUP_ID_X;
-      uint blockDim  = GROUP_SIZE_X;
-      uint gridDim   = NUM_GROUPS_X;
+      uint tid = LOCAL_ID_X;
+      uint bid  = GROUP_ID_X;
+      uint bdim  = GROUP_SIZE_X;
+      uint gdim   = NUM_GROUPS_X;
 
-      int warpIdx = threadIdx/32;
+      int warpIdx = tid/32;
       constexpr uint ne = $NE;
       constexpr uint ne8 = RoundUp<8>(ne);
       constexpr uint nip = $NIP;
@@ -214,7 +215,7 @@ namespace ngcomp
 
 
       // zero elvecx (overhead would be enough
-      for (uint i = threadIdx; i < $BS_ELS*locdofsx_roundup; i+= blockDim)
+      for (uint i = tid; i < $BS_ELS*locdofsx_roundup; i+= bdim)
         {
           uint c = i%locdofsx_roundup;
           uint r = i/locdofsx_roundup;
@@ -223,12 +224,12 @@ namespace ngcomp
 
       BARRIER();
 
-      for (uint baseelem = blockIdx*$BS_ELS; baseelem < $NE; baseelem += gridDim*$BS_ELS) { 
+      for (uint baseelem = bid*$BS_ELS; baseelem < $NE; baseelem += gdim*$BS_ELS) { 
 
       BARRIER();
 
       // load element vectors
-      for (uint i = threadIdx; i < $BS_ELS*locdofsx; i += blockDim)
+      for (uint i = tid; i < $BS_ELS*locdofsx; i += bdim)
         {
            uint dofnr = i % locdofsx;
            uint locelnr = i / locdofsx;
@@ -237,7 +238,7 @@ namespace ngcomp
         }
 
       // zero elvecy
-      for (uint i = threadIdx; i < $BS_ELS*locdofsy_roundup; i+= blockDim)
+      for (uint i = tid; i < $BS_ELS*locdofsy_roundup; i+= bdim)
         {
           uint c = i%locdofsy_roundup;
           uint r = i/locdofsy_roundup;
@@ -249,7 +250,7 @@ namespace ngcomp
 
 #if ($ONLY_LOADSTORE==1)
 
-      for (uint i = threadIdx; i < $BS_ELS*locdofsy_roundup; i+= blockDim)
+      for (uint i = tid; i < $BS_ELS*locdofsy_roundup; i+= bdim)
         {
           uint c = i/$BS_ELS;
           uint r = i%$BS_ELS;
@@ -277,18 +278,18 @@ namespace ngcomp
               uint comp = ipcomp / BSTS_IPTS;
               uint ip = baseip + iptile*TS_IPTS;
 
-              WarpMatrix<TS_IPTS,TS_ELS> pointvalsrefxi = 0;
+              WarpMatrix<TS_IPTS,TS_ELS,real> pointvalsrefxi = 0;
               auto mb = mat_elvecx.SubMatrix(TS_ELS*eltile, 0);
               auto ma = mat_bmatx.SubMatrix(ip+nip8*comp, 0);
 
-              pointvalsrefxi.AddMM<8*$DOFX_TILES>(ma, mb.Transpose(), threadIdx);
-              pointvalsrefxi.Store(mat_pointvalsref.SubMatrix(TS_IPTS*iptile+bs_ipts*comp, TS_ELS*eltile), threadIdx);
+              pointvalsrefxi.AddMM<8*$DOFX_TILES>(ma, mb.Transpose(), tid);
+              pointvalsrefxi.Store(mat_pointvalsref.SubMatrix(TS_IPTS*iptile+bs_ipts*comp, TS_ELS*eltile), tid);
             }
 
           BARRIER();
   
           // work on integration points
-          for (uint ip = threadIdx; ip < bs_ipts*bs_els ; ip += blockDim)
+          for (uint ip = tid; ip < bs_ipts*bs_els ; ip += bdim)
              {
                uint locelnr = ip % $BS_ELS;
                uint locipnr = ip / $BS_ELS;
@@ -332,16 +333,16 @@ namespace ngcomp
               int eltile = blocknr % BSTS_ELS;  // which els
               int ydoftile = blocknr / BSTS_ELS;  // which dofs
 
-              WarpMatrix<TS_ELS,8,real> sum(mat_elvecy.SubMatrix(TS_ELS*eltile, 8*ydoftile), threadIdx);
+              WarpMatrix<TS_ELS,8,real> sum(mat_elvecy.SubMatrix(TS_ELS*eltile, 8*ydoftile), tid);
 
               for (int comp = 0; comp < $DIMYREF; comp++)
                 {
                    auto ma = mat_pointvalsref.SubMatrix(bs_ipts*comp, TS_ELS*eltile);
                    auto mb = mat_bmaty.SubMatrix(baseip+RoundUp<$BS_IPTS>(nip)*comp, 8*ydoftile);
-                   sum.AddMM<$BS_IPTS> (ma.Transpose(), mb, threadIdx);
+                   sum.AddMM<$BS_IPTS> (ma.Transpose(), mb, tid);
                 }
 
-              sum.Store(mat_elvecy.SubMatrix(8*eltile, 8*ydoftile), threadIdx);
+              sum.Store(mat_elvecy.SubMatrix(8*eltile, 8*ydoftile), tid);
            }
 
           BARRIER();
@@ -363,19 +364,19 @@ namespace ngcomp
              uint eltile = blocknr % $EL_TILES;  // which els
              uint iptile = blocknr / $EL_TILES;  // which pts*comp tile
 
-             WarpMatrix<8,8> pointvalsrefxi = 0;
+             WarpMatrix<8,8,real> pointvalsrefxi = 0;
 
               // slower for convection -> now good!
               auto mb = mat_elvecx.SubMatrix(8*eltile, 0);
               auto ma = mat_bmatx.SubMatrix($BMATX_REM_ROWS+8*iptile, 0);
-              pointvalsrefxi.AddMM<RoundUp<8>(locdofsx)>(ma, mb.Transpose(), threadIdx);
-              pointvalsrefxi.Store(mat_pointvalsref.SubMatrix(8*iptile,8*eltile), threadIdx);
+              pointvalsrefxi.AddMM<RoundUp<8>(locdofsx)>(ma, mb.Transpose(), tid);
+              pointvalsrefxi.Store(mat_pointvalsref.SubMatrix(8*iptile,8*eltile), tid);
             }
 
           BARRIER();
   
           // work on integration points
-          for (uint ip = threadIdx; ip < numips*bs_els; ip += blockDim)
+          for (uint ip = tid; ip < numips*bs_els; ip += bdim)
              {
                uint locelnr = ip % $BS_ELS;
                uint locipnr = ip / $BS_ELS;
@@ -424,16 +425,16 @@ namespace ngcomp
               uint eltile = blocknr % $EL_TILES;  // which els
               uint ydoftile = blocknr / $EL_TILES;  // which dofs
 
-              WarpMatrix<8,8,real> sum(mat_elvecy.SubMatrix(8*eltile, 8*ydoftile), threadIdx);
+              WarpMatrix<8,8,real> sum(mat_elvecy.SubMatrix(8*eltile, 8*ydoftile), tid);
 
               for (uint ipcomp = 0; ipcomp < numips*$DIMYREF; ipcomp += 8)
                 {
                    auto ma = mat_pointvalsref.SubMatrix(ipcomp, 8*eltile);
                    auto mb = mat_bmaty.SubMatrix($BMATY_REM_ROWS+ipcomp, 8*ydoftile);
-                   sum.AddMM<8>(ma.Transpose(), mb, threadIdx);
+                   sum.AddMM<8>(ma.Transpose(), mb, tid);
                 }
 
-              sum.Store(mat_elvecy.SubMatrix(8*eltile, 8*ydoftile), threadIdx);
+              sum.Store(mat_elvecy.SubMatrix(8*eltile, 8*ydoftile), tid);
            }
 
           BARRIER();
@@ -447,7 +448,7 @@ namespace ngcomp
 
 
       // store vector
-      for (uint i = threadIdx; i < $BS_ELS*locdofsy; i += blockDim)
+      for (uint i = tid; i < $BS_ELS*locdofsy; i += bdim)
         {
            uint dofnr = i % locdofsy;
            uint locelnr = i / locdofsy;
@@ -594,6 +595,17 @@ namespace ngcomp
 
     library = device->CompileSource (code);
     kernel = library->GetKernel ("apply_btdtb");
+
+    /*
+      grid-stride launch: oversubscribe the compute units for load
+      balance, but never launch more groups than element batches.
+      Measured H1o3/fp32: RTX 5090 (170 SMs) saturates around
+      16..32 groups per SM, apple silicon is happy from ~10 per core.
+    */
+    ngroups = std::min (size_t((ne+pmat->opts.BS_els-1)/pmat->opts.BS_els),
+                        32*device->ComputeUnits());
+    if (auto env = getenv("NGS_BTDTB_GROUPS"))
+      ngroups = atoi(env);
   }
 
 
@@ -607,7 +619,7 @@ namespace ngcomp
     DeviceVectorWrapper<REAL> dvx(x);
     DeviceVectorWrapper<REAL> dvy(y);
 
-    queue->Launch (*kernel, Dim3(200), Dim3(warps*32),
+    queue->Launch (*kernel, Dim3(ngroups), Dim3(warps*32),
                    { dvx.DevArgRO(), dvy.DevArgRW(),
                      buffer_dofx, buffer_dofy,
                      buffer_bmatx, buffer_bmaty,

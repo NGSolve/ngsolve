@@ -1045,15 +1045,15 @@ namespace tinybla {
             auto BTileQuad = m2.template GetTile<4*KTILE,BW>(k, c);
 
 
-            myvals = FMA (QuadBroadcast(ATileQuad, 0), HTMat<1,BW,float> (BTileQuad.template GetRow<0>()), myvals);
-            myvals = FMA (QuadBroadcast(ATileQuad, 1), HTMat<1,BW,float> (BTileQuad.template GetRow<1>()), myvals);
-            myvals = FMA (QuadBroadcast(ATileQuad, 2), HTMat<1,BW,float> (BTileQuad.template GetRow<2>()), myvals);
-            myvals = FMA (QuadBroadcast(ATileQuad, 3), HTMat<1,BW,float> (BTileQuad.template GetRow<3>()), myvals);
+            myvals = FMA (QuadBroadcast(ATileQuad, 0), HTMat<1,BW,T> (BTileQuad.template GetRow<0>()), myvals);
+            myvals = FMA (QuadBroadcast(ATileQuad, 1), HTMat<1,BW,T> (BTileQuad.template GetRow<1>()), myvals);
+            myvals = FMA (QuadBroadcast(ATileQuad, 2), HTMat<1,BW,T> (BTileQuad.template GetRow<2>()), myvals);
+            myvals = FMA (QuadBroadcast(ATileQuad, 3), HTMat<1,BW,T> (BTileQuad.template GetRow<3>()), myvals);
 /*
             tmpmyvals = FMA (QuadBroadcast(ATileQuad, 0), HTMat<1,BW,float> (BTileQuad.template GetRow<0>()), 
-                       FMA (QuadBroadcast(ATileQuad, 1), HTMat<1,BW,float> (BTileQuad.template GetRow<1>()), 
-                         FMA (QuadBroadcast(ATileQuad, 2), HTMat<1,BW,float> (BTileQuad.template GetRow<2>()), 
-                           FMA (QuadBroadcast(ATileQuad, 3), HTMat<1,BW,float> (BTileQuad.template GetRow<3>()), tmpmyvals))));
+                       FMA (QuadBroadcast(ATileQuad, 1), HTMat<1,BW,T> (BTileQuad.template GetRow<1>()), 
+                         FMA (QuadBroadcast(ATileQuad, 2), HTMat<1,BW,T> (BTileQuad.template GetRow<2>()), 
+                           FMA (QuadBroadcast(ATileQuad, 3), HTMat<1,BW,T> (BTileQuad.template GetRow<3>()), tmpmyvals))));
 */
             // for (uint k1 = 0; k1 < 4; k1++)
             // myvals = FMA (QuadBroadcast(ATileQuad, k1), m2.template GetTile<KTILE,BW>(k+k1,c), myvals);
@@ -1081,7 +1081,7 @@ namespace tinybla {
           auto ATileQuad = m1.template GetTile<BH,KTILE>(r,k + (tid&3));
           for (uint k1 = 0; k1 < 4; k1++)
             {
-              auto BTile = HTMat<1,BW,float> (HTVec<BW,float>().template LoadSlice<4> (m2.Addr(0,0)));
+              auto BTile = HTMat<1,BW,T> (HTVec<BW,float>().template LoadSlice<4> (m2.Addr(0,0)));
               m2 = m2.template ShiftRows<1>();
               myvals = FMA (QuadBroadcast(ATileQuad, k1), BTile, myvals);
            }
@@ -1099,10 +1099,10 @@ namespace tinybla {
         {
           auto ATileQuad = m1.template GetTile<BH,KTILE>(r,k + (tid&3));
 
-          auto BTile0 = HTMat<1,BW,float> (HTVec<BW,float>().template LoadSlice<4> (m2.Addr(0,0)));
-          auto BTile1 = HTMat<1,BW,float> (HTVec<BW,float>().template LoadSlice<4> (m2.Addr(1,0)));
-          auto BTile2 = HTMat<1,BW,float> (HTVec<BW,float>().template LoadSlice<4> (m2.Addr(2,0)));
-          auto BTile3 = HTMat<1,BW,float> (HTVec<BW,float>().template LoadSlice<4> (m2.Addr(3,0)));
+          auto BTile0 = HTMat<1,BW,T> (HTVec<BW,float>().template LoadSlice<4> (m2.Addr(0,0)));
+          auto BTile1 = HTMat<1,BW,T> (HTVec<BW,float>().template LoadSlice<4> (m2.Addr(1,0)));
+          auto BTile2 = HTMat<1,BW,T> (HTVec<BW,float>().template LoadSlice<4> (m2.Addr(2,0)));
+          auto BTile3 = HTMat<1,BW,T> (HTVec<BW,float>().template LoadSlice<4> (m2.Addr(3,0)));
           auto ATile0 = QuadBroadcast(ATileQuad, 0);
           auto ATile1 = QuadBroadcast(ATileQuad, 1);
           auto ATile2 = QuadBroadcast(ATileQuad, 2);
@@ -1347,8 +1347,8 @@ namespace tinybla {
   };
 
 
-  template <uint K, uint H, uint W, ORDERING ORD1, typename Tp1, typename Tld1,  ORDERING ORD2, typename Tp2, typename Tld2>
-  inline auto AddMM(WarpMatrix<H,W,float> m, BareMatrix<ORD1,Tp1,Tld1> m1, BareMatrix<ORD2,Tp2,Tld2> m2, uint tid)
+  template <uint K, uint H, uint W, typename T, ORDERING ORD1, typename Tp1, typename Tld1,  ORDERING ORD2, typename Tp2, typename Tld2>
+  inline auto AddMM(WarpMatrix<H,W,T> m, BareMatrix<ORD1,Tp1,Tld1> m1, BareMatrix<ORD2,Tp2,Tld2> m2, uint tid)
   {
     static_assert(H%8==0, "AddMM height must be a multiple of 8");
     static_assert(W%4==0, "AddMM width must be a multiple of 4");
@@ -1384,10 +1384,10 @@ namespace tinybla {
           {
             auto ATileQuad = m1.template GetTile<BH,KTILE>(r,k + (tid&3));
             auto BTileQuad = m2.template GetTile<4*KTILE,BW>(k, c);
-            myvals = FMA (QuadBroadcast(ATileQuad, 0), HTMat<1,BW,float> (BTileQuad.template GetRow<0>()), myvals);
-            myvals = FMA (QuadBroadcast(ATileQuad, 1), HTMat<1,BW,float> (BTileQuad.template GetRow<1>()), myvals);
-            myvals = FMA (QuadBroadcast(ATileQuad, 2), HTMat<1,BW,float> (BTileQuad.template GetRow<2>()), myvals);
-            myvals = FMA (QuadBroadcast(ATileQuad, 3), HTMat<1,BW,float> (BTileQuad.template GetRow<3>()), myvals);
+            myvals = FMA (QuadBroadcast(ATileQuad, 0), HTMat<1,BW,T> (BTileQuad.template GetRow<0>()), myvals);
+            myvals = FMA (QuadBroadcast(ATileQuad, 1), HTMat<1,BW,T> (BTileQuad.template GetRow<1>()), myvals);
+            myvals = FMA (QuadBroadcast(ATileQuad, 2), HTMat<1,BW,T> (BTileQuad.template GetRow<2>()), myvals);
+            myvals = FMA (QuadBroadcast(ATileQuad, 3), HTMat<1,BW,T> (BTileQuad.template GetRow<3>()), myvals);
           }
 
         // remainder

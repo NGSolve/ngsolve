@@ -1,6 +1,7 @@
 
 #include <la.hpp>
 #include <comp.hpp>
+#include <gpu_btdtb.hpp>
 #include <memory>
 #include "cuda_linalg.hpp"
 #include "cuda_profiler.hpp"
@@ -418,11 +419,16 @@ namespace ngla
 
   void InitBTDTB ()
   {
+    // the backend-independent kernel from comp/gpu_btdtb.hpp; precision
+    // follows the matrix-free options (DevMatrixFreeBTDTB is the
+    // retired nvcc-jit implementation)
     BaseMatrix::RegisterDeviceMatrixCreator(typeid(MatrixFreeBTDTB),
                                             [] (const BaseMatrix & bmat) -> shared_ptr<BaseMatrix>
                                             {
                                               auto & mat = dynamic_cast<const MatrixFreeBTDTB&>(bmat);
-                                              return make_shared<DevMatrixFreeBTDTB>(mat);
+                                              if (mat.opts.fp32)
+                                                return make_shared<GPU_BTDTBMatrix<float>>(mat);
+                                              return make_shared<GPU_BTDTBMatrix<double>>(mat);
                                             });
   }
 };

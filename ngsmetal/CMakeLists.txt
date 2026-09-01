@@ -23,7 +23,7 @@ target_link_libraries(libngsmetal ${LAPACK_CMAKE_LINK_INTERFACE} "$<BUILD_INTERF
 install(TARGETS libngsmetal DESTINATION ${NGSOLVE_INSTALL_DIR_PYTHON}/ngsolve COMPONENT ngsolve)
 
 install( FILES
-        gpu_btdtb.hpp metal_device.hpp
+        metal_device.hpp
         DESTINATION ${NGSOLVE_INSTALL_DIR_INCLUDE}
         COMPONENT ngsolve_devel
        )

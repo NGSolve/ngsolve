@@ -203,6 +203,8 @@ namespace ngs_cuda
     { return Attr (CU_DEVICE_ATTRIBUTE_MAX_THREADS_PER_BLOCK); }
     size_t SimdWidth() const override
     { return Attr (CU_DEVICE_ATTRIBUTE_WARP_SIZE); }
+    size_t ComputeUnits() const override
+    { return Attr (CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT); }
 
     shared_ptr<Buffer> NewBuffer (size_t bytes, MemType mt) override
     { return std::make_shared<CudaBuffer> (bytes, mt); }
