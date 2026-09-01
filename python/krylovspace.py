@@ -748,6 +748,9 @@ class MinResSolver(LinearSolver):
     Parameters
     ----------
 """ + linear_solver_param_doc
+
+    name = "MinRes"
+    
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
