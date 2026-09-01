@@ -186,6 +186,7 @@ Common GPU programming (CUDA / Metal / host reference):
    :maxdepth: 1
 
    unit-5.6-gpu/commonGPU.ipynb
+   unit-5.6-gpu/matrixfree.ipynb
 
 some more MPI examples:
 
