@@ -58,7 +58,7 @@ class LinearSolverCreator:
 
 
 class LinearSolver(BaseMatrix):
-    """Base class for linear solvers.
+    __doc__ = """Base class for linear solvers.
 """ + linear_solver_param_doc
     name = "LinearSolver"
     def __init__(self, mat : BaseMatrix,
@@ -70,8 +70,31 @@ class LinearSolver(BaseMatrix):
                  callback : Optional[Callable[[int, float], None]] = None,
                  callback_sol : Optional[Callable[[BaseVector], None]] = None,
                  printrates : bool = False,
-                 plotrates : bool = False):
+                 plotrates : bool = False,
+                 **legacy):
         super().__init__()
+        # legacy argument names from the retired C++ solvers
+        if "printing" in legacy:
+            print("WARNING: 'printing' is deprecated, use printrates instead!")
+            printrates = legacy.pop("printing")
+        if "maxsteps" in legacy:
+            print("WARNING: 'maxsteps' is deprecated, use maxiter instead!")
+            maxiter = legacy.pop("maxsteps")
+        if "precision" in legacy:
+            print("WARNING: 'precision' is deprecated, use tol instead!")
+            if tol is None:
+                tol = legacy.pop("precision")
+            else:
+                legacy.pop("precision")
+        if "abstol" in legacy:
+            print("WARNING: 'abstol' is deprecated, use atol instead!")
+            if atol is None:
+                atol = legacy.pop("abstol")
+            else:
+                legacy.pop("abstol")
+        legacy.pop("complex", None)   # deduced from the matrix
+        if legacy:
+            raise TypeError("unknown arguments: {}".format(list(legacy)))
         if atol is None and tol is None:
             tol = 1e-12
         self.mat = mat
@@ -125,6 +148,26 @@ class LinearSolver(BaseMatrix):
     def Update(self):
         if hasattr(self.pre, "Update"):
             self.pre.Update()
+
+    # backward compatibility with the retired C++ KrylovSpaceSolver
+    def GetSteps(self) -> int:
+        return self.iterations
+
+    def SetAbsolutePrecision(self, prec : float) -> None:
+        self.tol = None
+        self.atol = prec
+
+    @property
+    def errors(self):
+        return self.residuals
+
+    @property
+    def maxsteps(self) -> int:
+        return self.maxiter
+
+    @maxsteps.setter
+    def maxsteps(self, val : int):
+        self.maxiter = val
 
     def CheckResidual(self, residual):
         self.iterations += 1
@@ -225,7 +268,7 @@ class LinearSolver(BaseMatrix):
     
     
 class CGSolver(LinearSolver):
-    """Preconditioned conjugate gradient method
+    __doc__ = """Preconditioned conjugate gradient method
 
     Parameters
     ----------
@@ -239,26 +282,9 @@ conjugate : bool = False
 
     def __init__(self, *args,
                  conjugate : bool = False,
-                 abstol : float = None,
-                 maxsteps : int = None,
-                 printing : bool = False,
                  **kwargs):
-        if printing:
-            print("WARNING: printing is deprecated, use printrates instead!")
-            kwargs["printrates"] = printing
-        if abstol is not None:
-            print("WARNING: abstol is deprecated, use atol instead!")
-            kwargs["abstol"] = abstol
-        if maxsteps is not None:
-            print("WARNING: maxsteps is deprecated, use maxiter instead!")
-            kwargs["maxiter"] = maxsteps
         super().__init__(*args, **kwargs)
         self.conjugate = conjugate
-
-    # for backward compatibility
-    @property
-    def errors(self):
-        return self.residuals
 
     def _SolveImpl(self, rhs : BaseVector, sol : BaseVector):
         d, w, s = [sol.CreateVector() for i in range(3)]
@@ -344,7 +370,7 @@ def CG(mat, rhs, pre=None, sol=None, tol=1e-12, maxsteps = 100, printrates = Tru
 
 
 class QMRSolver(LinearSolver):
-    """Quasi Minimal Residuum method
+    __doc__ = """Quasi Minimal Residuum method
 
     Parameters
     ----------
@@ -555,7 +581,7 @@ def QMR(mat, rhs, fdofs, pre1=None, pre2=None, sol=None, maxsteps = 100, printra
 
 
 class TFQMRSolver(LinearSolver):
-    """Transpose-Free Quasi Minimal Residuum method
+    __doc__ = """Transpose-Free Quasi Minimal Residuum method
 
     Parameters
     ----------
@@ -717,7 +743,7 @@ def TFQMR(mat, rhs, pre=None, sol=None, maxsteps = 100, printrates = True, initi
 
 #Source: Michael Kolmbauer https://www.numa.uni-linz.ac.at/Teaching/PhD/Finished/kolmbauer-diss.pdf
 class MinResSolver(LinearSolver):
-    """Minimal Residuum method
+    __doc__ = """Minimal Residuum method
 
     Parameters
     ----------
@@ -857,7 +883,7 @@ def MinRes(mat, rhs, pre=None, sol=None, maxsteps = 100, printrates = True, init
 
 
 class RichardsonSolver(LinearSolver):
-    """ Preconditioned Richardson Iteration
+    __doc__ = """ Preconditioned Richardson Iteration
 
 Parameters
 ----------
@@ -954,8 +980,8 @@ def PreconditionedRichardson(a, rhs, pre=None, freedofs=None, maxit=100, tol=1e-
 
     return u
 
-class GMResSolver(LinearSolver):
-    """Preconditioned GMRes solver. Minimizes the preconditioned residuum pre * (b-A*x)
+class GMRESSolver(LinearSolver):
+    __doc__ = """Preconditioned GMRES solver. Minimizes the preconditioned residuum pre * (b-A*x)
 
 Parameters
 ----------
@@ -966,9 +992,9 @@ innerproduct : Callable[[BaseVector, BaseVector], Union[float, complex]] = None
   Innerproduct to be used in iteration, all orthogonalizations/norms are computed with respect to that inner product.
 
 restart : int = None
-  If given, GMRes is restarted with the current solution x every 'restart' steps.
+  If given, GMRES is restarted with the current solution x every 'restart' steps.
 """
-    name = "GMRes"
+    name = "GMRES"
 
     def __init__(self, *args,
                  innerproduct : Optional[Callable[[BaseVector, BaseVector],
@@ -1077,7 +1103,7 @@ restart : int = None
             if self.restart is not None and (k+1 == self.restart and not (self.restart == self.maxiter)):
                 calcSolution(k)
                 del Q
-                restarted_solver = GMResSolver(mat=self.mat,
+                restarted_solver = GMRESSolver(mat=self.mat,
                                                pre=self.pre,
                                                tol=0,
                                                atol=self._final_residual,
@@ -1094,7 +1120,7 @@ restart : int = None
         calcSolution(k)
         return sol
 
-def GMRes(A, b, pre=None, freedofs=None, x=None, maxsteps = 100, tol = None, innerproduct=None,
+def GMRES(A, b, pre=None, freedofs=None, x=None, maxsteps = 100, tol = None, innerproduct=None,
           callback=None, restart=None, startiteration=0, printrates=True, reltol=None):
     """Restarting preconditioned gmres solver for A*x=b. Minimizes the preconditioned residuum pre*(b-A*x).
 
@@ -1140,12 +1166,16 @@ startiteration : int = 0
 printrates : bool = True
   Print norm of preconditioned residual in each step.
 """
-    solver = GMResSolver(mat=A, pre=pre, freedofs=freedofs,
+    solver = GMRESSolver(mat=A, pre=pre, freedofs=freedofs,
                          maxiter=maxsteps, tol=reltol, atol=tol,
                          innerproduct=innerproduct,
                          callback_sol=callback, restart=restart,
                          printrates=printrates)
     return solver.Solve(rhs=b, sol=x)
+
+# deprecated spellings
+GMResSolver = GMRESSolver
+GMRes = GMRES
 
 
 
