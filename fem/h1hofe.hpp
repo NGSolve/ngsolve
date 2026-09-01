@@ -61,8 +61,12 @@ namespace ngfem
     bool nodalp2 = false;
 
   public:
-    using VertexOrientedFE<ET>::SetVertexNumbers;    
-    using ET_trait<ET>::ElementType;
+    using VertexOrientedFE<ET>::SetVertexNumbers;
+    H1HighOrderFE * SetVertexNumbers (FlatArray<int> vnums) override
+    { VertexOrientedFE<ET>::SetVertexNumbers(vnums); return this; }
+
+    // using ET_trait<ET>::ElementType;
+    using BASE::ElementType;
     
     INLINE void SetNodalp2() { nodalp2 = true; }
     

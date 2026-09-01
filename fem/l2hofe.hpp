@@ -70,7 +70,8 @@ namespace ngfem
 #endif
 
   public:
-    using ET_trait<ET>::ElementType;
+    // using ET_trait<ET>::ElementType;
+    using BASE::ElementType;    
     using BaseScalarFiniteElement::CalcShape;
     
     INLINE L2HighOrderFE () { ; }

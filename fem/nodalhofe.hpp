@@ -13,7 +13,7 @@ namespace ngfem
                     public ET_trait<ET>, public VertexOrientedFE<ET>
   {
   protected:
-    
+    typedef T_ScalarFiniteElement<NodalHOFE<ET>, ET> BASE;
     enum { DIM = ET_trait<ET>::DIM };
 
     using ScalarFiniteElement<DIM>::ndof;
@@ -37,7 +37,8 @@ namespace ngfem
     using VertexOrientedFE<ET>::SetVertexNumbers;    
     NodalHOFE * SetVertexNumbers (FlatArray<int> vnums) override
     { VertexOrientedFE<ELEMENT_TYPE(ET)>::SetVertexNumbers(vnums); return this; }   // cast for msvc ?
-    using ET_trait<ET>::ElementType;
+    // using ET_trait<ET>::ElementType;
+    using BASE::ElementType;    
 
     /// builds a functional element of order aorder.
     INLINE NodalHOFE (int aorder)

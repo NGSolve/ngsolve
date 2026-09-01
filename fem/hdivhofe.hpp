@@ -41,12 +41,16 @@ namespace ngfem
       public VertexOrientedFE<ET>
   {
   protected:
+    typedef T_HDivFiniteElement<HDivHighOrderNormalFiniteElement <ET>, ET >  BASE;    
     enum { DIM = ET_trait<ET>::DIM };
     using VertexOrientedFE<ET>::vnums;
     using VertexOrientedFE<ET>::GetVertexOrientedFace;
   public:
     using VertexOrientedFE<ET>::SetVertexNumbers;    
+    T_HDivHighOrderNormalFiniteElement * SetVertexNumbers (FlatArray<int> vnums) override
+    { VertexOrientedFE<ELEMENT_TYPE(ET)>::SetVertexNumbers(vnums); return this; }  
 
+    
     T_HDivHighOrderNormalFiniteElement ()
     {
       for (int i = 0; i < ET_trait<ET>::N_VERTEX; i++)
@@ -370,6 +374,7 @@ namespace ngfem
     public T_HDivFiniteElement< HDivHighOrderFE_Shape<ET>, ET > , public ET_trait<ET>, public VertexOrientedFE<ET>
   {
   protected:
+    typedef T_HDivFiniteElement< HDivHighOrderFE_Shape<ET>, ET >  BASE;
     using ET_trait<ET>::N_VERTEX;
     using ET_trait<ET>::N_FACET;
     using ET_trait<ET>::DIM;
@@ -390,6 +395,9 @@ namespace ngfem
     bool RT = false;
   public:
     using VertexOrientedFE<ET>::SetVertexNumbers;
+    HDivHighOrderFE * SetVertexNumbers (FlatArray<int> vnums) override
+    { VertexOrientedFE<ELEMENT_TYPE(ET)>::SetVertexNumbers(vnums); return this; }  
+    
     /// minimal constructor, orders will be set later
     HDivHighOrderFE () 
       : ho_div_free(false), only_ho_div(false)
