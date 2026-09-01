@@ -301,7 +301,8 @@ namespace ngla
     virtual BaseVector & Add (double scal, const BaseVector & v) override;
     virtual BaseVector & Add (BaseScalar & scal, const BaseVector & v) override;
 
-    using BaseVector::InnerProduct;
+    // using BaseVector::InnerProduct;
+    using S_BaseVector<T>::InnerProduct;
     virtual double InnerProductD (const BaseVector & v2) const override;
     virtual void InnerProduct (const BaseVector & v2, BaseScalar & scal, bool conjugate = false) const override;
     virtual double L2Norm () const override;

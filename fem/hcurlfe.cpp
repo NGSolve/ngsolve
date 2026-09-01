@@ -300,10 +300,10 @@ namespace ngfem
       }
     */
     EvaluateCurl (mir.IR(), coefs, curl);
-    if (D == 2)
+    if constexpr (D == 2)
       for (int i = 0; i < mir.Size(); i++)
         curl.Row(i) *= 1.0/mir[i].GetJacobiDet();
-    else
+    else if constexpr (D==3)
       {
         for (int i = 0; i < mir.Size(); i++)
           {
@@ -582,7 +582,7 @@ namespace ngfem
     int test_ndof = testfe.GetNDof();
 
     MatrixFixWidth<DIM> shape(ndof);
-    MatrixFixWidth<3> testshape(test_ndof);
+    MatrixFixWidth<DIM> testshape(test_ndof);
     
     const IntegrationRule & rule = 
       SelectIntegrationRule (ElementType(), order);

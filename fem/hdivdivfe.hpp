@@ -1417,7 +1417,8 @@ namespace ngfem
               auto inv = mip.GetJacobianInverse();
               auto mapped = [&](const Mat<2, 2, T> & S, T val)
                 {
-                  Mat<2, 2, T> mat = Trans(inv) * S * inv;
+                  // Mat<2, 2, T> mat = Trans(inv) * S * inv;
+                  Mat mat = Trans(inv) * S * inv;
                   mat *= mip.GetMeasure() * val;
                   return mat;
                 };

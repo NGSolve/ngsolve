@@ -241,7 +241,7 @@ namespace ngfem
     int j;
     
     int test_ndof = testfe.GetNDof();
-    int dim = D;
+    constexpr int dim = D;
     
     MatrixFixWidth<DIM> shape(ndof);
     Matrix<> shapen(ndof, 1);
@@ -251,7 +251,7 @@ namespace ngfem
 
    const IntegrationRule & facerule = SelectIntegrationRule (testfe.ElementType(), order);
     
-   if (dim == 2)
+   if constexpr (dim == 2)
      {
        const POINT3D * points = ElementTopology::GetVertices (ElementType());
        const EDGE & edge = ElementTopology::GetEdges (ElementType()) [fnr];
@@ -290,7 +290,7 @@ namespace ngfem
 	 }
      }
    
-   else
+   else if constexpr (dim==3)
      
      {
        const POINT3D * points = ElementTopology::GetVertices (ElementType());

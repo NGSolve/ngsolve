@@ -3132,7 +3132,7 @@ namespace ngcomp
                 SIMD_MappedIntegrationRule<2,3> mir(ir, eltrans, 1, lh);
                 for (size_t k = 0; k < ni; k++)
                   {
-                    const Mat<2,3,SIMD<double>> & mdxdxref = reinterpret_cast<const Mat<2,3,SIMD<double>>&> (dxdxref[6*(k+base)]);
+                    const Mat<3,2,SIMD<double>> & mdxdxref = reinterpret_cast<const Mat<3,2,SIMD<double>>&> (dxdxref[6*(k+base)]);
                     const Vec<3,SIMD<double>> & vx = reinterpret_cast<const Vec<3,SIMD<double>>&> (x[3*(k+base)]);
                     mir[k] = SIMD<MappedIntegrationPoint<2,3>> (ir[k], eltrans, vx, mdxdxref);
                   }
