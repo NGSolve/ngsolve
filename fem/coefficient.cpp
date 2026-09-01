@@ -7540,7 +7540,7 @@ class RealImagCF : public CoefficientFunctionNoDerivative
 
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<double> values) const override
     {
-      BareSliceMatrix<Complex,RowMajor> cvalues(values.Height(), values.Width(), values.Dist()/2, (Complex*)(void*)values.Data());
+      BareSliceMatrix<Complex,RowMajor> cvalues(ir.Size(), cf->Dimension(), values.Dist()/2, (Complex*)(void*)values.Data());
       cf -> Evaluate (ir, cvalues);
     }
 
