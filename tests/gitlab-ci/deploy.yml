@@ -1,7 +1,8 @@
 deploy_github:
   stage: deploy
   tags:
-    - deploy_github
+    - linux
+    - bash
   script:
     - git remote add github git@github.com:NGSolve/ngsolve.git || true
     - git remote update
@@ -14,7 +15,8 @@ deploy_github:
 deploy_release:
   stage: deploy
   tags:
-    - deploy_github
+    - linux
+    - bash
   script:
     - git remote add github git@github.com:NGSolve/ngsolve.git || true
     - git push github $CI_COMMIT_TAG
@@ -26,7 +28,8 @@ deploy_release:
 deploy_nightly:
   stage: deploy
   tags:
-    - deploy_github
+    - linux
+    - bash
   script:
     - source tests/gitlab-ci/deploy/nightly.sh
   only:
