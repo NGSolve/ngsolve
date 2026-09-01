@@ -725,12 +725,12 @@ void HDivDivFacetHOElement<ET_TET> :: CalcShape(const IntegrationPoint &ip, Slic
                                const MIP &mip,
                                MAT &&mat, LocalHeap &lh)
     {
-      Mat<3, 3> jacobian = mip.GetJacobian();
-      Cast(fel).CalcShape(mip.IP(), Trans(mat) /* , jacobian*/);
+      Mat<3, 2> jacobian = mip.GetJacobian();
+      Cast(fel).CalcShape(mip.IP(), Trans(mat.Rows(4)) /* , jacobian*/);
       for (int i = 0; i < fel.GetNDof(); i++)
       {
-        FlatMatrix<> shapei(3, 3, &mat(0, i));                                                          // &mat(i, 0)
-        Mat<3, 3> trafo_shapei = Cof(mip.GetJacobian()) * Mat<3, 3>(shapei) * Trans(mip.GetJacobian()); // Mat<3, 3> trafo_shapei = (1 / mip.GetJacobiDet()) * mip.GetJacobianInverse() * shapei * mip.GetJacobian(); // check if this is correct
+        FlatMatrix<> shapei(2, 2, &mat(0, i));                                                          // &mat(i, 0)
+        Mat<3, 3> trafo_shapei = Cof(mip.GetJacobian()) * Mat<2, 2>(shapei) * Trans(mip.GetJacobian()); // Mat<3, 3> trafo_shapei = (1 / mip.GetJacobiDet()) * mip.GetJacobianInverse() * shapei * mip.GetJacobian(); // check if this is correct
         shapei = trafo_shapei;
       }
     }

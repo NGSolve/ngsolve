@@ -376,7 +376,7 @@ namespace ngbla
   template <int S1> INLINE constexpr auto CombinedSize(IC<S1> s1, size_t s2) {
     NETGEN_CHECK_SAME(size_t(s1), size_t(s2)); return s1; }  
   template <int S1, int S2> INLINE constexpr auto CombinedSize(IC<S1> s1, IC<S2> s2) {
-    // static_assert(S1 == S2, "shape mismatch between fixed-size operands");
+    static_assert(S1 == S2, "shape mismatch between fixed-size operands");
     NETGEN_CHECK_SAME(size_t(s1), size_t(s2)); return s1; }  
   template <int S2> INLINE constexpr auto CombinedSize(undefined_size s1, IC<S2> s2) {
     NETGEN_CHECK_SAME(size_t(s1), size_t(s2)); return s2; }  
