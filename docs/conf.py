@@ -42,6 +42,9 @@ extensions = ["sphinx.ext.autodoc","sphinx.ext.mathjax","sphinx.ext.todo", "sphi
 #increase timeout for cell execution, since some files take long to execute
 nbsphinx_timeout = 600
 
+# ipykernel >= 7 warns once per kernel that the client connection is plain TCP
+nbsphinx_execute_arguments = ["--log-level=ERROR"]
+
 # Don't add .txt suffix to source files (available for Sphinx >= 1.5):
 html_sourcelink_suffix = ''
 
