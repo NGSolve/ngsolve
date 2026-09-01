@@ -134,11 +134,18 @@ namespace ngcomp
           if (fabs(step) < 1e-10) break;
         }
 
+      bool is_front = both_sides;
+      if (!is_front)
+        {
+          IntegrationPoint ipm(0.5);
+          MappedIntegrationPoint<1, DIMR> mipm{ipm, trafo};
+          is_front = InnerProduct(n, mipm.GetNV()) < 0;
+        }
+
       for (double l : { lam, 0.0, 1.0 })
         {
           IntegrationPoint ipl(l);
           MappedIntegrationPoint<1, DIMR> mip{ipl, trafo};
-          bool is_front = both_sides || InnerProduct(n, mip.GetNV()) < 0;
           double d = L2Norm2(mip.GetPoint() - pmaster);
           if (is_front && d < min_dist)
             {
