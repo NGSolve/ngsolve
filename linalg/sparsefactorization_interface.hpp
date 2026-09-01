@@ -18,17 +18,30 @@ struct MapInnerDofs {
   size_t size = 0;
   Array<size_t> value_map;
   bool have_value_map = false;
+  int bs = 1;                   // entry size of a blocked matrix
 
   MapInnerDofs() {}
 
   void Init(shared_ptr<BitArray> ainner,
-               shared_ptr<const Array<int>> acluster = nullptr)
+               shared_ptr<const Array<int>> acluster = nullptr,
+               int abs = 1, size_t nblocks = 0)
   {
     inner = ainner;
     cluster = acluster;
+    bs = abs;
     have_value_map = false;
     if (!inner && !cluster) {
-      size = 0;
+      if (bs == 1) {
+        size = 0;
+        return;
+      }
+      size = nblocks;
+      project.SetSize(size);
+      embed.SetSize(size);
+      for (size_t i : Range(size)) {
+        project[i] = i;
+        embed[i] = i;
+      }
       return;
     }
     if (inner) {
@@ -58,28 +71,31 @@ struct MapInnerDofs {
     size = project.Size();
   }
 
-  operator bool() const { return inner || cluster; }
+  operator bool() const { return inner || cluster || bs > 1; }
 
   template <typename T>
   void Project(FlatVector<T> dst, FlatVector<T> src) const {
     for (size_t i = 0; i < project.Size(); i++)
-      dst[i] = src[project[i]];
+      for (int k = 0; k < bs; k++)
+        dst[i*bs+k] = src[project[i]*bs+k];
   }
 
   template <typename T> void Embed(T &dst, const T &src) const {
-    for (size_t i : Range(embed)) {
-      if (embed[i] >= 0)
-        dst[i] = src[embed[i]];
-      else
-        dst[i] = 0.0;
-    }
+    for (size_t i : Range(embed))
+      for (int k = 0; k < bs; k++) {
+        if (embed[i] >= 0)
+          dst[i*bs+k] = src[embed[i]*bs+k];
+        else
+          dst[i*bs+k] = 0.0;
+      }
   }
 
   template <typename T>
   void EmbedAdd(FlatVector<T> dst, FlatVector<T> src, T scale) const {
     for (size_t i : Range(embed))
       if (embed[i] >= 0)
-        dst[i] += scale * src[embed[i]];
+        for (int k = 0; k < bs; k++)
+          dst[i*bs+k] += scale * src[embed[i]*bs+k];
   }
 
   template <typename T>
@@ -132,6 +148,72 @@ struct MapInnerDofs {
 
     return result;
   }
+
+  template <int N, typename T>
+  shared_ptr<SparseMatrixTM<T>>
+  ProjectMatrixBlocked(shared_ptr<const SparseMatrix<Mat<N, N, T>>> m,
+                       shared_ptr<SparseMatrixTM<T>> cached = nullptr) {
+    auto block_vals = m->GetValues();
+    FlatArray<T> vals_ori(block_vals.Size()*N*N, (T*)(void*)block_vals.Data());
+
+    if (cached && have_value_map && cached->GetValues().Size() == value_map.Size()) {
+      auto dst = cached->GetValues();
+      for (size_t k : Range(value_map))
+        dst[k] = vals_ori[value_map[k]];
+      cached->SetSPD(m->IsSPD());
+      return cached;
+    }
+
+    // symmetric storage keeps the lower triangle only, expand both of them
+    bool sym_storage =
+        dynamic_cast<const SparseMatrixSymmetric<Mat<N, N, T>>*>(m.get()) != nullptr;
+
+    auto is_used = [this](int i, int j) {
+      if (inner)
+        return bool((*inner)[i] && (*inner)[j]);
+      if (cluster)
+        return bool((*cluster)[i] == (*cluster)[j]);
+      return true;
+    };
+
+    Array<int> rowi, coli;
+    Array<T> vals;
+    auto append_block = [&](int bi, int bj, size_t pos, bool transposed) {
+      for (int k = 0; k < N; k++)
+        for (int l = 0; l < N; l++) {
+          rowi.Append(embed[bi]*N + k);
+          coli.Append(embed[bj]*N + l);
+          vals.Append(vals_ori[pos*N*N + (transposed ? l*N+k : k*N+l)]);
+        }
+    };
+
+    for (auto i : project)
+      for (auto j : m->GetRowIndices(i)) {
+        if (!is_used(i, j)) continue;
+        auto pos = m->GetPosition(i, j);
+        append_block(i, j, pos, false);
+        if (sym_storage && i != j)
+          append_block(j, i, pos, true);
+      }
+
+    auto result = SparseMatrixTM<T>::CreateFromCOO(rowi, coli, vals,
+                                                   size*N, size*N);
+    result->SetSPD(m->IsSPD());
+
+    value_map.SetSize(result->GetValues().Size());
+    for (size_t r : Range(size*N))
+      for (auto c : result->GetRowIndices(r)) {
+        int bi = project[r/N], k = r%N;
+        int bj = project[c/N], l = c%N;
+        bool transposed = sym_storage && bj > bi;
+        auto pos = transposed ? m->GetPosition(bj, bi) : m->GetPosition(bi, bj);
+        value_map[result->GetPosition(r, c)] =
+            pos*N*N + (transposed ? l*N+k : k*N+l);
+      }
+    have_value_map = true;
+
+    return result;
+  }
 };
 
 bool IsMatrixSymmetric(shared_ptr<const BaseSparseMatrix> mat, double tol = 0);
@@ -159,11 +241,11 @@ public:
   void SetSubset(shared_ptr<BitArray> inner, shared_ptr<const Array<int>> cluster) override;
 
   AutoVector CreateRowVector() const override {
-    return make_unique<VVector<double>>(Width());
+    return matrix.lock()->CreateColVector();
   }
 
   AutoVector CreateColVector() const override {
-    return make_unique<VVector<double>>(Height());
+    return matrix.lock()->CreateRowVector();
   }
 
   shared_ptr<const BaseSparseMatrix> GetInnerMatrix() const {
