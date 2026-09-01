@@ -61,7 +61,7 @@ from pyngcore import BitArray, TaskManager, SetNumThreads, PajeTrace, Timers, Ti
 from .ngstd import IntRange
 from .bla import Matrix, Vector, InnerProduct, Norm
 from .la import BaseMatrix, BaseVector, BlockVector, MultiVector, BlockMatrix, \
-    CreateVVector, CGSolver, QMRSolver, GMRESSolver, ArnoldiSolver, \
+    CreateVVector, ArnoldiSolver, \
     Projector, DiagonalMatrix, IdentityMatrix, Embedding, PermutationMatrix, \
     ConstEBEMatrix, ParallelMatrix, PARALLEL_STATUS
 from .fem import BFI, LFI, CoefficientFunction, Parameter, ParameterC, ET, \
@@ -91,6 +91,9 @@ from .utils import x, y, z, dx, ds, grad, Grad, curl, div, Deviator, PyId, PyTra
     PyDet, PyCross, PyCof, PyInv, PySym, PySkew, OuterProduct, PrivateSpace, Normalize, printonce
 
 from . import solvers
+# Python krylovspace solvers replace the retired C++ ones, also in ngsolve.la
+from .krylovspace import CGSolver, QMRSolver, GMRESSolver
+la.CGSolver, la.QMRSolver, la.GMRESSolver = CGSolver, QMRSolver, GMRESSolver
 from . import preconditioners
 from . import timestepping
 from .solve_implementation import Solve
