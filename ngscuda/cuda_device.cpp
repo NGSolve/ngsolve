@@ -87,6 +87,23 @@ namespace ngs_cuda
 
     string Name() const override { return name; }
     CUfunction Get() const { return func; }
+
+    KernelInfo Info (size_t groupsize) const override
+    {
+      KernelInfo ki;
+      auto attr = [&] (CUfunction_attribute a) { int v = 0; cuFuncGetAttribute (&v, a, func); return size_t(v); };
+      ki.registers = attr (CU_FUNC_ATTRIBUTE_NUM_REGS);
+      ki.local_bytes = attr (CU_FUNC_ATTRIBUTE_LOCAL_SIZE_BYTES);
+      ki.shared_bytes = attr (CU_FUNC_ATTRIBUTE_SHARED_SIZE_BYTES);
+      ki.max_threads_per_group = attr (CU_FUNC_ATTRIBUTE_MAX_THREADS_PER_BLOCK);
+      if (groupsize)
+        {
+          int blocks = 0;
+          cuOccupancyMaxActiveBlocksPerMultiprocessor (&blocks, func, int(groupsize), 0);
+          ki.max_groups_per_unit = blocks;
+        }
+      return ki;
+    }
   };
 
 

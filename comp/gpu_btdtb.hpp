@@ -94,15 +94,57 @@ namespace ngcomp
     auto NewSharedBuffer = [&] (size_t nreals)
     { return device->NewBuffer (nreals*sizeof(REAL), MemType::Shared); };
     
-    FlatArray<int> hdofx = pmat->dofx.AsArray();
-    buffer_dofx = device->NewBuffer(hdofx.Size()*sizeof(int), MemType::Shared);
-    FlatArray<int> ddofx(hdofx.Size(), buffer_dofx->HostData<int>());
-    ddofx = hdofx;
+    /*
+      The dofs of an element decompose into intervals of consecutive numbers
+      (one per vertex/edge/face/cell), with the same structure on every
+      element: one L2 interval, 5 for H(div), at most 15 for H1. We store one
+      base per interval and element, the interval number and the offset within
+      the interval are global constants. A space violating the structure just
+      yields more intervals, never a wrong index.
+    */
+    auto SplitIntervals = [] (const Table<DofId> & dofs, int locdofs,
+                              Array<int> & runof, Array<int> & offof)
+    {
+      if (locdofs == 0) return 0;
+      Array<bool> newrun(locdofs);
+      newrun = false;
+      newrun[0] = true;
+      for (size_t elnr : Range(dofs.Size()))
+        for (int k = 1; k < locdofs; k++)
+          if (dofs[elnr][k] != dofs[elnr][k-1]+1)
+            newrun[k] = true;
 
-    FlatArray<int> hdofy = pmat->dofy.AsArray();
-    buffer_dofy = device->NewBuffer(hdofy.Size()*sizeof(int), MemType::Shared);
-    FlatArray<int> ddofy(hdofy.Size(), buffer_dofy->HostData<int>());
-    ddofy = hdofy;
+      runof.SetSize(locdofs);
+      offof.SetSize(locdofs);
+      int run = -1, off = 0;
+      for (int k = 0; k < locdofs; k++)
+        {
+          if (newrun[k]) { run++; off = 0; }
+          runof[k] = run;
+          offof[k] = off++;
+        }
+      return run+1;
+    };
+
+    auto IntervalBases = [&] (const Table<DofId> & dofs, int locdofs, int nruns,
+                              FlatArray<int> runof, FlatArray<int> offof)
+    {
+      if (dofs.Size() != size_t(ne))
+        throw Exception("GPU_BTDTBMatrix: dof table does not match number of elements");
+      auto buffer = device->NewBuffer(size_t(ne)*nruns*sizeof(int), MemType::Shared);
+      int * bases = buffer->HostData<int>();
+      for (size_t elnr : Range(dofs.Size()))
+        for (int k = 0; k < locdofs; k++)
+          if (offof[k] == 0)
+            bases[elnr*nruns+runof[k]] = dofs[elnr][k];
+      return buffer;
+    };
+
+    Array<int> runofx, offofx, runofy, offofy;
+    int nrunsx = SplitIntervals (pmat->dofx, locdofsx, runofx, offofx);
+    int nrunsy = SplitIntervals (pmat->dofy, locdofsy, runofy, offofy);
+    buffer_dofx = IntervalBases (pmat->dofx, locdofsx, nrunsx, runofx, offofx);
+    buffer_dofy = IntervalBases (pmat->dofy, locdofsy, nrunsy, runofy, offofy);
 
     // for the remainder, store the compressed tensor in the last rows of buffer_bmatx
     buffer_bmatx = NewSharedBuffer(dimxref*(RoundUp(nip,BS_ipts)+BS_ipts)*RoundUp<8>(locdofsx));
@@ -170,12 +212,17 @@ namespace ngcomp
 
       typedef $REAL real;
 
+      // dofnr -> (interval, offset within interval), same for all elements
+      CONSTANT_ARRAY(int, runof_x, $LOCDOFSX) = $RUNOFX;
+      CONSTANT_ARRAY(int, offof_x, $LOCDOFSX) = $OFFOFX;
+      CONSTANT_ARRAY(int, runof_y, $LOCDOFSY) = $RUNOFY;
+      CONSTANT_ARRAY(int, offof_y, $LOCDOFSY) = $OFFOFY;
 
       KERNEL(apply_btdtb,
              GLOBAL_IN(real, x),
              $YARG,
-             GLOBAL_IN(int,   dofx),
-             GLOBAL_IN(int,   dofy),
+             GLOBAL_IN(int,   basex),
+             GLOBAL_IN(int,   basey),
              GLOBAL_IN(real, bmatx),
              GLOBAL_IN(real, bmaty),
              GLOBAL_IN(real, weights),
@@ -196,6 +243,8 @@ namespace ngcomp
       constexpr uint bs_ipts = $BS_IPTS;
       constexpr uint locdofsx = $LOCDOFSX;
       constexpr uint locdofsy = $LOCDOFSY;
+      constexpr uint nrunsx = $NRUNSX;
+      constexpr uint nrunsy = $NRUNSY;
 
       constexpr uint locdofsx_roundup = RoundUp<8> (locdofsx);
       constexpr uint locdofsy_roundup = RoundUp<8> (locdofsy);
@@ -234,7 +283,8 @@ namespace ngcomp
            uint dofnr = i % locdofsx;
            uint locelnr = i / locdofsx;
            uint elnr = baseelem + locelnr;
-           elvecx[locelnr][dofnr] = (elnr < ne) ? x[dofx[elnr*locdofsx+dofnr]] : 0;
+           elvecx[locelnr][dofnr] = (elnr < ne)
+             ? x[basex[elnr*nrunsx+runof_x[dofnr]] + offof_x[dofnr]] : 0;
         }
 
       // zero elvecy
@@ -455,11 +505,14 @@ namespace ngcomp
 
            uint elnr = baseelem + locelnr;
            if (elnr < ne)
+             {
+               uint dof = basey[elnr*nrunsy+runof_y[dofnr]] + offof_y[dofnr];
 #if ($ATOMIC==1)
-             ATOMIC_ADD(&y[dofy[elnr*locdofsy+dofnr]], elvecy[locelnr][dofnr]);
+               ATOMIC_ADD(&y[dof], elvecy[locelnr][dofnr]);
 #else
-             y[dofy[elnr*locdofsy+dofnr]] += elvecy[locelnr][dofnr];
+               y[dof] += elvecy[locelnr][dofnr];
 #endif
+             }
         }
 
       }
@@ -542,6 +595,20 @@ namespace ngcomp
     code = Substitute(code, "$DOFX_TILES", ToString(RoundUp<8>(locdofsx)/8) +" /* DOFX_TILES */ ");
     code = Substitute(code, "$DOFY_TILES", ToString(RoundUp<8>(locdofsy)/8) +" /* DOFY_TILES */ ");
     
+    auto InitList = [] (FlatArray<int> a)
+    {
+      string s = "{";
+      for (auto i : Range(a))
+        { if (i) s += ","; s += ToString(a[i]); }
+      return s+"}";
+    };
+    code = Substitute(code, "$NRUNSX", ToString(nrunsx));
+    code = Substitute(code, "$NRUNSY", ToString(nrunsy));
+    code = Substitute(code, "$RUNOFX", InitList(runofx));
+    code = Substitute(code, "$OFFOFX", InitList(offofx));
+    code = Substitute(code, "$RUNOFY", InitList(runofy));
+    code = Substitute(code, "$OFFOFY", InitList(offofy));
+
     code = Substitute(code, "$LOCDOFSX", ToString(locdofsx));    
     code = Substitute(code, "$LOCDOFSY", ToString(locdofsy));
     code = Substitute(code, "$DIMXREF", ToString(dimxref));
@@ -589,9 +656,7 @@ namespace ngcomp
     else
       code = Substitute(code, "$REAL", "double");
     
-    ofstream codefile("applybtdtb.gpu");
-    codefile << code;
-    codefile.close();
+    ofstream("applybtdtb.gpu") << code;
 
     library = device->CompileSource (code);
     kernel = library->GetKernel ("apply_btdtb");
@@ -606,6 +671,10 @@ namespace ngcomp
                         32*device->ComputeUnits());
     if (auto env = getenv("NGS_BTDTB_GROUPS"))
       ngroups = atoi(env);
+    if (getenv("NGS_BTDTB_INFO"))
+      cout << "apply_btdtb: " << kernel->Info(warps*32) << " groups=" << ngroups
+           << " groupsize=" << warps*32 << " intervals x/y=" << nrunsx << "/" << nrunsy
+           << " locdofs x/y=" << locdofsx << "/" << locdofsy << endl;
   }
 
 

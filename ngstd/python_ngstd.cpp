@@ -99,6 +99,16 @@ static void ExportGPU (py::module & m)
 
   py::class_<Kernel, shared_ptr<Kernel>> (m, "GPUKernel")
     .def_property_readonly("name", &Kernel::Name)
+    .def("Info", [](Kernel & self, size_t groupsize)
+         {
+           auto ki = self.Info(groupsize);
+           py::dict d;
+           d["registers"] = ki.registers; d["local_bytes"] = ki.local_bytes;
+           d["shared_bytes"] = ki.shared_bytes;
+           d["max_threads_per_group"] = ki.max_threads_per_group;
+           d["max_groups_per_unit"] = ki.max_groups_per_unit;
+           return d;
+         }, py::arg("groupsize") = 0, "resource usage: registers, local, shared, occupancy")
     .def("__str__", [](Kernel & self) { return "GPUKernel " + self.Name(); })
     ;
 

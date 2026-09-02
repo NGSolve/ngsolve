@@ -24,6 +24,7 @@
 #include <functional>
 #include <type_traits>
 #include <initializer_list>
+#include <ostream>
 
 namespace ngs_gpu
 {
@@ -125,6 +126,23 @@ namespace ngs_gpu
 
   class Library;
 
+  // resource usage of a compiled kernel, 0 where the backend has no query
+  struct KernelInfo
+  {
+    size_t registers = 0;            // per thread
+    size_t local_bytes = 0;          // stack / spills per thread
+    size_t shared_bytes = 0;         // static group memory
+    size_t max_threads_per_group = 0;
+    size_t max_groups_per_unit = 0;  // resident groups per SM/core at groupsize
+  };
+
+  inline std::ostream & operator<< (std::ostream & ost, const KernelInfo & ki)
+  {
+    return ost << "regs=" << ki.registers << " local=" << ki.local_bytes
+               << "B shared=" << ki.shared_bytes << "B maxthreads=" << ki.max_threads_per_group
+               << " groups/unit=" << ki.max_groups_per_unit;
+  }
+
   class Kernel
   {
     friend class Library;
@@ -133,6 +151,7 @@ namespace ngs_gpu
     virtual ~Kernel() = default;
     virtual string Name() const = 0;
     const shared_ptr<Library> & GetLibrary() const { return library; }
+    virtual KernelInfo Info (size_t groupsize = 0) const { return {}; }
   };
 
 

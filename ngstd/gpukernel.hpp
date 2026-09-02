@@ -32,6 +32,9 @@ namespace ngs_gpu
 
   #define NGS_INDICES
   #define KERNEL(name, ...)   extern "C" __global__ void name(__VA_ARGS__ NGS_INDICES)
+  // group size and resident groups per SM the kernel is compiled for
+  #define KERNEL_BOUNDS(name, maxthreads, mingroups, ...) \
+    extern "C" __global__ void __launch_bounds__(maxthreads, mingroups) name(__VA_ARGS__ NGS_INDICES)
 
   #define GLOBAL(T,name)      T * name
   #define GLOBAL_IN(T,name)   const T * name
@@ -59,6 +62,9 @@ namespace ngs_gpu
   #define NUM_GROUPS_X  gridDim.x
   #define NUM_GROUPS_Y  gridDim.y
   #define NUM_GROUPS_Z  gridDim.z
+
+  // program-scope table, may be indexed by a runtime value
+  #define CONSTANT_ARRAY(T,name,N)  __device__ const T name[N]
 
   #define SHARED(T,name,N)       alignas(16) __shared__ T name[N]
   #define SHARED_2D(T,name,N,M)  alignas(16) __shared__ T name[N][M]
@@ -208,6 +214,7 @@ namespace ngs_gpu
     extern "C" NGS_KERNEL_EXPORT void name##_ngsthunk (void ** _a)      \
     { ngs_cpu::Call (&name, _a); }                                      \
     static void name(__VA_ARGS__)
+  #define KERNEL_BOUNDS(name, maxthreads, mingroups, ...) KERNEL(name, __VA_ARGS__)
 
   #define GLOBAL(T,name)      T * name
   #define GLOBAL_IN(T,name)   const T * name
@@ -236,6 +243,8 @@ namespace ngs_gpu
   #define NUM_GROUPS_Y  ngs_cpu::ngr[1]
   #define NUM_GROUPS_Z  ngs_cpu::ngr[2]
 
+  #define CONSTANT_ARRAY(T,name,N)  static const T name[N]
+
   #define SHARED(T,name,N)       T * name = (T*) ngs_cpu::SharedAlloc(sizeof(T)*(N))
   #define SHARED_2D(T,name,N,M)  T (*name)[M] = (T(*)[M]) ngs_cpu::SharedAlloc(sizeof(T)*(N)*(M))
   #define BARRIER()              ngs_cpu::group->barrier.Wait()
@@ -257,6 +266,8 @@ namespace ngs_gpu
     , uint3 _ngs_ngrps [[threadgroups_per_grid]]
 
   #define KERNEL(name, ...)   kernel void name(__VA_ARGS__ NGS_INDICES)
+  #define KERNEL_BOUNDS(name, maxthreads, mingroups, ...) \
+    [[max_total_threads_per_threadgroup(maxthreads)]] kernel void name(__VA_ARGS__ NGS_INDICES)
 
   #define GLOBAL(T,name)      device T * name
   #define GLOBAL_IN(T,name)   device const T * name
@@ -281,6 +292,8 @@ namespace ngs_gpu
   #define NUM_GROUPS_X  _ngs_ngrps.x
   #define NUM_GROUPS_Y  _ngs_ngrps.y
   #define NUM_GROUPS_Z  _ngs_ngrps.z
+
+  #define CONSTANT_ARRAY(T,name,N)  constant T name[N]
 
   #define SHARED(T,name,N)       alignas(16) threadgroup T name[N]
   #define SHARED_2D(T,name,N,M)  alignas(16) threadgroup T name[N][M]

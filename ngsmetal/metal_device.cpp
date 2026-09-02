@@ -126,6 +126,14 @@ namespace ngsmetal
 
     string Name() const override { return name; }
     MTL::ComputePipelineState * Get() const { return pso; }
+
+    KernelInfo Info (size_t groupsize) const override
+    {
+      KernelInfo ki;
+      ki.shared_bytes = pso->staticThreadgroupMemoryLength();
+      ki.max_threads_per_group = pso->maxTotalThreadsPerThreadgroup();
+      return ki;
+    }
   };
 
 
