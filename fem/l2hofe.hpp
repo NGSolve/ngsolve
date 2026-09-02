@@ -89,6 +89,8 @@ namespace ngfem
     template <typename TA>
     INLINE void SetVertexNumbers (const TA & avnums)
     { for (int i = 0; i < N_VERTEX; i++) vnums[i] = avnums[i]; }
+    L2HighOrderFE * SetVertexNumbers (FlatArray<int> avnums) override
+    { SetVertexNumbers<FlatArray<int>> (avnums); return this; }
 
     /// different orders in different directions
     virtual void SetOrder (IVec<DIM> p) override { order_inner = p; }

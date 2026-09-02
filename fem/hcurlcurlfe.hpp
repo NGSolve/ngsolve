@@ -640,6 +640,8 @@ namespace ngfem
     
   public:
     using VertexOrientedFE<ET>::SetVertexNumbers;
+    T_HCurlCurlFE * SetVertexNumbers (FlatArray<int> vnums) override
+    { VertexOrientedFE<ELEMENT_TYPE(ET)>::SetVertexNumbers(vnums); return this; }
     
     T_HCurlCurlFE (int aorder)
     {

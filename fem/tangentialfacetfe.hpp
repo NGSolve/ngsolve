@@ -35,6 +35,8 @@ namespace ngfem
     using HCurlFiniteElement<ET_trait<ET>::DIM>::ndof;    
     using VertexOrientedFE<ET>::SetVertexNumber;
     using VertexOrientedFE<ET>::SetVertexNumbers;
+    TangentialFacetFacetFE * SetVertexNumbers (FlatArray<int> vnums) override
+    { VertexOrientedFE<ELEMENT_TYPE(ET)>::SetVertexNumbers(vnums); return this; }
     using VertexOrientedFE<ET>::GetVertexOrientedEdge;
 
     TangentialFacetFacetFE (int aorder)
@@ -131,6 +133,8 @@ namespace ngfem
     
   public:
     using VertexOrientedFE<ET>::SetVertexNumbers;
+    TangentialFacetVolumeFE * SetVertexNumbers (FlatArray<int> vnums) override
+    { VertexOrientedFE<ELEMENT_TYPE(ET)>::SetVertexNumbers(vnums); return this; }
     using VertexOrientedFE<ET>::GetVertexOrientedEdge;
     using VertexOrientedFE<ET>::GetVertexOrientedFace;
     using HCurlFiniteElement<ET_trait<ET>::DIM>::GetNDof;        

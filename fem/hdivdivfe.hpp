@@ -194,6 +194,8 @@ namespace ngfem
 
   public:
     using VertexOrientedFE<ET>::SetVertexNumbers;
+    T_HDivDivFE * SetVertexNumbers (FlatArray<int> vnums) override
+    { VertexOrientedFE<ELEMENT_TYPE(ET)>::SetVertexNumbers(vnums); return this; }
     
     T_HDivDivFE (int aorder, bool _plus = false)
       : plus(_plus)
@@ -2807,6 +2809,8 @@ namespace ngfem
 
   public:
     using VertexOrientedFE<ET>::SetVertexNumbers;
+    T_HDivDivSurfaceFE * SetVertexNumbers (FlatArray<int> vnums) override
+    { VertexOrientedFE<ELEMENT_TYPE(ET)>::SetVertexNumbers(vnums); return this; }
     
     T_HDivDivSurfaceFE (int aorder)
     {
@@ -2814,7 +2818,7 @@ namespace ngfem
       order_inner = aorder;
     }
     
-    virtual ELEMENT_TYPE ElementType() const { return ET; }
+    virtual ELEMENT_TYPE ElementType() const override { return ET; }
     const HDivDivSurfaceFE<ET> * Cast() const { return static_cast<const HDivDivSurfaceFE<ET>*> (this); } 
     
     INLINE void SetOrderInner (IVec<DIM,int> order) { order_inner = order; }
@@ -2825,7 +2829,7 @@ namespace ngfem
     }
 
     virtual void CalcMappedShape_Vector (const MappedIntegrationPoint<DIM,DIM+1> & mip,
-                            BareSliceMatrix<double> shape) const
+                            BareSliceMatrix<double> shape) const override
     {
       Vec<DIM, AutoDiff<DIM+1>> adp = mip;
       TIP<DIM, AutoDiffDiff<DIM+1>> addp(adp, mip.IP().FacetNr(), mip.IP().VB());
@@ -2838,7 +2842,7 @@ namespace ngfem
 
 
     virtual void CalcMappedShape_Matrix (const MappedIntegrationPoint<DIM,DIM+1> & mip,
-                            BareSliceMatrix<double> shape) const
+                            BareSliceMatrix<double> shape) const override
     {
       Vec<DIM, AutoDiff<DIM+1>> adp = mip;
       TIP<DIM, AutoDiffDiff<DIM+1>> addp(adp, mip.IP().FacetNr(), mip.IP().VB());

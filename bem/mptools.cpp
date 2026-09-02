@@ -472,7 +472,7 @@ namespace ngsbem
     constexpr bool is_rr = std::is_same<RADIAL,Regular>::value && std::is_same<TARGET,Regular>::value;
     using trafo_type =
         std::conditional_t<
-            std::is_same<RADIAL, Singular>::value && std::is_same<TARGET, Regular>::value || std::is_same<T_Kappa, Complex>::value,
+            is_sr || std::is_same<T_Kappa, Complex>::value,
             Complex,
             double
         >;

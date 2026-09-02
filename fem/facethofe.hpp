@@ -34,6 +34,8 @@ namespace ngfem
     bool nodal;
   public:
     using VertexOrientedFE<ET>::SetVertexNumbers;
+    FacetFE * SetVertexNumbers (FlatArray<int> vnums) override
+    { VertexOrientedFE<ELEMENT_TYPE(ET)>::SetVertexNumbers(vnums); return this; }
   public:
     FacetFE (bool anodal = false) : nodal(anodal) { ; }
 
