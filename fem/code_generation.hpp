@@ -64,7 +64,7 @@ namespace ngfem
 
     NGS_DLL_HEADER string AddPointer(const void *p, string name = "", string type = "void *", string qualifiers = "");
 
-    void AddLinkFlag(string flag);
+    NGS_DLL_HEADER void AddLinkFlag(string flag);
 
     static atomic<unsigned> id_counter;
     static string Map( string code, std::map<string,string> variables ) {
@@ -82,9 +82,9 @@ namespace ngfem
     }
 
     [[deprecated("use Declare(i,dims,iscomplex) instead")]]  
-    void Declare (string type, int i, FlatArray<int> dims);
-    void Declare (int i, FlatArray<int> dims, bool iscomplex);
-    string GetType (bool iscomplex) const;
+    NGS_DLL_HEADER void Declare (string type, int i, FlatArray<int> dims);
+    NGS_DLL_HEADER void Declare (int i, FlatArray<int> dims, bool iscomplex);
+    NGS_DLL_HEADER string GetType (bool iscomplex) const;
   };
 
   struct CodeExpr
