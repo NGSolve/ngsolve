@@ -782,9 +782,13 @@ namespace ngcomp
       for (size_t i=0; i<D; i++)
         for (size_t j=0; j<D; j++)
           for (size_t k=0; k<D; k++)
+            for (size_t l=0; l<nd_u; l++)
             {
               //Gamma_ijk = 0.5*( d_i C_jk + d_j C_ik - d_k C_ij )
-              mat.Row(i*D*D+j*D+k).Range(bmir.Size()) = 0.5*(bmat.Row(i*D*D+(D*k+j))+bmat.Row(j*D*D+(D*i+k))-bmat.Row(k*D*D+(D*i+j)));
+              mat.Row(l*D*D*D+i*D*D+j*D+k).Range(bmir.Size()) =
+                0.5*(bmat.Row(l*D*D*D+i*D*D+(D*k+j))
+                     +bmat.Row(l*D*D*D+j*D*D+(D*i+k))
+                     -bmat.Row(l*D*D*D+k*D*D+(D*i+j)));
             }
     }
     

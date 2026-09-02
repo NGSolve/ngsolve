@@ -299,6 +299,17 @@ def test_hdivsurface_gradient_simd():
     assert_scalar_and_simd_matrices_agree(HDivSurface(mesh, order=2), vb=BND)
 
 
+@pytest.mark.parametrize("dimension", [2, 3])
+def test_hcurlcurl_christoffel_simd(dimension):
+    if dimension == 2:
+        mesh = MakeStructured2DMesh(quads=False, nx=1, ny=1)
+    else:
+        mesh = MakeStructured3DMesh(hexes=False, nx=1, ny=1, nz=1)
+    assert_scalar_and_simd_matrices_agree(
+        HCurlCurl(mesh, order=2), operator="christoffel"
+    )
+
+
     
 if __name__ == "__main__":
     test_fespaces_2d()
