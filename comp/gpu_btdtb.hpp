@@ -238,9 +238,9 @@ namespace ngcomp
       constexpr uint ne = $NE;
       constexpr uint ne8 = RoundUp<8>(ne);
       constexpr uint nip = $NIP;
-      constexpr uint nip8 = RoundUp<8> (nip); 
       constexpr uint bs_els = $BS_ELS;
       constexpr uint bs_ipts = $BS_IPTS;
+      constexpr uint nip_padded = RoundUp<bs_ipts> (nip);   // component stride of bmatx/bmaty
       constexpr uint locdofsx = $LOCDOFSX;
       constexpr uint locdofsy = $LOCDOFSY;
       constexpr uint nrunsx = $NRUNSX;
@@ -330,7 +330,7 @@ namespace ngcomp
 
               WarpMatrix<TS_IPTS,TS_ELS,real> pointvalsrefxi = 0;
               auto mb = mat_elvecx.SubMatrix(TS_ELS*eltile, 0);
-              auto ma = mat_bmatx.SubMatrix(ip+nip8*comp, 0);
+              auto ma = mat_bmatx.SubMatrix(ip+nip_padded*comp, 0);
 
               pointvalsrefxi.AddMM<8*$DOFX_TILES>(ma, mb.Transpose(), tid);
               pointvalsrefxi.Store(mat_pointvalsref.SubMatrix(TS_IPTS*iptile+bs_ipts*comp, TS_ELS*eltile), tid);
@@ -388,7 +388,7 @@ namespace ngcomp
               for (int comp = 0; comp < $DIMYREF; comp++)
                 {
                    auto ma = mat_pointvalsref.SubMatrix(bs_ipts*comp, TS_ELS*eltile);
-                   auto mb = mat_bmaty.SubMatrix(baseip+RoundUp<$BS_IPTS>(nip)*comp, 8*ydoftile);
+                   auto mb = mat_bmaty.SubMatrix(baseip+nip_padded*comp, 8*ydoftile);
                    sum.AddMM<$BS_IPTS> (ma.Transpose(), mb, tid);
                 }
 
