@@ -11,13 +11,12 @@ pkg = ori["packages"]
 
 for name in pkg:
     p = pkg[name]
-    if not p["file_name"].startswith("https://") and not os.path.exists(
-        os.path.join("pyodide", p["file_name"])
-    ):
-        p["file_name"] = (
-            f"https://cdn.jsdelivr.net/pyodide/v{pyodide_version}/full/"
-            + Path(p["file_name"]).name
-        )
+    if not p["file_name"].startswith("https://"):
+        file_name = Path(p["file_name"]).name
+        if not os.path.exists(file_name):
+            p["file_name"] = (
+                f"https://cdn.jsdelivr.net/pyodide/v{pyodide_version}/full/" + file_name
+            )
     pkg[name] = p
 
 pkg["webgui-jupyter-widgets"]["depends"].append("numpy")

@@ -1,10 +1,10 @@
 # syntax=docker/dockerfile:1.7-labs
 FROM ubuntu:25.10 AS builder
 ENV DEBIAN_FRONTEND=noninteractive
-ENV PYODIDE_VERSION=0.29.1
-ENV EMSDK_VERSION=4.0.9
+ENV PYODIDE_VERSION=314.0.6
+ENV EMSDK_VERSION=5.0.3
 ENV PYTHON_MAJOR=3
-ENV PYTHON_MINOR=13
+ENV PYTHON_MINOR=14
 ENV PYTHON_PATCH=2
 ENV PYTHON_VERSION=${PYTHON_MAJOR}.${PYTHON_MINOR}.${PYTHON_PATCH}
 RUN apt-get update && apt-get -y upgrade
@@ -36,7 +36,9 @@ RUN mkdir /root/output
 WORKDIR /root/output
 RUN wget https://github.com/pyodide/pyodide/releases/download/${PYODIDE_VERSION}/pyodide-${PYODIDE_VERSION}.tar.bz2
 RUN tar xvf pyodide-${PYODIDE_VERSION}.tar.bz2
-RUN cd pyodide && unzip libopenblas*.zip
+# the distribution ships more than one libopenblas archive, extract the one
+# referenced by the lock file (that's the one loaded at runtime)
+RUN cd pyodide && unzip $(python3 -c "import json; print(json.load(open('pyodide-lock.json'))['packages']['libopenblas']['file_name'])")
 RUN cd pyodide && rm -rf *.whl* *.tar
 RUN ls pyodide/*.zip | grep -v python_stdlib.zip | xargs rm -f --
 RUN ln -s /usr/bin/python3 /usr/bin/python

@@ -23,8 +23,8 @@ cd build
 emcmake cmake .. \
       -DCMAKE_BUILD_TYPE=Release \
       -DCMAKE_CROSSCOMPILING=ON \
-      -DCMAKE_C_FLAGS="-I$TARGETINSTALLDIR/include/python3.13 -g0 -sSUPPORT_LONGJMP=0 -fwasm-exceptions -O2 -fvisibility=hidden" \
-      -DCMAKE_CXX_FLAGS="-I$TARGETINSTALLDIR/include/python3.13 -g0 -sSUPPORT_LONGJMP=0 -fwasm-exceptions -O2 -fvisibility=hidden" \
+      -DCMAKE_C_FLAGS="-I$TARGETINSTALLDIR/include/python${PYTHON_MAJOR}.${PYTHON_MINOR} -g0 -sSUPPORT_LONGJMP=0 -fwasm-exceptions -O2 -fvisibility=hidden" \
+      -DCMAKE_CXX_FLAGS="-I$TARGETINSTALLDIR/include/python${PYTHON_MAJOR}.${PYTHON_MINOR} -g0 -sSUPPORT_LONGJMP=0 -fwasm-exceptions -O2 -fvisibility=hidden" \
       -DCMAKE_CXX_FLAGS_RELEASE="" \
       -DCMAKE_INSTALL_PREFIX=/opt/opencascade \
       -DBUILD_LIBRARY_TYPE:STRING=Static \
