@@ -5442,7 +5442,7 @@ namespace ngcomp
                        // timerDG2a.Stop();
                        // timerDG2b.Start();
                        Array<int> dnums1_trial(fel1_trial.GetNDof(), lh), dnums2_trial(fel2_trial.GetNDof(), lh);
-                       Array<int> dnums1_test(fel1_test.GetNDof(), lh), dnums2_test(fel2_trial.GetNDof(), lh);
+                       Array<int> dnums1_test(fel1_test.GetNDof(), lh), dnums2_test(fel2_test.GetNDof(), lh);
                        fespace->GetDofNrs (ei1, dnums1_trial);
                        fespace->GetDofNrs (ei2, dnums2_trial);
                        fespace2->GetDofNrs (ei1, dnums1_test);
