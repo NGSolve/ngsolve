@@ -2,6 +2,7 @@ from ngsolve import *
 from netgen.geom2d import SplineGeometry, unit_square
 from netgen.csg import unit_cube, CSGeometry, Cylinder, Sphere, Pnt, Plane, Vec
 import netgen.meshing as meshing
+import pytest
 from ngsolve.meshes import MakeStructured2DMesh,MakeStructured3DMesh, MakeStructuredSurfaceMesh
 from space_utils import *
 
@@ -215,6 +216,88 @@ def test_fespaces_surface():
     Test(mesh=mesh, order=2, vb=BND, addorder=1)
     """
     return
+
+
+def assemble_operator_matrix(fes, operator, vb, simd_evaluate, trace=False):
+    trial, test = fes.TnT()
+    trial = trial.Operator(operator)
+    test = test.Operator(operator)
+    if trace:
+        trial = trial.Trace()
+        test = test.Trace()
+    integrator = SymbolicBFI(
+        InnerProduct(trial, test),
+        vb,
+        simd_evaluate=simd_evaluate,
+    )
+    form = BilinearForm(fes)
+    form += integrator
+    form.Assemble()
+    return form.mat, integrator
+
+
+def assert_scalar_and_simd_matrices_agree(
+    fes, operator="grad", vb=VOL, trace=False
+):
+    scalar_matrix, _ = assemble_operator_matrix(fes, operator, vb, False, trace)
+    simd_matrix, simd_integrator = assemble_operator_matrix(
+        fes, operator, vb, True, trace
+    )
+
+    # An unsupported SIMD operator silently falls back and flips this flag.
+    assert simd_integrator.simd_evaluate
+    scalar_norm = Norm(scalar_matrix.AsVector())
+    assert scalar_norm > 0
+    assert Norm(simd_matrix.AsVector() - scalar_matrix.AsVector()) < (
+        1e-10 * max(1, scalar_norm)
+    )
+
+
+@pytest.mark.parametrize("space", [HDiv, HCurl, HCurlCurl, HCurlDiv])
+def test_gradient_simd_2d(space):
+    mesh = MakeStructured2DMesh(quads=False, nx=1, ny=1)
+    assert_scalar_and_simd_matrices_agree(space(mesh, order=2))
+
+
+@pytest.mark.parametrize("space", [HDiv, HCurl, HCurlCurl])
+def test_gradient_simd_3d(space):
+    mesh = MakeStructured3DMesh(hexes=False, nx=1, ny=1, nz=1)
+    assert_scalar_and_simd_matrices_agree(space(mesh, order=2))
+
+
+@pytest.mark.parametrize("dimension", [2, 3])
+@pytest.mark.parametrize("space", [HDiv, HCurl])
+def test_gradient_trace_simd(space, dimension):
+    if dimension == 2:
+        mesh = MakeStructured2DMesh(quads=False, nx=1, ny=1)
+    else:
+        mesh = MakeStructured3DMesh(hexes=False, nx=1, ny=1, nz=1)
+    assert_scalar_and_simd_matrices_agree(
+        space(mesh, order=2), vb=BND, trace=True
+    )
+
+
+def test_hcurl_gradient_simd_on_surface_mesh():
+    mesh = MakeStructuredSurfaceMesh(
+        quads=False,
+        nx=1,
+        ny=1,
+        mapping=lambda x, y, z: (x, y, x + 2 * y),
+    )
+    assert_scalar_and_simd_matrices_agree(
+        HCurl(mesh, order=2), vb=BND, trace=True
+    )
+
+
+def test_hdivsurface_gradient_simd():
+    mesh = MakeStructuredSurfaceMesh(
+        quads=False,
+        nx=1,
+        ny=1,
+        mapping=lambda x, y, z: (x, y, x + 2 * y),
+    )
+    assert_scalar_and_simd_matrices_agree(HDivSurface(mesh, order=2), vb=BND)
+
 
     
 if __name__ == "__main__":
