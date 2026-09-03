@@ -196,25 +196,34 @@ namespace ngcomp
     auto [geo_ndof_b, dims_g, nip_g] = pmat->Bgeo.Shape();
     if (int(numels_g) != ne || int(dimr_g) != dimr || int(nip_g) != nip || geo_ndof_b != geo_ndof)
       throw Exception("GPU_BTDTBMatrix: geometry data does not match");
+    /*
+      curved classes evaluate F per ip block by the warp matmul into shared
+      memory (9*BS_ipts*BS_els reals); that exceeds metal's 32 KB threadgroup
+      memory for large blocks, then F is evaluated per point instead - as for
+      straight elements, where 4 coefficients make the per-point evaluation
+      cheaper than a separate per-element phase.
+    */
+    bool geo_staged = pmat->geo_order > 1 && BS_ipts <= 16;
     int geo_roundup = RoundUp<8>(geo_ndof);
-    buffer_geocoefs = NewSharedBuffer(size_t(ne)*dimr*geo_roundup);
+    int geo_stride = geo_staged ? geo_roundup : int(geo_ndof);   // the matmul needs K padded to 8
+    buffer_geocoefs = NewSharedBuffer(size_t(ne)*dimr*geo_stride);
     for (int e = 0; e < ne; e++)
       for (int i = 0; i < dimr; i++)
-        for (int n = 0; n < geo_roundup; n++)
-          buffer_geocoefs.HostData()[(size_t(e)*dimr+i)*geo_roundup+n] = (n < int(geo_ndof)) ? pmat->geocoefs(e,n,i) : 0;
+        for (int n = 0; n < geo_stride; n++)
+          buffer_geocoefs.HostData()[(size_t(e)*dimr+i)*geo_stride+n] = (n < int(geo_ndof)) ? pmat->geocoefs(e,n,i) : 0;
     // gradients laid out like bmatx: [refdir][ip (padded to BS_ipts)][node], plus the remainder block
-    buffer_bgeo = NewSharedBuffer(dims*(RoundUp(nip,BS_ipts)+BS_ipts)*geo_roundup);
-    FlatTensor<3,REAL> dbgeo(dims,RoundUp(nip,BS_ipts),geo_roundup, buffer_bgeo.HostData());
+    buffer_bgeo = NewSharedBuffer(dims*(RoundUp(nip,BS_ipts)+BS_ipts)*geo_stride);
+    FlatTensor<3,REAL> dbgeo(dims,RoundUp(nip,BS_ipts),geo_stride, buffer_bgeo.HostData());
     for (int j = 0; j < dims; j++)
       for (int i = 0; i < RoundUp(nip,BS_ipts); i++)
-        for (int k = 0; k < geo_roundup; k++)
+        for (int k = 0; k < geo_stride; k++)
           dbgeo(j,i,k) = (i < nip && k < int(geo_ndof)) ? pmat->Bgeo(k,j,i) : 0;
     int bgeo_rem_rows = dims*RoundUp(nip,BS_ipts);
-    FlatTensor<3,REAL> dbgeo_rem(dims,nip_rem,geo_roundup, buffer_bgeo.HostData() + bgeo_rem_rows*geo_roundup);
+    FlatTensor<3,REAL> dbgeo_rem(dims,nip_rem,geo_stride, buffer_bgeo.HostData() + bgeo_rem_rows*geo_stride);
     dbgeo_rem = 0;
     for (int j = 0; j < dims; j++)
       for (int i = 0; i < nip_rem; i++)
-        for (int k = 0; k < geo_roundup; k++)
+        for (int k = 0; k < geo_stride; k++)
           dbgeo_rem(j,i,k) = (k < int(geo_ndof)) ? pmat->Bgeo(k,j,i+RoundDown(nip,BS_ipts)) : 0;
     // basis values at the points, for the coordinates: sgeo[ip][node]
     buffer_sgeo = NewSharedBuffer(size_t(nip)*geo_ndof);
@@ -222,12 +231,6 @@ namespace ngcomp
       for (int n = 0; n < int(geo_ndof); n++)
         buffer_sgeo.HostData()[size_t(i)*geo_ndof+n] = pmat->Sgeo(n,i);
 
-    /*
-      curved classes evaluate F per ip block by the warp matmul into shared
-      memory (9*BS_ipts*BS_els reals); that exceeds metal's 32 KB threadgroup
-      memory for large blocks, then F is evaluated per point instead
-    */
-    bool geo_staged = pmat->geo_order > 1 && BS_ipts <= 16;
 
     
     string code = code_gpukernel + code_tinybla +
@@ -270,8 +273,7 @@ namespace ngcomp
       int warpIdx = tid/32;
       const uint ne = ne_;
       constexpr uint geo_ndof = $GEO_NDOF;
-      constexpr uint geo_roundup = $GEO_ROUNDUP;
-      constexpr uint geo_order = $GEO_ORDER;
+      constexpr uint geo_roundup = $GEO_ROUNDUP;   // node stride of the coefficients and gradients
       constexpr uint dimr = $DIMR;
       constexpr uint dims = $DIMS;
       constexpr uint nip = $NIP;
@@ -295,7 +297,6 @@ namespace ngcomp
       // geometry coefficients of the batch [element][coordinate][node], and for
       // straight elements (constant gradients) F per element [element][coord][refdir]
       SHARED(real, elgeo, $BS_ELS*dimr*geo_roundup);
-      SHARED(real, elF, $BS_ELS*dimr*dims);
       auto mat_bgeo = MakeBareMatrix<RowMajor>(bgeo, geo_roundup);
 #if ($GEO_STAGED==1)
       // F at the points of the current ip block [coordinate*dims+refdir][ip][element]
@@ -337,27 +338,14 @@ namespace ngcomp
       for (uint i = tid; i < $BS_ELS*locdofsy_roundup; i += bdim)
         elvecy[i/locdofsy_roundup][i%locdofsy_roundup] = 0;
 
+#if ($ONLY_LOADSTORE==0)
       // geometry coefficients, contiguous per element ([coordinate][node] padded to geo_roundup)
       for (uint i = tid; i < $BS_ELS*dimr*geo_roundup; i += bdim)
         elgeo[i] = (baseelem + i/(dimr*geo_roundup) < ne) ? geocoefs[baseelem*dimr*geo_roundup + i] : 0;
+#endif
 
 
       BARRIER();
-
-      if constexpr (geo_order == 1)
-        {
-          for (uint i = tid; i < $BS_ELS*dimr*dims; i += bdim)
-            {
-              uint locelnr = i / (dimr*dims);
-              uint coord = (i % (dimr*dims)) / dims;
-              uint refdir = i % dims;
-              real sum = 0;
-              for (uint c = 0; c < geo_ndof; c++)
-                sum += elgeo[(locelnr*dimr+coord)*geo_roundup+c] * bgeo[(refdir*nip_padded)*geo_roundup+c];
-              elF[i] = sum;
-            }
-          BARRIER();
-        }
 
 #if ($ONLY_LOADSTORE==1)
 
@@ -434,19 +422,16 @@ namespace ngcomp
                Mat<$DIMR,$DIMS,real> F;
                for (int i = 0; i < $DIMR; i++)
                   for (int j = 0; j < $DIMS; j++)
-                    if constexpr (geo_order == 1)
-                      F(i,j) = elF[(locelnr*dimr+i)*dims+j];
-                    else
-                      {
+                    {
 #if ($GEO_STAGED==1)
-                        F(i,j) = Fvals[(i*dims+j)*bs_ipts + locipnr][locelnr];
+                      F(i,j) = Fvals[(i*dims+j)*bs_ipts + locipnr][locelnr];
 #else
-                        real sum = 0;
-                        for (uint c = 0; c < geo_ndof; c++)
-                          sum += elgeo[(locelnr*dimr+i)*geo_roundup+c] * bgeo[(j*nip_padded + baseip+locipnr)*geo_roundup+c];
-                        F(i,j) = sum;
+                      real sum = 0;
+                      for (uint c = 0; c < geo_ndof; c++)
+                        sum += elgeo[(locelnr*dimr+i)*geo_roundup+c] * bgeo[(j*nip_padded + baseip+locipnr)*geo_roundup+c];
+                      F(i,j) = sum;
 #endif
-                      }
+                    }
                real J = Det(F);
 
                for (int comp = 0; comp < $DIMXREF; comp++)
@@ -552,19 +537,16 @@ namespace ngcomp
                Mat<$DIMR,$DIMS,real> F;
                for (uint i = 0; i < $DIMR; i++)
                   for (uint j = 0; j < $DIMS; j++)
-                    if constexpr (geo_order == 1)
-                      F(i,j) = elF[(locelnr*dimr+i)*dims+j];
-                    else
-                      {
+                    {
 #if ($GEO_STAGED==1)
-                        F(i,j) = Fvals[i*frows + j*numips + locipnr][locelnr];
+                      F(i,j) = Fvals[i*frows + j*numips + locipnr][locelnr];
 #else
-                        real sum = 0;
-                        for (uint c = 0; c < geo_ndof; c++)
-                          sum += elgeo[(locelnr*dimr+i)*geo_roundup+c] * bgeo[($BGEO_REM_ROWS + j*numips + locipnr)*geo_roundup+c];
-                        F(i,j) = sum;
+                      real sum = 0;
+                      for (uint c = 0; c < geo_ndof; c++)
+                        sum += elgeo[(locelnr*dimr+i)*geo_roundup+c] * bgeo[($BGEO_REM_ROWS + j*numips + locipnr)*geo_roundup+c];
+                      F(i,j) = sum;
 #endif
-                      }
+                    }
                real J = Det(F);
 
                for (uint j = 0; j < $DIMXREF; j++)
@@ -707,8 +689,7 @@ namespace ngcomp
     code = Substitute(code, "$BMATX_REM_ROWS", ToString(bmatx_rem_rows)+" /*bmatx_rem_rows*/ ");      
     code = Substitute(code, "$BMATY_REM_ROWS", ToString(bmaty_rem_rows)+" /*bmaty_rem_rows*/ ");      
     code = Substitute(code, "$GEO_NDOF", ToString(geo_ndof));
-    code = Substitute(code, "$GEO_ORDER", ToString(pmat->geo_order));
-    code = Substitute(code, "$GEO_ROUNDUP", ToString(geo_roundup));
+    code = Substitute(code, "$GEO_ROUNDUP", ToString(geo_stride));
     code = Substitute(code, "$GEO_TILES", ToString(geo_roundup/8));
     code = Substitute(code, "$GEO_STAGED", ToString(geo_staged ? 1 : 0));
     code = Substitute(code, "$BGEO_REM_ROWS", ToString(bgeo_rem_rows)+" /*bgeo_rem_rows*/ ");
