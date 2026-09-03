@@ -682,6 +682,16 @@ namespace tinybla {
     return r;
   }
 
+  template <int S, typename T>
+  TB_HD T InnerProduct (Vec<S,T> a, Vec<S,T> b) {
+    T sum = 0;
+    for (int i = 0; i < S; i++) sum += a(i)*b(i);
+    return sum;
+  }
+
+  template <int S, typename T>
+  TB_HD T Norm (Vec<S,T> v) { return sqrt(InnerProduct(v, v)); }
+
 
   template <int H, int W, typename T>
   class Mat {

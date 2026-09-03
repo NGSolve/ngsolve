@@ -213,6 +213,7 @@ namespace ngcomp
       CONSTANT_ARRAY(int, offof_x, $LOCDOFSX) = $OFFOFX;
       CONSTANT_ARRAY(int, runof_y, $LOCDOFSY) = $RUNOFY;
       CONSTANT_ARRAY(int, offof_y, $LOCDOFSY) = $OFFOFY;
+      $NREF_TABLE
 
       KERNEL(apply_btdtb,
              GLOBAL_IN(real, x),
@@ -355,8 +356,9 @@ namespace ngcomp
               // xrefvals -> xvals
               $TRANSFORMX;   
 
+              $MEASURE
               $PHYSICS
-              yvals = weights[baseip+locipnr] * JacobiDets[elnr] * yvals;
+              yvals = weights[baseip+locipnr] * meas * yvals;
 
               // yvals -> yrefvals
               $TRANSFORMY;          
@@ -444,8 +446,9 @@ namespace ngcomp
               // xrefvals -> xvals
               $TRANSFORMX;   
 
+              $MEASURE
               $PHYSICS
-              yvals = weights[baseip+locipnr] * JacobiDets[elnr] * yvals;
+              yvals = weights[baseip+locipnr] * meas * yvals;
 
               // yvals -> yrefvals
               $TRANSFORMY;          
@@ -588,6 +591,38 @@ namespace ngcomp
         { if (i) s += ","; s += ToString(a[i]); }
       return s+"}";
     };
+    {
+      // element-boundary integrals: weight * |Cof(F) nref_ip| instead of weight * det
+      bool eb = pmat->facetnr.Size() > 0;
+      string table, measure = "real meas = JacobiDets[elnr];";
+      if (eb)
+        {
+          // reference normal per facet, facet of each integration point
+          int nfacets = pmat->normals_ref.Height();
+          Array<double> flat(nfacets*dimr);
+          for (int f = 0; f < nfacets; f++)
+            for (int d = 0; d < dimr; d++)
+              flat[f*dimr+d] = pmat->normals_ref(f,d);
+          string init = "{";
+          for (auto i : Range(flat)) { if (i) init += ","; init += ToString(flat[i]); }
+          table = "CONSTANT_ARRAY(real, nref, " + ToString(nfacets*dimr) + ") = " + init + "};\n";
+          table += "      CONSTANT_ARRAY(int, facetof, " + ToString(nip) + ") = " + InitList(pmat->facetnr) + ";";
+          string nvec = "Vec<" + ToString(dimr) + ",real>(";
+          for (int d = 0; d < dimr; d++)
+            nvec += (d ? "," : "") + string("nref[") + ToString(dimr) + "*facetof[baseip+locipnr]+" + ToString(d) + "]";
+          nvec += ")";
+          // measure |Cof(F) nref| and physical normal; the generated physics
+          // accesses the normal as normals(i,k)
+          string D = ToString(dimr);
+          measure =
+            "Vec<"+D+",real> cofn = Cof(F)*" + nvec + ";\n"
+            "real meas = Norm(cofn);\n"
+            "struct { Vec<"+D+",real> nv; real operator() (int, int k) const { return nv(k); } }\n"
+            "  normals { ((J > 0) ? real(1) : real(-1)) / meas * cofn };\n";
+        }
+      code = Substitute(code, "$NREF_TABLE", table);
+      code = Substitute(code, "$MEASURE", measure);
+    }
     code = Substitute(code, "$NRUNSX", ToString(nrunsx));
     code = Substitute(code, "$NRUNSY", ToString(nrunsy));
     code = Substitute(code, "$RUNOFX", InitList(runofx));

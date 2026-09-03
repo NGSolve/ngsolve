@@ -1063,6 +1063,10 @@ namespace ngcomp
     Array<shared_ptr<DifferentialOperator>> diffopsx, diffopsy;  // computing T
     Tensor<4> D; // element, dimy, dimx, nip
     Tensor<4> Jacobi; // element, dimr, dims, nip
+    // element-boundary integrals: facet of each integration point, and the
+    // reference normal per facet (nfacets x dim); both empty for volume integrals
+    Array<int> facetnr;
+    Matrix<> normals_ref;
     MatFreeOptions opts;
     Array<IntRange> ranges_x, ranges_xref, ranges_y, ranges_yref;
     Array<Code> physics;    // code for d_form / d_test

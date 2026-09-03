@@ -1193,6 +1193,8 @@ namespace ngcomp
               {
                 auto eltype = felx.ElementType();
                 
+                if (bfi->ElementVB() != BND)
+                  throw Exception("matrix-free: only volume and element-boundary integrals supported");
                 Facet2ElementTrafo transform(eltype, bfi->ElementVB()); 
                 int nfacet = transform.GetNFacets();
                 
@@ -1207,6 +1209,22 @@ namespace ngcomp
                   }
               }
             
+            // element-boundary integrals: the measure of a point is |Cof(J) nref| with the
+            // reference normal of its facet, and varies over the element
+            bool eb = bfi->ElementVB() != VOL;
+            Array<int> facetnr(eb ? ir.Size() : 0);
+            int nfacets = eb ? ElementTopology::GetNFacets(felx.ElementType()) : 0;
+            Matrix<> normals_ref(nfacets, dimS);
+            if (eb)
+              {
+                auto normals = ElementTopology::GetNormals(felx.ElementType());
+                for (int f = 0; f < nfacets; f++)
+                  for (size_t d = 0; d < dimS; d++)
+                    normals_ref(f,d) = normals[f][d];
+                for (auto i : Range(ir))
+                  facetnr[i] = ir[i].FacetNr();
+              }
+
             Tensor<3> bmatx(felx.GetNDof(), dimxref, ir.Size());
             Tensor<3> bmaty(fely.GetNDof(), dimyref, ir.Size());
             
@@ -1261,7 +1279,7 @@ namespace ngcomp
             
             if (linear)
               {
-                Tensor<4> diag(elclass_inds.Size(), dimy, dimx, 1 /* ir.Size()*/); 
+                Tensor<4> diag(elclass_inds.Size(), dimy, dimx, eb ? ir.Size() : 1);
                 Tensor<4> Jacobi(elclass_inds.Size(), dimR, dimS, curved ? ir.Size() : 1);
                 
                 // for (auto i : Range(elclass_inds))
@@ -1273,8 +1291,27 @@ namespace ngcomp
                       ElementId ei(VOL, elclass_inds[i]);
                       auto & trafo = ma->GetTrafo(ei, lh);
                       auto & mir = trafo(ir, lh);
-                      if (bfi->ElementVB() != VOL) 
-                        mir.ComputeNormalsAndMeasure (fel.ElementType());
+                      if (eb)
+                        for (auto j : Range(ir))
+                          {
+                            auto setfacet = [&] (auto & mip, auto n)
+                            {
+                              double len = L2Norm(n);
+                              double sign = mip.GetJacobiDet() > 0 ? 1 : -1;
+                              mip.SetMeasure(len);
+                              mip.SetNV(sign/len * n);
+                            };
+                            if (dimS == 3)
+                              {
+                                auto & mip3 = static_cast<MappedIntegrationPoint<3,3>&>(mir[j]);
+                                setfacet (mip3, Vec<3>(mip3.GetJacobianCofactor() * Vec<3>(normals_ref.Row(facetnr[j]))));
+                              }
+                            else
+                              {
+                                auto & mip2 = static_cast<MappedIntegrationPoint<2,2>&>(mir[j]);
+                                setfacet (mip2, Vec<2>(mip2.GetJacobianCofactor() * Vec<2>(normals_ref.Row(facetnr[j]))));
+                              }
+                          }
 
                       for (auto j : Range(curved?ir.Size():1))
                         Jacobi(i, STAR, STAR, j) = mir[j].GetJacobian();
@@ -1310,8 +1347,11 @@ namespace ngcomp
                                       ud.test_comp = l;
                                       
                                       cf -> Evaluate (mir, val);
-                                      // proxyvalues(STAR,l1+l,k1+k) = val.Col(0);
-                                      diag(i, l1+l, k1+k, 0) = mir[0].GetMeasure()*val.Col(0)(0);
+                                      if (eb)
+                                        for (auto j : Range(ir))
+                                          diag(i, l1+l, k1+k, j) = mir[j].GetMeasure()*val(j,0);
+                                      else
+                                        diag(i, l1+l, k1+k, 0) = mir[0].GetMeasure()*val(0,0);
                                     }
                                 l1 += proxy2->Dimension();
                               }
@@ -1334,14 +1374,17 @@ namespace ngcomp
                 // cout << "diag = " << endl << diag << endl;
                 // cout << "jac = " << Jacobi << endl;
                 
-                mat = make_shared<MatrixFreeBTDTB> (bfi -> GetCoefficientFunction(),
-                                                    trialproxies, testproxies,
-                                                    fesy->GetNDof(), fesx->GetNDof(),
-                                                    Array<size_t>(elclass_inds), std::move(dofx), std::move(dofy),
-                                                    std::move(bmatx), std::move(bmaty),
-                                                    std::move(weights),
-                                                    std::move(diffopsx), std::move(diffopsy), std::move(diag), std::move(Jacobi),
-                                                    *matfree_opts);
+                auto mfmat = make_shared<MatrixFreeBTDTB> (bfi -> GetCoefficientFunction(),
+                                                           trialproxies, testproxies,
+                                                           fesy->GetNDof(), fesx->GetNDof(),
+                                                           Array<size_t>(elclass_inds), std::move(dofx), std::move(dofy),
+                                                           std::move(bmatx), std::move(bmaty),
+                                                           std::move(weights),
+                                                           std::move(diffopsx), std::move(diffopsy), std::move(diag), std::move(Jacobi),
+                                                           *matfree_opts);
+                mfmat->facetnr = std::move(facetnr);
+                mfmat->normals_ref = std::move(normals_ref);
+                mat = mfmat;
                                                     
               }
             

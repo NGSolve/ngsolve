@@ -27,6 +27,10 @@ namespace ngcomp
     static bool SupportsVB (VorB checkvb) { return (checkvb==VOL) || (checkvb==BND); }
     
     typedef DiffOpIdBoundary<D> DIFFOP_TRACE;
+
+    // identity: reference values are the physical values
+    static string GenerateTransformationCode (string invar, string outvar, bool trans)
+    { return outvar + " = " + invar + ";\n"; }
     
     template <typename FEL, typename MIP, typename MAT>
     static void GenerateMatrix (const FEL & bfel, const MIP & mip,
