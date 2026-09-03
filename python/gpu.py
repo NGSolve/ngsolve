@@ -24,8 +24,14 @@ _backend_names = []
 for _tag, _module in (("metal", "ngsolve.ngsmetal"), ("cuda", "ngsolve.ngscuda")):
     try:
         _mod = __import__(_module, fromlist=["*"])
-    except ImportError:
-        continue          # not built, or no runtime - try the next one
+    except ModuleNotFoundError:
+        continue          # not built - try the next one
+    except ImportError as _e:
+        # built, but failed to load (no runtime, or a binding error):
+        # say so rather than silently falling back to the host
+        import warnings
+        warnings.warn(f"{_module} is present but could not be loaded: {_e}")
+        continue
     backend = _tag
     for _name in dir(_mod):
         if not _name.startswith("_"):

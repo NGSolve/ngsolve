@@ -1214,18 +1214,27 @@ inverse : string
     .def("CreateDeviceMatrix", &BaseMatrix::CreateDeviceMatrix)
     ;
 
-  py::class_<DeviceVector<double>, shared_ptr<DeviceVector<double>>, BaseVector>
-    (m, "DeviceVectorD", "vector on the gpu, fp64")
-    .def(py::init<size_t>(), py::arg("size"))
-    .def(py::init<const BaseVector&>(), py::arg("vec"));
-  py::class_<DeviceVector<float>, shared_ptr<DeviceVector<float>>, BaseVector>
-    (m, "DeviceVectorF", "vector on the gpu, fp32")
-    .def(py::init<size_t>(), py::arg("size"))
-    .def(py::init<const BaseVector&>(), py::arg("vec"));
-  py::class_<DeviceVector<Complex>, shared_ptr<DeviceVector<Complex>>, BaseVector>
-    (m, "DeviceVectorC", "vector on the gpu, complex fp64")
-    .def(py::init<size_t>(), py::arg("size"))
-    .def(py::init<const BaseVector&>(), py::arg("vec"));
+  auto bind_devicevector = [&m] (auto proto, const char * name, const char * doc)
+  {
+    typedef DeviceVector<decltype(proto)> DV;
+    py::class_<DV, shared_ptr<DV>, BaseVector> (m, name, doc)
+      .def(py::init<size_t>(), py::arg("size"))
+      .def(py::init<const BaseVector&>(), py::arg("vec"))
+      .def("D2H", [] (DV & self)
+           {
+             // a copy in host-visible memory
+             auto tmp = make_shared<DV> (self.Size(), MemType::Shared);
+             tmp->Set (1.0, self);
+             return tmp;
+           }, "copy into a host-visible device vector")
+      .def("WaitUntilCompleted", [] (DV & self) { self.GetQueue()->Finish(); },
+           "wait until all queued kernels writing this vector are done")
+      .def_property_readonly("memtype", [] (DV & self) { return self.GetMemType(); })
+      ;
+  };
+  bind_devicevector (double(), "DeviceVectorD", "vector on the gpu, fp64");
+  bind_devicevector (float(), "DeviceVectorF", "vector on the gpu, fp32");
+  bind_devicevector (Complex(), "DeviceVectorC", "vector on the gpu, complex fp64");
 
   py::class_<DeviceSparseMatrix<double>, shared_ptr<DeviceSparseMatrix<double>>, BaseMatrix>
     (m, "DeviceSparseMatrixD", "csr matrix on the gpu, fp64");

@@ -4,7 +4,7 @@
 #include <comp.hpp>
 #include <python_comp.hpp>
 
-#include "metal_vector.hpp"
+#include <devicevector.hpp>
 #include <gpu_btdtb.hpp>
 
 #include "metal_device.hpp"
@@ -110,30 +110,8 @@ Xcode.
          })
     ;
   
-  py::class_<MetalVector, BaseVector, shared_ptr<MetalVector>> (m, "MetalVector")
-    .def(py::init<size_t>(), py::arg("size"))
-    .def(py::init<const BaseVector&>(), py::arg("size"))
-    .def("D2H", [](MetalVector& mv) {
-      auto tmp = make_shared<MetalVector>(mv.Size(), MemType::Shared);
-      tmp -> Set(1.0, mv);
-      return tmp;
-    })
-    .def("WaitUntilCompleted", [](MetalVector& mv) { mv.GetQueue()->Finish(); })
-    ;
-
-
-  BaseVector::RegisterDeviceVectorCreator(typeid(S_BaseVectorPtr<double>),
-                                          [] (const BaseVector & vec, bool unified) -> shared_ptr<BaseVector>
-                                          {
-                                            return make_shared<MetalVector>
-                                              (vec, unified ? MemType::Shared : MemType::Device);
-                                          });
-  BaseVector::RegisterDeviceVectorCreator(typeid(VVector<double>),
-                                          [] (const BaseVector & vec, bool unified) -> shared_ptr<BaseVector>
-                                          {
-                                            return make_shared<MetalVector>
-                                              (vec, unified ? MemType::Shared : MemType::Device);
-                                          });
+  // device vectors: BaseVector::CreateDeviceVector creates the common
+  // DeviceVector<float> (ngsolve.la.DeviceVectorF), nothing to register
   
   
 
