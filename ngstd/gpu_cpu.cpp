@@ -169,7 +169,7 @@ namespace ngs_gpu
       size_t ComputeUnits() const override
       { return std::max (1u, std::thread::hardware_concurrency()); }
 
-      shared_ptr<Buffer> NewBuffer (size_t bytes, MemType mt) override
+      shared_ptr<Buffer> DoNewBuffer (size_t bytes, MemType mt) override
       { return std::make_shared<CpuBuffer> (bytes, mt); }
 
       shared_ptr<Queue> DefaultQueue() override

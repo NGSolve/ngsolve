@@ -223,7 +223,7 @@ namespace ngs_cuda
     size_t ComputeUnits() const override
     { return Attr (CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT); }
 
-    shared_ptr<Buffer> NewBuffer (size_t bytes, MemType mt) override
+    shared_ptr<Buffer> DoNewBuffer (size_t bytes, MemType mt) override
     { return std::make_shared<CudaBuffer> (bytes, mt); }
 
     shared_ptr<Queue> DefaultQueue() override { return defqueue; }

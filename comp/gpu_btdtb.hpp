@@ -41,9 +41,9 @@ namespace ngcomp
     shared_ptr<ngs_gpu::Kernel> kernel;
     shared_ptr<ngs_gpu::Queue> queue;
 
-    shared_ptr<ngs_gpu::Buffer> buffer_dofx, buffer_dofy;
-    shared_ptr<ngs_gpu::Buffer> buffer_bmatx, buffer_bmaty;
-    shared_ptr<ngs_gpu::Buffer> buffer_weights, buffer_geocoefs, buffer_bgeo, buffer_sgeo;
+    ngs_gpu::TypedBuffer<int> buffer_dofx, buffer_dofy;
+    ngs_gpu::TypedBuffer<REAL> buffer_bmatx, buffer_bmaty;
+    ngs_gpu::TypedBuffer<REAL> buffer_weights, buffer_geocoefs, buffer_bgeo, buffer_sgeo;
     
   public:
     GPU_BTDTBMatrix (const BaseMatrix& mat);
@@ -91,7 +91,7 @@ namespace ngcomp
       throw Exception("GPU_BTDTBMatrix: only square element Jacobians supported (volume elements)");
 
     auto NewSharedBuffer = [&] (size_t nreals)
-    { return device->NewBuffer (nreals*sizeof(REAL), MemType::Shared); };
+    { return device->NewBuffer<REAL> (nreals, MemType::Shared); };
     
     /*
       The dofs of an element decompose into intervals of consecutive numbers
@@ -130,8 +130,8 @@ namespace ngcomp
     {
       if (dofs.Size() != size_t(ne))
         throw Exception("GPU_BTDTBMatrix: dof table does not match number of elements");
-      auto buffer = device->NewBuffer(size_t(ne)*nruns*sizeof(int), MemType::Shared);
-      int * bases = buffer->HostData<int>();
+      auto buffer = device->NewBuffer<int> (size_t(ne)*nruns, MemType::Shared);
+      int * bases = buffer.HostData();
       for (size_t elnr : Range(dofs.Size()))
         for (int k = 0; k < locdofs; k++)
           if (offof[k] == 0)
@@ -147,7 +147,7 @@ namespace ngcomp
 
     // for the remainder, store the compressed tensor in the last rows of buffer_bmatx
     buffer_bmatx = NewSharedBuffer(dimxref*(RoundUp(nip,BS_ipts)+BS_ipts)*RoundUp<8>(locdofsx));
-    FlatTensor<3,REAL> dbmatx(dimxref,RoundUp(nip,BS_ipts),RoundUp<8>(locdofsx), buffer_bmatx->HostData<REAL>());
+    FlatTensor<3,REAL> dbmatx(dimxref,RoundUp(nip,BS_ipts),RoundUp<8>(locdofsx), buffer_bmatx.HostData());
     for (int j = 0; j < dimxref; j++)
       for (int i = 0; i < RoundUp(nip,BS_ipts); i++)
         for (int k = 0; k < RoundUp<8>(locdofsx); k++)
@@ -155,7 +155,7 @@ namespace ngcomp
 
     int bmatx_rem_rows = dimxref*RoundUp(nip,BS_ipts);
     int nip_rem = nip - RoundDown(nip, BS_ipts);
-    FlatTensor<3,REAL> dbmatx_rem(dimxref,nip_rem,RoundUp<8>(locdofsx), buffer_bmatx->HostData<REAL>() + bmatx_rem_rows*RoundUp<8>(locdofsx));
+    FlatTensor<3,REAL> dbmatx_rem(dimxref,nip_rem,RoundUp<8>(locdofsx), buffer_bmatx.HostData() + bmatx_rem_rows*RoundUp<8>(locdofsx));
     dbmatx_rem = 0;
     for (int j = 0; j < dimxref; j++)
       for (int i = 0; i < nip_rem; i++)
@@ -164,14 +164,14 @@ namespace ngcomp
 
     
     buffer_bmaty = NewSharedBuffer(dimyref*(RoundUp(nip,BS_ipts)+BS_ipts)*RoundUp<8>(locdofsy));
-    FlatTensor<3,REAL> dbmaty(dimyref,RoundUp(nip,BS_ipts),RoundUp<8>(locdofsy), buffer_bmaty->HostData<REAL>());
+    FlatTensor<3,REAL> dbmaty(dimyref,RoundUp(nip,BS_ipts),RoundUp<8>(locdofsy), buffer_bmaty.HostData());
     for (int j = 0; j < dimyref; j++)
       for (int i = 0; i < RoundUp(nip,BS_ipts); i++)
         for (int k = 0; k < RoundUp<8>(locdofsy); k++)
           dbmaty(j,i,k) = (i<nip && k < locdofsy) ? pmat->By(k,j,i) : 0;
 
     int bmaty_rem_rows = dimyref*RoundUp(nip,BS_ipts);    
-    FlatTensor<3,REAL> dbmaty_rem(dimyref,nip_rem,RoundUp<8>(locdofsy), buffer_bmaty->HostData<REAL>() + bmaty_rem_rows*RoundUp<8>(locdofsy));
+    FlatTensor<3,REAL> dbmaty_rem(dimyref,nip_rem,RoundUp<8>(locdofsy), buffer_bmaty.HostData() + bmaty_rem_rows*RoundUp<8>(locdofsy));
     dbmaty_rem = 0;
     for (int j = 0; j < dimyref; j++)
       for (int i = 0; i < nip_rem; i++)
@@ -182,7 +182,7 @@ namespace ngcomp
 
     buffer_weights = NewSharedBuffer(RoundUp<8>(nip));
     for (int i = 0; i < RoundUp<8>(nip); i++)
-      buffer_weights->HostData<REAL>()[i] = i < nip ? pmat->weights[i] : 0;
+      buffer_weights.HostData()[i] = i < nip ? pmat->weights[i] : 0;
 
     /*
       geometry: per element the coefficients of the mapping in the L2 basis
@@ -199,16 +199,16 @@ namespace ngcomp
     for (int e = 0; e < ne; e++)
       for (int i = 0; i < dimr; i++)
         for (int n = 0; n < geo_roundup; n++)
-          buffer_geocoefs->HostData<REAL>()[(size_t(e)*dimr+i)*geo_roundup+n] = (n < int(geo_ndof)) ? pmat->geocoefs(e,n,i) : 0;
+          buffer_geocoefs.HostData()[(size_t(e)*dimr+i)*geo_roundup+n] = (n < int(geo_ndof)) ? pmat->geocoefs(e,n,i) : 0;
     // gradients laid out like bmatx: [refdir][ip (padded to BS_ipts)][node], plus the remainder block
     buffer_bgeo = NewSharedBuffer(dims*(RoundUp(nip,BS_ipts)+BS_ipts)*geo_roundup);
-    FlatTensor<3,REAL> dbgeo(dims,RoundUp(nip,BS_ipts),geo_roundup, buffer_bgeo->HostData<REAL>());
+    FlatTensor<3,REAL> dbgeo(dims,RoundUp(nip,BS_ipts),geo_roundup, buffer_bgeo.HostData());
     for (int j = 0; j < dims; j++)
       for (int i = 0; i < RoundUp(nip,BS_ipts); i++)
         for (int k = 0; k < geo_roundup; k++)
           dbgeo(j,i,k) = (i < nip && k < int(geo_ndof)) ? pmat->Bgeo(k,j,i) : 0;
     int bgeo_rem_rows = dims*RoundUp(nip,BS_ipts);
-    FlatTensor<3,REAL> dbgeo_rem(dims,nip_rem,geo_roundup, buffer_bgeo->HostData<REAL>() + bgeo_rem_rows*geo_roundup);
+    FlatTensor<3,REAL> dbgeo_rem(dims,nip_rem,geo_roundup, buffer_bgeo.HostData() + bgeo_rem_rows*geo_roundup);
     dbgeo_rem = 0;
     for (int j = 0; j < dims; j++)
       for (int i = 0; i < nip_rem; i++)
@@ -218,7 +218,7 @@ namespace ngcomp
     buffer_sgeo = NewSharedBuffer(size_t(nip)*geo_ndof);
     for (int i = 0; i < nip; i++)
       for (int n = 0; n < int(geo_ndof); n++)
-        buffer_sgeo->HostData<REAL>()[size_t(i)*geo_ndof+n] = pmat->Sgeo(n,i);
+        buffer_sgeo.HostData()[size_t(i)*geo_ndof+n] = pmat->Sgeo(n,i);
 
     /*
       curved classes evaluate F per ip block by the warp matmul into shared

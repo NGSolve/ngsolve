@@ -24,7 +24,7 @@ namespace ngla
 
   Dev<double> * UnifiedVector :: DevData() const
   {
-    return (Dev<double>*)ngs_cuda::BufferDevPtr(*devbuffer) + devoffset;
+    return (Dev<double>*)ngs_cuda::BufferDevPtr(*devbuffer.Raw()) + devoffset;
   }
 
   FlatVector<Dev<double>> UnifiedVector :: FVDev() const

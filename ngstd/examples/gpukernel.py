@@ -31,7 +31,7 @@ hx = np.arange(n, dtype=np.float32)
 def run(dev):
     lib = dev.CompileSource(GPUKernelPrelude + src)
     q = dev.DefaultQueue()
-    x, y, o = dev.NewBuffer(4*n), dev.NewBuffer(4*n), dev.NewBuffer(4*ngrp)
+    x, y, o = dev.NewBuffer(n), dev.NewBuffer(n), dev.NewBuffer(ngrp)
     x.H2D(hx)
     y.H2D(np.ones(n, dtype=np.float32))
     q.Launch(lib.GetKernel("saxpy"), groups=[ngrp], groupsize=[tg], args=[x, y, 2.0, n])

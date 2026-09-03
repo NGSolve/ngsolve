@@ -74,27 +74,64 @@ static void ExportGPU (py::module & m)
     .value("Shared", MemType::Shared)
     ;
 
-  py::class_<Buffer, shared_ptr<Buffer>> (m, "GPUBuffer")
-    .def_property_readonly("size", &Buffer::Size)
-    .def_property_readonly("memtype", &Buffer::GetMemType)
+  // a device buffer with a numpy dtype: sizes and offsets count elements
+  struct PyGPUBuffer
+  {
+    shared_ptr<Buffer> buf;
+    py::dtype dtype;
+    size_t ItemSize() const { return dtype.itemsize(); }
+    size_t Size() const { return buf->Size() / ItemSize(); }
+  };
+
+  py::class_<PyGPUBuffer, shared_ptr<PyGPUBuffer>> (m, "GPUBuffer", py::buffer_protocol())
+    .def_property_readonly("size", &PyGPUBuffer::Size, "number of elements")
+    .def_property_readonly("nbytes", [](PyGPUBuffer & self) { return self.buf->Size(); })
+    .def_property_readonly("dtype", [](PyGPUBuffer & self) { return self.dtype; })
+    .def_property_readonly("memtype", [](PyGPUBuffer & self) { return self.buf->GetMemType(); })
     .def_property_readonly("host_visible",
-                           [](Buffer & self) { return self.HostPtr() != nullptr; })
-    .def("H2D", [](Buffer & self, py::array_t<float, py::array::c_style> a, size_t offset)
+                           [](PyGPUBuffer & self) { return self.buf->HostPtr() != nullptr; })
+    .def("__len__", &PyGPUBuffer::Size)
+    .def("H2D", [](PyGPUBuffer & self, py::object obj, size_t offset)
          {
-           if (offset + a.nbytes() > self.Size())
+           auto a = py::module::import("numpy").attr("ascontiguousarray")
+             (obj, py::arg("dtype")=self.dtype).cast<py::array>();
+           size_t n = a.size();
+           if (offset + n > self.Size())
              throw Exception("GPUBuffer.H2D: does not fit");
-           self.H2D (static_cast<const void*>(a.data()), (size_t)a.nbytes(), offset);
-         }, py::arg("array"), py::arg("offset")=0)
-    .def("D2H", [](Buffer & self, size_t n, size_t offset)
+           self.buf->H2D (a.data(), n*self.ItemSize(), offset*self.ItemSize());
+         }, py::arg("array"), py::arg("offset")=0,
+         "upload an array (converted to the buffer's dtype), offset in elements")
+    .def("D2H", [](PyGPUBuffer & self, py::object nobj, size_t offset)
          {
-           if (offset + n*sizeof(float) > self.Size())
+           if (offset > self.Size())
+             throw Exception("GPUBuffer.D2H: offset out of range");
+           size_t n = nobj.is_none() ? self.Size()-offset : py::cast<size_t>(nobj);
+           if (offset + n > self.Size())
              throw Exception("GPUBuffer.D2H: does not fit");
-           py::array_t<float> a(n);
-           self.D2H (static_cast<void*>(a.mutable_data()), n*sizeof(float), offset);
+           py::array a(self.dtype, std::vector<py::ssize_t>{ py::ssize_t(n) });
+           self.buf->D2H (a.mutable_data(), n*self.ItemSize(), offset*self.ItemSize());
            return a;
-         }, py::arg("n"), py::arg("offset")=0)
-    .def("__str__", [](Buffer & self)
-         { return "GPUBuffer, size = " + ToString(self.Size()) + " bytes"; })
+         }, py::arg("n")=py::none(), py::arg("offset")=0,
+         "download n elements (default: all) as a numpy array, offset in elements")
+    // numpy view without a copy, host visible buffers only
+    .def_buffer([](PyGPUBuffer & self) -> py::buffer_info
+         {
+           void * ptr = self.buf->HostPtr();
+           if (!ptr)
+             throw Exception("GPUBuffer is not host visible, use D2H");
+           return py::buffer_info (ptr, py::ssize_t(self.ItemSize()),
+                                   py::cast<std::string>(self.dtype.attr("char")),
+                                   1, { py::ssize_t(self.Size()) }, { py::ssize_t(self.ItemSize()) });
+         })
+    .def("numpy", [](py::object self)
+         {
+           if (!py::cast<PyGPUBuffer&>(self).buf->HostPtr())
+             throw Exception("GPUBuffer.numpy: not host visible, use D2H");
+           return py::module::import("numpy").attr("asarray")(self);
+         }, "numpy view of a host visible buffer, no copy")
+    .def("__str__", [](PyGPUBuffer & self)
+         { return "GPUBuffer, size = " + ToString(self.Size()) + ", dtype = "
+             + py::cast<std::string>(py::str(self.dtype)); })
     ;
 
   py::class_<Kernel, shared_ptr<Kernel>> (m, "GPUKernel")
@@ -129,17 +166,24 @@ static void ExportGPU (py::module & m)
              return Dim3(v[0], v[1], v[2]);
            };
 
+           auto npgeneric = py::module::import("numpy").attr("generic");
            std::vector<KernelArg> kargs;
            for (auto arg : args)
              {
-               if (py::isinstance<Buffer>(arg))
-                 kargs.push_back (KernelArg(py::cast<shared_ptr<Buffer>>(arg)));
+               if (py::isinstance<PyGPUBuffer>(arg))
+                 kargs.push_back (KernelArg(py::cast<PyGPUBuffer&>(arg).buf));
+               else if (py::isinstance(arg, npgeneric))
+                 {
+                   // numpy scalar: passed with its own dtype (np.float64 -> double)
+                   auto bytes = py::cast<std::string>(arg.attr("tobytes")());
+                   kargs.push_back (KernelArg(bytes.data(), bytes.size()));
+                 }
                else if (py::isinstance<py::float_>(arg))
                  kargs.push_back (KernelArg(py::cast<float>(arg)));   // Metal is fp32
                else if (py::isinstance<py::int_>(arg))
                  kargs.push_back (KernelArg(py::cast<int32_t>(arg)));
                else
-                 throw Exception("GPUQueue.Launch: argument must be GPUBuffer, float or int");
+                 throw Exception("GPUQueue.Launch: argument must be GPUBuffer, numpy scalar, float or int");
              }
 
            self.Launch (*kernel, dim(groups, "groups"), dim(groupsize, "groupsize"),
@@ -156,8 +200,12 @@ static void ExportGPU (py::module & m)
     .def_property_readonly("unified_memory", &Device::IsUnifiedMemory)
     .def_property_readonly("max_threads_per_group", &Device::MaxThreadsPerGroup)
     .def_property_readonly("simd_width", &Device::SimdWidth)
-    .def("NewBuffer", &Device::NewBuffer,
-         py::arg("bytes"), py::arg("memtype")=MemType::Shared)
+    .def("NewBuffer", [](Device & self, size_t size, py::object dtype, MemType mt)
+         {
+           auto dt = dtype.is_none() ? py::dtype::of<float>() : py::dtype::from_args(dtype);
+           return make_shared<PyGPUBuffer> (PyGPUBuffer{ self.NewBuffer(size*dt.itemsize(), mt), dt });
+         }, py::arg("size"), py::arg("dtype")=py::none(), py::arg("memtype")=MemType::Shared,
+         "buffer of size elements of dtype (default float32)")
     .def("CompileSource", &Device::CompileSource, py::arg("source"))
     .def("DefaultQueue", &Device::DefaultQueue)
     .def("__str__", [](Device & self) { return "GPUDevice " + self.Name(); })

@@ -157,7 +157,7 @@ namespace ngla
       shared_ptr<ngs_gpu::Queue> queue;
       shared_ptr<Kernel> setscalar, scale, scale_dev, set, axpy, axpy_dev;
       shared_ptr<Kernel> dot1, dot2;
-      shared_ptr<Buffer> dot_scratch;   // dotgroups partials + one result slot
+      TypedBuffer<T> dot_scratch;   // dotgroups partials + one result slot
       unsigned dotgroups, dotgroupsize;
       unsigned groupsize;
 
@@ -192,16 +192,16 @@ namespace ngla
           dotgroupsize *= 2;
         // enough groups to saturate a gpu, few for the cpu reference backend
         dotgroups = (device->SimdWidth() > 1) ? 256 : 4;
-        dot_scratch = device->NewBuffer ((dotgroups+1)*sizeof(T), MemType::Device);
+        dot_scratch = device->NewBuffer<T> (dotgroups+1, MemType::Device);
       }
 
       // res: where dv_dot2 puts the result (buffer + byte offset)
       void LaunchDot (KernelArg x, KernelArg y, KernelArg res, int n) const
       {
         queue->Launch (*dot1, Dim3(dotgroups), Dim3(dotgroupsize),
-                       { x, y, KernelArg(*dot_scratch), KernelArg(int(n)) });
+                       { x, y, KernelArg(dot_scratch), KernelArg(int(n)) });
         queue->Launch (*dot2, Dim3(1), Dim3(dotgroupsize),
-                       { KernelArg(*dot_scratch), res, KernelArg(int(dotgroups)) });
+                       { KernelArg(dot_scratch), res, KernelArg(int(dotgroups)) });
       }
 
       static const DeviceVectorKernels & Get()
@@ -272,12 +272,12 @@ namespace ngla
     queue = kern.queue;
 
     size_t padded = align > 1 ? ((asize+align-1)/align)*align : asize;
-    devbuffer = kern.device->NewBuffer (padded*sizeof(T), memtype);
+    devbuffer = kern.device->template NewBuffer<T> (padded, memtype);
     devoffset = 0;
 
     if (memtype == MemType::Shared)
       {
-        host_data = devbuffer->HostData<T>();
+        host_data = devbuffer.HostData();
         host_uptodate = dev_uptodate = true;
       }
     else
@@ -291,7 +291,7 @@ namespace ngla
       {
         Array<T> zeros(padded-asize);
         zeros = T(0);
-        devbuffer->H2DArray<T> (zeros.Data(), padded-asize, asize);
+        devbuffer.H2D (zeros.Data(), padded-asize, asize);
       }
   }
 
@@ -324,7 +324,7 @@ namespace ngla
   KernelArg DeviceVector<T> :: DevArgRO() const
   {
     UpdateDevice();
-    return KernelArg (*devbuffer, devoffset*sizeof(T));
+    return KernelArg (devbuffer, devoffset);
   }
 
   template <typename T>
@@ -332,7 +332,7 @@ namespace ngla
   {
     UpdateDevice();
     InvalidateHost();
-    return KernelArg (*devbuffer, devoffset*sizeof(T));
+    return KernelArg (devbuffer, devoffset);
   }
 
   template <typename T>
@@ -340,7 +340,7 @@ namespace ngla
   {
     dev_uptodate = true;
     InvalidateHost();
-    return KernelArg (*devbuffer, devoffset*sizeof(T));
+    return KernelArg (devbuffer, devoffset);
   }
 
 
@@ -352,7 +352,7 @@ namespace ngla
 
     if (host_uptodate) return;
     if (dev_uptodate)
-      devbuffer->D2HArray<T> (host_data, this->size, devoffset);
+      devbuffer.D2H (host_data, this->size, devoffset);
     host_uptodate = true;
   }
 
@@ -361,7 +361,7 @@ namespace ngla
   {
     if (dev_uptodate) return;
     if (host_uptodate)
-      devbuffer->H2DArray<T> (host_data, this->size, devoffset);
+      devbuffer.H2D (host_data, this->size, devoffset);
     dev_uptodate = true;
   }
 
@@ -461,10 +461,10 @@ namespace ngla
     // fetch the partials (2KB cost the same as 8 bytes) and sum here
     kern.queue->Launch (*kern.dot1, Dim3(kern.dotgroups), Dim3(kern.dotgroupsize),
                         { DevArgRO(), dv.DevArgRO(),
-                          KernelArg(*kern.dot_scratch), KernelArg(int(this->size)) });
+                          KernelArg(kern.dot_scratch), KernelArg(int(this->size)) });
     kern.queue->Finish();
     T partials[256];
-    kern.dot_scratch->D2HArray (partials, kern.dotgroups);
+    kern.dot_scratch.D2H (partials, kern.dotgroups);
     T res = 0;
     for (unsigned i = 0; i < kern.dotgroups; i++)
       res += partials[i];
@@ -666,9 +666,9 @@ namespace ngla
   DeviceScalar :: DeviceScalar (double d)
   {
     auto dev = GetGpuDevice();
-    devbuffer = dev->NewBuffer (sizeof(double), PreferredMemType());
+    devbuffer = dev->NewBuffer<double> (1, PreferredMemType());
     queue = dev->DefaultQueue();
-    devbuffer->H2D (&d, sizeof(double));
+    devbuffer.H2D (&d, 1);
   }
 
   DeviceScalar :: DeviceScalar (const DeviceScalar & s2)
@@ -679,14 +679,14 @@ namespace ngla
 
   DeviceScalar & DeviceScalar :: operator= (const DeviceScalar & s2)
   {
-    std::vector<KernelArg> args = { DevArg(), KernelArg(*s2.devbuffer) };
+    std::vector<KernelArg> args = { DevArg(), KernelArg(s2.devbuffer) };
     EvalScalarExpr (", GLOBAL(double,s0), GLOBAL_IN(double,s1)", "s0[0] = s1[0];", args);
     return *this;
   }
 
   void DeviceScalar :: Set (double d)
   {
-    devbuffer->H2D (&d, sizeof(double));
+    devbuffer.H2D (&d, 1);
   }
 
   void DeviceScalar :: Set (Complex c)
@@ -698,7 +698,7 @@ namespace ngla
   {
     queue->Finish();   // kernels writing the value may still be queued
     double d;
-    devbuffer->D2H (&d, sizeof(double));
+    devbuffer.D2H (&d, 1);
     return d;
   }
 

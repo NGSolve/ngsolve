@@ -24,8 +24,8 @@ n, tg = 1000, 256
 kernel = dev.CompileSource(src).GetKernel("saxpy")
 queue = dev.DefaultQueue()
 
-x = dev.NewBuffer(4*n)
-y = dev.NewBuffer(4*n)
+x = dev.NewBuffer(n)
+y = dev.NewBuffer(n)
 x.H2D(np.arange(n, dtype=np.float32))
 y.H2D(np.ones(n, dtype=np.float32))
 

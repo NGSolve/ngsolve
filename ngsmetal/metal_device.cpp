@@ -245,7 +245,7 @@ namespace ngsmetal
     { return dev->maxThreadsPerThreadgroup().width; }
     size_t SimdWidth() const override { return 32; }
 
-    shared_ptr<Buffer> NewBuffer (size_t bytes, MemType mt) override
+    shared_ptr<Buffer> DoNewBuffer (size_t bytes, MemType mt) override
     { return std::make_shared<MetalBuffer> (dev, queue, bytes, mt); }
 
     shared_ptr<Library> CompileSource (const string & source) override

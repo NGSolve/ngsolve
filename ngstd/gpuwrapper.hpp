@@ -18,6 +18,7 @@
 
 #include <cstddef>
 #include <cstring>
+#include <stdexcept>
 #include <string>
 #include <vector>
 #include <memory>
@@ -70,16 +71,39 @@ namespace ngs_gpu
     { DoH2D (src, bytes, offset); }
     void D2H (void * dst, size_t bytes, size_t offset = 0) const
     { DoD2H (dst, bytes, offset); }
+  };
 
-    // counted in elements, not bytes - deliberately a different name:
-    // as overloads of H2D/D2H the units would silently depend on whether
-    // the caller's pointer happens to be typed
-    template <typename T>
-    void H2DArray (const T * src, size_t n, size_t elemoffset = 0)
-    { DoH2D (src, n*sizeof(T), elemoffset*sizeof(T)); }
-    template <typename T>
-    void D2HArray (T * dst, size_t n, size_t elemoffset = 0) const
-    { DoD2H (dst, n*sizeof(T), elemoffset*sizeof(T)); }
+
+  /*
+    Typed view of a buffer: sizes, offsets and transfers count elements of T.
+    A value type sharing ownership of the raw buffer, copies alias.
+  */
+  template <typename T>
+  class TypedBuffer
+  {
+    shared_ptr<Buffer> buf;
+  public:
+    typedef T value_type;
+
+    TypedBuffer () = default;
+    explicit TypedBuffer (shared_ptr<Buffer> abuf) : buf(std::move(abuf)) { }
+
+    explicit operator bool() const { return bool(buf); }
+    const shared_ptr<Buffer> & Raw() const { return buf; }
+
+    size_t Size() const { return buf->Size() / sizeof(T); }
+    size_t Bytes() const { return buf->Size(); }
+    MemType GetMemType() const { return buf->GetMemType(); }
+
+    // nullptr if not host visible
+    T * HostData() const { return buf->HostData<T>(); }
+    T & operator[] (size_t i) const { return HostData()[i]; }
+
+    // const like a shared_ptr: the handle, not the memory
+    void H2D (const T * src, size_t n, size_t offset = 0) const
+    { buf->H2D (src, n*sizeof(T), offset*sizeof(T)); }
+    void D2H (T * dst, size_t n, size_t offset = 0) const
+    { buf->D2H (dst, n*sizeof(T), offset*sizeof(T)); }
   };
 
 
@@ -106,6 +130,11 @@ namespace ngs_gpu
     KernelArg (const shared_ptr<TB> & b, size_t off = 0)
       : KernelArg (static_cast<Buffer&>(*b), off) { }
 
+    // offset in elements
+    template <typename T>
+    KernelArg (const TypedBuffer<T> & b, size_t elemoff = 0)
+      : KernelArg (*b.Raw(), elemoff*sizeof(T)) { }
+
     template <typename T,
               typename = std::enable_if_t<std::is_trivially_copyable_v<T> &&
                                           !std::is_base_of_v<Buffer, T>>>
@@ -114,6 +143,14 @@ namespace ngs_gpu
     {
       static_assert (sizeof(T) <= MAX_INLINE, "kernel argument too large");
       std::memcpy (inlinedata, &val, sizeof(T));
+    }
+
+    // raw bytes by value
+    KernelArg (const void * data, size_t bytes)
+      : kind(Kind::Value), nbytes(bytes)
+    {
+      if (bytes > MAX_INLINE) throw std::runtime_error ("kernel argument too large");
+      std::memcpy (inlinedata, data, bytes);
     }
 
     Kind GetKind() const { return kind; }
@@ -213,9 +250,19 @@ namespace ngs_gpu
     // metal has no query for it, the default suits apple silicon
     virtual size_t ComputeUnits() const { return 16; }
 
-    virtual shared_ptr<Buffer> NewBuffer (size_t bytes, MemType = MemType::Device) = 0;
+    // raw bytes
+    shared_ptr<Buffer> NewBuffer (size_t bytes, MemType mt = MemType::Device)
+    { return DoNewBuffer (bytes, mt); }
+    // n elements of T
+    template <typename T>
+    TypedBuffer<T> NewBuffer (size_t n, MemType mt = MemType::Device)
+    { return TypedBuffer<T> (DoNewBuffer (n*sizeof(T), mt)); }
+
     virtual shared_ptr<Library> CompileSource (const string & source) = 0;
     virtual shared_ptr<Queue> DefaultQueue() = 0;
+
+  protected:
+    virtual shared_ptr<Buffer> DoNewBuffer (size_t bytes, MemType mt) = 0;
   };
 
 

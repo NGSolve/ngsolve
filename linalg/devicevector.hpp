@@ -56,7 +56,7 @@ namespace ngla
   class NGS_DLL_HEADER DeviceScalar : public BaseScalar
   {
   protected:
-    shared_ptr<ngs_gpu::Buffer> devbuffer;   // one double
+    ngs_gpu::TypedBuffer<double> devbuffer;   // one double
     shared_ptr<ngs_gpu::Queue> queue;
 
   public:
@@ -73,8 +73,8 @@ namespace ngla
     Complex GetC () const override;
 
     // buffer of the value, for kernel arguments and backend access
-    const shared_ptr<ngs_gpu::Buffer> & DevBuffer() const { return devbuffer; }
-    ngs_gpu::KernelArg DevArg() const { return ngs_gpu::KernelArg(*devbuffer); }
+    const shared_ptr<ngs_gpu::Buffer> & DevBuffer() const { return devbuffer.Raw(); }
+    ngs_gpu::KernelArg DevArg() const { return ngs_gpu::KernelArg(devbuffer); }
 
     // evaluate a scalar expression on the device, e.g.
     //   alpha = Div (Scal(rz), Scal(pq));
@@ -240,7 +240,7 @@ namespace ngla
   class NGS_DLL_HEADER DeviceVector : public S_BaseVector<T>
   {
   protected:
-    shared_ptr<ngs_gpu::Buffer> devbuffer;
+    ngs_gpu::TypedBuffer<T> devbuffer;
     shared_ptr<ngs_gpu::Queue> queue;
     size_t devoffset = 0;              // elements into devbuffer
     size_t align = 1;
@@ -268,9 +268,9 @@ namespace ngla
     ngs_gpu::KernelArg DevArgW() const;    // kernel overwrites, no upload needed
 
     const shared_ptr<ngs_gpu::Buffer> & DevBufferRO() const
-    { UpdateDevice(); return devbuffer; }
+    { UpdateDevice(); return devbuffer.Raw(); }
     const shared_ptr<ngs_gpu::Buffer> & DevBufferRW() const
-    { UpdateDevice(); InvalidateHost(); return devbuffer; }
+    { UpdateDevice(); InvalidateHost(); return devbuffer.Raw(); }
     size_t DevOffset() const { return devoffset; }
     MemType GetMemType() const { return memtype; }
     const shared_ptr<ngs_gpu::Queue> & GetQueue() const { return queue; }
