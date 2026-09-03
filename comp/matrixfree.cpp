@@ -3,6 +3,7 @@
 
 
 #include "bilinearform.hpp"
+#include <l2hofe.hpp>
 #include "reorderedfespace.hpp"
 #include <diagonalmatrix.hpp>
 
@@ -732,7 +733,7 @@ namespace ngcomp
             {
               HeapReset hr(lh);
               
-              const auto &mip = CreateMIP (Matrix(Jacobi(i, STAR, STAR, 0)), lh);
+              const auto &mip = CreateMIP (Matrix(Jacobi(i, STAR, STAR, (nipJ > 1) ? j : 0)), lh);
               
               pointvalsrefx = Trans(Bx(STAR,STAR,j)) * elvecx;
               pointvalsx = 0;
@@ -807,7 +808,7 @@ namespace ngcomp
                     {
                       HeapReset hr(lh);
                       
-                      MappedIntegrationPoint<dims,dimr> mip(dummyip, dummytrafo, Vec<dimr>(0), Mat<dimr,dims>(Jacobi(i, STAR, STAR, 0)));
+                      MappedIntegrationPoint<dims,dimr> mip(dummyip, dummytrafo, Vec<dimr>(0), Mat<dimr,dims>(Jacobi(i, STAR, STAR, (nipJ > 1) ? j : 0)));
                       
                       pointvalsrefx = Trans(Bx(STAR,STAR,j)) * elvecx;
                       // for (size_t k = 0; k < pointvalsrefx.Size(); k++)
@@ -933,7 +934,7 @@ namespace ngcomp
                             {
                               size_t ii = i*SW+k;
                                                            
-                              MappedIntegrationPoint<dims,dimr> mip(dummyip, dummytrafo, Vec<dimr>(0), Mat<dimr,dims>(Jacobi(ii, STAR, STAR, 0)));
+                              MappedIntegrationPoint<dims,dimr> mip(dummyip, dummytrafo, Vec<dimr>(0), Mat<dimr,dims>(Jacobi(ii, STAR, STAR, (nipJ > 1) ? j : 0)));
                               pointvalsx = 0;
                               for (size_t i : Range(diffopsx))
                                 {
@@ -1028,7 +1029,7 @@ namespace ngcomp
                     {
                       HeapReset hr(lh);
                       
-                      MappedIntegrationPoint<dims,dimr> mip(dummyip, dummytrafo, Vec<dimr>(0), Mat<dimr,dims>(Jacobi(i, STAR, STAR, 0)));
+                      MappedIntegrationPoint<dims,dimr> mip(dummyip, dummytrafo, Vec<dimr>(0), Mat<dimr,dims>(Jacobi(i, STAR, STAR, (nipJ > 1) ? j : 0)));
                       
                       pointvalsrefx = Trans(Bx(STAR,STAR,j)) * elvecx;
                       // for (size_t k = 0; k < pointvalsrefx.Size(); k++)
@@ -1180,6 +1181,7 @@ namespace ngcomp
             int bonus_intorder = bfi->GetBonusIntegrationOrder();
 
             bool curved = ma->GetElement(ei).is_curved;
+            int geo_order = curved ? ma->GetCurveOrder() : 1;
             
             IntegrationRule ir;
             if (bfi->ElementVB() == VOL)
@@ -1253,8 +1255,55 @@ namespace ngcomp
                   }
               }
 
-            // cout << "bmatx = " << bmatx << endl;
-            // cout << "bmaty = " << bmaty << endl;
+            /*
+              geometry: L2 (Dubiner) basis of order geo_order on the reference
+              element, per element the L2 projection of the mapping x(xref).
+              Orthogonal basis -> the projection is well conditioned for any
+              order; netgen mappings are polynomial of the curve order, so the
+              projection reproduces them (checked below at the integration points).
+            */
+            auto eltype = felx.ElementType();
+            L2HighOrderFE<ET_TET> geofe_tet(geo_order);
+            L2HighOrderFE<ET_TRIG> geofe_trig(geo_order);
+            ScalarFiniteElement<3> * geofe3 = &geofe_tet;
+            ScalarFiniteElement<2> * geofe2 = &geofe_trig;
+            if (eltype != ET_TET && eltype != ET_TRIG)
+              throw Exception("matrix-free geometry: only trigs and tets supported");
+            auto geo_ndof = (dimS == 3) ? geofe3->GetNDof() : geofe2->GetNDof();
+            auto GeoShape = [&] (const IntegrationPoint & ip, FlatVector<> shape)
+            { if (dimS == 3) geofe3->CalcShape(ip, shape); else geofe2->CalcShape(ip, shape); };
+            auto GeoDShape = [&] (const IntegrationPoint & ip, FlatMatrix<> dshape)
+            { if (dimS == 3) geofe3->CalcDShape(ip, dshape); else geofe2->CalcDShape(ip, dshape); };
+
+            Tensor<3> Bgeo(geo_ndof, dimS, ir.Size());
+            Matrix<> Sgeo(geo_ndof, ir.Size());
+            for (int i : Range(ir.Size()))
+              {
+                Matrix<> dshape(geo_ndof, dimS);
+                GeoDShape (ir[i], dshape);
+                for (int n = 0; n < geo_ndof; n++)
+                  for (size_t c = 0; c < dimS; c++)
+                    Bgeo(n,c,i) = dshape(n,c);
+                Vector<> shape(geo_ndof);
+                GeoShape (ir[i], shape);
+                Sgeo.Col(i) = shape;
+              }
+
+            // projection: mass matrix and the quadrature for the right-hand sides
+            IntegrationRule irgeo(eltype, 2*geo_order);
+            Matrix<> geo_shapes(irgeo.Size(), geo_ndof);
+            for (int q : Range(irgeo.Size()))
+              {
+                Vector<> shape(geo_ndof);
+                GeoShape (irgeo[q], shape);
+                geo_shapes.Row(q) = shape;
+              }
+            Matrix<> geo_massinv(geo_ndof, geo_ndof);
+            geo_massinv = 0;
+            for (int q : Range(irgeo.Size()))
+              geo_massinv += irgeo[q].Weight() * geo_shapes.Row(q) * Trans(geo_shapes.Row(q));
+            CalcInverse (geo_massinv);
+            Tensor<3> geocoefs(elclass_inds.Size(), geo_ndof, dimR);
 
             Table<DofId> dofx(elclass_inds.Size(), felx.GetNDof());
             Table<DofId> dofy(elclass_inds.Size(), fely.GetNDof());
@@ -1279,7 +1328,9 @@ namespace ngcomp
             
             if (linear)
               {
-                Tensor<4> diag(elclass_inds.Size(), dimy, dimx, eb ? ir.Size() : 1);
+                // D varies over the element: measure (boundary, curved) or coefficient
+                bool perpoint = eb || curved || !bfi->GetCoefficientFunction()->ElementwiseConstant();
+                Tensor<4> diag(elclass_inds.Size(), dimy, dimx, perpoint ? ir.Size() : 1);
                 Tensor<4> Jacobi(elclass_inds.Size(), dimR, dimS, curved ? ir.Size() : 1);
                 
                 // for (auto i : Range(elclass_inds))
@@ -1315,6 +1366,39 @@ namespace ngcomp
 
                       for (auto j : Range(curved?ir.Size():1))
                         Jacobi(i, STAR, STAR, j) = mir[j].GetJacobian();
+
+                      {
+                        auto & mirgeo = trafo(irgeo, lh);
+                        FlatMatrix<> rhs(geo_ndof, dimR, lh);
+                        rhs = 0;
+                        for (int q : Range(irgeo.Size()))
+                          rhs += irgeo[q].Weight() * geo_shapes.Row(q) * Trans(mirgeo[q].GetPoint());
+                        FlatMatrix<> coefs(geo_ndof, dimR, lh);
+                        coefs = geo_massinv * rhs;
+                        for (int n = 0; n < geo_ndof; n++)
+                          for (size_t r = 0; r < dimR; r++)
+                            geocoefs(i,n,r) = coefs(n,r);
+
+                        // the projected geometry must reproduce the mesh Jacobians
+                        double errmax = 0, nrmmax = 0;
+                        for (auto j : Range(ir.Size()))
+                          {
+                            FlatMatrix<> jac = mir[j].GetJacobian();
+                            for (size_t r = 0; r < dimR; r++)
+                              for (size_t c = 0; c < dimS; c++)
+                                {
+                                  double val = 0;
+                                  for (int n = 0; n < geo_ndof; n++)
+                                    val += coefs(n,r) * Bgeo(n,c,j);
+                                  errmax = max(errmax, fabs(val - jac(r,c)));
+                                  nrmmax = max(nrmmax, fabs(jac(r,c)));
+                                }
+                          }
+                        if (errmax > 1e-8*nrmmax)
+                          throw Exception("matrix-free geometry: projected mapping deviates from the mesh Jacobian by "
+                                          + ToString(errmax/nrmmax) + " (relative), element " + ToString(elclass_inds[i])
+                                          + ", geometry order " + ToString(geo_order));
+                      }
                       
                       FlatMatrix<> transx(dimx, dimxref, lh);
                       FlatMatrix<> transy(dimy, dimyref, lh);
@@ -1347,7 +1431,7 @@ namespace ngcomp
                                       ud.test_comp = l;
                                       
                                       cf -> Evaluate (mir, val);
-                                      if (eb)
+                                      if (perpoint)
                                         for (auto j : Range(ir))
                                           diag(i, l1+l, k1+k, j) = mir[j].GetMeasure()*val(j,0);
                                       else
@@ -1384,6 +1468,10 @@ namespace ngcomp
                                                            *matfree_opts);
                 mfmat->facetnr = std::move(facetnr);
                 mfmat->normals_ref = std::move(normals_ref);
+                mfmat->geo_order = geo_order;
+                mfmat->geocoefs = std::move(geocoefs);
+                mfmat->Bgeo = std::move(Bgeo);
+                mfmat->Sgeo = std::move(Sgeo);
                 mat = mfmat;
                                                     
               }

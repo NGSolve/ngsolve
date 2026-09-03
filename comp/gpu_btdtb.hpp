@@ -43,7 +43,7 @@ namespace ngcomp
 
     shared_ptr<ngs_gpu::Buffer> buffer_dofx, buffer_dofy;
     shared_ptr<ngs_gpu::Buffer> buffer_bmatx, buffer_bmaty;
-    shared_ptr<ngs_gpu::Buffer> buffer_weights, buffer_Jacobi, buffer_JacobiDets;
+    shared_ptr<ngs_gpu::Buffer> buffer_weights, buffer_geocoefs, buffer_bgeo, buffer_sgeo;
     
   public:
     GPU_BTDTBMatrix (const BaseMatrix& mat);
@@ -183,18 +183,49 @@ namespace ngcomp
     buffer_weights = NewSharedBuffer(RoundUp<8>(nip));
     for (int i = 0; i < RoundUp<8>(nip); i++)
       buffer_weights->HostData<REAL>()[i] = i < nip ? pmat->weights[i] : 0;
-    
-    buffer_JacobiDets = NewSharedBuffer(ne);
-    for (int i = 0; i < ne; i++)
-      buffer_JacobiDets->HostData<REAL>()[i] = Det(pmat->Jacobi(i,STAR,STAR,0));
 
+    /*
+      geometry: per element the coefficients of the mapping in the L2 basis
+      (geocoefs[el][coordinate][node], contiguous), and the gradients of that
+      basis at the integration points (bgeo[refdir][ip][node]). The kernel
+      evaluates F at every point from these, 9*geo_ndof fma per point.
+    */
+    auto [numels_g, geo_ndof, dimr_g] = pmat->geocoefs.Shape();
+    auto [geo_ndof_b, dims_g, nip_g] = pmat->Bgeo.Shape();
+    if (int(numels_g) != ne || int(dimr_g) != dimr || int(nip_g) != nip || geo_ndof_b != geo_ndof)
+      throw Exception("GPU_BTDTBMatrix: geometry data does not match");
+    int geo_roundup = RoundUp<8>(geo_ndof);
+    buffer_geocoefs = NewSharedBuffer(size_t(ne)*dimr*geo_roundup);
+    for (int e = 0; e < ne; e++)
+      for (int i = 0; i < dimr; i++)
+        for (int n = 0; n < geo_roundup; n++)
+          buffer_geocoefs->HostData<REAL>()[(size_t(e)*dimr+i)*geo_roundup+n] = (n < int(geo_ndof)) ? pmat->geocoefs(e,n,i) : 0;
+    // gradients laid out like bmatx: [refdir][ip (padded to BS_ipts)][node], plus the remainder block
+    buffer_bgeo = NewSharedBuffer(dims*(RoundUp(nip,BS_ipts)+BS_ipts)*geo_roundup);
+    FlatTensor<3,REAL> dbgeo(dims,RoundUp(nip,BS_ipts),geo_roundup, buffer_bgeo->HostData<REAL>());
+    for (int j = 0; j < dims; j++)
+      for (int i = 0; i < RoundUp(nip,BS_ipts); i++)
+        for (int k = 0; k < geo_roundup; k++)
+          dbgeo(j,i,k) = (i < nip && k < int(geo_ndof)) ? pmat->Bgeo(k,j,i) : 0;
+    int bgeo_rem_rows = dims*RoundUp(nip,BS_ipts);
+    FlatTensor<3,REAL> dbgeo_rem(dims,nip_rem,geo_roundup, buffer_bgeo->HostData<REAL>() + bgeo_rem_rows*geo_roundup);
+    dbgeo_rem = 0;
+    for (int j = 0; j < dims; j++)
+      for (int i = 0; i < nip_rem; i++)
+        for (int k = 0; k < geo_roundup; k++)
+          dbgeo_rem(j,i,k) = (k < int(geo_ndof)) ? pmat->Bgeo(k,j,i+RoundDown(nip,BS_ipts)) : 0;
+    // basis values at the points, for the coordinates: sgeo[ip][node]
+    buffer_sgeo = NewSharedBuffer(size_t(nip)*geo_ndof);
+    for (int i = 0; i < nip; i++)
+      for (int n = 0; n < int(geo_ndof); n++)
+        buffer_sgeo->HostData<REAL>()[size_t(i)*geo_ndof+n] = pmat->Sgeo(n,i);
 
-    int ne8 = RoundUp<8>(ne);
-    buffer_Jacobi = NewSharedBuffer(dimr*dims*ne8);
-    for (int i = 0; i < ne; i++)
-      for (int j = 0; j < dimr; j++)
-        for (int k = 0; k < dims; k++)
-          buffer_Jacobi->HostData<REAL>()[i+k*ne8+j*dims*ne8] = pmat->Jacobi(i,j,k,0);
+    /*
+      curved classes evaluate F per ip block by the warp matmul into shared
+      memory (9*BS_ipts*BS_els reals); that exceeds metal's 32 KB threadgroup
+      memory for large blocks, then F is evaluated per point instead
+    */
+    bool geo_staged = pmat->geo_order > 1 && BS_ipts <= 16;
 
     
     string code = code_gpukernel + code_tinybla +
@@ -223,8 +254,9 @@ namespace ngcomp
              GLOBAL_IN(real, bmatx),
              GLOBAL_IN(real, bmaty),
              GLOBAL_IN(real, weights),
-             GLOBAL_IN(real, Jacobi),
-             GLOBAL_IN(real, JacobiDets),
+             GLOBAL_IN(real, geocoefs),
+             GLOBAL_IN(real, bgeo),
+             GLOBAL_IN(real, sgeo),
              VALUE(real, s),
              VALUE(int, ne_))
       {
@@ -234,7 +266,11 @@ namespace ngcomp
 
       int warpIdx = tid/32;
       const uint ne = ne_;
-      const uint ne8 = RoundUp<8>(ne);      // stride of the Jacobi buffer
+      constexpr uint geo_ndof = $GEO_NDOF;
+      constexpr uint geo_roundup = $GEO_ROUNDUP;
+      constexpr uint geo_order = $GEO_ORDER;
+      constexpr uint dimr = $DIMR;
+      constexpr uint dims = $DIMS;
       constexpr uint nip = $NIP;
       constexpr uint bs_els = $BS_ELS;
       constexpr uint bs_ipts = $BS_IPTS;
@@ -252,6 +288,17 @@ namespace ngcomp
 
       constexpr int MAXDIMREF = ($DIMXREF>$DIMYREF) ? $DIMXREF : $DIMYREF;
       SHARED_2D(real, pointvalsref, MAXDIMREF*$BS_IPTS, $BS_ELS);
+
+      // geometry coefficients of the batch [element][coordinate][node], and for
+      // straight elements (constant gradients) F per element [element][coord][refdir]
+      SHARED(real, elgeo, $BS_ELS*dimr*geo_roundup);
+      SHARED(real, elF, $BS_ELS*dimr*dims);
+      auto mat_bgeo = MakeBareMatrix<RowMajor>(bgeo, geo_roundup);
+#if ($GEO_STAGED==1)
+      // F at the points of the current ip block [coordinate*dims+refdir][ip][element]
+      SHARED_2D(real, Fvals, dimr*dims*$BS_IPTS, $BS_ELS);
+      auto mat_Fvals = MakeBareMatrix<RowMajor>(Fvals);
+#endif
 
       auto mat_elvecx = MakeBareMatrix<RowMajor>(elvecx); 
       auto mat_elvecy = MakeBareMatrix<RowMajor>(elvecy);
@@ -287,8 +334,27 @@ namespace ngcomp
       for (uint i = tid; i < $BS_ELS*locdofsy_roundup; i += bdim)
         elvecy[i/locdofsy_roundup][i%locdofsy_roundup] = 0;
 
+      // geometry coefficients, contiguous per element ([coordinate][node] padded to geo_roundup)
+      for (uint i = tid; i < $BS_ELS*dimr*geo_roundup; i += bdim)
+        elgeo[i] = (baseelem + i/(dimr*geo_roundup) < ne) ? geocoefs[baseelem*dimr*geo_roundup + i] : 0;
+
 
       BARRIER();
+
+      if constexpr (geo_order == 1)
+        {
+          for (uint i = tid; i < $BS_ELS*dimr*dims; i += bdim)
+            {
+              uint locelnr = i / (dimr*dims);
+              uint coord = (i % (dimr*dims)) / dims;
+              uint refdir = i % dims;
+              real sum = 0;
+              for (uint c = 0; c < geo_ndof; c++)
+                sum += elgeo[(locelnr*dimr+coord)*geo_roundup+c] * bgeo[(refdir*nip_padded)*geo_roundup+c];
+              elF[i] = sum;
+            }
+          BARRIER();
+        }
 
 #if ($ONLY_LOADSTORE==1)
 
@@ -329,6 +395,24 @@ namespace ngcomp
               pointvalsrefxi.Store(mat_pointvalsref.SubMatrix(TS_IPTS*iptile+bs_ipts*comp, TS_ELS*eltile), tid);
             }
 
+#if ($GEO_STAGED==1)
+          // F = geometry coefficients x gradients, one warp tile per (coordinate, refdir, ip tile, el tile)
+          for (uint warp = warpIdx; warp < dimr*dims*BSTS_IPTS*BSTS_ELS; warp += $WARPS)
+            {
+              uint eltile = warp % BSTS_ELS;
+              uint rest = warp / BSTS_ELS;
+              uint iptile = rest % BSTS_IPTS;
+              uint ig = rest / BSTS_IPTS;          // coordinate*dims + refdir
+              uint ip = baseip + iptile*TS_IPTS;
+
+              WarpMatrix<TS_IPTS,TS_ELS,real> f = 0;
+              auto mb = MakeBareMatrix<RowMajor>(elgeo + (ig/dims)*geo_roundup, dimr*geo_roundup).SubMatrix(TS_ELS*eltile, 0);
+              auto ma = mat_bgeo.SubMatrix(ip+nip_padded*(ig%dims), 0);
+              f.AddMM<8*$GEO_TILES>(ma, mb.Transpose(), tid);
+              f.Store(mat_Fvals.SubMatrix(TS_IPTS*iptile+bs_ipts*ig, TS_ELS*eltile), tid);
+            }
+#endif
+
           BARRIER();
   
           // work on integration points
@@ -347,8 +431,20 @@ namespace ngcomp
                Mat<$DIMR,$DIMS,real> F;
                for (int i = 0; i < $DIMR; i++)
                   for (int j = 0; j < $DIMS; j++)
-                     F(i,j) = Jacobi[elnr + ne8 * (j + $DIMS*i)];
-               real J = (elnr < ne) ?  JacobiDets[elnr] : 0;
+                    if constexpr (geo_order == 1)
+                      F(i,j) = elF[(locelnr*dimr+i)*dims+j];
+                    else
+                      {
+#if ($GEO_STAGED==1)
+                        F(i,j) = Fvals[(i*dims+j)*bs_ipts + locipnr][locelnr];
+#else
+                        real sum = 0;
+                        for (uint c = 0; c < geo_ndof; c++)
+                          sum += elgeo[(locelnr*dimr+i)*geo_roundup+c] * bgeo[(j*nip_padded + baseip+locipnr)*geo_roundup+c];
+                        F(i,j) = sum;
+#endif
+                      }
+               real J = Det(F);
 
                for (int comp = 0; comp < $DIMXREF; comp++)
                   xrefvals(comp) = pointvalsref[locipnr+comp*bs_ipts][locelnr];
@@ -417,6 +513,24 @@ namespace ngcomp
               pointvalsrefxi.Store(mat_pointvalsref.SubMatrix(8*iptile,8*eltile), tid);
             }
 
+#if ($GEO_STAGED==1)
+          // geometry: per coordinate a padded block of rows (refdir*numips + ip)
+          constexpr uint frows = RoundUp<8>(numips*dims);
+          for (uint blocknr = warpIdx; blocknr < dimr * (frows/8) * $EL_TILES; blocknr += $WARPS)
+            {
+              uint eltile = blocknr % $EL_TILES;
+              uint rest = blocknr / $EL_TILES;
+              uint rowtile = rest % (frows/8);
+              uint coord = rest / (frows/8);
+
+              WarpMatrix<8,8,real> f = 0;
+              auto mb = MakeBareMatrix<RowMajor>(elgeo + coord*geo_roundup, dimr*geo_roundup).SubMatrix(8*eltile, 0);
+              auto ma = mat_bgeo.SubMatrix($BGEO_REM_ROWS+8*rowtile, 0);
+              f.AddMM<8*$GEO_TILES>(ma, mb.Transpose(), tid);
+              f.Store(mat_Fvals.SubMatrix(coord*frows + 8*rowtile, 8*eltile), tid);
+            }
+#endif
+
           BARRIER();
   
           // work on integration points
@@ -433,12 +547,22 @@ namespace ngcomp
                Vec<$DIMY,real> yvals;
 
                Mat<$DIMR,$DIMS,real> F;
-#pragma unroll
                for (uint i = 0; i < $DIMR; i++)
-#pragma unroll
                   for (uint j = 0; j < $DIMS; j++)
-                     F(i,j) = Jacobi[elnr + ne8 * (j + $DIMS*i)];
-               real J = (elnr < ne) ?  JacobiDets[elnr] : 0;
+                    if constexpr (geo_order == 1)
+                      F(i,j) = elF[(locelnr*dimr+i)*dims+j];
+                    else
+                      {
+#if ($GEO_STAGED==1)
+                        F(i,j) = Fvals[i*frows + j*numips + locipnr][locelnr];
+#else
+                        real sum = 0;
+                        for (uint c = 0; c < geo_ndof; c++)
+                          sum += elgeo[(locelnr*dimr+i)*geo_roundup+c] * bgeo[($BGEO_REM_ROWS + j*numips + locipnr)*geo_roundup+c];
+                        F(i,j) = sum;
+#endif
+                      }
+               real J = Det(F);
 
                for (uint j = 0; j < $DIMXREF; j++)
                   xrefvals(j) = pointvalsref[locipnr+j*numips][locelnr];
@@ -579,6 +703,12 @@ namespace ngcomp
 
     code = Substitute(code, "$BMATX_REM_ROWS", ToString(bmatx_rem_rows)+" /*bmatx_rem_rows*/ ");      
     code = Substitute(code, "$BMATY_REM_ROWS", ToString(bmaty_rem_rows)+" /*bmaty_rem_rows*/ ");      
+    code = Substitute(code, "$GEO_NDOF", ToString(geo_ndof));
+    code = Substitute(code, "$GEO_ORDER", ToString(pmat->geo_order));
+    code = Substitute(code, "$GEO_ROUNDUP", ToString(geo_roundup));
+    code = Substitute(code, "$GEO_TILES", ToString(geo_roundup/8));
+    code = Substitute(code, "$GEO_STAGED", ToString(geo_staged ? 1 : 0));
+    code = Substitute(code, "$BGEO_REM_ROWS", ToString(bgeo_rem_rows)+" /*bgeo_rem_rows*/ ");
     
     code = Substitute(code, "$EL_TILES", ToString(RoundUp<8>(pmat->opts.BS_els)/8)+" /*EL_TILES*/ ");
     code = Substitute(code, "$DOFX_TILES", ToString(RoundUp<8>(locdofsx)/8) +" /* DOFX_TILES */ ");
@@ -594,7 +724,7 @@ namespace ngcomp
     {
       // element-boundary integrals: weight * |Cof(F) nref_ip| instead of weight * det
       bool eb = pmat->facetnr.Size() > 0;
-      string table, measure = "real meas = JacobiDets[elnr];";
+      string table, measure = "real meas = J;";
       if (eb)
         {
           // reference normal per facet, facet of each integration point
@@ -619,6 +749,19 @@ namespace ngcomp
             "real meas = Norm(cofn);\n"
             "struct { Vec<"+D+",real> nv; real operator() (int, int k) const { return nv(k); } }\n"
             "  normals { ((J > 0) ? real(1) : real(-1)) / meas * cofn };\n";
+        }
+      // coordinates x(ip) = sum_node coefs * basis values, accessed as points(i,k)
+      if (phys.find("points(") != string::npos)
+        {
+          string D = ToString(dimr);
+          measure +=
+            "Vec<"+D+",real> pnt;\n"
+            "for (uint k = 0; k < dimr; k++)\n"
+            "  { real sum = 0;\n"
+            "    for (uint c = 0; c < geo_ndof; c++)\n"
+            "      sum += elgeo[(locelnr*dimr+k)*geo_roundup+c] * sgeo[(baseip+locipnr)*geo_ndof+c];\n"
+            "    pnt(k) = sum; }\n"
+            "struct { Vec<"+D+",real> p; real operator() (int, int k) const { return p(k); } } points { pnt };\n";
         }
       code = Substitute(code, "$NREF_TABLE", table);
       code = Substitute(code, "$MEASURE", measure);
@@ -727,7 +870,7 @@ namespace ngcomp
                    { dvx.DevArgRO(), dvy.DevArgRW(),
                      buffer_dofx, buffer_dofy,
                      buffer_bmatx, buffer_bmaty,
-                     buffer_weights, buffer_Jacobi, buffer_JacobiDets, REAL(s), int(ne) });
+                     buffer_weights, buffer_geocoefs, buffer_bgeo, buffer_sgeo, REAL(s), int(ne) });
   }
 }
 

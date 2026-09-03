@@ -1067,6 +1067,14 @@ namespace ngcomp
     // reference normal per facet (nfacets x dim); both empty for volume integrals
     Array<int> facetnr;
     Matrix<> normals_ref;
+    // element geometry as coefficients of an L2 (Dubiner) basis of order
+    // geo_order (1 for straight, the mesh curve order for curved elements):
+    // geocoefs(el, node, coordinate), Bgeo(node, refdir, ip) its gradients at
+    // the integration points; F = sum_node geocoefs (x) Bgeo
+    int geo_order = 1;
+    Tensor<3> geocoefs;
+    Tensor<3> Bgeo;
+    Matrix<> Sgeo;    // (node, ip) basis values, x(ip) = sum_node geocoefs Sgeo
     MatFreeOptions opts;
     Array<IntRange> ranges_x, ranges_xref, ranges_y, ranges_yref;
     Array<Code> physics;    // code for d_form / d_test
