@@ -70,6 +70,9 @@ namespace ngla
   shared_ptr<BaseMatrix> CreateDevMatrix (Matrix<> &mat);
 
 
+  // the cuda-only solver of dev_sparsecholesky.cpp, for comparisons
+  shared_ptr<BaseMatrix> CreateDevSparseCholesky (const SparseCholeskyTM<double> & mat);
+
   class DevSparseMatrix : public DevMatrix
   {
   protected:

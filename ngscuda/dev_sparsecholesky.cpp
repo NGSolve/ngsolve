@@ -50,6 +50,11 @@ namespace ngla
   };
 
 
+  shared_ptr<BaseMatrix> CreateDevSparseCholesky (const SparseCholeskyTM<double> & mat)
+  {
+    return make_shared<DevSparseCholesky>(mat);
+  }
+
   static const auto a = []()
   {
     BaseMatrix::RegisterDeviceMatrixCreator

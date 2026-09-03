@@ -298,6 +298,9 @@ namespace ngla
       : SparseCholeskyTM<TM> (a, ainner, acluster, allow_refactor) { ; }
     SparseCholesky() {}
 
+    // a DeviceSparseCholesky for scalar TM if a gpu backend is registered
+    virtual shared_ptr<BaseMatrix> CreateDeviceMatrix() const override;
+
     ///
     virtual ~SparseCholesky () { ; }
     

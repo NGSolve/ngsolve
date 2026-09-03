@@ -1226,6 +1226,10 @@ inverse : string
     (m, "DeviceDiagonalMatrixD", "diagonal matrix on the gpu, fp64");
   py::class_<DeviceDiagonalMatrix<float>, shared_ptr<DeviceDiagonalMatrix<float>>, BaseMatrix>
     (m, "DeviceDiagonalMatrixF", "diagonal matrix on the gpu, fp32");
+  py::class_<DeviceSparseCholesky<double>, shared_ptr<DeviceSparseCholesky<double>>, BaseMatrix>
+    (m, "DeviceSparseCholeskyD", "sparse Cholesky solver on the gpu, fp64");
+  py::class_<DeviceSparseCholesky<float>, shared_ptr<DeviceSparseCholesky<float>>, BaseMatrix>
+    (m, "DeviceSparseCholeskyF", "sparse Cholesky solver on the gpu, fp32");
 
   py::class_<BaseSparseMatrix, shared_ptr<BaseSparseMatrix>, BaseMatrix>
     (m, "BaseSparseMatrix", "sparse matrix of any type")

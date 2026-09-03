@@ -87,6 +87,11 @@ PYBIND11_MODULE(_ngscuda, m) {
           }
           ));
 
+  m.def("DevSparseCholesky", [] (shared_ptr<BaseMatrix> mat)
+        {
+          return CreateDevSparseCholesky (dynamic_cast<const SparseCholeskyTM<double>&>(*mat));
+        }, py::arg("mat"), "cuda-only sparse Cholesky solver of ngscuda, for comparisons");
+
 #ifdef NONE
   // TODO:
   // make operators work instead of Add, Mult, ..

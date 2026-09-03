@@ -599,14 +599,17 @@ namespace ngcomp
       y.Cumulate();
     }
 
+    // the operator applied by Mult, as a composition:
+    //   (I + E) ( inv (I + E^T) + innersolve )
     shared_ptr<BaseMatrix> CreateDeviceMatrix() const override
     {
-      shared_ptr<BaseMatrix> op;
-      if (bfa->SymmetricStorage())
-        op = harmonicext * inv * TransposeOperator (harmonicext) + innersolve;
-      else
-        op = harmonicext * inv * harmonicexttrans + innersolve;
-      
+      if (block)   // Gauss-Seidel variant: no composition, apply on the host
+        return BaseMatrix::CreateDeviceMatrix();
+      shared_ptr<BaseMatrix> id = make_shared<IdentityMatrix> (VHeight(), IsComplex());
+      shared_ptr<BaseMatrix> ext = id + harmonicext;
+      shared_ptr<BaseMatrix> exttrans =
+        id + (bfa->SymmetricStorage() ? TransposeOperator (harmonicext) : harmonicexttrans);
+      shared_ptr<BaseMatrix> op = ext * (inv * exttrans + innersolve);
       return op->CreateDeviceMatrix();
     }
     

@@ -73,6 +73,15 @@ namespace ngs_gpu
   #define GLOBAL_ATOMIC(T,name)  T * name
   #define ATOMIC_PTR(T)          T *
   #define ATOMIC_ADD(p,val)      atomicAdd(p, val)
+  template <typename T> __device__ inline T ngs_atomic_load (T * p)
+  { return *(volatile T*)p; }
+  #define ATOMIC_LOAD(p)         ngs_atomic_load(p)
+
+  // synchronisation below the group: the lanes of one warp / simdgroup
+  // (the x-lanes of a group whose GROUP_SIZE_X is the simd width), and
+  // a fence making this thread's global writes visible device-wide
+  #define SIMD_BARRIER()         __syncwarp()
+  #define DEVICE_FENCE()         __threadfence()
 
 #elif defined(NGS_GPU_CPU)
 
@@ -99,6 +108,7 @@ namespace ngs_gpu
 
   #include <atomic>
   #include <cstddef>
+  #include <deque>
   #include <thread>
   #include <vector>
   #include <mutex>
@@ -133,10 +143,15 @@ namespace ngs_gpu
     struct Group
     {
       Barrier barrier;
+      std::deque<Barrier> rowbarriers;   // one per (y,z) row of x-lanes
       std::vector<char> arena;
       std::size_t used = 0;
       void * last = nullptr;
-      Group (unsigned n, std::size_t sh) : barrier(n), arena(sh) { }
+      Group (unsigned sx, unsigned sy, unsigned sz, std::size_t sh)
+        : barrier(sx*sy*sz), arena(sh)
+      {
+        for (unsigned i = 0; i < sy*sz; i++) rowbarriers.emplace_back (sx);
+      }
     };
 
     thread_local unsigned lid[3] = {0,0,0}, gid[3] = {0,0,0};
@@ -159,8 +174,11 @@ namespace ngs_gpu
     }
 
     // plain float has no fetch_add, atomic_ref gives the gpu's atomicAdd
-    template <typename T> inline void AtomicAdd (T * p, T val)
-    { std::atomic_ref<T>(*p).fetch_add (val, std::memory_order_relaxed); }
+    template <typename T> inline T AtomicAdd (T * p, T val)
+    { return std::atomic_ref<T>(*p).fetch_add (val, std::memory_order_relaxed); }
+    // for spin-waits: let the thread being waited for run
+    template <typename T> inline T AtomicLoad (T * p)
+    { std::this_thread::yield(); return std::atomic_ref<T>(*p).load (std::memory_order_relaxed); }
 
     // unpack void** using the static kernel signature - no libffi needed
     template <typename T> inline T Get (void * p)
@@ -183,7 +201,7 @@ namespace ngs_gpu
   {
     using namespace ngs_cpu;
     unsigned nthreads = sx*sy*sz;
-    Group g (nthreads, 65536 + dynshared);
+    Group g (sx, sy, sz, 65536 + dynshared);
 
     auto worker = [&] (unsigned t)
     {
@@ -252,6 +270,10 @@ namespace ngs_gpu
   #define GLOBAL_ATOMIC(T,name)  T * name
   #define ATOMIC_PTR(T)          T *
   #define ATOMIC_ADD(p,val)      ngs_cpu::AtomicAdd(p, val)
+  #define ATOMIC_LOAD(p)         ngs_cpu::AtomicLoad(p)
+
+  #define SIMD_BARRIER()         ngs_cpu::group->rowbarriers[ngs_cpu::lid[1] + ngs_cpu::gsz[1]*ngs_cpu::lid[2]].Wait()
+  #define DEVICE_FENCE()         std::atomic_thread_fence(std::memory_order_seq_cst)
 
 #else   // metal
 
@@ -302,6 +324,10 @@ namespace ngs_gpu
   #define GLOBAL_ATOMIC(T,name)  device metal::atomic<T> * name
   #define ATOMIC_PTR(T)          device metal::atomic<T> *
   #define ATOMIC_ADD(p,val)      metal::atomic_fetch_add_explicit(p, val, metal::memory_order_relaxed)
+  #define ATOMIC_LOAD(p)         metal::atomic_load_explicit(p, metal::memory_order_relaxed)
+
+  #define SIMD_BARRIER()         simdgroup_barrier(mem_flags::mem_device | mem_flags::mem_threadgroup)
+  #define DEVICE_FENCE()         atomic_thread_fence(mem_flags::mem_device, metal::memory_order_seq_cst, metal::thread_scope_device)
 
 #endif
 

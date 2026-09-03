@@ -142,12 +142,10 @@ namespace ngla
     virtual shared_ptr<BaseSparseMatrix> CreateSparseMatrix() const override;
     
     
-    /*
     virtual shared_ptr<BaseMatrix> CreateDeviceMatrix() const override
     {
       return make_shared<EmbeddedMatrix>(height, range, mat->CreateDeviceMatrix());
     }
-    */
   };
 
 
@@ -223,12 +221,10 @@ namespace ngla
     virtual shared_ptr<BaseSparseMatrix> CreateSparseMatrix() const override;
     IntRange GetRange() const { return range; }
 
-    /*
     virtual shared_ptr<BaseMatrix> CreateDeviceMatrix() const override
     {
       return make_shared<EmbeddedTransposeMatrix>(width, range, mat->CreateDeviceMatrix());
     }
-    */
   };
 
 
