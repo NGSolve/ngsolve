@@ -232,7 +232,6 @@ namespace ngcomp
       uint tid = LOCAL_ID_X;
       uint bid  = GROUP_ID_X;
       uint bdim  = GROUP_SIZE_X;
-      uint gdim   = NUM_GROUPS_X;
 
       int warpIdx = tid/32;
       constexpr uint ne = $NE;
@@ -273,7 +272,9 @@ namespace ngcomp
 
       BARRIER();
 
-      for (uint baseelem = bid*$BS_ELS; baseelem < $NE; baseelem += gdim*$BS_ELS) { 
+      // one group per element batch
+      { uint baseelem = bid*$BS_ELS;
+      if (baseelem >= $NE) return;
 
       BARRIER();
 
@@ -662,15 +663,13 @@ namespace ngcomp
     kernel = library->GetKernel ("apply_btdtb");
 
     /*
-      grid-stride launch: oversubscribe the compute units for load
-      balance, but never launch more groups than element batches.
-      Measured H1o3/fp32: RTX 5090 (170 SMs) saturates around
-      16..32 groups per SM, apple silicon is happy from ~10 per core.
+      one group per element batch: no grid-stride loop in the kernel, so no
+      loop-carried state - the register count drops to ~45 for every space
+      (measured 64..72 with the loop) and occupancy is no longer an issue.
+      The finer granularity also balances the tail; the per-group dispatch
+      cost only shows for cheap batches (L2 at BS_els=16, ~5% on cuda).
     */
-    ngroups = std::min (size_t((ne+pmat->opts.BS_els-1)/pmat->opts.BS_els),
-                        32*device->ComputeUnits());
-    if (auto env = getenv("NGS_BTDTB_GROUPS"))
-      ngroups = atoi(env);
+    ngroups = (ne+pmat->opts.BS_els-1)/pmat->opts.BS_els;
     if (getenv("NGS_BTDTB_INFO"))
       cout << "apply_btdtb: " << kernel->Info(warps*32) << " groups=" << ngroups
            << " groupsize=" << warps*32 << " intervals x/y=" << nrunsx << "/" << nrunsy
