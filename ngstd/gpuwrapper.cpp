@@ -30,6 +30,10 @@ namespace ngs_gpu
       }
     while (!name.empty() && name.back() == ' ') name.pop_back();
     if (!name.empty() && name.front() == ' ') name.erase(0, 1);
+    // "Complex< float >" -> "Complex<float>"
+    for (size_t p; (p = name.find(" <")) != string::npos; ) name.erase(p, 1);
+    for (size_t p; (p = name.find("< ")) != string::npos; ) name.erase(p+1, 1);
+    for (size_t p; (p = name.find(" >")) != string::npos; ) name.erase(p, 1);
 
     static const std::map<string, ArgType> table =
       {
@@ -50,6 +54,7 @@ namespace ngs_gpu
         { "int8_t", {ArgType::Int, 1} },
         { "unsigned char", {ArgType::UInt, 1} }, { "uint8_t", {ArgType::UInt, 1} },
         { "bool", {ArgType::Bool, 1} },
+        { "Complex<float>", {ArgType::Complex, 8} }, { "Complex<double>", {ArgType::Complex, 16} },
       };
     auto it = table.find(name);
     return (it != table.end()) ? it->second : ArgType();
@@ -63,6 +68,7 @@ namespace ngs_gpu
       case Int:   return "int" + std::to_string(8*size);
       case UInt:  return "uint" + std::to_string(8*size);
       case Bool:  return "bool";
+      case Complex: return "complex" + std::to_string(8*size);   // both parts, as numpy
       default:    return size ? std::to_string(size) + " bytes" : "?";
       }
   }
@@ -208,13 +214,20 @@ namespace ngs_gpu
                 auto inner = SplitTopLevel (a.substr(lp+1, a.size()-lp-2));
                 if (inner.size() == 2)
                   {
+                    string tname = inner[0];
                     if (macro == "GLOBAL" || macro == "GLOBAL_IN" || macro == "GLOBAL_ATOMIC")
                       arg.kind = KernelSignature::Buffer;
+                    else if (macro == "GLOBAL_ATOMIC_COMPLEX")
+                      {
+                        // declared with the real type, holds Complex<T>
+                        arg.kind = KernelSignature::Buffer;
+                        tname = "Complex<" + Trim(inner[0]) + ">";
+                      }
                     else if (macro == "VALUE")
                       arg.kind = KernelSignature::Value;
                     if (arg.kind != KernelSignature::Unknown)
                       {
-                        arg.type = ResolveType (inner[0], alias);
+                        arg.type = ResolveType (tname, alias);
                         arg.name = inner[1];
                       }
                   }

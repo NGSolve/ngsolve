@@ -16,6 +16,7 @@
   No backend headers here - ngscuda and ngsmetal implement the interface.
 */
 
+#include <complex>
 #include <cstddef>
 #include <cstring>
 #include <stdexcept>
@@ -113,9 +114,12 @@ namespace ngs_gpu
     checking launches against the kernel declaration. size 0 = unknown,
     unknown types are not checked.
   */
+  template <typename T> struct IsStdComplex : std::false_type { };
+  template <typename T> struct IsStdComplex<std::complex<T>> : std::true_type { };
+
   struct ArgType
   {
-    enum Kind : unsigned char { Unknown, Float, Int, UInt, Bool };
+    enum Kind : unsigned char { Unknown, Float, Int, UInt, Bool, Complex };
     Kind kind = Unknown;
     unsigned size = 0;
 
@@ -127,6 +131,7 @@ namespace ngs_gpu
     {
       if constexpr (std::is_same_v<T,bool>) return { Bool, 1 };
       else if constexpr (std::is_floating_point_v<T>) return { Float, sizeof(T) };
+      else if constexpr (IsStdComplex<T>::value) return { Complex, sizeof(T) };   // size of both parts
       else if constexpr (std::is_integral_v<T>)
         return { std::is_signed_v<T> ? Int : UInt, sizeof(T) };
       else return { Unknown, sizeof(T) };   // size is still checked
@@ -137,7 +142,7 @@ namespace ngs_gpu
     bool Known() const { return kind != Unknown && size != 0; }
     bool operator== (const ArgType & t2) const { return kind == t2.kind && size == t2.size; }
     bool operator!= (const ArgType & t2) const { return !(*this == t2); }
-    string ToString() const;    // "float32", "int64", "8 bytes", "?"
+    string ToString() const;    // "float32", "int64", "complex64", "8 bytes", "?"
   };
 
 

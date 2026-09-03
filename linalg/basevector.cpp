@@ -15,6 +15,7 @@
 #include "basevector.hpp"
 #include "vvector.hpp"
 #include "multivector.hpp"
+#include "devicevector.hpp"
 
 #include "../parallel/parallelvector.hpp"   // for BlockVector
 
@@ -1069,6 +1070,22 @@ namespace ngla
     auto it = devveccreator.find(typeid(*this));
     if (it == devveccreator.end())
       {
+        // no backend-specific vector registered: the common DeviceVector,
+        // in the precision the device offers
+        if (ngs_gpu::HasDevice())
+          {
+            MemType mt = unified ? PreferredMemType() : MemType::Device;
+            bool fp64 = GetGpuDevice()->HasFloat64();
+            return std::visit ([&] (auto proto) -> shared_ptr<BaseVector>
+            {
+              if constexpr (is_same_v<decltype(proto),Complex>)
+                return make_shared<DeviceVector<Complex>> (*this, mt);
+              else if (fp64)
+                return make_shared<DeviceVector<double>> (*this, mt);
+              else
+                return make_shared<DeviceVector<float>> (*this, mt);
+            }, GetScalarType());
+          }
         cout << IM(1) << "No device creator function, creating host vector";
         cout << IM(7) << ", type = " << typeid(*this).name();
         cout << IM(1) << endl;

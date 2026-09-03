@@ -83,6 +83,13 @@ namespace ngs_gpu
   #define SIMD_BARRIER()         __syncwarp()
   #define DEVICE_FENCE()         __threadfence()
 
+  #define NGS_CPLX_FUNC          __host__ __device__ inline
+  #define NGS_CPLX_SQRT          sqrt
+  #define NGS_CPLX_ADDRSPACES(DEF)  DEF()
+  // a complex atomic buffer is a plain pointer, added component-wise
+  #define GLOBAL_ATOMIC_COMPLEX(T,name)   Complex<T> * name
+  #define ATOMIC_ADD_COMPLEX(name,i,val)  atomicAdd(&name[i], val)
+
 #elif defined(NGS_GPU_CPU)
 
   /* host reference backend: the kernel is ordinary c++, work-items of one
@@ -107,6 +114,7 @@ namespace ngs_gpu
   #undef threadgroup
 
   #include <atomic>
+  #include <cmath>
   #include <cstddef>
   #include <deque>
   #include <thread>
@@ -275,6 +283,12 @@ namespace ngs_gpu
   #define SIMD_BARRIER()         ngs_cpu::group->rowbarriers[ngs_cpu::lid[1] + ngs_cpu::gsz[1]*ngs_cpu::lid[2]].Wait()
   #define DEVICE_FENCE()         std::atomic_thread_fence(std::memory_order_seq_cst)
 
+  #define NGS_CPLX_FUNC          inline
+  #define NGS_CPLX_SQRT          std::sqrt
+  #define NGS_CPLX_ADDRSPACES(DEF)  DEF()
+  #define GLOBAL_ATOMIC_COMPLEX(T,name)   Complex<T> * name
+  #define ATOMIC_ADD_COMPLEX(name,i,val)  ngs_cpu::AtomicAdd(&name[i], val)
+
 #else   // metal
 
   #include <metal_stdlib>
@@ -329,6 +343,132 @@ namespace ngs_gpu
   #define SIMD_BARRIER()         simdgroup_barrier(mem_flags::mem_device | mem_flags::mem_threadgroup)
   #define DEVICE_FENCE()         atomic_thread_fence(mem_flags::mem_device, metal::memory_order_seq_cst, metal::thread_scope_device)
 
+  #define NGS_CPLX_FUNC          inline
+  #define NGS_CPLX_SQRT          sqrt
+  // references to a struct carry an address space, one overload each
+  #define NGS_CPLX_ADDRSPACES(DEF)  DEF(thread) DEF(device) DEF(threadgroup)
+  // metal has no atomic<Complex>: the buffer is viewed as 2n reals
+  #define GLOBAL_ATOMIC_COMPLEX(T,name)   device metal::atomic<T> * name
+  #define ATOMIC_ADD_COMPLEX(name,i,val)  \
+    { ATOMIC_ADD(&name[2*(i)], (val).re); ATOMIC_ADD(&name[2*(i)+1], (val).im); }
+
+#endif
+
+
+/*
+  Complex numbers, the same struct on every backend so results agree
+  bit for bit. Layout re,im as std::complex, so buffers transfer as is.
+  Use Complex<float> / Complex<double> explicitly. Mixed arithmetic with
+  a real converts the real to the value_type; write T(2) rather than 2
+  where the compiler cannot deduce it.
+
+    Complex<float> z(1, 2), w = z*conj(z) + T(0.5);   Norm(z) == |z|^2
+
+  A buffer accumulated with atomics is declared GLOBAL_ATOMIC_COMPLEX(T,y)
+  and written with ATOMIC_ADD_COMPLEX(y, i, val).
+*/
+
+template <typename T>
+struct Complex
+{
+  typedef T value_type;
+  T re, im;
+  Complex () = default;
+  NGS_CPLX_FUNC Complex (T are) : re(are), im(0) { }
+  NGS_CPLX_FUNC Complex (T are, T aim) : re(are), im(aim) { }
+};
+
+// the scalar operand in a non-deduced position, so ints and doubles convert
+#define NGS_CPLX_SCAL(T) typename Complex<T>::value_type
+
+template <typename T> NGS_CPLX_FUNC T real (Complex<T> z) { return z.re; }
+template <typename T> NGS_CPLX_FUNC T imag (Complex<T> z) { return z.im; }
+template <typename T> NGS_CPLX_FUNC Complex<T> conj (Complex<T> z) { return Complex<T>(z.re, -z.im); }
+template <typename T> NGS_CPLX_FUNC T Norm (Complex<T> z) { return z.re*z.re + z.im*z.im; }
+template <typename T> NGS_CPLX_FUNC T abs (Complex<T> z) { return NGS_CPLX_SQRT(z.re*z.re + z.im*z.im); }
+
+template <typename T> NGS_CPLX_FUNC Complex<T> operator- (Complex<T> a)
+{ return Complex<T>(-a.re, -a.im); }
+
+template <typename T> NGS_CPLX_FUNC Complex<T> operator+ (Complex<T> a, Complex<T> b)
+{ return Complex<T>(a.re+b.re, a.im+b.im); }
+template <typename T> NGS_CPLX_FUNC Complex<T> operator+ (Complex<T> a, NGS_CPLX_SCAL(T) b)
+{ return Complex<T>(a.re+b, a.im); }
+template <typename T> NGS_CPLX_FUNC Complex<T> operator+ (NGS_CPLX_SCAL(T) a, Complex<T> b)
+{ return Complex<T>(a+b.re, b.im); }
+
+template <typename T> NGS_CPLX_FUNC Complex<T> operator- (Complex<T> a, Complex<T> b)
+{ return Complex<T>(a.re-b.re, a.im-b.im); }
+template <typename T> NGS_CPLX_FUNC Complex<T> operator- (Complex<T> a, NGS_CPLX_SCAL(T) b)
+{ return Complex<T>(a.re-b, a.im); }
+template <typename T> NGS_CPLX_FUNC Complex<T> operator- (NGS_CPLX_SCAL(T) a, Complex<T> b)
+{ return Complex<T>(a-b.re, -b.im); }
+
+template <typename T> NGS_CPLX_FUNC Complex<T> operator* (Complex<T> a, Complex<T> b)
+{ return Complex<T>(a.re*b.re - a.im*b.im, a.re*b.im + a.im*b.re); }
+template <typename T> NGS_CPLX_FUNC Complex<T> operator* (Complex<T> a, NGS_CPLX_SCAL(T) b)
+{ return Complex<T>(a.re*b, a.im*b); }
+template <typename T> NGS_CPLX_FUNC Complex<T> operator* (NGS_CPLX_SCAL(T) a, Complex<T> b)
+{ return Complex<T>(a*b.re, a*b.im); }
+
+// scaled to avoid overflow in the denominator
+template <typename T> NGS_CPLX_FUNC Complex<T> operator/ (Complex<T> a, Complex<T> b)
+{
+  if ((b.re < 0 ? -b.re : b.re) >= (b.im < 0 ? -b.im : b.im))
+    {
+      T r = b.im / b.re, den = b.re + b.im*r;
+      return Complex<T>((a.re + a.im*r) / den, (a.im - a.re*r) / den);
+    }
+  T r = b.re / b.im, den = b.re*r + b.im;
+  return Complex<T>((a.re*r + a.im) / den, (a.im*r - a.re) / den);
+}
+template <typename T> NGS_CPLX_FUNC Complex<T> operator/ (Complex<T> a, NGS_CPLX_SCAL(T) b)
+{ return Complex<T>(a.re/b, a.im/b); }
+template <typename T> NGS_CPLX_FUNC Complex<T> operator/ (NGS_CPLX_SCAL(T) a, Complex<T> b)
+{ return Complex<T>(a) / b; }
+
+template <typename T> NGS_CPLX_FUNC bool operator== (Complex<T> a, Complex<T> b)
+{ return a.re == b.re && a.im == b.im; }
+template <typename T> NGS_CPLX_FUNC bool operator!= (Complex<T> a, Complex<T> b)
+{ return !(a == b); }
+
+// tinybla accumulates through fma(a,b,c)
+template <typename T> NGS_CPLX_FUNC Complex<T> fma (Complex<T> a, Complex<T> b, Complex<T> c)
+{ return a*b + c; }
+template <typename T> NGS_CPLX_FUNC Complex<T> fma (NGS_CPLX_SCAL(T) a, Complex<T> b, Complex<T> c)
+{ return a*b + c; }
+template <typename T> NGS_CPLX_FUNC Complex<T> fma (Complex<T> a, NGS_CPLX_SCAL(T) b, Complex<T> c)
+{ return a*b + c; }
+
+#define NGS_CPLX_COMPOUND(AS)                                                        \
+  template <typename T> NGS_CPLX_FUNC AS Complex<T> & operator+= (AS Complex<T> & a, Complex<T> b) \
+  { a.re += b.re; a.im += b.im; return a; }                                          \
+  template <typename T> NGS_CPLX_FUNC AS Complex<T> & operator-= (AS Complex<T> & a, Complex<T> b) \
+  { a.re -= b.re; a.im -= b.im; return a; }                                          \
+  template <typename T> NGS_CPLX_FUNC AS Complex<T> & operator*= (AS Complex<T> & a, Complex<T> b) \
+  { Complex<T> t = Complex<T>(a.re, a.im) * b; a.re = t.re; a.im = t.im; return a; } \
+  template <typename T> NGS_CPLX_FUNC AS Complex<T> & operator/= (AS Complex<T> & a, Complex<T> b) \
+  { Complex<T> t = Complex<T>(a.re, a.im) / b; a.re = t.re; a.im = t.im; return a; } \
+  template <typename T> NGS_CPLX_FUNC AS Complex<T> & operator+= (AS Complex<T> & a, NGS_CPLX_SCAL(T) b) \
+  { a.re += b; return a; }                                                           \
+  template <typename T> NGS_CPLX_FUNC AS Complex<T> & operator-= (AS Complex<T> & a, NGS_CPLX_SCAL(T) b) \
+  { a.re -= b; return a; }                                                           \
+  template <typename T> NGS_CPLX_FUNC AS Complex<T> & operator*= (AS Complex<T> & a, NGS_CPLX_SCAL(T) b) \
+  { a.re *= b; a.im *= b; return a; }                                                \
+  template <typename T> NGS_CPLX_FUNC AS Complex<T> & operator/= (AS Complex<T> & a, NGS_CPLX_SCAL(T) b) \
+  { a.re /= b; a.im /= b; return a; }
+
+NGS_CPLX_ADDRSPACES(NGS_CPLX_COMPOUND)
+
+#ifdef __CUDACC__
+template <typename T> __device__ inline void atomicAdd (Complex<T> * p, Complex<T> v)
+{ atomicAdd (&p->re, v.re); atomicAdd (&p->im, v.im); }
+#elif defined(NGS_GPU_CPU)
+namespace ngs_cpu
+{
+  template <typename T> inline void AtomicAdd (Complex<T> * p, Complex<T> v)
+  { AtomicAdd (&p->re, v.re); AtomicAdd (&p->im, v.im); }
+}
 #endif
 
 )RAW";

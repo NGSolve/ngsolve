@@ -93,6 +93,7 @@ static void ExportGPU (py::module & m)
       case 'i': k = ArgType::Int; break;
       case 'u': k = ArgType::UInt; break;
       case 'b': k = ArgType::Bool; break;
+      case 'c': k = ArgType::Complex; break;
       default: break;
       }
     return ArgType (k, unsigned(dt.itemsize()));

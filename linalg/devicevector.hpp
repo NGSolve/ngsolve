@@ -18,6 +18,9 @@
   The elementwise kernels are written in the common syntax of
   ngstd/gpukernel.hpp and compiled at runtime, so the same source runs on
   metal, cuda and the cpu reference backend.
+
+  T is double, float or Complex (= std::complex<double>, the kernels see
+  it as Complex<double>). The complex vector needs an fp64 device.
 */
 
 #include <gpuwrapper.hpp>
@@ -243,6 +246,13 @@ namespace ngla
     ngs_gpu::TypedBuffer<T> devbuffer;
     shared_ptr<ngs_gpu::Queue> queue;
     size_t devoffset = 0;              // elements into devbuffer
+
+    // the scaled operations, with the coefficient in the vector's type
+    BaseVector & ScaleT (T scal);
+    BaseVector & SetScalarT (T scal);
+    BaseVector & SetT (T scal, const BaseVector & v);
+    BaseVector & AddT (T scal, const BaseVector & v);
+    T DotT (const BaseVector & v2, bool conjugate) const;   // result over the host
     size_t align = 1;
     MemType memtype = MemType::Shared;
 
@@ -295,15 +305,20 @@ namespace ngla
     { BaseVector::operator= (v); return *this; }
 
     virtual BaseVector & Scale (double scal) override;
+    virtual BaseVector & Scale (Complex scal) override;
     virtual BaseVector & Scale (BaseScalar & scal) override;
     virtual BaseVector & SetScalar (double scal) override;
+    virtual BaseVector & SetScalar (Complex scal) override;
     virtual BaseVector & Set (double scal, const BaseVector & v) override;
+    virtual BaseVector & Set (Complex scal, const BaseVector & v) override;
     virtual BaseVector & Add (double scal, const BaseVector & v) override;
+    virtual BaseVector & Add (Complex scal, const BaseVector & v) override;
     virtual BaseVector & Add (BaseScalar & scal, const BaseVector & v) override;
 
     // using BaseVector::InnerProduct;
     using S_BaseVector<T>::InnerProduct;
     virtual double InnerProductD (const BaseVector & v2) const override;
+    virtual Complex InnerProductC (const BaseVector & v2, bool conjugate = false) const override;
     virtual void InnerProduct (const BaseVector & v2, BaseScalar & scal, bool conjugate = false) const override;
     virtual double L2Norm () const override;
 
@@ -344,8 +359,10 @@ namespace ngla
 #if !defined(FILE_DEVICEVECTOR_CPP)
   extern template class DeviceVector<double>;
   extern template class DeviceVector<float>;
+  extern template class DeviceVector<Complex>;
   extern template class DeviceVectorWrapper<double>;
   extern template class DeviceVectorWrapper<float>;
+  extern template class DeviceVectorWrapper<Complex>;
 #endif
 }
 

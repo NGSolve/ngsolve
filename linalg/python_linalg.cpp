@@ -1214,6 +1214,19 @@ inverse : string
     .def("CreateDeviceMatrix", &BaseMatrix::CreateDeviceMatrix)
     ;
 
+  py::class_<DeviceVector<double>, shared_ptr<DeviceVector<double>>, BaseVector>
+    (m, "DeviceVectorD", "vector on the gpu, fp64")
+    .def(py::init<size_t>(), py::arg("size"))
+    .def(py::init<const BaseVector&>(), py::arg("vec"));
+  py::class_<DeviceVector<float>, shared_ptr<DeviceVector<float>>, BaseVector>
+    (m, "DeviceVectorF", "vector on the gpu, fp32")
+    .def(py::init<size_t>(), py::arg("size"))
+    .def(py::init<const BaseVector&>(), py::arg("vec"));
+  py::class_<DeviceVector<Complex>, shared_ptr<DeviceVector<Complex>>, BaseVector>
+    (m, "DeviceVectorC", "vector on the gpu, complex fp64")
+    .def(py::init<size_t>(), py::arg("size"))
+    .def(py::init<const BaseVector&>(), py::arg("vec"));
+
   py::class_<DeviceSparseMatrix<double>, shared_ptr<DeviceSparseMatrix<double>>, BaseMatrix>
     (m, "DeviceSparseMatrixD", "csr matrix on the gpu, fp64");
   py::class_<DeviceSparseMatrix<float>, shared_ptr<DeviceSparseMatrix<float>>, BaseMatrix>

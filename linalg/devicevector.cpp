@@ -37,6 +37,15 @@ namespace ngla
       return src;
     }
 
+    // the scalar type as spelled in a kernel
+    template <typename T> const char * ScalName ()
+    {
+      if constexpr (is_same_v<T,double>) return "double";
+      else if constexpr (is_same_v<T,float>) return "float";
+      else return "Complex<double>";
+    }
+    template <typename T> constexpr bool NeedsFp64 = !is_same_v<T,float>;
+
     // elements handled by one work-item - the memory bound kernels want
     // more than one in flight, and the tail is taken by the last one only
     constexpr int DV_PER_THREAD = 4;
@@ -109,12 +118,19 @@ namespace ngla
         Both stages stay on the device, so with res pointing into a
         DeviceScalar the reduction is graph-capturable.
       */
-      KERNEL(dv_dot1, GLOBAL_IN(SCAL,x), GLOBAL_IN(SCAL,y), GLOBAL(SCAL,partial), VALUE(int,n))
+      // conjugate applies to the second vector, as on the host; it is
+      // ignored for real SCAL, where CONJ expands to nothing
+      KERNEL(dv_dot1, GLOBAL_IN(SCAL,x), GLOBAL_IN(SCAL,y), GLOBAL(SCAL,partial),
+                      VALUE(int,conjugate), VALUE(int,n))
       {
         SHARED(SCAL, tmp, 1024);
         SCAL s = 0;
-        for (int i = int(GLOBAL_ID_X); i < n; i += int(GROUP_SIZE_X*NUM_GROUPS_X))
-          s += x[i]*y[i];
+        if (conjugate)
+          for (int i = int(GLOBAL_ID_X); i < n; i += int(GROUP_SIZE_X*NUM_GROUPS_X))
+            s += x[i]*CONJ(y[i]);
+        else
+          for (int i = int(GLOBAL_ID_X); i < n; i += int(GROUP_SIZE_X*NUM_GROUPS_X))
+            s += x[i]*y[i];
         tmp[LOCAL_ID_X] = s;
         BARRIER();
         for (uint d = GROUP_SIZE_X/2; d > 0; d /= 2)
@@ -164,14 +180,14 @@ namespace ngla
       DeviceVectorKernels (shared_ptr<Device> adevice)
         : device(adevice)
       {
-        if constexpr (is_same_v<T,double>)
+        if constexpr (NeedsFp64<T>)
           if (!device->HasFloat64())
-            throw Exception("DeviceVector<double> on "+device->Name()+
-                            ", which has no fp64 - use DeviceVector<float>");
+            throw Exception(string("DeviceVector<")+ScalName<T>()+"> on "+device->Name()+
+                            ", which has no fp64 - only float vectors are available there");
 
-        string scal = is_same_v<T,double> ? "double" : "float";
-        library = device->CompileSource (string(code_gpukernel) +
-                                         Substitute (kernel_source, "SCAL", scal));
+        string src = Substitute (kernel_source, "SCAL", ScalName<T>());
+        src = Substitute (src, "CONJ", is_same_v<T,Complex> ? "conj" : "");
+        library = device->CompileSource (string(code_gpukernel) + src);
         setscalar = library->GetKernel ("dv_setscalar");
         scale     = library->GetKernel ("dv_scale");
         scale_dev = library->GetKernel ("dv_scale_dev");
@@ -196,10 +212,10 @@ namespace ngla
       }
 
       // res: where dv_dot2 puts the result (buffer + byte offset)
-      void LaunchDot (KernelArg x, KernelArg y, KernelArg res, int n) const
+      void LaunchDot (KernelArg x, KernelArg y, KernelArg res, int n, bool conjugate = false) const
       {
         queue->Launch (*dot1, Dim3(dotgroups), Dim3(dotgroupsize),
-                       { x, y, KernelArg(dot_scratch), KernelArg(int(n)) });
+                       { x, y, KernelArg(dot_scratch), KernelArg(int(conjugate)), KernelArg(int(n)) });
         queue->Launch (*dot2, Dim3(1), Dim3(dotgroupsize),
                        { KernelArg(dot_scratch), res, KernelArg(int(dotgroups)) });
       }
@@ -366,21 +382,38 @@ namespace ngla
   }
 
 
-  template <typename T>
-  BaseVector & DeviceVector<T> :: Scale (double scal)
+  // a Complex coefficient for a real vector must be real
+  template <typename T> T ToScal (Complex c)
   {
-    if (scal == 1.0) return *this;
+    if constexpr (is_same_v<T,Complex>) return c;
+    else
+      {
+        if (c.imag() != 0)
+          throw Exception("DeviceVector: complex coefficient for a real vector");
+        return T(c.real());
+      }
+  }
+
+  template <typename T>
+  BaseVector & DeviceVector<T> :: ScaleT (T scal)
+  {
+    if (scal == T(1.0)) return *this;
     const auto & kern = DeviceVectorKernels<T>::Get();
     kern.Launch (kern.scale, this->size,
-                 { DevArgRW(), KernelArg(T(scal)), KernelArg(int(this->size)) });
+                 { DevArgRW(), KernelArg(scal), KernelArg(int(this->size)) });
     return *this;
   }
+
+  template <typename T>
+  BaseVector & DeviceVector<T> :: Scale (double scal) { return ScaleT (T(scal)); }
+  template <typename T>
+  BaseVector & DeviceVector<T> :: Scale (Complex scal) { return ScaleT (ToScal<T>(scal)); }
 
   template <typename T>
   BaseVector & DeviceVector<T> :: Scale (BaseScalar & scal)
   {
     // the DeviceScalar holds a double, so the buffer types match only
-    // for T=double; float vectors read the value over the host
+    // for T=double; other vectors read the value over the host
     if constexpr (is_same_v<T,double>)
       if (auto devscal = dynamic_cast<DeviceScalar*> (&scal))
         {
@@ -389,46 +422,63 @@ namespace ngla
                        { DevArgRW(), devscal->DevArg(), KernelArg(int(this->size)) });
           return *this;
         }
-    return Scale (scal.GetD());
+    if constexpr (is_same_v<T,Complex>)
+      return Scale (scal.GetC());
+    else
+      return Scale (scal.GetD());
   }
 
   template <typename T>
-  BaseVector & DeviceVector<T> :: SetScalar (double scal)
+  BaseVector & DeviceVector<T> :: SetScalarT (T scal)
   {
     const auto & kern = DeviceVectorKernels<T>::Get();
     kern.Launch (kern.setscalar, this->size,
-                 { DevArgW(), KernelArg(T(scal)), KernelArg(int(this->size)) });
+                 { DevArgW(), KernelArg(scal), KernelArg(int(this->size)) });
     return *this;
   }
 
   template <typename T>
-  BaseVector & DeviceVector<T> :: Set (double scal, const BaseVector & v)
+  BaseVector & DeviceVector<T> :: SetScalar (double scal) { return SetScalarT (T(scal)); }
+  template <typename T>
+  BaseVector & DeviceVector<T> :: SetScalar (Complex scal) { return SetScalarT (ToScal<T>(scal)); }
+
+  template <typename T>
+  BaseVector & DeviceVector<T> :: SetT (T scal, const BaseVector & v)
   {
     if (v.Size() != this->size)
       throw Exception("DeviceVector::Set - size mismatch");
-    if (&v == this) return Scale(scal);
+    if (&v == this) return ScaleT(scal);
     DeviceVectorWrapper<T> dv(v, memtype);
     const auto & kern = DeviceVectorKernels<T>::Get();
     kern.Launch (kern.set, this->size,
                  { DevArgW(), dv.DevArgRO(),
-                   KernelArg(T(scal)), KernelArg(int(this->size)) });
+                   KernelArg(scal), KernelArg(int(this->size)) });
     return *this;
   }
 
   template <typename T>
-  BaseVector & DeviceVector<T> :: Add (double scal, const BaseVector & v)
+  BaseVector & DeviceVector<T> :: Set (double scal, const BaseVector & v) { return SetT (T(scal), v); }
+  template <typename T>
+  BaseVector & DeviceVector<T> :: Set (Complex scal, const BaseVector & v) { return SetT (ToScal<T>(scal), v); }
+
+  template <typename T>
+  BaseVector & DeviceVector<T> :: AddT (T scal, const BaseVector & v)
   {
     if (v.Size() != this->size)
       throw Exception("DeviceVector::Add - size mismatch");
-    if (&v == this) return Scale(1.0+scal);
+    if (&v == this) return ScaleT(T(1.0)+scal);
     DeviceVectorWrapper<T> dv(v, memtype);
     const auto & kern = DeviceVectorKernels<T>::Get();
     kern.Launch (kern.axpy, this->size,
                  { DevArgRW(), dv.DevArgRO(),
-                   KernelArg(T(scal)), KernelArg(int(this->size)) });
+                   KernelArg(scal), KernelArg(int(this->size)) });
     return *this;
   }
 
+  template <typename T>
+  BaseVector & DeviceVector<T> :: Add (double scal, const BaseVector & v) { return AddT (T(scal), v); }
+  template <typename T>
+  BaseVector & DeviceVector<T> :: Add (Complex scal, const BaseVector & v) { return AddT (ToScal<T>(scal), v); }
 
   template <typename T>
   BaseVector & DeviceVector<T> :: Add (BaseScalar & scal, const BaseVector & v)
@@ -446,22 +496,25 @@ namespace ngla
                          devscal->DevArg(), KernelArg(int(this->size)) });
           return *this;
         }
-    return Add (scal.GetD(), v);
+    if constexpr (is_same_v<T,Complex>)
+      return Add (scal.GetC(), v);
+    else
+      return Add (scal.GetD(), v);
   }
 
 
   template <typename T>
-  double DeviceVector<T> :: InnerProductD (const BaseVector & v2) const
+  T DeviceVector<T> :: DotT (const BaseVector & v2, bool conjugate) const
   {
     if (v2.Size() != this->size)
-      throw Exception("DeviceVector::InnerProductD - size mismatch");
+      throw Exception("DeviceVector::InnerProduct - size mismatch");
     DeviceVectorWrapper<T> dv(v2, memtype);
     const auto & kern = DeviceVectorKernels<T>::Get();
     // the host reads back anyway, so skip the second reduction kernel:
     // fetch the partials (2KB cost the same as 8 bytes) and sum here
     kern.queue->Launch (*kern.dot1, Dim3(kern.dotgroups), Dim3(kern.dotgroupsize),
-                        { DevArgRO(), dv.DevArgRO(),
-                          KernelArg(kern.dot_scratch), KernelArg(int(this->size)) });
+                        { DevArgRO(), dv.DevArgRO(), KernelArg(kern.dot_scratch),
+                          KernelArg(int(conjugate)), KernelArg(int(this->size)) });
     kern.queue->Finish();
     T partials[256];
     kern.dot_scratch.D2H (partials, kern.dotgroups);
@@ -469,6 +522,21 @@ namespace ngla
     for (unsigned i = 0; i < kern.dotgroups; i++)
       res += partials[i];
     return res;
+  }
+
+  template <typename T>
+  double DeviceVector<T> :: InnerProductD (const BaseVector & v2) const
+  {
+    if constexpr (is_same_v<T,Complex>)
+      throw Exception("InnerProductD for complex DeviceVector");
+    else
+      return DotT (v2, false);
+  }
+
+  template <typename T>
+  Complex DeviceVector<T> :: InnerProductC (const BaseVector & v2, bool conjugate) const
+  {
+    return DotT (v2, conjugate);
   }
 
   template <typename T>
@@ -491,7 +559,10 @@ namespace ngla
   template <typename T>
   double DeviceVector<T> :: L2Norm () const
   {
-    return sqrt (fabs (InnerProductD (*this)));
+    if constexpr (is_same_v<T,Complex>)
+      return sqrt (fabs (DotT (*this, true).real()));
+    else
+      return sqrt (fabs (DotT (*this, false)));
   }
 
 
@@ -522,8 +593,7 @@ namespace ngla
   ostream & DeviceVector<T> :: Print (ostream & ost) const
   {
     const T * data = HostData();
-    ost << "DeviceVector<" << (is_same_v<T,double> ? "double" : "float")
-        << ">, size = " << this->size << endl;
+    ost << "DeviceVector<" << ScalName<T>() << ">, size = " << this->size << endl;
     for (size_t i = 0; i < this->size; i++)
       ost << data[i] << "\n";
     return ost;
@@ -625,7 +695,11 @@ namespace ngla
   template <typename T>
   shared_ptr<BaseScalar> DeviceVector<T> :: CreateScalar () const
   {
-    return make_shared<DeviceScalar>();
+    // the DeviceScalar is real-valued
+    if constexpr (is_same_v<T,Complex>)
+      return BaseVector::CreateScalar();
+    else
+      return make_shared<DeviceScalar>();
   }
 
 
@@ -710,6 +784,8 @@ namespace ngla
 
   template class DeviceVector<double>;
   template class DeviceVector<float>;
+  template class DeviceVector<Complex>;
   template class DeviceVectorWrapper<double>;
   template class DeviceVectorWrapper<float>;
+  template class DeviceVectorWrapper<Complex>;
 }
