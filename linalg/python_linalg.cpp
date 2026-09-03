@@ -601,6 +601,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
          { b.AddTo(-1, *a); return a; })
 
     .def("__neg__", [] (shared_ptr<BaseVector> a) { return (-1.0)*a; })
+    .def("__imul__", [] (shared_ptr<BaseVector> a, BaseScalar & scal) { a->Scale(scal); return a; })
     .def("__rmul__", [] (shared_ptr<BaseVector> a, double scal) { return scal*a; })
     .def("__rmul__", [] (shared_ptr<BaseVector> a, Complex scal) { return scal*a; })
     .def("__rmul__", [] (shared_ptr<BaseVector> a, shared_ptr<BaseScalar> scal) { return scal*a; })    
@@ -1213,6 +1214,182 @@ inverse : string
     .def("Update", [](BM &m) { m.Update(); }, py::call_guard<py::gil_scoped_release>(), "Update matrix")
     .def("CreateDeviceMatrix", &BaseMatrix::CreateDeviceMatrix)
     ;
+
+  /*
+    Device scalars in python. Arithmetic builds an expression, assigned
+    to a scalar with  alpha.data = wd / as_s  - one kernel, no host
+    round-trip. Get() reads the value back and waits for the queue.
+  */
+  using ngs_gpu::KernelArg;
+  struct PyDevScalExpr
+  {
+    string type;    // "double" or "float"
+    std::function<void(string & code, string & params, std::vector<KernelArg> & args)> emit;
+  };
+  py::class_<PyDevScalExpr> (m, "DeviceScalarExpr", "expression of device scalars, evaluated on assignment");
+
+  auto bind_devicescalar = [&m] (auto proto, const char * name, const char * doc)
+  {
+    typedef decltype(proto) T;
+    typedef DeviceScalar<T> DS;
+    const string tname = DevScalTypeName<T>();
+
+    // leaf and constant expressions of this precision
+    auto leaf = [tname] (shared_ptr<DS> s) -> PyDevScalExpr
+    {
+      return { tname, [s, tname] (string & code, string & params, std::vector<KernelArg> & args)
+        {
+          auto nm = "s" + ToString(args.size());
+          params += ", GLOBAL_IN(" + tname + "," + nm + ")";
+          code += nm + "[0]";
+          args.push_back (s->DevArg());
+        } };
+    };
+    auto constant = [tname] (double v) -> PyDevScalExpr
+    {
+      return { tname, [v, tname] (string & code, string & params, std::vector<KernelArg> & args)
+        {
+          auto nm = "s" + ToString(args.size());
+          params += ", VALUE(" + tname + "," + nm + ")";
+          code += nm;
+          if (tname == "double") args.push_back (KernelArg(double(v)));
+          else args.push_back (KernelArg(float(v)));
+        } };
+    };
+    auto assign = [tname] (DS & self, const PyDevScalExpr & e)
+    {
+      if (e.type != tname)
+        throw Exception("DeviceScalar: expression of another precision");
+      std::vector<KernelArg> args;
+      string body = "s0[0] = ", params = ", GLOBAL(" + tname + ",s0)";
+      args.push_back (self.DevArg());
+      e.emit (body, params, args);
+      body += ";";
+      EvalScalarExpr (params, body, args);
+    };
+
+    py::class_<DS, shared_ptr<DS>, BaseScalar> (m, name, doc)
+      .def(py::init<double>(), py::arg("value")=0.0)
+      .def("Get", [] (DS & self) { return self.GetD(); }, "value on the host, waits for the queue")
+      .def("Set", [] (DS & self, double v) { self.Set(v); })
+      .def("__float__", [] (DS & self) { return self.GetD(); })
+      .def("__repr__", [] (DS & self) { return string(DevScalTypeName<T>()) + " device scalar " + ToString(self.GetD()); })
+      .def_property("data", [] (DS & self) { return self.GetD(); },
+                    [assign, leaf] (shared_ptr<DS> self, py::object rhs)
+                    {
+                      if (py::isinstance<PyDevScalExpr>(rhs))
+                        assign (*self, py::cast<PyDevScalExpr>(rhs));
+                      else if (py::isinstance<DS>(rhs))
+                        assign (*self, leaf (py::cast<shared_ptr<DS>>(rhs)));
+                      else
+                        self->Set (py::cast<double>(rhs));
+                    }, "assign an expression, a device scalar or a number")
+      .def("expr", [leaf] (shared_ptr<DS> self) { return leaf(self); })
+      ;
+
+    // operators: any combination of scalar, expression and number
+    auto is_operand = [] (py::object o)
+    {
+      return py::isinstance<PyDevScalExpr>(o) || py::isinstance<DS>(o) ||
+        py::isinstance<py::float_>(o) || py::isinstance<py::int_>(o);
+    };
+    auto to_expr = [leaf, constant] (py::object o) -> PyDevScalExpr
+    {
+      if (py::isinstance<PyDevScalExpr>(o)) return py::cast<PyDevScalExpr>(o);
+      if (py::isinstance<DS>(o)) return leaf (py::cast<shared_ptr<DS>>(o));
+      return constant (py::cast<double>(o));
+    };
+    auto binop = [to_expr, is_operand, tname] (char op, py::object a, py::object b) -> py::object
+    {
+      if (!is_operand(a) || !is_operand(b))   // e.g. scalar * vector: let the vector handle it
+        return py::reinterpret_borrow<py::object>(Py_NotImplemented);
+      auto ea = to_expr(a), eb = to_expr(b);
+      if (ea.type != tname || eb.type != tname)
+        throw Exception("DeviceScalar: expression mixes precisions");
+      return py::cast (PyDevScalExpr{ tname, [ea, eb, op] (string & code, string & params, std::vector<KernelArg> & args)
+        { code += "("; ea.emit (code, params, args); code += op; eb.emit (code, params, args); code += ")"; } });
+    };
+    auto func = [to_expr] (const char * f, py::object a) -> PyDevScalExpr
+    {
+      auto ea = to_expr(a);
+      return { ea.type, [ea, f] (string & code, string & params, std::vector<KernelArg> & args)
+        { code += string(f) + "("; ea.emit (code, params, args); code += ")"; } };
+    };
+
+    auto cls = py::cast<py::object>(m.attr(name));
+    for (auto [pyname, op, reflected] : { std::tuple{"__add__",'+',false}, std::tuple{"__radd__",'+',true},
+                                          std::tuple{"__sub__",'-',false}, std::tuple{"__rsub__",'-',true},
+                                          std::tuple{"__mul__",'*',false}, std::tuple{"__rmul__",'*',true},
+                                          std::tuple{"__truediv__",'/',false}, std::tuple{"__rtruediv__",'/',true} })
+      {
+        char c = op; bool r = reflected;
+        cls.attr(pyname) = py::cpp_function ([binop, c, r] (py::object self, py::object other)
+                                             { return r ? binop (c, other, self) : binop (c, self, other); },
+                                             py::is_method(cls));
+      }
+    cls.attr("__neg__") = py::cpp_function ([func] (py::object self) { return func ("-", self); }, py::is_method(cls));
+    cls.attr("Sqrt") = py::cpp_function ([func] (py::object self) { return func ("sqrt", self); }, py::is_method(cls));
+
+    // the same operators on expressions of this precision
+    auto ecls = py::cast<py::object>(m.attr("DeviceScalarExpr"));
+    if (!py::hasattr(ecls, "__add__"))
+      {
+        for (auto [pyname, op, reflected] : { std::tuple{"__add__",'+',false}, std::tuple{"__radd__",'+',true},
+                                              std::tuple{"__sub__",'-',false}, std::tuple{"__rsub__",'-',true},
+                                              std::tuple{"__mul__",'*',false}, std::tuple{"__rmul__",'*',true},
+                                              std::tuple{"__truediv__",'/',false}, std::tuple{"__rtruediv__",'/',true} })
+          {
+            char c = op; bool r = reflected;
+            ecls.attr(pyname) = py::cpp_function ([c, r] (py::object self, py::object other) -> py::object
+              {
+                if (!(py::isinstance<PyDevScalExpr>(other) || py::isinstance<DeviceScalar<double>>(other) ||
+                      py::isinstance<DeviceScalar<float>>(other) || py::isinstance<py::float_>(other) ||
+                      py::isinstance<py::int_>(other)))
+                  return py::reinterpret_borrow<py::object>(Py_NotImplemented);
+                // resolve the precision from the expression operand
+                auto e = py::cast<PyDevScalExpr>(self);
+                auto conv = [&e] (py::object o) -> PyDevScalExpr
+                {
+                  if (py::isinstance<PyDevScalExpr>(o)) return py::cast<PyDevScalExpr>(o);
+                  if (e.type == "double")
+                    if (py::isinstance<DeviceScalar<double>>(o))
+                      return py::cast<PyDevScalExpr>(o.attr("expr")());
+                  if (e.type == "float")
+                    if (py::isinstance<DeviceScalar<float>>(o))
+                      return py::cast<PyDevScalExpr>(o.attr("expr")());
+                  double v = py::cast<double>(o); string t = e.type;
+                  return { t, [v, t] (string & code, string & params, std::vector<KernelArg> & args)
+                    {
+                      auto nm = "s" + ToString(args.size());
+                      params += ", VALUE(" + t + "," + nm + ")";
+                      code += nm;
+                      if (t == "double") args.push_back (KernelArg(double(v)));
+                      else args.push_back (KernelArg(float(v)));
+                    } };
+                };
+                PyDevScalExpr ea = e, eb = conv(other);
+                if (ea.type != eb.type) throw Exception("DeviceScalar: expression mixes precisions");
+                if (r) std::swap (ea, eb);
+                return py::cast (PyDevScalExpr{ ea.type, [ea, eb, c] (string & code, string & params, std::vector<KernelArg> & args)
+                  { code += "("; ea.emit (code, params, args); code += c; eb.emit (code, params, args); code += ")"; } });
+              }, py::is_method(ecls));
+          }
+        ecls.attr("__neg__") = py::cpp_function ([] (py::object self)
+          {
+            auto ea = py::cast<PyDevScalExpr>(self);
+            return PyDevScalExpr{ ea.type, [ea] (string & code, string & params, std::vector<KernelArg> & args)
+              { code += "-("; ea.emit (code, params, args); code += ")"; } };
+          }, py::is_method(ecls));
+        ecls.attr("Sqrt") = py::cpp_function ([] (py::object self)
+          {
+            auto ea = py::cast<PyDevScalExpr>(self);
+            return PyDevScalExpr{ ea.type, [ea] (string & code, string & params, std::vector<KernelArg> & args)
+              { code += "sqrt("; ea.emit (code, params, args); code += ")"; } };
+          }, py::is_method(ecls));
+      }
+  };
+  bind_devicescalar (double(), "DeviceScalarD", "scalar on the gpu, fp64");
+  bind_devicescalar (float(), "DeviceScalarF", "scalar on the gpu, fp32");
 
   auto bind_devicevector = [&m] (auto proto, const char * name, const char * doc)
   {

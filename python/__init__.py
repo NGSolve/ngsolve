@@ -92,8 +92,8 @@ from .utils import x, y, z, dx, ds, grad, Grad, curl, div, Deviator, PyId, PyTra
 
 from . import solvers
 # Python krylovspace solvers replace the retired C++ ones, also in ngsolve.la
-from .krylovspace import CGSolver, QMRSolver, GMRESSolver
-la.CGSolver, la.QMRSolver, la.GMRESSolver = CGSolver, QMRSolver, GMRESSolver
+from .krylovspace import CGSolver, QMRSolver, GMRESSolver, DeviceCGSolver
+la.CGSolver, la.QMRSolver, la.GMRESSolver, la.DeviceCGSolver = CGSolver, QMRSolver, GMRESSolver, DeviceCGSolver
 from . import preconditioners
 from . import timestepping
 from .solve_implementation import Solve

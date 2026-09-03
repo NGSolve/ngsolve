@@ -11,6 +11,16 @@ add_custom_command(
         DEPENDS tinybla.h embed_source.cmake
         COMMENT "Embedding tinybla.h"
         )
+add_custom_command(
+        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/gpukernel_code.cpp
+        COMMAND ${CMAKE_COMMAND}
+                -DINPUT=${CMAKE_CURRENT_SOURCE_DIR}/gpukernel.h
+                -DOUTPUT=${CMAKE_CURRENT_BINARY_DIR}/gpukernel_code.cpp
+                -DSYMBOL=ngs_gpu::code_gpukernel
+                -P ${CMAKE_CURRENT_SOURCE_DIR}/embed_source.cmake
+        DEPENDS gpukernel.h embed_source.cmake
+        COMMENT "Embedding gpukernel.h"
+        )
 
 add_library( ngstd ${NGS_LIB_TYPE}
         blockalloc.cpp evalfunc.cpp templates.cpp
@@ -19,6 +29,7 @@ add_library( ngstd ${NGS_LIB_TYPE}
         python_ngstd.cpp
         bspline.cpp
         ${CMAKE_CURRENT_BINARY_DIR}/tinybla_code.cpp
+        ${CMAKE_CURRENT_BINARY_DIR}/gpukernel_code.cpp
         )
 
 target_compile_definitions(ngstd PUBLIC ${NGSOLVE_COMPILE_DEFINITIONS})
@@ -39,7 +50,7 @@ install( FILES
         stringops.hpp
         statushandler.hpp ngsstream.hpp 
         mycomplex.hpp python_ngstd.hpp ngs_utils.hpp
-        bspline.hpp sample_sort.hpp gpuwrapper.hpp gpukernel.hpp tinybla.hpp tinybla.h
+        bspline.hpp sample_sort.hpp gpuwrapper.hpp gpukernel.hpp gpukernel.h tinybla.hpp tinybla.h
         DESTINATION ${NGSOLVE_INSTALL_DIR_INCLUDE}
         COMPONENT ngsolve_devel
        )

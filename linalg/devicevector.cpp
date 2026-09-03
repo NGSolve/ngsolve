@@ -412,10 +412,10 @@ namespace ngla
   template <typename T>
   BaseVector & DeviceVector<T> :: Scale (BaseScalar & scal)
   {
-    // the DeviceScalar holds a double, so the buffer types match only
-    // for T=double; other vectors read the value over the host
-    if constexpr (is_same_v<T,double>)
-      if (auto devscal = dynamic_cast<DeviceScalar*> (&scal))
+    // a device scalar of the vector's precision is read by the kernel,
+    // any other scalar over the host
+    if constexpr (!is_same_v<T,Complex>)
+      if (auto devscal = dynamic_cast<DeviceScalar<T>*> (&scal))
         {
           const auto & kern = DeviceVectorKernels<T>::Get();
           kern.Launch (kern.scale_dev, this->size,
@@ -483,9 +483,9 @@ namespace ngla
   template <typename T>
   BaseVector & DeviceVector<T> :: Add (BaseScalar & scal, const BaseVector & v)
   {
-    // buffer types match only for T=double, see Scale
-    if constexpr (is_same_v<T,double>)
-      if (auto devscal = dynamic_cast<DeviceScalar*> (&scal))
+    // see Scale
+    if constexpr (!is_same_v<T,Complex>)
+      if (auto devscal = dynamic_cast<DeviceScalar<T>*> (&scal))
         {
           if (v.Size() != this->size)
             throw Exception("DeviceVector::Add - size mismatch");
@@ -543,14 +543,14 @@ namespace ngla
   void DeviceVector<T> :: InnerProduct (const BaseVector & v2, BaseScalar & scal, bool conjugate) const
   {
     // result straight into the DeviceScalar - no host round-trip, capturable
-    if constexpr (is_same_v<T,double>)
-      if (auto devscal = dynamic_cast<DeviceScalar*> (&scal))
+    if constexpr (!is_same_v<T,Complex>)
+      if (auto devscal = dynamic_cast<DeviceScalar<T>*> (&scal))
         {
           if (v2.Size() != this->size)
             throw Exception("DeviceVector::InnerProduct - size mismatch");
           DeviceVectorWrapper<T> dv(v2, memtype);
           const auto & kern = DeviceVectorKernels<T>::Get();
-          kern.LaunchDot (DevArgRO(), dv.DevArgRO(), devscal->DevArg(), int(this->size));
+          kern.LaunchDot (DevArgRO(), dv.DevArgRO(), devscal->DevArg(), int(this->size), conjugate);
           return;
         }
     BaseVector::InnerProduct (v2, scal, conjugate);
@@ -695,11 +695,11 @@ namespace ngla
   template <typename T>
   shared_ptr<BaseScalar> DeviceVector<T> :: CreateScalar () const
   {
-    // the DeviceScalar is real-valued
+    // the DeviceScalar is real-valued, in the vector's precision
     if constexpr (is_same_v<T,Complex>)
       return BaseVector::CreateScalar();
     else
-      return make_shared<DeviceScalar>();
+      return make_shared<DeviceScalar<T>>();
   }
 
 
@@ -737,50 +737,68 @@ namespace ngla
   }
 
 
-  DeviceScalar :: DeviceScalar (double d)
+  template <typename T>
+  DeviceScalar<T> :: DeviceScalar (double d)
   {
     auto dev = GetGpuDevice();
-    devbuffer = dev->NewBuffer<double> (1, PreferredMemType());
+    if constexpr (is_same_v<T,double>)
+      if (!dev->HasFloat64())
+        throw Exception("DeviceScalar<double> on "+dev->Name()+
+                        ", which has no fp64 - use DeviceScalar<float>");
+    devbuffer = dev->NewBuffer<T> (1, PreferredMemType());
     queue = dev->DefaultQueue();
-    devbuffer.H2D (&d, 1);
+    T val = T(d);
+    devbuffer.H2D (&val, 1);
   }
 
-  DeviceScalar :: DeviceScalar (const DeviceScalar & s2)
+  template <typename T>
+  DeviceScalar<T> :: DeviceScalar (const DeviceScalar & s2)
     : DeviceScalar ()
   {
     (*this) = s2;
   }
 
-  DeviceScalar & DeviceScalar :: operator= (const DeviceScalar & s2)
+  template <typename T>
+  DeviceScalar<T> & DeviceScalar<T> :: operator= (const DeviceScalar & s2)
   {
-    std::vector<KernelArg> args = { DevArg(), KernelArg(s2.devbuffer) };
-    EvalScalarExpr (", GLOBAL(double,s0), GLOBAL_IN(double,s1)", "s0[0] = s1[0];", args);
+    std::vector<KernelArg> args = { DevArg(), s2.DevArg() };
+    string t = DevScalTypeName<T>();
+    EvalScalarExpr (", GLOBAL(" + t + ",s0), GLOBAL_IN(" + t + ",s1)", "s0[0] = s1[0];", args);
     return *this;
   }
 
-  void DeviceScalar :: Set (double d)
+  template <typename T>
+  void DeviceScalar<T> :: Set (double d)
   {
-    devbuffer.H2D (&d, 1);
+    // a kernel may still be reading the old value
+    queue->Finish();
+    T val = T(d);
+    devbuffer.H2D (&val, 1);
   }
 
-  void DeviceScalar :: Set (Complex c)
+  template <typename T>
+  void DeviceScalar<T> :: Set (Complex c)
   {
     throw Exception ("DeviceScalar is real-valued");
   }
 
-  double DeviceScalar :: GetD () const
+  template <typename T>
+  double DeviceScalar<T> :: GetD () const
   {
     queue->Finish();   // kernels writing the value may still be queued
-    double d;
-    devbuffer.D2H (&d, 1);
-    return d;
+    T val;
+    devbuffer.D2H (&val, 1);
+    return val;
   }
 
-  Complex DeviceScalar :: GetC () const
+  template <typename T>
+  Complex DeviceScalar<T> :: GetC () const
   {
     throw Exception ("DeviceScalar is real-valued");
   }
 
+  template class DeviceScalar<double>;
+  template class DeviceScalar<float>;
 
   template class DeviceVector<double>;
   template class DeviceVector<float>;

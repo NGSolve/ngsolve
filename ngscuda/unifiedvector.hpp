@@ -68,16 +68,16 @@ namespace ngla
   // device pointer and the device expression assignment
   // used for CUDA graph capture.
   // -------------------------------------------------------
-  class UnifiedScalar : public DeviceScalar
+  class UnifiedScalar : public DeviceScalar<double>
   {
   public:
-    UnifiedScalar (double d = 0.0) : DeviceScalar(d) { }
+    UnifiedScalar (double d = 0.0) : DeviceScalar<double>(d) { }
 
     double* DevPtr() const;
 
-    using DeviceScalar::operator=;
+    using DeviceScalar<double>::operator=;
     UnifiedScalar & operator= (const UnifiedScalar & s2)
-    { DeviceScalar::operator= (static_cast<const DeviceScalar&>(s2)); return *this; }
+    { DeviceScalar<double>::operator= (static_cast<const DeviceScalar<double>&>(s2)); return *this; }
   };
 
 }

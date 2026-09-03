@@ -316,6 +316,64 @@ conjugate : bool = False
             s.data += w
 
         
+class DeviceCGSolver(LinearSolver):
+    __doc__ = """Preconditioned conjugate gradient method with all vector and
+scalar operations on the device.
+
+The coefficients alpha and beta live in device scalars and are computed
+by device kernels, so an iteration issues no host synchronisation. The
+residual is read back to the host only every `check` iterations, where
+the convergence test, callbacks and printing happen.
+
+Matrix and preconditioner must be device operators (CreateDeviceMatrix),
+rhs and solution device vectors; the real case only.
+
+    Parameters
+    ----------
+
+""" + linear_solver_param_doc + """
+
+check : int = 10
+  Number of iterations between two residual checks on the host.
+"""
+    name = "DeviceCG"
+
+    def __init__(self, *args, check : int = 10, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.check = check
+
+    def _SolveImpl(self, rhs : BaseVector, sol : BaseVector):
+        r, w, s, q = [sol.CreateVector() for i in range(4)]
+        wd, wdn, as_s, alpha, neg_alpha, beta = [rhs.CreateScalar() for i in range(6)]
+        if not hasattr(wd, "Get"):
+            raise Exception("DeviceCGSolver needs device vectors, e.g. rhs = devmat.CreateColVector()")
+        r.data = rhs - self.mat * sol
+        w.data = self.pre * r
+        s.data = w
+        w.InnerProduct(r, wd)
+        if self.CheckResidual(sqrt(abs(wd.Get()))):
+            return
+        it = 0
+        while True:
+            q.data = self.mat * s
+            s.InnerProduct(q, as_s)
+            alpha.data = wd / as_s
+            neg_alpha.data = -alpha
+            sol.data += alpha * s
+            r.data += neg_alpha * q
+            w.data = self.pre * r
+            w.InnerProduct(r, wdn)
+            beta.data = wdn / wd
+            s *= beta
+            s.data += w
+            wd.data = wdn
+            it += 1
+            if it % self.check == 0 or it + 1 >= self.maxiter:
+                self.iterations = it       # CheckResidual counts as CGSolver does
+                if self.CheckResidual(sqrt(abs(wd.Get()))):
+                    return
+
+
 def CG(mat, rhs, pre=None, sol=None, tol=1e-12, maxsteps = 100, printrates = True, plotrates = False, initialize = True, conjugate=False, callback=None, **kwargs):
     """preconditioned conjugate gradient method
 

@@ -75,6 +75,11 @@ PYBIND11_MODULE(_ngscuda, m) {
     ;
 
 
+  // the scalar of a UnifiedVector, with the operators of ngsolve.la.DeviceScalarD
+  py::class_<UnifiedScalar, DeviceScalar<double>, shared_ptr<UnifiedScalar>>
+    (m, "UnifiedScalar", "scalar on the cuda device")
+    .def(py::init<double>(), py::arg("value")=0.0);
+
   py::class_<DevMatrix, BaseMatrix, shared_ptr<DevMatrix>>
     (m, "DevBaseMatrix", "device matrix for CUDA applications");
 

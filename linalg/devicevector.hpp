@@ -37,6 +37,7 @@ namespace ngla
   NGS_DLL_HEADER MemType PreferredMemType();
 
   template <typename T> class DeviceVectorWrapper;
+  template <typename T> class DeviceScalar;
 
 
   // compiles (once per shape) and launches the one-thread kernel
@@ -44,25 +45,33 @@ namespace ngla
   NGS_DLL_HEADER void EvalScalarExpr (const std::string & params, const std::string & body,
                                       const std::vector<ngs_gpu::KernelArg> & args);
 
+  // the precision as spelled in a kernel
+  template <typename T> constexpr const char * DevScalTypeName ()
+  { return std::is_same_v<T,double> ? "double" : "float"; }
+
   template <typename T>
   concept IsDevScalarExpr = requires (const T & e, std::string & c, std::string & p,
                                       std::vector<ngs_gpu::KernelArg> & a)
-  { e.Emit (c, p, a); };
+  { e.Emit (c, p, a); typename T::value_type; };
 
 
   /*
-    A scalar living in gpu memory, at a fixed device address. Kernels
+    A scalar living in gpu memory, at a fixed device address, in the
+    precision T of the vectors it belongs to (double or float). Kernels
     and backend libraries can read and write it without a host
     round-trip, which is what makes operator sequences using it
     recordable into a device graph.
   */
+  template <typename T>
   class NGS_DLL_HEADER DeviceScalar : public BaseScalar
   {
   protected:
-    ngs_gpu::TypedBuffer<double> devbuffer;   // one double
+    ngs_gpu::TypedBuffer<T> devbuffer;   // one value
     shared_ptr<ngs_gpu::Queue> queue;
 
   public:
+    typedef T value_type;
+
     DeviceScalar (double d = 0.0);
 
     // value copy on the device, no host round-trip
@@ -78,15 +87,19 @@ namespace ngla
     // buffer of the value, for kernel arguments and backend access
     const shared_ptr<ngs_gpu::Buffer> & DevBuffer() const { return devbuffer.Raw(); }
     ngs_gpu::KernelArg DevArg() const { return ngs_gpu::KernelArg(devbuffer); }
+    const shared_ptr<ngs_gpu::Queue> & GetQueue() const { return queue; }
 
     // evaluate a scalar expression on the device, e.g.
-    //   alpha = Div (Scal(rz), Scal(pq));
+    //   alpha = rz / pq;
     // one single-thread kernel, no host round-trip, capturable
     template <IsDevScalarExpr Expr>
     DeviceScalar & operator= (const Expr & e)
     {
+      static_assert (std::is_same_v<typename Expr::value_type, T>,
+                     "DeviceScalar: expression of another precision");
       std::vector<ngs_gpu::KernelArg> args;
-      std::string body = "s0[0] = ", params = ", GLOBAL(double,s0)";
+      std::string body = "s0[0] = ";
+      std::string params = std::string(", GLOBAL(") + DevScalTypeName<T>() + ",s0)";
       args.push_back (DevArg());
       e.Emit (body, params, args);
       body += ";";
@@ -100,29 +113,34 @@ namespace ngla
     Scalar expression templates. A node contributes its sub-expression
     to the kernel source and its buffers/values to the argument list;
     the assignment above compiles the collected source once per shape.
+    All nodes of one expression share the precision T.
   */
 
+  template <typename T>
   struct DevScalExpr        // leaf: a DeviceScalar
   {
-    const DeviceScalar * s;
+    typedef T value_type;
+    const DeviceScalar<T> * s;
     void Emit (std::string & code, std::string & params,
                std::vector<ngs_gpu::KernelArg> & args) const
     {
       auto name = "s" + std::to_string(args.size());
-      params += ", GLOBAL_IN(double," + name + ")";
+      params += std::string(", GLOBAL_IN(") + DevScalTypeName<T>() + "," + name + ")";
       code += name + "[0]";
-      args.push_back (ngs_gpu::KernelArg(*s->DevBuffer()));
+      args.push_back (s->DevArg());
     }
   };
 
+  template <typename T>
   struct DevConstExpr       // leaf: a value, passed as kernel argument
   {
-    double val;
+    typedef T value_type;
+    T val;
     void Emit (std::string & code, std::string & params,
                std::vector<ngs_gpu::KernelArg> & args) const
     {
       auto name = "s" + std::to_string(args.size());
-      params += ", VALUE(double," + name + ")";
+      params += std::string(", VALUE(") + DevScalTypeName<T>() + "," + name + ")";
       code += name;
       args.push_back (ngs_gpu::KernelArg(val));
     }
@@ -131,6 +149,7 @@ namespace ngla
   template <IsDevScalarExpr L, IsDevScalarExpr R>
   struct DevBinExpr
   {
+    typedef typename L::value_type value_type;
     L l; R r; char op;
     void Emit (std::string & code, std::string & params,
                std::vector<ngs_gpu::KernelArg> & args) const
@@ -146,6 +165,7 @@ namespace ngla
   template <IsDevScalarExpr E>
   struct DevFuncExpr
   {
+    typedef typename E::value_type value_type;
     E e; const char * func;
     void Emit (std::string & code, std::string & params,
                std::vector<ngs_gpu::KernelArg> & args) const
@@ -161,15 +181,13 @@ namespace ngla
                       tau = Sqrt(rho);  x = 0.5*a + b;
     Operands are expressions, DeviceScalars or plain numbers; at least
     one gpu-flavoured operand is required, so the templates never touch
-    ordinary arithmetic.
+    ordinary arithmetic. The precision is that of the gpu-flavoured
+    operands, which must agree; plain numbers are converted to it.
   */
 
-  inline DevScalExpr ToDevExpr (const DeviceScalar & s) { return {&s}; }
-  inline DevConstExpr ToDevExpr (double v) { return {v}; }
-  template <IsDevScalarExpr E> auto ToDevExpr (const E & e) { return e; }
-
   template <typename T>
-  concept IsDevScalarLike = std::is_base_of_v<DeviceScalar, std::remove_cvref_t<T>>;
+  concept IsDevScalarLike = requires { typename std::remove_cvref_t<T>::value_type; } &&
+    std::is_base_of_v<DeviceScalar<typename std::remove_cvref_t<T>::value_type>, std::remove_cvref_t<T>>;
   template <typename T>
   concept IsDevScalarOperand = IsDevScalarExpr<std::remove_cvref_t<T>> ||
     IsDevScalarLike<T> || std::is_arithmetic_v<std::remove_cvref_t<T>>;
@@ -177,29 +195,60 @@ namespace ngla
   concept IsDevScalarOp = IsDevScalarOperand<L> && IsDevScalarOperand<R> &&
     !(std::is_arithmetic_v<std::remove_cvref_t<L>> && std::is_arithmetic_v<std::remove_cvref_t<R>>);
 
-  template <typename L, typename R> requires IsDevScalarOp<L,R>
-  auto operator+ (const L & l, const R & r)
-  { return DevBinExpr<decltype(ToDevExpr(l)), decltype(ToDevExpr(r))>{ToDevExpr(l), ToDevExpr(r), '+'}; }
+  // the precision of a binary operation: from the gpu-flavoured side
+  template <typename L, typename R>
+  using DevOpType = std::conditional_t<std::is_arithmetic_v<std::remove_cvref_t<L>>,
+                                       typename std::remove_cvref_t<R>::value_type,
+                                       typename std::remove_cvref_t<L>::value_type>;
 
-  template <typename L, typename R> requires IsDevScalarOp<L,R>
-  auto operator- (const L & l, const R & r)
-  { return DevBinExpr<decltype(ToDevExpr(l)), decltype(ToDevExpr(r))>{ToDevExpr(l), ToDevExpr(r), '-'}; }
+  template <typename T, typename X>
+  auto ToDevExpr (const X & x)
+  {
+    if constexpr (std::is_arithmetic_v<X>)
+      return DevConstExpr<T>{T(x)};
+    else if constexpr (IsDevScalarLike<X>)
+      {
+        static_assert (std::is_same_v<typename X::value_type, T>,
+                       "DeviceScalar expression mixes precisions");
+        return DevScalExpr<T>{&x};
+      }
+    else
+      {
+        static_assert (std::is_same_v<typename X::value_type, T>,
+                       "DeviceScalar expression mixes precisions");
+        return x;
+      }
+  }
 
-  template <typename L, typename R> requires IsDevScalarOp<L,R>
-  auto operator* (const L & l, const R & r)
-  { return DevBinExpr<decltype(ToDevExpr(l)), decltype(ToDevExpr(r))>{ToDevExpr(l), ToDevExpr(r), '*'}; }
+#define NGS_DEVSCAL_BINOP(OP, CH)                                                   \
+  template <typename L, typename R> requires IsDevScalarOp<L,R>                     \
+  auto operator OP (const L & l, const R & r)                                       \
+  {                                                                                 \
+    typedef DevOpType<L,R> T;                                                       \
+    auto el = ToDevExpr<T>(l); auto er = ToDevExpr<T>(r);                           \
+    return DevBinExpr<decltype(el), decltype(er)>{el, er, CH};                      \
+  }
+  NGS_DEVSCAL_BINOP(+, '+')
+  NGS_DEVSCAL_BINOP(-, '-')
+  NGS_DEVSCAL_BINOP(*, '*')
+  NGS_DEVSCAL_BINOP(/, '/')
+#undef NGS_DEVSCAL_BINOP
 
-  template <typename L, typename R> requires IsDevScalarOp<L,R>
-  auto operator/ (const L & l, const R & r)
-  { return DevBinExpr<decltype(ToDevExpr(l)), decltype(ToDevExpr(r))>{ToDevExpr(l), ToDevExpr(r), '/'}; }
+  template <typename X> requires (IsDevScalarExpr<std::remove_cvref_t<X>> || IsDevScalarLike<X>)
+  auto operator- (const X & x)
+  {
+    typedef typename std::remove_cvref_t<X>::value_type T;
+    auto e = ToDevExpr<T>(x);
+    return DevFuncExpr<decltype(e)>{e, "-"};
+  }
 
-  template <typename T> requires (IsDevScalarExpr<std::remove_cvref_t<T>> || IsDevScalarLike<T>)
-  auto operator- (const T & t)
-  { return DevFuncExpr<decltype(ToDevExpr(t))>{ToDevExpr(t), "-"}; }
-
-  template <typename T> requires (IsDevScalarExpr<std::remove_cvref_t<T>> || IsDevScalarLike<T>)
-  auto Sqrt (const T & t)
-  { return DevFuncExpr<decltype(ToDevExpr(t))>{ToDevExpr(t), "sqrt"}; }
+  template <typename X> requires (IsDevScalarExpr<std::remove_cvref_t<X>> || IsDevScalarLike<X>)
+  auto Sqrt (const X & x)
+  {
+    typedef typename std::remove_cvref_t<X>::value_type T;
+    auto e = ToDevExpr<T>(x);
+    return DevFuncExpr<decltype(e)>{e, "sqrt"};
+  }
 
 
   /*
@@ -211,13 +260,14 @@ namespace ngla
   template <IsDevScalarExpr E>
   struct DevScalStmt
   {
-    DeviceScalar * dest;
+    typedef typename E::value_type T;
+    DeviceScalar<T> * dest;
     E e;
     void EmitStmt (std::string & body, std::string & params,
                    std::vector<ngs_gpu::KernelArg> & args) const
     {
       auto name = "s" + std::to_string(args.size());
-      params += ", GLOBAL(double," + name + ")";
+      params += std::string(", GLOBAL(") + DevScalTypeName<T>() + "," + name + ")";
       args.push_back (dest->DevArg());
       body += name + "[0] = ";
       e.Emit (body, params, args);
@@ -225,9 +275,12 @@ namespace ngla
     }
   };
 
-  template <typename E> requires IsDevScalarOperand<E>
-  auto Assign (DeviceScalar & d, const E & e)
-  { return DevScalStmt<decltype(ToDevExpr(e))>{&d, ToDevExpr(e)}; }
+  template <typename T, typename E> requires IsDevScalarOperand<E>
+  auto Assign (DeviceScalar<T> & d, const E & e)
+  {
+    auto ee = ToDevExpr<T>(e);
+    return DevScalStmt<decltype(ee)>{&d, ee};
+  }
 
   template <typename... E>
   void Eval (const DevScalStmt<E> &... stmts)
@@ -357,6 +410,8 @@ namespace ngla
 
 
 #if !defined(FILE_DEVICEVECTOR_CPP)
+  extern template class DeviceScalar<double>;
+  extern template class DeviceScalar<float>;
   extern template class DeviceVector<double>;
   extern template class DeviceVector<float>;
   extern template class DeviceVector<Complex>;
