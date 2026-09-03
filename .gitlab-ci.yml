@@ -2,6 +2,16 @@ default:
   artifacts:
     expire_in: 6 mos
 
+# Access github.com via personal access token to avoid download rate limit issues.
+workflow:
+  rules:
+    - if: $GH_TOKEN
+      variables:
+        GIT_CONFIG_COUNT: "1"
+        GIT_CONFIG_KEY_0: "url.https://oauth2:${GH_TOKEN}@github.com/.insteadOf"
+        GIT_CONFIG_VALUE_0: "https://github.com/"
+    - when: always
+
 stages:
   - build
   - test
