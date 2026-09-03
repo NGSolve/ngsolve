@@ -6,7 +6,9 @@
 #include <cuda.h>
 #include <nvrtc.h>
 
+#include <cstdlib>
 #include <cstring>
+#include <fstream>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -189,6 +191,75 @@ namespace ngs_cuda
   };
 
 
+  // if NGS_CUDA_DUMP_PTX is set, the generated ptx and a summary of the
+  // compiled kernels are written to that directory ("1" -> current dir)
+  static const char * PtxDumpDir()
+  {
+    const char * dir = getenv ("NGS_CUDA_DUMP_PTX");
+    if (!dir || !*dir) return nullptr;
+    return (strcmp(dir, "1") == 0) ? "." : dir;
+  }
+
+  // names of the '.entry' points, in the order they appear in the ptx
+  static std::vector<std::string> PtxEntryNames (const std::string & ptx)
+  {
+    std::vector<std::string> names;
+    for (size_t pos = 0; (pos = ptx.find (".entry", pos)) != std::string::npos; )
+      {
+        pos += 6;
+        size_t beg = ptx.find_first_not_of (" \t\n", pos);
+        if (beg == std::string::npos) break;
+        size_t end = ptx.find_first_of (" \t\n(", beg);
+        names.push_back (ptx.substr (beg, end-beg));
+        pos = beg;
+      }
+    return names;
+  }
+
+  static void DumpPtx (const std::string & dir, const std::string & source,
+                       const std::string & ptx, const std::string & log,
+                       const std::string & arch, size_t cubinsize, CUmodule module)
+  {
+    static int counter = 0;
+    std::string base = dir + "/ngsgpu_" + std::to_string(counter++);
+
+    std::ofstream (base+".ptx") << ptx;
+
+    std::ofstream info (base+".info");
+    info << "source:      ngsgpu.cu, " << source.size() << " bytes\n"
+         << "options:     " << arch << " --std=c++17 --device-as-default-execution-space\n"
+         << "ptx:         " << ptx.size() << " bytes\n"
+         << "cubin:       " << cubinsize << " bytes\n";
+    if (log.find_first_not_of (" \t\n") != std::string::npos)
+      info << "compile log:\n" << log << "\n";
+
+    for (auto & name : PtxEntryNames (ptx))
+      {
+        CUfunction func;
+        if (cuModuleGetFunction (&func, module, name.c_str()) != CUDA_SUCCESS)
+          continue;
+        auto attr = [&] (CUfunction_attribute a)
+        { int v = 0; cuFuncGetAttribute (&v, a, func); return v; };
+
+        info << "\nkernel " << name << "\n"
+             << "  registers:              " << attr (CU_FUNC_ATTRIBUTE_NUM_REGS) << "\n"
+             << "  local bytes:            " << attr (CU_FUNC_ATTRIBUTE_LOCAL_SIZE_BYTES) << "\n"
+             << "  const bytes:            " << attr (CU_FUNC_ATTRIBUTE_CONST_SIZE_BYTES) << "\n"
+             << "  static shared bytes:    " << attr (CU_FUNC_ATTRIBUTE_SHARED_SIZE_BYTES) << "\n"
+             << "  max threads per block:  " << attr (CU_FUNC_ATTRIBUTE_MAX_THREADS_PER_BLOCK) << "\n"
+             << "  ptx version:            " << attr (CU_FUNC_ATTRIBUTE_PTX_VERSION) << "\n"
+             << "  binary version:         " << attr (CU_FUNC_ATTRIBUTE_BINARY_VERSION) << "\n";
+
+        for (int bs : { 32, 64, 128, 256, 512, 1024 })
+          {
+            int blocks = 0;
+            if (cuOccupancyMaxActiveBlocksPerMultiprocessor (&blocks, func, bs, 0) == CUDA_SUCCESS)
+              info << "  blocks/SM at " << bs << " threads: " << blocks << "\n";
+          }
+      }
+  }
+
+
   class CudaDevice : public Device
   {
     CUdevice dev;
@@ -243,14 +314,29 @@ namespace ngs_cuda
                               "--device-as-default-execution-space" };
 
       auto res = nvrtcCompileProgram (prog, 3, opts);
+
+      size_t logsize = 0;
+      nvrtcGetProgramLogSize (prog, &logsize);
+      std::string log (logsize, '\0');
+      if (logsize) nvrtcGetProgramLog (prog, log.data());
+      while (!log.empty() && log.back() == '\0') log.pop_back();
+
       if (res != NVRTC_SUCCESS)
         {
-          size_t logsize = 0;
-          nvrtcGetProgramLogSize (prog, &logsize);
-          std::string log (logsize, '\0');
-          if (logsize) nvrtcGetProgramLog (prog, log.data());
           nvrtcDestroyProgram (&prog);
           throw std::runtime_error ("ngscuda: kernel compile error:\n" + log);
+        }
+
+      const char * dumpdir = PtxDumpDir();
+
+      std::string ptx;
+      if (dumpdir)
+        {
+          size_t ptxsize = 0;
+          Check (nvrtcGetPTXSize (prog, &ptxsize), "nvrtcGetPTXSize");
+          ptx.resize (ptxsize);
+          Check (nvrtcGetPTX (prog, ptx.data()), "nvrtcGetPTX");
+          while (!ptx.empty() && ptx.back() == '\0') ptx.pop_back();
         }
 
       std::string image;
@@ -262,15 +348,23 @@ namespace ngs_cuda
         }
       else
         {
-          size_t ptxsize = 0;
-          Check (nvrtcGetPTXSize (prog, &ptxsize), "nvrtcGetPTXSize");
-          image.resize (ptxsize);
-          Check (nvrtcGetPTX (prog, image.data()), "nvrtcGetPTX");
+          cubinsize = 0;
+          if (ptx.empty())
+            {
+              size_t ptxsize = 0;
+              Check (nvrtcGetPTXSize (prog, &ptxsize), "nvrtcGetPTXSize");
+              ptx.resize (ptxsize);
+              Check (nvrtcGetPTX (prog, ptx.data()), "nvrtcGetPTX");
+            }
+          image = ptx;
         }
       nvrtcDestroyProgram (&prog);
 
       CUmodule module;
       Check (cuModuleLoadData (&module, image.data()), "cuModuleLoadData");
+
+      if (dumpdir)
+        DumpPtx (dumpdir, source, ptx, log, arch, cubinsize, module);
       return std::make_shared<CudaLibrary> (module);
     }
   };
