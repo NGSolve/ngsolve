@@ -1218,6 +1218,14 @@ inverse : string
     (m, "DeviceSparseMatrixD", "csr matrix on the gpu, fp64");
   py::class_<DeviceSparseMatrix<float>, shared_ptr<DeviceSparseMatrix<float>>, BaseMatrix>
     (m, "DeviceSparseMatrixF", "csr matrix on the gpu, fp32");
+  py::class_<DeviceBlockJacobi<double>, shared_ptr<DeviceBlockJacobi<double>>, BaseMatrix>
+    (m, "DeviceBlockJacobiD", "block-Jacobi preconditioner on the gpu, fp64");
+  py::class_<DeviceBlockJacobi<float>, shared_ptr<DeviceBlockJacobi<float>>, BaseMatrix>
+    (m, "DeviceBlockJacobiF", "block-Jacobi preconditioner on the gpu, fp32");
+  py::class_<DeviceDiagonalMatrix<double>, shared_ptr<DeviceDiagonalMatrix<double>>, BaseMatrix>
+    (m, "DeviceDiagonalMatrixD", "diagonal matrix on the gpu, fp64");
+  py::class_<DeviceDiagonalMatrix<float>, shared_ptr<DeviceDiagonalMatrix<float>>, BaseMatrix>
+    (m, "DeviceDiagonalMatrixF", "diagonal matrix on the gpu, fp32");
 
   py::class_<BaseSparseMatrix, shared_ptr<BaseSparseMatrix>, BaseMatrix>
     (m, "BaseSparseMatrix", "sparse matrix of any type")

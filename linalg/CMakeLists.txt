@@ -8,7 +8,7 @@ add_library(ngla ${NGS_LIB_TYPE}
         mumpsinverse.cpp elementbyelement.cpp arnoldi.cpp paralleldofs.cpp diagonalmatrix.cpp
         python_linalg.cpp umfpackinverse.cpp
         ../parallel/parallelvvector.cpp ../parallel/parallel_matrices.cpp 
-        sparsefactorization_interface.cpp devicevector.cpp device_sparsematrix.cpp
+        sparsefactorization_interface.cpp devicevector.cpp device_sparsematrix.cpp device_blockjacobi.cpp device_diagonalmatrix.cpp
 )
 
 target_include_directories(ngla PRIVATE ${UMFPACK_INCLUDE_DIR} ${NETGEN_PYTHON_INCLUDE_DIRS})
@@ -45,7 +45,7 @@ install( FILES
         special_matrix.hpp superluinverse.hpp mumpsinverse.hpp
         umfpackinverse.hpp vvector.hpp python_linalg.hpp
         elementbyelement.hpp arnoldi.hpp paralleldofs.hpp
-        sparsefactorization_interface.hpp devicevector.hpp device_sparsematrix.hpp
+        sparsefactorization_interface.hpp devicevector.hpp device_sparsematrix.hpp device_blockjacobi.hpp device_diagonalmatrix.hpp
         DESTINATION ${NGSOLVE_INSTALL_DIR_INCLUDE}
         COMPONENT ngsolve_devel
        )

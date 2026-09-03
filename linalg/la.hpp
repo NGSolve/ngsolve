@@ -36,5 +36,7 @@ namespace ngla
 #include "arnoldi.hpp"
 #include "devicevector.hpp"
 #include "device_sparsematrix.hpp"
+#include "device_blockjacobi.hpp"
+#include "device_diagonalmatrix.hpp"
 
 #endif

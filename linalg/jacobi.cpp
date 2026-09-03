@@ -6,6 +6,7 @@
 
 
 #include "jacobi.hpp"
+#include "device_diagonalmatrix.hpp"
 #include "paralleldofs.hpp"
 
 
@@ -369,6 +370,23 @@ namespace ngla
   }
 
 
+
+  template <class TM, class TV_ROW, class TV_COL>
+  shared_ptr<BaseMatrix> JacobiPrecond<TM,TV_ROW,TV_COL> ::
+  CreateDeviceMatrix () const
+  {
+    if constexpr ((is_same_v<TM,double> || is_same_v<TM,float>) &&
+                  is_same_v<TV_ROW,TM> && is_same_v<TV_COL,TM>)
+      if (ngs_gpu::HasDevice())
+        {
+          FlatVector<TM> fdiag (invdiag.Size(), invdiag.Data());
+          if constexpr (is_same_v<TM,double>)
+            if (GetGpuDevice()->HasFloat64())
+              return make_shared<DeviceDiagonalMatrix<double>> (fdiag);
+          return make_shared<DeviceDiagonalMatrix<float>> (fdiag);
+        }
+    return BaseMatrix::CreateDeviceMatrix();
+  }
 
   template class JacobiPrecond<double>;
   template class JacobiPrecond<float>;  

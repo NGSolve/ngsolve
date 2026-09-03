@@ -189,6 +189,8 @@ namespace ngla
     }
 
     virtual shared_ptr<BaseSparseMatrix> CreateSparseMatrix() const override;
+    // a DeviceBlockJacobi for scalar TM if a gpu backend is registered
+    virtual shared_ptr<BaseMatrix> CreateDeviceMatrix() const override;
     const Array<FlatMatrix<TM>> & GetInverses() const { return invdiag; }
     const Array<TM> & MatrixData() const { return bigmem; } 
   };

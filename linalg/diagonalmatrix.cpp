@@ -6,6 +6,7 @@
 
 
 #include "diagonalmatrix.hpp"
+#include "device_diagonalmatrix.hpp"
 #include "sparsematrix.hpp"
 
 namespace ngla
@@ -303,6 +304,21 @@ namespace ngla
     return ost << diag;
   }
 
+
+  template <typename TM>
+  shared_ptr<BaseMatrix> DiagonalMatrix<TM> :: CreateDeviceMatrix () const
+  {
+    if constexpr (is_same_v<TM,double> || is_same_v<TM,float>)
+      if (ngs_gpu::HasDevice())
+        {
+          FlatVector<TM> fdiag = diag->template FV<TM>();
+          if constexpr (is_same_v<TM,double>)
+            if (GetGpuDevice()->HasFloat64())
+              return make_shared<DeviceDiagonalMatrix<double>> (fdiag);
+          return make_shared<DeviceDiagonalMatrix<float>> (fdiag);
+        }
+    return BaseMatrix::CreateDeviceMatrix();
+  }
 
   template class DiagonalMatrix<double>;
   template class DiagonalMatrix<float>;

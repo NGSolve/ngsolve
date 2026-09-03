@@ -89,6 +89,9 @@ namespace ngla
     void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
 
     shared_ptr<BaseMatrix> InverseMatrix (shared_ptr<BitArray> subset = nullptr) const override;
+
+    // a DeviceDiagonalMatrix for scalar TM if a gpu backend is registered
+    shared_ptr<BaseMatrix> CreateDeviceMatrix() const override;
   };
 
 

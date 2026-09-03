@@ -603,7 +603,8 @@ namespace ngla
   shared_ptr<BaseMatrix> SparseMatrix<TM,TV_ROW,TV_COL> ::
   CreateDeviceMatrix () const
   {
-    if constexpr (is_same_v<TM,double> || is_same_v<TM,float>)
+    if constexpr ((is_same_v<TM,double> || is_same_v<TM,float>) &&
+                  is_same_v<TV_ROW,TM> && is_same_v<TV_COL,TM>)
       if (ngs_gpu::HasDevice())
         {
           // double only where the device computes in fp64

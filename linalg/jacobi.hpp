@@ -84,6 +84,9 @@ namespace ngla
     int VWidth() const override { return height; }
 
     FlatArray<TM> GetInverse() const { return invdiag; }
+
+    // a DeviceDiagonalMatrix for scalar TM if a gpu backend is registered
+    shared_ptr<BaseMatrix> CreateDeviceMatrix() const override;
     
     ///
     void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
