@@ -8,6 +8,7 @@
 #define FILE_SPARSEMATRIX_CPP
 
 #include "sparsematrix.hpp"
+#include "device_sparsematrix.hpp"
 #include "jacobi.hpp"
 #include "blockjacobi.hpp"
 #include "pardisoinverse.hpp"

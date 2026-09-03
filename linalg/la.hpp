@@ -35,5 +35,6 @@ namespace ngla
 #include "eigen.hpp"
 #include "arnoldi.hpp"
 #include "devicevector.hpp"
+#include "device_sparsematrix.hpp"
 
 #endif

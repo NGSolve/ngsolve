@@ -586,6 +586,8 @@ namespace ngla
 
     virtual shared_ptr<BaseMatrix> CreateMatrix () const override;
     // virtual BaseMatrix * CreateMatrix (const Array<int> & elsperrow) const;
+    // a DeviceSparseMatrix for scalar TM if a gpu backend is registered
+    virtual shared_ptr<BaseMatrix> CreateDeviceMatrix () const override;
     ///
     virtual AutoVector CreateVector () const override;
     virtual AutoVector CreateRowVector () const override;

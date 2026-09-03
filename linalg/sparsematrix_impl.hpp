@@ -600,6 +600,22 @@ namespace ngla
   }
 
   template <class TM, class TV_ROW, class TV_COL>
+  shared_ptr<BaseMatrix> SparseMatrix<TM,TV_ROW,TV_COL> ::
+  CreateDeviceMatrix () const
+  {
+    if constexpr (is_same_v<TM,double> || is_same_v<TM,float>)
+      if (ngs_gpu::HasDevice())
+        {
+          // double only where the device computes in fp64
+          if constexpr (is_same_v<TM,double>)
+            if (GetGpuDevice()->HasFloat64())
+              return make_shared<DeviceSparseMatrix<double>> (*this);
+          return make_shared<DeviceSparseMatrix<float>> (*this);
+        }
+    return BaseMatrix::CreateDeviceMatrix();
+  }
+
+  template <class TM, class TV_ROW, class TV_COL>
   AutoVector SparseMatrix<TM,TV_ROW,TV_COL> ::
   CreateVector () const
   {

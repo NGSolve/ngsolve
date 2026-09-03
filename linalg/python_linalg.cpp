@@ -1214,6 +1214,11 @@ inverse : string
     .def("CreateDeviceMatrix", &BaseMatrix::CreateDeviceMatrix)
     ;
 
+  py::class_<DeviceSparseMatrix<double>, shared_ptr<DeviceSparseMatrix<double>>, BaseMatrix>
+    (m, "DeviceSparseMatrixD", "csr matrix on the gpu, fp64");
+  py::class_<DeviceSparseMatrix<float>, shared_ptr<DeviceSparseMatrix<float>>, BaseMatrix>
+    (m, "DeviceSparseMatrixF", "csr matrix on the gpu, fp32");
+
   py::class_<BaseSparseMatrix, shared_ptr<BaseSparseMatrix>, BaseMatrix>
     (m, "BaseSparseMatrix", "sparse matrix of any type")
     
