@@ -83,6 +83,21 @@ static void ExportGPU (py::module & m)
     size_t Size() const { return buf->Size() / ItemSize(); }
   };
 
+  // numpy dtype -> kernel argument type
+  static auto argtype = [] (const py::dtype & dt)
+  {
+    ArgType::Kind k = ArgType::Unknown;
+    switch (dt.kind())
+      {
+      case 'f': k = ArgType::Float; break;
+      case 'i': k = ArgType::Int; break;
+      case 'u': k = ArgType::UInt; break;
+      case 'b': k = ArgType::Bool; break;
+      default: break;
+      }
+    return ArgType (k, unsigned(dt.itemsize()));
+  };
+
   py::class_<PyGPUBuffer, shared_ptr<PyGPUBuffer>> (m, "GPUBuffer", py::buffer_protocol())
     .def_property_readonly("size", &PyGPUBuffer::Size, "number of elements")
     .def_property_readonly("nbytes", [](PyGPUBuffer & self) { return self.buf->Size(); })
@@ -146,6 +161,17 @@ static void ExportGPU (py::module & m)
            d["max_groups_per_unit"] = ki.max_groups_per_unit;
            return d;
          }, py::arg("groupsize") = 0, "resource usage: registers, local, shared, occupancy")
+    .def_property_readonly("signature", [](Kernel & self) -> py::object
+         {
+           auto sig = self.Signature();
+           if (!sig) return py::none();
+           py::list l;
+           for (auto & a : sig->args)
+             l.append (py::make_tuple (a.kind == KernelSignature::Buffer ? "buffer" :
+                                       a.kind == KernelSignature::Value ? "value" : "?",
+                                       a.type.ToString(), a.name));
+           return l;
+         }, "declared arguments as (kind, type, name), None if not declared with KERNEL(...)")
     .def("__str__", [](Kernel & self) { return "GPUKernel " + self.Name(); })
     ;
 
@@ -171,12 +197,16 @@ static void ExportGPU (py::module & m)
            for (auto arg : args)
              {
                if (py::isinstance<PyGPUBuffer>(arg))
-                 kargs.push_back (KernelArg(py::cast<PyGPUBuffer&>(arg).buf));
+                 {
+                   auto & b = py::cast<PyGPUBuffer&>(arg);
+                   kargs.push_back (KernelArg(b.buf).WithType(argtype(b.dtype)));
+                 }
                else if (py::isinstance(arg, npgeneric))
                  {
                    // numpy scalar: passed with its own dtype (np.float64 -> double)
                    auto bytes = py::cast<std::string>(arg.attr("tobytes")());
-                   kargs.push_back (KernelArg(bytes.data(), bytes.size()));
+                   auto dt = py::dtype::from_args(arg.attr("dtype"));
+                   kargs.push_back (KernelArg(bytes.data(), bytes.size(), argtype(dt)));
                  }
                else if (py::isinstance<py::float_>(arg))
                  kargs.push_back (KernelArg(py::cast<float>(arg)));   // Metal is fp32

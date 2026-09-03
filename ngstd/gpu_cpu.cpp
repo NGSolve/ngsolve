@@ -178,7 +178,7 @@ namespace ngs_gpu
         return defqueue;
       }
 
-      shared_ptr<Library> CompileSource (const string & source) override
+      shared_ptr<Library> DoCompileSource (const string & source) override
       {
         namespace fs = std::filesystem;
         auto dir = fs::temp_directory_path() /

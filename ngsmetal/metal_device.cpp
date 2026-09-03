@@ -248,7 +248,7 @@ namespace ngsmetal
     shared_ptr<Buffer> DoNewBuffer (size_t bytes, MemType mt) override
     { return std::make_shared<MetalBuffer> (dev, queue, bytes, mt); }
 
-    shared_ptr<Library> CompileSource (const string & source) override
+    shared_ptr<Library> DoCompileSource (const string & source) override
     {
       NS::Error * error = nullptr;
       auto lib = dev->newLibrary (Str(source), nullptr, &error);

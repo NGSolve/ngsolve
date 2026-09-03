@@ -299,7 +299,7 @@ namespace ngs_cuda
 
     shared_ptr<Queue> DefaultQueue() override { return defqueue; }
 
-    shared_ptr<Library> CompileSource (const string & source) override
+    shared_ptr<Library> DoCompileSource (const string & source) override
     {
       nvrtcProgram prog;
       Check (nvrtcCreateProgram (&prog, source.c_str(), "ngsgpu.cu",

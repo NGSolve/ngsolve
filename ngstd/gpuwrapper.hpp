@@ -21,6 +21,7 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <map>
 #include <memory>
 #include <functional>
 #include <type_traits>
@@ -107,6 +108,51 @@ namespace ngs_gpu
   };
 
 
+  /*
+    Scalar type of a kernel argument (element type for buffers), for
+    checking launches against the kernel declaration. size 0 = unknown,
+    unknown types are not checked.
+  */
+  struct ArgType
+  {
+    enum Kind : unsigned char { Unknown, Float, Int, UInt, Bool };
+    Kind kind = Unknown;
+    unsigned size = 0;
+
+    constexpr ArgType () = default;
+    constexpr ArgType (Kind k, unsigned sz) : kind(k), size(sz) { }
+
+    template <typename T>
+    static constexpr ArgType Of()
+    {
+      if constexpr (std::is_same_v<T,bool>) return { Bool, 1 };
+      else if constexpr (std::is_floating_point_v<T>) return { Float, sizeof(T) };
+      else if constexpr (std::is_integral_v<T>)
+        return { std::is_signed_v<T> ? Int : UInt, sizeof(T) };
+      else return { Unknown, sizeof(T) };   // size is still checked
+    }
+    // c type name as written in a kernel source, e.g. "unsigned int"
+    static ArgType FromName (const string & name);
+
+    bool Known() const { return kind != Unknown && size != 0; }
+    bool operator== (const ArgType & t2) const { return kind == t2.kind && size == t2.size; }
+    bool operator!= (const ArgType & t2) const { return !(*this == t2); }
+    string ToString() const;    // "float32", "int64", "8 bytes", "?"
+  };
+
+
+  // declared arguments of a kernel, from KERNEL(name, GLOBAL_IN(T,x), VALUE(T,a), ...)
+  struct KernelSignature
+  {
+    enum Kind : unsigned char { Unknown, Buffer, Value };
+    struct Arg { Kind kind; ArgType type; string name; };
+    std::vector<Arg> args;
+  };
+
+  // all KERNEL declarations in a source, keyed by kernel name
+  std::map<string, KernelSignature> ParseKernelSignatures (const string & source);
+
+
   // one positional kernel argument: a buffer binding, or bytes by value
   class KernelArg
   {
@@ -119,6 +165,7 @@ namespace ngs_gpu
     Buffer * buf = nullptr;
     size_t offset = 0;      // byte offset into buf
     size_t nbytes = 0;
+    ArgType type;           // element type / value type, unknown for raw buffers
     alignas(16) unsigned char inlinedata[MAX_INLINE];
 
   public:
@@ -133,27 +180,32 @@ namespace ngs_gpu
     // offset in elements
     template <typename T>
     KernelArg (const TypedBuffer<T> & b, size_t elemoff = 0)
-      : KernelArg (*b.Raw(), elemoff*sizeof(T)) { }
+      : KernelArg (*b.Raw(), elemoff*sizeof(T)) { type = ArgType::Of<T>(); }
 
     template <typename T,
               typename = std::enable_if_t<std::is_trivially_copyable_v<T> &&
                                           !std::is_base_of_v<Buffer, T>>>
     KernelArg (const T & val)
-      : kind(Kind::Value), nbytes(sizeof(T))
+      : kind(Kind::Value), nbytes(sizeof(T)), type(ArgType::Of<T>())
     {
       static_assert (sizeof(T) <= MAX_INLINE, "kernel argument too large");
       std::memcpy (inlinedata, &val, sizeof(T));
     }
 
     // raw bytes by value
-    KernelArg (const void * data, size_t bytes)
-      : kind(Kind::Value), nbytes(bytes)
+    KernelArg (const void * data, size_t bytes, ArgType atype = {})
+      : kind(Kind::Value), nbytes(bytes), type(atype)
     {
+      if (!type.size) type.size = unsigned(bytes);
       if (bytes > MAX_INLINE) throw std::runtime_error ("kernel argument too large");
       std::memcpy (inlinedata, data, bytes);
     }
 
+    // e.g. a raw buffer whose type the caller knows
+    KernelArg & WithType (ArgType t) { type = t; return *this; }
+
     Kind GetKind() const { return kind; }
+    ArgType GetType() const { return type; }
     Buffer * GetBuffer() const { return buf; }
     size_t Offset() const { return offset; }
     size_t NBytes() const { return nbytes; }
@@ -189,15 +241,25 @@ namespace ngs_gpu
     virtual string Name() const = 0;
     const shared_ptr<Library> & GetLibrary() const { return library; }
     virtual KernelInfo Info (size_t groupsize = 0) const { return {}; }
+    // nullptr if the source had no KERNEL(...) declaration for it
+    const KernelSignature * Signature() const;
   };
 
 
   class Library : public std::enable_shared_from_this<Library>
   {
+    friend class Device;
+    std::map<string, KernelSignature> signatures;   // parsed from the source
   protected:
     virtual shared_ptr<Kernel> DoGetKernel (const string & name) = 0;
   public:
     virtual ~Library() = default;
+
+    const KernelSignature * FindSignature (const string & name) const
+    {
+      auto it = signatures.find(name);
+      return (it != signatures.end()) ? &it->second : nullptr;
+    }
 
     shared_ptr<Kernel> GetKernel (const string & name)
     {
@@ -206,6 +268,13 @@ namespace ngs_gpu
       return kernel;
     }
   };
+
+
+  inline const KernelSignature * Kernel :: Signature() const
+  { return library ? library->FindSignature(Name()) : nullptr; }
+
+  // throws if the arguments do not match the kernel's declaration
+  void CheckKernelArgs (const Kernel & kernel, const std::vector<KernelArg> & args);
 
 
   class Queue
@@ -220,17 +289,20 @@ namespace ngs_gpu
     void Launch (Kernel & kernel, Dim3 groups, Dim3 groupsize,
                  const std::vector<KernelArg> & args,
                  size_t dynamic_group_memory = 0)
-    { DoLaunch (kernel, groups, groupsize, args, dynamic_group_memory); }
+    {
+      CheckKernelArgs (kernel, args);
+      DoLaunch (kernel, groups, groupsize, args, dynamic_group_memory);
+    }
 
     void Launch (Kernel & kernel, Dim3 groups, Dim3 groupsize,
                  std::initializer_list<KernelArg> args,
                  size_t dynamic_group_memory = 0)
-    { DoLaunch (kernel, groups, groupsize, args, dynamic_group_memory); }
+    { Launch (kernel, groups, groupsize, std::vector<KernelArg>(args), dynamic_group_memory); }
 
     void Launch (const shared_ptr<Kernel> & kernel, Dim3 groups, Dim3 groupsize,
                  std::initializer_list<KernelArg> args,
                  size_t dynamic_group_memory = 0)
-    { DoLaunch (*kernel, groups, groupsize, args, dynamic_group_memory); }
+    { Launch (*kernel, groups, groupsize, std::vector<KernelArg>(args), dynamic_group_memory); }
 
     virtual void Finish() = 0;    // submit and wait
   };
@@ -258,11 +330,19 @@ namespace ngs_gpu
     TypedBuffer<T> NewBuffer (size_t n, MemType mt = MemType::Device)
     { return TypedBuffer<T> (DoNewBuffer (n*sizeof(T), mt)); }
 
-    virtual shared_ptr<Library> CompileSource (const string & source) = 0;
+    // the source's KERNEL declarations are kept for checking launches
+    shared_ptr<Library> CompileSource (const string & source)
+    {
+      auto lib = DoCompileSource (source);
+      lib->signatures = ParseKernelSignatures (source);
+      return lib;
+    }
+
     virtual shared_ptr<Queue> DefaultQueue() = 0;
 
   protected:
     virtual shared_ptr<Buffer> DoNewBuffer (size_t bytes, MemType mt) = 0;
+    virtual shared_ptr<Library> DoCompileSource (const string & source) = 0;
   };
 
 
