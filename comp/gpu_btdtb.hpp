@@ -6,10 +6,8 @@
 #include <gpukernel.hpp>
 #include <tinybla.hpp>
 #include <devicevector.hpp>
-
-using namespace ngcomp;
-
-
+#include <map>
+#include <mutex>
 
 namespace ngcomp
 {
@@ -87,9 +85,10 @@ namespace ngcomp
     auto [numels,dimy,dimx,nipD] = pmat->D.Shape();
     auto [numels2,dimr,dims,nipJ] = pmat->Jacobi.Shape();
 
-    // cout << "nip = " << nip << endl;
     int BS_ipts = pmat->opts.BS_ipts;
     ne = numels;
+    if (dimr != dims)
+      throw Exception("GPU_BTDTBMatrix: only square element Jacobians supported (volume elements)");
 
     auto NewSharedBuffer = [&] (size_t nreals)
     { return device->NewBuffer (nreals*sizeof(REAL), MemType::Shared); };
@@ -207,9 +206,6 @@ namespace ngcomp
       template <uint N>
       constexpr uint RoundDown (uint i) { return N * ( i / N ); }
 
-      template <typename T>
-      auto MyMin (T a, T b) { return (a < b) ? a : b; }
-
       typedef $REAL real;
 
       // dofnr -> (interval, offset within interval), same for all elements
@@ -227,15 +223,17 @@ namespace ngcomp
              GLOBAL_IN(real, bmaty),
              GLOBAL_IN(real, weights),
              GLOBAL_IN(real, Jacobi),
-             GLOBAL_IN(real, JacobiDets))
+             GLOBAL_IN(real, JacobiDets),
+             VALUE(real, s),
+             VALUE(int, ne_))
       {
       uint tid = LOCAL_ID_X;
       uint bid  = GROUP_ID_X;
       uint bdim  = GROUP_SIZE_X;
 
       int warpIdx = tid/32;
-      constexpr uint ne = $NE;
-      constexpr uint ne8 = RoundUp<8>(ne);
+      const uint ne = ne_;
+      const uint ne8 = RoundUp<8>(ne);      // stride of the Jacobi buffer
       constexpr uint nip = $NIP;
       constexpr uint bs_els = $BS_ELS;
       constexpr uint bs_ipts = $BS_IPTS;
@@ -262,21 +260,17 @@ namespace ngcomp
       auto mat_bmaty = MakeBareMatrix<RowMajor>(bmaty, locdofsy_roundup);
 
 
-      // zero elvecx (overhead would be enough
-      for (uint i = tid; i < $BS_ELS*locdofsx_roundup; i+= bdim)
-        {
-          uint c = i%locdofsx_roundup;
-          uint r = i/locdofsx_roundup;
-          elvecx[r][c] = 0;
-        }
-
-      BARRIER();
-
       // one group per element batch
       { uint baseelem = bid*$BS_ELS;
-      if (baseelem >= $NE) return;
+      if (baseelem >= ne) return;
 
-      BARRIER();
+      // zero the padding columns of elvecx, the valid ones are loaded below
+      if constexpr (locdofsx_roundup > locdofsx)
+        {
+          constexpr uint npad = locdofsx_roundup - locdofsx;
+          for (uint i = tid; i < $BS_ELS*npad; i += bdim)
+            elvecx[i/npad][locdofsx + i%npad] = 0;
+        }
 
       // load element vectors
       for (uint i = tid; i < $BS_ELS*locdofsx; i += bdim)
@@ -289,12 +283,8 @@ namespace ngcomp
         }
 
       // zero elvecy
-      for (uint i = tid; i < $BS_ELS*locdofsy_roundup; i+= bdim)
-        {
-          uint c = i%locdofsy_roundup;
-          uint r = i/locdofsy_roundup;
-          elvecy[r][c] = 0;
-        }
+      for (uint i = tid; i < $BS_ELS*locdofsy_roundup; i += bdim)
+        elvecy[i/locdofsy_roundup][i%locdofsy_roundup] = 0;
 
 
       BARRIER();
@@ -308,6 +298,7 @@ namespace ngcomp
           if (c < locdofsx_roundup)
             elvecy[r][c] = elvecx[r][c];
         }
+      BARRIER();
 #else
 
 
@@ -494,10 +485,6 @@ namespace ngcomp
 
 #endif
 
-      BARRIER();
-
-
-
       // store vector
       for (uint i = tid; i < $BS_ELS*locdofsy; i += bdim)
         {
@@ -509,9 +496,9 @@ namespace ngcomp
              {
                uint dof = basey[elnr*nrunsy+runof_y[dofnr]] + offof_y[dofnr];
 #if ($ATOMIC==1)
-               ATOMIC_ADD(&y[dof], elvecy[locelnr][dofnr]);
+               ATOMIC_ADD(&y[dof], s*elvecy[locelnr][dofnr]);
 #else
-               y[dof] += elvecy[locelnr][dofnr];
+               y[dof] += s*elvecy[locelnr][dofnr];
 #endif
              }
         }
@@ -580,18 +567,16 @@ namespace ngcomp
     code = Substitute(code, "$YARG", pmat->opts.atomic
                       ? "GLOBAL_ATOMIC(real, y)" : "GLOBAL(real, y)");
     
-    code = Substitute(code, "$NE", ToString(ne)+" /*ne*/ ");
     code = Substitute(code, "$NIP", ToString(nip)+" /*nip*/ ");
     code = Substitute(code, "$BS_ELS", ToString(pmat->opts.BS_els)+" /*BS_ELS*/ ");
     code = Substitute(code, "$BS_IPTS", ToString(pmat->opts.BS_ipts)+" /*BS_IPTS*/ ");
-    code = Substitute(code, "$DIMR", ToString(3)+" /*dimr*/ ");  
-    code = Substitute(code, "$DIMS", ToString(3)+" /*dims*/ ");
+    code = Substitute(code, "$DIMR", ToString(dimr)+" /*dimr*/ ");
+    code = Substitute(code, "$DIMS", ToString(dims)+" /*dims*/ ");
     code = Substitute(code, "$WARPS", ToString(warps)+" /*warps*/ ");
 
     code = Substitute(code, "$BMATX_REM_ROWS", ToString(bmatx_rem_rows)+" /*bmatx_rem_rows*/ ");      
     code = Substitute(code, "$BMATY_REM_ROWS", ToString(bmaty_rem_rows)+" /*bmaty_rem_rows*/ ");      
     
-    code = Substitute(code, "$IP_TILES", ToString(RoundDown<8>(nip)/8)+" /* IP_TILES */ ");
     code = Substitute(code, "$EL_TILES", ToString(RoundUp<8>(pmat->opts.BS_els)/8)+" /*EL_TILES*/ ");
     code = Substitute(code, "$DOFX_TILES", ToString(RoundUp<8>(locdofsx)/8) +" /* DOFX_TILES */ ");
     code = Substitute(code, "$DOFY_TILES", ToString(RoundUp<8>(locdofsy)/8) +" /* DOFY_TILES */ ");
@@ -616,7 +601,6 @@ namespace ngcomp
     code = Substitute(code, "$DIMYREF", ToString(dimyref));
     code = Substitute(code, "$DIMX", ToString(dimx));
     code = Substitute(code, "$DIMY", ToString(dimy));
-    code = Substitute(code, "$BS_IPTS", ToString(pmat->opts.BS_ipts));
 
     code = Substitute(code, "$ONLY_LOADSTOREB", ToString(pmat->opts.only_loadstoreB));    
     code = Substitute(code, "$ONLY_LOADSTORE", ToString(pmat->opts.only_loadstore));    
@@ -657,9 +641,26 @@ namespace ngcomp
     else
       code = Substitute(code, "$REAL", "double");
     
-    ofstream("applybtdtb.gpu") << code;
+    if (pmat->opts.write_GPU_kernel)
+      ofstream(*pmat->opts.write_GPU_kernel) << code;
 
-    library = device->CompileSource (code);
+    /*
+      the generated source depends on space, order and options only (ne is a
+      kernel argument), so all element classes and all meshes of one kernel
+      shape share one compiled library
+    */
+    bool cached = false;
+    {
+      static std::map<std::pair<Device*, string>, shared_ptr<Library>> cache;
+      static std::mutex mutex;
+      std::lock_guard<std::mutex> lock(mutex);
+      auto & entry = cache[{device.get(), code}];
+      if (!entry)
+        entry = device->CompileSource (code);
+      else
+        cached = true;
+      library = entry;
+    }
     kernel = library->GetKernel ("apply_btdtb");
 
     /*
@@ -671,7 +672,7 @@ namespace ngcomp
     */
     ngroups = (ne+pmat->opts.BS_els-1)/pmat->opts.BS_els;
     if (getenv("NGS_BTDTB_INFO"))
-      cout << "apply_btdtb: " << kernel->Info(warps*32) << " groups=" << ngroups
+      cout << "apply_btdtb: " << (cached ? "cached " : "compiled ") << kernel->Info(warps*32) << " groups=" << ngroups
            << " groupsize=" << warps*32 << " intervals x/y=" << nrunsx << "/" << nrunsy
            << " locdofs x/y=" << locdofsx << "/" << locdofsy << endl;
   }
@@ -691,7 +692,7 @@ namespace ngcomp
                    { dvx.DevArgRO(), dvy.DevArgRW(),
                      buffer_dofx, buffer_dofy,
                      buffer_bmatx, buffer_bmaty,
-                     buffer_weights, buffer_Jacobi, buffer_JacobiDets });
+                     buffer_weights, buffer_Jacobi, buffer_JacobiDets, REAL(s), int(ne) });
   }
 }
 

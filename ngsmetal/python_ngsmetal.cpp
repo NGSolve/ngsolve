@@ -10,6 +10,7 @@
 #include "metal_device.hpp"
 
 using namespace ngsmetal;
+using namespace ngcomp;
 
 namespace
 {
