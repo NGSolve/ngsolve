@@ -3062,6 +3062,14 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
       mat = (1.0/mip.GetJacobiDet()) * mip.GetJacobian();      
     }
 
+    static string GenerateTransformationCode (string invar, string outvar, bool trans)
+    {
+      if (!trans)
+        return outvar + " = 1/J * (F * " + invar + ");\n";
+      else
+        return outvar + " = 1/J * (Trans(F) * " + invar + ");\n";
+    }
+
     
     template <typename FEL, typename MIP, typename MAT>
     static void GenerateMatrix (const FEL & bfel, const MIP & mip,
@@ -3431,6 +3439,19 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
             for (int l = 0; l < DIM_SPC; l++)
               mat(i*DIM_SPC+k,j*DIM_SPC+l) = cov_trans(k,l)*piola_trans(i,j);
     }    
+
+    static string GenerateTransformationCode (string invar, string outvar, bool trans)
+    {
+      string d = ToString(DIM_SPC), dmat = ToString(DIM_DMAT);
+      string mat = "ToMat<"+d+","+d+">";
+      if (!trans)
+        return outvar + " = ToVec(1/J * (F * (" + mat + "(" + invar
+          + ".Range<0," + dmat + ">()) * Inv(F))));\n";
+      else
+        return outvar + " = 0.0; " + outvar + ".SetRange<0," + dmat
+          + ">(ToVec(1/J * (Trans(F) * (" + mat + "(" + invar
+          + ") * Trans(Inv(F))))));\n";
+    }
     
     template <typename FEL, typename MIP, typename MAT>
     static void GenerateMatrix (const FEL & fel, const MIP & mip,

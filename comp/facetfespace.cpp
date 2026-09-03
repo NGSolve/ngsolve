@@ -184,6 +184,9 @@ namespace ngcomp
     
     using FiniteElementType = FacetVolumeFiniteElement<D>;
     typedef DiffOpIdDual<D-1,D> DIFFOP_TRACE;
+
+    static string GenerateTransformationCode (string invar, string outvar, bool trans)
+    { return outvar + " = (1/meas) * " + invar + ";\n"; }
     
     template <typename FEL, typename MIP, typename MAT>
     static void GenerateMatrix (const FEL & bfel, const MIP & mip,

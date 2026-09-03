@@ -437,10 +437,11 @@ namespace ngcomp
                for (int comp = 0; comp < $DIMXREF; comp++)
                   xrefvals(comp) = pointvalsref[locipnr+comp*bs_ipts][locelnr];
 
+              $MEASURE
+
               // xrefvals -> xvals
               $TRANSFORMX;   
 
-              $MEASURE
               $PHYSICS
               yvals = weights[baseip+locipnr] * meas * yvals;
 
@@ -552,10 +553,11 @@ namespace ngcomp
                for (uint j = 0; j < $DIMXREF; j++)
                   xrefvals(j) = pointvalsref[locipnr+j*numips][locelnr];
 
+              $MEASURE
+
               // xrefvals -> xvals
               $TRANSFORMX;   
 
-              $MEASURE
               $PHYSICS
               yvals = weights[baseip+locipnr] * meas * yvals;
 
@@ -661,8 +663,11 @@ namespace ngcomp
         if (rangey.Size()==1)
           phys += "yvals("+ToString(rangey[0])+") = var_"+ToString(steps-1)+";\n";          
         else
-          for (int l : Range(rangey))
-            phys += "yvals("+ToString(rangey[l])+") = var_"+ToString(steps-1)+"_"+ToString(l)+";\n";
+          {
+            auto dims = compiledcf->Dimensions();
+            for (int l : Range(rangey))
+              phys += "yvals("+ToString(rangey[l])+") = " + Var(steps-1, l, dims).S() + ";\n";
+          }
         phys += "}\n";
       }
       

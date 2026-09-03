@@ -492,6 +492,25 @@ namespace ngfem
     CalcTransformationMatrix (const BaseMappedIntegrationPoint & mip,
                               SliceMatrix<double> trans,
                               LocalHeap & lh) const override;
+
+    virtual string GenerateTransformationCode (string invar, string outvar, bool trans) const override
+    {
+      int inw = trans ? diffop->Dim() : diffop->DimRef();
+      int outw = trans ? diffop->DimRef() : diffop->Dim();
+      string code;
+      for (int i = 0; i < dim; i++)
+        {
+          code += "{\n";
+          code += "Vec<" + ToString(outw) + ",real> res_comp;\n";
+          code += diffop->GenerateTransformationCode
+            (invar + ".Range<" + ToString(i*inw) + "," + ToString((i+1)*inw) + ">()",
+             "res_comp", trans);
+          code += outvar + ".SetRange<" + ToString(i*outw) + "," + ToString((i+1)*outw)
+            + ">(res_comp);\n";
+          code += "}\n";
+        }
+      return code;
+    }
     
     NGS_DLL_HEADER virtual void
     Apply (const FiniteElement & fel,
