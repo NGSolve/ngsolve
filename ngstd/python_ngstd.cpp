@@ -202,10 +202,19 @@ static void ExportGPU (py::module & m)
     .def_property_readonly("simd_width", &Device::SimdWidth)
     .def("NewBuffer", [](Device & self, size_t size, py::object dtype, MemType mt)
          {
-           auto dt = dtype.is_none() ? py::dtype::of<float>() : py::dtype::from_args(dtype);
+           auto dt = py::dtype::from_args(dtype);
            return make_shared<PyGPUBuffer> (PyGPUBuffer{ self.NewBuffer(size*dt.itemsize(), mt), dt });
-         }, py::arg("size"), py::arg("dtype")=py::none(), py::arg("memtype")=MemType::Shared,
-         "buffer of size elements of dtype (default float32)")
+         }, py::arg("size"), py::arg("dtype"), py::arg("memtype")=MemType::Shared,
+         "buffer of size elements of dtype")
+    .def("NewBuffer", [](Device & self, py::object arraylike, MemType mt)
+         {
+           // dtype, size and contents from the array, multi-dim arrays are flattened
+           auto a = py::module::import("numpy").attr("ascontiguousarray")(arraylike).cast<py::array>();
+           auto buf = self.NewBuffer (size_t(a.nbytes()), mt);
+           buf->H2D (a.data(), size_t(a.nbytes()));
+           return make_shared<PyGPUBuffer> (PyGPUBuffer{ buf, a.dtype() });
+         }, py::arg("array"), py::arg("memtype")=MemType::Shared,
+         "buffer with the dtype and contents of an array-like")
     .def("CompileSource", &Device::CompileSource, py::arg("source"))
     .def("DefaultQueue", &Device::DefaultQueue)
     .def("__str__", [](Device & self) { return "GPUDevice " + self.Name(); })
