@@ -142,6 +142,8 @@ namespace ngcomp
     Array<int> runofx, offofx, runofy, offofy;
     int nrunsx = SplitIntervals (pmat->dofx, locdofsx, runofx, offofx);
     int nrunsy = SplitIntervals (pmat->dofy, locdofsy, runofy, offofy);
+    if (locdofsx >= 65536 || locdofsy >= 65536 || nip >= 65536)
+      throw Exception("GPU_BTDTBMatrix: 16-bit index tables need locdofs, nip < 65536");
     buffer_dofx = IntervalBases (pmat->dofx, locdofsx, nrunsx, runofx, offofx);
     buffer_dofy = IntervalBases (pmat->dofy, locdofsy, nrunsy, runofy, offofy);
 
@@ -239,11 +241,12 @@ namespace ngcomp
 
       typedef $REAL real;
 
-      // dofnr -> (interval, offset within interval), same for all elements
-      CONSTANT_ARRAY(int, runof_x, $LOCDOFSX) = $RUNOFX;
-      CONSTANT_ARRAY(int, offof_x, $LOCDOFSX) = $OFFOFX;
-      CONSTANT_ARRAY(int, runof_y, $LOCDOFSY) = $RUNOFY;
-      CONSTANT_ARRAY(int, offof_y, $LOCDOFSY) = $OFFOFY;
+      // dofnr -> (interval, offset within interval), same for all elements;
+      // 16 bit: interval < 16 for H1, offset < locdofs
+      CONSTANT_ARRAY(unsigned short, runof_x, $LOCDOFSX) = $RUNOFX;
+      CONSTANT_ARRAY(unsigned short, offof_x, $LOCDOFSX) = $OFFOFX;
+      CONSTANT_ARRAY(unsigned short, runof_y, $LOCDOFSY) = $RUNOFY;
+      CONSTANT_ARRAY(unsigned short, offof_y, $LOCDOFSY) = $OFFOFY;
       $NREF_TABLE
 
       KERNEL(apply_btdtb,
@@ -736,7 +739,7 @@ namespace ngcomp
           string init = "{";
           for (auto i : Range(flat)) { if (i) init += ","; init += ToString(flat[i]); }
           table = "CONSTANT_ARRAY(real, nref, " + ToString(nfacets*dimr) + ") = " + init + "};\n";
-          table += "      CONSTANT_ARRAY(int, facetof, " + ToString(nip) + ") = " + InitList(pmat->facetnr) + ";";
+          table += "      CONSTANT_ARRAY(unsigned short, facetof, " + ToString(nip) + ") = " + InitList(pmat->facetnr) + ";";
           string nvec = "Vec<" + ToString(dimr) + ",real>(";
           for (int d = 0; d < dimr; d++)
             nvec += (d ? "," : "") + string("nref[") + ToString(dimr) + "*facetof[baseip+locipnr]+" + ToString(d) + "]";
