@@ -7,6 +7,7 @@
 
 #include <special_matrix.hpp>
 #include "sparsematrix.hpp"
+#include "devicevector.hpp"
 
 namespace ngla
 {
@@ -84,6 +85,73 @@ namespace ngla
 
 
   
+  static AutoVector DevVec (size_t size, bool is_complex)
+  {
+    if (is_complex)
+      return make_unique<DeviceVector<Complex>> (size);
+    return make_unique<DeviceVector<double>> (size);
+  }
+
+  class DeviceEmbedding : public Embedding
+  {
+  public:
+    using Embedding::Embedding;
+    AutoVector CreateRowVector () const override { return DevVec (Width(), IsComplex()); }
+    AutoVector CreateColVector () const override { return DevVec (Height(), IsComplex()); }
+  };
+
+  class DeviceEmbeddingTranspose : public EmbeddingTranspose
+  {
+  public:
+    using EmbeddingTranspose::EmbeddingTranspose;
+    AutoVector CreateRowVector () const override { return DevVec (Width(), IsComplex()); }
+    AutoVector CreateColVector () const override { return DevVec (Height(), IsComplex()); }
+  };
+
+  class DeviceEmbeddedMatrix : public EmbeddedMatrix
+  {
+  public:
+    using EmbeddedMatrix::EmbeddedMatrix;
+    AutoVector CreateColVector () const override { return DevVec (Height(), IsComplex()); }
+  };
+
+  class DeviceEmbeddedTransposeMatrix : public EmbeddedTransposeMatrix
+  {
+  public:
+    using EmbeddedTransposeMatrix::EmbeddedTransposeMatrix;
+    AutoVector CreateRowVector () const override { return DevVec (Width(), IsComplex()); }
+  };
+
+
+  shared_ptr<BaseMatrix> Embedding :: CreateDeviceMatrix () const
+  {
+    if (ngs_gpu::HasDevice())
+      return make_shared<DeviceEmbedding> (height, range, is_complex);
+    return BaseMatrix::CreateDeviceMatrix();
+  }
+
+  shared_ptr<BaseMatrix> EmbeddingTranspose :: CreateDeviceMatrix () const
+  {
+    if (ngs_gpu::HasDevice())
+      return make_shared<DeviceEmbeddingTranspose> (width, range, is_complex);
+    return BaseMatrix::CreateDeviceMatrix();
+  }
+
+  shared_ptr<BaseMatrix> EmbeddedMatrix :: CreateDeviceMatrix () const
+  {
+    if (ngs_gpu::HasDevice())
+      return make_shared<DeviceEmbeddedMatrix> (height, range, mat->CreateDeviceMatrix());
+    return make_shared<EmbeddedMatrix> (height, range, mat->CreateDeviceMatrix());
+  }
+
+  shared_ptr<BaseMatrix> EmbeddedTransposeMatrix :: CreateDeviceMatrix () const
+  {
+    if (ngs_gpu::HasDevice())
+      return make_shared<DeviceEmbeddedTransposeMatrix> (width, range, mat->CreateDeviceMatrix());
+    return make_shared<EmbeddedTransposeMatrix> (width, range, mat->CreateDeviceMatrix());
+  }
+
+
   void Embedding :: Mult (const BaseVector & x, BaseVector & y) const
   {
     static Timer t("Embedding::Mult"); RegionTimer reg(t);
