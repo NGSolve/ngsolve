@@ -314,6 +314,11 @@ namespace ngla
     mutable T * host_data = nullptr;   // into devbuffer, into hostmem, or foreign
     Array<T> hostmem;                  // only if the host copy is ours and separate
     mutable bool host_uptodate = false, dev_uptodate = false;
+    // buffer write count the host copy corresponds to: a replayed program
+    // writes without passing through InvalidateHost
+    mutable unsigned long host_writes = 0;
+    bool HostStale() const
+    { return !host_uptodate || (memtype != MemType::Shared && host_writes != devbuffer.Raw()->Writes()); }
 
     DeviceVector () { }
     void AllocBuffer (size_t asize);
@@ -345,7 +350,7 @@ namespace ngla
     // on shared memory host and device are the same storage, never stale
     void InvalidateHost() const { if (memtype != MemType::Shared) host_uptodate = false; }
     void InvalidateDevice() const { if (memtype != MemType::Shared) dev_uptodate = false; }
-    bool IsHostUptodate() const { return host_uptodate; }
+    bool IsHostUptodate() const { return !HostStale(); }
     bool IsDevUptodate() const { return dev_uptodate; }
 
     // read-only host view, does not invalidate the device copy

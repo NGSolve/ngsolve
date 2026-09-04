@@ -14,9 +14,38 @@ Everything the backend module exports (device vectors, device matrices, ...) is
 re-exported here as well.
 """
 
-from ngsolve.ngstd import (GPUDevice, GPUBuffer, GPUKernel, GPULibrary, GPUQueue,
+from ngsolve.ngstd import (GPUDevice, GPUBuffer, GPUKernel, GPULibrary, GPUQueue, GPUProgram,
                            MemType, GPUKernelPrelude, TinyBlaPrelude,
                            GetGPUDevice, GetCPUDevice, HasGPUDevice, SetGPUDevice)
+
+
+class Recording:
+    """Record the device launches of a block of code, replay them with Run():
+
+        with Recording() as rec:
+            ... one iteration, device vectors and scalars only ...
+        for i in range(n): rec.Run()
+
+    Inside the block nothing is executed, so a host read (Get, Norm, a
+    transfer) raises. The recorded launches keep their buffers alive.
+    """
+    def __init__(self, queue=None):
+        self.queue = queue if queue is not None else GetGPUDevice().DefaultQueue()
+        self.program = None
+
+    def __enter__(self):
+        self.queue.BeginRecording()
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        self.program = self.queue.EndRecording()
+        return False
+
+    def Run(self):
+        self.program.Run()
+
+    def __len__(self):
+        return len(self.program) if self.program is not None else 0
 
 backend = None
 _backend_names = []
@@ -44,7 +73,7 @@ if GetGPUDevice() is None:
     SetGPUDevice(GetCPUDevice())
     backend = "host"
 
-__all__ = ["GPUDevice", "GPUBuffer", "GPUKernel", "GPULibrary", "GPUQueue",
-           "MemType", "GPUKernelPrelude", "TinyBlaPrelude",
+__all__ = ["GPUDevice", "GPUBuffer", "GPUKernel", "GPULibrary", "GPUQueue", "GPUProgram",
+           "Recording", "MemType", "GPUKernelPrelude", "TinyBlaPrelude",
            "GetGPUDevice", "GetCPUDevice", "HasGPUDevice", "SetGPUDevice",
            "backend"] + _backend_names

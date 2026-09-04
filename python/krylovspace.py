@@ -335,12 +335,17 @@ rhs and solution device vectors; the real case only.
 
 check : int = 10
   Number of iterations between two residual checks on the host.
+
+record : bool = False
+  Record the launches of one iteration and replay them (ngsolve.gpu.Recording),
+  which removes the per-launch Python and driver overhead.
 """
     name = "DeviceCG"
 
-    def __init__(self, *args, check : int = 10, **kwargs):
+    def __init__(self, *args, check : int = 10, record : bool = False, **kwargs):
         super().__init__(*args, **kwargs)
         self.check = check
+        self.record = record
 
     def _SolveImpl(self, rhs : BaseVector, sol : BaseVector):
         r, w, s, q = [sol.CreateVector() for i in range(4)]
@@ -353,8 +358,9 @@ check : int = 10
         w.InnerProduct(r, wd)
         if self.CheckResidual(sqrt(abs(wd.Get()))):
             return
-        it = 0
-        while True:
+
+        def iteration():
+            nonlocal s
             q.data = self.mat * s
             s.InnerProduct(q, as_s)
             alpha.data = wd / as_s
@@ -367,6 +373,16 @@ check : int = 10
             s *= beta
             s.data += w
             wd.data = wdn
+
+        if self.record:
+            from ngsolve.gpu import Recording
+            with Recording() as rec:
+                iteration()
+            iteration = rec.Run
+
+        it = 0
+        while True:
+            iteration()
             it += 1
             if it % self.check == 0 or it + 1 >= self.maxiter:
                 self.iterations = it       # CheckResidual counts as CGSolver does

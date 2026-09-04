@@ -293,6 +293,7 @@ namespace ngla
     devbuffer = kern.device->template NewBuffer<T> (padded, memtype);
     devoffset = 0;
 
+    host_writes = devbuffer.Raw()->Writes();
     if (memtype == MemType::Shared)
       {
         host_data = devbuffer.HostData();
@@ -368,10 +369,11 @@ namespace ngla
     // a kernel may still be writing the buffer we are about to read
     if (queue) queue->Finish();
 
-    if (host_uptodate) return;
+    if (!HostStale()) return;
     if (dev_uptodate)
       devbuffer.D2H (host_data, this->size, devoffset);
     host_uptodate = true;
+    host_writes = devbuffer.Raw()->Writes();
   }
 
   template <typename T>
@@ -381,6 +383,7 @@ namespace ngla
     if (host_uptodate)
       devbuffer.H2D (host_data, this->size, devoffset);
     dev_uptodate = true;
+    host_writes = devbuffer.Raw()->Writes();
   }
 
 
@@ -628,6 +631,7 @@ namespace ngla
         this->host_data = p->host_data ? p->host_data + range.First() : nullptr;
         this->host_uptodate = p->host_uptodate;
         this->dev_uptodate = p->dev_uptodate;
+        this->host_writes = p->host_writes;
         return;
       }
 
@@ -670,6 +674,7 @@ namespace ngla
             // full alias: same storage, the flags simply carry over
             alias_of->host_uptodate = this->host_uptodate;
             alias_of->dev_uptodate = this->dev_uptodate;
+            alias_of->host_writes = this->host_writes;
           }
         this->host_data = nullptr;
         return;

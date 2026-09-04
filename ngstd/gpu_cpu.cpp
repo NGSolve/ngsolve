@@ -125,7 +125,7 @@ namespace ngs_gpu
     class CpuQueue : public Queue
     {
     public:
-      void Finish() override { }     // launches run synchronously
+      void DoFinish() override { }   // launches run synchronously
 
     protected:
       void DoLaunch (Kernel & kernel, Dim3 groups, Dim3 groupsize,

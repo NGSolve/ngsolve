@@ -141,8 +141,10 @@ namespace ngs_cuda
     CUstream stream = nullptr;
     bool owned = false;
     bool tracking = false;    // follow ngs_cuda_stream at launch time
+    CUstream capture_stream = nullptr;   // graphs are captured here, see DoReplay
+    CUstream forced = nullptr;           // launches go here while set
 
-    CUstream Current() const { return tracking ? ngs_cuda_stream : stream; }
+    CUstream Current() const { return forced ? forced : (tracking ? ngs_cuda_stream : stream); }
 
   public:
     CudaQueue() : owned(true)
@@ -153,9 +155,13 @@ namespace ngs_cuda
     struct TrackNgsStream { };
     CudaQueue (TrackNgsStream) : tracking(true) { }
 
-    ~CudaQueue() { if (owned) cuStreamDestroy (stream); }
+    ~CudaQueue()
+    {
+      if (owned) cuStreamDestroy (stream);
+      if (capture_stream) cuStreamDestroy (capture_stream);
+    }
 
-    void Finish() override
+    void DoFinish() override
     { Check (cuStreamSynchronize (Current()), "cuStreamSynchronize"); }
 
   protected:
@@ -189,6 +195,45 @@ namespace ngs_cuda
                              groupsize.x, groupsize.y, groupsize.z,
                              dynamic_group_memory, Current(),
                              params.data(), nullptr), "cuLaunchKernel");
+    }
+
+    struct GraphCache
+    {
+      CUgraph graph = nullptr;
+      CUgraphExec exec = nullptr;
+      ~GraphCache()
+      {
+        if (exec) cuGraphExecDestroy (exec);
+        if (graph) cuGraphDestroy (graph);
+      }
+    };
+
+    // the launches are captured into a graph on the first replay. Capture
+    // needs a non-default stream (the queue may follow the legacy default
+    // stream), nothing runs during capture; the graph is then launched on
+    // the queue's stream
+    void DoReplay (const Program & prog) override
+    {
+      auto cache = std::static_pointer_cast<GraphCache> (prog.backend_cache);
+      if (!cache)
+        {
+          if (!capture_stream)
+            Check (cuStreamCreate (&capture_stream, CU_STREAM_NON_BLOCKING), "cuStreamCreate");
+          cache = std::make_shared<GraphCache>();
+          forced = capture_stream;
+          try
+            {
+              Check (cuStreamBeginCapture (capture_stream, CU_STREAM_CAPTURE_MODE_THREAD_LOCAL), "cuStreamBeginCapture");
+              for (auto & n : prog.Nodes())
+                DoLaunch (*n.kernel, n.groups, n.groupsize, n.args, n.dynamic_group_memory);
+              Check (cuStreamEndCapture (capture_stream, &cache->graph), "cuStreamEndCapture");
+            }
+          catch (...) { forced = nullptr; throw; }
+          forced = nullptr;
+          Check (cuGraphInstantiate (&cache->exec, cache->graph, 0), "cuGraphInstantiate");
+          prog.backend_cache = cache;
+        }
+      Check (cuGraphLaunch (cache->exec, Current()), "cuGraphLaunch");
     }
   };
 

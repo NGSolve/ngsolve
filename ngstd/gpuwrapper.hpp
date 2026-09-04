@@ -49,11 +49,15 @@ namespace ngs_gpu
 
   // public interface is non-virtual, backends override the Do* hooks,
   // otherwise the typed overloads get hidden in derived classes
+  // true while a Queue records launches, see Queue::BeginRecording
+  bool IsRecording();
+
   class Buffer
   {
   protected:
     size_t size;   // bytes
     MemType memtype;
+    unsigned long writes = 0;   // kernel launches that may have written it
     Buffer (size_t asize, MemType amemtype) : size(asize), memtype(amemtype) { }
 
     virtual void * DoHostPtr() const = 0;
@@ -66,14 +70,18 @@ namespace ngs_gpu
     size_t Size() const { return size; }
     MemType GetMemType() const { return memtype; }
 
+    // counts launches with this buffer in a writable slot, live and
+    // replayed alike: a host copy taken at count n is stale once it moved
+    unsigned long Writes() const { return writes; }
+    void NoteWrite() { writes++; }
+
     // nullptr if not host visible
     void * HostPtr() const { return DoHostPtr(); }
     template <typename T> T * HostData() const { return static_cast<T*>(DoHostPtr()); }
 
-    void H2D (const void * src, size_t bytes, size_t offset = 0)
-    { DoH2D (src, bytes, offset); }
-    void D2H (void * dst, size_t bytes, size_t offset = 0) const
-    { DoD2H (dst, bytes, offset); }
+    // transfers are host synchronisation, not allowed inside a recording
+    void H2D (const void * src, size_t bytes, size_t offset = 0);
+    void D2H (void * dst, size_t bytes, size_t offset = 0) const;
   };
 
 
@@ -151,7 +159,7 @@ namespace ngs_gpu
   struct KernelSignature
   {
     enum Kind : unsigned char { Unknown, Buffer, Value };
-    struct Arg { Kind kind; ArgType type; string name; };
+    struct Arg { Kind kind; ArgType type; string name; bool readonly = false; };   // GLOBAL_IN
     std::vector<Arg> args;
   };
 
@@ -168,25 +176,22 @@ namespace ngs_gpu
 
   private:
     Kind kind;
-    Buffer * buf = nullptr;
-    size_t offset = 0;      // byte offset into buf
+    shared_ptr<Buffer> buf;   // owned, so a recorded launch keeps it alive
+    size_t offset = 0;        // byte offset into buf
     size_t nbytes = 0;
     ArgType type;           // element type / value type, unknown for raw buffers
     alignas(16) unsigned char inlinedata[MAX_INLINE];
 
   public:
-    KernelArg (Buffer & b, size_t off = 0)
-      : kind(Kind::Buffer), buf(&b), offset(off) { }
-
     // templated so shared_ptr<Derived> needs only one user-defined conversion
     template <typename TB, typename = std::enable_if_t<std::is_base_of_v<Buffer, TB>>>
     KernelArg (const shared_ptr<TB> & b, size_t off = 0)
-      : KernelArg (static_cast<Buffer&>(*b), off) { }
+      : kind(Kind::Buffer), buf(b), offset(off) { }
 
     // offset in elements
     template <typename T>
     KernelArg (const TypedBuffer<T> & b, size_t elemoff = 0)
-      : KernelArg (*b.Raw(), elemoff*sizeof(T)) { type = ArgType::Of<T>(); }
+      : KernelArg (b.Raw(), elemoff*sizeof(T)) { type = ArgType::Of<T>(); }
 
     template <typename T,
               typename = std::enable_if_t<std::is_trivially_copyable_v<T> &&
@@ -212,7 +217,8 @@ namespace ngs_gpu
 
     Kind GetKind() const { return kind; }
     ArgType GetType() const { return type; }
-    Buffer * GetBuffer() const { return buf; }
+    Buffer * GetBuffer() const { return buf.get(); }
+    const shared_ptr<Buffer> & SharedBuffer() const { return buf; }
     size_t Offset() const { return offset; }
     size_t NBytes() const { return nbytes; }
     const void * Data() const { return inlinedata; }
@@ -238,7 +244,7 @@ namespace ngs_gpu
                << " groups/unit=" << ki.max_groups_per_unit;
   }
 
-  class Kernel
+  class Kernel : public std::enable_shared_from_this<Kernel>
   {
     friend class Library;
     shared_ptr<Library> library;   // the raw handle points into the module
@@ -283,22 +289,62 @@ namespace ngs_gpu
   void CheckKernelArgs (const Kernel & kernel, const std::vector<KernelArg> & args);
 
 
-  class Queue
+  class Queue;
+
+  /*
+    A recorded sequence of launches, replayed with one call. Recorded by
+    Queue::BeginRecording / EndRecording: while recording, Launch stores
+    the kernel, geometry and arguments (which keep their buffers alive)
+    instead of dispatching, and host synchronisation - Finish, transfers -
+    throws, as it would read results that do not exist yet. The device
+    scalars make iterations recordable: everything an iteration reads is
+    at a fixed device address.
+  */
+  class Program
   {
+    friend class Queue;
+  public:
+    struct Node
+    {
+      shared_ptr<Kernel> kernel;
+      Dim3 groups, groupsize;
+      std::vector<KernelArg> args;
+      size_t dynamic_group_memory;
+    };
+  private:
+    std::vector<Node> nodes;
+    shared_ptr<Queue> queue;
+  public:
+    // a backend's lowered form (cuda graph, ...), built on first replay
+    mutable shared_ptr<void> backend_cache;
+
+    size_t Size() const { return nodes.size(); }
+    const std::vector<Node> & Nodes() const { return nodes; }
+    const shared_ptr<Queue> & GetQueue() const { return queue; }
+    void Run();   // replay on the recording queue
+  };
+
+
+  class Queue : public std::enable_shared_from_this<Queue>
+  {
+    shared_ptr<Program> recording;   // while recording
+
   protected:
     virtual void DoLaunch (Kernel & kernel, Dim3 groups, Dim3 groupsize,
                            const std::vector<KernelArg> & args,
                            size_t dynamic_group_memory) = 0;
+    virtual void DoFinish() = 0;
+    // backends may lower a program (cuda graph, one command buffer)
+    virtual void DoReplay (const Program & prog);
+
+    void NoteWrites (const Kernel & kernel, const std::vector<KernelArg> & args);
+
   public:
     virtual ~Queue() = default;
 
     void Launch (Kernel & kernel, Dim3 groups, Dim3 groupsize,
                  const std::vector<KernelArg> & args,
-                 size_t dynamic_group_memory = 0)
-    {
-      CheckKernelArgs (kernel, args);
-      DoLaunch (kernel, groups, groupsize, args, dynamic_group_memory);
-    }
+                 size_t dynamic_group_memory = 0);
 
     void Launch (Kernel & kernel, Dim3 groups, Dim3 groupsize,
                  std::initializer_list<KernelArg> args,
@@ -310,7 +356,13 @@ namespace ngs_gpu
                  size_t dynamic_group_memory = 0)
     { Launch (*kernel, groups, groupsize, std::vector<KernelArg>(args), dynamic_group_memory); }
 
-    virtual void Finish() = 0;    // submit and wait
+    // submit and wait; throws inside a recording
+    void Finish();
+
+    void BeginRecording();
+    shared_ptr<Program> EndRecording();
+    bool IsRecording() const { return bool(recording); }
+    void Replay (const Program & prog);
   };
 
 

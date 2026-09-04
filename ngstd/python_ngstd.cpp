@@ -180,6 +180,13 @@ static void ExportGPU (py::module & m)
     .def("GetKernel", &Library::GetKernel, py::arg("name"))
     ;
 
+  py::class_<Program, shared_ptr<Program>> (m, "GPUProgram",
+                                             "a recorded sequence of kernel launches, see GPUQueue.BeginRecording")
+    .def("Run", &Program::Run, "replay all launches")
+    .def("__len__", &Program::Size)
+    .def("__repr__", [] (Program & p) { return "GPUProgram with " + ToString(p.Size()) + " launches"; })
+    ;
+
   py::class_<Queue, shared_ptr<Queue>> (m, "GPUQueue")
     .def("Launch", [](Queue & self, shared_ptr<Kernel> kernel,
                       std::vector<unsigned> groups, std::vector<unsigned> groupsize,
@@ -223,6 +230,10 @@ static void ExportGPU (py::module & m)
          py::arg("kernel"), py::arg("groups"), py::arg("groupsize"),
          py::arg("args")=py::list(), py::arg("group_memory")=0)
     .def("Finish", &Queue::Finish)
+    .def("BeginRecording", &Queue::BeginRecording,
+         "record the following launches into a program instead of running them")
+    .def("EndRecording", &Queue::EndRecording, "stop recording, returns the GPUProgram")
+    .def_property_readonly("recording", &Queue::IsRecording)
     ;
 
   py::class_<Device, shared_ptr<Device>> (m, "GPUDevice")

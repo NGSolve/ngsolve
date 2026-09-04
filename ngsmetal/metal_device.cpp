@@ -172,7 +172,7 @@ namespace ngsmetal
     MetalQueue (MTL::CommandQueue * aqueue) : queue(aqueue) { }
     ~MetalQueue() { if (pending) pending->release(); }
 
-    void Finish() override
+    void DoFinish() override
     {
       if (!pending) return;
       pending->waitUntilCompleted();
@@ -190,15 +190,11 @@ namespace ngsmetal
         Err ("kernel execution failed: " + (msg.empty() ? "unknown" : msg));
     }
 
-  protected:
-    void DoLaunch (Kernel & kernel, Dim3 groups, Dim3 groupsize,
-                   const std::vector<KernelArg> & args,
-                   size_t dynamic_group_memory) override
+  private:
+    void Encode (MTL::ComputeCommandEncoder * enc, Kernel & kernel, Dim3 groups, Dim3 groupsize,
+                 const std::vector<KernelArg> & args, size_t dynamic_group_memory)
     {
       auto & mk = dynamic_cast<MetalKernel&> (kernel);
-
-      auto cb = queue->commandBuffer();
-      auto enc = cb->computeCommandEncoder();
       enc->setComputePipelineState (mk.Get());
 
       for (size_t i = 0; i < args.size(); i++)
@@ -219,12 +215,37 @@ namespace ngsmetal
 
       enc->dispatchThreadgroups (MTL::Size(groups.x, groups.y, groups.z),
                                  MTL::Size(groupsize.x, groupsize.y, groupsize.z));
-      enc->endEncoding();
+    }
 
+    void Commit (MTL::CommandBuffer * cb)
+    {
       if (pending) pending->release();
       pending = cb;
       pending->retain();
       pending->commit();
+    }
+
+  protected:
+    void DoLaunch (Kernel & kernel, Dim3 groups, Dim3 groupsize,
+                   const std::vector<KernelArg> & args,
+                   size_t dynamic_group_memory) override
+    {
+      auto cb = queue->commandBuffer();
+      auto enc = cb->computeCommandEncoder();
+      Encode (enc, kernel, groups, groupsize, args, dynamic_group_memory);
+      enc->endEncoding();
+      Commit (cb);
+    }
+
+    // one command buffer, one serial encoder: dispatches run in order
+    void DoReplay (const Program & prog) override
+    {
+      auto cb = queue->commandBuffer();
+      auto enc = cb->computeCommandEncoder();
+      for (auto & n : prog.Nodes())
+        Encode (enc, *n.kernel, n.groups, n.groupsize, n.args, n.dynamic_group_memory);
+      enc->endEncoding();
+      Commit (cb);
     }
   };
 

@@ -6,6 +6,7 @@
 /*********************************************************************/
 
 #include "gpuwrapper.hpp"
+#include <atomic>
 #include <stdexcept>
 #include <cctype>
 
@@ -217,7 +218,10 @@ namespace ngs_gpu
                   {
                     string tname = inner[0];
                     if (macro == "GLOBAL" || macro == "GLOBAL_IN" || macro == "GLOBAL_ATOMIC")
-                      arg.kind = KernelSignature::Buffer;
+                      {
+                        arg.kind = KernelSignature::Buffer;
+                        arg.readonly = (macro == "GLOBAL_IN");
+                      }
                     else if (macro == "GLOBAL_ATOMIC_COMPLEX")
                       {
                         // declared with the real type, holds Complex<T>
@@ -291,5 +295,102 @@ namespace ngs_gpu
     if (!the_device && device_creator)
       the_device = device_creator();
     return the_device;
+  }
+
+
+  /* **************** recording and replay **************** */
+
+  namespace
+  {
+    // a recording is per queue, but a transfer does not know its queue
+    std::atomic<int> recording_depth{0};
+  }
+
+  bool IsRecording() { return recording_depth.load() > 0; }
+
+  void Buffer :: H2D (const void * src, size_t bytes, size_t offset)
+  {
+    if (IsRecording())
+      throw std::runtime_error ("host-to-device transfer inside a device recording");
+    DoH2D (src, bytes, offset);
+  }
+
+  void Buffer :: D2H (void * dst, size_t bytes, size_t offset) const
+  {
+    if (IsRecording())
+      throw std::runtime_error ("device-to-host transfer inside a device recording");
+    DoD2H (dst, bytes, offset);
+  }
+
+  void Queue :: NoteWrites (const Kernel & kernel, const std::vector<KernelArg> & args)
+  {
+    auto sig = kernel.Signature();
+    for (size_t i = 0; i < args.size(); i++)
+      if (args[i].GetKind() == KernelArg::Kind::Buffer)
+        {
+          bool readonly = sig && i < sig->args.size() && sig->args[i].readonly;
+          if (!readonly) args[i].GetBuffer()->NoteWrite();
+        }
+  }
+
+  void Queue :: Launch (Kernel & kernel, Dim3 groups, Dim3 groupsize,
+                        const std::vector<KernelArg> & args, size_t dynamic_group_memory)
+  {
+    CheckKernelArgs (kernel, args);
+    if (recording)
+      {
+        recording->nodes.push_back ({ kernel.shared_from_this(), groups, groupsize,
+                                      args, dynamic_group_memory });
+        return;
+      }
+    NoteWrites (kernel, args);
+    DoLaunch (kernel, groups, groupsize, args, dynamic_group_memory);
+  }
+
+  void Queue :: Finish()
+  {
+    if (recording)
+      throw std::runtime_error ("Queue::Finish inside a device recording - "
+                                "a host synchronisation (Get, Norm, transfer) is not allowed there");
+    DoFinish();
+  }
+
+  void Queue :: BeginRecording()
+  {
+    if (recording)
+      throw std::runtime_error ("Queue::BeginRecording: already recording");
+    recording = std::make_shared<Program>();
+    recording->queue = shared_from_this();
+    recording_depth++;
+  }
+
+  shared_ptr<Program> Queue :: EndRecording()
+  {
+    if (!recording)
+      throw std::runtime_error ("Queue::EndRecording: not recording");
+    recording_depth--;
+    auto prog = recording;
+    recording = nullptr;
+    return prog;
+  }
+
+  void Queue :: DoReplay (const Program & prog)
+  {
+    for (auto & n : prog.nodes)
+      DoLaunch (*n.kernel, n.groups, n.groupsize, n.args, n.dynamic_group_memory);
+  }
+
+  void Queue :: Replay (const Program & prog)
+  {
+    if (recording)
+      throw std::runtime_error ("Queue::Replay inside a recording");
+    for (auto & n : prog.nodes)
+      NoteWrites (*n.kernel, n.args);
+    DoReplay (prog);
+  }
+
+  void Program :: Run()
+  {
+    queue->Replay (*this);
   }
 }
