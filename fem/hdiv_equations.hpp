@@ -716,6 +716,15 @@ public:
     {
       CalcDShapeFE<FEL,D,D-1,D>(static_cast<const FEL&>(fel), mip, Trans(mat), lh, eps());
     }
+
+    static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
+                                      const SIMD_BaseMappedIntegrationRule & bmir,
+                                      BareSliceMatrix<SIMD<double>> mat)
+    {
+      CalcSIMDDShapeFE<FEL,D,D-1,D>
+        (static_cast<const FEL&>(bfel),
+         static_cast<const SIMD_MappedIntegrationRule<D-1,D>&>(bmir), mat, eps());
+    }
   };  
 
 
