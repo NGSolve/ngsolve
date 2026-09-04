@@ -253,7 +253,7 @@ namespace ngcomp
       template <uint N>
       constexpr uint RoundDown (uint i) { return N * ( i / N ); }
 
-      typedef $REAL real;
+      typedef $REAL Real;
 
       // dofnr -> (interval, offset within interval), same for all elements;
       // 16 bit: interval < 16 for H1, offset < locdofs
@@ -264,18 +264,18 @@ namespace ngcomp
       $NREF_TABLE
 
       KERNEL(apply_btdtb,
-             GLOBAL_IN(real, x),
+             GLOBAL_IN(Real, x),
              $YARG,
              GLOBAL_IN(int,   basex),
              GLOBAL_IN(int,   basey),
-             GLOBAL_IN(real, bmatx),
-             GLOBAL_IN(real, bmaty),
-             GLOBAL_IN(real, weights),
-             GLOBAL_IN(real, geocoefs),
-             GLOBAL_IN(real, bgeo),
-             GLOBAL_IN(real, sgeo),
+             GLOBAL_IN(Real, bmatx),
+             GLOBAL_IN(Real, bmaty),
+             GLOBAL_IN(Real, weights),
+             GLOBAL_IN(Real, geocoefs),
+             GLOBAL_IN(Real, bgeo),
+             GLOBAL_IN(Real, sgeo),
              GLOBAL_IN(int,  domain),
-             VALUE(real, s),
+             VALUE(Real, s),
              VALUE(int, ne_))
       {
       uint tid = LOCAL_ID_X;
@@ -300,19 +300,19 @@ namespace ngcomp
       constexpr uint locdofsx_roundup = RoundUp<8> (locdofsx);
       constexpr uint locdofsy_roundup = RoundUp<8> (locdofsy);
 
-      SHARED_2D(real, elvecx, $BS_ELS, locdofsx_roundup);
-      SHARED_2D(real, elvecy, $BS_ELS, locdofsy_roundup);
+      SHARED_2D(Real, elvecx, $BS_ELS, locdofsx_roundup);
+      SHARED_2D(Real, elvecy, $BS_ELS, locdofsy_roundup);
 
       constexpr int MAXDIMREF = ($DIMXREF>$DIMYREF) ? $DIMXREF : $DIMYREF;
-      SHARED_2D(real, pointvalsref, MAXDIMREF*$BS_IPTS, $BS_ELS);
+      SHARED_2D(Real, pointvalsref, MAXDIMREF*$BS_IPTS, $BS_ELS);
 
       // geometry coefficients of the batch [element][coordinate][node], and for
       // straight elements (constant gradients) F per element [element][coord][refdir]
-      SHARED(real, elgeo, $BS_ELS*dimr*geo_roundup);
+      SHARED(Real, elgeo, $BS_ELS*dimr*geo_roundup);
       auto mat_bgeo = MakeBareMatrix<RowMajor>(bgeo, geo_roundup);
 #if ($GEO_STAGED==1)
       // F at the points of the current ip block [coordinate*dims+refdir][ip][element]
-      SHARED_2D(real, Fvals, dimr*dims*$BS_IPTS, $BS_ELS);
+      SHARED_2D(Real, Fvals, dimr*dims*$BS_IPTS, $BS_ELS);
       auto mat_Fvals = MakeBareMatrix<RowMajor>(Fvals);
 #endif
 
@@ -390,7 +390,7 @@ namespace ngcomp
               uint comp = ipcomp / BSTS_IPTS;
               uint ip = baseip + iptile*TS_IPTS;
 
-              WarpMatrix<TS_IPTS,TS_ELS,real> pointvalsrefxi = 0;
+              WarpMatrix<TS_IPTS,TS_ELS,Real> pointvalsrefxi = 0;
               auto mb = mat_elvecx.SubMatrix(TS_ELS*eltile, 0);
               auto ma = mat_bmatx.SubMatrix(ip+nip_padded*comp, 0);
 
@@ -408,7 +408,7 @@ namespace ngcomp
               uint ig = rest / BSTS_IPTS;          // coordinate*dims + refdir
               uint ip = baseip + iptile*TS_IPTS;
 
-              WarpMatrix<TS_IPTS,TS_ELS,real> f = 0;
+              WarpMatrix<TS_IPTS,TS_ELS,Real> f = 0;
               auto mb = MakeBareMatrix<RowMajor>(elgeo + (ig/dims)*geo_roundup, dimr*geo_roundup).SubMatrix(TS_ELS*eltile, 0);
               auto ma = mat_bgeo.SubMatrix(ip+nip_padded*(ig%dims), 0);
               f.AddMM<8*$GEO_TILES>(ma, mb.Transpose(), tid);
@@ -426,25 +426,25 @@ namespace ngcomp
                uint elnr = baseelem + locelnr;
 
 #if ($ONLY_LOADSTOREB==0)
-               Vec<$DIMXREF,real> xrefvals;
-               Vec<$DIMYREF,real> yrefvals;
-               Vec<$DIMX,real> xvals;
-               Vec<$DIMY,real> yvals;
+               Vec<$DIMXREF,Real> xrefvals;
+               Vec<$DIMYREF,Real> yrefvals;
+               Vec<$DIMX,Real> xvals;
+               Vec<$DIMY,Real> yvals;
 
-               Mat<$DIMR,$DIMS,real> F;
+               Mat<$DIMR,$DIMS,Real> F;
                for (int i = 0; i < $DIMR; i++)
                   for (int j = 0; j < $DIMS; j++)
                     {
 #if ($GEO_STAGED==1)
                       F(i,j) = Fvals[(i*dims+j)*bs_ipts + locipnr][locelnr];
 #else
-                      real sum = 0;
+                      Real sum = 0;
                       for (uint c = 0; c < geo_ndof; c++)
                         sum += elgeo[(locelnr*dimr+i)*geo_roundup+c] * bgeo[(j*nip_padded + baseip+locipnr)*geo_roundup+c];
                       F(i,j) = sum;
 #endif
                     }
-               real J = Det(F);
+               Real J = Det(F);
 
                for (int comp = 0; comp < $DIMXREF; comp++)
                   xrefvals(comp) = pointvalsref[locipnr+comp*bs_ipts][locelnr];
@@ -476,7 +476,7 @@ namespace ngcomp
               int eltile = blocknr % BSTS_ELS;  // which els
               int ydoftile = blocknr / BSTS_ELS;  // which dofs
 
-              WarpMatrix<TS_ELS,8,real> sum(mat_elvecy.SubMatrix(TS_ELS*eltile, 8*ydoftile), tid);
+              WarpMatrix<TS_ELS,8,Real> sum(mat_elvecy.SubMatrix(TS_ELS*eltile, 8*ydoftile), tid);
 
               for (int comp = 0; comp < $DIMYREF; comp++)
                 {
@@ -507,7 +507,7 @@ namespace ngcomp
              uint eltile = blocknr % $EL_TILES;  // which els
              uint iptile = blocknr / $EL_TILES;  // which pts*comp tile
 
-             WarpMatrix<8,8,real> pointvalsrefxi = 0;
+             WarpMatrix<8,8,Real> pointvalsrefxi = 0;
 
               // slower for convection -> now good!
               auto mb = mat_elvecx.SubMatrix(8*eltile, 0);
@@ -526,7 +526,7 @@ namespace ngcomp
               uint rowtile = rest % (frows/8);
               uint coord = rest / (frows/8);
 
-              WarpMatrix<8,8,real> f = 0;
+              WarpMatrix<8,8,Real> f = 0;
               auto mb = MakeBareMatrix<RowMajor>(elgeo + coord*geo_roundup, dimr*geo_roundup).SubMatrix(8*eltile, 0);
               auto ma = mat_bgeo.SubMatrix($BGEO_REM_ROWS+8*rowtile, 0);
               f.AddMM<8*$GEO_TILES>(ma, mb.Transpose(), tid);
@@ -544,25 +544,25 @@ namespace ngcomp
                uint elnr = baseelem + locelnr;
 
 #if ($ONLY_LOADSTOREB==0)
-               Vec<$DIMXREF,real> xrefvals;
-               Vec<$DIMYREF,real> yrefvals;
-               Vec<$DIMX,real> xvals;
-               Vec<$DIMY,real> yvals;
+               Vec<$DIMXREF,Real> xrefvals;
+               Vec<$DIMYREF,Real> yrefvals;
+               Vec<$DIMX,Real> xvals;
+               Vec<$DIMY,Real> yvals;
 
-               Mat<$DIMR,$DIMS,real> F;
+               Mat<$DIMR,$DIMS,Real> F;
                for (uint i = 0; i < $DIMR; i++)
                   for (uint j = 0; j < $DIMS; j++)
                     {
 #if ($GEO_STAGED==1)
                       F(i,j) = Fvals[i*frows + j*numips + locipnr][locelnr];
 #else
-                      real sum = 0;
+                      Real sum = 0;
                       for (uint c = 0; c < geo_ndof; c++)
                         sum += elgeo[(locelnr*dimr+i)*geo_roundup+c] * bgeo[($BGEO_REM_ROWS + j*numips + locipnr)*geo_roundup+c];
                       F(i,j) = sum;
 #endif
                     }
-               real J = Det(F);
+               Real J = Det(F);
 
                for (uint j = 0; j < $DIMXREF; j++)
                   xrefvals(j) = pointvalsref[locipnr+j*numips][locelnr];
@@ -597,7 +597,7 @@ namespace ngcomp
               uint eltile = blocknr % $EL_TILES;  // which els
               uint ydoftile = blocknr / $EL_TILES;  // which dofs
 
-              WarpMatrix<8,8,real> sum(mat_elvecy.SubMatrix(8*eltile, 8*ydoftile), tid);
+              WarpMatrix<8,8,Real> sum(mat_elvecy.SubMatrix(8*eltile, 8*ydoftile), tid);
 
               for (uint ipcomp = 0; ipcomp < numips*$DIMYREF; ipcomp += 8)
                 {
@@ -689,7 +689,7 @@ namespace ngcomp
       
     phys += "} // END PHYSICS \n";
 
-    phys = Substitute(phys, "double", "real");
+    phys = Substitute(phys, "double", "Real");
     code = Substitute(code, "$PHYSICS", phys);
 
     
@@ -698,7 +698,7 @@ namespace ngcomp
 
     // y is accumulated atomically only if elements may share dofs
     code = Substitute(code, "$YARG", pmat->opts.atomic
-                      ? "GLOBAL_ATOMIC(real, y)" : "GLOBAL(real, y)");
+                      ? "GLOBAL_ATOMIC(Real, y)" : "GLOBAL(Real, y)");
     
     code = Substitute(code, "$NIP", ToString(nip)+" /*nip*/ ");
     code = Substitute(code, "$BS_ELS", ToString(pmat->opts.BS_els)+" /*BS_ELS*/ ");
@@ -729,7 +729,7 @@ namespace ngcomp
     {
       // element-boundary integrals: weight * |Cof(F) nref_ip| instead of weight * det
       bool eb = pmat->facetnr.Size() > 0;
-      string table, measure = "real meas = J;";
+      string table, measure = "Real meas = J;";
       if (eb)
         {
           // reference normal per facet, facet of each integration point
@@ -740,9 +740,9 @@ namespace ngcomp
               flat[f*dimr+d] = pmat->normals_ref(f,d);
           string init = "{";
           for (auto i : Range(flat)) { if (i) init += ","; init += ToString(flat[i]); }
-          table = "CONSTANT_ARRAY(real, nref, " + ToString(nfacets*dimr) + ") = " + init + "};\n";
+          table = "CONSTANT_ARRAY(Real, nref, " + ToString(nfacets*dimr) + ") = " + init + "};\n";
           table += "      CONSTANT_ARRAY(unsigned short, facetof, " + ToString(nip) + ") = " + InitList(pmat->facetnr) + ";";
-          string nvec = "Vec<" + ToString(dimr) + ",real>(";
+          string nvec = "Vec<" + ToString(dimr) + ",Real>(";
           for (int d = 0; d < dimr; d++)
             nvec += (d ? "," : "") + string("nref[") + ToString(dimr) + "*facetof[baseip+locipnr]+" + ToString(d) + "]";
           nvec += ")";
@@ -750,23 +750,23 @@ namespace ngcomp
           // accesses the normal as normals(i,k)
           string D = ToString(dimr);
           measure =
-            "Vec<"+D+",real> cofn = Cof(F)*" + nvec + ";\n"
-            "real meas = Norm(cofn);\n"
-            "struct { Vec<"+D+",real> nv; real operator() (int, int k) const { return nv(k); } }\n"
-            "  normals { ((J > 0) ? real(1) : real(-1)) / meas * cofn };\n";
+            "Vec<"+D+",Real> cofn = Cof(F)*" + nvec + ";\n"
+            "Real meas = Norm(cofn);\n"
+            "struct { Vec<"+D+",Real> nv; Real operator() (int, int k) const { return nv(k); } }\n"
+            "  normals { ((J > 0) ? Real(1) : Real(-1)) / meas * cofn };\n";
         }
       // coordinates x(ip) = sum_node coefs * basis values, accessed as points(i,k)
       if (phys.find("points(") != string::npos)
         {
           string D = ToString(dimr);
           measure +=
-            "Vec<"+D+",real> pnt;\n"
+            "Vec<"+D+",Real> pnt;\n"
             "for (uint k = 0; k < dimr; k++)\n"
-            "  { real sum = 0;\n"
+            "  { Real sum = 0;\n"
             "    for (uint c = 0; c < geo_ndof; c++)\n"
             "      sum += elgeo[(locelnr*dimr+k)*geo_roundup+c] * sgeo[(baseip+locipnr)*geo_ndof+c];\n"
             "    pnt(k) = sum; }\n"
-            "struct { Vec<"+D+",real> p; real operator() (int, int k) const { return p(k); } } points { pnt };\n";
+            "struct { Vec<"+D+",Real> p; Real operator() (int, int k) const { return p(k); } } points { pnt };\n";
         }
       code = Substitute(code, "$NREF_TABLE", table);
       code = Substitute(code, "$MEASURE", measure);
@@ -795,7 +795,7 @@ namespace ngcomp
         IntRange rangexref = pmat->ranges_xref[i];
         IntRange rangex = pmat->ranges_x[i];
         transxcode += "{\n";
-        transxcode += "Vec<" + ToString(rangex.Size()) + ",real> res;\n";
+        transxcode += "Vec<" + ToString(rangex.Size()) + ",Real> res;\n";
         transxcode += pmat->diffopsx[i] -> GenerateTransformationCode("xrefvals.Range<"+ToString(rangexref.First())+","+ToString(rangexref.Next())+">()",
                                                                       "res", false);
         transxcode += "xvals.SetRange<" + ToString(rangex.First()) +"," + ToString(rangex.Next()) + ">(res);\n";
@@ -811,7 +811,7 @@ namespace ngcomp
         IntRange rangeyref = pmat->ranges_yref[i];
         IntRange rangey = pmat->ranges_y[i];
         transycode += "{\n";
-        transycode += "Vec<" + ToString(rangeyref.Size()) + ",real> res;\n";
+        transycode += "Vec<" + ToString(rangeyref.Size()) + ",Real> res;\n";
         transycode += pmat->diffopsy[i] -> GenerateTransformationCode("yvals.Range<"+ToString(rangey.First())+","+ToString(rangey.Next())+">()",
                                                                       "res", true);
         transycode += "yrefvals.SetRange<" + ToString(rangeyref.First()) +"," + ToString(rangeyref.Next()) + ">(res);\n";
