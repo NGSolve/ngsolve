@@ -37,19 +37,26 @@ namespace ngla
 
     ngs_gpu::TypedBuffer<int> dev_firsti, dev_colnr;   // int32 indices
     ngs_gpu::TypedBuffer<T> dev_values;
-    int lanes;                         // work-items per row in Mult
+
+    // kernel and work-items per row, chosen by timing on this matrix
+    struct SpMVChoice { shared_ptr<ngs_gpu::Kernel> kernel; int lanes = 1, rows_per_group = 1; };
+    SpMVChoice choice;
 
     // transposed csr, built on demand
     mutable ngs_gpu::TypedBuffer<int> devt_firsti, devt_colnr;
     mutable ngs_gpu::TypedBuffer<T> devt_values;
-    mutable int lanes_trans = 0;
+    mutable SpMVChoice choice_trans;
     mutable std::mutex trans_mutex;
 
     void BuildTranspose() const;
+    SpMVChoice AutoTune (const ngs_gpu::TypedBuffer<int> & firsti,
+                         const ngs_gpu::TypedBuffer<int> & colnr,
+                         const ngs_gpu::TypedBuffer<T> & values,
+                         size_t rows, size_t cols) const;
     void LaunchSpMV (const ngs_gpu::TypedBuffer<int> & firsti,
                      const ngs_gpu::TypedBuffer<int> & colnr,
                      const ngs_gpu::TypedBuffer<T> & values,
-                     int alanes, size_t rows,
+                     const SpMVChoice & ch, size_t rows,
                      ngs_gpu::KernelArg x, ngs_gpu::KernelArg y, T s) const;
 
   public:
