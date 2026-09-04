@@ -235,18 +235,18 @@ namespace ngcomp
 	this->hc_intrange[k] = this->hc_ilower+k;
       ParallelVVector<double> v1(this->hc_pardofs);
       BaseVector & bv1(v1);
-      v1.FVDouble() = 0.0;
+      v1.FV<double>() = 0.0;
       for(auto k:Range(this->hc_ndof))
 	if(this->hc_freedofs->Test(k))
-	  v1.FVDouble()[k] = 1;
+	  v1.FV<double>()[k] = 1;
       bv1.SetParallelStatus(CUMULATED);
       int fdhc = (int) InnerProduct(bv1,bv1);
       ParallelVVector<double> v2(this->h1_pardofs);
       BaseVector & bv2(v2);
-      v2.FVDouble() = 0.0;
+      v2.FV<double>() = 0.0;
       for(auto k:Range(this->h1_ndof))
 	if(this->h1_freedofs->Test(k))
-	  v2.FVDouble()[k] = 1;
+	  v2.FV<double>()[k] = 1;
       bv2.SetParallelStatus(CUMULATED);
       int fdh1 = (int) InnerProduct(bv2,bv2);      
       cout << IM(2) << "hcurl freedofs: " << fdhc << " out of " << this->hc_pardofs->GetNDofGlobal() << endl;
@@ -392,7 +392,7 @@ namespace ngcomp
       HYPRE_IJVectorSetValues(this->x, this->hc_intrange.Size(), this->hc_intrange.Data(), this->buf_z.Data());
       for(auto k:Range(this->buf_hc.Size()))
 	if(this->hc_freedofs->Test(this->hc_masterdofs[k]))
-	  buf_hc[k] = f.FVDouble()[this->hc_masterdofs[k]];
+	  buf_hc[k] = f.FV<double>()[this->hc_masterdofs[k]];
 	else
 	  buf_hc[k] = 0.0;
       HYPRE_IJVectorSetValues(this->b, this->hc_intrange.Size(), this->hc_intrange.Data(), this->buf_hc.Data());
@@ -407,9 +407,9 @@ namespace ngcomp
     
     /** get sol **/
     HYPRE_IJVectorGetValues(x, this->hc_intrange.Size(), this->hc_intrange.Data(), this->buf_hc.Data());    
-    if(this->hc_ndof) u.FVDouble() = 0.0;    
+    if(this->hc_ndof) u.FV<double>() = 0.0;    
     for(auto k:Range(this->buf_hc.Size()))
-      u.FVDouble()[this->hc_masterdofs[k]] = this->buf_hc[k];
+      u.FV<double>()[this->hc_masterdofs[k]] = this->buf_hc[k];
 
     /*
     // check for positiveness of PC

@@ -164,7 +164,7 @@ namespace ngla
 	    *hevecs[i] = 0;
 	    for (int j = 0; j < m; j++)
 	      *hevecs[i] += evecs(i,j) * *abv[j];
-	    // hevecs[i]->FVComplex() = Trans(matV)*evecs.Row(i);
+	    // hevecs[i]->FV<Complex>() = Trans(matV)*evecs.Row(i);
 	  }
       }
     t3.Stop();

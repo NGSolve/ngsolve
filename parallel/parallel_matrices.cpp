@@ -847,8 +847,8 @@ auto _dummy_init = [] () {
     y.Distribute();
     size_t count = 0;
     auto me = paralleldofs->GetCommunicator().Rank();
-    auto fx = x.FVDouble();
-    auto fy = y.FVDouble();
+    auto fx = x.FV<double>();
+    auto fy = y.FV<double>();
     for (auto p : paralleldofs->GetDistantProcs())
       {
         double signed_s = (p < me) ? -s : s;
@@ -865,12 +865,12 @@ auto _dummy_init = [] () {
       auto exdofs = paralleldofs->GetExchangeDofs(p);
       if (p<paralleldofs->GetCommunicator().Rank()) {
 	for (auto k:Range(exdofs.Size())) {
-	  y.FVDouble()[exdofs[k]] -= s*x.FVDouble()[count++];
+	  y.FV<double>()[exdofs[k]] -= s*x.FV<double>()[count++];
 	}
       }
       else {
 	for (auto k:Range(exdofs.Size())) {
-	  y.FVDouble()[exdofs[k]] += s*x.FVDouble()[count++];
+	  y.FV<double>()[exdofs[k]] += s*x.FV<double>()[count++];
 	}
       }
     }

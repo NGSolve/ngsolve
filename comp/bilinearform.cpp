@@ -6095,7 +6095,7 @@ namespace ngcomp
              int tid = TaskManager::GetThreadId();
              {
                RegionTimer r(tx;
-               auto fvx = x.FVDouble();
+               auto fvx = x.FV<double>();
                for (auto i : myrange)
                  {
                    fesx->GetDofNrs(ElementId(VOL,elclass_inds[i]), dofs);

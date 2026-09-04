@@ -45,7 +45,7 @@ namespace ngla
     RegionTimer reg(t);
 
     /*
-    auto me = FVDouble();
+    auto me = FV<double>();
     t.AddFlops (me.Size());
 
     double parts[16];
@@ -82,7 +82,7 @@ namespace ngla
     t.AddFlops (Size());
     
     /*
-    auto me = FVDouble();
+    auto me = FV<double>();
 
     static Timer t("BaseVector::Scale");
     RegionTimer reg(t);
@@ -107,7 +107,7 @@ namespace ngla
 
   BaseVector & BaseVector :: Scale (Complex scal)
   {
-    FVComplex() *= scal;
+    FV<Complex>() *= scal;
     return *this;
   }
 
@@ -119,7 +119,7 @@ namespace ngla
 
 
     /*
-    auto fv = FVDouble();
+    auto fv = FV<double>();
     t.AddFlops (fv.Size());
 
     ParallelFor ( fv.Range(),
@@ -140,7 +140,7 @@ namespace ngla
 
   BaseVector & BaseVector :: SetScalar (Complex scal)
   {
-    FVComplex() = scal;
+    FV<Complex>() = scal;
     return *this;
   }
 
@@ -172,8 +172,8 @@ namespace ngla
 
     
     /*
-    auto me = FVDouble();
-    auto you = v.FVDouble();
+    auto me = FV<double>();
+    auto you = v.FV<double>();
 
     if (me.Addr(0) == you.Addr(0) && scal==1.0) return *this;
     t.AddFlops (me.Size());
@@ -193,9 +193,9 @@ namespace ngla
                        ToString(Size()) + " != size of other = " + ToString(v.Size()));
 
     if (v.IsComplex())
-      FVComplex() = scal * v.FVComplex();
+      FV<Complex>() = scal * v.FV<Complex>();
     else
-      FVComplex() = scal * v.FVDouble();      
+      FV<Complex>() = scal * v.FV<double>();      
     return *this;
   }
     
@@ -214,8 +214,8 @@ namespace ngla
 
     
     /*
-    auto me = FVDouble();
-    auto you = v.FVDouble();
+    auto me = FV<double>();
+    auto you = v.FV<double>();
 
     if (me.Size() != you.Size())
       throw Exception (string ("BaseVector::Add: size of me = ") +
@@ -251,9 +251,9 @@ namespace ngla
                        ToString(Size()) + " != size of other = " + ToString(v.Size()));
 
     if (v.IsComplex())
-      FVComplex() += scal * v.FVComplex();
+      FV<Complex>() += scal * v.FV<Complex>();
     else
-      FVComplex() += scal * v.FVDouble();      
+      FV<Complex>() += scal * v.FV<double>();      
     return *this;
   }
 
@@ -318,28 +318,28 @@ namespace ngla
   
   void BaseVector :: Save(ostream & ost) const
   {
-    FlatVector<double> fv = FVDouble();
+    FlatVector<double> fv = FV<double>();
     for (size_t i = 0; i < fv.Size(); i++)
       SaveBin (ost, fv(i));
   }
 
   void BaseVector :: Load(istream & ist) 
   {
-    FlatVector<double> fv = FVDouble();
+    FlatVector<double> fv = FV<double>();
     for (size_t i = 0; i < fv.Size(); i++)
       LoadBin (ist, fv(i));
   }
 
   void BaseVector :: SaveText(ostream & ost) const
   {
-    FlatVector<double> fv = FVDouble();
+    FlatVector<double> fv = FV<double>();
     for (size_t i = 0; i < fv.Size(); i++)
       ost << fv(i) << " ";
   }
 
   void BaseVector :: LoadText(istream & ist) 
   {
-    FlatVector<double> fv = FVDouble();
+    FlatVector<double> fv = FV<double>();
     for (size_t i = 0; i < fv.Size(); i++)
       ist >> fv(i);
   }
@@ -347,7 +347,7 @@ namespace ngla
   size_t BaseVector :: CheckSum () const
   {
     size_t sum = 0;
-    auto fv = FVDouble();
+    auto fv = FV<double>();
     for (auto i : ngstd::Range(fv))
       {
         double val = fv(i);
@@ -363,7 +363,7 @@ namespace ngla
 
   void BaseVector :: SetRandom () 
   {
-    FlatVector<double> fv = FVDouble();
+    FlatVector<double> fv = FV<double>();
     for (size_t i = 0; i < fv.Size(); i++)
       fv(i) = double (rand()) / RAND_MAX;
   }
@@ -373,7 +373,7 @@ namespace ngla
       void BaseVector :: GetIndirect (const Array<int> & ind, 
       FlatVector< Vec<S,double> > & v) const 
       { 
-      FlatVector<double> fv = FVDouble();
+      FlatVector<double> fv = FV<double>();
       if(EntrySize() != S)
       throw Exception("BaseVector::GetIndirect() wrong dimensions");
 
@@ -396,7 +396,7 @@ namespace ngla
       void BaseVector :: GetIndirect (const Array<int> & ind, 
       FlatVector< Vec<S,Complex> > & v) const 
       { 
-      FlatVector<Complex> fv = FVComplex();
+      FlatVector<Complex> fv = FV<Complex>();
       if(EntrySize() != 2*S)
       throw Exception("BaseVector::GetIndirect() wrong dimensions");
 
@@ -436,13 +436,6 @@ namespace ngla
   }
 
 
-  template<>
-  FlatVector<Complex> S_BaseVector<Complex> :: FVComplex () const
-  {
-    FlatVector<Complex> fv = FVScal();
-    return FlatVector<Complex> (fv.Size() * sizeof(Complex)/sizeof(Complex),
-                                reinterpret_cast<Complex*> (fv.Addr(0)));
-  }
 
 
   template<> double S_BaseVector<double> :: InnerProductD (const BaseVector & v2) const
@@ -622,7 +615,7 @@ namespace ngla
   {
     if (EntrySize() == 1)
       {
-        FlatVector<double> lsv(Size(), FVDouble().Addr(0));
+        FlatVector<double> lsv(Size(), FV<double>().Addr(0));
         for (auto i : ind.Range())
           {
             int index = ind[i];
@@ -650,7 +643,7 @@ namespace ngla
       }
     else
       {
-        FlatSysVector<double> lsv(Size(), EntrySize(), FVDouble().Addr(0));
+        FlatSysVector<double> lsv(Size(), EntrySize(), FV<double>().Addr(0));
         FlatSysVector<double> sv(ind.Size(), EntrySize(), v.Addr(0));
         
         for (size_t i = 0; i < ind.Size(); i++)
@@ -667,7 +660,7 @@ namespace ngla
   {
     if (EntrySize() == 1)
       {
-        FlatVector<double> lsv(Size(), FVDouble().Addr(0));
+        FlatVector<double> lsv(Size(), FV<double>().Addr(0));
         for (auto i : ind.Range())
           {
             int index = ind[i];
@@ -676,7 +669,7 @@ namespace ngla
       }
     else
       {
-        FlatSysVector<double> lsv(Size(), EntrySize(), FVDouble().Addr(0));
+        FlatSysVector<double> lsv(Size(), EntrySize(), FV<double>().Addr(0));
         FlatSysVector<float> sv(ind.Size(), EntrySize(), v.Addr(0));
         
         for (size_t i = 0; i < ind.Size(); i++)
@@ -692,7 +685,7 @@ namespace ngla
   void S_BaseVector<double> :: GetIndirect (FlatArray<int> ind, 
 					    FlatVector<Complex> v) const 
   { 
-    FlatSysVector<double> lsv(Size(), EntrySize(), FVDouble().Addr(0));
+    FlatSysVector<double> lsv(Size(), EntrySize(), FV<double>().Addr(0));
     FlatSysVector<Complex> sv(ind.Size(), EntrySize(), v.Addr(0));
 
     for (size_t i = 0; i < ind.Size(); i++)
@@ -701,7 +694,7 @@ namespace ngla
       else
 	sv(i) = -1.0;
     /*
-    FlatVector<Complex> fv = FVComplex();
+    FlatVector<Complex> fv = FV<Complex>();
     int es = EntrySize() / 2;
     int ii = 0;
     for (int i = 0; i < ind.Size(); i++)
@@ -738,7 +731,7 @@ namespace ngla
       }
     else
       {
-        FlatSysVector<float> lsv(Size(), EntrySize(), (float*)FVDouble().Addr(0));
+        FlatSysVector<float> lsv(Size(), EntrySize(), (float*)FV<double>().Addr(0));
         FlatSysVector<double> sv(ind.Size(), EntrySize(), v.Addr(0));
         
         for (size_t i = 0; i < ind.Size(); i++)
@@ -755,7 +748,7 @@ namespace ngla
   {
     if (EntrySize() == 1)
       {
-        // FlatVector<float> lsv(Size(), (float*)FVDouble().Addr(0));
+        // FlatVector<float> lsv(Size(), (float*)FV<double>().Addr(0));
         FlatVector<float> lsv(Size(), (float*)Memory());
         for (auto i : ind.Range())
           {
@@ -781,7 +774,7 @@ namespace ngla
   void S_BaseVector<float> :: GetIndirect (FlatArray<int> ind, 
                                            FlatVector<Complex> v) const 
   { 
-    FlatSysVector<float> lsv(Size(), EntrySize(), (float*)FVDouble().Addr(0));
+    FlatSysVector<float> lsv(Size(), EntrySize(), (float*)FV<double>().Addr(0));
     FlatSysVector<Complex> sv(ind.Size(), EntrySize(), v.Addr(0));
 
     for (size_t i = 0; i < ind.Size(); i++)
@@ -817,7 +810,7 @@ namespace ngla
   void S_BaseVector<Complex> :: GetIndirect (FlatArray<int> ind, 
                                              FlatVector<Complex> v) const 
   { 
-    FlatVector<Complex> fv = FVComplex();
+    FlatVector<Complex> fv = FV<Complex>();
     int es = EntrySize() / 2;
     int ii = 0;
     for (size_t i = 0; i < ind.Size(); i++)
@@ -842,7 +835,7 @@ namespace ngla
   void BaseVector :: SetIndirect (FlatArray<int> ind, 
 				  FlatVector<double> v) 
   { 
-    FlatSysVector<double> lsv(Size(), EntrySize(), FVDouble().Addr(0));
+    FlatSysVector<double> lsv(Size(), EntrySize(), FV<double>().Addr(0));
     FlatSysVector<double> sv(ind.Size(), EntrySize(), v.Addr(0));
 
     for (size_t i = 0; i < ind.Size(); i++)
@@ -850,7 +843,7 @@ namespace ngla
 	lsv(ind[i]) = sv(i);
 
     /*
-      FlatVector<double> fv = FVDouble();
+      FlatVector<double> fv = FV<double>();
       int es = EntrySize();
       int ii = 0;
       for (int i = 0; i < ind.Size(); i++)
@@ -876,7 +869,7 @@ namespace ngla
 	lsv(ind[i]) = sv(i);
 
     /*
-      FlatVector<double> fv = FVDouble();
+      FlatVector<double> fv = FV<double>();
       int es = EntrySize();
       int ii = 0;
       for (int i = 0; i < ind.Size(); i++)
@@ -896,7 +889,7 @@ namespace ngla
   void BaseVector :: SetIndirect (FlatArray<int> ind, 
 				  FlatVector<Complex> v) 
   { 
-    FlatVector<Complex> fv = FVComplex();
+    FlatVector<Complex> fv = FV<Complex>();
     int es = EntrySize() / 2;
     int ii = 0;
     for (size_t i = 0; i < ind.Size(); i++)
@@ -915,7 +908,7 @@ namespace ngla
     void BaseVector :: AddIndirect (const Array<int> & ind, 
     const FlatVector< Vec<S,double> > & v) 
     { 
-    FlatVector<double> fv = FVDouble();
+    FlatVector<double> fv = FV<double>();
     int es = EntrySize();
     
     for (int i = 0; i < ind.Size(); i++)
@@ -931,7 +924,7 @@ namespace ngla
     void BaseVector :: AddIndirect (const Array<int> & ind, 
     const FlatVector< Vec<S,Complex> > & v)
     { 
-    FlatVector<Complex> fv = FVComplex();
+    FlatVector<Complex> fv = FV<Complex>();
     if(EntrySize() != 2*S)
     throw Exception("BaseVector::AddIndirect() wrong dimensions");
 
@@ -953,7 +946,7 @@ namespace ngla
   {    
     if (EntrySize() == 1)
       {
-        FlatVector<double> lsv(Size(), FVDouble().Addr(0));
+        FlatVector<double> lsv(Size(), FV<double>().Addr(0));
 
         if (!use_atomic)
           {
@@ -971,7 +964,7 @@ namespace ngla
       }
     else
       {
-        FlatSysVector<double> lsv(Size(), EntrySize(), FVDouble().Addr(0));
+        FlatSysVector<double> lsv(Size(), EntrySize(), FV<double>().Addr(0));
         FlatSysVector<double> sv(ind.Size(), EntrySize(), v.Addr(0));
         
         for (size_t i = 0; i < ind.Size(); i++)
@@ -1004,7 +997,7 @@ namespace ngla
       }
     else
       {
-        FlatSysVector<float> lsv(Size(), EntrySize(), (float*)FVDouble().Addr(0));
+        FlatSysVector<float> lsv(Size(), EntrySize(), (float*)FV<double>().Addr(0));
         FlatSysVector<float> sv(ind.Size(), EntrySize(), v.Addr(0));
         
         for (size_t i = 0; i < ind.Size(); i++)
@@ -1017,7 +1010,7 @@ namespace ngla
   void BaseVector :: AddIndirect (FlatArray<int> ind, 
 				  FlatVector<Complex> v, bool use_atomic)
   { 
-    FlatVector<Complex> fv = FVComplex();
+    FlatVector<Complex> fv = FV<Complex>();
     int es = EntrySize() / 2;
 
     if (es == 1)
@@ -1150,8 +1143,8 @@ namespace ngla
       throw Exception (string ("BaseVector::InnerProduct: size of me = ") + ToString(Size()) + " != size of other = " + ToString(v2.Size()));
 
     
-    auto me = FVDouble();
-    auto you = v2.FVDouble();
+    auto me = FV<double>();
+    auto you = v2.FV<double>();
 	
     t.AddFlops (me.Size());
     /*
@@ -1178,28 +1171,10 @@ namespace ngla
 
 
 
-  template <class SCAL>
-  FlatVector<double> S_BaseVector<SCAL> :: FVDouble () const 
-  {
-    if constexpr (std::is_same<SCAL,float>()) throw Exception("FVDouble called for fp32 vector");
-    return FlatVector<double> (size * entrysize, (double*)Memory());
-  }
-
-  template <class SCAL>
-  FlatVector<Complex> S_BaseVector<SCAL> :: FVComplex () const
-  {
-    throw Exception ("FVComplex called for real vector");
-  }
 
 
 
-  template<>
-  FlatVector<double> S_BaseVector<Complex> :: FVDouble () const
-  {
-    FlatVector<Complex> fv = FVScal();
-    return FlatVector<double> (fv.Size() * sizeof(Complex)/sizeof(double),
-                               reinterpret_cast<double*> (fv.Addr(0)));
-  }
+
 
   AutoVector :: ~AutoVector() { }
 
@@ -1221,6 +1196,7 @@ namespace ngla
   BlockVector :: BlockVector (const Array<shared_ptr<BaseVector>> & avecs)
     : vecs(avecs), ispar(vecs.Size())
   {
+    if (vecs.Size()) scaltype = vecs[0]->GetScalarType();
     size = 0;
     for (auto & vec:vecs)
       size += vec->Size();
@@ -1246,10 +1222,6 @@ namespace ngla
 
   void * BlockVector :: Memory () const
   { throw Exception("BlockVector::Memory is not useful"); }
-  FlatVector<double> BlockVector :: FVDouble () const 
-  { throw Exception("BlockVector::FVDouble is not useful"); }
-  FlatVector<Complex> BlockVector :: FVComplex () const
-  { throw Exception("BlockVector::FVComplex is not useful"); }
   void BlockVector :: GetIndirect (FlatArray<int> ind, 
                                    FlatVector<double> v) const
   { throw Exception("BlockVector::GetIndirect is not useful"); }      
@@ -1458,10 +1430,10 @@ namespace ngla
     RegionTimer reg(t);
     
     ParallelForRange
-      (refvec->FVDouble().Size(), [&] (IntRange myrange)
+      (refvec->FV<double>().Size(), [&] (IntRange myrange)
        {
          for (int i = 0; i < Size(); i++)
-           vecs[i]->FVDouble().Range(myrange) = s;
+           vecs[i]->FV<double>().Range(myrange) = s;
        });
   }
 
@@ -1469,9 +1441,9 @@ namespace ngla
   {
     static Timer t("BaseVector-MV :: mult mat");
     RegionTimer reg(t);
-    t.AddFlops (mat.Height()*mat.Width()*this->RefVec()->FVDouble().Size());
+    t.AddFlops (mat.Height()*mat.Width()*this->RefVec()->FV<double>().Size());
 
-    size_t n = refvec->FVDouble().Size();
+    size_t n = refvec->FV<double>().Size();
 
     size_t BBH = 256;
     size_t AH = 512;
@@ -1491,7 +1463,7 @@ namespace ngla
 
           // get pointers of first multivector
           for (int ell = 0; ell < js; ell++) {
-            ppx[ell] = (*this)[j0 + ell]->FVDouble().Addr(i0);
+            ppx[ell] = (*this)[j0 + ell]->FV<double>().Addr(i0);
           }
 
           for (int k0 = 0; k0 < v2.Size(); k0+=BH) {
@@ -1499,7 +1471,7 @@ namespace ngla
 
             // get pointers of second multivector
             for (int ell = 0; ell < ks; ell++) {
-              ppy[ell] = v2[k0 + ell]->FVDouble().Addr(i0);
+              ppy[ell] = v2[k0 + ell]->FV<double>().Addr(i0);
             }
 
             MultiVectorAdd(is, FlatArray(js, ppx), FlatArray(ks, ppy), SliceMatrix<double>(ks, js, mat.Width(), &mat(k0,j0)));
@@ -1516,9 +1488,9 @@ namespace ngla
   {
     static Timer t("BaseVector-MV :: mult mat complex");
     RegionTimer reg(t);
-    t.AddFlops (4*mat.Height()*mat.Width()*this->RefVec()->FVComplex().Size());
+    t.AddFlops (4*mat.Height()*mat.Width()*this->RefVec()->FV<Complex>().Size());
 
-    size_t n = refvec->FVComplex().Size();
+    size_t n = refvec->FV<Complex>().Size();
 
     size_t BBH = 128;
     size_t AH = 256;
@@ -1539,7 +1511,7 @@ namespace ngla
 
           // get pointers of first multivector
           for (int ell = 0; ell < js; ell++) {
-            ppx[ell] = (*this)[j0 + ell]->FVComplex().Addr(i0);
+            ppx[ell] = (*this)[j0 + ell]->FV<Complex>().Addr(i0);
           }
 
           for (int k0 = 0; k0 < v2.Size(); k0+=BH) {
@@ -1547,7 +1519,7 @@ namespace ngla
 
             // get pointers of second multivector
             for (int ell = 0; ell < ks; ell++) {
-              ppy[ell] = v2[k0 + ell]->FVComplex().Addr(i0);
+              ppy[ell] = v2[k0 + ell]->FV<Complex>().Addr(i0);
             }
 
             MultiVectorAdd(is, FlatArray(js, ppx), FlatArray(ks, ppy), SliceMatrix<Complex>(ks, js, mat.Width(), &mat(k0,j0)));
@@ -1565,13 +1537,13 @@ namespace ngla
   Vector<> BaseVectorPtrMV :: InnerProductD (const BaseVector & v2) const 
   {
     static Timer t("BaseVector-MV :: InnerProduct - vec");
-    t.AddFlops (Size()*this->RefVec()->FVDouble().Size());
+    t.AddFlops (Size()*this->RefVec()->FV<double>().Size());
     RegionTimer reg(t);
 
     Vector<> ip(Size());
     ParallelFor (Size(), [&] (int nr)
                  {
-                   ip(nr) = ngbla::InnerProduct ((*this)[nr]->FVDouble(), v2.FVDouble());
+                   ip(nr) = ngbla::InnerProduct ((*this)[nr]->FV<double>(), v2.FV<double>());
                  });
     return ip;
   }
@@ -1580,9 +1552,9 @@ namespace ngla
   {
     static Timer t("BaseVector-MultiVector::InnerProductD");
     RegionTimer reg(t);
-    t.AddFlops (Size()*v2.Size()*this->RefVec()->FVDouble().Size());
+    t.AddFlops (Size()*v2.Size()*this->RefVec()->FV<double>().Size());
 
-    size_t n = this->RefVec()->FVDouble().Size();
+    size_t n = this->RefVec()->FV<double>().Size();
 
     Matrix<double> res(v2.Size(), Size());
     res = 0;
@@ -1604,7 +1576,7 @@ namespace ngla
 
           // store pointers to vectors of first multivector
           for (int ell=0; ell < js; ell++) {
-            ppx[ell] = (*this)[j0 + ell]->FVDouble().Addr(i0);
+            ppx[ell] = (*this)[j0 + ell]->FV<double>().Addr(i0);
           }
 
           for (int k0 = 0; k0 < v2.Size(); k0 += BH) {
@@ -1612,7 +1584,7 @@ namespace ngla
 
             // store pointers to vectors of second multivector
             for(int ell=0; ell < ks; ell++) {
-              ppy[ell] = v2[k0 + ell]->FVDouble().Addr(i0);
+              ppy[ell] = v2[k0 + ell]->FV<double>().Addr(i0);
             }
 
             // calculate result
@@ -1641,9 +1613,9 @@ namespace ngla
   {
     static Timer t("BaseVector-MultiVector::InnerProductC");
     RegionTimer reg(t);
-    t.AddFlops (4*Size()*v2.Size()*this->RefVec()->FVComplex().Size());
+    t.AddFlops (4*Size()*v2.Size()*this->RefVec()->FV<Complex>().Size());
 
-    size_t n = this->RefVec()->FVComplex().Size();
+    size_t n = this->RefVec()->FV<Complex>().Size();
 
     Matrix<Complex> res(v2.Size(), Size());
     res = 0. + 0i;
@@ -1667,7 +1639,7 @@ namespace ngla
 
           // store pointers to vectors of first multivector
           for (int ell=0; ell < js; ell++) {
-            ppx[ell] = (*this)[j0 + ell]->FVComplex().Addr(i0);
+            ppx[ell] = (*this)[j0 + ell]->FV<Complex>().Addr(i0);
           }
 
           for (int k0 = 0; k0 < v2.Size(); k0 += BH) {
@@ -1675,7 +1647,7 @@ namespace ngla
 
             // store pointers to vectors of second multivector
             for(int ell=0; ell < ks; ell++) {
-              ppy[ell] = v2[k0 + ell]->FVComplex().Addr(i0);
+              ppy[ell] = v2[k0 + ell]->FV<Complex>().Addr(i0);
             }
 
             // calculate result

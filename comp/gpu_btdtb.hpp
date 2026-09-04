@@ -48,7 +48,7 @@ namespace ngcomp
     shared_ptr<ngs_gpu::Kernel> kernel;
     shared_ptr<ngs_gpu::Queue> queue;
 
-    ngs_gpu::TypedBuffer<int> buffer_dofx, buffer_dofy;
+    ngs_gpu::TypedBuffer<int> buffer_dofx, buffer_dofy, buffer_domain;
     ngs_gpu::TypedBuffer<REAL> buffer_bmatx, buffer_bmaty;
     ngs_gpu::TypedBuffer<REAL> buffer_weights, buffer_geocoefs, buffer_bgeo, buffer_sgeo;
     
@@ -189,6 +189,10 @@ namespace ngcomp
     
 
 
+    buffer_domain = device->template NewBuffer<int> (ne, MemType::Shared);
+    for (int e = 0; e < ne; e++)
+      buffer_domain.HostData()[e] = (e < pmat->domains.Size()) ? pmat->domains[e] : 0;
+
     buffer_weights = NewSharedBuffer(RoundUp<8>(nip));
     for (int i = 0; i < RoundUp<8>(nip); i++)
       buffer_weights.HostData()[i] = i < nip ? pmat->weights[i] : 0;
@@ -270,6 +274,7 @@ namespace ngcomp
              GLOBAL_IN(Real, geocoefs),
              GLOBAL_IN(Real, bgeo),
              GLOBAL_IN(Real, sgeo),
+             GLOBAL_IN(int,  domain),
              VALUE(Real, s),
              VALUE(int, ne_))
       {
@@ -444,6 +449,8 @@ namespace ngcomp
                for (int comp = 0; comp < $DIMXREF; comp++)
                   xrefvals(comp) = pointvalsref[locipnr+comp*bs_ipts][locelnr];
 
+              const int domain_index = domain[(baseelem + locelnr < ne) ? baseelem + locelnr : 0];
+
               $MEASURE
 
               // xrefvals -> xvals
@@ -559,6 +566,8 @@ namespace ngcomp
 
                for (uint j = 0; j < $DIMXREF; j++)
                   xrefvals(j) = pointvalsref[locipnr+j*numips][locelnr];
+
+              const int domain_index = domain[(baseelem + locelnr < ne) ? baseelem + locelnr : 0];
 
               $MEASURE
 
@@ -866,7 +875,8 @@ namespace ngcomp
                    { dvx.DevArgRO(), dvy.DevArgRW(),
                      buffer_dofx, buffer_dofy,
                      buffer_bmatx, buffer_bmaty,
-                     buffer_weights, buffer_geocoefs, buffer_bgeo, buffer_sgeo, REAL(s), int(ne) });
+                     buffer_weights, buffer_geocoefs, buffer_bgeo, buffer_sgeo,
+                     buffer_domain, REAL(s), int(ne) });
   }
 }
 

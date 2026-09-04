@@ -85,19 +85,19 @@ namespace ngla
     for(int i=0; i<v.Size(); i++)
       {
 	if(is_real)
-	  v.FVDouble()(i) = double (rand()) / RAND_MAX;
+	  v.FV<double>()(i) = double (rand()) / RAND_MAX;
 	else
-	  v.FVComplex()(i) = double (rand()) / RAND_MAX;
+	  v.FV<Complex>()(i) = double (rand()) / RAND_MAX;
       }
     */
     if (is_real)
       {
-        for(int i = 0; i < v.FVDouble().Size(); i++)
-          v.FVDouble()(i) = double (rand()) / RAND_MAX;
+        for(int i = 0; i < v.FV<double>().Size(); i++)
+          v.FV<double>()(i) = double (rand()) / RAND_MAX;
       }
     else
-      for(int i = 0; i < v.FVComplex().Size(); i++)
-        v.FVComplex()(i) = double (rand()) / RAND_MAX;
+      for(int i = 0; i < v.FV<Complex>().Size(); i++)
+        v.FV<Complex>()(i) = double (rand()) / RAND_MAX;
 
     v.Distribute();
     v.Cumulate();

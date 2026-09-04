@@ -9,7 +9,9 @@
 
 #include <la.hpp>
 #include <gpukernel.hpp>
-#include <map>
+#include <algorithm>
+#include <vector>
+#include <iostream>
 
 namespace ngla
 {
@@ -113,6 +115,25 @@ namespace ngla
           for ( ; i < n; i++) y[i] += s*x[i];
       }
 
+      // precision change between the two floating point types, on the device
+      KERNEL(dv_from_other, GLOBAL(SCAL,y), GLOBAL_IN(OTHER,x), VALUE(int,n))
+      {
+        int i = 4*int(GLOBAL_ID_X);
+        if (i+3 < n)
+          { y[i] = (SCAL)x[i]; y[i+1] = (SCAL)x[i+1]; y[i+2] = (SCAL)x[i+2]; y[i+3] = (SCAL)x[i+3]; }
+        else
+          for ( ; i < n; i++) y[i] = (SCAL)x[i];
+      }
+
+      KERNEL(dv_to_other, GLOBAL(OTHER,y), GLOBAL_IN(SCAL,x), VALUE(int,n))
+      {
+        int i = 4*int(GLOBAL_ID_X);
+        if (i+3 < n)
+          { y[i] = (OTHER)x[i]; y[i+1] = (OTHER)x[i+1]; y[i+2] = (OTHER)x[i+2]; y[i+3] = (OTHER)x[i+3]; }
+        else
+          for ( ; i < n; i++) y[i] = (OTHER)x[i];
+      }
+
 
       /*
         two-stage dot product: dv_dot1 writes one partial sum per group,
@@ -174,6 +195,7 @@ namespace ngla
       shared_ptr<Device> device;
       shared_ptr<ngs_gpu::Queue> queue;
       shared_ptr<Kernel> setscalar, scale, scale_dev, set, axpy, axpy_dev;
+      shared_ptr<Kernel> from_other, to_other;
       shared_ptr<Kernel> dot1, dot2;
       TypedBuffer<T> dot_scratch;   // dotgroups partials + one result slot
       unsigned dotgroups, dotgroupsize;
@@ -189,6 +211,8 @@ namespace ngla
 
         string src = Substitute (kernel_source, "SCAL", ScalName<T>());
         src = Substitute (src, "CONJ", is_same_v<T,Complex> ? "conj" : "");
+        // the other real precision, for the cross-precision copy kernels
+        src = Substitute (src, "OTHER", is_same_v<T,double> ? "float" : "double");
         library = device->CompileSource (string(code_gpukernel) + src);
         setscalar = library->GetKernel ("dv_setscalar");
         scale     = library->GetKernel ("dv_scale");
@@ -196,6 +220,8 @@ namespace ngla
         set       = library->GetKernel ("dv_set");
         axpy      = library->GetKernel ("dv_axpy");
         axpy_dev  = library->GetKernel ("dv_axpy_dev");
+        from_other = library->GetKernel ("dv_from_other");
+        to_other   = library->GetKernel ("dv_to_other");
         dot1      = library->GetKernel ("dv_dot1");
         dot2      = library->GetKernel ("dv_dot2");
 
@@ -635,6 +661,32 @@ namespace ngla
         return;
       }
 
+    // a device vector of the other floating point type: convert on the
+    // device, never through the host.  The host mirror of this wrapper is
+    // declared valid but never filled -- the wrapper is only ever handed to
+    // kernels through DevArg*, and a kernel write clears the flag, which is
+    // how the destructor knows to convert back.
+    using Other = std::conditional_t<std::is_same_v<T,double>, float, double>;
+    if (auto po = dynamic_cast<const DeviceVector<Other>*> (&vec))
+      {
+        this->memtype = MemType::Device;
+        this->align = 1;
+        this->AllocBuffer (this->size);
+        const auto & kern = DeviceVectorKernels<T>::Get();
+        kern.Launch (kern.from_other, this->size,
+                     { this->DevArgW(),
+                       KernelArg (po->DevBufferRO(),
+                                  (po->DevOffset() + range.First()) * sizeof(Other))
+                         .WithType (ArgType::Of<Other>()),
+                       KernelArg (int(this->size)) });
+        converting = true;
+        convert_offset = range.First();
+        initial_host_uptodate = false;
+        this->host_uptodate = true;
+        this->dev_uptodate = true;
+        return;
+      }
+
     // a device buffer of our own, the host side stays with vec
     this->memtype = MemType::Device;
     this->align = 1;
@@ -679,6 +731,25 @@ namespace ngla
         this->host_data = nullptr;
         return;
       }
+
+    using Other = std::conditional_t<std::is_same_v<T,double>, float, double>;
+    if (converting)
+      if (auto po = dynamic_cast<const DeviceVector<Other>*> (&vec))
+        {
+          if (!this->host_uptodate)     // a kernel wrote: convert back on the device
+            {
+              const auto & kern = DeviceVectorKernels<T>::Get();
+              kern.Launch (kern.to_other, this->size,
+                           { KernelArg (po->DevBufferRW(),
+                                        (po->DevOffset() + convert_offset) * sizeof(Other))
+                               .WithType (ArgType::Of<Other>()),
+                             this->DevArgRO(),
+                             KernelArg (int(this->size)) });
+              po->InvalidateHost();
+            }
+          this->host_data = nullptr;
+          return;
+        }
 
     // only pay for the copy back if a kernel actually wrote
     if (initial_host_uptodate && !this->host_uptodate)
