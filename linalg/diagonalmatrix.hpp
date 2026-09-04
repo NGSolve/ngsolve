@@ -34,6 +34,8 @@ namespace ngla
     bool KeepValues() const { return keep_values; }
     shared_ptr<BitArray> Mask() const { return bits; }
 
+    shared_ptr<BaseMatrix> CreateDeviceMatrix () const override;
+
     virtual shared_ptr<BaseSparseMatrix> CreateSparseMatrix() const override;
     
     AutoVector CreateRowVector() const override

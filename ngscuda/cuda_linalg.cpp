@@ -143,12 +143,6 @@ namespace ngla
                                             });
 
     
-    BaseMatrix::RegisterDeviceMatrixCreator(typeid(Projector),
-                                            [] (const BaseMatrix & bmat) -> shared_ptr<BaseMatrix>
-                                            {
-                                              auto & proj = dynamic_cast<const Projector&>(bmat);
-                                              return make_shared<DevProjector>(proj);
-                                            });
     
   }
 
@@ -866,87 +860,8 @@ namespace ngla
 
   
 
-  void DevProjector :: Mult (const BaseVector & x, BaseVector & y) const
-  {
-    y = x;
-    Project (y);
-  }
 
-  void DevProjector :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
-  {
-    static Timer t("DevProjector::MultAdd"); RegionTimer reg(t);
-    if (x.EntrySize() != 1)
-      throw Exception("DevProjector :: MultAdd not implemented for EntrySize > 1");
 
-    DeviceVectorWrapper<double> ux(x);
-    DeviceVectorWrapper<double> uy(y);
-    ux.UpdateDevice();
-    uy.UpdateDevice();
-
-    // DevProjectorMultAdd (s, bits->Size(), DevPtr(ux), DevPtr(uy), bits->Data(), keep_values);
-    if (keep_values)
-      DeviceParallelFor
-        (bits->Size(),
-         [s, x=DevPtr(ux), y=DevPtr(uy), bits=bits->Data()] DEVICE_LAMBDA (auto i)
-         {
-           unsigned char mask = (char(1) << (i % CHAR_BIT));
-           unsigned int addr = i / CHAR_BIT;
-           
-           if (bits[addr] & mask)
-             y[i] += s * x[i];
-         });
-    else
-      DeviceParallelFor
-        (bits->Size(),
-         [s, x=DevPtr(ux), y=DevPtr(uy), bits=bits->Data()] DEVICE_LAMBDA (auto i)
-         {
-           unsigned char mask = (char(1) << (i % CHAR_BIT));
-           unsigned int addr = i / CHAR_BIT;
-           
-           if (! (bits[addr] & mask) )
-             y[i] += s * x[i];
-         });
-
-    uy.InvalidateHost();
-  }
-
-  void DevProjector :: Project (BaseVector & x) const
-  {
-    static Timer t("DevProjector::Project"); RegionTimer reg(t);
-    if (x.EntrySize() != 1)
-      throw Exception("DevProjector :: Project not implemented for EntrySize > 1");
-
-    DeviceVectorWrapper<double> ux(x);
-
-    ux.UpdateDevice();
-
-    // DevProjectorProject (bits->Size(), (double*)DevPtr(ux), bits->Data(), keep_values);
-    if (keep_values)
-      DeviceParallelFor
-        (bits->Size(),
-         [x=DevPtr(ux), bits=bits->Data()] DEVICE_LAMBDA (auto i)
-         {
-           unsigned char mask = (char(1) << (i % CHAR_BIT));
-           unsigned int addr = i / CHAR_BIT;
-           
-           if (! (bits[addr] & mask) )
-             x[i] = 0.0;
-         });
-    else
-      DeviceParallelFor
-        (bits->Size(),
-         [x=DevPtr(ux), bits=bits->Data()] DEVICE_LAMBDA (auto i)
-         {
-           unsigned char mask = (char(1) << (i % CHAR_BIT));
-           unsigned int addr = i / CHAR_BIT;
-           
-           if (bits[addr] & mask)
-             x[i] = 0;
-         });
-      
-      
-    ux.InvalidateHost();
-  }
 
 
   
