@@ -100,6 +100,8 @@ namespace ngla
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
     virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
     virtual shared_ptr<BaseSparseMatrix> CreateSparseMatrix() const override;    
+
+    NGS_DLL_HEADER shared_ptr<BaseMatrix> CreateDeviceMatrix () const override;
   };
 
 
@@ -142,10 +144,7 @@ namespace ngla
     virtual shared_ptr<BaseSparseMatrix> CreateSparseMatrix() const override;
     
     
-    virtual shared_ptr<BaseMatrix> CreateDeviceMatrix() const override
-    {
-      return make_shared<EmbeddedMatrix>(height, range, mat->CreateDeviceMatrix());
-    }
+    NGS_DLL_HEADER shared_ptr<BaseMatrix> CreateDeviceMatrix() const override;
   };
 
 
@@ -182,6 +181,7 @@ namespace ngla
     virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
 
     virtual shared_ptr<BaseSparseMatrix> CreateSparseMatrix() const override;    
+    NGS_DLL_HEADER shared_ptr<BaseMatrix> CreateDeviceMatrix () const override;
   };
 
 
@@ -221,10 +221,7 @@ namespace ngla
     virtual shared_ptr<BaseSparseMatrix> CreateSparseMatrix() const override;
     IntRange GetRange() const { return range; }
 
-    virtual shared_ptr<BaseMatrix> CreateDeviceMatrix() const override
-    {
-      return make_shared<EmbeddedTransposeMatrix>(width, range, mat->CreateDeviceMatrix());
-    }
+    NGS_DLL_HEADER shared_ptr<BaseMatrix> CreateDeviceMatrix() const override;
   };
 
 
