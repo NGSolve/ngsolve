@@ -43,7 +43,7 @@ PYBIND11_MODULE(_ngscuda, m) {
                   {
                     auto vec = bvec.template unchecked<1>();
                     shared_ptr<UnifiedVector> uv = make_shared<UnifiedVector>(vec.size());
-                    FlatVector<double> fv = uv->FVDouble();
+                    FlatVector<double> fv = uv->FV<double>();
                     for (size_t i = 0; i < vec.size(); i++)
                       {
                         fv(i) = vec(i);

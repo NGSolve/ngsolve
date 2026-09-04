@@ -113,7 +113,7 @@ namespace ngla
                                               auto diagarray = Jacobimat.GetInverse();
 
                                               VVector<double> diag(diagarray.Size());
-                                              auto fv = diag.FVDouble();
+                                              auto fv = diag.FV<double>();
                                               for (size_t i = 0; i < fv.Size(); i++)
                                                 fv[i] = diagarray[i];
                                               

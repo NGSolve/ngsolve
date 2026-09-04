@@ -113,6 +113,7 @@ namespace ngla
     size_t size;
     /// number of reals per entry
     int entrysize = 1;
+    Scalar scaltype = double(0);   // set by S_BaseVector, or from the wrapped vector
     ///
     BaseVector () { ; }
     
@@ -228,10 +229,8 @@ namespace ngla
     int EntrySize() const throw () { return entrysize; }
     // one entry has the size of that many scalars (double or complex)
     virtual int EntrySizeScal() const throw () = 0;
-    virtual Scalar GetScalarType() const = 0;
+    Scalar GetScalarType() const { return scaltype; }
     virtual void * Memory () const = 0;
-    virtual FlatVector<double> FVDouble () const = 0;
-    virtual FlatVector<Complex> FVComplex () const = 0;
 
     template <typename SCAL = double>
     FlatSysVector<SCAL> SV () const
@@ -474,15 +473,6 @@ namespace ngla
       return vec->Memory();
     }
 
-    FlatVector<double> FVDouble () const 
-    {
-      return vec->FVDouble();
-    }
-    
-    FlatVector<Complex> FVComplex () const
-    {
-      return vec->FVComplex();
-    }
 
     AutoVector CreateVector () const
     {
@@ -621,30 +611,33 @@ namespace ngla
   }
   
 
-  template <>
-  inline FlatVector<double> BaseVector::FV<double> () const
+  /*
+    The host memory of the vector as FlatVector<T>. T's real type must be
+    the vector's real type: a complex vector may be viewed as complex or
+    as twice as many reals, a Vec<3,double> vector as double, but a float
+    vector never as double. Length in T's from the byte size.
+  */
+  template <typename T> inline string ScalarTypeName ()
   {
-    return FVDouble();
-  }
-
-  template <>
-  inline FlatVector<float> BaseVector::FV<float> () const
-  {
-    return FlatVector<float>(Size(), (float*)Memory());
-  }
-
-  
-  template <>
-  inline FlatVector<Complex> BaseVector::FV<Complex> () const
-  {
-    return FVComplex();
+    if constexpr (std::is_same_v<T,double>) return "double";
+    else if constexpr (std::is_same_v<T,float>) return "float";
+    else if constexpr (std::is_same_v<T,Complex>) return "Complex";
+    else return typeid(T).name();
   }
 
   template <typename T>
   inline FlatVector<T> BaseVector::FV () const
   {
-    typedef typename mat_traits<T>::TSCAL TSCAL;
-    return FlatVector<T> (Size(), static_cast<T*> (static_cast<void*>(FV<TSCAL>().Addr(0))));
+    typedef typename scal_traits<typename mat_traits<T>::TSCAL>::TSCAL_REAL TREAL;
+    size_t bytes = std::visit ([&] (auto proto) -> size_t
+    {
+      typedef typename scal_traits<decltype(proto)>::TSCAL_REAL VREAL;
+      if constexpr (!std::is_same_v<VREAL,TREAL>)
+        throw Exception ("BaseVector::FV<" + ScalarTypeName<T>() + "> called for a vector of "
+                         + ScalarTypeName<decltype(proto)>());
+      return size_t(size) * entrysize * sizeof(VREAL);
+    }, scaltype);
+    return FlatVector<T> (bytes / sizeof(T), static_cast<T*> (Memory()));
   }
 
 
@@ -662,7 +655,7 @@ namespace ngla
   class NGS_DLL_HEADER S_BaseVector : virtual public BaseVector
   {
   public:
-    S_BaseVector () throw () { ; }
+    S_BaseVector () throw () { scaltype = SCAL(0); }
     virtual ~S_BaseVector() { ; }
 
     S_BaseVector & operator= (double s);
@@ -681,8 +674,6 @@ namespace ngla
     virtual Complex InnerProductC (const BaseVector & v2, bool conjugate = false) const override;
 
 
-    virtual FlatVector<double> FVDouble () const override;
-    virtual FlatVector<Complex> FVComplex () const override;
 
     virtual FlatVector<SCAL> FVScal () const 
     {
@@ -690,7 +681,6 @@ namespace ngla
                                (SCAL*)Memory());
     }
 
-    virtual Scalar GetScalarType() const override { return Scalar(SCAL(0)); }
 
     template <typename T>
       inline void T_GetIndirect (FlatArray<int> ind, FlatVector<T> v) const;
@@ -743,10 +733,7 @@ namespace ngla
     virtual int EntrySizeScal() const throw () override { return vecs[0]->EntrySizeScal(); }
     shared_ptr<BaseVector> & operator[] (size_t i) const { return vecs[i]; }
 
-    virtual Scalar GetScalarType() const override { return vecs[0]->GetScalarType(); }
     void * Memory () const override;
-    FlatVector<double> FVDouble () const override;
-    FlatVector<Complex> FVComplex () const override;
     void GetIndirect (FlatArray<int> ind, FlatVector<double> v) const override;
     void GetIndirect (FlatArray<int> ind, FlatVector<float> v) const override;    
     void GetIndirect (FlatArray<int> ind, FlatVector<Complex> v) const override;
@@ -1113,14 +1100,14 @@ namespace ngla
   S_InnerProduct<ComplexConjugate> (const BaseVector & v1, const BaseVector & v2)
   {
     return v1.InnerProductC(v2, true);
-    // return InnerProduct( v1.FVComplex(), Conj(v2.FVComplex()) );
+    // return InnerProduct( v1.FV<Complex>(), Conj(v2.FV<Complex>()) );
   }
 
   template <>
   inline Complex S_InnerProduct<ComplexConjugate2> (const BaseVector & v1, const BaseVector & v2)
   {
     return v2.InnerProductC(v1, true);
-    // return InnerProduct( v2.FVComplex(), Conj(v1.FVComplex()) );
+    // return InnerProduct( v2.FV<Complex>(), Conj(v1.FV<Complex>()) );
   }
 
   ///

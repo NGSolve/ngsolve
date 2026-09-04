@@ -15,6 +15,7 @@ namespace ngla
       : BaseVector(), ParallelBaseVector(), orig(aorig), range(arange)
     {
       BaseVector::entrysize = aorig->EntrySize();
+      BaseVector::scaltype = aorig->GetScalarType();
       this->size = range.Size();
       status = orig->GetParallelStatus();
       local_vec = orig->GetLocalVector()->Range(range);
@@ -30,14 +31,6 @@ namespace ngla
 
     virtual bool IsComplex() const override
     { return orig->IsComplex(); } 
-
-    virtual Scalar GetScalarType() const override { return orig->GetScalarType(); }
-    
-    FlatVector<double> FVDouble () const override
-    { return orig->GetLocalVector()->Range(range).FVDouble(); }
-
-    FlatVector<Complex> FVComplex () const override
-    { return orig->GetLocalVector()->Range(range).FVComplex(); }
 
     AutoVector Range (T_Range<size_t> range2) const override
     {
@@ -143,9 +136,9 @@ namespace ngla
   BaseVector & ParallelBaseVector :: SetScalar (double scal)
   {
     if (IsComplex())
-      FVComplex() = scal;
+      FV<Complex>() = scal;
     else
-      FVDouble() = scal;
+      FV<double>() = scal;
     if ( IsParallelVector() )
       this->SetStatus(CUMULATED);
     else
@@ -155,7 +148,7 @@ namespace ngla
 
   BaseVector & ParallelBaseVector :: SetScalar (Complex scal)
   {
-    FVComplex() = scal;
+    FV<Complex>() = scal;
     if ( IsParallelVector() )
       this->SetStatus(CUMULATED);
     else
@@ -170,7 +163,7 @@ namespace ngla
   
   BaseVector & ParallelBaseVector :: Set (double scal, const BaseVector & v)
   {
-    FVDouble() = scal * v.FVDouble();
+    FV<double>() = scal * v.FV<double>();
     const ParallelBaseVector * parv = dynamic_cast_ParallelBaseVector (&v);
 
     if ( parv && parv->IsParallelVector() )
@@ -188,7 +181,7 @@ namespace ngla
 
   BaseVector & ParallelBaseVector :: Set (Complex scal, const BaseVector & v)
   {
-    FVComplex() = scal * v.FVComplex();
+    FV<Complex>() = scal * v.FV<Complex>();
     const ParallelBaseVector * parv = dynamic_cast_ParallelBaseVector (&v);
 
     if ( parv->IsParallelVector() )
@@ -212,7 +205,7 @@ namespace ngla
         else 
 	  parv -> Cumulate();
       }
-    FVDouble() += scal * parv->FVDouble();
+    FV<double>() += scal * parv->FV<double>();
     return *this;
   }
 
@@ -228,7 +221,7 @@ namespace ngla
 	  parv->Cumulate();
       }
 
-    FVComplex() += scal * parv->FVComplex();
+    FV<Complex>() += scal * parv->FV<Complex>();
     return *this;
   }
 
@@ -305,8 +298,8 @@ namespace ngla
         if (this->EntrySize() == 1)
           {
             static Timer t("masked ip"); RegionTimer reg(t);
-            FlatVector<> me = this->FVDouble();
-            FlatVector<> you = parv2->FVDouble();
+            FlatVector<> me = this->template FV<double>();
+            FlatVector<> you = parv2->FV<double>();
             const BitArray & ba = const_cast<BitArray&>(paralleldofs->MasterDofs());
 	    SCAL localsum = MatKernelMaskedScalAB(me.Size(), me.Data(), 0, you.Data(), 0, ba);
 	    if ( this->Status() == NOT_PARALLEL && parv2->Status() == NOT_PARALLEL )
@@ -347,8 +340,8 @@ namespace ngla
       Distribute();
 
     Complex localsum = conjugate ?
-      ngbla::InnerProduct (Conj(FVComplex()), dynamic_cast<const S_BaseVector<Complex>&>(*parv2).FVComplex()) :
-      ngbla::InnerProduct (FVComplex(), dynamic_cast<const S_BaseVector<Complex>&>(*parv2).FVComplex());
+      ngbla::InnerProduct (Conj(FV<Complex>()), dynamic_cast<const S_BaseVector<Complex>&>(*parv2).FV<Complex>()) :
+      ngbla::InnerProduct (FV<Complex>(), dynamic_cast<const S_BaseVector<Complex>&>(*parv2).FV<Complex>());
 
     // not parallel
     if ( this->Status() == NOT_PARALLEL && parv2->Status() == NOT_PARALLEL )
@@ -599,11 +592,11 @@ namespace ngla
             pv2->MakeSameStatus();
             
             for (int i = 0; i < Size(); i++)
-              ptrs1[i] = (*this)[i]->FVDouble().Data();
+              ptrs1[i] = (*this)[i]->FV<double>().Data();
             for (int i = 0; i < v2.Size(); i++)
-              ptrs2[i] = v2[i]->FVDouble().Data();
+              ptrs2[i] = v2[i]->FV<double>().Data();
             
-            ngbla::PairwiseInnerProduct((*this)[0]->FVDouble().Size(), ptrs2, ptrs1, res);
+            ngbla::PairwiseInnerProduct((*this)[0]->FV<double>().Size(), ptrs2, ptrs1, res);
             
             paralleldofs->GetCommunicator()
               .AllReduce(FlatArray(res.Height()*res.Width(), res.Data()), NG_MPI_SUM);
@@ -636,7 +629,7 @@ namespace ngla
     
     if (this->entrysize == 1)
       {
-	FlatVector<double> fv = this -> FVDouble ();
+	FlatVector<double> fv = this->template FV<double>();
 	for (int dof = 0; dof < paralleldofs->GetNDofLocal(); dof++)
 	  if (paralleldofs->IsMasterDof ( dof ) )
 	    sum += sqr (fv[dof]);

@@ -46,7 +46,6 @@ namespace ngla
     virtual ostream & PrintStatus (ostream & ost) const;
     virtual AutoVector CreateVector () const override;
 
-    virtual FlatVector<Complex> FVComplex () const override;
 
     // typed device pointer into the buffer, no transfer implied
     virtual Dev<double> * DevData() const;

@@ -2300,14 +2300,14 @@ namespace ngla
          int i = 0;
          for ( ; i + 4 <= x.Size(); i += 4)
            {
-             auto fx0 = x[i+0]->FVDouble();
-             auto fx1 = x[i+1]->FVDouble();
-             auto fx2 = x[i+2]->FVDouble();
-             auto fx3 = x[i+3]->FVDouble();
-             auto fy0 = y[i+0]->FVDouble();
-             auto fy1 = y[i+1]->FVDouble();
-             auto fy2 = y[i+2]->FVDouble();
-             auto fy3 = y[i+3]->FVDouble();
+             auto fx0 = x[i+0]->FV<double>();
+             auto fx1 = x[i+1]->FV<double>();
+             auto fx2 = x[i+2]->FV<double>();
+             auto fx3 = x[i+3]->FV<double>();
+             auto fy0 = y[i+0]->FV<double>();
+             auto fy1 = y[i+1]->FV<double>();
+             auto fy2 = y[i+2]->FV<double>();
+             auto fy3 = y[i+3]->FV<double>();
              double a0 = alpha[i+0];
              double a1 = alpha[i+1];
              double a2 = alpha[i+2];
@@ -2334,8 +2334,8 @@ namespace ngla
 
          for ( ; i+1 <= x.Size(); i++)
            {
-             auto fx0 = x[i+0]->FVDouble();
-             auto fy0 = y[i+0]->FVDouble();
+             auto fx0 = x[i+0]->FV<double>();
+             auto fy0 = y[i+0]->FV<double>();
              double a0 = alpha[i+0];
              for (auto row : myrange)
                {

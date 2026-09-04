@@ -162,7 +162,7 @@ namespace ngcomp
 
     for (int i = 0; i < vec.Size(); i++)
       {
-        FlatVector<double> fv = vec[i] -> FVDouble();
+        FlatVector<double> fv = vec[i] -> FV<double>();
 
 	/*
         for (int i = 0; i < fv.Size(); i++)

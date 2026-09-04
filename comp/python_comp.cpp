@@ -2186,7 +2186,7 @@ active_dofs : BitArray or None
                         {
                           auto vec = py::cast<shared_ptr<BaseVector>>(state[3]);
                           // cout << "unpickle cf, vec = " << *vec << endl;
-                          string str((char*)(void*)vec->FVDouble().Data(), 8*vec->Size());
+                          string str((char*)(void*)vec->FV<double>().Data(), 8*vec->Size());
                           istringstream in(str);
                           gf->Load(in);
                         }
@@ -2206,7 +2206,7 @@ active_dofs : BitArray or None
            if (parallel)
              self.Save(out);
            else
-             for (auto d : self.GetVector().FVDouble())
+             for (auto d : self.GetVector().FV<double>())
                SaveBin(out, d);
          },
          py::arg("filename"), py::arg("parallel")=false, docu_string(R"raw_string(
@@ -2229,7 +2229,7 @@ parallel : bool
            if (parallel)
              self.Load(in);
            else
-             for (auto & d : self.GetVector().FVDouble())
+             for (auto & d : self.GetVector().FV<double>())
                LoadBin(in, d);
          },
          py::arg("filename"), py::arg("parallel")=false, docu_string(R"raw_string(       
@@ -4367,7 +4367,7 @@ deformation : ngsolve.comp.GridFunction
              dynamic_cast<const BaseScalarFiniteElement& >(tpfes->Spaces(0)[0]->GetFE(ElementId(VOL,elnr),glh)).CalcShape(ip,shape);
              FlatVector<> result(ndofy,glh);
              result = Trans(elmat)*shape;
-             gf_k->GetVector().FVDouble() = result;
+             gf_k->GetVector().FV<double>() = result;
              
            });
   

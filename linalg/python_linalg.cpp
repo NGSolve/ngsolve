@@ -307,28 +307,28 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
       if (!self.IsComplex())
         return py::buffer_info
           (
-           self.FVDouble().Data(),                       /* Pointer to buffer */
+           self.FV<double>().Data(),                       /* Pointer to buffer */
            sizeof(double),                               /* Size of one scalar */
            py::format_descriptor<double>::format(),      /* Python struct-style format descriptor */
            1,                                            /* Number of dimensions */
-           { self.FVDouble().Size() },                              /* Buffer dimensions */
+           { self.FV<double>().Size() },                              /* Buffer dimensions */
            { sizeof(double)  }                           /* Strides (in bytes) for each index */
         );
       else
         return py::buffer_info
           (
-           self.FVComplex().Data(),                       /* Pointer to buffer */
+           self.FV<Complex>().Data(),                       /* Pointer to buffer */
            sizeof(Complex),                               /* Size of one scalar */
            py::format_descriptor<Complex>::format(),      /* Python struct-style format descriptor */
            1,                                            /* Number of dimensions */
-           { self.FVComplex().Size() },                              /* Buffer dimensions */
+           { self.FV<Complex>().Size() },                              /* Buffer dimensions */
            { sizeof(Complex)  }                           /* Strides (in bytes) for each index */
         );
     })
     
     .def(py::pickle([] (const BaseVector& bv)
                     {
-                      MemoryView mv((void*) &bv.FVDouble()[0], sizeof(double) * bv.FVDouble().Size());
+                      MemoryView mv((void*) &bv.FV<double>()[0], sizeof(double) * bv.FV<double>().Size());
                       return py::make_tuple(bv.Size(),bv.IsComplex(),bv.EntrySize(),mv);
                     },
                     [] (py::tuple state) -> shared_ptr<BaseVector>
@@ -444,9 +444,9 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
              if(entrysize == 1)
              {
                  if( !self.IsComplex() )
-                     return py::cast(self.FVDouble()[ind]);
+                     return py::cast(self.FV<double>()[ind]);
                  else
-                     return py::cast(self.FVComplex()[ind]);
+                     return py::cast(self.FV<Complex>()[ind]);
              }
              else
              {
@@ -634,14 +634,14 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def("FV", [] (BaseVector & self)
                                 {
                                   if (!self.IsComplex())
-                                    return py::cast(self.FVDouble());
+                                    return py::cast(self.FV<double>());
                                   else
-                                    return py::cast(self.FVComplex());
+                                    return py::cast(self.FV<Complex>());
                                 }, py::keep_alive<0,1>())
     .def("Reshape", [] (BaseVector & self, size_t w)
          {
            size_t h = self.Size()/w;
-           return FlatMatrix<> (h, w, &self.FVDouble()(0));
+           return FlatMatrix<> (h, w, &self.FV<double>()(0));
          }, py::arg("width"))
     .def("SetRandom", [] (BaseVector & self, optional<unsigned int> seed)
          {

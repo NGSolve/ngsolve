@@ -1279,7 +1279,7 @@ void ExportReadAnsys (py::module & m)
             auto gf = CreateGridFunction(fes, "force", Flags());
             gf->Update();
             gf->GetVector() = 0.0;
-            auto fv = gf->GetVector().FVDouble();
+            auto fv = gf->GetVector().FV<double>();
             size_t nscal = fes->GetNDof() / dim;
             for (auto & [key, val] : fmap)
               {

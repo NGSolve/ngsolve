@@ -201,7 +201,8 @@ namespace ngla
       shared_ptr<ngs_gpu::Queue> queue;
       shared_ptr<Kernel> reorder, reorder_add, multdiag, reset, solveL, solveLT;
       unsigned groupsize;      // elementwise kernels
-      unsigned lanes;          // simd width, x-size of the solve groups
+      unsigned lanes;          // x-size of the solve groups, at most the simd width
+      unsigned rows_L = 1, rows_LT = 8;   // y-size: rows of lanes per group
       unsigned solvegroups;    // persistent groups
 
       DeviceCholeskyKernels (shared_ptr<Device> adevice)
@@ -230,6 +231,25 @@ namespace ngla
         // must be taken by the rows of a single group
         lanes = gpu ? device->SimdWidth() : 8;
         solvegroups = gpu ? 512 : 1;
+        // tuning: NGS_GPU_CHOL_L=32x1 NGS_GPU_CHOL_LT=32x8 NGS_GPU_CHOL_GROUPS=512
+        auto geom = [&] (const char * name, unsigned & rows)
+        {
+          if (const char * e = getenv(name))
+            {
+              unsigned x = 0, y = 0;
+              if (sscanf (e, "%ux%u", &x, &y) == 2 && x > 0 && y > 0)
+                {
+                  // a row of lanes must be exactly one simd group: narrower rows
+                  // share a barrier with a neighbour that may spin on them (deadlock)
+                  if (gpu && x != device->SimdWidth())
+                    throw Exception(string(name)+": lanes must equal the simd width");
+                  lanes = x; rows = y;
+                }
+            }
+        };
+        geom ("NGS_GPU_CHOL_L", rows_L);
+        geom ("NGS_GPU_CHOL_LT", rows_LT);
+        if (getenv("NGS_GPU_CHOL_GROUPS")) solvegroups = atoi (getenv("NGS_GPU_CHOL_GROUPS"));
       }
 
       void LaunchElementwise (const shared_ptr<Kernel> & kernel, size_t n,
@@ -338,9 +358,20 @@ namespace ngla
     for (size_t i = 0; i < lfact.Size(); i++) hlfact[i] = T(lfact[i]);
     for (size_t i = 0; i < diag.Size(); i++) hdiag[i] = T(diag[i]);
 
+    // depth of the dependency graph: the latency floor of the persistent solve
+    size_t levels = 0;
+    {
+      Array<int> level(njobs);
+      level = 1;
+      for (size_t i = 0; i < njobs; i++)
+        for (int d : dep[i])
+          level[d] = max (level[d], level[i]+1);
+      for (int l : level) levels = max<size_t> (levels, l);
+    }
     cout << IM(7) << "DeviceSparseCholesky<" << (is_same_v<T,double> ? "double" : "float")
          << "> height = " << height << ", nused = " << nused << ", lfact = " << lfact.Size()
-         << ", microtasks = " << njobs << endl;
+         << " (" << lfact.Size()*sizeof(T)/1e6 << " MB), microtasks = " << njobs
+         << ", dependency levels = " << levels << endl;
 
     dev_microtasks = Upload<int> (*device, hosttasks);
     dev_depidx = Upload<int> (*device, depidx);
@@ -385,7 +416,7 @@ namespace ngla
 
     // one row of lanes per job in flight; the backward solve has more
     // parallelism per task and runs 8 rows per group
-    queue->Launch (*kern.solveL, Dim3(kern.solvegroups), Dim3(kern.lanes, 1),
+    queue->Launch (*kern.solveL, Dim3(kern.solvegroups), Dim3(kern.lanes, kern.rows_L),
                    { KernelArg(dev_depidx), KernelArg(dev_depdata), KernelArg(dev_incomingdep),
                      KernelArg(dev_hx), KernelArg(dev_hx), KernelArg(dev_cnt),
                      KernelArg(dev_microtasks), KernelArg(dev_blocks), KernelArg(dev_rowindex2),
@@ -395,7 +426,7 @@ namespace ngla
     kern.LaunchElementwise (kern.multdiag, nused,
                             { KernelArg(dev_diag), KernelArg(dev_hx), KernelArg(int(nused)) });
 
-    queue->Launch (*kern.solveLT, Dim3(kern.solvegroups), Dim3(kern.lanes, 8),
+    queue->Launch (*kern.solveLT, Dim3(kern.solvegroups), Dim3(kern.lanes, kern.rows_LT),
                    { KernelArg(dev_depidx_trans), KernelArg(dev_depdata_trans), KernelArg(dev_incomingdep_trans),
                      KernelArg(dev_hx), KernelArg(dev_hx), KernelArg(dev_cnt),
                      KernelArg(dev_microtasks), KernelArg(dev_blocks), KernelArg(dev_rowindex2),

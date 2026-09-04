@@ -40,10 +40,6 @@ namespace ngla
     return { Size(), DevData() };
   }
 
-  FlatVector<Complex> UnifiedVector :: FVComplex () const
-  {
-    throw Exception ("unified complex not yet supported");
-  }
 
 
   BaseVector & UnifiedVector :: operator= (double d)
@@ -63,7 +59,7 @@ namespace ngla
           return *this;
         }
 
-    FVDouble() = v2.FVDouble();
+    FV<double>() = v2.FV<double>();
     UpdateDevice();
     return *this;
   }
