@@ -1164,13 +1164,18 @@ namespace ngcomp
           {
             if (elclass_inds_all.Size() == 0) continue;
             Array<size_t> elclass_inds;
+            Array<int> elclass_domains;
             for (auto elnr : elclass_inds_all)
               {
                 ElementId el(VOL, elnr);
-                if (bfi->DefinedOn (ma->GetElIndex(el)) &&
+                auto domain = ma->GetElIndex(el);
+                if (bfi->DefinedOn (domain) &&
                     bfi->DefinedOnElement (elnr) &&
                     fesx->DefinedOn (el) && fesy->DefinedOn (el))
-                  elclass_inds.Append (elnr);
+                  {
+                    elclass_inds.Append (elnr);
+                    elclass_domains.Append (domain);
+                  }
               }
             if (elclass_inds.Size() == 0) continue;
             ElementId ei(VOL,elclass_inds[0]);
@@ -1466,6 +1471,7 @@ namespace ngcomp
                                                            std::move(weights),
                                                            std::move(diffopsx), std::move(diffopsy), std::move(diag), std::move(Jacobi),
                                                            *matfree_opts);
+                mfmat->domains = std::move(elclass_domains);
                 mfmat->facetnr = std::move(facetnr);
                 mfmat->normals_ref = std::move(normals_ref);
                 mfmat->geo_order = geo_order;
