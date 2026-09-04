@@ -892,8 +892,36 @@ namespace ngla
 
   void DevProjector :: Mult (const BaseVector & x, BaseVector & y) const
   {
-    y = x;
-    Project (y);
+    static Timer t("DevProjector::Mult"); RegionTimer reg(t);
+    if (x.EntrySize() != 1)
+      throw Exception("DevProjector :: Mult not implemented for EntrySize > 1");
+
+    DeviceVectorWrapper<double> ux(x);
+    DeviceVectorWrapper<double> uy(y);
+    ux.UpdateDevice();
+
+    if (keep_values)
+      DeviceParallelFor
+        (bits->Size(),
+         [x=DevPtr(ux), y=DevPtr(uy), bits=bits->Data()] DEVICE_LAMBDA (auto i)
+         {
+           unsigned char mask = (char(1) << (i % CHAR_BIT));
+           unsigned int addr = i / CHAR_BIT;
+
+           y[i] = (bits[addr] & mask) ? x[i] : 0.0;
+         });
+    else
+      DeviceParallelFor
+        (bits->Size(),
+         [x=DevPtr(ux), y=DevPtr(uy), bits=bits->Data()] DEVICE_LAMBDA (auto i)
+         {
+           unsigned char mask = (char(1) << (i % CHAR_BIT));
+           unsigned int addr = i / CHAR_BIT;
+
+           y[i] = (bits[addr] & mask) ? 0.0 : x[i];
+         });
+
+    uy.InvalidateHost();
   }
 
   void DevProjector :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
