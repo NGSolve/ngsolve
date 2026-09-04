@@ -3,6 +3,8 @@
 
 /*********************************************************************/
 /* File:   device_sparsematrix.hpp                                   */
+/* Author: Joachim Schoeberl                                         */
+/*         (developed with AI assistance, Claude Fable 5.1)          */
 /* Date:   3. Sep. 2026                                              */
 /*********************************************************************/
 

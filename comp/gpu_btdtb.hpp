@@ -1,6 +1,13 @@
 #ifndef FILE_GPU_BTDTB_HPP
 #define FILE_GPU_BTDTB_HPP
 
+/*********************************************************************/
+/* File:   gpu_btdtb.hpp                                             */
+/* Author: Joachim Schoeberl                                         */
+/*         (developed with AI assistance, Claude Fable 5.1)          */
+/* Date:   3. Aug. 2026                                              */
+/*********************************************************************/
+
 #include <comp.hpp>
 #include <gpuwrapper.hpp>
 #include <gpukernel.hpp>

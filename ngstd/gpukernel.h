@@ -1,3 +1,9 @@
+/*********************************************************************/
+/* File:   gpukernel.h                                               */
+/* Author: Joachim Schoeberl                                         */
+/*         (developed with AI assistance, Claude Fable 5.1)          */
+/* Date:   4. Sep. 2026                                              */
+/*********************************************************************/
 
 #ifdef __CUDACC__
 

@@ -4,7 +4,8 @@
 /*********************************************************************/
 /* File:   gpuwrapper.hpp                                            */
 /* Author: Joachim Schoeberl                                         */
-/* Date:   29. Aug. 2025                                             */
+/*         (developed with AI assistance, Claude Fable 5.1)          */
+/* Date:   29. Aug. 2026                                             */
 /*********************************************************************/
 
 /*

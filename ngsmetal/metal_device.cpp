@@ -1,6 +1,8 @@
 /*********************************************************************/
 /* File:   metal_device.cpp                                          */
-/* Date:   29. Aug. 2025                                             */
+/* Author: Joachim Schoeberl                                         */
+/*         (developed with AI assistance, Claude Fable 5.1)          */
+/* Date:   29. Aug. 2026                                             */
 /*********************************************************************/
 
 #define NS_PRIVATE_IMPLEMENTATION

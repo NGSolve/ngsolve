@@ -1,6 +1,13 @@
 #ifndef FILE_CUDA_DEVICE_HPP
 #define FILE_CUDA_DEVICE_HPP
 
+/*********************************************************************/
+/* File:   cuda_device.hpp                                           */
+/* Author: Joachim Schoeberl                                         */
+/*         (developed with AI assistance, Claude Fable 5.1)          */
+/* Date:   29. Aug. 2026                                             */
+/*********************************************************************/
+
 /*
   CUDA implementation of the ngs_gpu interface (ngstd/gpuwrapper.hpp).
 

@@ -1,5 +1,7 @@
 /*********************************************************************/
 /* File:   devicevector.cpp                                          */
+/* Author: Joachim Schoeberl                                         */
+/*         (developed with AI assistance, Claude Fable 5.1)          */
 /* Date:   29. Aug. 2026                                             */
 /*********************************************************************/
 

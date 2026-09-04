@@ -1,4 +1,9 @@
-
+/*********************************************************************/
+/* File:   tinybla.h                                                 */
+/* Author: Joachim Schoeberl                                         */
+/*         (developed with AI assistance, Claude Fable 5.1)          */
+/* Date:   3. Aug. 2026                                              */
+/*********************************************************************/
 
 #ifdef __CUDACC__
 #define TB_CUDA
