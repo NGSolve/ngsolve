@@ -194,32 +194,6 @@ namespace ngla
   };
 
 
-  class DevProjector : public DevMatrix
-  {
-  private:
-    shared_ptr<DevBitArray> bits;
-    bool keep_values;
-  public:
-    DevProjector (const Projector & proj)
-      : bits(make_shared<DevBitArray>(*proj.Mask())), 
-        keep_values(proj.KeepValues()) { ; }
-
-    virtual xbool IsSymmetric() const override { return true; }
-    
-    void Mult (const BaseVector & x, BaseVector & y) const override;
-    void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
-
-    void Project (BaseVector & x) const;
-
-    virtual int VHeight() const override { return bits->Size(); }
-    virtual int VWidth() const override { return bits->Size(); }
-
-    AutoVector CreateRowVector() const override
-    { throw Exception("CreateRowVector not implemented for DevProjector!"); }
-    AutoVector CreateColVector() const override
-    { throw Exception("CreateColVector not implemented for DevProjector!"); }
-
-  };
 
 
 
