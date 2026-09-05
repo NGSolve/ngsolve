@@ -59,6 +59,13 @@
   // a fence making this thread's global writes visible device-wide
   #define SIMD_BARRIER()         __syncwarp()
   #define DEVICE_FENCE()         __threadfence()
+  // sum over the 32 lanes of the warp, all lanes must call it
+  template <typename T> __device__ inline T ngs_simd_sum (T x)
+  {
+    for (int o = 16; o > 0; o >>= 1) x += __shfl_xor_sync (0xffffffff, x, o);
+    return x;
+  }
+  #define SIMD_SUM(x)            ngs_simd_sum(x)
 
   #define NGS_CPLX_FUNC          __host__ __device__ inline
   #define NGS_CPLX_SQRT          sqrt
@@ -129,11 +136,12 @@
     {
       Barrier barrier;
       std::deque<Barrier> rowbarriers;   // one per (y,z) row of x-lanes
+      std::vector<double> rowscratch;    // SIMD_SUM slots, one per work-item
       std::vector<char> arena;
       std::size_t used = 0;
       void * last = nullptr;
       Group (unsigned sx, unsigned sy, unsigned sz, std::size_t sh)
-        : barrier(sx*sy*sz), arena(sh)
+        : barrier(sx*sy*sz), rowscratch(sx*sy*sz), arena(sh)
       {
         for (unsigned i = 0; i < sy*sz; i++) rowbarriers.emplace_back (sx);
       }
@@ -259,6 +267,23 @@
 
   #define SIMD_BARRIER()         ngs_cpu::group->rowbarriers[ngs_cpu::lid[1] + ngs_cpu::gsz[1]*ngs_cpu::lid[2]].Wait()
   #define DEVICE_FENCE()         std::atomic_thread_fence(std::memory_order_seq_cst)
+  namespace ngs_cpu
+  {
+    // sum over the x-lanes of a row, same result on every lane
+    template <typename T> inline T SimdSum (T x)
+    {
+      unsigned row = lid[1] + gsz[1]*lid[2], sx = gsz[0];
+      double * slots = group->rowscratch.data() + row*sx;
+      Barrier & b = group->rowbarriers[row];
+      slots[lid[0]] = double(x);
+      b.Wait();
+      double sum = 0;
+      for (unsigned i = 0; i < sx; i++) sum += slots[i];
+      b.Wait();    // slots free for the next call
+      return T(sum);
+    }
+  }
+  #define SIMD_SUM(x)            ngs_cpu::SimdSum(x)
 
   #define NGS_CPLX_FUNC          inline
   #define NGS_CPLX_SQRT          std::sqrt
@@ -319,6 +344,7 @@
 
   #define SIMD_BARRIER()         simdgroup_barrier(mem_flags::mem_device | mem_flags::mem_threadgroup)
   #define DEVICE_FENCE()         atomic_thread_fence(mem_flags::mem_device, metal::memory_order_seq_cst, metal::thread_scope_device)
+  #define SIMD_SUM(x)            metal::simd_sum(x)
 
   #define NGS_CPLX_FUNC          inline
   #define NGS_CPLX_SQRT          sqrt
