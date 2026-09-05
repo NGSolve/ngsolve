@@ -66,6 +66,8 @@
     return x;
   }
   #define SIMD_SUM(x)            ngs_simd_sum(x)
+  // value of lane src, all lanes of the warp must call it
+  #define SIMD_BROADCAST(x,src)  __shfl_sync(0xffffffff, x, src)
 
   #define NGS_CPLX_FUNC          __host__ __device__ inline
   #define NGS_CPLX_SQRT          sqrt
@@ -136,7 +138,7 @@
     {
       Barrier barrier;
       std::deque<Barrier> rowbarriers;   // one per (y,z) row of x-lanes
-      std::vector<double> rowscratch;    // SIMD_SUM slots, one per work-item
+      std::vector<double> rowscratch;    // SIMD_SUM / SIMD_BROADCAST slots, one per work-item
       std::vector<char> arena;
       std::size_t used = 0;
       void * last = nullptr;
@@ -283,7 +285,23 @@
       return T(sum);
     }
   }
+  namespace ngs_cpu
+  {
+    // value of lane src of the row, all lanes must call it
+    template <typename T> inline T SimdBroadcast (T x, int src)
+    {
+      unsigned row = lid[1] + gsz[1]*lid[2], sx = gsz[0];
+      double * slots = group->rowscratch.data() + row*sx;
+      Barrier & b = group->rowbarriers[row];
+      slots[lid[0]] = double(x);
+      b.Wait();
+      double v = slots[src];
+      b.Wait();
+      return T(v);
+    }
+  }
   #define SIMD_SUM(x)            ngs_cpu::SimdSum(x)
+  #define SIMD_BROADCAST(x,src)  ngs_cpu::SimdBroadcast(x, src)
 
   #define NGS_CPLX_FUNC          inline
   #define NGS_CPLX_SQRT          std::sqrt
@@ -345,6 +363,7 @@
   #define SIMD_BARRIER()         simdgroup_barrier(mem_flags::mem_device | mem_flags::mem_threadgroup)
   #define DEVICE_FENCE()         atomic_thread_fence(mem_flags::mem_device, metal::memory_order_seq_cst, metal::thread_scope_device)
   #define SIMD_SUM(x)            metal::simd_sum(x)
+  #define SIMD_BROADCAST(x,src)  metal::simd_broadcast(x, ushort(src))
 
   #define NGS_CPLX_FUNC          inline
   #define NGS_CPLX_SQRT          sqrt

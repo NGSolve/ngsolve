@@ -70,6 +70,8 @@ namespace ngla
       }
 
 
+      #define CHOL_TILE 32   // register tile of the L solves, at least the lane count
+
       #define CHOL_TASK_SETUP                                                  \
         int blocknr  = microtasks[4*myjob];                                    \
         int type     = microtasks[4*myjob+1];                                  \
@@ -106,16 +108,42 @@ namespace ngla
 
             CHOL_TASK_SETUP
 
+            // L part in tiles of `lanes` columns: lane holds x of its column,
+            // the pivot is broadcast, then one trailing update of the rest
+            // of the block. U[i,j] = lfact[firstinrow[i]-i-1+j]
             if (type == 0 || type == 2)     // L_BLOCK, LB_BLOCK
-              for (int i = rfirst; i < rnext-1; i++)
+              for (int c0 = rfirst; c0 < rnext; c0 += lanes)
                 {
-                  // lane reading hy[i+1] next iteration waits for the lane updating it now
-                  SIMD_BARRIER();
-                  SCAL hyi = hy[i];
-                  int off = firstinrow[i] - i - 1;
-                  for (int j = lane + rfirst; j < rnext; j += lanes)
-                    if (j > i) hy[j] -= lfact[off+j] * hyi;
-                  SIMD_BARRIER();
+                  int col = c0 + lane;
+                  bool valid = col < rnext;
+                  int nt = (rnext - c0 < lanes) ? rnext - c0 : lanes;
+                  SCAL x = valid ? hy[col] : SCAL(0);
+                  // the lane's column of the tile into registers, then the pivot chain
+                  SCAL u[CHOL_TILE];
+                  #pragma unroll
+                  for (int i = 0; i < CHOL_TILE; i++)
+                    u[i] = (i < nt && lane > i && valid) ? lfact[firstinrow[c0+i] - (c0+i) - 1 + col] : SCAL(0);
+                  #pragma unroll
+                  for (int i = 0; i < CHOL_TILE-1; i++)
+                    if (i < nt-1)
+                      {
+                        SCAL xi = SIMD_BROADCAST(x, i);
+                        x -= u[i] * xi;
+                      }
+                  if (valid) hy[col] = x;
+                  for (int j0 = c0 + nt; j0 < rnext; j0 += lanes)
+                    {
+                      int j = j0 + lane;
+                      bool jv = j < rnext;
+                      SCAL v = jv ? hy[j] : SCAL(0);
+                      for (int i = 0; i < nt; i++)
+                        {
+                          SCAL xi = SIMD_BROADCAST(x, i);
+                          if (jv) v -= lfact[firstinrow[c0+i] - (c0+i) - 1 + j] * xi;
+                        }
+                      if (jv) hy[j] = v;
+                    }
+                  SIMD_BARRIER();   // the next tile reads what other lanes wrote
                 }
             SIMD_BARRIER();   // B part reads the hy written by the L part
 
@@ -130,9 +158,10 @@ namespace ngla
 
             SIMD_BARRIER();
             DEVICE_FENCE();
-            if (lane == 0)
-              for (int k = depidx[myjob]; k < depidx[myjob+1]; k++)
-                ATOMIC_ADD(&incomingdep[depdata[k]], -1);
+            // all lanes release the dependents: the root of the elimination
+            // tree has thousands of them in the backward solve
+            for (int k = depidx[myjob] + lane; k < depidx[myjob+1]; k += lanes)
+              ATOMIC_ADD(&incomingdep[depdata[k]], -1);
           }
       }
 
@@ -172,20 +201,51 @@ namespace ngla
                 }
             SIMD_BARRIER();   // L part reads the hy updated by the B part
 
+            // L part in tiles from the last one down: lane holds x of its row,
+            // column j of the tile is broadcast, then the rows before the tile
+            // get the tile's contribution
             if (type == 0 || type == 2)     // L_BLOCK, LB_BLOCK
-              for (int j = rsize-1; j >= 0; j--)
+              for (int c0 = rfirst + ((rsize-1)/lanes)*lanes; c0 >= rfirst; c0 -= lanes)
                 {
-                  SCAL hyj = hy[rfirst+j];
-                  for (int i = lane; i < j; i += lanes)
-                    hy[rfirst+i] -= lfact[firstinrow[rfirst+i] - i - 1 + j] * hyj;
-                  SIMD_BARRIER();   // hy[rfirst+j-1] is read next iteration
+                  int row = c0 + lane;
+                  bool valid = row < rnext;
+                  int nt = (rnext - c0 < lanes) ? rnext - c0 : lanes;
+                  int off = valid ? firstinrow[row] - row - 1 : 0;
+                  SCAL x = valid ? hy[row] : SCAL(0);
+                  SCAL u[CHOL_TILE];
+                  #pragma unroll
+                  for (int j = 0; j < CHOL_TILE; j++)
+                    u[j] = (j < nt && lane < j && valid) ? lfact[off + c0 + j] : SCAL(0);
+                  #pragma unroll
+                  for (int j = CHOL_TILE-1; j > 0; j--)
+                    if (j < nt)
+                      {
+                        SCAL xj = SIMD_BROADCAST(x, j);
+                        x -= u[j] * xj;
+                      }
+                  if (valid) hy[row] = x;
+                  for (int i0 = rfirst; i0 < c0; i0 += lanes)
+                    {
+                      int i = i0 + lane;
+                      bool iv = i < c0;
+                      int offi = iv ? firstinrow[i] - i - 1 : 0;
+                      SCAL v = iv ? hy[i] : SCAL(0);
+                      for (int j = 0; j < nt; j++)
+                        {
+                          SCAL xj = SIMD_BROADCAST(x, j);
+                          if (iv) v -= lfact[offi + c0 + j] * xj;
+                        }
+                      if (iv) hy[i] = v;
+                    }
+                  SIMD_BARRIER();
                 }
 
             SIMD_BARRIER();
             DEVICE_FENCE();
-            if (lane == 0)
-              for (int k = depidx[myjob]; k < depidx[myjob+1]; k++)
-                ATOMIC_ADD(&incomingdep[depdata[k]], -1);
+            // all lanes release the dependents: the root of the elimination
+            // tree has thousands of them in the backward solve
+            for (int k = depidx[myjob] + lane; k < depidx[myjob+1]; k += lanes)
+              ATOMIC_ADD(&incomingdep[depdata[k]], -1);
           }
       }
 
@@ -202,7 +262,7 @@ namespace ngla
       shared_ptr<Kernel> reorder, reorder_add, multdiag, reset, solveL, solveLT;
       unsigned groupsize;      // elementwise kernels
       unsigned lanes;          // x-size of the solve groups, at most the simd width
-      unsigned rows_L = 1, rows_LT = 8;   // y-size: rows of lanes per group
+      unsigned rows_L = 8, rows_LT = 8;   // y-size: rows of lanes per group (rows in flight = groups*rows)
       unsigned solvegroups;    // persistent groups
 
       DeviceCholeskyKernels (shared_ptr<Device> adevice)
@@ -230,8 +290,11 @@ namespace ngla
         // the host backend runs groups one after another, so all jobs
         // must be taken by the rows of a single group
         lanes = gpu ? device->SimdWidth() : 8;
-        solvegroups = gpu ? 512 : 1;
-        // tuning: NGS_GPU_CHOL_L=32x1 NGS_GPU_CHOL_LT=32x8 NGS_GPU_CHOL_GROUPS=512
+        if (lanes > 32) throw Exception("DeviceSparseCholesky: simd width exceeds the register tile");
+        // few persistent groups per core: the spinning rows compete with the
+        // working ones for memory traffic (Metal: 4/core best, 512 up to 10x slower)
+        solvegroups = gpu ? 4*device->ComputeUnits() : 1;
+        // overrides for experiments: NGS_GPU_CHOL_L=32x8 NGS_GPU_CHOL_LT=32x8 NGS_GPU_CHOL_GROUPS=80
         auto geom = [&] (const char * name, unsigned & rows)
         {
           if (const char * e = getenv(name))
@@ -250,6 +313,9 @@ namespace ngla
         geom ("NGS_GPU_CHOL_L", rows_L);
         geom ("NGS_GPU_CHOL_LT", rows_LT);
         if (getenv("NGS_GPU_CHOL_GROUPS")) solvegroups = atoi (getenv("NGS_GPU_CHOL_GROUPS"));
+        cout << IM(7) << "chol solve groups = " << solvegroups << " (" << device->ComputeUnits() << " compute units)" << endl
+             << IM(7) << "chol_solveL:  " << solveL->Info(lanes*rows_L) << endl
+             << IM(7) << "chol_solveLT: " << solveLT->Info(lanes*rows_LT) << endl;
       }
 
       void LaunchElementwise (const shared_ptr<Kernel> & kernel, size_t n,
@@ -358,20 +424,34 @@ namespace ngla
     for (size_t i = 0; i < lfact.Size(); i++) hlfact[i] = T(lfact[i]);
     for (size_t i = 0; i < diag.Size(); i++) hdiag[i] = T(diag[i]);
 
-    // depth of the dependency graph: the latency floor of the persistent solve
-    size_t levels = 0;
+    // depth of the dependency graph: the latency floor of the persistent solve;
+    // the same path weighted by block columns counts the serialized column
+    // steps of the L parts
+    size_t levels = 0, maxblock = 0, colsteps = 0;
     {
-      Array<int> level(njobs);
+      auto blocks = mat.GetBlocks();
+      Array<int> level(njobs), cols(njobs);
+      for (size_t i = 0; i < njobs; i++)
+        {
+          int bs = blocks[tasks[i].blocknr+1] - blocks[tasks[i].blocknr];
+          maxblock = max<size_t> (maxblock, bs);
+          cols[i] = (tasks[i].type == B_BLOCK) ? 1 : bs;
+        }
       level = 1;
       for (size_t i = 0; i < njobs; i++)
         for (int d : dep[i])
-          level[d] = max (level[d], level[i]+1);
+          {
+            level[d] = max (level[d], level[i]+1);
+            cols[d] = max (cols[d], cols[i] + (tasks[d].type == B_BLOCK ? 1 : blocks[tasks[d].blocknr+1]-blocks[tasks[d].blocknr]));
+          }
       for (int l : level) levels = max<size_t> (levels, l);
+      for (int c : cols) colsteps = max<size_t> (colsteps, c);
     }
     cout << IM(7) << "DeviceSparseCholesky<" << (is_same_v<T,double> ? "double" : "float")
          << "> height = " << height << ", nused = " << nused << ", lfact = " << lfact.Size()
          << " (" << lfact.Size()*sizeof(T)/1e6 << " MB), microtasks = " << njobs
-         << ", dependency levels = " << levels << endl;
+         << ", dependency levels = " << levels << ", max block = " << maxblock
+         << ", critical path column steps = " << colsteps << endl;
 
     dev_microtasks = Upload<int> (*device, hosttasks);
     dev_depidx = Upload<int> (*device, depidx);
@@ -414,8 +494,6 @@ namespace ngla
                               KernelArg(dev_incomingdep0_trans), KernelArg(dev_incomingdep_trans),
                               KernelArg(dev_cnt), KernelArg(int(njobs)) });
 
-    // one row of lanes per job in flight; the backward solve has more
-    // parallelism per task and runs 8 rows per group
     queue->Launch (*kern.solveL, Dim3(kern.solvegroups), Dim3(kern.lanes, kern.rows_L),
                    { KernelArg(dev_depidx), KernelArg(dev_depdata), KernelArg(dev_incomingdep),
                      KernelArg(dev_hx), KernelArg(dev_hx), KernelArg(dev_cnt),
