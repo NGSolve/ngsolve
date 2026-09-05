@@ -46,6 +46,8 @@
   #define SHARED(T,name,N)       alignas(16) __shared__ T name[N]
   #define SHARED_2D(T,name,N,M)  alignas(16) __shared__ T name[N][M]
   #define BARRIER()              __syncthreads()
+  // group barrier that also makes the group's global writes visible to the group
+  #define DEVICE_BARRIER()       __syncthreads()
 
   #define GLOBAL_ATOMIC(T,name)  T * name
   #define ATOMIC_PTR(T)          T *
@@ -261,6 +263,7 @@
   #define SHARED(T,name,N)       T * name = (T*) ngs_cpu::SharedAlloc(sizeof(T)*(N))
   #define SHARED_2D(T,name,N,M)  T (*name)[M] = (T(*)[M]) ngs_cpu::SharedAlloc(sizeof(T)*(N)*(M))
   #define BARRIER()              ngs_cpu::group->barrier.Wait()
+  #define DEVICE_BARRIER()       { std::atomic_thread_fence(std::memory_order_seq_cst); ngs_cpu::group->barrier.Wait(); }
 
   #define GLOBAL_ATOMIC(T,name)  T * name
   #define ATOMIC_PTR(T)          T *
@@ -354,6 +357,7 @@
   #define SHARED(T,name,N)       alignas(16) threadgroup T name[N]
   #define SHARED_2D(T,name,N,M)  alignas(16) threadgroup T name[N][M]
   #define BARRIER()              threadgroup_barrier(mem_flags::mem_threadgroup)
+  #define DEVICE_BARRIER()       threadgroup_barrier(mem_flags::mem_device | mem_flags::mem_threadgroup)
 
   #define GLOBAL_ATOMIC(T,name)  device metal::atomic<T> * name
   #define ATOMIC_PTR(T)          device metal::atomic<T> *

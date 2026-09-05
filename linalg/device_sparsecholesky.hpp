@@ -17,7 +17,11 @@
 
   The two triangular solves are persistent kernels: every simd group
   takes micro-tasks from a global counter in topological order and
-  spin-waits on the task's dependency counter, as in ngscuda.
+  spin-waits on the task's dependency counter, as in ngscuda. The top
+  of the elimination tree can instead run one block per threadgroup
+  (L part by one warp, B micro-blocks over the group's warps, group
+  barriers in between), which halves the handoffs on the critical
+  path; the constructor times both and keeps the faster.
 */
 
 #include "devicevector.hpp"
@@ -30,7 +34,8 @@ namespace ngla
   class NGS_DLL_HEADER DeviceSparseCholesky : public BaseMatrix
   {
   protected:
-    size_t height, width, nused, njobs;
+    size_t height, width, nused, njobs, ncut, ntopblocks;
+    bool usetop = false;      // block kernels for the top blocks (decided by timing)
     MemType memtype;
     shared_ptr<ngs_gpu::Device> device;
     shared_ptr<ngs_gpu::Queue> queue;
@@ -38,9 +43,15 @@ namespace ngla
     ngs_gpu::TypedBuffer<int> dev_taskdesc;      // 8 ints per task: type, rfirst, rnext, base, ext_size, mfirst, mnext, -
     ngs_gpu::TypedBuffer<int> dev_depidx, dev_depdata;          // dependency table (csr)
     ngs_gpu::TypedBuffer<int> dev_depidx_trans, dev_depdata_trans;
-    ngs_gpu::TypedBuffer<int> dev_incomingdep0, dev_incomingdep0_trans;   // initial counters
+    ngs_gpu::TypedBuffer<int> dev_incomingdep0, dev_incomingdep0_trans;   // initial counters below the cut
+    ngs_gpu::TypedBuffer<int> dev_incomingdep0_all, dev_incomingdep0_trans_all;   // without a cut
     ngs_gpu::TypedBuffer<int> dev_incomingdep, dev_incomingdep_trans;     // working counters
     ngs_gpu::TypedBuffer<int> dev_cnt;           // job counters of the two solves
+    // the top blocks, one threadgroup per block
+    ngs_gpu::TypedBuffer<int> dev_blkdesc;       // 8 ints per top block
+    ngs_gpu::TypedBuffer<int> dev_bdepidx, dev_bdepdata, dev_bdepidx_trans, dev_bdepdata_trans;
+    ngs_gpu::TypedBuffer<int> dev_bincoming0, dev_bincoming0_trans, dev_bincoming, dev_bincoming_trans;
+    ngs_gpu::TypedBuffer<int> dev_bcnt;
 
     ngs_gpu::TypedBuffer<int> dev_rowindex2;     // row indices, one set per block
     ngs_gpu::TypedBuffer<int> dev_firstinrow;    // into lfact
