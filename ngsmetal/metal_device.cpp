@@ -16,6 +16,7 @@
 #include <string>
 
 #include "metal_device.hpp"
+#include <IOKit/IOKitLib.h>
 
 namespace ngsmetal
 {
@@ -267,6 +268,28 @@ namespace ngsmetal
     size_t MaxThreadsPerGroup() const override
     { return dev->maxThreadsPerThreadgroup().width; }
     size_t SimdWidth() const override { return 32; }
+    // gpu cores from the IOKit registry (Metal has no API for it)
+    size_t ComputeUnits() const override
+    {
+      static size_t cores = [] () -> size_t
+      {
+        size_t n = 8;
+        io_service_t srv = IOServiceGetMatchingService (kIOMainPortDefault, IOServiceMatching ("AGXAccelerator"));
+        if (srv)
+          {
+            if (CFTypeRef val = IORegistryEntryCreateCFProperty (srv, CFSTR("gpu-core-count"), kCFAllocatorDefault, 0))
+              {
+                int v = 0;
+                if (CFGetTypeID(val) == CFNumberGetTypeID() && CFNumberGetValue ((CFNumberRef)val, kCFNumberIntType, &v) && v > 0)
+                  n = v;
+                CFRelease (val);
+              }
+            IOObjectRelease (srv);
+          }
+        return n;
+      } ();
+      return cores;
+    }
 
     shared_ptr<Buffer> DoNewBuffer (size_t bytes, MemType mt) override
     { return std::make_shared<MetalBuffer> (dev, queue, bytes, mt); }

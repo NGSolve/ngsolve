@@ -20,6 +20,7 @@ target_include_directories(libngsmetal PRIVATE ${NETGEN_PYTHON_INCLUDE_DIRS} ${m
 
 target_link_libraries (libngsmetal PUBLIC ngcomp ngfem ngla ngbla ngstd ${MPI_CXX_LIBRARIES} PRIVATE "$<BUILD_INTERFACE:netgen_python>" ${HYPRE_LIBRARIES})
 target_link_libraries(libngsmetal ${LAPACK_CMAKE_LINK_INTERFACE} "$<BUILD_INTERFACE:ngs_lapack>")
+target_link_libraries(libngsmetal PRIVATE "-framework IOKit" "-framework CoreFoundation")
 install(TARGETS libngsmetal DESTINATION ${NGSOLVE_INSTALL_DIR_PYTHON}/ngsolve COMPONENT ngsolve)
 
 install( FILES
