@@ -501,7 +501,7 @@ namespace ngfem
       for (int i = 0; i < dim; i++)
         {
           code += "{\n";
-          code += "Vec<" + ToString(outw) + ",real> res_comp;\n";
+          code += "Vec<" + ToString(outw) + ",Real> res_comp;\n";
           code += diffop->GenerateTransformationCode
             (invar + ".Range<" + ToString(i*inw) + "," + ToString((i+1)*inw) + ">()",
              "res_comp", trans);
