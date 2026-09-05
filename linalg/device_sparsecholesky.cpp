@@ -341,7 +341,7 @@ namespace ngla
     TypedBuffer<T> Upload (Device & device, FlatArray<T> data)
     {
       auto buf = device.NewBuffer<T> (max<size_t>(data.Size(),1), MemType::Device);
-      buf.H2D (data.Data(), data.Size());
+      if (data.Size()) buf.H2D (data.Data(), data.Size());
       return buf;
     }
 
