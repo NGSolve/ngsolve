@@ -168,6 +168,10 @@ namespace ngla
                 KernelArg(int(KeepValues())), KernelArg(int(n)) });
     }
 
+    xbool IsSymmetric () const override { return true; }
+    void MultTrans (const BaseVector & x, BaseVector & y) const override { Mult (x, y); }
+    void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override { MultAdd (s, x, y); }
+
     AutoVector CreateRowVector () const override
     { return make_unique<DeviceVector<double>> (Mask()->Size(), memtype); }
     AutoVector CreateColVector () const override
