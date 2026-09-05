@@ -1973,6 +1973,16 @@ active_dofs : BitArray or None
          {
            return self.GetBaseSpace();
          })
+    .def("Embedding", [](CompressedFESpace & self)
+         {
+           return self.GetEmbedding();
+         }, "Sparse embedding of the compressed space into its base space "
+            "(base ndof x compressed ndof): E * x scatters x to the active dofs")
+    .def("Restriction", [](CompressedFESpace & self)
+         {
+           return self.GetRestriction();
+         }, "Sparse restriction of the base space to the compressed dofs "
+            "(compressed ndof x base ndof); the transpose of Embedding()")
     .def(py::pickle([](const CompressedFESpace* compr_fes)
                     {
                       return py::make_tuple(compr_fes->GetBaseSpace(),compr_fes->GetActiveDofs());

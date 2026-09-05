@@ -1,5 +1,6 @@
 // #include <comp.hpp>
 #include "compressedfespace.hpp"
+#include <sparsematrix.hpp>
 
 namespace ngcomp
 {
@@ -79,6 +80,35 @@ namespace ngcomp
          });
     }
 
+
+  shared_ptr<BaseMatrix> CompressedFESpace::GetEmbedding() const
+  {
+    size_t ndofall = space->GetNDof();
+    Array<int> cnt(ndofall);
+    cnt = 0;
+    for (auto d : comp2all)
+      cnt[d] = 1;
+    auto mat = make_shared<SparseMatrix<double>> (cnt, GetNDof());
+    for (auto i : Range(comp2all))
+      {
+        mat->GetRowIndices(comp2all[i])[0] = i;
+        mat->GetRowValues(comp2all[i])[0] = 1.0;
+      }
+    return mat;
+  }
+
+  shared_ptr<BaseMatrix> CompressedFESpace::GetRestriction() const
+  {
+    Array<int> cnt(GetNDof());
+    cnt = 1;
+    auto mat = make_shared<SparseMatrix<double>> (cnt, space->GetNDof());
+    for (auto i : Range(comp2all))
+      {
+        mat->GetRowIndices(i)[0] = comp2all[i];
+        mat->GetRowValues(i)[0] = 1.0;
+      }
+    return mat;
+  }
 
   FiniteElement & CompressedFESpace::GetFE (ElementId ei, Allocator & lh) const
   {
