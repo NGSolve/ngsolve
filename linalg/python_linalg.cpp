@@ -1425,10 +1425,21 @@ inverse : string
     (m, "DeviceDiagonalMatrixD", "diagonal matrix on the gpu, fp64");
   py::class_<DeviceDiagonalMatrix<float>, shared_ptr<DeviceDiagonalMatrix<float>>, BaseMatrix>
     (m, "DeviceDiagonalMatrixF", "diagonal matrix on the gpu, fp32");
+  // explicit constructors from a host factorization, to choose the precision
+  auto chol_of = [] (shared_ptr<BaseMatrix> mat) -> const SparseCholeskyTM<double> &
+  {
+    auto p = dynamic_pointer_cast<SparseCholeskyTM<double>> (mat);
+    if (!p) throw Exception("DeviceSparseCholesky: expected a SparseCholesky factorization");
+    return *p;
+  };
   py::class_<DeviceSparseCholesky<double>, shared_ptr<DeviceSparseCholesky<double>>, BaseMatrix>
-    (m, "DeviceSparseCholeskyD", "sparse Cholesky solver on the gpu, fp64");
+    (m, "DeviceSparseCholeskyD", "sparse Cholesky solver on the gpu, fp64")
+    .def(py::init([chol_of] (shared_ptr<BaseMatrix> mat)
+                  { return make_shared<DeviceSparseCholesky<double>> (chol_of(mat)); }), py::arg("factorization"));
   py::class_<DeviceSparseCholesky<float>, shared_ptr<DeviceSparseCholesky<float>>, BaseMatrix>
-    (m, "DeviceSparseCholeskyF", "sparse Cholesky solver on the gpu, fp32");
+    (m, "DeviceSparseCholeskyF", "sparse Cholesky solver on the gpu, fp32")
+    .def(py::init([chol_of] (shared_ptr<BaseMatrix> mat)
+                  { return make_shared<DeviceSparseCholesky<float>> (chol_of(mat)); }), py::arg("factorization"));
 
   py::class_<BaseSparseMatrix, shared_ptr<BaseSparseMatrix>, BaseMatrix>
     (m, "BaseSparseMatrix", "sparse matrix of any type")

@@ -72,23 +72,23 @@ namespace ngla
 
       #define CHOL_TILE 32   // register tile of the L solves, at least the lane count
 
-      #define CHOL_TASK_SETUP                                                  \
-        int blocknr  = microtasks[4*myjob];                                    \
-        int type     = microtasks[4*myjob+1];                                  \
-        int bblock   = microtasks[4*myjob+2];                                  \
-        int nbblocks = microtasks[4*myjob+3];                                  \
-        int rfirst = blocks[blocknr], rnext = blocks[blocknr+1];               \
-        int rsize = rnext - rfirst;                                            \
-        int base = firstinrow_ri[rfirst] + rsize - 1;                          \
-        int ext_size = firstinrow[rfirst+1] - firstinrow[rfirst] - rsize + 1;  \
-        int mfirst = int((long)ext_size * bblock / nbblocks);                  \
-        int mnext  = int((long)ext_size * (bblock+1) / nbblocks);
+      // per-task descriptor (8 ints, host-side precomputed): type, rfirst, rnext,
+      // base into rowindex2, ext_size, mfirst, mnext of the micro-block; loaded
+      // before the wait so the dependent latency is off the critical path
+      #define CHOL_TASK_LOAD                                                   \
+        int type     = taskdesc[8*myjob];                                      \
+        int rfirst   = taskdesc[8*myjob+1];                                    \
+        int rnext    = taskdesc[8*myjob+2];                                    \
+        int base     = taskdesc[8*myjob+3];                                    \
+        int ext_size = taskdesc[8*myjob+4];                                    \
+        int mfirst   = taskdesc[8*myjob+5];                                    \
+        int mnext    = taskdesc[8*myjob+6];                                    \
+        int rsize = rnext - rfirst;
 
       KERNEL(chol_solveL, GLOBAL_IN(int,depidx), GLOBAL_IN(int,depdata), GLOBAL_ATOMIC(int,incomingdep),
                           GLOBAL(SCAL,hy), GLOBAL_ATOMIC(SCAL,hy_atomic), GLOBAL_ATOMIC(int,cnt),
-                          GLOBAL_IN(int,microtasks), GLOBAL_IN(int,blocks), GLOBAL_IN(int,rowindex2),
-                          GLOBAL_IN(int,firstinrow_ri), GLOBAL_IN(int,firstinrow), GLOBAL_IN(SCAL,lfact),
-                          VALUE(int,njobs))
+                          GLOBAL_IN(int,taskdesc), GLOBAL_IN(int,rowindex2),
+                          GLOBAL_IN(int,firstinrow), GLOBAL_IN(SCAL,lfact), VALUE(int,njobs))
       {
         SHARED(int, myjobs, 16);
         int lane = int(LOCAL_ID_X), row = int(LOCAL_ID_Y);
@@ -100,13 +100,12 @@ namespace ngla
             SIMD_BARRIER();
             int myjob = myjobs[row];
             if (myjob >= njobs) break;
+            CHOL_TASK_LOAD
 
             if (lane == 0)
               while (ATOMIC_LOAD(&incomingdep[myjob]) != 0) { }
             SIMD_BARRIER();
             DEVICE_FENCE();
-
-            CHOL_TASK_SETUP
 
             // L part in tiles of `lanes` columns: lane holds x of its column,
             // the pivot is broadcast, then one trailing update of the rest
@@ -168,9 +167,8 @@ namespace ngla
 
       KERNEL(chol_solveLT, GLOBAL_IN(int,depidx), GLOBAL_IN(int,depdata), GLOBAL_ATOMIC(int,incomingdep),
                            GLOBAL(SCAL,hy), GLOBAL_ATOMIC(SCAL,hy_atomic), GLOBAL_ATOMIC(int,cnt),
-                           GLOBAL_IN(int,microtasks), GLOBAL_IN(int,blocks), GLOBAL_IN(int,rowindex2),
-                           GLOBAL_IN(int,firstinrow_ri), GLOBAL_IN(int,firstinrow), GLOBAL_IN(SCAL,lfact),
-                           VALUE(int,njobs))
+                           GLOBAL_IN(int,taskdesc), GLOBAL_IN(int,rowindex2),
+                           GLOBAL_IN(int,firstinrow), GLOBAL_IN(SCAL,lfact), VALUE(int,njobs))
       {
         SHARED(int, myjobs, 16);
         int lane = int(LOCAL_ID_X), row = int(LOCAL_ID_Y);
@@ -182,13 +180,12 @@ namespace ngla
             SIMD_BARRIER();
             int myjob = njobs-1 - myjobs[row];
             if (myjob < 0) break;
+            CHOL_TASK_LOAD
 
             if (lane == 0)
               while (ATOMIC_LOAD(&incomingdep[myjob]) != 0) { }
             SIMD_BARRIER();
             DEVICE_FENCE();
-
-            CHOL_TASK_SETUP
 
             if ((type == 1 || type == 2) && ext_size != 0)    // B_BLOCK, LB_BLOCK
               for (int i = rfirst + lane; i < rnext; i += lanes)
@@ -378,13 +375,24 @@ namespace ngla
     // micro-tasks and their dependency graphs
     auto tasks = mat.GetMicroTasks();
     njobs = tasks.Size();
-    Array<int> hosttasks(4*njobs);
+    auto blocks = mat.GetBlocks();
+    auto firstinrow = mat.GetFirstInRow();
+    auto firstinrow_ri = mat.GetFirstInRowRI();
+    Array<int> taskdesc(8*njobs);
     for (size_t i = 0; i < njobs; i++)
       {
-        hosttasks[4*i]   = tasks[i].blocknr;
-        hosttasks[4*i+1] = int(tasks[i].type);
-        hosttasks[4*i+2] = tasks[i].bblock;
-        hosttasks[4*i+3] = tasks[i].nbblocks;
+        const auto & t = tasks[i];
+        int rfirst = blocks[t.blocknr], rnext = blocks[t.blocknr+1], rsize = rnext-rfirst;
+        long ext_size = long(firstinrow[rfirst+1] - firstinrow[rfirst]) - rsize + 1;
+        int * d = &taskdesc[8*i];
+        d[0] = int(t.type);
+        d[1] = rfirst;
+        d[2] = rnext;
+        d[3] = int(firstinrow_ri[rfirst]) + rsize - 1;
+        d[4] = int(ext_size);
+        d[5] = t.nbblocks ? int(ext_size * t.bblock / t.nbblocks) : 0;
+        d[6] = t.nbblocks ? int(ext_size * (t.bblock+1) / t.nbblocks) : 0;
+        d[7] = 0;
       }
 
     auto dep = mat.GetMicroDependency();
@@ -407,16 +415,11 @@ namespace ngla
       incoming_trans[i] = dep[i].Size();
 
     // 64-bit offsets to int32
-    auto firstinrow = mat.GetFirstInRow();
-    auto firstinrow_ri = mat.GetFirstInRowRI();
     if (firstinrow[nused] > size_t(INT_MAX) || firstinrow_ri[nused] > size_t(INT_MAX))
       throw Exception("DeviceSparseCholesky: factor too large for 32-bit offsets");
-    Array<int> hfirstinrow(nused+1), hfirstinrow_ri(nused+1);
+    Array<int> hfirstinrow(nused+1);
     for (size_t i = 0; i <= nused; i++)
-      {
-        hfirstinrow[i] = int(firstinrow[i]);
-        hfirstinrow_ri[i] = int(firstinrow_ri[i]);
-      }
+      hfirstinrow[i] = int(firstinrow[i]);
 
     auto lfact = mat.GetLFact();
     auto diag = mat.GetDiag();
@@ -429,7 +432,6 @@ namespace ngla
     // steps of the L parts
     size_t levels = 0, maxblock = 0, colsteps = 0;
     {
-      auto blocks = mat.GetBlocks();
       Array<int> level(njobs), cols(njobs);
       for (size_t i = 0; i < njobs; i++)
         {
@@ -453,7 +455,7 @@ namespace ngla
          << ", dependency levels = " << levels << ", max block = " << maxblock
          << ", critical path column steps = " << colsteps << endl;
 
-    dev_microtasks = Upload<int> (*device, hosttasks);
+    dev_taskdesc = Upload<int> (*device, taskdesc);
     dev_depidx = Upload<int> (*device, depidx);
     dev_depdata = Upload<int> (*device, depdata);
     dev_depidx_trans = Upload<int> (*device, deptidx);
@@ -464,9 +466,7 @@ namespace ngla
     dev_incomingdep_trans = device->NewBuffer<int> (max<size_t>(njobs,1), MemType::Device);
     dev_cnt = device->NewBuffer<int> (2, MemType::Device);
 
-    dev_blocks = Upload<int> (*device, mat.GetBlocks());
     dev_rowindex2 = Upload<int> (*device, mat.GetRowIndex2());
-    dev_firstinrow_ri = Upload<int> (*device, hfirstinrow_ri);
     dev_firstinrow = Upload<int> (*device, hfirstinrow);
     dev_lfact = Upload<T> (*device, hlfact);
     dev_diag = Upload<T> (*device, hdiag);
@@ -497,9 +497,8 @@ namespace ngla
     queue->Launch (*kern.solveL, Dim3(kern.solvegroups), Dim3(kern.lanes, kern.rows_L),
                    { KernelArg(dev_depidx), KernelArg(dev_depdata), KernelArg(dev_incomingdep),
                      KernelArg(dev_hx), KernelArg(dev_hx), KernelArg(dev_cnt),
-                     KernelArg(dev_microtasks), KernelArg(dev_blocks), KernelArg(dev_rowindex2),
-                     KernelArg(dev_firstinrow_ri), KernelArg(dev_firstinrow), KernelArg(dev_lfact),
-                     KernelArg(int(njobs)) });
+                     KernelArg(dev_taskdesc), KernelArg(dev_rowindex2),
+                     KernelArg(dev_firstinrow), KernelArg(dev_lfact), KernelArg(int(njobs)) });
 
     kern.LaunchElementwise (kern.multdiag, nused,
                             { KernelArg(dev_diag), KernelArg(dev_hx), KernelArg(int(nused)) });
@@ -507,9 +506,8 @@ namespace ngla
     queue->Launch (*kern.solveLT, Dim3(kern.solvegroups), Dim3(kern.lanes, kern.rows_LT),
                    { KernelArg(dev_depidx_trans), KernelArg(dev_depdata_trans), KernelArg(dev_incomingdep_trans),
                      KernelArg(dev_hx), KernelArg(dev_hx), KernelArg(dev_cnt),
-                     KernelArg(dev_microtasks), KernelArg(dev_blocks), KernelArg(dev_rowindex2),
-                     KernelArg(dev_firstinrow_ri), KernelArg(dev_firstinrow), KernelArg(dev_lfact),
-                     KernelArg(int(njobs)) });
+                     KernelArg(dev_taskdesc), KernelArg(dev_rowindex2),
+                     KernelArg(dev_firstinrow), KernelArg(dev_lfact), KernelArg(int(njobs)) });
 
     kern.LaunchElementwise (kern.reorder_add, height,
                             { KernelArg(dev_hx), uy.DevArgRW(), KernelArg(dev_order),

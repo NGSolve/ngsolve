@@ -35,16 +35,14 @@ namespace ngla
     shared_ptr<ngs_gpu::Device> device;
     shared_ptr<ngs_gpu::Queue> queue;
 
-    ngs_gpu::TypedBuffer<int> dev_microtasks;    // 4 ints per task: blocknr, type, bblock, nbblocks
+    ngs_gpu::TypedBuffer<int> dev_taskdesc;      // 8 ints per task: type, rfirst, rnext, base, ext_size, mfirst, mnext, -
     ngs_gpu::TypedBuffer<int> dev_depidx, dev_depdata;          // dependency table (csr)
     ngs_gpu::TypedBuffer<int> dev_depidx_trans, dev_depdata_trans;
     ngs_gpu::TypedBuffer<int> dev_incomingdep0, dev_incomingdep0_trans;   // initial counters
     ngs_gpu::TypedBuffer<int> dev_incomingdep, dev_incomingdep_trans;     // working counters
     ngs_gpu::TypedBuffer<int> dev_cnt;           // job counters of the two solves
 
-    ngs_gpu::TypedBuffer<int> dev_blocks;        // block i has dofs [blocks[i], blocks[i+1])
     ngs_gpu::TypedBuffer<int> dev_rowindex2;     // row indices, one set per block
-    ngs_gpu::TypedBuffer<int> dev_firstinrow_ri; // into rowindex2
     ngs_gpu::TypedBuffer<int> dev_firstinrow;    // into lfact
     ngs_gpu::TypedBuffer<T> dev_lfact;           // L factor, compressed
     ngs_gpu::TypedBuffer<T> dev_diag;            // inverse diagonal
