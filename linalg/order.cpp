@@ -67,6 +67,7 @@ namespace ngla
   void MinimumDegreeOrdering::DoArchive(Archive & ar)
   {
     ar & n & nused & order & blocknr & vertices & priqueue;
+    ar & edges & adjstart & adjdata & adjlen & adjw & vmark & markid & approx & curstamp;
     if(ar.Output())
       {
         ar << cliques.Size();
@@ -109,29 +110,8 @@ namespace ngla
   void MinimumDegreeOrdering :: AddEdge (int v1, int v2)
   {
     if (v1 == v2) return;
-
-    CliqueEl * p1 = new (ball) CliqueEl(v1);
-    CliqueEl * p2 = new (ball) CliqueEl(v2);
-
-    p1->eliminate = 0;
-    p2->eliminate = 0;
-
-    p1->next = p2;
-    p2->next = p1;
-
-    p1->clmaster = p1;
-    p2->clmaster = p1;
-
-    p1->SetFlag (false);
-    p2->SetFlag (false);
-
-    p1->nextcl = cliques[v1];
-    cliques[v1] = p1;
-    p2->nextcl = cliques[v2];
-    cliques[v2] = p2;
-
-    vertices[v1].numcliques++;
-    vertices[v2].numcliques++;
+    edges.Append (v1);
+    edges.Append (v2);
   }
 
 
@@ -142,7 +122,7 @@ namespace ngla
 	{
 	  (*testout) << "Vertex " << i << ", degree = " 
 		     << CalcDegree (i) 
-		     << endl;
+		     << ", adjacency = " << Adj(i) << endl;
 	  
 	  for (CliqueEl * p1 = cliques[i]; p1; p1 = p1->nextcl)
 	    {
@@ -165,45 +145,32 @@ namespace ngla
 
   int MinimumDegreeOrdering :: CalcDegree (int v1)
   {
-    // static Timer t("MDO::CalcDegree");
-    // RegionTimer reg(t);
+    // distinct vertices of the elements and the adjacency of v1, weighted
+    // with their minions; v1 itself is counted too
+    for (CliqueEl * p1 = cliques[v1]; p1; p1 = p1->nextcl)
+      {
+	CliqueEl * p2 = p1;
+	do { vertices[p2->GetVertexNr()].SetUsed(0); p2 = p2->next; } while (p2 != p1);
+      }
+    for (int w : Adj(v1)) vertices[w].SetUsed(0);
+    vertices[v1].SetUsed(0);
 
     int deg = 0;
-
-    // clear flags to count vertices just once:
+    auto count = [&] (int v2)
+    {
+      if (!vertices[v2].Used() && !vertices[v2].Eliminated() && IsMaster(v2))
+        {
+          deg += 1+NumMinions(v2);
+          vertices[v2].SetUsed(1);
+        }
+    };
+    count (v1);
     for (CliqueEl * p1 = cliques[v1]; p1; p1 = p1->nextcl)
       {
 	CliqueEl * p2 = p1;
-	do
-	  {
-	    vertices[p2->GetVertexNr()].SetUsed(0);   
-	    p2 = p2->next;
-	  }
-	while (p2 != p1);
+	do { count (p2->GetVertexNr()); p2 = p2->next; } while (p2 != p1);
       }
-
-    
-    // count members of all cliques of vertex
-    
-    for (CliqueEl * p1 = cliques[v1]; p1; p1 = p1->nextcl)
-      {
-	CliqueEl * p2 = p1;
-	do
-	  {
-	    int v2 = p2->GetVertexNr();
-	    if (!vertices[v2].Used())
-	      {
-		if (IsMaster(v2)) 
-                  deg += 1+NumMinions(v2);
-                else
-                  cerr << "we still have minions" << endl;
-		vertices[p2->GetVertexNr()].SetUsed(1);
-	      }
-	    p2 = p2->next;
-	  }
-	while (p2 != p1);
-      }
-
+    for (int w : Adj(v1)) count (w);
     return deg;
   }
  
@@ -212,69 +179,48 @@ namespace ngla
   void MinimumDegreeOrdering :: EliminateMasterVertex (int v)
   {
     static Timer t("MDO::EliminateMaster", NoTracing);
-    /*
-    static Timer t1("MDO::EliminateMaster 1", NoTracing);
-    static Timer t2("MDO::EliminateMaster 2", NoTracing);
-    static Timer t2a("MDO::EliminateMaster 2a", NoTracing);
-    static Timer t2b("MDO::EliminateMaster 2b", NoTracing);
-    static Timer t2c("MDO::EliminateMaster 2c", NoTracing);
-    static Timer t3("MDO::EliminateMaster 3", NoTracing);
-    static Timer t4("MDO::EliminateMaster 4 (calcdeg)", NoTracing);
-    */
     RegionTimer reg(t);
+    curstamp++;
 
-    // t1.Start();
-    // (*testout) << "Eliminate Master Vertex " << v  << endl;
-
-    // int numminions = NumMinions (v);
-
+    // the elements of v go, their members and the adjacency of v form the
+    // new element (masters only, each once; v itself excluded via Used)
     for (CliqueEl * p1 = cliques[v]; p1; p1 = p1->nextcl)
       {
 	CliqueEl * p2 = p1;
-	do
-	  {
-	    vertices[p2->GetVertexNr()].SetUsed (0);
-	    p2->eliminate = 1;
-	    p2 = p2->next;
-	  }
-	while (p2 != p1);
+	do { vertices[p2->GetVertexNr()].SetUsed (0); p2->eliminate = 1; p2 = p2->next; } while (p2 != p1);
       }
+    for (int w : Adj(v)) vertices[w].SetUsed (0);
+    vertices[v].SetUsed (1);
 
-
-    //  new clique is union of cliques of vertex v
     CliqueEl * newp = NULL;
-
+    auto addmember = [&] (int w)
+    {
+      if (vertices[w].Used() || vertices[w].Eliminated() || !IsMaster(w)) return;
+      CliqueEl * p3 = new (ball) CliqueEl (w);
+      p3->next = newp;
+      p3->clmaster = newp ? newp->clmaster : p3;
+      p3->eliminate = 0;
+      p3->nextcl = NULL;
+      p3->SetFlag (false);
+      newp = p3;
+      vertices[w].SetUsed (1);
+    };
+    // in the order the clique lists had them (elements, then the edges
+    // last added first): the ring order decides ties in the priority queue
     for (CliqueEl * p1 = cliques[v]; p1; p1 = p1->nextcl)
       {
 	CliqueEl * p2 = p1;
-	do
-	  {
-	    if (!vertices[p2->GetVertexNr()].Used() && p2->GetVertexNr() != v)
-	      {
-                CliqueEl * p3 = new (ball) CliqueEl (p2->GetVertexNr());
-
-		p3 -> next = newp;
-                p3 -> clmaster = newp ? newp->clmaster : p3;
-
-		p3 -> eliminate = 0;
-		p3 -> nextcl = NULL;
-		p3 -> SetFlag (false);
-
-		newp = p3;
-
-		vertices[p2->GetVertexNr()].SetUsed(1);
-	      }
-	    p2 = p2->next;
-	  }
-	while (p2 != p1);
+	do { addmember (p2->GetVertexNr()); p2 = p2->next; } while (p2 != p1);
       }
-
-    // t1.Stop();
-
+    {
+      auto a = Adj(v);
+      for (int k = a.Size()-1; k >= 0; k--) addmember (a[k]);
+    }
+    adjlen[v] = 0;
 
     if (!newp)
       {
-        // was not in any clique with more than 1 member
+        // no neighbours left: the block is v and its minions
 	CliqueEl * p1 = cliques[v];
 	while (p1)
 	  {
@@ -283,110 +229,93 @@ namespace ngla
 	    p1 = p2;
 	  }
 	cliques[v] = NULL;	
-	vertices[v].nconnected = 0;
         delete [] vertices[v].connected;
-	vertices[v].connected = NULL;
-	
+        int cnt = NumMinions(v);
+	vertices[v].nconnected = cnt;
+	vertices[v].connected = cnt ? new int[cnt] : NULL;
+        cnt = 0;
+        for (int hv = NextMinion(v); hv != -1; hv = NextMinion(hv))
+          vertices[v].connected[cnt++] = hv;
 	return;
       }
 
-
-	
-    // close new clique
+    // close the new element, its weight, flag its members
     newp -> clmaster -> next = newp;
-      
-    // t2.Start();
-    // t2a.Start();
-
-
-    // find dominated cliques
-
-    // flag all vertices belonging to new clique
     {
+      int wp = 0;
       CliqueEl * p3 = newp;
-      do
-        {
-          vertices[p3->Nr()].SetFlag (1);
-          p3 = p3->next;
-        }
-      while (p3 != newp);
+      do { wp += 1 + NumMinions (p3->Nr()); vertices[p3->Nr()].SetFlag (1); p3 = p3->next; } while (p3 != newp);
+      newp->clmaster->weight = wp;
     }
 
-    
+    // dominated elements: all members in the new element
+    if (approx)
+      {
+        // one pass over the members: w(e) = weight of e outside the new
+        // element, zero means dominated
+        touched.SetSize0();
+        CliqueEl * p3 = newp;
+        do
+          {
+            int wi = 1 + NumMinions (p3->Nr());
+            for (CliqueEl * p1 = cliques[p3->Nr()]; p1; p1 = p1->nextcl)
+              {
+                if (p1->eliminate) continue;
+                CliqueEl * cm = p1->clmaster;
+                if (cm->stamp != curstamp) { cm->stamp = curstamp; cm->w = cm->weight; touched.Append (cm); }
+                cm->w -= wi;
+              }
+            p3 = p3->next;
+          }
+        while (p3 != newp);
 
-    {
-      // check all cliques of all members of new clique
-      CliqueEl * p3 = newp;
-      do
-        {
-          for (CliqueEl * p1 = cliques[p3->Nr()]; p1; p1 = p1->nextcl)
+        for (CliqueEl * cm : touched)
+          if (cm->w == 0)
             {
-              if (p1->clmaster != p1) continue;
-
-              if (!p1->eliminate)
-                {
-                  bool dominated = 1;
-		  
-                  CliqueEl * p2 = p1;
-                  do
-                    {
-                      if (!vertices[p2->Nr()].Flag())
-                        {
-                          dominated = 0;
-                          break;
-                        }
-                      p2 = p2->next;
-                    }
-                  while (p1 != p2);
-                  
-                  // if clique is dominated, set eliminate flag
-                  if (dominated)
-                    {
-                      CliqueEl * p2 = p1;
-                      do
-                        {
-                          p2->eliminate = 1;
-                          p2 = p2->next;
-                        }
-                      while (p1 != p2);
-                    }
-                } 
+              CliqueEl * p2 = cm;
+              do { p2->eliminate = 1; p2 = p2->next; } while (p2 != cm);
             }
-          p3 = p3->next;
-        }
-      while (p3 != newp);
-    }
-    
-    // t2a.Stop();
-    // t2b.Start();
-    
+      }
+    else
+      {
+        CliqueEl * p3 = newp;
+        do
+          {
+            for (CliqueEl * p1 = cliques[p3->Nr()]; p1; p1 = p1->nextcl)
+              {
+                if (p1->clmaster != p1 || p1->eliminate) continue;
+                bool dominated = true;
+                CliqueEl * p2 = p1;
+                do
+                  {
+                    if (!vertices[p2->Nr()].Flag()) { dominated = false; break; }
+                    p2 = p2->next;
+                  }
+                while (p1 != p2);
+                if (dominated)
+                  {
+                    p2 = p1;
+                    do { p2->eliminate = 1; p2 = p2->next; } while (p1 != p2);
+                  }
+              }
+            p3 = p3->next;
+          }
+        while (p3 != newp);
+      }
+
     {
-      // clear flag
+      // delete the dominated elements from the members' lists, the new
+      // element becomes the head of every member's list
       CliqueEl * p3 = newp;
       do
         {
-          vertices[p3->GetVertexNr()].SetFlag (0);
-          p3 = p3->next;
-        }
-      while (p3 != newp);
-    }
-    
-  
-    {
-      // delete cliques with eliminate flag set
-      CliqueEl * p3 = newp;
-      do
-        {
-          // p3->next is first remaining clique:
           p3->nextcl = cliques[p3->Nr()];
           while (p3->nextcl && p3->nextcl->eliminate)
             p3->nextcl = p3->nextcl->nextcl;
 
-          
           CliqueEl hcel(-1);
           hcel.nextcl = cliques[p3->Nr()];
           CliqueEl * p1 = &hcel;
-	  
           while (p1)
             {
               while (p1->nextcl && p1->nextcl->eliminate)
@@ -405,10 +334,9 @@ namespace ngla
         }
       while (p3 != newp);
     }
-      
 
     {
-      // delete also clique-elements of v
+      // delete the elements of v
       CliqueEl * p1 = cliques[v];
       while (p1)
         {
@@ -418,74 +346,69 @@ namespace ngla
         }
       cliques[v] = NULL;
     }
-    
-    // t2b.Stop();
-    // t2c.Start();
 
+    {
+      // prune the adjacency of the members: entries in the new element are
+      // absorbed by it, eliminated and minion entries are stale
+      CliqueEl * p3 = newp;
+      do
+        {
+          int i = p3->Nr();
+          auto a = Adj(i);
+          int cnt = 0, wsum = 0;
+          for (int w : a)
+            if (!vertices[w].Eliminated() && IsMaster(w) && !vertices[w].Flag())
+              { a[cnt++] = w; wsum += 1 + NumMinions(w); }
+          adjlen[i] = cnt;
+          adjw[i] = wsum;
+          p3 = p3->next;
+        }
+      while (p3 != newp);
+    }
 
-    // find equivalent cliques
+    // indistinguishable vertices: only the new element and no adjacency
+    // left -> merged into v; equal elements and adjacency -> merged
     CliqueEl * p3 = newp;
     do
       {
-	if (IsMaster (p3->GetVertexNr()))
-	  {
-	    int nclp3 = NumCliques (*p3);
-	    if ( nclp3 == 1)
-	      {
-		// only in new clique ==> connect to v
-		SetMaster (v, *p3);
-	      }
-	  }
-        
+	if (IsMaster (p3->GetVertexNr()) && NumCliques (*p3) == 1 && adjlen[*p3] == 0)
+          SetMaster (v, *p3);
 	p3 = p3->next;
       }
     while (p3 != newp);
-
 
     p3 = newp;
     do
       {
 	if (IsMaster (p3->GetVertexNr()))
 	  {
-	    int nclp3 = NumCliques (*p3);
-
+	    int nclp3 = NumCliques (*p3), nadj3 = adjlen[*p3];
             SetFlagCliques (p3->GetVertexNr());
+            markid++;
+            for (int w : Adj(*p3)) vmark[w] = markid;
 
             for (CliqueEl * p4 = p3->next; p4 != newp; p4 = p4->next)
-              {
-                // have p3 and p4 equivalent cliques ?
-                if (IsMaster (*p4) && NumCliques(*p4) == nclp3)
-                  { 
-                    bool samecl = true;
-
-                    for (CliqueEl * p1 = cliques[p4->Nr()]; p1; p1 = p1->nextcl)
-                      if (!p1->Flag()) 
-                        {
-                          samecl = false;
-                          break;
-                        }
-                    
-                    if (samecl)
-                      SetMaster (*p3, *p4);
-                  }
-              }
+              if (IsMaster (*p4) && NumCliques(*p4) == nclp3 && adjlen[*p4] == nadj3)
+                { 
+                  bool same = true;
+                  for (CliqueEl * p1 = cliques[p4->Nr()]; p1; p1 = p1->nextcl)
+                    if (!p1->Flag()) { same = false; break; }
+                  if (same)
+                    for (int w : Adj(*p4))
+                      if (vmark[w] != markid) { same = false; break; }
+                  if (same)
+                    SetMaster (*p3, *p4);
+                }
 
             ClearFlagCliques (p3->GetVertexNr());
           }
-
 	p3 = p3->next;
       }
     while (p3 != newp);
 
-    // t2c.Stop();
-    // t2.Stop();
-
-
-    // t3.Start();
-
     {
-      // setup elimination data structures for vertex v
-
+      // the elimination structure of v: its minions, then the members of
+      // the new element with their minions
       int cnt = NumMinions(v);
       CliqueEl * p3 = newp;
       do 
@@ -496,7 +419,7 @@ namespace ngla
         }
       while (p3 != newp);
 
-      delete [] vertices[v].connected;  // necessary ?       
+      delete [] vertices[v].connected;
       vertices[v].nconnected = cnt;
       vertices[v].connected = new int[cnt];
       cnt = 0;
@@ -524,13 +447,11 @@ namespace ngla
         }
       while (p3 != newp);
     }
-      
 
-    
     CliqueEl * anymaster = nullptr;
-    
     {
-      // disconnect minions 
+      // disconnect the minions from all elements (their adjacency entries
+      // elsewhere are skipped as stale)
       int cnt = 0;
       CliqueEl * p3 = newp;
       do 
@@ -545,22 +466,24 @@ namespace ngla
       for (int i = 0; i < cnt; i++)
         {
           int v3o = p3->GetVertexNr();
-          
           p3 = p3->next;
           
           if (!IsMaster (v3o))
             {
+              vertices[v3o].SetFlag (0);
+              adjlen[v3o] = 0;
               for (CliqueEl * p1 = cliques[v3o]; p1; )
                 {
-                  // disconnect p1
                   if (p1->clmaster == p1)
                     {
                       CliqueEl * newmaster = p1->next;
+                      newmaster->weight = p1->weight;
+                      newmaster->w = p1->w;
+                      newmaster->stamp = p1->stamp;
                       for (CliqueEl * p2 = p1->next; p2 != p1; p2=p2->next)
                         p2->clmaster = newmaster;
                       p1->clmaster = newmaster;
                     }
-
 
                   for (CliqueEl * p2 = p1; true; p2=p2->next)
                     if (p2->next == p1)  
@@ -576,22 +499,78 @@ namespace ngla
               cliques[v3o] = nullptr;
             }
         }
-      // t3.Stop();
     }
     
-    // t4.Start();
-    // calc master degrees in new clique
+    // degrees of the remaining (master) members
     if (anymaster)
       {
+        int wp = 0;
         CliqueEl * p3 = anymaster;
-        do
+        do { wp += 1 + NumMinions (*p3); p3 = p3->next; } while (p3 != anymaster);
+        anymaster->clmaster->weight = wp;
+
+        if (approx)
           {
-            priqueue.SetDegree (*p3, CalcDegree (*p3) - NumMinions (*p3));
-            p3 = p3->next;
+            // deg(i) <= 1 + |L_p \ i| + |A_i| + sum over the other elements of w(e),
+            // and the old degree plus the growth is a bound too (AMD)
+            p3 = anymaster;
+            do
+              {
+                int v3 = *p3;
+                int growth = wp - (1 + NumMinions (v3));
+                int deg = 1 + growth + adjw[v3];
+                for (CliqueEl * p1 = cliques[v3]; p1; p1 = p1->nextcl)
+                  if (p1 != p3 && p1->clmaster->stamp == curstamp)
+                    deg += p1->clmaster->w;
+                int olddeg = priqueue.GetDegree (v3);
+                if (olddeg > 0 && olddeg < n) deg = min (deg, olddeg + growth);
+                priqueue.SetDegree (v3, min (deg, n-1));
+                p3 = p3->next;
+              }
+            while (p3 != anymaster);
           }
-        while (p3 != anymaster);      
+        else
+          {
+            // exact: the new element counts once, the other elements and the
+            // adjacency only outside it
+            p3 = anymaster;
+            do
+              {
+                int v3 = *p3;
+                int deg = wp;
+                for (CliqueEl * p1 = cliques[v3]; p1; p1 = p1->nextcl)
+                  if (p1 != p3)
+                    {
+                      CliqueEl * p2 = p1;
+                      do { vertices[*p2].SetUsed (0); p2 = p2->next; } while (p2 != p1);
+                    }
+                for (int w : Adj(v3)) vertices[w].SetUsed (0);
+                for (CliqueEl * p1 = cliques[v3]; p1; p1 = p1->nextcl)
+                  if (p1 != p3)
+                    {
+                      CliqueEl * p2 = p1;
+                      do
+                        {
+                          int w = *p2;
+                          if (!vertices[w].Flag() && !vertices[w].Used())
+                            { deg += 1 + NumMinions (w); vertices[w].SetUsed (1); }
+                          p2 = p2->next;
+                        }
+                      while (p2 != p1);
+                    }
+                // adjacency: pruned of the new element, but may overlap the other elements
+                for (int w : Adj(v3))
+                  if (!vertices[w].Used())
+                    { deg += 1 + NumMinions (w); vertices[w].SetUsed (1); }
+                priqueue.SetDegree (v3, deg - NumMinions (v3));
+                p3 = p3->next;
+              }
+            while (p3 != anymaster);
+          }
+
+        p3 = anymaster;
+        do { vertices[*p3].SetFlag (0); p3 = p3->next; } while (p3 != anymaster);
       }
-    // t4.Stop();
   }
 
 
@@ -608,6 +587,7 @@ namespace ngla
     vertices[v].nconnected = 0;
     delete [] vertices[v].connected;    
     vertices[v].connected = NULL;
+    adjlen[v] = 0;
   }
 
 
@@ -625,11 +605,29 @@ namespace ngla
 
     if (auto *tm = GetTaskManager(); tm) tm -> StopWorkers();
 
-    for (int j = 0; j < n; j++)
+    // adjacency arrays from the collected edges
+    adjstart.SetSize (n+1);
+    adjlen.SetSize (n);
+    adjw.SetSize (n);
+    vmark.SetSize (n);
+    adjstart = 0;
+    for (size_t k = 0; k < edges.Size(); k += 2)
+      { adjstart[edges[k]+1]++; adjstart[edges[k+1]+1]++; }
+    for (int i = 0; i < n; i++) adjstart[i+1] += adjstart[i];
+    adjdata.SetSize (adjstart[n]);
+    adjlen = 0;
+    for (size_t k = 0; k < edges.Size(); k += 2)
       {
-	// priqueue.SetDegree(j, CalcDegree(j));
-	priqueue.SetDegree(j, 1+NumCliques(j));
+        int v1 = edges[k], v2 = edges[k+1];
+        adjdata[adjstart[v1] + adjlen[v1]++] = v2;
+        adjdata[adjstart[v2] + adjlen[v2]++] = v1;
       }
+    edges.DeleteAll();
+    vmark = 0;
+    adjw = 0;
+
+    for (int j = 0; j < n; j++)
+      priqueue.SetDegree(j, 1+adjlen[j]);
 
     int minj = -1;
     int lastel = -1;
@@ -688,8 +686,6 @@ namespace ngla
 	vertices[minj].SetEliminated (1);
 	lastel = minj;
       }
-    // PrintCliques();
-    // NgProfiler::Print (cout);
     if (auto *tm = GetTaskManager(); tm) tm -> StartWorkers();
   }
 

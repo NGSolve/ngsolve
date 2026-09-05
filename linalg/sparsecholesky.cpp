@@ -182,7 +182,10 @@ namespace ngla
     clock_t starttime, endtime;
     starttime = clock();
     
+    static Timer tgraph("SparseCholesky - build mdo graph");
+    tgraph.Start();
     mdo = new MinimumDegreeOrdering (n);
+    mdo->approx = a->GetInverseFlags().GetDefineFlag("approxdegree") || getenv("NGS_MDO_APPROX");
     GetMemoryTracer().Track(*mdo, "MinimumDegreeOrdering");
 
     if (inner)
@@ -252,7 +255,7 @@ namespace ngla
     if (printstat)
       cout << IM(4) << "start ordering" << endl;
     
-    // mdo -> PrintCliques ();
+    tgraph.Stop();
     mdo->Order();
     nused = mdo->nused;
     endtime = clock();

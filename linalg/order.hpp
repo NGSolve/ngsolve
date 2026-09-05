@@ -125,6 +125,9 @@ namespace ngla
     CliqueEl * clmaster;
     int vnr;
     bool eliminate = false;
+    // in the clique master: weighted size (vertices incl. minions), and the
+    // per-elimination counter of the approximate degree update
+    int weight = 0, w = 0, stamp = -1;
   
     CliqueEl (int avnr) : vnr(avnr) { ; }
 
@@ -158,6 +161,22 @@ namespace ngla
     MDOPriorityQueue priqueue;
     ///
     ngstd::BlockAllocator ball;
+    /// approximate degrees (the AMD bound) instead of exact ones: about twice as fast, similar fill
+    bool approx = false;
+    int curstamp = 0;
+    Array<CliqueEl*> touched;   // elements met in the current elimination
+
+    /*
+      original edges: adjacency arrays (csr), built in Order() from the
+      edges collected by AddEdge; entries only get removed (absorbed into
+      an element, or stale: eliminated / minion vertices, skipped lazily)
+    */
+    Array<int> edges;           // pairs, until Order()
+    Array<size_t> adjstart;
+    Array<int> adjdata, adjlen, adjw;   // current length, weighted size outside the new clique
+    Array<int> vmark;           // per-vertex marks of the equivalence test
+    int markid = 0;
+    FlatArray<int> Adj (int v) { return adjdata.Range (adjstart[v], adjstart[v]+adjlen[v]); }
   public:
     ///
     MinimumDegreeOrdering (int an);
