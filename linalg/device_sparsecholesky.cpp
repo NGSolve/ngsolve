@@ -40,7 +40,8 @@ namespace ngla
       and as an atomic buffer for the accumulations into rows that
       other jobs update at the same time.
     */
-    const char * kernel_source = R"RAW(
+    const char * kernel_source =
+    R"RAW(
 
       KERNEL(chol_reorder, GLOBAL_IN(SCAL,src), GLOBAL(SCAL,dst), GLOBAL_IN(int,order), VALUE(int,n))
       {
@@ -86,6 +87,9 @@ namespace ngla
         int mnext    = taskdesc[8*myjob+6];                                    \
         int rsize = rnext - rfirst;
 
+    )RAW"
+    // msvc: at most 16 KB per string literal, the pieces are concatenated
+    R"RAW(
       KERNEL(chol_solveL, GLOBAL_IN(int,depidx), GLOBAL_IN(int,depdata), GLOBAL_ATOMIC(int,incomingdep),
                           GLOBAL(SCAL,hy), GLOBAL_ATOMIC(SCAL,hy_atomic), GLOBAL_ATOMIC(int,cnt),
                           GLOBAL_IN(int,taskdesc), GLOBAL_IN(int,rowindex2),
@@ -166,6 +170,9 @@ namespace ngla
       }
 
 
+    )RAW"
+    // msvc: at most 16 KB per string literal, the pieces are concatenated
+    R"RAW(
       KERNEL(chol_solveLT, GLOBAL_IN(int,depidx), GLOBAL_IN(int,depdata), GLOBAL_ATOMIC(int,incomingdep),
                            GLOBAL(SCAL,hy), GLOBAL_ATOMIC(SCAL,hy_atomic), GLOBAL_ATOMIC(int,cnt),
                            GLOBAL_IN(int,taskdesc), GLOBAL_IN(int,rowindex2),
@@ -248,6 +255,9 @@ namespace ngla
       }
 
 
+    )RAW"
+    // msvc: at most 16 KB per string literal, the pieces are concatenated
+    R"RAW(
       /*
         The top of the elimination tree, one threadgroup per block: warp 0
         solves the block's L part, the warps then split the B micro-blocks,
