@@ -211,8 +211,11 @@ namespace ngla
 
         string src = Substitute (kernel_source, "SCAL", ScalName<T>());
         src = Substitute (src, "CONJ", is_same_v<T,Complex> ? "conj" : "");
-        // the other real precision, for the cross-precision copy kernels
-        src = Substitute (src, "OTHER", is_same_v<T,double> ? "float" : "double");
+        // the other real precision, for the cross-precision copy kernels;
+        // without fp64 no double vector exists, and double would not compile
+        string other = is_same_v<T,double> ? "float" : "double";
+        if (!device->HasFloat64()) other = ScalName<T>();
+        src = Substitute (src, "OTHER", other);
         library = device->CompileSource (string(code_gpukernel) + src);
         setscalar = library->GetKernel ("dv_setscalar");
         scale     = library->GetKernel ("dv_scale");
