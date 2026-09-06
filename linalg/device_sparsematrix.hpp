@@ -57,7 +57,7 @@ namespace ngla
                      const ngs_gpu::TypedBuffer<int> & colnr,
                      const ngs_gpu::TypedBuffer<T> & values,
                      const SpMVChoice & ch, size_t rows,
-                     ngs_gpu::KernelArg x, ngs_gpu::KernelArg y, T s) const;
+                     ngs_gpu::KernelArg x, ngs_gpu::KernelArg y, T s, T beta) const;
 
   public:
     // values are converted to T
@@ -70,6 +70,8 @@ namespace ngla
     virtual size_t NZE () const override { return nze; }
     virtual bool IsComplex() const override { return false; }
 
+    virtual void Mult (const BaseVector & x, BaseVector & y) const override;
+    virtual void MultTrans (const BaseVector & x, BaseVector & y) const override;
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
     virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
 
