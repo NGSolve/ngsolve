@@ -68,8 +68,6 @@ extern void TFQMROddBeta(double* rho, double* rho_last, double* beta, double* be
   //    res.Row(k) += s * a.Row(i) * b.Row(j)
 
 
-extern void DevProjectorMultAdd (double s, size_t size, const double * a, double * b, const unsigned char * bits, bool keep_values);
-extern void DevProjectorProject (size_t size, double * a, const unsigned char * bits, bool keep_values);
 */
 
 }

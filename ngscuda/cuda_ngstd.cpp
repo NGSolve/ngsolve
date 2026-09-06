@@ -105,50 +105,7 @@ namespace ngs_cuda
   }
 
 
-  cudaStream_t ngs_cuda_stream = cudaStreamDefault;  
-
-  
-  DevStackMemory stackmemory;
-
-  DevBitArray :: DevBitArray (size_t asize)
-  {
-    SetSize (asize);
-  }
-
-  DevBitArray :: DevBitArray (const BitArray & ba)
-  {
-    (*this) = ba;
-  }
-
-  DevBitArray :: ~DevBitArray ()
-  {
-    if (size)
-      cudaFree(dev_data);
-  }
-
-  DevBitArray & DevBitArray :: operator= (const BitArray &ba)
-  {
-    SetSize (ba.Size());
-
-    if (!size)
-      return *this;
-
-    cudaMemcpy(dev_data, ba.Data(), Addr(size) + 1, cudaMemcpyHostToDevice);
-
-    return *this;
-  }
-
-  void DevBitArray :: SetSize (size_t asize)
-  {
-    if (size == asize)
-      return;
-
-    if (size)
-      cudaFree(dev_data);
-    
-    size = asize;
-    cudaMalloc((void**) &dev_data, Addr(size) + 1);
-  }
+  cudaStream_t ngs_cuda_stream = cudaStreamDefault;
 
 }
 
