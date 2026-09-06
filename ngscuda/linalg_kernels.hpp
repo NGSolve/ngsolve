@@ -43,12 +43,8 @@ extern void ManyMatVec (FlatArray<Dev<MatVecData>> matvecs,
 
 
     /*
-extern void ConstEBEKernelCopyIn (int numblocks, int bs, int * row_dnums, double * dev_ux, double * dev_hx);
-extern void ConstEBEKernelCopyOut (int numblocks, int bs, int * col_dnums, double * dev_hy, double * dev_uy);
 */
 
-extern void ConstEBEKernelCopyInIdx (int numblocks, int * idx, int bs, int * row_dnums, double * dev_ux, double * dev_hx);
-extern void ConstEBEKernelCopyOutIdx (int numblocks, int * idx, int bs, int * col_dnums, double * dev_hy, double * dev_uy);
 
 // TFQMR scalar batch kernels — one kernel launch per scalar-update group between vector operarions
 // Even step, after InnerProduct(r,v): compute alpha, neg_alpha, coeff

@@ -155,6 +155,7 @@ namespace ngla
     virtual AutoVector CreateColVector () const override;
 
     virtual shared_ptr<BaseSparseMatrix> CreateSparseMatrix() const override;
+    shared_ptr<BaseMatrix> CreateDeviceMatrix () const override;
     
     FlatMatrix<SCAL> GetMatrix() const { return matrix; }
     FlatTable<int> GetRowDNums() const { return row_dnums; }

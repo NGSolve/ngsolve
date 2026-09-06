@@ -37,6 +37,7 @@ namespace ngla
 #include "devicevector.hpp"
 #include "device_sparsematrix.hpp"
 #include "device_blockjacobi.hpp"
+#include "device_ebeconst.hpp"
 #include "device_diagonalmatrix.hpp"
 #include "device_sparsecholesky.hpp"
 

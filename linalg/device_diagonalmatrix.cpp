@@ -408,11 +408,12 @@ namespace ngla
 
   shared_ptr<BaseMatrix> BlockDiagonalMatrixSoA :: CreateDeviceMatrix () const
   {
-    // double only: the neighbours in the mass-operator tree (element-by-element
-    // matrices) have no common-layer version yet and stay host double, and a
-    // float device factor cannot form a product with them
-    if (ngs_gpu::HasDevice() && GetGpuDevice()->HasFloat64())
-      return make_shared<DeviceBlockDiagonalMatrixSoA<double>> (*this);
+    if (ngs_gpu::HasDevice())
+      {
+        if (GetGpuDevice()->HasFloat64())
+          return make_shared<DeviceBlockDiagonalMatrixSoA<double>> (*this);
+        return make_shared<DeviceBlockDiagonalMatrixSoA<float>> (*this);
+      }
     return BaseMatrix::CreateDeviceMatrix();
   }
 
