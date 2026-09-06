@@ -12,6 +12,8 @@
 #include "basescalar.hpp"
 
 
+namespace ngs_gpu { enum class MemType; }
+
 namespace ngla
 {
   using namespace ngbla;
@@ -102,6 +104,53 @@ namespace ngla
     return ost;
   }
   
+
+  class ParallelDofs;
+
+  /*
+    Describes a vector type along independent axes: size, scalar type,
+    entries per dof, MPI distribution, device placement, block structure.
+    Every axis may be left open. An operator fills in what it knows, and
+    Merge combines the knowledge of several sources.
+  */
+  class NGS_DLL_HEADER VecFormat
+  {
+  public:
+    optional<size_t> size;
+    optional<Scalar> scal;
+    optional<int> es;                     // entries per dof, in scalars
+    shared_ptr<ParallelDofs> pardofs;     // null: sequential or unknown
+    PARALLEL_STATUS parstatus = CUMULATED;
+    optional<ngs_gpu::MemType> device;    // engaged: DeviceVector
+    std::vector<VecFormat> blocks;        // non-empty: BlockVector
+
+    VecFormat () = default;
+    explicit VecFormat (size_t asize) : size(asize) { }
+    VecFormat (size_t asize, Scalar ascal, int aes = 1)
+      : size(asize), scal(ascal), es(aes) { }
+
+    bool IsBlock() const { return !blocks.empty(); }
+    bool IsComplex() const { return scal && std::holds_alternative<Complex>(*scal); }
+    bool HasSize() const { return size.has_value() || IsBlock(); }
+
+    // scalar, entry size and placement; size, distribution and blocks dropped
+    VecFormat ValueAxes() const;
+    // open scalar -> double, open entry size -> 1
+    VecFormat WithDefaults() const;
+    VecFormat WithSize (size_t asize) const;
+    VecFormat WithScalar (Scalar ascal) const;
+    VecFormat OnDevice (ngs_gpu::MemType mt) const;
+    // combine with a scaling factor: real times Complex gives Complex
+    VecFormat Promote (Scalar ascal) const;
+
+    // fills open axes from the other side, throws on contradiction
+    static VecFormat Merge (const VecFormat & a, const VecFormat & b);
+    static Scalar MergeScalar (Scalar a, Scalar b);
+  };
+
+  NGS_DLL_HEADER string ScalarName (const Scalar & s);
+  NGS_DLL_HEADER ostream & operator<< (ostream & ost, const VecFormat & f);
+
 
   /**
      Base vector for linalg
@@ -230,6 +279,7 @@ namespace ngla
     // one entry has the size of that many scalars (double or complex)
     virtual int EntrySizeScal() const throw () = 0;
     Scalar GetScalarType() const { return scaltype; }
+    virtual VecFormat GetFormat () const;
     virtual void * Memory () const = 0;
 
     template <typename SCAL = double>
@@ -333,6 +383,8 @@ namespace ngla
   
 
   AutoVector CreateBaseVector(size_t size, bool is_complex = false, int es = 1);
+  // the one factory: VVector, S_BaseVectorPtr, parallel, device or block vector
+  NGS_DLL_HEADER AutoVector CreateBaseVector(const VecFormat & f);
   
   
   class NGS_DLL_HEADER AutoVector 
@@ -494,6 +546,7 @@ namespace ngla
       return vec->L2Norm();
     }
 
+    VecFormat GetFormat () const { return vec->GetFormat(); }
     bool IsComplex() const 
     {
       return vec->IsComplex();
@@ -758,6 +811,7 @@ namespace ngla
     void AddIndirect (FlatArray<int> ind, FlatVector<Complex> v, bool use_atomic = false) override { T_AddIndirect (ind, v, use_atomic); }    
     
     bool IsComplex() const override;
+    VecFormat GetFormat () const override;
 
     AutoVector CreateVector () const override;
 

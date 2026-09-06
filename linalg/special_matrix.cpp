@@ -46,80 +46,103 @@ namespace ngla
   
   
   
+  // runs the body with FlatVectors in the scalar type of y
+  template <typename FUNC>
+  static void VisitPerm (const BaseVector & x, BaseVector & y, FUNC f)
+  {
+    std::visit ([&] (auto proto)
+    {
+      typedef decltype(proto) T;
+      f (x.FV<T>(), y.FV<T>());
+    }, y.GetScalarType());
+  }
+
   void PermutationMatrix :: Mult (const BaseVector & x, BaseVector & y) const
   {
-    auto fvx = x.FV<double>();
-    auto fvy = y.FV<double>();
-    for (size_t i = 0; i < ind.Size(); i++)
-      if(ind[i] != size_t(-1))
-        fvy(i) = fvx(ind[i]);
+    y = 0;   // rows with index -1 stay zero
+    VisitPerm (x, y, [&] (auto fvx, auto fvy)
+    {
+      for (size_t i = 0; i < ind.Size(); i++)
+        if(ind[i] != size_t(-1))
+          fvy(i) = fvx(ind[i]);
+    });
   }
-  
+
   void PermutationMatrix :: MultTrans (const BaseVector & x, BaseVector & y) const
   {
-    auto fvx = x.FV<double>();
-    auto fvy = y.FV<double>();
     y = 0;
-    for (size_t i = 0; i < ind.Size(); i++)
-      if(ind[i] != size_t(-1))
-        fvy(ind[i]) += fvx(i);
+    VisitPerm (x, y, [&] (auto fvx, auto fvy)
+    {
+      for (size_t i = 0; i < ind.Size(); i++)
+        if(ind[i] != size_t(-1))
+          fvy(ind[i]) += fvx(i);
+    });
   }
 
   void PermutationMatrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
-    auto fvx = x.FV<double>();
-    auto fvy = y.FV<double>();
-    for (size_t i = 0; i < ind.Size(); i++)
-      if(ind[i] != size_t(-1))
-        fvy(i) += s * fvx(ind[i]);
+    VisitPerm (x, y, [&] (auto fvx, auto fvy)
+    {
+      for (size_t i = 0; i < ind.Size(); i++)
+        if(ind[i] != size_t(-1))
+          fvy(i) += s * fvx(ind[i]);
+    });
   }
-  
+
   void PermutationMatrix :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
   {
-    auto fvx = x.FV<double>();
-    auto fvy = y.FV<double>();
+    VisitPerm (x, y, [&] (auto fvx, auto fvy)
+    {
+      for (size_t i = 0; i < ind.Size(); i++)
+        if(ind[i] != size_t(-1))
+          fvy(ind[i]) += s * fvx(i);
+    });
+  }
+
+  shared_ptr<BaseSparseMatrix> PermutationMatrix :: CreateSparseMatrix() const
+  {
+    Array<int> ai, aj;
     for (size_t i = 0; i < ind.Size(); i++)
-      if(ind[i] != size_t(-1))
-        fvy(ind[i]) += s * fvx(i);
+      if (ind[i] != size_t(-1))
+        {
+          ai += int(i);
+          aj += int(ind[i]);
+        }
+    Array<double> vals(ai.Size());
+    vals = 1.0;
+    return SparseMatrix<double>::CreateFromCOO (ai, aj, vals, Height(), Width());
   }
 
 
   
-  static AutoVector DevVec (size_t size, bool is_complex)
-  {
-    if (is_complex)
-      return make_unique<DeviceVector<Complex>> (size);
-    return make_unique<DeviceVector<double>> (size);
-  }
-
   class DeviceEmbedding : public Embedding
   {
   public:
     using Embedding::Embedding;
-    AutoVector CreateRowVector () const override { return DevVec (Width(), IsComplex()); }
-    AutoVector CreateColVector () const override { return DevVec (Height(), IsComplex()); }
+    VecFormat RowFormat () const override { return Embedding::RowFormat().OnDevice(MemType::Shared); }
+    VecFormat ColFormat () const override { return Embedding::ColFormat().OnDevice(MemType::Shared); }
   };
 
   class DeviceEmbeddingTranspose : public EmbeddingTranspose
   {
   public:
     using EmbeddingTranspose::EmbeddingTranspose;
-    AutoVector CreateRowVector () const override { return DevVec (Width(), IsComplex()); }
-    AutoVector CreateColVector () const override { return DevVec (Height(), IsComplex()); }
+    VecFormat RowFormat () const override { return EmbeddingTranspose::RowFormat().OnDevice(MemType::Shared); }
+    VecFormat ColFormat () const override { return EmbeddingTranspose::ColFormat().OnDevice(MemType::Shared); }
   };
 
   class DeviceEmbeddedMatrix : public EmbeddedMatrix
   {
   public:
     using EmbeddedMatrix::EmbeddedMatrix;
-    AutoVector CreateColVector () const override { return DevVec (Height(), IsComplex()); }
+    VecFormat ColFormat () const override { return EmbeddedMatrix::ColFormat().OnDevice(MemType::Shared); }
   };
 
   class DeviceEmbeddedTransposeMatrix : public EmbeddedTransposeMatrix
   {
   public:
     using EmbeddedTransposeMatrix::EmbeddedTransposeMatrix;
-    AutoVector CreateRowVector () const override { return DevVec (Width(), IsComplex()); }
+    VecFormat RowFormat () const override { return EmbeddedTransposeMatrix::RowFormat().OnDevice(MemType::Shared); }
   };
 
 
@@ -753,6 +776,22 @@ namespace ngla
           if (spmat)
               spmat->MultTransAdd(s, *bvx[i], *bvy[j]);
         }
+  }
+
+  VecFormat BlockMatrix :: RowFormat () const
+  {
+    VecFormat f;
+    for (auto col : Range(w))
+      f.blocks.push_back (col_reps[col]->RowFormat());
+    return f;
+  }
+
+  VecFormat BlockMatrix :: ColFormat () const
+  {
+    VecFormat f;
+    for (auto row : Range(h))
+      f.blocks.push_back (row_reps[row]->ColFormat());
+    return f;
   }
 
   AutoVector BlockMatrix :: CreateRowVector () const {

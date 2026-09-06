@@ -194,6 +194,13 @@ namespace ngla
     // virtual void  RecvVec ( int dest );
     virtual void AddRecvValues( int sender ) override;
     virtual AutoVector CreateVector () const override;
+    virtual VecFormat GetFormat () const override
+    {
+      auto f = BaseVector::GetFormat();
+      f.pardofs = paralleldofs;
+      f.parstatus = status;
+      return f;
+    }
     virtual unique_ptr<MultiVector> CreateMultiVector (size_t cnt) const override;
     
     virtual double L2Norm () const override;

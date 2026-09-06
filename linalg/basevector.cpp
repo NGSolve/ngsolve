@@ -1696,4 +1696,189 @@ namespace ngla
   template class VVector<double>;
   template class VVector<float>;
   template class VVector<Complex>;
+
+  /* ************************** VecFormat ************************** */
+
+  string ScalarName (const Scalar & s)
+  {
+    return std::visit ([] (auto proto) { return ScalarTypeName<decltype(proto)>(); }, s);
+  }
+
+  ostream & operator<< (ostream & ost, const VecFormat & f)
+  {
+    if (f.IsBlock())
+      {
+        ost << "[";
+        for (size_t i = 0; i < f.blocks.size(); i++)
+          ost << (i ? ", " : "") << f.blocks[i];
+        return ost << "]";
+      }
+    ost << "size=" << (f.size ? ToString(*f.size) : "?");
+    ost << " scalar=" << (f.scal ? ScalarName(*f.scal) : "?");
+    ost << " es=" << (f.es ? ToString(*f.es) : "?");
+    if (f.pardofs) ost << " parallel";
+    if (f.device) ost << " device";
+    return ost;
+  }
+
+  VecFormat VecFormat :: ValueAxes () const
+  {
+    VecFormat f;
+    f.scal = scal;
+    f.es = es;
+    f.device = device;
+    return f;
+  }
+
+  VecFormat VecFormat :: WithDefaults () const
+  {
+    VecFormat f = *this;
+    if (f.IsBlock())
+      {
+        for (auto & b : f.blocks) b = b.WithDefaults();
+        return f;
+      }
+    if (!f.scal) f.scal = double(0);
+    if (!f.es) f.es = 1;
+    return f;
+  }
+
+  VecFormat VecFormat :: WithSize (size_t asize) const
+  {
+    VecFormat f = *this;
+    f.size = asize;
+    return f;
+  }
+
+  VecFormat VecFormat :: WithScalar (Scalar ascal) const
+  {
+    VecFormat f = *this;
+    f.scal = ascal;
+    for (auto & b : f.blocks) b = b.WithScalar(ascal);
+    return f;
+  }
+
+  VecFormat VecFormat :: OnDevice (ngs_gpu::MemType mt) const
+  {
+    VecFormat f = *this;
+    f.device = mt;
+    for (auto & b : f.blocks) b = b.OnDevice(mt);
+    return f;
+  }
+
+  VecFormat VecFormat :: Promote (Scalar ascal) const
+  {
+    if (!std::holds_alternative<Complex>(ascal)) return *this;
+    VecFormat f = *this;
+    if (!f.IsBlock())
+      f.scal = f.scal ? MergeScalar (*f.scal, ascal) : ascal;
+    for (auto & b : f.blocks) b = b.Promote(ascal);
+    return f;
+  }
+
+  Scalar VecFormat :: MergeScalar (Scalar a, Scalar b)
+  {
+    if (a.index() == b.index()) return a;
+    bool ca = std::holds_alternative<Complex>(a), cb = std::holds_alternative<Complex>(b);
+    bool fa = std::holds_alternative<float>(a), fb = std::holds_alternative<float>(b);
+    if ((ca || cb) && !fa && !fb) return Complex(0);
+    throw Exception ("VecFormat: incompatible scalar types " + ScalarName(a) + " and " + ScalarName(b));
+  }
+
+  VecFormat VecFormat :: Merge (const VecFormat & a, const VecFormat & b)
+  {
+    if (a.IsBlock() || b.IsBlock())
+      {
+        if (a.IsBlock() && b.IsBlock())
+          {
+            if (a.blocks.size() != b.blocks.size())
+              throw Exception ("VecFormat: block counts differ");
+            VecFormat f = a;
+            for (size_t i = 0; i < f.blocks.size(); i++)
+              f.blocks[i] = Merge (a.blocks[i], b.blocks[i]);
+            return f;
+          }
+        const VecFormat & blk = a.IsBlock() ? a : b;
+        const VecFormat & other = a.IsBlock() ? b : a;
+        if (other.size)
+          throw Exception ("VecFormat: block vector merged with plain vector");
+        VecFormat f = blk;
+        for (auto & bl : f.blocks) bl = Merge (bl, other);
+        return f;
+      }
+
+    VecFormat f = a;
+    if (b.size)
+      {
+        if (f.size && *f.size != *b.size)
+          throw Exception ("VecFormat: sizes differ, " + ToString(*f.size) + " != " + ToString(*b.size));
+        f.size = b.size;
+      }
+    if (b.scal)
+      f.scal = f.scal ? MergeScalar (*f.scal, *b.scal) : b.scal;
+    if (b.es)
+      {
+        if (f.es && *f.es != *b.es)
+          throw Exception ("VecFormat: entry sizes differ, " + ToString(*f.es) + " != " + ToString(*b.es));
+        f.es = b.es;
+      }
+    if (!f.pardofs && b.pardofs)
+      {
+        f.pardofs = b.pardofs;
+        f.parstatus = b.parstatus;
+      }
+    if (!f.device) f.device = b.device;
+    return f;
+  }
+
+
+  VecFormat BaseVector :: GetFormat () const
+  {
+    return std::visit ([&] (auto proto) -> VecFormat
+    {
+      typedef typename scal_traits<decltype(proto)>::TSCAL_REAL REAL;
+      int es = entrysize * sizeof(REAL) / sizeof(decltype(proto));
+      return VecFormat (size, proto, es);
+    }, scaltype);
+  }
+
+  VecFormat BlockVector :: GetFormat () const
+  {
+    VecFormat f;
+    for (auto & v : vecs)
+      f.blocks.push_back (v->GetFormat());
+    return f;
+  }
+
+  AutoVector CreateBaseVector (const VecFormat & f)
+  {
+    if (f.IsBlock())
+      {
+        Array<shared_ptr<BaseVector>> vecs;
+        for (auto & b : f.blocks)
+          vecs += shared_ptr<BaseVector> (CreateBaseVector(b));
+        return make_unique<BlockVector> (vecs);
+      }
+    if (!f.size)
+      throw Exception ("CreateBaseVector: size not known, format: " + ToString(f));
+    size_t size = *f.size;
+    int es = f.es.value_or(1);
+    return std::visit ([&] (auto proto) -> AutoVector
+    {
+      typedef decltype(proto) T;
+      if (f.pardofs)
+        return make_unique<S_ParallelBaseVectorPtr<T>> (size, es, f.pardofs, f.parstatus);
+      if (f.device)
+        {
+          if (es != 1)
+            throw Exception ("CreateBaseVector: device vectors need entry size 1, format: " + ToString(f));
+          return make_unique<DeviceVector<T>> (size, *f.device);
+        }
+      if (es == 1)
+        return make_unique<VVector<T>> (size);
+      return make_unique<S_BaseVectorPtr<T>> (size, es);
+    }, f.scal.value_or(Scalar(double(0))));
+  }
+
+
 }

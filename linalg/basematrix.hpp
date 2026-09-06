@@ -100,15 +100,33 @@ namespace ngla
     [[deprecated("use CreateRowVector or CreateColVector instead")]]
     virtual AutoVector CreateVector () const;
 
+    // what the operator knows about its row/col vectors, open axes allowed.
+    // default asks CreateRow/ColVector, operators should override
+    virtual VecFormat RowFormat () const;
+    virtual VecFormat ColFormat () const;
+
+    // result vector: what the operator knows, filled from x.
+    // without a size of its own (Identity) it takes x's format entirely
+    AutoVector CreateColVectorFor (const BaseVector & x) const
+    {
+      auto f = ColFormat(), fx = x.GetFormat();
+      return CreateBaseVector (VecFormat::Merge (f, f.HasSize() ? fx.ValueAxes() : fx).WithDefaults());
+    }
+    AutoVector CreateRowVectorFor (const BaseVector & x) const
+    {
+      auto f = RowFormat(), fx = x.GetFormat();
+      return CreateBaseVector (VecFormat::Merge (f, f.HasSize() ? fx.ValueAxes() : fx).WithDefaults());
+    }
+
     virtual AutoVector Evaluate(BaseVector & v) const 
     {
-      auto res = CreateColVector();
+      auto res = CreateColVectorFor (v);
       Mult (v, res);
       return res;
     }
     virtual AutoVector EvaluateTrans(BaseVector & v) const 
     {
-      auto res = CreateRowVector();
+      auto res = CreateRowVectorFor (v);
       MultTrans (v, res);
       return res;
     }
@@ -366,6 +384,8 @@ namespace ngla
     
     virtual AutoVector CreateRowVector () const override { return bm.CreateColVector(); }
     virtual AutoVector CreateColVector () const override { return bm.CreateRowVector(); }
+    VecFormat RowFormat () const override { return bm.ColFormat(); }
+    VecFormat ColFormat () const override { return bm.RowFormat(); }
 
     virtual void Mult (const BaseVector & x, BaseVector & y) const override
     {
@@ -434,6 +454,8 @@ namespace ngla
 
     virtual AutoVector CreateRowVector () const override { return spbm->CreateColVector(); }
     virtual AutoVector CreateColVector () const override { return spbm->CreateRowVector(); }
+    VecFormat RowFormat () const override { return spbm->ColFormat(); }
+    VecFormat ColFormat () const override { return spbm->RowFormat(); }
 
     virtual void Mult (const BaseVector & x, BaseVector & y) const override
     {
@@ -495,27 +517,32 @@ namespace ngla
   public:
     ///
     ProductMatrix (const BaseMatrix & abma, const BaseMatrix & abmb)
-      : bma(abma), bmb(abmb), tempvec(abmb.CreateColVector())
-    { ; }
+      : bma(abma), bmb(abmb)
+    { tempvec.AssignPointer (CreateTempVector()); }
     ProductMatrix (shared_ptr<BaseMatrix> aspbma, shared_ptr<BaseMatrix> aspbmb)
       : bma(*aspbma), bmb(*aspbmb), spbma(aspbma), spbmb(aspbmb)
-        // tempvec(aspbmb->CreateColVector())
-    {
-      try
-        {
-          tempvec.AssignPointer(bmb.CreateColVector());
-        }
-      catch (Exception & e)
-        {
-          tempvec.AssignPointer(bma.CreateRowVector());          
-        }
-    }
+    { tempvec.AssignPointer (CreateTempVector()); }
+    // the space between the factors, both sides contribute
+    AutoVector CreateTempVector () const
+    { return CreateBaseVector (VecFormat::Merge (bmb.ColFormat(), bma.RowFormat()).WithDefaults()); }
     ///
     virtual bool IsComplex() const override { return bma.IsComplex() || bmb.IsComplex(); }
     virtual BaseMatrix::OperatorInfo GetOperatorInfo () const override;
 
-    virtual AutoVector CreateRowVector () const override { return bmb.CreateRowVector(); }
-    virtual AutoVector CreateColVector () const override { return bma.CreateColVector(); }
+    // an agnostic factor takes scalar and placement from the other one,
+    // a factor without size (Identity) takes the whole neighbouring space
+    VecFormat RowFormat () const override
+    {
+      auto fb = bmb.RowFormat(), fmid = bma.RowFormat();
+      return VecFormat::Merge (fb, fb.HasSize() ? fmid.ValueAxes() : fmid);
+    }
+    VecFormat ColFormat () const override
+    {
+      auto fa = bma.ColFormat(), fmid = bmb.ColFormat();
+      return VecFormat::Merge (fa, fa.HasSize() ? fmid.ValueAxes() : fmid);
+    }
+    virtual AutoVector CreateRowVector () const override { return CreateBaseVector (RowFormat().WithDefaults()); }
+    virtual AutoVector CreateColVector () const override { return CreateBaseVector (ColFormat().WithDefaults()); }
 
     auto SPtrA() const { return spbma; }
     auto SPtrB() const { return spbmb; }
@@ -567,7 +594,7 @@ namespace ngla
     virtual void MultAdd (FlatVector<double> alpha, const MultiVector & x, MultiVector & y) const override
     {
       static Timer t("ProductMatrix::MultAdd(mv)"); RegionTimer reg(t);
-      auto tempvec = shared_ptr<BaseVector>(bmb.CreateColVector())->CreateMultiVector(x.Size());
+      auto tempvec = shared_ptr<BaseVector>(CreateTempVector())->CreateMultiVector(x.Size());
       *tempvec = 0;
       Vector ones(x.Size());
       ones = 1.0;
@@ -624,28 +651,10 @@ namespace ngla
     
     virtual BaseMatrix::OperatorInfo GetOperatorInfo () const override;
 
-    virtual AutoVector CreateRowVector () const override
-    {
-      try
-        {
-          return bma.CreateRowVector();
-        }
-      catch (Exception & e)
-        {
-          return bmb.CreateRowVector();          
-        }
-    }
-    virtual AutoVector CreateColVector () const override
-    {
-      try
-        {
-          return bma.CreateColVector();
-        }
-      catch (Exception & e)
-        {
-          return bmb.CreateColVector();          
-        }
-    }
+    VecFormat RowFormat () const override { return VecFormat::Merge (bma.RowFormat(), bmb.RowFormat()); }
+    VecFormat ColFormat () const override { return VecFormat::Merge (bma.ColFormat(), bmb.ColFormat()); }
+    virtual AutoVector CreateRowVector () const override { return CreateBaseVector (RowFormat().WithDefaults()); }
+    virtual AutoVector CreateColVector () const override { return CreateBaseVector (ColFormat().WithDefaults()); }
 
     virtual void Mult (const BaseVector & x, BaseVector & y) const override
     {
@@ -811,8 +820,10 @@ namespace ngla
     
     virtual int VHeight() const override { return bm.VHeight(); }
     virtual int VWidth() const override { return bm.VWidth(); }
-    virtual AutoVector CreateRowVector () const override { return bm.CreateRowVector(); }
-    virtual AutoVector CreateColVector () const override { return bm.CreateColVector(); }
+    VecFormat RowFormat () const override { return bm.RowFormat().Promote(scale); }
+    VecFormat ColFormat () const override { return bm.ColFormat().Promote(scale); }
+    virtual AutoVector CreateRowVector () const override { return CreateBaseVector (RowFormat().WithDefaults()); }
+    virtual AutoVector CreateColVector () const override { return CreateBaseVector (ColFormat().WithDefaults()); }
     virtual ostream & Print (ostream & ost) const override
     {
       ost << "Scale with " << scale << ":" << endl;
@@ -850,14 +861,18 @@ namespace ngla
   
   class NGS_DLL_HEADER IdentityMatrix : public BaseMatrix
   {
-    bool has_format;
-    size_t size;
+    VecFormat fmt;    // all axes may stay open
   public:
     ///
-    IdentityMatrix ()
-      : has_format(false) { ; }
-    IdentityMatrix (size_t asize, bool ais_complex)
-      : has_format(true), size(asize) { is_complex=ais_complex; }
+    IdentityMatrix () { ; }
+    IdentityMatrix (size_t asize, bool ais_complex = false)
+      : fmt(asize)
+    {
+      if (ais_complex) fmt.scal = Complex(0);
+      is_complex = ais_complex;
+    }
+    IdentityMatrix (VecFormat afmt)
+      : fmt(afmt) { is_complex = fmt.IsComplex(); }
     
     virtual BaseMatrix::OperatorInfo GetOperatorInfo () const override;
     
@@ -899,25 +914,25 @@ namespace ngla
 
     virtual int VHeight() const override
     {
-      if (has_format) return size;
+      if (fmt.size) return *fmt.size;
       throw Exception("Identity: no Height");
     }
     virtual int VWidth() const override
     {
-      if (has_format) return size;
+      if (fmt.size) return *fmt.size;
       throw Exception("Identity: no Width");
     }
+    VecFormat RowFormat () const override { return fmt; }
+    VecFormat ColFormat () const override { return fmt; }
     virtual AutoVector CreateRowVector () const override
     {
-      if (has_format)
-        return CreateBaseVector(size, is_complex, 1);
-      throw Exception("Identity: no RowVector");
+      if (!fmt.HasSize()) throw Exception("Identity: no RowVector");
+      return CreateBaseVector (fmt.WithDefaults());
     }
     virtual AutoVector CreateColVector () const override
     {
-      if (has_format)
-        return CreateBaseVector(size, is_complex, 1);
-      throw Exception("Identity: no ColVector");
+      if (!fmt.HasSize()) throw Exception("Identity: no ColVector");
+      return CreateBaseVector (fmt.WithDefaults());
     }
 
     virtual ostream & Print (ostream & ost) const override

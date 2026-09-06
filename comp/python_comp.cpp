@@ -1976,12 +1976,12 @@ active_dofs : BitArray or None
     .def("Embedding", [](CompressedFESpace & self)
          {
            return self.GetEmbedding();
-         }, "Sparse embedding of the compressed space into its base space "
+         }, "Embedding of the compressed space into its base space, a type-agnostic PermutationMatrix "
             "(base ndof x compressed ndof): E * x scatters x to the active dofs")
     .def("Restriction", [](CompressedFESpace & self)
          {
            return self.GetRestriction();
-         }, "Sparse restriction of the base space to the compressed dofs "
+         }, "Restriction of the base space to the compressed dofs, a type-agnostic PermutationMatrix "
             "(compressed ndof x base ndof); the transpose of Embedding()")
     .def(py::pickle([](const CompressedFESpace* compr_fes)
                     {

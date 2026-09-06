@@ -385,6 +385,8 @@ namespace ngla
     virtual void * Memory () const override;
     virtual FlatVector<T> FVScal () const override;
     virtual AutoVector CreateVector () const override;
+    virtual VecFormat GetFormat () const override
+    { return BaseVector::GetFormat().OnDevice(memtype); }
     virtual AutoVector Range (T_Range<size_t> range) const override;
     virtual shared_ptr<BaseScalar> CreateScalar () const override;
     virtual ostream & Print (ostream & ost) const override;

@@ -28,6 +28,7 @@ protected:
   py::object pyop;
   size_t h, w;
   bool is_complex;
+  Scalar scal = double(0);
 public:
   PyLinearOperator (py::object apyop)
     : pyop(apyop)
@@ -40,13 +41,17 @@ public:
     // const auto pyarray_dtype = py::reinterpret_borrow<py::dtype>(dtype);
     auto pyarray_dtype = py::cast<py::dtype>(pyop.attr("dtype"));
     is_complex = pyarray_dtype.is(pybind11::dtype::of<Complex>());
+    if (is_complex) scal = Complex(0);
+    else if (pyarray_dtype.is(pybind11::dtype::of<float>())) scal = float(0);
   }
 
   bool IsComplex() const override { return is_complex; }
   int VHeight() const override { return h; }
   int VWidth() const override { return w; }
-  AutoVector CreateRowVector () const override { return CreateBaseVector(w, is_complex, 1); }
-  AutoVector CreateColVector () const override { return CreateBaseVector(h, is_complex, 1); }
+  VecFormat RowFormat () const override { return VecFormat(w, scal); }
+  VecFormat ColFormat () const override { return VecFormat(h, scal); }
+  AutoVector CreateRowVector () const override { return CreateBaseVector(RowFormat()); }
+  AutoVector CreateColVector () const override { return CreateBaseVector(ColFormat()); }
 
   void Mult (const BaseVector & x, BaseVector & y) const override
   {
@@ -271,6 +276,28 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
       .def("__str__", [](BaseScalar &self) { return ToString(self); } )
       ;
     
+  py::class_<VecFormat> (m, "VecFormat",
+                         "Describes a vector type: size, scalar type, entry size, "
+                         "parallel, device, blocks. Axes an operator does not know stay open.")
+    .def(py::init<>())
+    .def(py::init<size_t>(), py::arg("size"))
+    .def("__str__", [] (const VecFormat & f) { return ToString(f); })
+    .def("__repr__", [] (const VecFormat & f) { return "VecFormat(" + ToString(f) + ")"; })
+    .def_property_readonly("size", [] (const VecFormat & f) -> py::object
+         { if (f.size) return py::cast(*f.size); return py::none(); })
+    .def_property_readonly("scalar", [] (const VecFormat & f) -> py::object
+         { if (f.scal) return py::cast(ScalarName(*f.scal)); return py::none(); })
+    .def_property_readonly("entrysize", [] (const VecFormat & f) -> py::object
+         { if (f.es) return py::cast(*f.es); return py::none(); })
+    .def_property_readonly("is_complex", &VecFormat::IsComplex)
+    .def_property_readonly("is_parallel", [] (const VecFormat & f) { return bool(f.pardofs); })
+    .def_property_readonly("is_device", [] (const VecFormat & f) { return f.device.has_value(); })
+    .def_property_readonly("blocks", [] (const VecFormat & f) { return f.blocks; })
+    .def("Merge", [] (const VecFormat & a, const VecFormat & b) { return VecFormat::Merge(a, b); })
+    .def("WithDefaults", &VecFormat::WithDefaults)
+    .def("CreateVector", [] (const VecFormat & f) { return shared_ptr<BaseVector>(CreateBaseVector(f.WithDefaults())); })
+    ;
+
   py::class_<BaseVector, shared_ptr<BaseVector>>(m, "BaseVector",
                                                  py::dynamic_attr(), // add dynamic attributes
                                                  py::buffer_protocol()
@@ -358,6 +385,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def_property_readonly("is_complex", &BaseVector::IsComplex)
     .def_property_readonly ("comm", [](const BaseVector & self) { return self.GetCommunicator(); })
     
+    .def("GetFormat", &BaseVector::GetFormat, "vector type as VecFormat")
     .def("CreateVector", [] (BaseVector & self, bool copy)
          {
            auto newvec = self.CreateVector();
@@ -395,7 +423,10 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
          },
          "creates a new vector of same type, copy contents (scipy compatibility)")
     .def_property_readonly("dtype", [](BaseVector & self)
-      { return self.IsComplex() ? py::dtype::of<Complex>() : py::dtype::of<double>(); })
+      {
+        return std::visit ([] (auto proto) { return py::dtype::of<decltype(proto)>(); },
+                           self.GetScalarType());
+      })
     
     .def("Assign",[](BaseVector & self, BaseVector & v2, py::object s)->void
                                    { 
@@ -1057,6 +1088,14 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
         { return shared_ptr<BaseVector>(self.CreateRowVector()); } )
     .def("CreateColVector", [] ( BaseMatrix & self)
         { return shared_ptr<BaseVector>(self.CreateColVector()); } )
+    .def("CreateRowVector", [] ( BaseMatrix & self, const BaseVector & like)
+        { return shared_ptr<BaseVector>(self.CreateRowVectorFor(like)); }, py::arg("like"),
+         "row vector, open axes (scalar, device, ...) taken from the given vector")
+    .def("CreateColVector", [] ( BaseMatrix & self, const BaseVector & like)
+        { return shared_ptr<BaseVector>(self.CreateColVectorFor(like)); }, py::arg("like"),
+         "col vector, open axes (scalar, device, ...) taken from the given vector")
+    .def("RowFormat", &BaseMatrix::RowFormat, "what the operator knows about its row vectors")
+    .def("ColFormat", &BaseMatrix::ColFormat, "what the operator knows about its col vectors")
     .def("CreateVector", [] ( BaseMatrix & self, bool colvec)
         {
           if (colvec)

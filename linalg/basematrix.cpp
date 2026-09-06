@@ -103,6 +103,32 @@ namespace ngla
     throw Exception (string("BaseMatrix::CreateVector not overloaded, type = ")+typeid(*this).name());            
   }
 
+  // operators not overriding the format functions describe themselves by
+  // the vectors they create; unable to create means nothing known
+  VecFormat BaseMatrix :: RowFormat () const
+  {
+    try
+      {
+        return CreateRowVector().GetFormat();
+      }
+    catch (Exception &)
+      {
+        return VecFormat();
+      }
+  }
+
+  VecFormat BaseMatrix :: ColFormat () const
+  {
+    try
+      {
+        return CreateColVector().GetFormat();
+      }
+    catch (Exception &)
+      {
+        return VecFormat();
+      }
+  }
+
   // AutoVector BaseMatrix :: CreateRowVector () const
   // {
   //   return CreateVector();
@@ -412,7 +438,7 @@ namespace ngla
   BaseMatrix::OperatorInfo IdentityMatrix :: GetOperatorInfo () const
   {
     OperatorInfo info;
-    if (has_format)
+    if (fmt.size)
       {
         info.name = "Identity";
         info.height = Height();

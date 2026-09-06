@@ -1,6 +1,7 @@
 // #include <comp.hpp>
 #include "compressedfespace.hpp"
 #include <sparsematrix.hpp>
+#include <special_matrix.hpp>
 
 namespace ngcomp
 {
@@ -81,33 +82,21 @@ namespace ngcomp
     }
 
 
+  // selection operators as type-agnostic permutations
   shared_ptr<BaseMatrix> CompressedFESpace::GetEmbedding() const
   {
-    size_t ndofall = space->GetNDof();
-    Array<int> cnt(ndofall);
-    cnt = 0;
-    for (auto d : comp2all)
-      cnt[d] = 1;
-    auto mat = make_shared<SparseMatrix<double>> (cnt, GetNDof());
-    for (auto i : Range(comp2all))
-      {
-        mat->GetRowIndices(comp2all[i])[0] = i;
-        mat->GetRowValues(comp2all[i])[0] = 1.0;
-      }
-    return mat;
+    Array<size_t> ind(all2comp.Size());
+    for (auto i : Range(all2comp))
+      ind[i] = all2comp[i] >= 0 ? size_t(all2comp[i]) : size_t(-1);
+    return make_shared<PermutationMatrix> (GetNDof(), std::move(ind));
   }
 
   shared_ptr<BaseMatrix> CompressedFESpace::GetRestriction() const
   {
-    Array<int> cnt(GetNDof());
-    cnt = 1;
-    auto mat = make_shared<SparseMatrix<double>> (cnt, space->GetNDof());
+    Array<size_t> ind(comp2all.Size());
     for (auto i : Range(comp2all))
-      {
-        mat->GetRowIndices(i)[0] = comp2all[i];
-        mat->GetRowValues(i)[0] = 1.0;
-      }
-    return mat;
+      ind[i] = comp2all[i];
+    return make_shared<PermutationMatrix> (space->GetNDof(), std::move(ind));
   }
 
   FiniteElement & CompressedFESpace::GetFE (ElementId ei, Allocator & lh) const
