@@ -6,44 +6,8 @@ namespace ngs_cuda
 {
   using namespace ngbla;
 
-
- 
-
-
 // own ngsolve cuda-kernels:
 extern void SetScalar (double val, int n, double * dev_ptr);
-extern void SetScalar (double val, ngbla::FlatVector<Dev<double>> vec);
-
-// y = val*x
-extern void SetVector (double val, int n, Dev<double> * x, Dev<double> * y);
-extern void MyDaxpy (double val, int n, Dev<double> * x, Dev<double> * y);
-
-/*
-extern void MultDiagonal (int n, double * D, double * x, double * y);
-extern void MultAddDiagonal (int n, double alpha, double * D, double * x, double * y);
-*/
-    
-// y = A * x
-class MatVecData
-{
-public:
-  SliceMatrix<Dev<double>> mat;
-  // BareVector<Dev<double>> x, y;
-  size_t offsetx, offsety;
-  MatVecData() : mat(0,0,0,nullptr) /* , x(nullptr), y(nullptr) */ { ; }
-};
-
-
-  /* **************** BlockJacobi kernels ********************* */
-
-  
-extern void ManyMatVec (FlatArray<Dev<MatVecData>> matvecs, 
-                        BareVector<Dev<double>> x, BareVector<Dev<double>> y); 
-
-
-
-    /*
-*/
 
 
 // TFQMR scalar batch kernels — one kernel launch per scalar-update group between vector operarions

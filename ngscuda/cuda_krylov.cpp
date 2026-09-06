@@ -80,9 +80,8 @@ void DevCGSolver::Mult(const BaseVector& rhs, BaseVector& sol) const
 
         if (!use_while_graph)
         try {
-            // First capture iteration body into regular graph (cuSPARSE works here)
+            // First capture iteration body into regular graph
             g_cg_for_while.BeginCapture();
-                cublasSetPointerMode(Get_CuBlas_Handle(), CUBLAS_POINTER_MODE_DEVICE);
                 ga->Mult(*p, *q);
                 (*p).InnerProduct(*q, *pq);
                 Eval (Assign(ualpha, urz / upq), Assign(uneg_alpha, -ualpha));
@@ -95,7 +94,6 @@ void DevCGSolver::Mult(const BaseVector& rhs, BaseVector& sol) const
                 (*p).Add(1.0, *z);
             g_cg_for_while.EndCapture();
             SyncNGSStream();
-            cublasSetPointerMode(Get_CuBlas_Handle(), CUBLAS_POINTER_MODE_HOST);
             // Allocate GPU-side iteration counter
             if (!iter_count_dev) cudaMalloc(&iter_count_dev, sizeof(int));
             cudaMemset(iter_count_dev, 0, sizeof(int));
@@ -146,7 +144,6 @@ void DevCGSolver::Mult(const BaseVector& rhs, BaseVector& sol) const
         cudaMemset(iter_count_dev, 0, sizeof(int));
         g_while.Launch();
         SyncNGSStream();
-        cublasSetPointerMode(Get_CuBlas_Handle(), CUBLAS_POINTER_MODE_HOST);
         // read back iteration count for GetSteps()
         cudaMemcpy(&step, iter_count_dev, sizeof(int), cudaMemcpyDeviceToHost);
         cudaFree(iter_count_dev);
@@ -157,10 +154,8 @@ void DevCGSolver::Mult(const BaseVector& rhs, BaseVector& sol) const
         for (int iter = 0; iter < maxsteps; iter++)
         {
             if (use_graph) {
-                cublasSetPointerMode(Get_CuBlas_Handle(), CUBLAS_POINTER_MODE_DEVICE);
                 g_cg.Launch();
                 SyncNGSStream();
-                cublasSetPointerMode(Get_CuBlas_Handle(), CUBLAS_POINTER_MODE_HOST);
             } else {
                 ga->Mult(*p, *q);
                 (*p).InnerProduct(*q, *pq);
@@ -387,7 +382,6 @@ void DevTFQMRSolver::Mult(const BaseVector& rhs, BaseVector& sol) const
         cudaMemset(iter_count_dev, 0, sizeof(int));
         g_while.Launch();
         SyncNGSStream();
-        cublasSetPointerMode(Get_CuBlas_Handle(), CUBLAS_POINTER_MODE_HOST);
         int pair_count = 0;
         cudaMemcpy(&pair_count, iter_count_dev, sizeof(int), cudaMemcpyDeviceToHost);
         cudaFree(iter_count_dev);

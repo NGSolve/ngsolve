@@ -10,7 +10,6 @@ def preload_cuda_libs():
     libs = [
         ("nvidia.cuda_runtime", "lib/libcudart.so.12"),
         ("nvidia.nvjitlink", "lib/libnvJitLink.so.12"),
-        ("nvidia.cublas", "lib/libcublas.so.12"),
     ]
 
     for pkg, rel in libs:

@@ -8,16 +8,8 @@
 #include <la.hpp>
 
 #include <cuda_runtime.h>
-#include <cublas_v2.h>
-#include <cusparse.h>
 
 #include "cuda_ngstd.hpp"
-
-namespace ngla
-{
-  cublasHandle_t Get_CuBlas_Handle ();
-  cusparseHandle_t Get_CuSparse_Handle ();
-}
 
   
 #include "cuda_ngbla.hpp"
@@ -69,46 +61,10 @@ namespace ngla
   shared_ptr<BaseMatrix> CreateDevMatrix (BaseMatrix &mat);
 
 
-  class DevSparseMatrix : public DevMatrix
-  {
-  protected:
-    //cusparseMatDescr_t * descr;
-    cusparseSpMatDescr_t descr;
-    int * dev_ind;
-    int * dev_col;
-    double * dev_val;
-    int height, width, nze;
-    size_t spmv_bufferSize = 0;
-    void*  spmv_buffer = nullptr;
-  public:
-    DevSparseMatrix () { }
-    DevSparseMatrix (const SparseMatrix<double> & mat);
-    virtual ~DevSparseMatrix ();
-
-    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
-    virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const;
-
-    virtual int VHeight() const { return height; }
-    virtual int VWidth() const { return width; }
-  };
 
 
-  class DevDiagonalMatrix : public DevMatrix
-  {
-  protected:
-    const UnifiedVector diag;
 
-  public:
-    DevDiagonalMatrix (const UnifiedVector _diag) : diag(_diag) { }
 
-    virtual xbool IsSymmetric() const { return true; }
-
-    virtual void Mult (const BaseVector & x, BaseVector & y) const;
-    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
-
-    virtual int VHeight() const { return diag.Size(); }
-    virtual int VWidth() const { return diag.Size(); }
-  };
 
 
   
@@ -126,7 +82,7 @@ namespace ngla
   // Supports CUDA graph capture of CG iteration body (convergence check via DtoH remains outside graph).
   class DevCGSolver : public KrylovSpaceSolver
   {
-    shared_ptr<BaseMatrix> a_dev;  // DevSparseMatrix for graph capture
+    shared_ptr<BaseMatrix> a_dev;  // device operator for graph capture
     shared_ptr<BaseMatrix> c_dev;  // preconditioner for graph capture
 
   public:

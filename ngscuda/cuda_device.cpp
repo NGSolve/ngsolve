@@ -201,7 +201,7 @@ namespace ngs_cuda
     { Check (cuStreamCreate (&stream, CU_STREAM_NON_BLOCKING), "cuStreamCreate"); }
 
     // launches follow the current ngs_cuda_stream, so they stay ordered
-    // with cuBLAS/cuSPARSE and are recorded during graph capture
+    // with cuda libraries and are recorded during graph capture
     struct TrackNgsStream { };
     CudaQueue (TrackNgsStream) : tracking(true) { }
 

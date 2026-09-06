@@ -42,7 +42,7 @@ set(nvcc_flags
 )
 target_compile_options(${lib_name} PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:${nvcc_flags}>)
 
-target_link_libraries(${lib_name} PUBLIC CUDA::cusparse CUDA::cublas CUDA::cudart CUDA::nvrtc CUDA::cuda_driver ngsolve $<BUILD_INTERFACE:netgen_python>)
+target_link_libraries(${lib_name} PUBLIC CUDA::cudart CUDA::nvrtc CUDA::cuda_driver ngsolve $<BUILD_INTERFACE:netgen_python>)
 set_target_properties(${lib_name} PROPERTIES POSITION_INDEPENDENT_CODE ON CUDA_SEPARABLE_COMPILATION ON)
 if(CMAKE_PROJECT_NAME STREQUAL "NGSolve")
   install( TARGETS ${lib_name} ${ngs_install_dir} )

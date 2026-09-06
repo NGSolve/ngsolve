@@ -7,7 +7,7 @@
 
   Storage, host/device state tracking and the transfers live in the
   base class. This class adds what needs raw CUDA: typed device
-  pointers for cuBLAS/cuSPARSE and hand-written kernels, on-device
+  pointers for cuda libraries and hand-written kernels, on-device
   reductions, and graph-capturable operations with device-resident
   scalars. It shrinks as those capabilities move into DeviceVector.
 */

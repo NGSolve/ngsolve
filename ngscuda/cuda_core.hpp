@@ -6,7 +6,6 @@
 #include <core/array.hpp>
 #include <core/exception.hpp>
 
-namespace ngla { void EnsureCuBlasWorkspace(); }
 
 namespace ngs_cuda
 {
@@ -86,7 +85,6 @@ namespace ngs_cuda
     bool capture_ok = false;
 
   public:
-    static inline std::function<void(cudaStream_t)> stream_change_callback = nullptr;
 
     CudaGraph()
     {
@@ -106,12 +104,8 @@ namespace ngs_cuda
     void BeginCapture()
     {
       capture_ok = false;
-      ngla::EnsureCuBlasWorkspace();
       prev_stream = ngs_cuda_stream;
       ngs_cuda_stream = stream;
-      if (stream_change_callback) {
-        stream_change_callback(ngs_cuda_stream);
-      }
       auto err = cudaStreamBeginCapture(stream, cudaStreamCaptureModeGlobal);
       if (err != cudaSuccess)
         throw ngstd::Exception(std::string("[CudaGraph] cudaStreamBeginCapture FAILED: ")
@@ -142,9 +136,6 @@ namespace ngs_cuda
 
       capture_ok = true;
       ngs_cuda_stream = prev_stream;
-      if (stream_change_callback) {
-        stream_change_callback(ngs_cuda_stream);
-      }
     }
 
     void Launch()
@@ -197,7 +188,6 @@ namespace ngs_cuda
     void Build(cudaGraph_t iteration_graph, double* rz_dev_ptr, double tol, int* iter_count, int maxsteps)
     {
       capture_ok = false;
-      ngla::EnsureCuBlasWorkspace();
 
       // 1. Create outer graph
       cudaGraphCreate(&outer_graph, 0);

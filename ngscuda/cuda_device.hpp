@@ -24,7 +24,7 @@ namespace ngs_cuda
   void InitCudaDevice();
 
   // raw cuda device pointer of a buffer allocated by this backend,
-  // for handing ngs_gpu storage to cuBLAS/cuSPARSE and typed kernels
+  // for handing ngs_gpu storage to cuda libraries and typed kernels
   void * BufferDevPtr (ngs_gpu::Buffer & buf);
 }
 

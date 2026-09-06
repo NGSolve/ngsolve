@@ -25,7 +25,7 @@ PYBIND11_MODULE(_ngscuda, m) {
   InitApplyIntegrationPoints();
   InitBTDTB();
 
-  m.def("InitCuLinalg", &InitCuLinalg, "Initializing cublas and cusparse.");
+  m.def("InitCuLinalg", &InitCuLinalg, "Initializing cuda linalg.");
   
   py::class_<UnifiedVector, BaseVector, shared_ptr<UnifiedVector>>
     (m, "UnifiedVector", "UnifiedVector for CUDA applications", py::multiple_inheritance())
@@ -82,14 +82,6 @@ PYBIND11_MODULE(_ngscuda, m) {
   py::class_<DevMatrix, BaseMatrix, shared_ptr<DevMatrix>>
     (m, "DevBaseMatrix", "device matrix for CUDA applications");
 
-  py::class_<DevSparseMatrix, DevMatrix, shared_ptr<DevSparseMatrix>>
-    (m, "DevSparseMatrix", "DevSparseMatrix for CUDA applications")
-
-    .def(py::init ( [] (SparseMatrix<double>& mat) -> shared_ptr<DevSparseMatrix>
-          {
-            return make_shared<DevSparseMatrix>(mat);
-          }
-          ));
 
 
   m.def("CreateDevMatrix", [] (BaseMatrix &mat)
