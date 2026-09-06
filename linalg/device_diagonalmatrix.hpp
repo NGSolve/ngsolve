@@ -37,9 +37,13 @@ namespace ngla
     virtual int VWidth() const override { return diag.Size(); }
     virtual bool IsComplex() const override { return false; }
 
+    virtual void Mult (const BaseVector & x, BaseVector & y) const override;
+    virtual void MultTrans (const BaseVector & x, BaseVector & y) const override
+    { Mult (x, y); }
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
     virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override
     { MultAdd (s, x, y); }
+    void Launch (const BaseVector & x, BaseVector & y, T s, T beta) const;
 
     virtual BaseVector & AsVector() override { return diag; }
     virtual const BaseVector & AsVector() const override { return diag; }

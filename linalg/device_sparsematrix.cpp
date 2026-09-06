@@ -28,9 +28,11 @@ namespace ngla
 
     const char * kernel_source = R"RAW(
 
-      // y[row] += s * sum_j val[j]*x[colnr[j]], one work-item per row
+      // y[row] = beta*y[row] + s * sum_j val[j]*x[colnr[j]]; beta 0 overwrites
+      #define STORE_ROW(r, v) { if (beta == SCAL(0)) y[r] = s*(v); else y[r] = beta*y[r] + s*(v); }
+
       KERNEL(spmv_row, GLOBAL_IN(int,firsti), GLOBAL_IN(int,colnr), GLOBAL_IN(SCAL,val),
-                       GLOBAL_IN(SCAL,x), GLOBAL(SCAL,y), VALUE(SCAL,s), VALUE(int,h))
+                       GLOBAL_IN(SCAL,x), GLOBAL(SCAL,y), VALUE(SCAL,s), VALUE(SCAL,beta), VALUE(int,h))
       {
         int row = int(GLOBAL_ID_X);
         if (row >= h) return;
@@ -38,13 +40,13 @@ namespace ngla
         int last = firsti[row+1];
         for (int j = firsti[row]; j < last; j++)
           sum += val[j]*x[colnr[j]];
-        y[row] += s*sum;
+        STORE_ROW(row, sum);
       }
 
       // lanes consecutive work-items share a row (lanes a power of two
       // dividing the group size), partial sums reduced in group memory
       KERNEL(spmv_lanes, GLOBAL_IN(int,firsti), GLOBAL_IN(int,colnr), GLOBAL_IN(SCAL,val),
-                         GLOBAL_IN(SCAL,x), GLOBAL(SCAL,y), VALUE(SCAL,s),
+                         GLOBAL_IN(SCAL,x), GLOBAL(SCAL,y), VALUE(SCAL,s), VALUE(SCAL,beta),
                          VALUE(int,lanes), VALUE(int,h))
       {
         SHARED(SCAL, tmp, 1024);
@@ -65,13 +67,13 @@ namespace ngla
             if (lane < d) tmp[lid] += tmp[lid+d];
             BARRIER();
           }
-        if (lane == 0 && row < h) y[row] += s*tmp[lid];
+        if (lane == 0 && row < h) STORE_ROW(row, tmp[lid]);
       }
 
       // two rows per lane group, two steps unrolled: four gathers in
       // flight per lane, which is what hides the gather latency
       KERNEL(spmv_rows2u2, GLOBAL_IN(int,firsti), GLOBAL_IN(int,colnr), GLOBAL_IN(SCAL,val),
-                                 GLOBAL_IN(SCAL,x), GLOBAL(SCAL,y), VALUE(SCAL,s),
+                                 GLOBAL_IN(SCAL,x), GLOBAL(SCAL,y), VALUE(SCAL,s), VALUE(SCAL,beta),
                                  VALUE(int,lanes), VALUE(int,h))
       {
         SHARED(SCAL, tmp, 1024);
@@ -104,8 +106,8 @@ namespace ngla
             if (lane < d) { tmp[lid] += tmp[lid+d]; tmp2[lid] += tmp2[lid+d]; }
             BARRIER();
           }
-        if (lane == 0 && row < h) y[row] += s*tmp[lid];
-        if (lane == 0 && row+1 < h) y[row+1] += s*tmp2[lid];
+        if (lane == 0 && row < h) STORE_ROW(row, tmp[lid]);
+        if (lane == 0 && row+1 < h) STORE_ROW(row+1, tmp2[lid]);
       }
 
     )RAW";
@@ -241,11 +243,11 @@ namespace ngla
     double best_time = 1e300;
     for (auto & c : candidates)
       {
-        LaunchSpMV (firsti, colnr, values, c, rows, KernelArg(x), KernelArg(y), T(1));
+        LaunchSpMV (firsti, colnr, values, c, rows, KernelArg(x), KernelArg(y), T(1), T(1));
         queue->Finish();
         auto t0 = std::chrono::steady_clock::now();
         for (int i = 0; i < 3; i++)
-          LaunchSpMV (firsti, colnr, values, c, rows, KernelArg(x), KernelArg(y), T(1));
+          LaunchSpMV (firsti, colnr, values, c, rows, KernelArg(x), KernelArg(y), T(1), T(1));
         queue->Finish();
         double t = std::chrono::duration<double>(std::chrono::steady_clock::now()-t0).count();
         if (t < best_time) { best_time = t; best = c; }
@@ -305,7 +307,7 @@ namespace ngla
                                             const TypedBuffer<int> & colnr,
                                             const TypedBuffer<T> & values,
                                             const SpMVChoice & ch, size_t rows,
-                                            KernelArg x, KernelArg y, T s) const
+                                            KernelArg x, KernelArg y, T s, T beta) const
   {
     if (rows == 0) return;
     const auto & kern = DeviceSparseKernels<T>::Get();
@@ -314,7 +316,7 @@ namespace ngla
         unsigned groups = (rows + kern.groupsize-1) / kern.groupsize;
         queue->Launch (*ch.kernel, Dim3(groups), Dim3(kern.groupsize),
                        { KernelArg(firsti), KernelArg(colnr), KernelArg(values),
-                         x, y, KernelArg(s), KernelArg(int(rows)) });
+                         x, y, KernelArg(s), KernelArg(beta), KernelArg(int(rows)) });
       }
     else
       {
@@ -322,8 +324,33 @@ namespace ngla
         unsigned groups = (items + kern.groupsize-1) / kern.groupsize;
         queue->Launch (*ch.kernel, Dim3(groups), Dim3(kern.groupsize),
                        { KernelArg(firsti), KernelArg(colnr), KernelArg(values),
-                         x, y, KernelArg(s), KernelArg(int(ch.lanes)), KernelArg(int(rows)) });
+                         x, y, KernelArg(s), KernelArg(beta), KernelArg(int(ch.lanes)), KernelArg(int(rows)) });
       }
+  }
+
+  template <typename T>
+  void DeviceSparseMatrix<T> :: Mult (const BaseVector & x, BaseVector & y) const
+  {
+    static Timer t("DeviceSparseMatrix::Mult"); RegionTimer reg(t);
+    if (x.Size() != width || y.Size() != height)
+      throw Exception("DeviceSparseMatrix::Mult - size mismatch");
+    DeviceVectorWrapper<T> ux(x, memtype);
+    DeviceVectorWrapper<T> uy(y, memtype);
+    LaunchSpMV (dev_firsti, dev_colnr, dev_values, choice, height,
+                ux.DevArgRO(), uy.DevArgW(), T(1), T(0));
+  }
+
+  template <typename T>
+  void DeviceSparseMatrix<T> :: MultTrans (const BaseVector & x, BaseVector & y) const
+  {
+    static Timer t("DeviceSparseMatrix::MultTrans"); RegionTimer reg(t);
+    if (x.Size() != height || y.Size() != width)
+      throw Exception("DeviceSparseMatrix::MultTrans - size mismatch");
+    BuildTranspose();
+    DeviceVectorWrapper<T> ux(x, memtype);
+    DeviceVectorWrapper<T> uy(y, memtype);
+    LaunchSpMV (devt_firsti, devt_colnr, devt_values, choice_trans, width,
+                ux.DevArgRO(), uy.DevArgW(), T(1), T(0));
   }
 
 
@@ -337,7 +364,7 @@ namespace ngla
     DeviceVectorWrapper<T> ux(x, memtype);
     DeviceVectorWrapper<T> uy(y, memtype);
     LaunchSpMV (dev_firsti, dev_colnr, dev_values, choice, height,
-                ux.DevArgRO(), uy.DevArgRW(), T(s));
+                ux.DevArgRO(), uy.DevArgRW(), T(s), T(1));
   }
 
 
@@ -353,7 +380,7 @@ namespace ngla
     DeviceVectorWrapper<T> ux(x, memtype);
     DeviceVectorWrapper<T> uy(y, memtype);
     LaunchSpMV (devt_firsti, devt_colnr, devt_values, choice_trans, width,
-                ux.DevArgRO(), uy.DevArgRW(), T(s));
+                ux.DevArgRO(), uy.DevArgRW(), T(s), T(1));
   }
 
 

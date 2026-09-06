@@ -26,12 +26,12 @@ namespace ngla
 
     const char * kernel_source = R"RAW(
 
-      // y[i] += s * d[i] * x[i]
+      // y[i] = beta*y[i] + s * d[i] * x[i]; beta 0 overwrites without reading y
       KERNEL(diag_mult, GLOBAL_IN(SCAL,d), GLOBAL_IN(SCAL,x), GLOBAL(SCAL,y),
-                        VALUE(SCAL,s), VALUE(int,n))
+                        VALUE(SCAL,s), VALUE(SCAL,beta), VALUE(int,n))
       {
         int i = int(GLOBAL_ID_X);
-        if (i < n) y[i] += s * d[i] * x[i];
+        if (i < n) y[i] = (beta == SCAL(0)) ? s * d[i] * x[i] : beta*y[i] + s * d[i] * x[i];
       }
 
 
@@ -201,12 +201,11 @@ namespace ngla
 
 
   template <typename T>
-  void DeviceDiagonalMatrix<T> :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
+  void DeviceDiagonalMatrix<T> :: Launch (const BaseVector & x, BaseVector & y, T s, T beta) const
   {
-    static Timer t("DeviceDiagonalMatrix::MultAdd"); RegionTimer reg(t);
     size_t n = diag.Size();
     if (x.Size() != n || y.Size() != n)
-      throw Exception("DeviceDiagonalMatrix::MultAdd - size mismatch");
+      throw Exception("DeviceDiagonalMatrix::Mult - size mismatch");
     if (n == 0) return;
 
     DeviceVectorWrapper<T> ux(x, diag.GetMemType());
@@ -215,8 +214,22 @@ namespace ngla
     const auto & kern = DeviceDiagonalKernels<T>::Get();
     unsigned groups = (n + kern.groupsize-1) / kern.groupsize;
     kern.queue->Launch (*kern.mult, Dim3(groups), Dim3(kern.groupsize),
-                        { diag.DevArgRO(), ux.DevArgRO(), uy.DevArgRW(),
-                          KernelArg(T(s)), KernelArg(int(n)) });
+                        { diag.DevArgRO(), ux.DevArgRO(), beta == T(0) ? uy.DevArgW() : uy.DevArgRW(),
+                          KernelArg(s), KernelArg(beta), KernelArg(int(n)) });
+  }
+
+  template <typename T>
+  void DeviceDiagonalMatrix<T> :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    static Timer t("DeviceDiagonalMatrix::MultAdd"); RegionTimer reg(t);
+    Launch (x, y, T(s), T(1));
+  }
+
+  template <typename T>
+  void DeviceDiagonalMatrix<T> :: Mult (const BaseVector & x, BaseVector & y) const
+  {
+    static Timer t("DeviceDiagonalMatrix::Mult"); RegionTimer reg(t);
+    Launch (x, y, T(1), T(0));
   }
 
 
