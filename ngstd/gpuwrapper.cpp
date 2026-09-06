@@ -6,12 +6,30 @@
 /*********************************************************************/
 
 #include "gpuwrapper.hpp"
+#include <core/ngcore.hpp>
 #include <atomic>
 #include <stdexcept>
 #include <cctype>
 
 namespace ngs_gpu
 {
+  bool IsTracing() { return ngcore::trace != nullptr; }
+  unsigned long long TraceNow() { return ngcore::GetTimeCounter(); }
+  double TraceSecondsPerTick() { return ngcore::seconds_per_tick; }
+
+  void TraceKernel (const Kernel & kernel, unsigned long long t_start, unsigned long long t_stop)
+  {
+    if (!ngcore::trace) return;
+    if (kernel.trace_timer < 0)
+      kernel.trace_timer = ngcore::NgProfiler::CreateTimer (kernel.Name());
+    // one serial row: keep the intervals ordered and disjoint
+    static unsigned long long last_stop = 0;
+    if (t_start < last_stop) t_start = last_stop;
+    if (t_stop < t_start) t_stop = t_start;
+    last_stop = t_stop;
+    ngcore::trace->AddGPUEvent (kernel.trace_timer, t_start, t_stop);
+  }
+
   ArgType ArgType :: FromName (const string & aname)
   {
     // normalize: drop const, collapse whitespace

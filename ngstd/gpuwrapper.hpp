@@ -252,6 +252,7 @@ namespace ngs_gpu
     virtual ~Kernel() = default;
     virtual string Name() const = 0;
     const shared_ptr<Library> & GetLibrary() const { return library; }
+    mutable int trace_timer = -1;   // ngcore timer id, created on first trace
     virtual KernelInfo Info (size_t groupsize = 0) const { return {}; }
     // nullptr if the source had no KERNEL(...) declaration for it
     const KernelSignature * Signature() const;
@@ -290,6 +291,17 @@ namespace ngs_gpu
 
 
   class Queue;
+
+  /*
+    Kernel tracing: while a paje trace is active (TaskManager(pajetrace=...)),
+    backends report every finished kernel with its device-measured start/stop
+    times, converted to ngcore ticks (TraceNow, TraceSecondsPerTick). The
+    kernels appear in the "GPU" row of the trace.
+  */
+  bool IsTracing();
+  unsigned long long TraceNow();          // ngcore::GetTimeCounter
+  double TraceSecondsPerTick();
+  void TraceKernel (const Kernel & kernel, unsigned long long t_start, unsigned long long t_stop);
 
   /*
     A recorded sequence of launches, replayed with one call. Recorded by
