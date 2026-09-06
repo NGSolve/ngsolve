@@ -3440,17 +3440,34 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
               mat(i*DIM_SPC+k,j*DIM_SPC+l) = cov_trans(k,l)*piola_trans(i,j);
     }    
 
-    static string GenerateTransformationCode (string invar, string outvar, bool trans)
+    static string GenerateTransformationCode (string invar, string outvar, bool trans,
+                                              bool curved = false)
     {
-      string d = ToString(DIM_SPC), dmat = ToString(DIM_DMAT);
-      string mat = "ToMat<"+d+","+d+">";
+      string d = ToString(DIM_SPC), dmat = ToString(DIM_DMAT), dref = ToString(DimRef());
+      string M = "Mat<"+d+","+d+",Real>", mat = "ToMat<"+d+","+d+">";
+      // product rule for u = 1/J F uhat with the reference gradient G and, on
+      // curved classes, dF(b) = d_b F from the kernel:
+      //   grad u = 1/J (F G + dF uhat - (F uhat) (x) dlnJ) Finv,   dlnJ = Trace(Finv dF)
+      string code = "{\n" + M + " Finv = Inv(F);\n";
+      if (curved)
+        code += "Vec<"+d+",Real> dlnJ = Trace(Finv * dF);\n";
       if (!trans)
-        return outvar + " = ToVec(1/J * (F * (" + mat + "(" + invar
-          + ".Range<0," + dmat + ">()) * Inv(F))));\n";
+        {
+          code += M + " G = " + mat + "(" + invar + ".Range<0," + dmat + ">());\n";
+          if (curved)
+            code += "Vec<"+d+",Real> uh = " + invar + ".Range<" + dmat + "," + dref + ">();\n"
+              + outvar + " = ToVec(1/J * ((F * G + dF * uh - Outer(F * uh, dlnJ)) * Finv));\n";
+          else
+            code += outvar + " = ToVec(1/J * (F * (G * Finv)));\n";
+        }
       else
-        return outvar + " = 0.0; " + outvar + ".SetRange<0," + dmat
-          + ">(ToVec(1/J * (Trans(F) * (" + mat + "(" + invar
-          + ") * Trans(Inv(F))))));\n";
+        {
+          code += M + " Q = 1/J * (" + mat + "(" + invar + ") * Trans(Finv));\n"
+            + outvar + " = 0.0; " + outvar + ".SetRange<0," + dmat + ">(ToVec(Trans(F) * Q));\n";
+          if (curved)
+            code += outvar + ".SetRange<" + dmat + "," + dref + ">(Trans(dF) * Q - Trans(F) * (Q * dlnJ));\n";
+        }
+      return code + "}\n";
     }
     
     template <typename FEL, typename MIP, typename MAT>

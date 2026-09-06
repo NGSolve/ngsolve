@@ -864,6 +864,114 @@ namespace tinybla {
     return vec;
   }
 
+  // --- shape-typed views of strided memory ------------------------------------
+  template <int H, int W, typename T>
+  struct FlatMat {
+    const T * data; int dr, dc;
+    TB_HD T operator() (int i, int j) const { return data[i*dr+j*dc]; }
+  };
+  template <int S, typename T>
+  struct FlatVec {
+    const T * data; int d;
+    TB_HD T operator() (int i) const { return data[i*d]; }
+  };
+  // rank 3, (i, a, b)
+  template <int S, int H, int W, typename T>
+  struct FlatTens3 {
+    const T * data; int d0, d1, d2;
+    TB_HD T operator() (int i, int a, int b) const { return data[i*d0+a*d1+b*d2]; }
+  };
+
+  // sum_k a(k) * b(k)
+  template <int K, typename T, typename FA, typename FB>
+  TB_HD T Contract (FA a, FB b) {
+    T sum = T(0);
+    for (int k = 0; k < K; k++) sum += a(k) * b(k);
+    return sum;
+  }
+
+  template <int H, int K, int W, typename T>
+  TB_HD Mat<H,W,T> operator* (FlatMat<H,K,T> a, FlatMat<K,W,T> b) {
+    Mat<H,W,T> r;
+    for (int i = 0; i < H; i++)
+      for (int j = 0; j < W; j++)
+        r(i,j) = Contract<K,T>([=] (int k) { return a(i,k); }, [=] (int k) { return b(k,j); });
+    return r;
+  }
+  template <int H, int K, typename T>
+  TB_HD Vec<H,T> operator* (FlatMat<H,K,T> a, FlatVec<K,T> x) {
+    Vec<H,T> v;
+    for (int i = 0; i < H; i++)
+      v(i) = Contract<K,T>([=] (int k) { return a(i,k); }, x);
+    return v;
+  }
+  // matrix times rank-3, sliced by the last index:  (A T)(b) = A T(:,:,b).
+  // With the coefficients A and the basis second derivatives T(k,a,b) this is
+  // the derivative of the mapping matrix, dF(b) = d_b F
+  template <int S, int K, int D, typename T>
+  TB_HD Vec<D,Mat<S,D,T>> operator* (FlatMat<S,K,T> a, FlatTens3<K,D,D,T> t) {
+    Vec<D,Mat<S,D,T>> r;
+    for (int b = 0; b < D; b++)
+      for (int i = 0; i < S; i++)
+        for (int p = 0; p < D; p++)
+          r(b)(i,p) = Contract<K,T>([=] (int k) { return a(i,k); }, [=] (int k) { return t(k,p,b); });
+    return r;
+  }
+
+  // --- Vec of matrices ---------------------------------------------------------
+  // (A V)(b) = A V(b) is the generic  T * Vec<S,T>  above with T a Mat
+  template <int S, int H, int W, typename T>
+  TB_HD Vec<S,Mat<W,H,T>> Trans (Vec<S,Mat<H,W,T>> v) {
+    Vec<S,Mat<W,H,T>> r;
+    for (int b = 0; b < S; b++) r(b) = Trans(v(b));
+    return r;
+  }
+  // column b of the result is V(b) u  (e.g. dF u = d_b (F u) with u frozen)
+  template <int D, int S, typename T>
+  TB_HD Mat<S,D,T> operator* (Vec<D,Mat<S,D,T>> v, Vec<D,T> u) {
+    Mat<S,D,T> r;
+    for (int b = 0; b < D; b++)
+      {
+        Vec<S,T> vu = v(b) * u;
+        for (int i = 0; i < S; i++) r(i,b) = vu(i);
+      }
+    return r;
+  }
+  // its adjoint: sum_b V(b) (column b of Q),  <Q, V u> = <Trans(V) Q, u>
+  template <int D, int S, typename T>
+  TB_HD Vec<D,T> operator* (Vec<D,Mat<D,S,T>> v, Mat<S,D,T> q) {
+    Vec<D,T> r; r = T(0);
+    for (int b = 0; b < D; b++)
+      {
+        Vec<S,T> qb;
+        for (int i = 0; i < S; i++) qb(i) = q(i,b);
+        r += v(b) * qb;
+      }
+    return r;
+  }
+  template <int D, typename T>
+  TB_HD T Trace (Mat<D,D,T> m) {
+    T t = T(0);
+    for (int i = 0; i < D; i++) t += m(i,i);
+    return t;
+  }
+  template <int S, int D, typename T>
+  TB_HD Vec<S,T> Trace (Vec<S,Mat<D,D,T>> v) {
+    Vec<S,T> r;
+    for (int b = 0; b < S; b++) r(b) = Trace(v(b));
+    return r;
+  }
+
+  // (a b^T)_ij = a_i b_j
+  template <int H, int W, typename T>
+  TB_HD Mat<H,W,T> Outer (Vec<H,T> a, Vec<W,T> b) {
+    Mat<H,W,T> r;
+    for (int i = 0; i < H; i++)
+      for (int j = 0; j < W; j++)
+        r(i,j) = a(i) * b(j);
+    return r;
+  }
+
   enum ORDERING { ColMajor, RowMajor };
   constexpr ORDERING operator! (ORDERING o) { return (o==RowMajor) ? ColMajor : RowMajor; }
 
