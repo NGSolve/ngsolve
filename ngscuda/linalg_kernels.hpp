@@ -67,14 +67,9 @@ extern void TFQMROddTauBatch(double* wnorm_sq, double* tau_in, double* alpha_in,
 extern void TFQMROddBeta(double* rho, double* rho_last, double* beta, double* beta_sq);
     
     /*
-  extern void DevBlockDiagonalMatrixSoAMultAddVecs (double s, int size, double * a, double * b, double * res);
 
   // for (i,j,k) in indices:
   //    res.Row(k) += s * a.Row(i) * b.Row(j)
-  extern void DevBlockDiagonalMatrixSoAMultAddVecs (double s, FlatArray<Dev<int>>, 
-                                                    SliceMatrix<Dev<double>> a, 
-                                                    SliceMatrix<Dev<double>> b,
-                                                    SliceMatrix<Dev<double>> res);
 
 
 extern void DevProjectorMultAdd (double s, size_t size, const double * a, double * b, const unsigned char * bits, bool keep_values);

@@ -67,11 +67,7 @@ namespace ngla
   };
 
   shared_ptr<BaseMatrix> CreateDevMatrix (BaseMatrix &mat);
-  shared_ptr<BaseMatrix> CreateDevMatrix (Matrix<> &mat);
 
-
-  // the cuda-only solver of dev_sparsecholesky.cpp, for comparisons
-  shared_ptr<BaseMatrix> CreateDevSparseCholesky (const SparseCholeskyTM<double> & mat);
 
   class DevSparseMatrix : public DevMatrix
   {
@@ -151,23 +147,6 @@ namespace ngla
   
 
 
-  class DevBlockDiagonalMatrixSoA : public DevMatrix
-  {
-    double * dev_data; // Tensor<3> blockdiag;  
-    int blocks, dimy, dimx;
-    Matrix<bool> nonzero;
-    Array<Dev<int>> indices, indices_trans;
-    DevTable<int> sparse, sparseT;
- public:
-    DevBlockDiagonalMatrixSoA (const BlockDiagonalMatrixSoA & mat);
-    ~DevBlockDiagonalMatrixSoA ();
-    void Mult (const BaseVector & x, BaseVector & y) const override;
-    void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
-    void MultTrans (const BaseVector & x, BaseVector & y) const override;    
-    void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
-    int VHeight() const override { return dimy*blocks; }
-    int VWidth() const override { return dimx*blocks; }
-  };
   
   
 
@@ -181,7 +160,7 @@ namespace ngla
   class DevCGSolver : public KrylovSpaceSolver
   {
     shared_ptr<BaseMatrix> a_dev;  // DevSparseMatrix for graph capture
-    shared_ptr<BaseMatrix> c_dev;  // DevBlockJacobiMatrix for graph capture
+    shared_ptr<BaseMatrix> c_dev;  // preconditioner for graph capture
 
   public:
     DevCGSolver() : KrylovSpaceSolver() { }

@@ -252,55 +252,6 @@ void ConstEBEKernelCopyOutIdx (int numblocks, int * idx, int bs, int * col_dnums
 
 
 
-/* ************** kernels for DevBlockDiagonalMatrixSoA Matrix ********************** */
-
-__global__ void DevBlockDiagonalMatrixSoAMultAddVecsKernel (double s, int size, double * a, double * b, double * res)
-{
-  int tid = blockIdx.x*blockDim.x+threadIdx.x;
-  for (int i = tid; i < size; i += blockDim.x*gridDim.x)
-    res[i] += s * a[i]*b[i];
-  
-}
-
-void DevBlockDiagonalMatrixSoAMultAddVecs (double s, int size, double * a, double * b, double * res)
-{    
-  DevBlockDiagonalMatrixSoAMultAddVecsKernel<<<512,256,0,ngs_cuda_stream>>> (s, size, a, b, res);
-}
-
-
-
-
-__global__ void DevBlockDiagonalMatrixSoAMultAddVecsKernel (double s, FlatArray<Dev<int>> inds,
-                                                            SliceMatrix<Dev<double>> a,
-                                                            SliceMatrix<Dev<double>> b,
-                                                            SliceMatrix<Dev<double>> res)
-{
-  // TODO: copy inds to shared memory ? 
-  int tid = blockIdx.x*blockDim.x+threadIdx.x;
-  for (int i = tid; i < res.Width(); i += blockDim.x*gridDim.x)
-    for (int j = 0; j < inds.Size(); j+=3)
-      {
-        int rowa = inds[j];
-        int rowb = inds[j+1];
-        int rowres = inds[j+2];
-        // res[i] += s * a[i]*b[i];
-        res(rowres,i) += s * a(rowa,i) * b(rowb,i);
-      }
-}
-
-// for (i,j,k) in indices:
-//    res.Row(k) += s * a.Row(i) * b.Row(j)
-void DevBlockDiagonalMatrixSoAMultAddVecs (double s, FlatArray<Dev<int>> inds, 
-                                           SliceMatrix<Dev<double>> a, 
-                                           SliceMatrix<Dev<double>> b,
-                                           SliceMatrix<Dev<double>> res)
-{
-  DevBlockDiagonalMatrixSoAMultAddVecsKernel<<<512,256,0,ngs_cuda_stream>>> (s, inds, a, b, res);
-}
-
-
-
-
 /* ************** kernels for DevProjector Matrix ********************** */
 
 __global__ void DevProjectorMultAddKernel1 (double s, size_t size, const double * a, 

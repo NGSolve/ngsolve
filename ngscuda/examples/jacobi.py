@@ -44,7 +44,7 @@ with TaskManager():
 fdev = UnifiedVector(f.vec)
 adev = CreateDevMatrix(a.mat)
 
-devjac = CreateDevSmoother(a.mat, fes.FreeDofs())
+devjac = c.CreateDeviceMatrix()
 
 fdev.UpdateDevice()
 

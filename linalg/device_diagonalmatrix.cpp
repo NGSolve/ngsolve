@@ -60,6 +60,25 @@ namespace ngla
         if (i < n && NGS_PROJ_SET(i) != keep) x[i] = SCAL(0);
       }
 
+
+      // block-diagonal SoA: y(j,i) = beta*y(j,i) + s * sum_k a(aind[k],i) * x(xind[k],i)
+      // for the entries k of row j, one work-item per block index i
+      KERNEL(blockdiag_soa, GLOBAL_IN(SCAL,a), GLOBAL_IN(int,first), GLOBAL_IN(int,aind), GLOBAL_IN(int,xind),
+                            GLOBAL_IN(SCAL,x), GLOBAL(SCAL,y),
+                            VALUE(SCAL,s), VALUE(SCAL,beta), VALUE(int,nrows), VALUE(int,blocks))
+      {
+        int i = int(GLOBAL_ID_X);
+        if (i >= blocks) return;
+        for (int j = 0; j < nrows; j++)
+          {
+            SCAL sum = SCAL(0);
+            for (int k = first[j]; k < first[j+1]; k++)
+              sum += a[aind[k]*blocks+i] * x[xind[k]*blocks+i];
+            int yi = j*blocks+i;
+            y[yi] = (beta == SCAL(0)) ? s*sum : beta*y[yi] + s*sum;
+          }
+      }
+
     )RAW";
 
 
@@ -72,6 +91,7 @@ namespace ngla
       shared_ptr<ngs_gpu::Queue> queue;
       shared_ptr<Kernel> mult;
       shared_ptr<Kernel> proj_mult, proj_multadd, proj_project;
+      shared_ptr<Kernel> blockdiag_soa;
       unsigned groupsize;
 
       DeviceDiagonalKernels (shared_ptr<Device> adevice)
@@ -84,6 +104,7 @@ namespace ngla
         proj_mult    = library->GetKernel ("proj_mult");
         proj_multadd = library->GetKernel ("proj_multadd");
         proj_project = library->GetKernel ("proj_project");
+        blockdiag_soa = library->GetKernel ("blockdiag_soa");
         queue = device->DefaultQueue();
         groupsize = (device->SimdWidth() > 1) ? 256 : 64;
         groupsize = min<size_t> (groupsize, device->MaxThreadsPerGroup());
@@ -261,8 +282,145 @@ namespace ngla
   }
 
 
+  template <typename T>
+  DeviceBlockDiagonalMatrixSoA<T> :: DeviceBlockDiagonalMatrixSoA (const BlockDiagonalMatrixSoA & mat)
+    : memtype (PreferredMemType())
+  {
+    FlatTensor<3> blockdiag = mat.GetBlockDiag();
+    dimy = blockdiag.GetSize();
+    dimx = blockdiag.GetSubTensor().GetSize();
+    blocks = blockdiag.GetSubTensor().GetSubTensor().GetSize();
+
+    auto device = DeviceDiagonalKernels<T>::Get().device;
+    size_t n = size_t(dimy)*dimx*blocks;
+    dev_data = device->template NewBuffer<T> (max<size_t>(n,1), MemType::Device);
+    if constexpr (is_same_v<T,double>)
+      dev_data.H2D (blockdiag.Data(), n);
+    else
+      {
+        std::vector<T> tmp (n);
+        for (size_t i = 0; i < n; i++) tmp[i] = T(blockdiag.Data()[i]);
+        dev_data.H2D (tmp.data(), n);
+      }
+
+    // row lists: a-row i*dimx+j holds block (i,j)
+    auto upload = [&] (FlatTable<int> table, bool trans,
+                       ngs_gpu::TypedBuffer<int> & bfirst, ngs_gpu::TypedBuffer<int> & baind,
+                       ngs_gpu::TypedBuffer<int> & bxind)
+    {
+      std::vector<int> hfirst, haind, hxind;
+      hfirst.push_back(0);
+      for (size_t j = 0; j < table.Size(); j++)
+        {
+          for (int k : table[j])
+            {
+              haind.push_back (trans ? k*dimx+int(j) : int(j)*dimx+k);
+              hxind.push_back (k);
+            }
+          hfirst.push_back (int(haind.size()));
+        }
+      bfirst = device->template NewBuffer<int> (hfirst.size(), MemType::Device);
+      baind  = device->template NewBuffer<int> (max<size_t>(haind.size(),1), MemType::Device);
+      bxind  = device->template NewBuffer<int> (max<size_t>(hxind.size(),1), MemType::Device);
+      bfirst.H2D (hfirst.data(), hfirst.size());
+      baind.H2D (haind.data(), haind.size());
+      bxind.H2D (hxind.data(), hxind.size());
+    };
+    upload (mat.GetSparseMatrix(), false, first, aind, xind);
+    upload (mat.GetSparseMatrixTrans(), true, firstT, aindT, xindT);
+  }
+
+  template <typename T>
+  void DeviceBlockDiagonalMatrixSoA<T> :: Launch (const BaseVector & x, BaseVector & y, T s, T beta, bool trans) const
+  {
+    int nrows = trans ? dimx : dimy, ncols = trans ? dimy : dimx;
+    if (x.Size() != size_t(ncols)*blocks || y.Size() != size_t(nrows)*blocks)
+      throw Exception("DeviceBlockDiagonalMatrixSoA::Mult - size mismatch");
+    if (blocks == 0) return;
+
+    DeviceVectorWrapper<T> ux(x, memtype);
+    DeviceVectorWrapper<T> uy(y, memtype);
+
+    const auto & kern = DeviceDiagonalKernels<T>::Get();
+    unsigned groups = (blocks + kern.groupsize-1) / kern.groupsize;
+    kern.queue->Launch (*kern.blockdiag_soa, Dim3(groups), Dim3(kern.groupsize),
+                        { dev_data,
+                          trans ? firstT : first, trans ? aindT : aind, trans ? xindT : xind,
+                          ux.DevArgRO(), beta == T(0) ? uy.DevArgW() : uy.DevArgRW(),
+                          KernelArg(s), KernelArg(beta), KernelArg(nrows), KernelArg(blocks) });
+  }
+
+  template <typename T>
+  void DeviceBlockDiagonalMatrixSoA<T> :: Mult (const BaseVector & x, BaseVector & y) const
+  {
+    static Timer t("DeviceBlockDiagonalMatrixSoA::Mult"); RegionTimer reg(t);
+    Launch (x, y, T(1), T(0), false);
+  }
+
+  template <typename T>
+  void DeviceBlockDiagonalMatrixSoA<T> :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    static Timer t("DeviceBlockDiagonalMatrixSoA::MultAdd"); RegionTimer reg(t);
+    Launch (x, y, T(s), T(1), false);
+  }
+
+  template <typename T>
+  void DeviceBlockDiagonalMatrixSoA<T> :: MultTrans (const BaseVector & x, BaseVector & y) const
+  {
+    static Timer t("DeviceBlockDiagonalMatrixSoA::MultTrans"); RegionTimer reg(t);
+    Launch (x, y, T(1), T(0), true);
+  }
+
+  template <typename T>
+  void DeviceBlockDiagonalMatrixSoA<T> :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    static Timer t("DeviceBlockDiagonalMatrixSoA::MultTransAdd"); RegionTimer reg(t);
+    Launch (x, y, T(s), T(1), true);
+  }
+
+  template <typename T>
+  AutoVector DeviceBlockDiagonalMatrixSoA<T> :: CreateRowVector () const
+  {
+    return make_unique<DeviceVector<T>> (size_t(dimx)*blocks, memtype);
+  }
+
+  template <typename T>
+  AutoVector DeviceBlockDiagonalMatrixSoA<T> :: CreateColVector () const
+  {
+    return make_unique<DeviceVector<T>> (size_t(dimy)*blocks, memtype);
+  }
+
+  template <typename T>
+  BaseMatrix::OperatorInfo DeviceBlockDiagonalMatrixSoA<T> :: GetOperatorInfo () const
+  {
+    return { string("DeviceBlockDiagonalMatrixSoA<") + (is_same_v<T,double> ? "double" : "float") + ">",
+             size_t(dimy)*blocks, size_t(dimx)*blocks };
+  }
+
+  template <typename T>
+  ostream & DeviceBlockDiagonalMatrixSoA<T> :: Print (ostream & ost) const
+  {
+    ost << "DeviceBlockDiagonalMatrixSoA<" << (is_same_v<T,double> ? "double" : "float")
+        << ">, blocks = " << blocks << ", dim = " << dimy << " x " << dimx << endl;
+    return ost;
+  }
+
+
+  shared_ptr<BaseMatrix> BlockDiagonalMatrixSoA :: CreateDeviceMatrix () const
+  {
+    // double only: the neighbours in the mass-operator tree (element-by-element
+    // matrices) have no common-layer version yet and stay host double, and a
+    // float device factor cannot form a product with them
+    if (ngs_gpu::HasDevice() && GetGpuDevice()->HasFloat64())
+      return make_shared<DeviceBlockDiagonalMatrixSoA<double>> (*this);
+    return BaseMatrix::CreateDeviceMatrix();
+  }
+
+
   template class DeviceDiagonalMatrix<double>;
   template class DeviceDiagonalMatrix<float>;
+  template class DeviceBlockDiagonalMatrixSoA<double>;
+  template class DeviceBlockDiagonalMatrixSoA<float>;
   template DeviceDiagonalMatrix<double>::DeviceDiagonalMatrix (FlatVector<double>);
   template DeviceDiagonalMatrix<double>::DeviceDiagonalMatrix (FlatVector<float>);
   template DeviceDiagonalMatrix<float>::DeviceDiagonalMatrix (FlatVector<double>);

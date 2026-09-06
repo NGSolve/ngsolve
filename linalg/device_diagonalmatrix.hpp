@@ -57,9 +57,49 @@ namespace ngla
   };
 
 
+  /*
+    Device counterpart of BlockDiagonalMatrixSoA: dimy x dimx blocks of
+    'blocks' diagonal entries each, block index fastest. Only the non-zero
+    (i,j) block positions are visited, as compressed row lists for A and A^T.
+  */
+  template <typename T>
+  class NGS_DLL_HEADER DeviceBlockDiagonalMatrixSoA : public BaseMatrix
+  {
+  protected:
+    int blocks, dimy, dimx;
+    MemType memtype;
+    ngs_gpu::TypedBuffer<T> dev_data;                 // (dimy*dimx) x blocks
+    ngs_gpu::TypedBuffer<int> first, aind, xind;      // per row j: entries k, a-row aind[k], x-row xind[k]
+    ngs_gpu::TypedBuffer<int> firstT, aindT, xindT;   // the same for the transpose
+
+    void Launch (const BaseVector & x, BaseVector & y, T s, T beta, bool trans) const;
+
+  public:
+    DeviceBlockDiagonalMatrixSoA (const BlockDiagonalMatrixSoA & mat);
+    virtual ~DeviceBlockDiagonalMatrixSoA () { }
+
+    virtual int VHeight() const override { return blocks*dimy; }
+    virtual int VWidth() const override { return blocks*dimx; }
+    virtual bool IsComplex() const override { return false; }
+
+    virtual void Mult (const BaseVector & x, BaseVector & y) const override;
+    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
+    virtual void MultTrans (const BaseVector & x, BaseVector & y) const override;
+    virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
+
+    virtual AutoVector CreateRowVector () const override;
+    virtual AutoVector CreateColVector () const override;
+
+    virtual BaseMatrix::OperatorInfo GetOperatorInfo () const override;
+    virtual ostream & Print (ostream & ost) const override;
+  };
+
+
 #if !defined(FILE_DEVICE_DIAGONALMATRIX_CPP)
   extern template class DeviceDiagonalMatrix<double>;
   extern template class DeviceDiagonalMatrix<float>;
+  extern template class DeviceBlockDiagonalMatrixSoA<double>;
+  extern template class DeviceBlockDiagonalMatrixSoA<float>;
 #endif
 }
 
