@@ -20,6 +20,7 @@
   #define GLOBAL_PTR(T)       T *
   #define LOCAL_PTR(T)        T *
   #define GPU_FUNC            __device__
+  #define LOOP_NO_UNROLL      _Pragma("unroll 1")
 
   typedef unsigned int   uint;
   typedef unsigned short ushort;
@@ -238,6 +239,7 @@
   #define GLOBAL_PTR(T)       T *
   #define LOCAL_PTR(T)        T *
   #define GPU_FUNC
+  #define LOOP_NO_UNROLL
 
   typedef unsigned int   uint;
   typedef unsigned short ushort;
@@ -335,6 +337,7 @@
   #define GLOBAL_PTR(T)       device T *
   #define LOCAL_PTR(T)        threadgroup T *
   #define GPU_FUNC
+  #define LOOP_NO_UNROLL      _Pragma("clang loop unroll(disable)")
 
   #define GLOBAL_ID_X   _ngs_gtid.x
   #define GLOBAL_ID_Y   _ngs_gtid.y

@@ -1076,6 +1076,7 @@ namespace ngcomp
     Tensor<3> geocoefs;
     Tensor<3> Bgeo;
     Matrix<> Sgeo;    // (node, ip) basis values, x(ip) = sum_node geocoefs Sgeo
+    Tensor<3> DDgeo;  // (node, refdir pair a*dims+b, ip) second derivatives; empty when straight
     MatFreeOptions opts;
     Array<IntRange> ranges_x, ranges_xref, ranges_y, ranges_yref;
     Array<Code> physics;    // code for d_form / d_test

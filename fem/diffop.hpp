@@ -493,7 +493,8 @@ namespace ngfem
                               SliceMatrix<double> trans,
                               LocalHeap & lh) const override;
 
-    virtual string GenerateTransformationCode (string invar, string outvar, bool trans) const override
+    virtual string GenerateTransformationCode (string invar, string outvar, bool trans,
+                                               bool curved = false) const override
     {
       int inw = trans ? diffop->Dim() : diffop->DimRef();
       int outw = trans ? diffop->DimRef() : diffop->Dim();
@@ -504,7 +505,7 @@ namespace ngfem
           code += "Vec<" + ToString(outw) + ",Real> res_comp;\n";
           code += diffop->GenerateTransformationCode
             (invar + ".Range<" + ToString(i*inw) + "," + ToString((i+1)*inw) + ">()",
-             "res_comp", trans);
+             "res_comp", trans, curved);
           code += outvar + ".SetRange<" + ToString(i*outw) + "," + ToString((i+1)*outw)
             + ">(res_comp);\n";
           code += "}\n";
@@ -1070,9 +1071,10 @@ namespace ngfem
     }
 
     NGS_DLL_HEADER virtual 
-    string GenerateTransformationCode (string invar, string outvar, bool trans) const override
+    string GenerateTransformationCode (string invar, string outvar, bool trans,
+                                       bool curved = false) const override
     {
-      return diffop->GenerateTransformationCode (invar, outvar, trans);
+      return diffop->GenerateTransformationCode (invar, outvar, trans, curved);
     }
     
   
@@ -1262,7 +1264,8 @@ namespace ngfem
 
 
     virtual 
-    string GenerateTransformationCode (string invar, string outvar, bool trans) const override;
+    string GenerateTransformationCode (string invar, string outvar, bool trans,
+                                       bool curved = false) const override;
     
 
     shared_ptr<CoefficientFunction> DiffShape (shared_ptr<CoefficientFunction> proxy,

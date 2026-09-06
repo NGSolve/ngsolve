@@ -50,7 +50,7 @@ namespace ngcomp
 
     ngs_gpu::TypedBuffer<int> buffer_dofx, buffer_dofy, buffer_domain;
     ngs_gpu::TypedBuffer<REAL> buffer_bmatx, buffer_bmaty;
-    ngs_gpu::TypedBuffer<REAL> buffer_weights, buffer_geocoefs, buffer_bgeo, buffer_sgeo;
+    ngs_gpu::TypedBuffer<REAL> buffer_weights, buffer_geocoefs, buffer_bgeo, buffer_sgeo, buffer_ddgeo;
     
   public:
     GPU_BTDTBMatrix (const BaseMatrix& mat);
@@ -154,40 +154,32 @@ namespace ngcomp
     buffer_dofx = IntervalBases (pmat->dofx, locdofsx, nrunsx, runofx, offofx);
     buffer_dofy = IntervalBases (pmat->dofy, locdofsy, nrunsy, runofy, offofy);
 
-    // for the remainder, store the compressed tensor in the last rows of buffer_bmatx
-    buffer_bmatx = NewSharedBuffer(dimxref*(RoundUp(nip,BS_ipts)+BS_ipts)*RoundUp<8>(locdofsx));
-    FlatTensor<3,REAL> dbmatx(dimxref,RoundUp(nip,BS_ipts),RoundUp<8>(locdofsx), buffer_bmatx.HostData());
+    int nip_pad = RoundUp(nip,BS_ipts), nip0 = RoundDown(nip,BS_ipts), nip_rem = nip-nip0;
+    auto TableSize = [&] (int nrows, int stride) { return size_t(nrows)*(nip_pad+BS_ipts)*stride; };
+
+    buffer_bmatx = NewSharedBuffer(TableSize(dimxref, RoundUp<8>(locdofsx)));
+    FlatTensor<3,REAL> dbmatx(dimxref, nip_pad, RoundUp<8>(locdofsx), buffer_bmatx.HostData());
+    FlatTensor<3,REAL> dbmatx_rem(dimxref, nip_rem, RoundUp<8>(locdofsx), dbmatx.Data()+dbmatx.GetTotalSize());
+    dbmatx = 0; dbmatx_rem = 0;
     for (int j = 0; j < dimxref; j++)
-      for (int i = 0; i < RoundUp(nip,BS_ipts); i++)
-        for (int k = 0; k < RoundUp<8>(locdofsx); k++)
-          dbmatx(j,i,k) = (i < nip && k < locdofsx) ? pmat->Bx(k,j,i) : 0;
+      {
+        dbmatx(j,STAR,STAR).Rows(0,nip).Cols(0,locdofsx) = Trans(pmat->Bx(STAR,j,STAR));
+        if (nip_rem)   // a 0-row slice cannot be addressed
+          dbmatx_rem(j,STAR,STAR).Cols(0,locdofsx) = Trans(pmat->Bx(STAR,j,STAR).Cols(nip0,nip));
+      }
+    int bmatx_rem_rows = dimxref*nip_pad;
 
-    int bmatx_rem_rows = dimxref*RoundUp(nip,BS_ipts);
-    int nip_rem = nip - RoundDown(nip, BS_ipts);
-    FlatTensor<3,REAL> dbmatx_rem(dimxref,nip_rem,RoundUp<8>(locdofsx), buffer_bmatx.HostData() + bmatx_rem_rows*RoundUp<8>(locdofsx));
-    dbmatx_rem = 0;
-    for (int j = 0; j < dimxref; j++)
-      for (int i = 0; i < nip_rem; i++)
-        for (int k = 0; k < RoundUp<8>(locdofsx); k++)
-          dbmatx_rem(j,i,k) = (k < locdofsx) ? pmat->Bx(k,j,i+RoundDown(nip,BS_ipts)) : 0;
-
-    
-    buffer_bmaty = NewSharedBuffer(dimyref*(RoundUp(nip,BS_ipts)+BS_ipts)*RoundUp<8>(locdofsy));
-    FlatTensor<3,REAL> dbmaty(dimyref,RoundUp(nip,BS_ipts),RoundUp<8>(locdofsy), buffer_bmaty.HostData());
+    buffer_bmaty = NewSharedBuffer(TableSize(dimyref, RoundUp<8>(locdofsy)));
+    FlatTensor<3,REAL> dbmaty(dimyref, nip_pad, RoundUp<8>(locdofsy), buffer_bmaty.HostData());
+    FlatTensor<3,REAL> dbmaty_rem(dimyref, nip_rem, RoundUp<8>(locdofsy), dbmaty.Data()+dbmaty.GetTotalSize());
+    dbmaty = 0; dbmaty_rem = 0;
     for (int j = 0; j < dimyref; j++)
-      for (int i = 0; i < RoundUp(nip,BS_ipts); i++)
-        for (int k = 0; k < RoundUp<8>(locdofsy); k++)
-          dbmaty(j,i,k) = (i<nip && k < locdofsy) ? pmat->By(k,j,i) : 0;
-
-    int bmaty_rem_rows = dimyref*RoundUp(nip,BS_ipts);    
-    FlatTensor<3,REAL> dbmaty_rem(dimyref,nip_rem,RoundUp<8>(locdofsy), buffer_bmaty.HostData() + bmaty_rem_rows*RoundUp<8>(locdofsy));
-    dbmaty_rem = 0;
-    for (int j = 0; j < dimyref; j++)
-      for (int i = 0; i < nip_rem; i++)
-        for (int k = 0; k < RoundUp<8>(locdofsy); k++)
-          dbmaty_rem(j,i,k) = (k < locdofsy) ? pmat->By(k,j,i+RoundDown(nip,BS_ipts)) : 0;
-    
-
+      {
+        dbmaty(j,STAR,STAR).Rows(0,nip).Cols(0,locdofsy) = Trans(pmat->By(STAR,j,STAR));
+        if (nip_rem)   // a 0-row slice cannot be addressed
+          dbmaty_rem(j,STAR,STAR).Cols(0,locdofsy) = Trans(pmat->By(STAR,j,STAR).Cols(nip0,nip));
+      }
+    int bmaty_rem_rows = dimyref*nip_pad;
 
     buffer_domain = device->template NewBuffer<int> (ne, MemType::Shared);
     for (int e = 0; e < ne; e++)
@@ -222,20 +214,39 @@ namespace ngcomp
       for (int i = 0; i < dimr; i++)
         for (int n = 0; n < geo_stride; n++)
           buffer_geocoefs.HostData()[(size_t(e)*dimr+i)*geo_stride+n] = (n < int(geo_ndof)) ? pmat->geocoefs(e,n,i) : 0;
-    // gradients laid out like bmatx: [refdir][ip (padded to BS_ipts)][node], plus the remainder block
-    buffer_bgeo = NewSharedBuffer(dims*(RoundUp(nip,BS_ipts)+BS_ipts)*geo_stride);
-    FlatTensor<3,REAL> dbgeo(dims,RoundUp(nip,BS_ipts),geo_stride, buffer_bgeo.HostData());
+    buffer_bgeo = NewSharedBuffer(TableSize(dims, geo_stride));
+    FlatTensor<3,REAL> dbgeo(dims, nip_pad, geo_stride, buffer_bgeo.HostData());
+    FlatTensor<3,REAL> dbgeo_rem(dims, nip_rem, geo_stride, dbgeo.Data()+dbgeo.GetTotalSize());
+    dbgeo = 0; dbgeo_rem = 0;
     for (int j = 0; j < dims; j++)
-      for (int i = 0; i < RoundUp(nip,BS_ipts); i++)
-        for (int k = 0; k < geo_stride; k++)
-          dbgeo(j,i,k) = (i < nip && k < int(geo_ndof)) ? pmat->Bgeo(k,j,i) : 0;
-    int bgeo_rem_rows = dims*RoundUp(nip,BS_ipts);
-    FlatTensor<3,REAL> dbgeo_rem(dims,nip_rem,geo_stride, buffer_bgeo.HostData() + bgeo_rem_rows*geo_stride);
-    dbgeo_rem = 0;
-    for (int j = 0; j < dims; j++)
-      for (int i = 0; i < nip_rem; i++)
-        for (int k = 0; k < geo_stride; k++)
-          dbgeo_rem(j,i,k) = (k < int(geo_ndof)) ? pmat->Bgeo(k,j,i+RoundDown(nip,BS_ipts)) : 0;
+      {
+        dbgeo(j,STAR,STAR).Rows(0,nip).Cols(0,geo_ndof) = Trans(pmat->Bgeo(STAR,j,STAR));
+        if (nip_rem)
+          dbgeo_rem(j,STAR,STAR).Cols(0,geo_ndof) = Trans(pmat->Bgeo(STAR,j,STAR).Cols(nip0,nip));
+      }
+    int bgeo_rem_rows = dims*nip_pad;
+
+    // second derivatives [refdir pair][ip][node] on curved classes (a dummy otherwise)
+    int nddir = dims*dims;
+    int ddgeo_rem_rows = nddir*nip_pad;
+    bool geo_hesse_data = pmat->geo_order > 1;
+    buffer_ddgeo = NewSharedBuffer(geo_hesse_data ? TableSize(nddir, geo_stride) : 1);
+    buffer_ddgeo.HostData()[0] = 0;
+    if (geo_hesse_data)
+      {
+        auto [geo_ndof_dd, nddir_dd, nip_dd] = pmat->DDgeo.Shape();
+        if (geo_ndof_dd != geo_ndof || int(nddir_dd) != nddir || int(nip_dd) != nip)
+          throw Exception("GPU_BTDTBMatrix: geometry second derivatives do not match");
+        FlatTensor<3,REAL> ddgeo(nddir, nip_pad, geo_stride, buffer_ddgeo.HostData());
+        FlatTensor<3,REAL> ddgeo_rem(nddir, nip_rem, geo_stride, ddgeo.Data()+ddgeo.GetTotalSize());
+        ddgeo = 0; ddgeo_rem = 0;
+        for (int j = 0; j < nddir; j++)
+          {
+            ddgeo(j,STAR,STAR).Rows(0,nip).Cols(0,geo_ndof) = Trans(pmat->DDgeo(STAR,j,STAR));
+            if (nip_rem)
+              ddgeo_rem(j,STAR,STAR).Cols(0,geo_ndof) = Trans(pmat->DDgeo(STAR,j,STAR).Cols(nip0,nip));
+          }
+      }
     // basis values at the points, for the coordinates: sgeo[ip][node]
     buffer_sgeo = NewSharedBuffer(size_t(nip)*geo_ndof);
     for (int i = 0; i < nip; i++)
@@ -274,6 +285,7 @@ namespace ngcomp
              GLOBAL_IN(Real, geocoefs),
              GLOBAL_IN(Real, bgeo),
              GLOBAL_IN(Real, sgeo),
+             GLOBAL_IN(Real, ddgeo),
              GLOBAL_IN(int,  domain),
              VALUE(Real, s),
              VALUE(int, ne_))
@@ -418,7 +430,10 @@ namespace ngcomp
 
           BARRIER();
   
-          // work on integration points
+          // work on integration points. The loop must stay a loop: once its body has no
+          // inner loop left (unrolled geometry contractions) nvcc unrolls it by its maximum
+          // trip count, 64 copies of the point code, and cicc needs minutes (83 s vs 1 s)
+          LOOP_NO_UNROLL
           for (uint ip = tid; ip < bs_ipts*bs_els ; ip += bdim)
              {
                uint locelnr = ip % $BS_ELS;
@@ -431,20 +446,23 @@ namespace ngcomp
                Vec<$DIMX,Real> xvals;
                Vec<$DIMY,Real> yvals;
 
+               FlatMat<dimr,geo_ndof,Real> Cgeo { elgeo + locelnr*dimr*geo_roundup, int(geo_roundup), 1 };
                Mat<$DIMR,$DIMS,Real> F;
+#if ($GEO_STAGED==1)
                for (int i = 0; i < $DIMR; i++)
                   for (int j = 0; j < $DIMS; j++)
-                    {
-#if ($GEO_STAGED==1)
-                      F(i,j) = Fvals[(i*dims+j)*bs_ipts + locipnr][locelnr];
+                    F(i,j) = Fvals[(i*dims+j)*bs_ipts + locipnr][locelnr];
 #else
-                      Real sum = 0;
-                      for (uint c = 0; c < geo_ndof; c++)
-                        sum += elgeo[(locelnr*dimr+i)*geo_roundup+c] * bgeo[(j*nip_padded + baseip+locipnr)*geo_roundup+c];
-                      F(i,j) = sum;
+               FlatMat<geo_ndof,dims,Real> dphi { bgeo + (baseip+locipnr)*geo_roundup, 1, int(nip_padded*geo_roundup) };
+               F = Cgeo * dphi;
 #endif
-                    }
                Real J = Det(F);
+#if ($GEO_HESSE==1)
+               // derivatives of the mapping matrix dF(b) = d_b F, for the transformation code
+               FlatTens3<geo_ndof,dims,dims,Real> ddphi { ddgeo + (baseip+locipnr)*geo_roundup, 1,
+                                                          int(dims*nip_padded*geo_roundup), int(nip_padded*geo_roundup) };
+               auto dF = Cgeo * ddphi;
+#endif
 
                for (int comp = 0; comp < $DIMXREF; comp++)
                   xrefvals(comp) = pointvalsref[locipnr+comp*bs_ipts][locelnr];
@@ -537,6 +555,7 @@ namespace ngcomp
           BARRIER();
   
           // work on integration points
+          LOOP_NO_UNROLL
           for (uint ip = tid; ip < numips*bs_els; ip += bdim)
              {
                uint locelnr = ip % $BS_ELS;
@@ -549,20 +568,22 @@ namespace ngcomp
                Vec<$DIMX,Real> xvals;
                Vec<$DIMY,Real> yvals;
 
+               FlatMat<dimr,geo_ndof,Real> Cgeo { elgeo + locelnr*dimr*geo_roundup, int(geo_roundup), 1 };
                Mat<$DIMR,$DIMS,Real> F;
+#if ($GEO_STAGED==1)
                for (uint i = 0; i < $DIMR; i++)
                   for (uint j = 0; j < $DIMS; j++)
-                    {
-#if ($GEO_STAGED==1)
-                      F(i,j) = Fvals[i*frows + j*numips + locipnr][locelnr];
+                    F(i,j) = Fvals[i*frows + j*numips + locipnr][locelnr];
 #else
-                      Real sum = 0;
-                      for (uint c = 0; c < geo_ndof; c++)
-                        sum += elgeo[(locelnr*dimr+i)*geo_roundup+c] * bgeo[($BGEO_REM_ROWS + j*numips + locipnr)*geo_roundup+c];
-                      F(i,j) = sum;
+               FlatMat<geo_ndof,dims,Real> dphi { bgeo + ($BGEO_REM_ROWS + locipnr)*geo_roundup, 1, int(numips*geo_roundup) };
+               F = Cgeo * dphi;
 #endif
-                    }
                Real J = Det(F);
+#if ($GEO_HESSE==1)
+               FlatTens3<geo_ndof,dims,dims,Real> ddphi { ddgeo + ($DDGEO_REM_ROWS + locipnr)*geo_roundup, 1,
+                                                          int(dims*numips*geo_roundup), int(numips*geo_roundup) };
+               auto dF = Cgeo * ddphi;
+#endif
 
                for (uint j = 0; j < $DIMXREF; j++)
                   xrefvals(j) = pointvalsref[locipnr+j*numips][locelnr];
@@ -714,6 +735,7 @@ namespace ngcomp
     code = Substitute(code, "$GEO_TILES", ToString(geo_roundup/8));
     code = Substitute(code, "$GEO_STAGED", ToString(geo_staged ? 1 : 0));
     code = Substitute(code, "$BGEO_REM_ROWS", ToString(bgeo_rem_rows)+" /*bgeo_rem_rows*/ ");
+    code = Substitute(code, "$DDGEO_REM_ROWS", ToString(ddgeo_rem_rows)+" /*ddgeo_rem_rows*/ ");
     
     code = Substitute(code, "$EL_TILES", ToString(RoundUp<8>(pmat->opts.BS_els)/8)+" /*EL_TILES*/ ");
     code = Substitute(code, "$DOFX_TILES", ToString(RoundUp<8>(locdofsx)/8) +" /* DOFX_TILES */ ");
@@ -760,12 +782,7 @@ namespace ngcomp
         {
           string D = ToString(dimr);
           measure +=
-            "Vec<"+D+",Real> pnt;\n"
-            "for (uint k = 0; k < dimr; k++)\n"
-            "  { Real sum = 0;\n"
-            "    for (uint c = 0; c < geo_ndof; c++)\n"
-            "      sum += elgeo[(locelnr*dimr+k)*geo_roundup+c] * sgeo[(baseip+locipnr)*geo_ndof+c];\n"
-            "    pnt(k) = sum; }\n"
+            "\nVec<"+D+",Real> pnt = Cgeo * FlatVec<geo_ndof,Real>{ sgeo + (baseip+locipnr)*geo_ndof, 1 };\n"
             "struct { Vec<"+D+",Real> p; Real operator() (int, int k) const { return p(k); } } points { pnt };\n";
         }
       code = Substitute(code, "$NREF_TABLE", table);
@@ -797,7 +814,7 @@ namespace ngcomp
         transxcode += "{\n";
         transxcode += "Vec<" + ToString(rangex.Size()) + ",Real> res;\n";
         transxcode += pmat->diffopsx[i] -> GenerateTransformationCode("xrefvals.Range<"+ToString(rangexref.First())+","+ToString(rangexref.Next())+">()",
-                                                                      "res", false);
+                                                                      "res", false, geo_hesse_data);
         transxcode += "xvals.SetRange<" + ToString(rangex.First()) +"," + ToString(rangex.Next()) + ">(res);\n";
         transxcode += "}\n";
       }
@@ -813,11 +830,15 @@ namespace ngcomp
         transycode += "{\n";
         transycode += "Vec<" + ToString(rangeyref.Size()) + ",Real> res;\n";
         transycode += pmat->diffopsy[i] -> GenerateTransformationCode("yvals.Range<"+ToString(rangey.First())+","+ToString(rangey.Next())+">()",
-                                                                      "res", true);
+                                                                      "res", true, geo_hesse_data);
         transycode += "yrefvals.SetRange<" + ToString(rangeyref.First()) +"," + ToString(rangeyref.Next()) + ">(res);\n";
         transycode += "}\n";
       }
     code = Substitute(code, "$TRANSFORMY", transycode);    
+    // dF is evaluated only where a transformation uses it
+    bool geo_hesse = geo_hesse_data
+      && (transxcode.find("dF") != string::npos || transycode.find("dF") != string::npos);
+    code = Substitute(code, "$GEO_HESSE", ToString(geo_hesse ? 1 : 0));
 
     if constexpr (std::is_same_v<REAL,float>)
       code = Substitute(code, "$REAL", "float");
@@ -875,7 +896,7 @@ namespace ngcomp
                    { dvx.DevArgRO(), dvy.DevArgRW(),
                      buffer_dofx, buffer_dofy,
                      buffer_bmatx, buffer_bmaty,
-                     buffer_weights, buffer_geocoefs, buffer_bgeo, buffer_sgeo,
+                     buffer_weights, buffer_geocoefs, buffer_bgeo, buffer_sgeo, buffer_ddgeo,
                      buffer_domain, REAL(s), int(ne) });
   }
 }

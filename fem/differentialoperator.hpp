@@ -268,7 +268,8 @@ namespace ngfem
                               LocalHeap & lh) const;
 
     NGS_DLL_HEADER
-    virtual string GenerateTransformationCode (string invar, string outvar, bool trans) const;
+    virtual string GenerateTransformationCode (string invar, string outvar, bool trans,
+                                               bool curved = false) const;
     
     NGS_DLL_HEADER virtual shared_ptr<CoefficientFunction> DiffShape (shared_ptr<CoefficientFunction> proxy,
                                                        shared_ptr<CoefficientFunction> dir,

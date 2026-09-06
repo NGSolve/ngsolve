@@ -324,9 +324,12 @@ namespace ngfem
 
   template <typename DIFFOP>
   string T_DifferentialOperator<DIFFOP> ::
-  GenerateTransformationCode (string invar, string outvar, bool trans) const  
+  GenerateTransformationCode (string invar, string outvar, bool trans, bool curved) const
   {
-    return DIFFOP::GenerateTransformationCode(invar, outvar, trans);
+    if constexpr (requires { DIFFOP::GenerateTransformationCode(invar, outvar, trans, curved); })
+      return DIFFOP::GenerateTransformationCode(invar, outvar, trans, curved);
+    else
+      return DIFFOP::GenerateTransformationCode(invar, outvar, trans);
   }
   
 }

@@ -1293,6 +1293,16 @@ namespace ngcomp
                 GeoShape (ir[i], shape);
                 Sgeo.Col(i) = shape;
               }
+            Tensor<3> DDgeo(geo_order > 1 ? geo_ndof : 0, dimS*dimS, ir.Size());
+            if (geo_order > 1)
+              for (int i : Range(ir.Size()))
+                {
+                  Matrix<> ddshape(geo_ndof, dimS*dimS);
+                  if (dimS == 3) geofe3->CalcDDShape(ir[i], ddshape); else geofe2->CalcDDShape(ir[i], ddshape);
+                  for (int n = 0; n < geo_ndof; n++)
+                    for (size_t c = 0; c < dimS*dimS; c++)
+                      DDgeo(n,c,i) = ddshape(n,c);
+                }
 
             // projection: mass matrix and the quadrature for the right-hand sides
             IntegrationRule irgeo(eltype, 2*geo_order);
@@ -1478,6 +1488,7 @@ namespace ngcomp
                 mfmat->geocoefs = std::move(geocoefs);
                 mfmat->Bgeo = std::move(Bgeo);
                 mfmat->Sgeo = std::move(Sgeo);
+                mfmat->DDgeo = std::move(DDgeo);
                 mat = mfmat;
                                                     
               }
