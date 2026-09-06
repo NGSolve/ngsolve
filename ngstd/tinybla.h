@@ -11,6 +11,7 @@
 #define thread
 #define constant
 #define threadgroup
+#define TB_DEVICE
 
 #elif defined(NGS_GPU_CPU)
 
@@ -19,12 +20,14 @@
 #define thread
 #define constant
 #define threadgroup
+#define TB_DEVICE
 
 #else
 #include <metal_stdlib>
 using namespace metal;
 #define TB_METAL
 #define TB_HD
+#define TB_DEVICE device   // pointer members need an address space
 
 #endif
 
@@ -865,20 +868,22 @@ namespace tinybla {
   }
 
   // --- shape-typed views of strided memory ------------------------------------
-  template <int H, int W, typename T>
-  struct FlatMat {
-    const T * data; int dr, dc;
+  // P is the pointer type: device memory by default, pass e.g.
+  // const threadgroup T * for a view into shared memory
+  template <int H, int W, typename T, typename P = const TB_DEVICE T *>
+  struct DoubleSliceMat {
+    P data; int dr, dc;
     TB_HD T operator() (int i, int j) const { return data[i*dr+j*dc]; }
   };
-  template <int S, typename T>
-  struct FlatVec {
-    const T * data; int d;
+  template <int S, typename T, typename P = const TB_DEVICE T *>
+  struct SliceVec {
+    P data; int d;
     TB_HD T operator() (int i) const { return data[i*d]; }
   };
   // rank 3, (i, a, b)
-  template <int S, int H, int W, typename T>
-  struct FlatTens3 {
-    const T * data; int d0, d1, d2;
+  template <int S, int H, int W, typename T, typename P = const TB_DEVICE T *>
+  struct SliceTens3 {
+    P data; int d0, d1, d2;
     TB_HD T operator() (int i, int a, int b) const { return data[i*d0+a*d1+b*d2]; }
   };
 
@@ -890,16 +895,16 @@ namespace tinybla {
     return sum;
   }
 
-  template <int H, int K, int W, typename T>
-  TB_HD Mat<H,W,T> operator* (FlatMat<H,K,T> a, FlatMat<K,W,T> b) {
+  template <int H, int K, int W, typename T, typename PA, typename PB>
+  TB_HD Mat<H,W,T> operator* (DoubleSliceMat<H,K,T,PA> a, DoubleSliceMat<K,W,T,PB> b) {
     Mat<H,W,T> r;
     for (int i = 0; i < H; i++)
       for (int j = 0; j < W; j++)
         r(i,j) = Contract<K,T>([=] (int k) { return a(i,k); }, [=] (int k) { return b(k,j); });
     return r;
   }
-  template <int H, int K, typename T>
-  TB_HD Vec<H,T> operator* (FlatMat<H,K,T> a, FlatVec<K,T> x) {
+  template <int H, int K, typename T, typename PA, typename PX>
+  TB_HD Vec<H,T> operator* (DoubleSliceMat<H,K,T,PA> a, SliceVec<K,T,PX> x) {
     Vec<H,T> v;
     for (int i = 0; i < H; i++)
       v(i) = Contract<K,T>([=] (int k) { return a(i,k); }, x);
@@ -908,8 +913,8 @@ namespace tinybla {
   // matrix times rank-3, sliced by the last index:  (A T)(b) = A T(:,:,b).
   // With the coefficients A and the basis second derivatives T(k,a,b) this is
   // the derivative of the mapping matrix, dF(b) = d_b F
-  template <int S, int K, int D, typename T>
-  TB_HD Vec<D,Mat<S,D,T>> operator* (FlatMat<S,K,T> a, FlatTens3<K,D,D,T> t) {
+  template <int S, int K, int D, typename T, typename PA, typename PT>
+  TB_HD Vec<D,Mat<S,D,T>> operator* (DoubleSliceMat<S,K,T,PA> a, SliceTens3<K,D,D,T,PT> t) {
     Vec<D,Mat<S,D,T>> r;
     for (int b = 0; b < D; b++)
       for (int i = 0; i < S; i++)

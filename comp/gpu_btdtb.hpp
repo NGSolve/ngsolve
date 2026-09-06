@@ -446,20 +446,20 @@ namespace ngcomp
                Vec<$DIMX,Real> xvals;
                Vec<$DIMY,Real> yvals;
 
-               FlatMat<dimr,geo_ndof,Real> Cgeo { elgeo + locelnr*dimr*geo_roundup, int(geo_roundup), 1 };
+               DoubleSliceMat<dimr,geo_ndof,Real,const threadgroup Real*> Cgeo { elgeo + locelnr*dimr*geo_roundup, int(geo_roundup), 1 };
                Mat<$DIMR,$DIMS,Real> F;
 #if ($GEO_STAGED==1)
                for (int i = 0; i < $DIMR; i++)
                   for (int j = 0; j < $DIMS; j++)
                     F(i,j) = Fvals[(i*dims+j)*bs_ipts + locipnr][locelnr];
 #else
-               FlatMat<geo_ndof,dims,Real> dphi { bgeo + (baseip+locipnr)*geo_roundup, 1, int(nip_padded*geo_roundup) };
+               DoubleSliceMat<geo_ndof,dims,Real> dphi { bgeo + (baseip+locipnr)*geo_roundup, 1, int(nip_padded*geo_roundup) };
                F = Cgeo * dphi;
 #endif
                Real J = Det(F);
 #if ($GEO_HESSE==1)
                // derivatives of the mapping matrix dF(b) = d_b F, for the transformation code
-               FlatTens3<geo_ndof,dims,dims,Real> ddphi { ddgeo + (baseip+locipnr)*geo_roundup, 1,
+               SliceTens3<geo_ndof,dims,dims,Real> ddphi { ddgeo + (baseip+locipnr)*geo_roundup, 1,
                                                           int(dims*nip_padded*geo_roundup), int(nip_padded*geo_roundup) };
                auto dF = Cgeo * ddphi;
 #endif
@@ -568,19 +568,19 @@ namespace ngcomp
                Vec<$DIMX,Real> xvals;
                Vec<$DIMY,Real> yvals;
 
-               FlatMat<dimr,geo_ndof,Real> Cgeo { elgeo + locelnr*dimr*geo_roundup, int(geo_roundup), 1 };
+               DoubleSliceMat<dimr,geo_ndof,Real,const threadgroup Real*> Cgeo { elgeo + locelnr*dimr*geo_roundup, int(geo_roundup), 1 };
                Mat<$DIMR,$DIMS,Real> F;
 #if ($GEO_STAGED==1)
                for (uint i = 0; i < $DIMR; i++)
                   for (uint j = 0; j < $DIMS; j++)
                     F(i,j) = Fvals[i*frows + j*numips + locipnr][locelnr];
 #else
-               FlatMat<geo_ndof,dims,Real> dphi { bgeo + ($BGEO_REM_ROWS + locipnr)*geo_roundup, 1, int(numips*geo_roundup) };
+               DoubleSliceMat<geo_ndof,dims,Real> dphi { bgeo + ($BGEO_REM_ROWS + locipnr)*geo_roundup, 1, int(numips*geo_roundup) };
                F = Cgeo * dphi;
 #endif
                Real J = Det(F);
 #if ($GEO_HESSE==1)
-               FlatTens3<geo_ndof,dims,dims,Real> ddphi { ddgeo + ($DDGEO_REM_ROWS + locipnr)*geo_roundup, 1,
+               SliceTens3<geo_ndof,dims,dims,Real> ddphi { ddgeo + ($DDGEO_REM_ROWS + locipnr)*geo_roundup, 1,
                                                           int(dims*numips*geo_roundup), int(numips*geo_roundup) };
                auto dF = Cgeo * ddphi;
 #endif
@@ -782,7 +782,7 @@ namespace ngcomp
         {
           string D = ToString(dimr);
           measure +=
-            "\nVec<"+D+",Real> pnt = Cgeo * FlatVec<geo_ndof,Real>{ sgeo + (baseip+locipnr)*geo_ndof, 1 };\n"
+            "\nVec<"+D+",Real> pnt = Cgeo * SliceVec<geo_ndof,Real>{ sgeo + (baseip+locipnr)*geo_ndof, 1 };\n"
             "struct { Vec<"+D+",Real> p; Real operator() (int, int k) const { return p(k); } } points { pnt };\n";
         }
       code = Substitute(code, "$NREF_TABLE", table);
