@@ -110,6 +110,7 @@ namespace ngcomp
 
     virtual void Update () override { ; }
 
+    virtual const BaseMatrix & GetAMatrix() const override { return GetBilinearForm()->GetMatrix(); }
     virtual const BaseMatrix & GetMatrix() const override 
     {
       return *mat;
