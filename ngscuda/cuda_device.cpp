@@ -10,7 +10,6 @@
 
 #include <cstdlib>
 #include <cstring>
-#include <deque>
 #include <fstream>
 #include <stdexcept>
 #include <string>
@@ -149,55 +148,6 @@ namespace ngs_cuda
 
     CUstream Current() const { return forced ? forced : (tracking ? ngs_cuda_stream : stream); }
 
-    // tracing: an event pair around every launch, read after completion.
-    // times are relative to a base event recorded on the idle stream
-    // together with the host tick, refreshed at every Finish
-    struct Traced { CUevent e0, e1; shared_ptr<Kernel> kernel; };
-    std::deque<Traced> traced;
-    std::vector<std::pair<CUevent,CUevent>> event_pool;
-    CUevent base_event = nullptr;
-    unsigned long long base_ticks = 0;
-
-    void Calibrate()
-    {
-      if (!base_event) Check (cuEventCreate (&base_event, CU_EVENT_DEFAULT), "cuEventCreate");
-      Check (cuStreamSynchronize (Current()), "cuStreamSynchronize");
-      Check (cuEventRecord (base_event, Current()), "cuEventRecord");
-      Check (cuEventSynchronize (base_event), "cuEventSynchronize");
-      base_ticks = TraceNow();
-    }
-
-    std::pair<CUevent,CUevent> GetEvents()
-    {
-      if (event_pool.empty())
-        {
-          CUevent e0, e1;
-          Check (cuEventCreate (&e0, CU_EVENT_DEFAULT), "cuEventCreate");
-          Check (cuEventCreate (&e1, CU_EVENT_DEFAULT), "cuEventCreate");
-          return { e0, e1 };
-        }
-      auto p = event_pool.back(); event_pool.pop_back();
-      return p;
-    }
-
-    void Harvest (bool wait)
-    {
-      double ticks_per_ms = 1e-3 / TraceSecondsPerTick();
-      while (!traced.empty())
-        {
-          auto & t = traced.front();
-          if (wait) Check (cuEventSynchronize (t.e1), "cuEventSynchronize");
-          else if (cuEventQuery (t.e1) != CUDA_SUCCESS) break;
-          float ms0 = 0, ms1 = 0;
-          cuEventElapsedTime (&ms0, base_event, t.e0);
-          cuEventElapsedTime (&ms1, base_event, t.e1);
-          TraceKernel (*t.kernel, base_ticks + (unsigned long long)(ms0*ticks_per_ms),
-                       base_ticks + (unsigned long long)(ms1*ticks_per_ms));
-          event_pool.push_back ({ t.e0, t.e1 });
-          traced.pop_front();
-        }
-    }
-
   public:
     CudaQueue() : owned(true)
     { Check (cuStreamCreate (&stream, CU_STREAM_NON_BLOCKING), "cuStreamCreate"); }
@@ -209,23 +159,12 @@ namespace ngs_cuda
 
     ~CudaQueue()
     {
-      if (base_event) Harvest (true);
-      for (auto & t : traced) { cuEventDestroy (t.e0); cuEventDestroy (t.e1); }
-      for (auto & p : event_pool) { cuEventDestroy (p.first); cuEventDestroy (p.second); }
-      if (base_event) cuEventDestroy (base_event);
       if (owned) cuStreamDestroy (stream);
       if (capture_stream) cuStreamDestroy (capture_stream);
     }
 
     void DoFinish() override
-    {
-      Check (cuStreamSynchronize (Current()), "cuStreamSynchronize");
-      if (base_event)
-        {
-          Harvest (true);
-          Calibrate();
-        }
-    }
+    { Check (cuStreamSynchronize (Current()), "cuStreamSynchronize"); }
 
   protected:
     void DoLaunch (Kernel & kernel, Dim3 groups, Dim3 groupsize,
@@ -253,28 +192,11 @@ namespace ngs_cuda
             params[i] = const_cast<void*> (a.Data());
         }
 
-      // no events inside a graph capture
-      bool tracing = IsTracing() && !forced;
-      std::pair<CUevent,CUevent> ev;
-      if (tracing)
-        {
-          if (!base_event) Calibrate();
-          ev = GetEvents();
-          Check (cuEventRecord (ev.first, Current()), "cuEventRecord");
-        }
-
       Check (cuLaunchKernel (ck.Get(),
                              groups.x, groups.y, groups.z,
                              groupsize.x, groupsize.y, groupsize.z,
                              dynamic_group_memory, Current(),
                              params.data(), nullptr), "cuLaunchKernel");
-
-      if (tracing)
-        {
-          Check (cuEventRecord (ev.second, Current()), "cuEventRecord");
-          traced.push_back ({ ev.first, ev.second, kernel.shared_from_this() });
-          Harvest (false);
-        }
     }
 
     struct GraphCache
@@ -294,12 +216,6 @@ namespace ngs_cuda
     // the queue's stream
     void DoReplay (const Program & prog) override
     {
-      // a graph launch has no per-kernel events: traced replays launch one by one
-      if (IsTracing())
-        {
-          Queue::DoReplay (prog);
-          return;
-        }
       auto cache = std::static_pointer_cast<GraphCache> (prog.backend_cache);
       if (!cache)
         {

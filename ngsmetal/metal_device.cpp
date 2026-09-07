@@ -14,8 +14,6 @@
 #include <iostream>
 #include <stdexcept>
 #include <string>
-#include <deque>
-#include <mach/mach_time.h>
 
 #include "metal_device.hpp"
 #include <IOKit/IOKitLib.h>
@@ -166,63 +164,19 @@ namespace ngsmetal
   };
 
 
-  // GPUStartTime/GPUEndTime are mach_absolute_time in seconds. ngcore's tick
-  // counter runs at a different rate (1 GHz on M4, 24 MHz mach timebase), so
-  // map through the rate measured between the first and the current reading,
-  // anchored at the current one: the gpu times lie shortly before now
-  static unsigned long long MachSecondsToTicks (double sec)
-  {
-    static const double mach_per_sec = [] {
-      mach_timebase_info_data_t tb; mach_timebase_info (&tb);
-      return 1e9 * tb.denom / tb.numer; } ();
-    static const unsigned long long c0 = TraceNow(), m0 = mach_absolute_time();
-    unsigned long long c = TraceNow(), m = mach_absolute_time();
-    double rate = (m - m0 > mach_per_sec/20)                  // > 50 ms baseline
-      ? double(c - c0) / double(m - m0)
-      : 1.0 / (TraceSecondsPerTick() * mach_per_sec);
-    return (unsigned long long)((long long)c + (long long)((sec*mach_per_sec - double(m)) * rate));
-  }
-
-
   class MetalQueue : public Queue
   {
     MTL::CommandQueue * queue;
     mutable MTL::CommandBuffer * pending = nullptr;
 
-    // command buffers launched while tracing, one kernel each; their gpu
-    // times are read after completion and go to the trace
-    struct Traced { MTL::CommandBuffer * cb; shared_ptr<Kernel> kernel; };
-    std::deque<Traced> traced;
-
-    void Harvest (bool wait)
-    {
-      while (!traced.empty())
-        {
-          auto & t = traced.front();
-          if (wait) t.cb->waitUntilCompleted();
-          auto status = t.cb->status();
-          if (status < MTL::CommandBufferStatusCompleted) break;
-          if (status == MTL::CommandBufferStatusCompleted)
-            TraceKernel (*t.kernel, MachSecondsToTicks (t.cb->GPUStartTime()),
-                         MachSecondsToTicks (t.cb->GPUEndTime()));
-          t.cb->release();
-          traced.pop_front();
-        }
-    }
-
   public:
     MetalQueue (MTL::CommandQueue * aqueue) : queue(aqueue) { }
-    ~MetalQueue()
-    {
-      Harvest (true);
-      if (pending) pending->release();
-    }
+    ~MetalQueue() { if (pending) pending->release(); }
 
     void DoFinish() override
     {
       if (!pending) return;
       pending->waitUntilCompleted();
-      Harvest (true);
 
       // metal reports kernel faults asynchronously, only here
       std::string msg;
@@ -282,24 +236,11 @@ namespace ngsmetal
       Encode (enc, kernel, groups, groupsize, args, dynamic_group_memory);
       enc->endEncoding();
       Commit (cb);
-      if (IsTracing())
-        {
-          cb->retain();
-          traced.push_back ({ cb, kernel.shared_from_this() });
-          Harvest (false);
-        }
     }
 
-    // one command buffer, one serial encoder: dispatches run in order.
-    // per-kernel gpu times need a command buffer per kernel (no dispatch
-    // boundary counters on apple gpus), so a traced replay launches one by one
+    // one command buffer, one serial encoder: dispatches run in order
     void DoReplay (const Program & prog) override
     {
-      if (IsTracing())
-        {
-          Queue::DoReplay (prog);
-          return;
-        }
       auto cb = queue->commandBuffer();
       auto enc = cb->computeCommandEncoder();
       for (auto & n : prog.Nodes())

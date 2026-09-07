@@ -150,13 +150,10 @@ namespace ngs_gpu
           }
 
         // the thread-local work-item indices live in the kernel's own library
-        bool tracing = IsTracing();
-        auto t0 = tracing ? TraceNow() : 0;
         ck.Launcher() (ck.Get(), argv.data(),
                 groups.x, groups.y, groups.z,
                 groupsize.x, groupsize.y, groupsize.z,
                 dynamic_group_memory);
-        if (tracing) TraceKernel (kernel, t0, TraceNow());
       }
     };
 
