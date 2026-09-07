@@ -399,7 +399,11 @@ namespace ngs_cuda
 
     bool HasFloat64() const override { return true; }
     bool IsUnifiedMemory() const override
-    { return Attr (CU_DEVICE_ATTRIBUTE_MANAGED_MEMORY) != 0; }
+    {
+      return Attr (CU_DEVICE_ATTRIBUTE_INTEGRATED) != 0
+        || Attr (CU_DEVICE_ATTRIBUTE_PAGEABLE_MEMORY_ACCESS_USES_HOST_PAGE_TABLES) != 0
+        || Attr (CU_DEVICE_ATTRIBUTE_DIRECT_MANAGED_MEM_ACCESS_FROM_HOST) != 0;
+    }
     size_t MaxThreadsPerGroup() const override
     { return Attr (CU_DEVICE_ATTRIBUTE_MAX_THREADS_PER_BLOCK); }
     size_t SimdWidth() const override
