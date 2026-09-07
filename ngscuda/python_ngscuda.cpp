@@ -11,9 +11,7 @@ using namespace ngla;
 using namespace ngs_cuda;
 
 namespace ngla {
-  extern void InitBTDTB ();
   extern bool synckernels;
-  
 }
 
 PYBIND11_MODULE(_ngscuda, m) {
@@ -21,7 +19,6 @@ PYBIND11_MODULE(_ngscuda, m) {
   InitCUDA(1);
   InitCudaDevice();      // register as ngs_gpu backend
   InitCuLinalg();
-  InitBTDTB();
 
   m.def("InitCuLinalg", &InitCuLinalg, "Initializing cuda linalg.");
   
