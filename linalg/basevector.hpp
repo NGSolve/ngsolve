@@ -316,6 +316,11 @@ namespace ngla
     template <typename T>
       FlatVector<T> FV () const;
     
+    [[deprecated("use FV<double>() instead")]]
+    auto FVDouble () const { return this->FV<double>(); }
+    [[deprecated("use FV<Complex>() instead")]]
+    auto FVComplex () const { return this->FV<Complex>(); }
+
     /*
     template <class TSCAL>
     TSCAL InnerProduct (const BaseVector & v2) const 
@@ -544,7 +549,6 @@ namespace ngla
     template <typename T>
     auto FV () const { return vec->FV<T>(); }
     
-
     void * Memory () const throw () 
     {
       return vec->Memory();
