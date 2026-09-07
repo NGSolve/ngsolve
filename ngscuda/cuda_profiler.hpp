@@ -12,7 +12,7 @@ namespace ngs_cuda
   extern int gpu_clock;
 // #define NGS_CUDA_DEVICE_TIMERS
 
-#ifdef __CUDACC__
+  // the tracing data, plain c++ shared by host and jit-compiled kernels
   constexpr int N_MAX_DEVICE_TIMERS = 16;
   struct DevTraceData {
     unsigned long long start;   // clock64 at region start (0 = entry unused)
@@ -54,13 +54,17 @@ namespace ngs_cuda
   };
 
 }
+
+#ifdef __CUDACC__
   extern "C" __device__ ngs_cuda::DevTimerData *d_timer_data;
   extern "C" __device__ ngs_cuda::DevTraceData *d_trace_data;
   extern "C" __device__ ngs_cuda::DevTraceBlockData *d_block_data;
   extern "C" __device__ ngs_cuda::DevTraceState *d_trace_state;
+#endif
 
 namespace ngs_cuda
 {
+#ifdef __CUDACC__
   extern Array<DevTimerData> timer_data;
   extern Array<DevTraceData> trace_data;
   extern Array<DevTraceBlockData> block_data;
@@ -299,8 +303,9 @@ namespace ngs_cuda
 
   void TimeProfiler();
 
-  // device addresses of the tracing buffers, for jit-compiled kernels
-  // (separate cuda modules cannot link against the __device__ symbols)
+  // device addresses of the tracing buffers; jit-compiled kernels get them
+  // as pointer constants (see cuda_matrix_free_btdtb.cpp), there are no
+  // offline device symbols any more
   void * GetDevTraceDataPtr();
   void * GetDevTimerDataPtr();
   void * GetDevTraceBlockDataPtr();

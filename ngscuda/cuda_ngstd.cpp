@@ -1,5 +1,3 @@
-#ifdef CUDA
-
 #include <ngstd.hpp>
 #include <cuda_ngstd.hpp>
 #include "cuda_profiler.hpp"
@@ -108,6 +106,3 @@ namespace ngs_cuda
   cudaStream_t ngs_cuda_stream = cudaStreamDefault;
 
 }
-
-
-#endif

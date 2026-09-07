@@ -1,13 +1,16 @@
 #include <ngstd.hpp>
 #include <cuda_ngstd.hpp>
+#include <gpuwrapper.hpp>
+#include <gpukernel.hpp>
 #include "cuda_profiler.hpp"
 
 using namespace std;
 
-__device__ ngs_cuda::DevTimerData *d_timer_data; // [N_MAX_BLOCKS * N_MAX_DEVICE_TIMERS];
-__device__ ngs_cuda::DevTraceData *d_trace_data; // [N_MAX_TRACER_OBJECTS+1];
-__device__ ngs_cuda::DevTraceBlockData *d_block_data; // [N_MAX_BLOCKS];
-__device__ ngs_cuda::DevTraceState *d_trace_state;
+/*
+  Plain C++: the tracing buffers live in managed memory and reach the
+  jit-compiled kernels as pointers (GetDev*Ptr), so no offline device
+  symbols and no nvcc are needed.
+*/
 
 namespace ngs_cuda
 {
@@ -28,17 +31,14 @@ namespace ngs_cuda
     if(!is_profiler_initialized)
     {
         cudaMallocManaged(&u_timer_data, sizeof(DevTimerData) * N_MAX_BLOCKS * N_MAX_DEVICE_TIMERS);
-        cudaMemcpyToSymbol (d_timer_data, &u_timer_data, sizeof(DevTimerData*));
-
+        cudaMemset(u_timer_data, 0, sizeof(DevTimerData) * N_MAX_BLOCKS * N_MAX_DEVICE_TIMERS);
         cudaMallocManaged(&u_trace_data, sizeof(DevTraceData) * (N_MAX_TRACER_OBJECTS+1));
-        cudaMemcpyToSymbol (d_trace_data, &u_trace_data, sizeof(DevTraceData*));
-
+        cudaMemset(u_trace_data, 0, sizeof(DevTraceData) * (N_MAX_TRACER_OBJECTS+1));
         cudaMallocManaged(&u_block_data, sizeof(DevTraceBlockData) * N_MAX_BLOCKS);
-        cudaMemcpyToSymbol (d_block_data, &u_block_data, sizeof(DevTraceBlockData*));
-
+        cudaMemset(u_block_data, 0, sizeof(DevTraceBlockData) * N_MAX_BLOCKS);
         cudaMallocManaged(&u_trace_state, sizeof(DevTraceState));
+        cudaDeviceSynchronize();
         *u_trace_state = DevTraceState{0, 0, true};   // zero counters, enable tracing
-        cudaMemcpyToSymbol (d_trace_state, &u_trace_state, sizeof(DevTraceState*));
 
         is_profiler_initialized = true;
     }
@@ -257,22 +257,27 @@ namespace ngs_cuda
       t_overhead.Stop();
   }
 
-  __global__ void SmallKernel (long long *clock)
+  // a jit-compiled no-op, launched through the common gpu device
+  static void SmallKernel ()
   {
-    if(clock)
-      *clock = clock64();
+    static shared_ptr<ngs_gpu::Kernel> kernel;
+    auto dev = ngs_gpu::GetDevice();
+    if (!dev) return;
+    if (!kernel)
+      kernel = dev->CompileSource (ngs_gpu::code_gpukernel + "KERNEL(noop, VALUE(int,n)) { }")->GetKernel ("noop");
+    dev->DefaultQueue()->Launch (*kernel, ngs_gpu::Dim3(1), ngs_gpu::Dim3(1), { ngs_gpu::KernelArg(int(0)) });
   }
 
   void WarmupCudaModule ()
   {
-    SmallKernel<<<1,1>>>(nullptr);
+    SmallKernel ();
     cudaDeviceSynchronize();
   }
 
   void TimeProfiler() {
     static Timer t("cudaDeviceSynchronize");
     for(auto i : Range(10))
-      SmallKernel<<<1,1>>>(nullptr);
+      SmallKernel();
     {
       RegionTimer rt(t);
       cudaDeviceSynchronize();
@@ -293,7 +298,7 @@ namespace ngs_cuda
         for(auto i : Range(100))
         {
           CudaRegionTimer crt(t);
-          SmallKernel<<<1,1>>>(nullptr);
+          SmallKernel();
         }
       }
       {
@@ -304,7 +309,7 @@ namespace ngs_cuda
         static Timer t("One CudaRegionTimer with 10 small kernel s"); RegionTimer rt(t);
         CudaRegionTimer crt(t);
         for(auto i : Range(100))
-          SmallKernel<<<1,1>>>(nullptr);
+          SmallKernel();
       }
       {
         RegionTimer rt(t);
