@@ -123,7 +123,7 @@ namespace ngla
 
     size_t Size() const { return size; }
 
-    size_t NZE() const { return nze; }
+    size_t NZE() const override { return nze; }
 
     // full col-index array
     FlatArray<ColIdx> GetColIndices() const { return colnr; }
@@ -142,9 +142,9 @@ namespace ngla
     void EmbedHeight (size_t starti, size_t newheight);
     void EmbedWidth (size_t starti, size_t newwidth);
     
-    ostream & Print (ostream & ost) const;
+    ostream & Print (ostream & ost) const override;
 
-    virtual Array<MemoryUsage> GetMemoryUsage () const;    
+    virtual Array<MemoryUsage> GetMemoryUsage () const override;    
 
     const MemoryTracer & GetMemoryTracer() const
     {

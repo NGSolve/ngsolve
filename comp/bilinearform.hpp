@@ -476,15 +476,15 @@ namespace ngcomp
 
     /// biform object
     virtual string GetClassName () const
-    {
+ override {
       return "BilinearForm";
     }
 
     /// prints report to file
-    virtual void PrintReport (ostream & ost) const;
+    virtual void PrintReport (ostream & ost) const override;
 
     ///
-    virtual Array<MemoryUsage> GetMemoryUsage () const;
+    virtual Array<MemoryUsage> GetMemoryUsage () const override;
 
     /// creates a compatible vector
     virtual AutoVector CreateRowVector() const;
@@ -790,22 +790,22 @@ namespace ngcomp
                                const string & aname, const Flags & flags);
     // virtual ~T_BilinearFormSymmetric ();
 
-    virtual void AllocateMatrix () { cout << "S_BilinearFormNonAssemble :: Allocate: nothing to do" << endl; }
-    virtual void CleanUpLevel() { ; } 
+    virtual void AllocateMatrix () override { cout << "S_BilinearFormNonAssemble :: Allocate: nothing to do" << endl; }
+    virtual void CleanUpLevel() override { ; } 
 
     virtual void AddElementMatrix (FlatArray<int> dnums1,
 				   FlatArray<int> dnums2,
                                    BareSliceMatrix<TSCAL> elmat,
 				   ElementId id, bool addatomic,
 				   LocalHeap & lh)
-    {
+ override {
       throw Exception ("AddElementMatrix for non-assemble biform called");
     }
 
-    virtual bool SymmetricStorage() const { return true; }
+    virtual bool SymmetricStorage() const override { return true; }
 
     virtual void LapackEigenSystem(FlatMatrix<TSCAL> & elmat, LocalHeap & lh) const
-    { cout << "no eigensystem available" << endl; }
+ override { cout << "no eigensystem available" << endl; }
   };
 
 
@@ -820,64 +820,64 @@ namespace ngcomp
     int comp; // , ncomp;
   public:
     ComponentBilinearForm (shared_ptr<BilinearForm> abase_blf, int acomp, int ancomp);
-    virtual BilinearForm & AddIntegrator (shared_ptr<BilinearFormIntegrator> bfi);
+    virtual BilinearForm & AddIntegrator (shared_ptr<BilinearFormIntegrator> bfi) override;
 
     virtual void Assemble (LocalHeap & lh) { cerr << "comp - assemble is illegal" << endl; }
 
     virtual void AssembleLinearization (const BaseVector & lin,
 					LocalHeap & lh, 
 					bool reallocate = 0) 
-    { throw Exception ("comp-bf - AssembleLinearization is illegal"); }
+ override { throw Exception ("comp-bf - AssembleLinearization is illegal"); }
 
     virtual void AddMatrix (double val, const BaseVector & x,
 			    BaseVector & y, LocalHeap & lh) const
-      { throw Exception ("comp-bf - AddMatrix is illegal"); }
+ override { throw Exception ("comp-bf - AddMatrix is illegal"); }
 
     virtual void AddMatrix (Complex val, const BaseVector & x,
 			    BaseVector & y, LocalHeap & lh) const
-    { throw Exception ("comp-bf - AddMatrix is illegal"); }
+ override { throw Exception ("comp-bf - AddMatrix is illegal"); }
 
     virtual void AddMatrixTrans (double val, const BaseVector & x,
                                  BaseVector & y, LocalHeap & lh) const
-    { throw Exception ("comp-bf - AddMatrixTrans is illegal"); }
+ override { throw Exception ("comp-bf - AddMatrixTrans is illegal"); }
     
     virtual void ApplyLinearizedMatrixAdd (double val,
 					   const BaseVector & lin,
 					   const BaseVector & x,
 					   BaseVector & y, LocalHeap & lh) const 
-    { throw Exception ("comp-bf - AddMatrix is illegal"); }
+ override { throw Exception ("comp-bf - AddMatrix is illegal"); }
 
     virtual void ApplyLinearizedMatrixAdd (Complex val,
 					   const BaseVector & lin,
 					   const BaseVector & x,
 					   BaseVector & y, LocalHeap & lh) const 
-    { throw Exception ("comp-bf - AddMatrix is illegal"); }
+ override { throw Exception ("comp-bf - AddMatrix is illegal"); }
 
     virtual shared_ptr<BaseMatrix> GetHarmonicExtension () const 
-    { throw Exception ("comp-bf - GetHarmonicExt is illegal"); }
+ override { throw Exception ("comp-bf - GetHarmonicExt is illegal"); }
 
     virtual shared_ptr<BaseMatrix> GetHarmonicExtensionTrans () const
-    { throw Exception ("comp-bf - GetHarmonicExtTrans is illegal"); } 
+ override { throw Exception ("comp-bf - GetHarmonicExtTrans is illegal"); } 
     virtual shared_ptr<BaseMatrix> GetInnerSolve () const 
-    { throw Exception ("comp-bf - GetInnerSolve is illegal"); } 
+ override { throw Exception ("comp-bf - GetInnerSolve is illegal"); } 
     virtual shared_ptr<BaseMatrix> GetInnerMatrix () const
-    { throw Exception ("comp-bf - GetInnerMatrix is illegal"); } 
+ override { throw Exception ("comp-bf - GetInnerMatrix is illegal"); } 
     virtual void ComputeInternal (BaseVector & u, const BaseVector & f, LocalHeap & lh) const
-    { throw Exception ("comp-bf - ComputeInternal is illegal"); } 
+ override { throw Exception ("comp-bf - ComputeInternal is illegal"); } 
     virtual void ModifyRHS (BaseVector & f) const 
-    { throw Exception ("comp-bf - ModifyRHS is illegal"); } 
+ override { throw Exception ("comp-bf - ModifyRHS is illegal"); } 
     virtual AutoVector CreateRowVector() const 
-    { throw Exception ("comp-bf - CreateRowVector is illegal"); } 
+ override { throw Exception ("comp-bf - CreateRowVector is illegal"); } 
     virtual AutoVector CreateColVector() const 
-    { throw Exception ("comp-bf - CreateColVector is illegal"); } 
+ override { throw Exception ("comp-bf - CreateColVector is illegal"); } 
     virtual void DoAssemble (LocalHeap & lh) 
-    { throw Exception ("comp-bf - DoAssemble is illegal"); } 
+ override { throw Exception ("comp-bf - DoAssemble is illegal"); } 
     virtual void AllocateMatrix ()
-    { throw Exception ("comp-bf - AllocateMatrix is illegal"); } 
+ override { throw Exception ("comp-bf - AllocateMatrix is illegal"); } 
     virtual void AllocateInternalMatrices ()
-    { throw Exception ("comp-bf - AllocateInternalMatrices is illegal"); } 
+ override { throw Exception ("comp-bf - AllocateInternalMatrices is illegal"); } 
     virtual double Energy (const BaseVector & x, LocalHeap & lh) const 
-    { throw Exception ("comp-bf - Energy is illegal"); } 
+ override { throw Exception ("comp-bf - Energy is illegal"); } 
 
     /*
     virtual shared_ptr<BaseVector> GetVectorPtr() const

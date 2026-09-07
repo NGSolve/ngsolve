@@ -214,7 +214,7 @@ namespace ngla
     Sym2NonSymMatrix (const BaseMatrix * abasematrix = 0);
     void SetMatrix (const BaseMatrix * abasematrix);
     const BaseMatrix & GetMatrix () const { return *base; }
-    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
+    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
     //  virtual void MultAdd (Complex s, const BaseVector & x, BaseVector & y) const;
   };
 

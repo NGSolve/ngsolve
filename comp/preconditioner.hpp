@@ -396,14 +396,14 @@ namespace ngcomp
     virtual ~TwoLevelPreconditioner();
 
     ///
-    virtual void Update ();
+    virtual void Update () override;
     ///
-    virtual const BaseMatrix & GetMatrix() const;
+    virtual const BaseMatrix & GetMatrix() const override;
     // { return *new SparseMatrix<double> (1,1); } // *premat; }
     // { return *premat; }
     ///
     virtual const char * ClassName() const
-    { return "TwoLevel Preconditioner"; }
+ override { return "TwoLevel Preconditioner"; }
   };
 
 
@@ -427,15 +427,15 @@ namespace ngcomp
     ///
     virtual ~ComplexPreconditioner();
     ///
-    virtual void Update ();
+    virtual void Update () override;
     ///
     virtual const BaseMatrix & GetMatrix() const
-    { 
+ override { 
       return *cm; 
     }
     ///
     virtual const char * ClassName() const
-    { return "Complex Preconditioner"; }
+ override { return "Complex Preconditioner"; }
   };
 
 
@@ -457,20 +457,20 @@ namespace ngcomp
     ///
     virtual ~ChebychevPreconditioner();
     ///
-    virtual void Update ();
+    virtual void Update () override;
     ///
     virtual const BaseMatrix & GetMatrix() const
-    { 
+ override { 
       return *cm; 
     }
     virtual const BaseMatrix & GetAMatrix() const
-    {
+ override {
       return bfa->GetMatrix(); 
     }
 
     ///
     virtual const char * ClassName() const
-    { return "Chebychev Preconditioner"; }
+ override { return "Chebychev Preconditioner"; }
   };
 
 
@@ -561,24 +561,24 @@ namespace ngcomp
   public:
     virtual ~CommutingAMGPreconditioner ();
 
-    virtual void Update ();
+    virtual void Update () override;
     ///
 
     virtual const BaseMatrix & GetAMatrix() const
-    {
+ override {
       return bfa->GetMatrix(); 
     }
 
     virtual const BaseMatrix & GetMatrix() const
-    { 
+ override { 
       return *amg; 
     }
     ///
-    virtual void CleanUpLevel ();
+    virtual void CleanUpLevel () override;
 
     ///
     virtual const char * ClassName() const
-    { return "CommutingAMG Preconditioner"; }
+ override { return "CommutingAMG Preconditioner"; }
   };
 
 
@@ -611,17 +611,17 @@ namespace ngcomp
     ///
     virtual ~NonsymmetricPreconditioner();
     ///
-    virtual bool IsComplex() const { return cm->IsComplex(); }
+    virtual bool IsComplex() const override { return cm->IsComplex(); }
 
-    virtual void Update ();
+    virtual void Update () override;
     ///
     virtual const BaseMatrix & GetMatrix() const
-    { 
+ override { 
       return *cm; 
     }
     ///
     virtual const char * ClassName() const
-    { return "Nonsymmetric Preconditioner"; }
+ override { return "Nonsymmetric Preconditioner"; }
   };
 
 

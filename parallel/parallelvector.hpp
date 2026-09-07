@@ -154,9 +154,9 @@ namespace ngla
   {
   protected:
     using S_BaseVector<SCAL>::InnerProduct;
-    virtual SCAL InnerProduct (const BaseVector & v2, bool conjugate = false) const;
+    virtual SCAL InnerProduct (const BaseVector & v2, bool conjugate = false) const override;
     virtual BaseVector & SetScalar (double scal)
-    { return ParallelBaseVector::SetScalar(scal); }
+ override { return ParallelBaseVector::SetScalar(scal); }
   };
 
 
