@@ -18,7 +18,7 @@ add_compile_definitions(CUDA)
 include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_library(${lib_name} SHARED
-    cuda_linalg.cpp cuda_ngstd.cpp cuda_ngbla.hpp cuda_applyIR.cpp
+    cuda_linalg.cpp cuda_ngstd.cpp cuda_ngbla.hpp
     cuda_profiler.cu cuda_matrix_free_btdtb.cpp cuda_device.cpp
 )
 
