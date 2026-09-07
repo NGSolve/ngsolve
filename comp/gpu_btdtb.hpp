@@ -230,8 +230,10 @@ namespace ngcomp
       }
     int bgeo_rem_rows = dims*nip_pad;
 
-    // second derivatives [refdir pair][ip][node] on curved classes (a dummy otherwise)
-    int nddir = dims*dims;
+    // second derivatives [refdir pair][ip][node] on curved classes (a dummy
+    // otherwise); the Hessian of each coordinate is symmetric, only the
+    // pairs a <= b are stored, in the order of SymSliceTens3::Pair
+    int nddir = dims*(dims+1)/2;
     int ddgeo_rem_rows = nddir*nip_pad;
     bool geo_hesse_data = pmat->geo_order > 1;
     buffer_ddgeo = NewSharedBuffer(geo_hesse_data ? TableSize(nddir, geo_stride) : 1);
@@ -239,17 +241,19 @@ namespace ngcomp
     if (geo_hesse_data)
       {
         auto [geo_ndof_dd, nddir_dd, nip_dd] = pmat->DDgeo.Shape();
-        if (geo_ndof_dd != geo_ndof || int(nddir_dd) != nddir || int(nip_dd) != nip)
+        if (geo_ndof_dd != geo_ndof || int(nddir_dd) != dims*dims || int(nip_dd) != nip)
           throw Exception("GPU_BTDTBMatrix: geometry second derivatives do not match");
         FlatTensor<3,REAL> ddgeo(nddir, nip_pad, geo_stride, buffer_ddgeo.HostData());
         FlatTensor<3,REAL> ddgeo_rem(nddir, nip_rem, geo_stride, ddgeo.Data()+ddgeo.GetTotalSize());
         ddgeo = 0; ddgeo_rem = 0;
-        for (int j = 0; j < nddir; j++)
-          {
-            ddgeo(j,STAR,STAR).Rows(0,nip).Cols(0,geo_ndof) = Trans(pmat->DDgeo(STAR,j,STAR));
-            if (nip_rem)
-              ddgeo_rem(j,STAR,STAR).Cols(0,geo_ndof) = Trans(pmat->DDgeo(STAR,j,STAR).Cols(nip0,nip));
-          }
+        for (int a = 0, j = 0; a < dims; a++)
+          for (int b = a; b < dims; b++, j++)
+            {
+              int jfull = a*dims+b;
+              ddgeo(j,STAR,STAR).Rows(0,nip).Cols(0,geo_ndof) = Trans(pmat->DDgeo(STAR,jfull,STAR));
+              if (nip_rem)
+                ddgeo_rem(j,STAR,STAR).Cols(0,geo_ndof) = Trans(pmat->DDgeo(STAR,jfull,STAR).Cols(nip0,nip));
+            }
       }
     // basis values at the points, for the coordinates: sgeo[ip][node]
     buffer_sgeo = NewSharedBuffer(size_t(nip)*geo_ndof);
@@ -463,8 +467,7 @@ namespace ngcomp
                Real J = Det(F);
 #if ($GEO_HESSE==1)
                // derivatives of the mapping matrix dF(b) = d_b F, for the transformation code
-               SliceTens3<geo_ndof,dims,dims,Real> ddphi { ddgeo + (baseip+locipnr)*geo_roundup, 1,
-                                                          int(dims*nip_padded*geo_roundup), int(nip_padded*geo_roundup) };
+               SymSliceTens3<geo_ndof,dims,Real> ddphi { ddgeo + (baseip+locipnr)*geo_roundup, 1, int(nip_padded*geo_roundup) };
                auto dF = Cgeo * ddphi;
 #endif
 
@@ -584,8 +587,7 @@ namespace ngcomp
 #endif
                Real J = Det(F);
 #if ($GEO_HESSE==1)
-               SliceTens3<geo_ndof,dims,dims,Real> ddphi { ddgeo + ($DDGEO_REM_ROWS + locipnr)*geo_roundup, 1,
-                                                          int(dims*numips*geo_roundup), int(numips*geo_roundup) };
+               SymSliceTens3<geo_ndof,dims,Real> ddphi { ddgeo + ($DDGEO_REM_ROWS + locipnr)*geo_roundup, 1, int(numips*geo_roundup) };
                auto dF = Cgeo * ddphi;
 #endif
 

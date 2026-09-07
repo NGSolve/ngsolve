@@ -855,6 +855,36 @@ namespace tinybla {
   }
 
 
+  // rectangular mapping matrices of manifold elements, as in ngbla: Det is
+  // the measure sqrt(det(F^T F)) and Inv the pseudo-inverse (F^T F)^{-1} F^T,
+  // so 1/J * F * u, Trace(Inv(F) * dF), ... read the same for volume and
+  // surface elements
+
+  template <typename T>
+  TB_HD T Det(Mat<3,2,T> m) {       // |F0 x F1|
+    T c0 = m(1,0)*m(2,1) - m(2,0)*m(1,1);
+    T c1 = m(2,0)*m(0,1) - m(0,0)*m(2,1);
+    T c2 = m(0,0)*m(1,1) - m(1,0)*m(0,1);
+    return sqrt(c0*c0 + c1*c1 + c2*c2);
+  }
+
+  template <typename T>
+  TB_HD T Det(Mat<2,1,T> m) { return sqrt(m(0,0)*m(0,0) + m(1,0)*m(1,0)); }
+
+  template <typename T>
+  TB_HD T Det(Mat<3,1,T> m) { return sqrt(m(0,0)*m(0,0) + m(1,0)*m(1,0) + m(2,0)*m(2,0)); }
+
+  template <int H, int W, typename T>
+  TB_HD Mat<W,H,T> PseudoInv(Mat<H,W,T> m) {
+    Mat<W,H,T> mt = Trans(m);
+    return Inv(mt * m) * mt;
+  }
+
+  template <typename T> TB_HD Mat<2,3,T> Inv(Mat<3,2,T> m) { return PseudoInv(m); }
+  template <typename T> TB_HD Mat<1,2,T> Inv(Mat<2,1,T> m) { return PseudoInv(m); }
+  template <typename T> TB_HD Mat<1,3,T> Inv(Mat<3,1,T> m) { return PseudoInv(m); }
+
+
   template <int H, int W, typename T>
   TB_HD auto ToMat(Vec<H*W,T> vec) { return Mat<H,W,T>(vec); }
 
@@ -885,6 +915,15 @@ namespace tinybla {
   struct SliceTens3 {
     P data; int d0, d1, d2;
     TB_HD T operator() (int i, int a, int b) const { return data[i*d0+a*d1+b*d2]; }
+  };
+
+  // rank 3 with a symmetric pair of trailing indices, (i, a, b) = (i, b, a),
+  // stored by pair p(a,b) = a*D - a*(a-1)/2 + (b-a) for a <= b (D(D+1)/2 pairs)
+  template <int S, int D, typename T, typename P = const TB_DEVICE T *>
+  struct SymSliceTens3 {
+    P data; int d0, d1;    // node stride, pair stride
+    static TB_HD int Pair (int a, int b) { return (a <= b) ? a*D - a*(a-1)/2 + (b-a) : b*D - b*(b-1)/2 + (a-b); }
+    TB_HD T operator() (int i, int a, int b) const { return data[i*d0 + Pair(a,b)*d1]; }
   };
 
   // sum_k a(k) * b(k)
@@ -920,6 +959,22 @@ namespace tinybla {
       for (int i = 0; i < S; i++)
         for (int p = 0; p < D; p++)
           r(b)(i,p) = Contract<K,T>([=] (int k) { return a(i,k); }, [=] (int k) { return t(k,p,b); });
+    return r;
+  }
+
+  // the same for symmetric second derivatives: one contraction per pair (a,b)
+  // fills dF(b)(i,a) and dF(a)(i,b)
+  template <int S, int K, int D, typename T, typename PA, typename PT>
+  TB_HD Vec<D,Mat<S,D,T>> operator* (DoubleSliceMat<S,K,T,PA> a, SymSliceTens3<K,D,T,PT> t) {
+    Vec<D,Mat<S,D,T>> r;
+    for (int p = 0; p < D; p++)
+      for (int b = p; b < D; b++)
+        for (int i = 0; i < S; i++)
+          {
+            T v = Contract<K,T>([=] (int k) { return a(i,k); }, [=] (int k) { return t(k,p,b); });
+            r(b)(i,p) = v;
+            r(p)(i,b) = v;
+          }
     return r;
   }
 
