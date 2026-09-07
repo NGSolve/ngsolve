@@ -1049,6 +1049,8 @@ namespace ngcomp
   class MatrixFreeBTDTB : public BaseMatrix
   {
   public:
+    shared_ptr<BaseMatrix> CreateDeviceMatrix () const override;
+
     size_t height, width;
     shared_ptr<CoefficientFunction> cf;   // the form
     // owned copies: the pointers stay valid while cf (the form) is alive,
