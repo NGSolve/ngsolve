@@ -11,9 +11,15 @@
 #include <Foundation/Foundation.hpp>
 #include <Metal/Metal.hpp>
 
+#include <mach/mach_time.h>
+
 #include <iostream>
 #include <stdexcept>
 #include <string>
+#include <utility>
+#include <vector>
+
+#include <core/paje_trace.hpp>
 
 #include "metal_device.hpp"
 #include <IOKit/IOKitLib.h>
@@ -169,9 +175,56 @@ namespace ngsmetal
     MTL::CommandQueue * queue;
     mutable MTL::CommandBuffer * pending = nullptr;
 
+    static constexpr size_t TRACE_CAPACITY = 4096;
+    ngcore::TraceContainer tracer{"GPU metal"};
+    std::vector<std::pair<std::string, MTL::CommandBuffer*>> traced;
+
+    // mach_absolute_time units per second
+    static double MachPerSec()
+    {
+      static const double f = []
+      { mach_timebase_info_data_t t; mach_timebase_info (&t);
+        return 1e9 * t.denom / t.numer; } ();
+      return f;
+    }
+
+    void FlushTrace()
+    {
+      if (traced.empty()) return;
+
+      // GPUStartTime/GPUEndTime are mach_absolute_time in seconds. ngcore ticks
+      // run at a different rate (1 GHz on M4, 24 MHz mach timebase), and the
+      // startup calibration of seconds_per_tick is coarse, so map through the
+      // rate measured since the first flush, anchored at the current reading
+      static const ngcore::TTimePoint tick0 = ngcore::GetTimeCounter();
+      static const unsigned long long mach0 = mach_absolute_time();
+      ngcore::TTimePoint tick = ngcore::GetTimeCounter();
+      unsigned long long mach = mach_absolute_time();
+      double rate = (mach - mach0 > MachPerSec()/20)          // > 50 ms baseline
+        ? double(tick - tick0) / double(mach - mach0)
+        : 1.0 / (ngcore::seconds_per_tick * MachPerSec());
+
+      auto ToTicks = [&] (double sec)
+        {
+          return ngcore::TTimePoint ((long long)tick +
+                                     (long long)((sec*MachPerSec() - double(mach)) * rate));
+        };
+
+      for (auto & [label, cb] : traced)
+        {
+          tracer.AddTicks (label, ToTicks(cb->GPUStartTime()), ToTicks(cb->GPUEndTime()));
+          cb->release();
+        }
+      traced.clear();
+    }
+
   public:
     MetalQueue (MTL::CommandQueue * aqueue) : queue(aqueue) { }
-    ~MetalQueue() { if (pending) pending->release(); }
+    ~MetalQueue()
+    {
+      for (auto & [label, cb] : traced) cb->release();
+      if (pending) pending->release();
+    }
 
     void DoFinish() override
     {
@@ -186,6 +239,9 @@ namespace ngsmetal
 
       pending->release();
       pending = nullptr;
+
+      // the queue is serial, so every traced buffer completed with the last
+      FlushTrace();
 
       if (failed || !msg.empty())
         Err ("kernel execution failed: " + (msg.empty() ? "unknown" : msg));
@@ -218,8 +274,14 @@ namespace ngsmetal
                                  MTL::Size(groupsize.x, groupsize.y, groupsize.z));
     }
 
-    void Commit (MTL::CommandBuffer * cb)
+    void Commit (MTL::CommandBuffer * cb, const std::string & label)
     {
+      if (tracer.Active())
+        {
+          if (traced.size() == TRACE_CAPACITY) DoFinish();
+          cb->retain();
+          traced.push_back ({label, cb});
+        }
       if (pending) pending->release();
       pending = cb;
       pending->retain();
@@ -235,7 +297,7 @@ namespace ngsmetal
       auto enc = cb->computeCommandEncoder();
       Encode (enc, kernel, groups, groupsize, args, dynamic_group_memory);
       enc->endEncoding();
-      Commit (cb);
+      Commit (cb, kernel.Name());
     }
 
     // one command buffer, one serial encoder: dispatches run in order
@@ -246,7 +308,7 @@ namespace ngsmetal
       for (auto & n : prog.Nodes())
         Encode (enc, *n.kernel, n.groups, n.groupsize, n.args, n.dynamic_group_memory);
       enc->endEncoding();
-      Commit (cb);
+      Commit (cb, "Program (" + std::to_string(prog.Size()) + " launches)");
     }
   };
 

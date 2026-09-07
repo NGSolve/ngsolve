@@ -15,6 +15,8 @@
 #include <string>
 #include <vector>
 
+#include <core/paje_trace.hpp>
+
 #include "cuda_device.hpp"
 
 namespace ngs_cuda
@@ -148,6 +150,59 @@ namespace ngs_cuda
 
     CUstream Current() const { return forced ? forced : (tracking ? ngs_cuda_stream : stream); }
 
+    static constexpr size_t TRACE_CAPACITY = 4096;
+    ngcore::TraceContainer tracer{"GPU cuda"};
+    std::vector<CUevent> trace_events;     // start/stop pair per slot
+    std::vector<std::string> trace_labels;
+    size_t trace_slots = 0;
+    CUevent trace_anchor = nullptr;
+
+    // records a start event on the stream, returns the slot, -1 if not traced
+    int BeginTrace (const std::string & label)
+    {
+      if (!tracer.Active()) return -1;
+      // events recorded into a graph carry no readable time
+      CUstreamCaptureStatus capturing;
+      if (cuStreamIsCapturing (Current(), &capturing) != CUDA_SUCCESS ||
+          capturing != CU_STREAM_CAPTURE_STATUS_NONE) return -1;
+
+      if (trace_events.empty())
+        {
+          trace_events.resize (2*TRACE_CAPACITY);
+          trace_labels.resize (TRACE_CAPACITY);
+          for (auto & ev : trace_events)
+            Check (cuEventCreate (&ev, CU_EVENT_DEFAULT), "cuEventCreate");
+          Check (cuEventCreate (&trace_anchor, CU_EVENT_DEFAULT), "cuEventCreate");
+        }
+      if (trace_slots == TRACE_CAPACITY) FlushTrace();
+      Check (cuEventRecord (trace_events[2*trace_slots], Current()), "cuEventRecord");
+      trace_labels[trace_slots] = label;
+      return int(trace_slots);
+    }
+
+    void EndTrace (int slot)
+    {
+      if (slot < 0) return;
+      Check (cuEventRecord (trace_events[2*slot+1], Current()), "cuEventRecord");
+      trace_slots++;
+    }
+
+    void FlushTrace()
+    {
+      if (!trace_slots) return;
+      Check (cuEventRecord (trace_anchor, Current()), "cuEventRecord");
+      Check (cuEventSynchronize (trace_anchor), "cuEventSynchronize");
+      tracer.Anchor (0);
+      for (size_t i = 0; i < trace_slots; i++)
+        {
+          float t0 = 0, t1 = 0;
+          cuEventElapsedTime (&t0, trace_events[2*i], trace_anchor);
+          cuEventElapsedTime (&t1, trace_events[2*i+1], trace_anchor);
+          tracer.AddInterval (trace_labels[i], -1e-3*t0, -1e-3*t1);
+        }
+      trace_slots = 0;
+    }
+
   public:
     CudaQueue() : owned(true)
     { Check (cuStreamCreate (&stream, CU_STREAM_NON_BLOCKING), "cuStreamCreate"); }
@@ -159,12 +214,17 @@ namespace ngs_cuda
 
     ~CudaQueue()
     {
+      for (auto ev : trace_events) cuEventDestroy (ev);
+      if (trace_anchor) cuEventDestroy (trace_anchor);
       if (owned) cuStreamDestroy (stream);
       if (capture_stream) cuStreamDestroy (capture_stream);
     }
 
     void DoFinish() override
-    { Check (cuStreamSynchronize (Current()), "cuStreamSynchronize"); }
+    {
+      Check (cuStreamSynchronize (Current()), "cuStreamSynchronize");
+      FlushTrace();
+    }
 
   protected:
     void DoLaunch (Kernel & kernel, Dim3 groups, Dim3 groupsize,
@@ -192,11 +252,13 @@ namespace ngs_cuda
             params[i] = const_cast<void*> (a.Data());
         }
 
+      int slot = BeginTrace (ck.Name());
       Check (cuLaunchKernel (ck.Get(),
                              groups.x, groups.y, groups.z,
                              groupsize.x, groupsize.y, groupsize.z,
                              dynamic_group_memory, Current(),
                              params.data(), nullptr), "cuLaunchKernel");
+      EndTrace (slot);
     }
 
     struct GraphCache
@@ -235,7 +297,9 @@ namespace ngs_cuda
           Check (cuGraphInstantiate (&cache->exec, cache->graph, 0), "cuGraphInstantiate");
           prog.backend_cache = cache;
         }
+      int slot = BeginTrace ("Program (" + std::to_string(prog.Size()) + " launches)");
       Check (cuGraphLaunch (cache->exec, Current()), "cuGraphLaunch");
+      EndTrace (slot);
     }
   };
 

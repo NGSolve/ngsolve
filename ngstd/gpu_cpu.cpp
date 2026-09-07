@@ -12,6 +12,8 @@
   metal without a gpu.
 */
 
+#include <core/paje_trace.hpp>
+
 #include "gpuwrapper.hpp"
 #include "gpukernel.hpp"
 
@@ -124,6 +126,7 @@ namespace ngs_gpu
 
     class CpuQueue : public Queue
     {
+      ngcore::TraceContainer tracer{"GPU cpu"};
     public:
       void DoFinish() override { }   // launches run synchronously
 
@@ -149,11 +152,16 @@ namespace ngs_gpu
               argv[i] = const_cast<void*> (a.Data());
           }
 
+        auto t0 = ngcore::GetTimeCounter();
+
         // the thread-local work-item indices live in the kernel's own library
         ck.Launcher() (ck.Get(), argv.data(),
                 groups.x, groups.y, groups.z,
                 groupsize.x, groupsize.y, groupsize.z,
                 dynamic_group_memory);
+
+        if (tracer.Active())
+          tracer.AddTicks (kernel.Name(), t0, ngcore::GetTimeCounter());
       }
     };
 
