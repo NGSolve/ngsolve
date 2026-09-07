@@ -140,44 +140,58 @@ namespace ngla
         dv_dot2 reduces the partials with a single group into res[0].
         Both stages stay on the device, so with res pointing into a
         DeviceScalar the reduction is graph-capturable.
+
+        Groups are 2D, GROUP_SIZE_X = simd width: SIMD_SUM reduces the
+        lanes of a row in registers, one shared slot per row, a single
+        barrier, and row 0 reduces the row sums with a second SIMD_SUM.
       */
       // conjugate applies to the second vector, as on the host; it is
       // ignored for real SCAL, where CONJ expands to nothing
       KERNEL(dv_dot1, GLOBAL_IN(SCAL,x), GLOBAL_IN(SCAL,y), GLOBAL(SCAL,partial),
                       VALUE(int,conjugate), VALUE(int,n))
       {
-        SHARED(SCAL, tmp, 1024);
+        SHARED(SCAL, tmp, 64);
+        int gsize = int(GROUP_SIZE_X*GROUP_SIZE_Y);
+        int lid = int(LOCAL_ID_X + GROUP_SIZE_X*LOCAL_ID_Y);
+        int stride = gsize*int(NUM_GROUPS_X);
         SCAL s = 0;
         if (conjugate)
-          for (int i = int(GLOBAL_ID_X); i < n; i += int(GROUP_SIZE_X*NUM_GROUPS_X))
+          for (int i = int(GROUP_ID_X)*gsize + lid; i < n; i += stride)
             s += x[i]*CONJ(y[i]);
         else
-          for (int i = int(GLOBAL_ID_X); i < n; i += int(GROUP_SIZE_X*NUM_GROUPS_X))
+          for (int i = int(GROUP_ID_X)*gsize + lid; i < n; i += stride)
             s += x[i]*y[i];
-        tmp[LOCAL_ID_X] = s;
+        s = SimdSum(s);
+        if (LOCAL_ID_X == 0) tmp[LOCAL_ID_Y] = s;
         BARRIER();
-        for (uint d = GROUP_SIZE_X/2; d > 0; d /= 2)
+        if (LOCAL_ID_Y == 0)
           {
-            if (LOCAL_ID_X < d) tmp[LOCAL_ID_X] += tmp[LOCAL_ID_X+d];
-            BARRIER();
+            // a loop, not a lane test: the cpu backend has simd width 1
+            SCAL t = 0;
+            for (uint i = LOCAL_ID_X; i < GROUP_SIZE_Y; i += GROUP_SIZE_X) t += tmp[i];
+            t = SimdSum(t);
+            if (LOCAL_ID_X == 0) partial[GROUP_ID_X] = t;
           }
-        if (LOCAL_ID_X == 0) partial[GROUP_ID_X] = tmp[0];
       }
 
       KERNEL(dv_dot2, GLOBAL_IN(SCAL,partial), GLOBAL(SCAL,res), VALUE(int,m))
       {
-        SHARED(SCAL, tmp, 1024);
+        SHARED(SCAL, tmp, 64);
+        int gsize = int(GROUP_SIZE_X*GROUP_SIZE_Y);
+        int lid = int(LOCAL_ID_X + GROUP_SIZE_X*LOCAL_ID_Y);
         SCAL s = 0;
-        for (int i = int(LOCAL_ID_X); i < m; i += int(GROUP_SIZE_X))
+        for (int i = lid; i < m; i += gsize)
           s += partial[i];
-        tmp[LOCAL_ID_X] = s;
+        s = SimdSum(s);
+        if (LOCAL_ID_X == 0) tmp[LOCAL_ID_Y] = s;
         BARRIER();
-        for (uint d = GROUP_SIZE_X/2; d > 0; d /= 2)
+        if (LOCAL_ID_Y == 0)
           {
-            if (LOCAL_ID_X < d) tmp[LOCAL_ID_X] += tmp[LOCAL_ID_X+d];
-            BARRIER();
+            SCAL t = 0;
+            for (uint i = LOCAL_ID_X; i < GROUP_SIZE_Y; i += GROUP_SIZE_X) t += tmp[i];
+            t = SimdSum(t);
+            if (LOCAL_ID_X == 0) res[0] = t;
           }
-        if (LOCAL_ID_X == 0) res[0] = tmp[0];
       }
 
     )RAW";
@@ -198,7 +212,8 @@ namespace ngla
       shared_ptr<Kernel> from_other, to_other;
       shared_ptr<Kernel> dot1, dot2;
       TypedBuffer<T> dot_scratch;   // dotgroups partials + one result slot
-      unsigned dotgroups, dotgroupsize;
+      unsigned dotgroups;
+      Dim3 dotgroupdim;             // (simd width, rows)
       unsigned groupsize;
 
       DeviceVectorKernels (shared_ptr<Device> adevice)
@@ -214,7 +229,8 @@ namespace ngla
         // the other real precision, for the cross-precision copy kernels;
         // without fp64 no double vector exists, and double would not compile
         string other = is_same_v<T,double> ? "float" : "double";
-        if (!device->HasFloat64()) other = ScalName<T>();
+        // ... and no cross-precision copies for complex vectors
+        if (!device->HasFloat64() || is_same_v<T,Complex>) other = ScalName<T>();
         src = Substitute (src, "OTHER", other);
         library = device->CompileSource (string(code_gpukernel) + src);
         setscalar = library->GetKernel ("dv_setscalar");
@@ -233,10 +249,10 @@ namespace ngla
         // reference backend runs one OS thread per work-item
         groupsize = (device->SimdWidth() > 1) ? device->MaxThreadsPerGroup() : 64;
 
-        // the reduction tree wants a power of two, at most the shared size
-        dotgroupsize = 1;
-        while (2*dotgroupsize <= groupsize && 2*dotgroupsize <= 1024)
-          dotgroupsize *= 2;
+        // rows of one simd-group each, at most the 64 shared slots
+        unsigned simdw = unsigned(device->SimdWidth());
+        unsigned rows = min (groupsize/simdw, 64u);
+        dotgroupdim = Dim3 (simdw, rows);
         // enough groups to saturate a gpu, few for the cpu reference backend
         dotgroups = (device->SimdWidth() > 1) ? 256 : 4;
         dot_scratch = device->NewBuffer<T> (dotgroups+1, MemType::Device);
@@ -245,9 +261,9 @@ namespace ngla
       // res: where dv_dot2 puts the result (buffer + byte offset)
       void LaunchDot (KernelArg x, KernelArg y, KernelArg res, int n, bool conjugate = false) const
       {
-        queue->Launch (*dot1, Dim3(dotgroups), Dim3(dotgroupsize),
+        queue->Launch (*dot1, Dim3(dotgroups), dotgroupdim,
                        { x, y, KernelArg(dot_scratch), KernelArg(int(conjugate)), KernelArg(int(n)) });
-        queue->Launch (*dot2, Dim3(1), Dim3(dotgroupsize),
+        queue->Launch (*dot2, Dim3(1), dotgroupdim,
                        { KernelArg(dot_scratch), res, KernelArg(int(dotgroups)) });
       }
 
@@ -546,7 +562,7 @@ namespace ngla
     const auto & kern = DeviceVectorKernels<T>::Get();
     // the host reads back anyway, so skip the second reduction kernel:
     // fetch the partials (2KB cost the same as 8 bytes) and sum here
-    kern.queue->Launch (*kern.dot1, Dim3(kern.dotgroups), Dim3(kern.dotgroupsize),
+    kern.queue->Launch (*kern.dot1, Dim3(kern.dotgroups), kern.dotgroupdim,
                         { DevArgRO(), dv.DevArgRO(), KernelArg(kern.dot_scratch),
                           KernelArg(int(conjugate)), KernelArg(int(this->size)) });
     kern.queue->Finish();

@@ -489,6 +489,16 @@ template <typename T> NGS_CPLX_FUNC Complex<T> fma (Complex<T> a, NGS_CPLX_SCAL(
 
 NGS_CPLX_ADDRSPACES(NGS_CPLX_COMPOUND)
 
+// SIMD_SUM for real and complex alike, all lanes must call it
+#ifdef __CUDACC__
+  #define NGS_DEV_FUNC __device__ inline
+#else
+  #define NGS_DEV_FUNC inline
+#endif
+template <typename T> NGS_DEV_FUNC T SimdSum (T x) { return SIMD_SUM(x); }
+template <typename T> NGS_DEV_FUNC Complex<T> SimdSum (Complex<T> z)
+{ return Complex<T>(SIMD_SUM(z.re), SIMD_SUM(z.im)); }
+
 #ifdef __CUDACC__
 template <typename T> __device__ inline void atomicAdd (Complex<T> * p, Complex<T> v)
 { atomicAdd (&p->re, v.re); atomicAdd (&p->im, v.im); }
