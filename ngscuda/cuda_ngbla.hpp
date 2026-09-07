@@ -7,7 +7,6 @@
 #include <matrix.hpp>
 
 #include "cuda_ngstd.hpp"
-#include "linalg_kernels.hpp"
 
 
 

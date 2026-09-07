@@ -1446,6 +1446,23 @@ inverse : string
       .def("WaitUntilCompleted", [] (DV & self) { self.GetQueue()->Finish(); },
            "wait until all queued kernels writing this vector are done")
       .def_property_readonly("memtype", [] (DV & self) { return self.GetMemType(); })
+      .def_property_readonly("__cuda_array_interface__", [] (DV & self)
+           {
+             // the consumer may write through the pointer: device made current,
+             // host copy invalidated, queued kernels finished
+             typedef decltype(proto) T;
+             auto buf = self.DevBufferRW();
+             auto ptr = buf->DevicePtr();
+             if (!ptr) throw Exception("__cuda_array_interface__: not a cuda vector");
+             self.GetQueue()->Finish();
+             py::dict cai;
+             cai["version"] = 3;
+             cai["shape"] = py::make_tuple(self.Size());
+             cai["typestr"] = py::dtype::of<T>().attr("str");
+             cai["data"] = py::make_tuple(ptr + self.DevOffset()*sizeof(T), false);
+             cai["strides"] = py::none();
+             return cai;
+           }, "cuda array interface (cuda backend only), for cupy, numba, torch")
       ;
   };
   bind_devicevector (double(), "DeviceVectorD", "vector on the gpu, fp64");

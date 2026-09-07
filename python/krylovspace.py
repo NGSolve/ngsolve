@@ -390,6 +390,118 @@ record : bool = False
                     return
 
 
+class DeviceTFQMRSolver(LinearSolver):
+    __doc__ = """Transpose-free quasi minimal residual method with all vector
+and scalar operations on the device, for non-symmetric systems.
+
+The coefficients live in device scalars and are computed by device
+kernels, so an iteration issues no host synchronisation. The residual
+estimate is read back to the host only every `check` iteration pairs,
+where the convergence test, callbacks and printing happen.
+
+Matrix and preconditioner must be device operators (CreateDeviceMatrix),
+rhs and solution device vectors; the real case only.
+
+    Parameters
+    ----------
+
+""" + linear_solver_param_doc + """
+
+check : int = 10
+  Number of iteration pairs (even + odd step) between two residual checks on the host.
+
+record : bool = False
+  Record the launches of one iteration pair and replay them (ngsolve.gpu.Recording).
+"""
+    name = "DeviceTFQMR"
+
+    def __init__(self, *args, check : int = 10, record : bool = False, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.check = check
+        self.record = record
+
+    def _SolveImpl(self, rhs : BaseVector, sol : BaseVector):
+        # the host TFQMRSolver above, with the scalars kept on the device
+        mat, pre = self.mat, self.pre
+        r, u, v, w, uhat, unext, rstar, d, tmp = [sol.CreateVector() for i in range(9)]
+        rho, rholast, vtrstar, alpha, neg_alpha, wnorm2, theta, c, tau, eta, coeff, beta, beta2 = \
+            [rhs.CreateScalar() for i in range(13)]
+        if not hasattr(rho, "Get"):
+            raise Exception("DeviceTFQMRSolver needs device vectors, e.g. rhs = devmat.CreateColVector()")
+
+        d[:] = 0
+        tmp.data = rhs - mat * sol
+        r.data = pre * tmp
+        u.data = r
+        w.data = r
+        rstar.data = r
+        tmp.data = mat * r
+        v.data = pre * tmp
+        uhat.data = v
+        theta.Set(0)
+        eta.Set(0)
+        r.InnerProduct(rstar, rho)
+        rholast.data = rho
+        tau.data = rho.Sqrt()
+        r0norm = sqrt(abs(rho.Get()))
+        if self.CheckResidual(r0norm) or r0norm == 0:
+            return
+
+        def halfstep():
+            nonlocal d
+            w.data += neg_alpha * uhat
+            coeff.data = theta * theta * eta / alpha
+            d *= coeff
+            d.data += u
+            w.InnerProduct(w, wnorm2)
+            theta.data = wnorm2.Sqrt() / tau
+            c.data = (1.0 / (1.0 + theta * theta)).Sqrt()
+            tau.data = tau * theta * c
+            eta.data = c * c * alpha
+            sol.data += eta * d
+
+        def pair():
+            nonlocal u, v
+            # even step
+            v.InnerProduct(rstar, vtrstar)
+            alpha.data = rho / vtrstar
+            neg_alpha.data = -alpha
+            unext.data = u
+            unext.data += neg_alpha * v
+            halfstep()
+            tmp.data = mat * unext
+            uhat.data = pre * tmp
+            u.data = unext
+            rholast.data = rho
+            # odd step
+            halfstep()
+            w.InnerProduct(rstar, rho)
+            beta.data = rho / rholast
+            beta2.data = beta * beta
+            u *= beta
+            u.data += w
+            v *= beta2
+            v.data += beta * uhat
+            tmp.data = mat * u
+            uhat.data = pre * tmp
+            v.data += uhat
+
+        if self.record:
+            from ngsolve.gpu import Recording
+            with Recording() as rec:
+                pair()
+            pair = rec.Run
+
+        it = 0
+        while True:
+            pair()
+            it += 2
+            if (it // 2) % self.check == 0 or it + 2 > self.maxiter:
+                self.iterations = it
+                if self.CheckResidual(abs(tau.Get()) * sqrt(it)):
+                    return
+
+
 def CG(mat, rhs, pre=None, sol=None, tol=1e-12, maxsteps = 100, printrates = True, plotrates = False, initialize = True, conjugate=False, callback=None, **kwargs):
     """preconditioned conjugate gradient method
 

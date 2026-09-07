@@ -263,6 +263,12 @@ namespace ngs_cuda
       *clock = clock64();
   }
 
+  void WarmupCudaModule ()
+  {
+    SmallKernel<<<1,1>>>(nullptr);
+    cudaDeviceSynchronize();
+  }
+
   void TimeProfiler() {
     static Timer t("cudaDeviceSynchronize");
     for(auto i : Range(10))

@@ -13,9 +13,7 @@
 
   
 #include "cuda_ngbla.hpp"
-#include "linalg_kernels.hpp"
 #include "cuda_device.hpp"
-#include "unifiedvector.hpp"
 
 
 namespace ngla
@@ -25,8 +23,8 @@ namespace ngla
   void InitCuLinalg();
 
 
-  // typed device access to any DeviceVector<double> (UnifiedVector,
-  // DeviceVectorWrapper, ...), with the transfers the access implies
+  // typed device access to any DeviceVector<double> (DeviceVectorWrapper, ...),
+  // with the transfers the access implies
 
   inline Dev<double> * DevPtr (const DeviceVector<double> & v)
   {
@@ -47,82 +45,17 @@ namespace ngla
   }
 
 
-  /* AutoVector CreateUnifiedVector(size_t size); */
-
   class DevMatrix : public BaseMatrix
   {
   public:
     DevMatrix() { }
 
-    AutoVector CreateRowVector() const override { return make_unique<UnifiedVector>(Width()); }
-    AutoVector CreateColVector() const override { return make_unique<UnifiedVector>(Height()); }
+    AutoVector CreateRowVector() const override { return make_unique<DeviceVector<double>>(Width(), PreferredMemType()); }
+    AutoVector CreateColVector() const override { return make_unique<DeviceVector<double>>(Height(), PreferredMemType()); }
   };
 
   shared_ptr<BaseMatrix> CreateDevMatrix (BaseMatrix &mat);
 
-
-
-
-
-
-
-
-  
-
-
-  
-  
-
-
-
-
-
-
-  // DevCGSolver — preconditioned CG with GPU-resident scalars (UnifiedScalar)
-  // Supports CUDA graph capture of CG iteration body (convergence check via DtoH remains outside graph).
-  class DevCGSolver : public KrylovSpaceSolver
-  {
-    shared_ptr<BaseMatrix> a_dev;  // device operator for graph capture
-    shared_ptr<BaseMatrix> c_dev;  // preconditioner for graph capture
-
-  public:
-    DevCGSolver() : KrylovSpaceSolver() { }
-
-    DevCGSolver(shared_ptr<BaseMatrix> mat,
-                shared_ptr<BaseMatrix> pre)
-      : KrylovSpaceSolver(mat, pre) { }
-
-    DevCGSolver(shared_ptr<BaseMatrix> mat,
-                shared_ptr<BaseMatrix> pre,
-                shared_ptr<BaseMatrix> adev_raw,
-                shared_ptr<BaseMatrix> cdev_raw)
-      : KrylovSpaceSolver(mat, pre),
-        a_dev(adev_raw), c_dev(cdev_raw) { }
-
-    void Mult(const BaseVector& rhs,
-              BaseVector& sol) const override;
-  };
-
-  // DevTFQMRSolver — preconditioned TFQMR for non-symmetric systems
-  // Per-iteration CUDA graph capture: two graphs (even/odd), alternated each step.
-  class DevTFQMRSolver : public KrylovSpaceSolver
-  {
-    shared_ptr<BaseMatrix> a_dev;
-    shared_ptr<BaseMatrix> c_dev;
-
-  public:
-    DevTFQMRSolver() : KrylovSpaceSolver() { }
-
-    DevTFQMRSolver(shared_ptr<BaseMatrix> mat,
-                   shared_ptr<BaseMatrix> pre,
-                   shared_ptr<BaseMatrix> adev_raw,
-                   shared_ptr<BaseMatrix> cdev_raw)
-      : KrylovSpaceSolver(mat, pre),
-        a_dev(adev_raw), c_dev(cdev_raw) { }
-
-    void Mult(const BaseVector& rhs,
-              BaseVector& sol) const override;
-  };
 }
 
 

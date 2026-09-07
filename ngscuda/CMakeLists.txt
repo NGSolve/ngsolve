@@ -18,13 +18,9 @@ add_compile_definitions(CUDA)
 include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_library(${lib_name} SHARED
-    cuda_linalg.cpp unifiedvector.cpp
-    cuda_ngstd.cpp cuda_ngbla.hpp cuda_applyIR.cpp
-    linalg_kernels.cu cuda_profiler.cu
-    cuda_krylov.cpp cuda_matrix_free_btdtb.cpp cuda_device.cpp
+    cuda_linalg.cpp cuda_ngstd.cpp cuda_ngbla.hpp cuda_applyIR.cpp
+    cuda_profiler.cu cuda_matrix_free_btdtb.cpp cuda_device.cpp
 )
-
-set_source_files_properties(cuda_linalg.cpp unifiedvector.cpp cuda_krylov.cpp PROPERTIES LANGUAGE CUDA)
 
 # warnign 611: warning #611-D: overloaded virtual function ... only partially overridden
 # warning 20011: calling a __host__ function(...) from a __host__ __device__ function(...) is not allowed
@@ -95,11 +91,9 @@ install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngs_nvlink DESTINATION ${NGSOLVE_I
 install( FILES
         cuda_linalg.hpp
         cuda_profiler.hpp
-        unifiedvector.hpp
         cuda_core.hpp
         cuda_ngstd.hpp
         cuda_ngbla.hpp
-        linalg_kernels.hpp
         cuda_device.hpp
         DESTINATION ${NGSOLVE_INSTALL_DIR_INCLUDE}
         COMPONENT ngsolve_devel

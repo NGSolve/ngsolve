@@ -106,6 +106,21 @@ static void ExportGPU (py::module & m)
     .def_property_readonly("memtype", [](PyGPUBuffer & self) { return self.buf->GetMemType(); })
     .def_property_readonly("host_visible",
                            [](PyGPUBuffer & self) { return self.buf->HostPtr() != nullptr; })
+    .def_property_readonly("__cuda_array_interface__", [](PyGPUBuffer & self)
+         {
+           // for cupy/numba/torch; queued kernels are finished first, the
+           // consumer must keep this object alive while it uses the pointer
+           auto ptr = self.buf->DevicePtr();
+           if (!ptr) throw Exception("__cuda_array_interface__: not a cuda buffer");
+           GetDevice()->DefaultQueue()->Finish();
+           py::dict cai;
+           cai["version"] = 3;
+           cai["shape"] = py::make_tuple(self.Size());
+           cai["typestr"] = self.dtype.attr("str");
+           cai["data"] = py::make_tuple(ptr, false);
+           cai["strides"] = py::none();
+           return cai;
+         }, "cuda array interface of the buffer (cuda backend only)")
     .def("__len__", &PyGPUBuffer::Size)
     .def("H2D", [](PyGPUBuffer & self, py::object obj, size_t offset)
          {

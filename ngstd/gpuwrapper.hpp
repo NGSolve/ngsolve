@@ -19,6 +19,7 @@
 
 #include <complex>
 #include <cstddef>
+#include <cstdint>
 #include <cstring>
 #include <stdexcept>
 #include <string>
@@ -63,6 +64,8 @@ namespace ngs_gpu
     virtual void * DoHostPtr() const = 0;
     virtual void DoH2D (const void * src, size_t bytes, size_t offset) = 0;
     virtual void DoD2H (void * dst, size_t bytes, size_t offset) const = 0;
+    // device address usable by other libraries (cuda), 0 if there is none
+    virtual uintptr_t DoDevicePtr() const { return 0; }
 
   public:
     virtual ~Buffer() = default;
@@ -78,6 +81,10 @@ namespace ngs_gpu
     // nullptr if not host visible
     void * HostPtr() const { return DoHostPtr(); }
     template <typename T> T * HostData() const { return static_cast<T*>(DoHostPtr()); }
+
+    // raw device address for interop (e.g. __cuda_array_interface__), 0 if the
+    // backend has none; the caller synchronises the queue before using it
+    uintptr_t DevicePtr() const { return DoDevicePtr(); }
 
     // transfers are host synchronisation, not allowed inside a recording
     void H2D (const void * src, size_t bytes, size_t offset = 0);

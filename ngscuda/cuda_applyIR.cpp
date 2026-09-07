@@ -180,8 +180,6 @@ namespace ngla
       DeviceVectorWrapper<double> ux(x);
       DeviceVectorWrapper<double> uy(y);
       
-      // const UnifiedVector & ux = dynamic_cast<const UnifiedVector&> (x);
-      // UnifiedVector & uy = dynamic_cast<UnifiedVector&> (y);
       
       // ux.UpdateDevice();
       // uy.UpdateDevice();

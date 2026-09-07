@@ -60,6 +60,8 @@ namespace ngs_cuda
       return (memtype == MemType::Shared) ? (void*)ptr : nullptr;
     }
 
+    uintptr_t DoDevicePtr() const override { return uintptr_t(ptr); }
+
     void DoH2D (const void * src, size_t bytes, size_t offset) override
     {
       if (offset+bytes > size)
@@ -503,9 +505,9 @@ namespace ngs_cuda
 
   void * BufferDevPtr (ngs_gpu::Buffer & buf)
   {
-    auto cb = dynamic_cast<CudaBuffer*> (&buf);
-    if (!cb) throw std::runtime_error ("ngscuda: buffer is not a cuda buffer");
-    return (void*)cb->Get();
+    auto p = buf.DevicePtr();
+    if (!p) throw std::runtime_error ("ngscuda: buffer is not a cuda buffer");
+    return (void*)p;
   }
 
 

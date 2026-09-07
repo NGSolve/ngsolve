@@ -41,8 +41,8 @@ with TaskManager():
 
 
 # CG-Solver on GPU
-fdev = UnifiedVector(f.vec)
-adev = CreateDevMatrix(a.mat)
+fdev = f.vec.CreateDeviceVector(copy=True)
+adev = a.mat.CreateDeviceMatrix()
 
 devjac = c.CreateDeviceMatrix()
 

@@ -14,6 +14,7 @@ namespace ngs_cuda
   
   extern int gpu_clock;
   void InitCUDA (int verbose = 2);
+  void WarmupCudaModule ();   // first launch of a kernel of this library
 
 }
 
