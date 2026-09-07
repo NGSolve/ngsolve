@@ -197,6 +197,8 @@ namespace ngla
     {
       return make_unique<VVector<TV>> (height/entrysize);
     }
+    VecFormat RowFormat () const override { return VVectorFormat<TV> (height/entrysize); }
+    VecFormat ColFormat () const override { return VVectorFormat<TV> (height/entrysize); }
   };
 
 

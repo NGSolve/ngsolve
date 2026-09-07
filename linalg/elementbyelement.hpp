@@ -60,6 +60,8 @@ namespace ngla
 
     AutoVector CreateRowVector () const override { return make_unique<VVector<double>> (width); } 
     AutoVector CreateColVector () const override { return make_unique<VVector<double>> (height); }
+    VecFormat RowFormat () const override { return VVectorFormat<double> (width); }
+    VecFormat ColFormat () const override { return VVectorFormat<double> (height); }
 
     void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
     void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
@@ -153,6 +155,8 @@ namespace ngla
     
     virtual AutoVector CreateRowVector () const override;
     virtual AutoVector CreateColVector () const override;
+    VecFormat RowFormat () const override { return VVectorFormat<SCAL> (w); }
+    VecFormat ColFormat () const override { return VVectorFormat<SCAL> (h); }
 
     virtual shared_ptr<BaseSparseMatrix> CreateSparseMatrix() const override;
     shared_ptr<BaseMatrix> CreateDeviceMatrix () const override;
@@ -193,6 +197,8 @@ namespace ngla
     {
       return make_unique<VVector<>> (num*matrix.Height());
     }
+    VecFormat RowFormat () const override { return VVectorFormat<double> (num*matrix.Width()); }
+    VecFormat ColFormat () const override { return VVectorFormat<double> (num*matrix.Height()); }
 
     const Matrix<> & GetMatrix() const { return matrix; }
   };

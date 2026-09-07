@@ -108,6 +108,8 @@ namespace ngla
     {
       return make_unique<VVector<TV>> (height);
     }
+    VecFormat RowFormat () const override { return VVectorFormat<TV> (height); }
+    VecFormat ColFormat () const override { return VVectorFormat<TV> (height); }
 
   };
 
@@ -159,6 +161,8 @@ namespace ngla
     virtual AutoVector CreateVector () const;
     virtual AutoVector CreateRowVector () const;
     virtual AutoVector CreateColVector () const;
+    VecFormat RowFormat () const override { return ParallelVVectorFormat<TV> (paralleldofs); }
+    VecFormat ColFormat () const override { return ParallelVVectorFormat<TV> (paralleldofs); }
     /*
     {
       return new ParallelVVector<TV> (height, paralleldofs);

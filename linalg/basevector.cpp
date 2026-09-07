@@ -1832,6 +1832,21 @@ namespace ngla
   }
 
 
+  VecFormat ParallelFormat (shared_ptr<ParallelDofs> pardofs, Scalar scal, int es, PARALLEL_STATUS status)
+  {
+    VecFormat f (pardofs->GetNDofLocal(), scal, es);
+    f.pardofs = pardofs;
+    f.parstatus = status;
+    return f;
+  }
+
+  VecFormat ParallelVectorFormat (shared_ptr<ParallelDofs> pardofs, PARALLEL_STATUS status)
+  {
+    if (!pardofs) throw Exception ("ParallelVectorFormat called with null pardofs");
+    Scalar scal = pardofs->IsComplex() ? Scalar(Complex(0)) : Scalar(double(0));
+    return ParallelFormat (pardofs, scal, pardofs->GetEntrySize(), status);
+  }
+
   VecFormat BaseVector :: GetFormat () const
   {
     return std::visit ([&] (auto proto) -> VecFormat

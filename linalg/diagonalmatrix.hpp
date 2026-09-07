@@ -38,10 +38,13 @@ namespace ngla
 
     virtual shared_ptr<BaseSparseMatrix> CreateSparseMatrix() const override;
     
+    // type-agnostic, only the size is known
+    VecFormat RowFormat () const override { return VecFormat (bits->Size()); }
+    VecFormat ColFormat () const override { return VecFormat (bits->Size()); }
     AutoVector CreateRowVector() const override
-    { throw Exception("CreateRowVector not implemented for Projector!"); }
+    { return CreateBaseVector (RowFormat().WithDefaults()); }
     AutoVector CreateColVector() const override
-    { throw Exception("CreateColVector not implemented for Projector!"); }
+    { return CreateBaseVector (ColFormat().WithDefaults()); }
 
     AutoVector Evaluate(BaseVector & v) const override
     {
@@ -86,6 +89,8 @@ namespace ngla
     
     AutoVector CreateRowVector () const override;
     AutoVector CreateColVector () const override;
+    VecFormat RowFormat () const override;
+    VecFormat ColFormat () const override;
 
     void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;    
     void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
@@ -115,6 +120,8 @@ namespace ngla
     
     AutoVector CreateRowVector () const override;
     AutoVector CreateColVector () const override;
+    VecFormat RowFormat () const override;
+    VecFormat ColFormat () const override;
 
     void Mult (const BaseVector & x, BaseVector & y) const override;    
     void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;    
@@ -144,6 +151,8 @@ namespace ngla
     
     AutoVector CreateRowVector () const override;
     AutoVector CreateColVector () const override;
+    VecFormat RowFormat () const override;
+    VecFormat ColFormat () const override;
 
     void Mult (const BaseVector & x, BaseVector & y) const override;    
     void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;

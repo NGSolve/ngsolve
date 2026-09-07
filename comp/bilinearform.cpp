@@ -7634,6 +7634,11 @@ namespace ngcomp
   {
     return bf -> CreateColVector();
   }
+
+  VecFormat BilinearFormApplication :: RowFormat () const
+  { return bf->GetTrialSpace()->GetVectorFormat(); }
+  VecFormat BilinearFormApplication :: ColFormat () const
+  { return bf->GetTestSpace()->GetVectorFormat(); }
   
   
   LinearizedBilinearFormApplication ::

@@ -197,6 +197,8 @@ namespace ngla
     { return make_unique<DeviceVector<double>> (Mask()->Size(), memtype); }
     AutoVector CreateColVector () const override
     { return make_unique<DeviceVector<double>> (Mask()->Size(), memtype); }
+    VecFormat RowFormat () const override { return DeviceVectorFormat<double> (Mask()->Size(), memtype); }
+    VecFormat ColFormat () const override { return RowFormat(); }
 
     BaseMatrix::OperatorInfo GetOperatorInfo () const override
     { return { "DeviceProjector", Mask()->Size(), Mask()->Size() }; }
@@ -265,6 +267,13 @@ namespace ngla
   {
     return make_unique<DeviceVector<T>> (diag.Size(), diag.GetMemType());
   }
+
+  template <typename T>
+  VecFormat DeviceDiagonalMatrix<T> :: RowFormat () const
+  { return DeviceVectorFormat<T> (diag.Size(), diag.GetMemType()); }
+  template <typename T>
+  VecFormat DeviceDiagonalMatrix<T> :: ColFormat () const
+  { return DeviceVectorFormat<T> (diag.Size(), diag.GetMemType()); }
 
   template <typename T>
   BaseMatrix::OperatorInfo DeviceDiagonalMatrix<T> :: GetOperatorInfo () const
@@ -389,6 +398,13 @@ namespace ngla
   {
     return make_unique<DeviceVector<T>> (size_t(dimy)*blocks, memtype);
   }
+
+  template <typename T>
+  VecFormat DeviceBlockDiagonalMatrixSoA<T> :: RowFormat () const
+  { return DeviceVectorFormat<T> (size_t(dimx)*blocks, memtype); }
+  template <typename T>
+  VecFormat DeviceBlockDiagonalMatrixSoA<T> :: ColFormat () const
+  { return DeviceVectorFormat<T> (size_t(dimy)*blocks, memtype); }
 
   template <typename T>
   BaseMatrix::OperatorInfo DeviceBlockDiagonalMatrixSoA<T> :: GetOperatorInfo () const

@@ -483,6 +483,18 @@ auto _dummy_init = [] () {
     */
   }
   
+  VecFormat ParallelMatrix :: RowFormat () const
+  {
+    auto pd = row_paralleldofs ? row_paralleldofs : paralleldofs;
+    return pd ? ParallelVectorFormat (pd, RowType(op)) : mat->RowFormat();
+  }
+
+  VecFormat ParallelMatrix :: ColFormat () const
+  {
+    auto pd = col_paralleldofs ? col_paralleldofs : paralleldofs;
+    return pd ? ParallelVectorFormat (pd, ColType(op)) : mat->ColFormat();
+  }
+
   AutoVector ParallelMatrix :: CreateColVector () const
   {
     auto pd = col_paralleldofs ? col_paralleldofs : paralleldofs;

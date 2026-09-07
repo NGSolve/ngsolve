@@ -271,6 +271,14 @@ namespace ngla
     return CreateBaseVector(diag->Size(), ngbla::IsComplex<TM>(), ngbla::Height<TM>());
   }
 
+  template <typename TM>
+  VecFormat DiagonalMatrix<TM> :: RowFormat () const 
+  { return VecFormat (diag->Size(), typename mat_traits<TM>::TSCAL(0), ngbla::Width<TM>()); }
+
+  template <typename TM>
+  VecFormat DiagonalMatrix<TM> :: ColFormat () const 
+  { return VecFormat (diag->Size(), typename mat_traits<TM>::TSCAL(0), ngbla::Height<TM>()); }
+
   template <typename TM>    
   shared_ptr<BaseMatrix> DiagonalMatrix<TM> ::
   InverseMatrix (shared_ptr<BitArray> subset) const
@@ -431,6 +439,11 @@ namespace ngla
   }
 
   template <typename T>
+  VecFormat BlockDiagonalMatrix<T> :: RowFormat () const { return VVectorFormat<T> (VWidth()); }
+  template <typename T>
+  VecFormat BlockDiagonalMatrix<T> :: ColFormat () const { return VVectorFormat<T> (VHeight()); }
+
+  template <typename T>
   void BlockDiagonalMatrix<T> :: Mult (const BaseVector & x, BaseVector & y) const
   {
     // cout << "BlockDiagonalMult, dims = " << dimx << " x " << dimy << endl;
@@ -587,6 +600,9 @@ namespace ngla
   {
     return make_unique<VVector<double>>(VHeight());    
   }
+
+  VecFormat BlockDiagonalMatrixSoA :: RowFormat () const { return VVectorFormat<double> (VWidth()); }
+  VecFormat BlockDiagonalMatrixSoA :: ColFormat () const { return VVectorFormat<double> (VHeight()); }
 
 
 

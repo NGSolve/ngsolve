@@ -940,6 +940,8 @@ namespace ngcomp
     virtual AutoVector CreateVector () const override;
     virtual AutoVector CreateRowVector () const override;
     virtual AutoVector CreateColVector () const override;
+    VecFormat RowFormat () const override;
+    VecFormat ColFormat () const override;
     
     ///
     virtual int VHeight() const override
@@ -1012,6 +1014,8 @@ namespace ngcomp
     
     AutoVector CreateColVector() const override;
     AutoVector CreateRowVector() const override;
+    VecFormat RowFormat () const override;
+    VecFormat ColFormat () const override;
     
     virtual int VHeight() const override { return nip*dimy; }
     virtual int VWidth() const override { return nip*dimx; }
@@ -1111,6 +1115,8 @@ namespace ngcomp
 
     AutoVector CreateColVector() const override;
     AutoVector CreateRowVector() const override;
+    VecFormat RowFormat () const override;
+    VecFormat ColFormat () const override;
 
     int VHeight() const override { return height; }
     int VWidth() const override { return width; }

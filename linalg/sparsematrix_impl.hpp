@@ -591,6 +591,12 @@ namespace ngla
   template <class TM> AutoVector SparseMatrixTM<TM> :: CreateColVector () const
   { throw Exception("SparseMatrixTM::CreateColVector"); }
 
+  // the vector type is fixed in SparseMatrix, here only the shape
+  template <class TM> VecFormat SparseMatrixTM<TM> :: RowFormat () const
+  { return VecFormat (this->width); }
+  template <class TM> VecFormat SparseMatrixTM<TM> :: ColFormat () const
+  { return VecFormat (this->size); }
+
 
   template <class TM, class TV_ROW, class TV_COL>
   shared_ptr<BaseMatrix> SparseMatrix<TM,TV_ROW,TV_COL> ::
@@ -638,6 +644,14 @@ namespace ngla
   {
     return make_unique<VVector<TVY>> (this->size);
   }
+
+  template <class TM, class TV_ROW, class TV_COL>
+  VecFormat SparseMatrix<TM,TV_ROW,TV_COL> :: RowFormat () const
+  { return VVectorFormat<TVX> (this->width); }
+
+  template <class TM, class TV_ROW, class TV_COL>
+  VecFormat SparseMatrix<TM,TV_ROW,TV_COL> :: ColFormat () const
+  { return VVectorFormat<TVY> (this->size); }
 
 
   template<class TM, class TV_ROW, class TV_COL>

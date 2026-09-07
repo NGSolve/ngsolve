@@ -103,6 +103,9 @@ namespace ngla
     
     AutoVector CreateRowVector () const override { return CreateBaseVector(height/entrysize, is_vector_complex, entrysize); }
     AutoVector CreateColVector () const override { return CreateBaseVector(height/entrysize, is_vector_complex, entrysize); }
+    VecFormat RowFormat () const override
+    { return VecFormat (height/entrysize, is_vector_complex ? Scalar(Complex(0)) : Scalar(double(0)), entrysize); }
+    VecFormat ColFormat () const override { return RowFormat(); }
 
     void Mult (const BaseVector & x, BaseVector & y) const override;
     void MultTrans (const BaseVector & x, BaseVector & y) const override;

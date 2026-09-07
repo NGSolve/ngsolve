@@ -212,6 +212,9 @@ namespace ngcomp
     return make_unique<VVector<double>> (nip*dimx);
   }
 
+  VecFormat ApplyIntegrationPoints :: RowFormat () const { return VVectorFormat<double> (nip*dimx); }
+  VecFormat ApplyIntegrationPoints :: ColFormat () const { return VVectorFormat<double> (nip*dimy); }
+
   void ApplyIntegrationPoints :: Mult (const BaseVector & x, BaseVector & y) const
   {
     static Timer t("ApplyIntegrationPoints"); RegionTimer reg(t);
@@ -678,6 +681,9 @@ namespace ngcomp
   {
     return make_unique<VVector<double>> (width);
   }
+
+  VecFormat MatrixFreeBTDTB :: RowFormat () const { return VVectorFormat<double> (width); }
+  VecFormat MatrixFreeBTDTB :: ColFormat () const { return VVectorFormat<double> (height); }
 
 
   void MatrixFreeBTDTB :: MultAdd (double s, const BaseVector & x, BaseVector & y) const

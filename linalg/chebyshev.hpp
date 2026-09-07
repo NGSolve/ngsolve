@@ -37,6 +37,8 @@ namespace ngla
     ///
     AutoVector CreateRowVector () const override { return a->CreateColVector(); }
     AutoVector CreateColVector () const override { return a->CreateRowVector(); }
+    VecFormat RowFormat () const override { return a->ColFormat(); }
+    VecFormat ColFormat () const override { return a->RowFormat(); }
   };
 
 }

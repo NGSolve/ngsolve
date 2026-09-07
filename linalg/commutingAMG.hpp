@@ -51,6 +51,8 @@ namespace ngla
     {
       return pmat->CreateColVector();
     }
+    VecFormat RowFormat () const override { return pmat->ColFormat(); }
+    VecFormat ColFormat () const override { return pmat->RowFormat(); }
   };
 
 

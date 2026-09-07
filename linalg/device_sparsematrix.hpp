@@ -77,6 +77,8 @@ namespace ngla
 
     virtual AutoVector CreateRowVector () const override;
     virtual AutoVector CreateColVector () const override;
+    VecFormat RowFormat () const override { return DeviceVectorFormat<T> (width, memtype); }
+    VecFormat ColFormat () const override { return DeviceVectorFormat<T> (height, memtype); }
 
     virtual BaseMatrix::OperatorInfo GetOperatorInfo () const override;
     virtual ostream & Print (ostream & ost) const override;

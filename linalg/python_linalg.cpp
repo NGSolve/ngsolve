@@ -980,6 +980,20 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
         throw Exception ("CreateColVector not overloaded from python");        
       }
 
+      VecFormat RowFormat () const override {
+        py::gil_scoped_acquire gil;
+        if (auto overload = pybind11::get_overload(this, "RowFormat"))
+          return py::cast<VecFormat> (overload());
+        return BaseMatrix::RowFormat();
+      }
+
+      VecFormat ColFormat () const override {
+        py::gil_scoped_acquire gil;
+        if (auto overload = pybind11::get_overload(this, "ColFormat"))
+          return py::cast<VecFormat> (overload());
+        return BaseMatrix::ColFormat();
+      }
+
       void Mult (const BaseVector & x, BaseVector & y) const override {
         pybind11::gil_scoped_acquire gil;
         

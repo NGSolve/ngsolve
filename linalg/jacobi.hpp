@@ -56,6 +56,8 @@ namespace ngla
     
     AutoVector CreateRowVector() const override { return jac->CreateRowVector(); }
     AutoVector CreateColVector() const override { return jac->CreateColVector(); }
+    VecFormat RowFormat () const override { return jac->RowFormat(); }
+    VecFormat ColFormat () const override { return jac->ColFormat(); }
   };
 
   
@@ -98,6 +100,8 @@ namespace ngla
     ///
     AutoVector CreateRowVector() const override { return mat->CreateColVector(); }
     AutoVector CreateColVector() const override { return mat->CreateRowVector(); }
+    VecFormat RowFormat () const override { return mat->ColFormat(); }
+    VecFormat ColFormat () const override { return mat->RowFormat(); }
     ///
     void GSSmooth (BaseVector & x, const BaseVector & b, int steps) const override;
 

@@ -301,6 +301,9 @@ ANY                  1 1 1 1 | 15
     /// complex space ?
     bool IsComplex () const { return iscomplex; }
 
+    /// type of coefficient vectors: ndof, scalar, dimension, distribution
+    VecFormat GetVectorFormat () const;
+
     virtual int GetSpatialDimension() const { return ma->GetDimension();}
 
     /// number of (process-local) dofs
@@ -1302,6 +1305,8 @@ ANY                  1 1 1 1 | 15
     virtual AutoVector CreateVector () const override;
     virtual AutoVector CreateRowVector () const override;
     virtual AutoVector CreateColVector () const override;
+    VecFormat RowFormat () const override;
+    VecFormat ColFormat () const override;
     
     virtual int VHeight() const override
     {
@@ -1342,6 +1347,8 @@ ANY                  1 1 1 1 | 15
     virtual AutoVector CreateVector () const override;
     virtual AutoVector CreateRowVector () const override;
     virtual AutoVector CreateColVector () const override;
+    VecFormat RowFormat () const override;
+    VecFormat ColFormat () const override;
   };
 
   

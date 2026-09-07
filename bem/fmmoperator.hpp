@@ -85,6 +85,8 @@ namespace ngsbem
     {
       return make_unique<VVector<TSCAL>>(ypts.Size() * kernelshape[0]);
     }
+    VecFormat RowFormat () const override { return VVectorFormat<TSCAL> (xpts.Size() * kernelshape[1]); }
+    VecFormat ColFormat () const override { return VVectorFormat<TSCAL> (ypts.Size() * kernelshape[0]); }
 
     virtual FMMOperatorInfo GetFMMInfo () const = 0;
   };

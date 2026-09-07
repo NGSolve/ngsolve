@@ -143,6 +143,8 @@ namespace ngcomp
     {
       return GetAMatrix().CreateRowVector();
     }
+    VecFormat RowFormat () const override { return GetAMatrix().ColFormat(); }
+    VecFormat ColFormat () const override { return GetAMatrix().RowFormat(); }
 
     virtual void PrintReport (ostream & ost) const override
     {

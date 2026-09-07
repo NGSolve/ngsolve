@@ -53,6 +53,8 @@ namespace ngla
     { return make_unique<VVector<TSCAL>> (VWidth()); }
     AutoVector CreateColVector() const override
     { return make_unique<VVector<TSCAL>> (VHeight()); }
+    VecFormat RowFormat () const override { return VVectorFormat<TSCAL> (VWidth()); }
+    VecFormat ColFormat () const override { return VVectorFormat<TSCAL> (VHeight()); }
     
     virtual tuple<int,int> EntrySizes() const override { return { bh, bw }; }
   };
@@ -81,6 +83,8 @@ namespace ngla
 
     AutoVector CreateRowVector () const override;
     AutoVector CreateColVector () const override;
+    VecFormat RowFormat () const override { return VVectorFormat<TSCAL> (width); }
+    VecFormat ColFormat () const override { return VVectorFormat<TSCAL> (height); }
   };
 
 

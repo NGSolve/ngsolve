@@ -529,6 +529,8 @@ namespace ngcomp
 
     AutoVector CreateRowVector() const override { return bfa->GetMatrix().CreateColVector(); }
     AutoVector CreateColVector() const override { return bfa->GetMatrix().CreateRowVector(); }
+    VecFormat RowFormat () const override { return bfa->GetMatrix().ColFormat(); }
+    VecFormat ColFormat () const override { return bfa->GetMatrix().RowFormat(); }
 
     int VHeight() const override { return bfa->GetMatrix().VHeight(); }
     int VWidth() const override { return bfa->GetMatrix().VHeight(); }

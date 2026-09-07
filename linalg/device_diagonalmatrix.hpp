@@ -51,6 +51,8 @@ namespace ngla
 
     virtual AutoVector CreateRowVector () const override;
     virtual AutoVector CreateColVector () const override;
+    VecFormat RowFormat () const override;
+    VecFormat ColFormat () const override;
 
     virtual BaseMatrix::OperatorInfo GetOperatorInfo () const override;
     virtual ostream & Print (ostream & ost) const override;
@@ -89,6 +91,8 @@ namespace ngla
 
     virtual AutoVector CreateRowVector () const override;
     virtual AutoVector CreateColVector () const override;
+    VecFormat RowFormat () const override;
+    VecFormat ColFormat () const override;
 
     virtual BaseMatrix::OperatorInfo GetOperatorInfo () const override;
     virtual ostream & Print (ostream & ost) const override;

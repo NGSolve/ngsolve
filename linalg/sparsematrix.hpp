@@ -530,6 +530,8 @@ namespace ngla
     virtual AutoVector CreateVector () const override;
     virtual AutoVector CreateRowVector () const override;
     virtual AutoVector CreateColVector () const override;
+    VecFormat RowFormat () const override;
+    VecFormat ColFormat () const override;
 
     // virtual tuple<int,int> EntrySizes() const override { return { mat_traits<TM>::HEIGHT, mat_traits<TM>::WIDTH }; }
     virtual tuple<int,int> EntrySizes() const override { return { ngbla::Height<TM>(), ngbla::Width<TM>() }; }
@@ -592,6 +594,8 @@ namespace ngla
     virtual AutoVector CreateVector () const override;
     virtual AutoVector CreateRowVector () const override;
     virtual AutoVector CreateColVector () const override;
+    VecFormat RowFormat () const override;
+    VecFormat ColFormat () const override;
 
 
     BaseMatrix::OperatorInfo GetOperatorInfo () const override
@@ -995,6 +999,8 @@ shared_ptr<BaseMatrix> CreateSparseMatrixInverse(shared_ptr<const BaseSparseMatr
     {
       return AutoVector(make_shared<S_BaseVectorPtr<TSCAL>> (this->size, this->bheight));
     }
+    VecFormat RowFormat () const override { return VecFormat (this->width, TSCAL(0), int(bwidth)); }
+    VecFormat ColFormat () const override { return VecFormat (this->size, TSCAL(0), int(bheight)); }
 
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
 

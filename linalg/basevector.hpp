@@ -151,6 +151,26 @@ namespace ngla
   NGS_DLL_HEADER string ScalarName (const Scalar & s);
   NGS_DLL_HEADER ostream & operator<< (ostream & ost, const VecFormat & f);
 
+  // formats of the standard vector classes, without allocating them
+  template <typename T>
+  inline VecFormat VVectorFormat (size_t size)
+  {
+    typedef typename mat_traits<T>::TSCAL TSCAL;
+    return VecFormat (size, TSCAL(0), int(sizeof(T)/sizeof(TSCAL)));
+  }
+  template <typename T>
+  inline VecFormat DeviceVectorFormat (size_t size, ngs_gpu::MemType mt)
+  { return VVectorFormat<T>(size).OnDevice(mt); }
+  // scalar and entry size from the ParallelDofs, as CreateParallelVector does
+  NGS_DLL_HEADER VecFormat ParallelVectorFormat (shared_ptr<ParallelDofs> pardofs, PARALLEL_STATUS status = CUMULATED);
+  NGS_DLL_HEADER VecFormat ParallelFormat (shared_ptr<ParallelDofs> pardofs, Scalar scal, int es, PARALLEL_STATUS status);
+  template <typename T>
+  inline VecFormat ParallelVVectorFormat (shared_ptr<ParallelDofs> pardofs, PARALLEL_STATUS status = CUMULATED)
+  {
+    typedef typename mat_traits<T>::TSCAL TSCAL;
+    return ParallelFormat (pardofs, TSCAL(0), int(sizeof(T)/sizeof(TSCAL)), status);
+  }
+
 
   /**
      Base vector for linalg

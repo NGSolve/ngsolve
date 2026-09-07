@@ -247,6 +247,8 @@ public:
   AutoVector CreateColVector() const override {
     return matrix.lock()->CreateRowVector();
   }
+  VecFormat RowFormat () const override { return matrix.lock()->ColFormat(); }
+  VecFormat ColFormat () const override { return matrix.lock()->RowFormat(); }
 
   shared_ptr<const BaseSparseMatrix> GetInnerMatrix() const {
     return inner_mat;
