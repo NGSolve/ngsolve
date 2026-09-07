@@ -62,6 +62,7 @@ namespace ngla
 
     void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
     void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
+    shared_ptr<BaseMatrix> CreateDeviceMatrix () const override;   // device_ebe.cpp
 
     void AddElementMatrix (int elnr,
                            FlatArray<int> dnums1,
