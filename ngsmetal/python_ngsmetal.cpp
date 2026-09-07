@@ -120,10 +120,4 @@ Xcode.
     .def(py::init<const BaseMatrix&>(), py::arg("mat"))
     ;
 
-  BaseMatrix::RegisterDeviceMatrixCreator(typeid(MatrixFreeBTDTB),
-                                          [] (const BaseMatrix & bmat) -> shared_ptr<BaseMatrix>
-                                          {
-                                            return make_shared<GPU_BTDTBMatrix<float>>(bmat);
-                                          });
-
 }

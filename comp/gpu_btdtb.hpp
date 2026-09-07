@@ -28,13 +28,13 @@ namespace ngcomp
   }
 
 
-  template <uint N>
-  constexpr uint RoundUp (uint i) { return N * ( (i+N-1) / N ); }
-  template <uint N>
-  constexpr uint RoundDown (uint i) { return N * ( i / N ); }
+  template <unsigned N>
+  constexpr unsigned RoundUp (unsigned i) { return N * ( (i+N-1) / N ); }
+  template <unsigned N>
+  constexpr unsigned RoundDown (unsigned i) { return N * ( i / N ); }
   
-  constexpr uint RoundUp (uint i, uint N) { return N * ( (i+N-1) / N ); }
-  constexpr uint RoundDown (uint i, uint N) { return N * ( i / N ); }
+  constexpr unsigned RoundUp (unsigned i, unsigned N) { return N * ( (i+N-1) / N ); }
+  constexpr unsigned RoundDown (unsigned i, unsigned N) { return N * ( i / N ); }
 
 
   template <typename REAL>
@@ -809,7 +809,7 @@ namespace ngcomp
     code = Substitute(code, "$ATOMIC", ToString(pmat->opts.atomic));    
 
     string transxcode;
-    for (uint i = 0 ; i < pmat->diffopsx.Size(); i++)
+    for (unsigned i = 0 ; i < pmat->diffopsx.Size(); i++)
       {
         IntRange rangexref = pmat->ranges_xref[i];
         IntRange rangex = pmat->ranges_x[i];
@@ -825,7 +825,7 @@ namespace ngcomp
 
 
     string transycode;
-    for (uint i = 0 ; i < pmat->diffopsy.Size(); i++)
+    for (unsigned i = 0 ; i < pmat->diffopsy.Size(); i++)
       {
         IntRange rangeyref = pmat->ranges_yref[i];
         IntRange rangey = pmat->ranges_y[i];

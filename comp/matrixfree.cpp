@@ -3,6 +3,7 @@
 
 
 #include "bilinearform.hpp"
+#include "gpu_btdtb.hpp"
 #include <l2hofe.hpp>
 #include "reorderedfespace.hpp"
 #include <diagonalmatrix.hpp>
@@ -2111,4 +2112,19 @@ namespace ngcomp
   }
   
   
+}
+
+
+namespace ngcomp
+{
+  shared_ptr<BaseMatrix> MatrixFreeBTDTB :: CreateDeviceMatrix () const
+  {
+    if (ngs_gpu::HasDevice())
+      {
+        if (opts.fp32 || !GetGpuDevice()->HasFloat64())
+          return make_shared<GPU_BTDTBMatrix<float>> (*this);
+        return make_shared<GPU_BTDTBMatrix<double>> (*this);
+      }
+    return BaseMatrix::CreateDeviceMatrix();
+  }
 }
