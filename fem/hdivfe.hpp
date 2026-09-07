@@ -49,7 +49,7 @@ namespace ngfem
     using BaseHDivFiniteElement::BaseHDivFiniteElement;
     
     ///
-    HD virtual ~HDivFiniteElement () { ; }
+    virtual ~HDivFiniteElement () { ; }
 
     /// 
     virtual string ClassName() const;
@@ -158,7 +158,7 @@ namespace ngfem
       : FiniteElement (andof, aorder){;}
 
     ///
-    HD virtual ~HDivNormalFiniteElement () { ; }
+    virtual ~HDivNormalFiniteElement () { ; }
 
     /// compute shape
     virtual void CalcShape (const IntegrationPoint & ip,

@@ -685,7 +685,7 @@ namespace ngfem
     INLINE NGS_DLL_HEADER IntegrationRule (size_t asize, double (*pts)[3], double * weights);
     
     // make it polymorphic
-    HD virtual ~IntegrationRule() { ; }
+    virtual ~IntegrationRule() { ; }
 
     IntegrationRule & operator= (IntegrationRule && ir2) = default;
     IntegrationRule & operator= (const IntegrationRule & ir2) = delete;

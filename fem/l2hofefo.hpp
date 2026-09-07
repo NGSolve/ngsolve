@@ -140,7 +140,7 @@ namespace detail
     }
     */
 
-    HD virtual void Evaluate (const IntegrationRule & ir, BareSliceVector<double> coefs, FlatVector<double> vals) const
+    virtual void Evaluate (const IntegrationRule & ir, BareSliceVector<double> coefs, FlatVector<double> vals) const
     {
       // static Timer t("evaluate");
       // RegionTimer r(t);
@@ -158,7 +158,7 @@ namespace detail
         this -> BASE::T_IMPL::Evaluate (ir, coefs, vals);
     }
 
-    HD virtual void EvaluateGradTrans (const IntegrationRule & ir, BareSliceMatrix<> values, BareSliceVector<> coefs) const
+    virtual void EvaluateGradTrans (const IntegrationRule & ir, BareSliceMatrix<> values, BareSliceVector<> coefs) const
     {
       /*
         static Timer t("evaluate grad trans");
@@ -189,7 +189,7 @@ namespace detail
     }
     */
 
-    HD NGS_DLL_HEADER virtual void GetDiagMassMatrix (FlatVector<> mass) const
+    NGS_DLL_HEADER virtual void GetDiagMassMatrix (FlatVector<> mass) const
     {
       if constexpr(ET == ET_SEGM)
 	{

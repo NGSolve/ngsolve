@@ -47,26 +47,26 @@ namespace ngfem
 
   public:
     /// make the class virtual
-    HD virtual ~FiniteElement () { ; }
+    virtual ~FiniteElement () { ; }
 
     /// Number of degrees-of-freedom
     INLINE int GetNDof () const { return ndof; }
 
-    HD virtual tuple<int,int,int,int> GetNDofVEFC () const { return { 1, 1, 1, 1 }; }
+    virtual tuple<int,int,int,int> GetNDofVEFC () const { return { 1, 1, 1, 1 }; }
 
 
     /// maximal polynomial order
     INLINE int Order () const { return order; }
 
     /// geometry of element
-    HD virtual ELEMENT_TYPE ElementType() const = 0; 
+    virtual ELEMENT_TYPE ElementType() const = 0; 
 
-    HD virtual int Dim () const
+    virtual int Dim () const
     {
       return ElementTopology::GetSpaceDim(ElementType());
     }
 
-    HD virtual bool ComplexShapes() const { return false; }
+    virtual bool ComplexShapes() const { return false; }
 
     /// the name of the element family
     virtual string ClassName() const;
@@ -110,7 +110,7 @@ namespace ngfem
     /// initialize with pointers to components, copy pointers
     CompoundFiniteElement (FlatArray<FiniteElement*> afea);
 
-    HD virtual ELEMENT_TYPE ElementType() const override { return fea[0]->ElementType(); }
+    virtual ELEMENT_TYPE ElementType() const override { return fea[0]->ElementType(); }
     /// number of components
     int GetNComponents() const { return fea.Size(); }
 
@@ -136,7 +136,7 @@ namespace ngfem
       return this;
     }
 
-    HD virtual bool ComplexShapes() const override;
+    virtual bool ComplexShapes() const override;
 
     virtual void Interpolate (const ElementTransformation & trafo,
                               const class CoefficientFunction & func, SliceMatrix<> coefs,
@@ -157,7 +157,7 @@ namespace ngfem
 
     VectorFiniteElement (const FiniteElement& ascalar_fe, int adim);
 
-    HD virtual ELEMENT_TYPE ElementType() const override { return scalar_fe.ElementType(); }
+    virtual ELEMENT_TYPE ElementType() const override { return scalar_fe.ElementType(); }
     /// number of components
     int GetNComponents() const { return dim; }
 
@@ -195,8 +195,8 @@ namespace ngfem
 
     const FiniteElement & FETrial() const { return fe_trial; } 
     const FiniteElement & FETest() const { return fe_test; }
-    HD virtual ELEMENT_TYPE ElementType() const { return fe_trial.ElementType(); }    
-    HD virtual bool ComplexShapes() const { return fe_trial.ComplexShapes() && fe_test.ComplexShapes(); }
+    virtual ELEMENT_TYPE ElementType() const { return fe_trial.ElementType(); }    
+    virtual bool ComplexShapes() const { return fe_trial.ComplexShapes() && fe_test.ComplexShapes(); }
   };
 
 
@@ -211,7 +211,7 @@ namespace ngfem
     /// initialize with pointers to components, copy pointers
     SymMatrixFiniteElement (const FiniteElement & ascalfe, int avdim, bool adeviatoric);
 
-    HD virtual ELEMENT_TYPE ElementType() const override { return scalfe.ElementType(); }
+    virtual ELEMENT_TYPE ElementType() const override { return scalfe.ElementType(); }
     /// number of components
     int GetNComponents() const { return dim; }
 
@@ -240,7 +240,7 @@ namespace ngfem
     /// initialize with pointers to components, copy pointers
     SkewMatrixFiniteElement (const FiniteElement & ascalfe, int avdim);
 
-    HD virtual ELEMENT_TYPE ElementType() const override { return scalfe.ElementType(); }
+    virtual ELEMENT_TYPE ElementType() const override { return scalfe.ElementType(); }
     /// number of components
     int GetNComponents() const { return dim; }
 
@@ -268,7 +268,7 @@ namespace ngfem
   {
   public:
     /* INLINE */ DummyFE () : FiniteElement(0, 0) { ; }
-    HD virtual ELEMENT_TYPE ElementType() const { return ET; }
+    virtual ELEMENT_TYPE ElementType() const { return ET; }
   };
 
 

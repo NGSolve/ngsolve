@@ -626,7 +626,7 @@ namespace ngfem
 
 
     template <int N, class S, class Sy, class Sc, class T>
-    HD INLINE static void EvalScaledMult (IC<N> n, S x, Sy y, Sc c, T && values)
+    INLINE static void EvalScaledMult (IC<N> n, S x, Sy y, Sc c, T && values)
     {
       S p1(c*REC::P1(x,y)), p2(c * REC::P0(x));
       Iterate<N+1> ([&] (auto i) LAMBDA_INLINE
@@ -1337,9 +1337,6 @@ namespace ngfem
   };
   
 
-#ifdef __CUDACC__    
-  extern __device__ Vec<2> * intlegnobubble_coefs;
-#endif
 
   class IntLegNoBubble : public RecursivePolynomial<IntLegNoBubble>
   {
@@ -1708,11 +1705,6 @@ namespace ngfem
 
 
 
-#ifdef __CUDACC__    
-  // __device__ Vec<3> * jacobialpha_coefs;
-  extern __device__ double jacobialpha_coefs[100][100][4];
-  extern __device__ int jacobialpha_maxn;
-#endif
 
   
   class JacobiPolynomialAlpha : public RecursivePolynomialNonStatic<JacobiPolynomialAlpha>

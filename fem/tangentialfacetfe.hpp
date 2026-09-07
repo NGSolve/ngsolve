@@ -48,7 +48,7 @@ namespace ngfem
 
     TangentialFacetFacetFE () { ; }
 
-    HD virtual ELEMENT_TYPE ElementType() const override { return ELEMENT_TYPE(ET); }
+    virtual ELEMENT_TYPE ElementType() const override { return ELEMENT_TYPE(ET); }
 
     INLINE void SetOrder (int aorder)
     {
@@ -141,7 +141,7 @@ namespace ngfem
     
     TangentialFacetVolumeFE () { highest_order_dc=false; }
     
-    HD virtual ELEMENT_TYPE ElementType() const override { return ELEMENT_TYPE(ET); }
+    virtual ELEMENT_TYPE ElementType() const override { return ELEMENT_TYPE(ET); }
 
     void SetHighestOrderDC(bool set) { highest_order_dc=set; }
 

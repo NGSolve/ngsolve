@@ -33,22 +33,22 @@ namespace ngfem
       : ScalarFiniteElement<D> (andof, aorder), fnr(afnr), fe(afe) 
     { } 
 
-    HD virtual ELEMENT_TYPE ElementType() const override { return fe.ElementType(); }
+    virtual ELEMENT_TYPE ElementType() const override { return fe.ElementType(); }
 
     using ScalarFiniteElement<D>::CalcShape;
-    HD virtual void CalcShape (const IntegrationPoint & ip, 
+    virtual void CalcShape (const IntegrationPoint & ip, 
                                BareSliceVector<> shape) const override
     {
       fe.CalcFacetShapeVolIP(fnr, ip, shape);
     }
     
-    HD virtual void CalcShape (const SIMD_IntegrationRule & ir, 
+    virtual void CalcShape (const SIMD_IntegrationRule & ir, 
                                BareSliceMatrix<SIMD<double>> shape) const override
     {
       fe.CalcFacetShapeVolIR(fnr, ir, shape);
     }
     
-    HD virtual void CalcDShape (const IntegrationPoint & ip, 
+    virtual void CalcDShape (const IntegrationPoint & ip, 
                                 BareSliceMatrix<> dshape) const override
     {
       fe.CalcFacetDShapeVolIP(fnr, ip, dshape);
@@ -56,13 +56,13 @@ namespace ngfem
     }
 
     using ScalarFiniteElement<D>::Evaluate;
-    HD NGS_DLL_HEADER virtual void Evaluate (const SIMD_IntegrationRule & ir, BareSliceVector<> coefs, BareVector<SIMD<double>> values) const override
+    NGS_DLL_HEADER virtual void Evaluate (const SIMD_IntegrationRule & ir, BareSliceVector<> coefs, BareVector<SIMD<double>> values) const override
     {
       fe.EvaluateFacetVolIp (fnr, ir, coefs, values);
     }
     
     using ScalarFiniteElement<D>::AddTrans;    
-    HD NGS_DLL_HEADER virtual void AddTrans (const SIMD_IntegrationRule & ir, BareVector<SIMD<double>> values, BareSliceVector<> coefs) const override
+    NGS_DLL_HEADER virtual void AddTrans (const SIMD_IntegrationRule & ir, BareVector<SIMD<double>> values, BareSliceVector<> coefs) const override
     {
       fe.AddTransFacetVolIp (fnr, ir, values, coefs);
     }

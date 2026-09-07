@@ -103,7 +103,7 @@ namespace ngfem
         order = max2(order, order_inner[i]);
     }
 
-    HD virtual tuple<int,int,int,int> GetNDofVEFC () const override
+    virtual tuple<int,int,int,int> GetNDofVEFC () const override
     {
       switch (DIM)
         {
@@ -120,14 +120,14 @@ namespace ngfem
     NGS_DLL_HEADER virtual void PrecomputeShapes (const IntegrationRule & ir) override;
 
     using BASE::Evaluate;
-    HD NGS_DLL_HEADER virtual void Evaluate (const IntegrationRule & ir, BareSliceVector<double> coefs, FlatVector<double> vals) const;
-    HD NGS_DLL_HEADER virtual void EvaluateTrans (const IntegrationRule & ir, BareSliceVector<> values, BareSliceVector<> coefs) const override;
+    NGS_DLL_HEADER virtual void Evaluate (const IntegrationRule & ir, BareSliceVector<double> coefs, FlatVector<double> vals) const;
+    NGS_DLL_HEADER virtual void EvaluateTrans (const IntegrationRule & ir, BareSliceVector<> values, BareSliceVector<> coefs) const override;
 
     using BASE::EvaluateGrad;    
-    HD NGS_DLL_HEADER virtual void EvaluateGrad (const IntegrationRule & ir, BareSliceVector<> coefs, FlatMatrixFixWidth<DIM> values) const;
+    NGS_DLL_HEADER virtual void EvaluateGrad (const IntegrationRule & ir, BareSliceVector<> coefs, FlatMatrixFixWidth<DIM> values) const;
 
     using BASE::EvaluateGradTrans;
-    HD NGS_DLL_HEADER virtual void EvaluateGradTrans (const IntegrationRule & ir, BareSliceMatrix<> values, BareSliceVector<> coefs) const override;
+    NGS_DLL_HEADER virtual void EvaluateGradTrans (const IntegrationRule & ir, BareSliceMatrix<> values, BareSliceVector<> coefs) const override;
 
     NGS_DLL_HEADER virtual void GetGradient (FlatVector<> coefs, FlatMatrixFixWidth<DIM> grad) const override;
     NGS_DLL_HEADER virtual void GetGradientTrans (FlatMatrixFixWidth<DIM> grad, FlatVector<> coefs) const override;
@@ -135,7 +135,7 @@ namespace ngfem
     NGS_DLL_HEADER virtual void GetTrace (int facet, FlatVector<> coefs, FlatVector<> fcoefs) const override;
     NGS_DLL_HEADER virtual void GetTraceTrans (int facet, FlatVector<> fcoefs, FlatVector<> coefs) const override;
 
-    HD NGS_DLL_HEADER virtual void GetDiagMassMatrix (FlatVector<> mass) const override;
+    NGS_DLL_HEADER virtual void GetDiagMassMatrix (FlatVector<> mass) const override;
     NGS_DLL_HEADER virtual bool DualityMassDiagonal () const override { return true; }
     NGS_DLL_HEADER virtual bool GetDiagDualityMassInverse (FlatVector<> diag) const override
     {

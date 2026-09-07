@@ -123,7 +123,7 @@ namespace ngfem
       order = ho;
     }
 
-    HD virtual tuple<int,int,int,int> GetNDofVEFC () const override
+    virtual tuple<int,int,int,int> GetNDofVEFC () const override
     {
       int nv = N_VERTEX;
       int ne = 0, nf = 0, nc = 0;

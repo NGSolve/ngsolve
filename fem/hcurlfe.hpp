@@ -97,7 +97,7 @@ namespace ngfem
   public:
     using BaseHCurlFiniteElement::BaseHCurlFiniteElement;
 
-    HD virtual ~HCurlFiniteElement () { ; }
+    virtual ~HCurlFiniteElement () { ; }
 
     virtual string NGS_DLL_HEADER ClassName() const override;
 
