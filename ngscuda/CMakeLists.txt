@@ -34,37 +34,6 @@ if(NETGEN_USE_PYTHON)
     install(TARGETS _ngscuda DESTINATION ${NGSOLVE_INSTALL_DIR_PYTHON}/ngsolve COMPONENT ngsolve)
 endif(NETGEN_USE_PYTHON)
 
-# ngs_nvcc / ngs_nvlink: wrappers for users compiling their own cuda code
-# against ngsolve, generated only if a cuda compiler is around
-find_program(NGS_NVCC nvcc HINTS ${CUDAToolkit_BIN_DIR})
-if(NGS_NVCC)
-  set( ngs_nvcc_header "${ngscxx_header}
-NVCC=${NGS_NVCC}
-")
-  set(nvcc_flags "--expt-relaxed-constexpr --extended-lambda -rdc=true")
-  foreach( opt ${NGSOLVE_COMPILE_OPTIONS} ${ngcore_compile_options} "-fPIC")
-    if(opt MATCHES "-std=")
-      set(nvcc_flags "${nvcc_flags} ${opt}")
-    else()
-      set(nvcc_flags "${nvcc_flags} -Xcompiler ${opt}")
-    endif()
-  endforeach()
-  set(ngs_nvcc_command "$NVCC ${ngscxx_define_flags} -arch=native ${nvcc_flags} ${ngscxx_includes} $*\n")
-  if(CCACHE_FOUND)
-    set(ngs_nvcc_command "
-if [ -f ${CCACHE_FOUND} ]
-  then ${CCACHE_FOUND} ${ngs_nvcc_command}
-  else ${ngs_nvcc_command}
-fi")
-  endif()
-  set(ngs_nvlink_command "$NVCC -rdc=true -arch=native $*\n")
-  file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/ngs_nvcc CONTENT "${ngs_nvcc_header}\n${ngs_nvcc_command}\n"
-       CONDITION $<COMPILE_LANGUAGE:CXX>)
-  file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/ngs_nvlink CONTENT "${ngs_nvcc_header}\n${ngs_nvlink_command}\n")
-  install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngs_nvcc DESTINATION ${NGSOLVE_INSTALL_DIR_BIN} COMPONENT ngsolve_devel )
-  install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngs_nvlink DESTINATION ${NGSOLVE_INSTALL_DIR_BIN} COMPONENT ngsolve_devel )
-endif()
-
 install( FILES
         cuda_linalg.hpp
         cuda_profiler.hpp
