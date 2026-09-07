@@ -119,7 +119,21 @@ namespace ngcomp
       mat.Col(0).Range(D) = static_cast<const MappedIntegrationPoint<D,D>&> (mip).GetNV();
     }
 
-    
+    // the generated element-boundary code provides the physical normal as normals(i,k)
+    static string GenerateTransformationCode (string invar, string outvar, bool trans)
+    {
+      string code;
+      if (!trans)
+        for (int k = 0; k < D; k++)
+          code += outvar + "(" + ToString(k) + ") = normals(0," + ToString(k) + ") * " + invar + "(0);\n";
+      else
+        {
+          code += outvar + "(0) = 0;\n";
+          for (int k = 0; k < D; k++)
+            code += outvar + "(0) += normals(0," + ToString(k) + ") * " + invar + "(" + ToString(k) + ");\n";
+        }
+      return code;
+    }
   };
   
   

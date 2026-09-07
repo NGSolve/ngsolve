@@ -457,7 +457,18 @@ namespace ngs_cuda
       if (res != NVRTC_SUCCESS)
         {
           nvrtcDestroyProgram (&prog);
-          throw std::runtime_error ("ngscuda: kernel compile error:\n" + log);
+          // the error lines first: nvrtc logs may start with pages of warnings
+          std::string errors;
+          for (size_t pos = 0; pos < log.size(); )
+            {
+              size_t nl = log.find ('\n', pos);
+              std::string line = log.substr (pos, nl == std::string::npos ? std::string::npos : nl-pos);
+              if (line.find (" error") != std::string::npos) errors += line + "\n";
+              if (nl == std::string::npos) break;
+              pos = nl+1;
+            }
+          throw std::runtime_error (std::string("ngscuda: kernel compile error (") + nvrtcGetErrorString(res) + ")\n"
+                                    + errors + "full nvrtc log:\n" + log);
         }
 
       const char * dumpdir = PtxDumpDir();

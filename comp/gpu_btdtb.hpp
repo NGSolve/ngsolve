@@ -65,7 +65,11 @@ namespace ngcomp
       return make_unique<DeviceVector<REAL>>(h, PreferredMemType());
     }
 
+    virtual int VHeight() const override { return h; }
+    virtual int VWidth() const override { return w; }
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
+    virtual BaseMatrix::OperatorInfo GetOperatorInfo () const override
+    { return { string("GPU_BTDTBMatrix<") + (std::is_same_v<REAL,double> ? "double" : "float") + ">", size_t(h), size_t(w) }; }
     
   };
 

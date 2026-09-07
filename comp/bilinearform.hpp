@@ -1051,8 +1051,10 @@ namespace ngcomp
   public:
     size_t height, width;
     shared_ptr<CoefficientFunction> cf;   // the form
-    const Array<ProxyFunction*>& trial_proxies;
-    const Array<ProxyFunction*>& test_proxies;
+    // owned copies: the pointers stay valid while cf (the form) is alive,
+    // the integrator that handed them over need not be
+    Array<ProxyFunction*> trial_proxies;
+    Array<ProxyFunction*> test_proxies;
 
     Array<size_t> elnums;
     Table<DofId> dofx;
