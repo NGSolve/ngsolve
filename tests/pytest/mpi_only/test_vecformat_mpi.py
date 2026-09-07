@@ -32,3 +32,21 @@ def test_parallel_formats():
     y1 = (a.mat * f.vec).Evaluate()
     y2 = ((I0 @ a.mat) * f.vec).Evaluate()
     assert abs(Norm(y1 - y2)) < 1e-12 * max(1.0, Norm(y1))
+
+
+# typed parallel operators: the format must describe the vectors they create
+def test_parallel_format_consistency():
+    comm = MPI_Comm(mpi.COMM_WORLD)
+    mesh = Mesh('square.vol.gz', comm)
+    fes = H1(mesh, order=2, dirichlet=".*")
+    u, v = fes.TnT()
+    a = BilinearForm(u*v*dx + grad(u)*grad(v)*dx).Assemble()
+    jac = Preconditioner(a, "local"); a.Assemble()
+    ops = {"mat": a.mat, "T": a.mat.T, "jacobi": jac, "prod": a.mat @ jac, "sum": a.mat + a.mat,
+           "scale": 2.0*a.mat, "bfapply": BilinearForm(u*v*dx, nonassemble=True).mat,
+           "mass": fes.Mass(1), "id@mat": IdentityMatrix() @ a.mat}
+    for name, op in ops.items():
+        for fmt, create in [(op.RowFormat(), op.CreateRowVector), (op.ColFormat(), op.CreateColVector)]:
+            real = create().GetFormat()
+            assert str(fmt.WithDefaults()) == str(real), f"{name}: {fmt} vs {real}"
+            assert fmt.is_parallel == (comm.size > 1), name
