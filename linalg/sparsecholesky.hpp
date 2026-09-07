@@ -48,6 +48,7 @@ namespace ngla
     bool SmoothIsProjection () const { return smooth_is_projection; }
     
     auto GetAMatrix() const { return matrix.lock(); }
+    auto GetInner() const { return inner; }
     virtual bool SupportsUpdate() const { return false; } 
   };
 
@@ -297,6 +298,9 @@ namespace ngla
       : SparseCholeskyTM<TM> (a, ainner, acluster, allow_refactor) { ; }
     SparseCholesky() {}
 
+    // a DeviceSparseCholesky for scalar TM if a gpu backend is registered
+    virtual shared_ptr<BaseMatrix> CreateDeviceMatrix() const override;
+
     ///
     virtual ~SparseCholesky () { ; }
     
@@ -308,8 +312,8 @@ namespace ngla
       MultAdd (s, x, y);
     }
 
-    AutoVector CreateRowVector () const override { return make_unique<VVector<TV>> (height); }
-    AutoVector CreateColVector () const override { return make_unique<VVector<TV>> (height); }
+    VecFormat RowFormat () const override { return VVectorFormat<TV> (height); }
+    VecFormat ColFormat () const override { return VVectorFormat<TV> (height); }
 
     void Smooth (BaseVector & u, const BaseVector & f, BaseVector & y) const override;
 

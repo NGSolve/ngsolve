@@ -50,7 +50,6 @@ namespace ngla
                             bool isymmetric, bool adisjointrows, bool adisjointcols);
     
     ~ElementByElementMatrix();
-    bool IsComplex() const override { return typeid(SCAL)==typeid(Complex); }
 
     void SetDisjointRows(bool newval){disjointrows=newval;}
     void SetDisjointCols(bool newval){disjointcols=newval;}
@@ -58,11 +57,12 @@ namespace ngla
     int VWidth() const override { return width; }
     size_t GetNumElMats() const { return elmats.Size(); }
 
-    AutoVector CreateRowVector () const override { return make_unique<VVector<double>> (width); } 
-    AutoVector CreateColVector () const override { return make_unique<VVector<double>> (height); }
+    VecFormat RowFormat () const override { return VVectorFormat<double> (width); }
+    VecFormat ColFormat () const override { return VVectorFormat<double> (height); }
 
     void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
     void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
+    shared_ptr<BaseMatrix> CreateDeviceMatrix () const override;   // device_ebe.cpp
 
     void AddElementMatrix (int elnr,
                            FlatArray<int> dnums1,
@@ -129,6 +129,7 @@ namespace ngla
   template <class SCAL = double>
   class NGS_DLL_HEADER ConstantElementByElementMatrix : public BaseMatrix
   {
+    using TSCAL64 = typename scal_traits<SCAL>::TSCAL64;
     size_t h, w;
     Matrix<SCAL> matrix;
     Table<int> col_dnums;   // output
@@ -147,13 +148,14 @@ namespace ngla
 
     virtual BaseMatrix::OperatorInfo GetOperatorInfo () const override;
     
-    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
-    virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
+    virtual void MultAdd (TSCAL64 s, const BaseVector & x, BaseVector & y) const override;
+    virtual void MultTransAdd (TSCAL64 s, const BaseVector & x, BaseVector & y) const override;
     
-    virtual AutoVector CreateRowVector () const override;
-    virtual AutoVector CreateColVector () const override;
+    VecFormat RowFormat () const override { return VVectorFormat<SCAL> (w); }
+    VecFormat ColFormat () const override { return VVectorFormat<SCAL> (h); }
 
     virtual shared_ptr<BaseSparseMatrix> CreateSparseMatrix() const override;
+    shared_ptr<BaseMatrix> CreateDeviceMatrix () const override;
     
     FlatMatrix<SCAL> GetMatrix() const { return matrix; }
     FlatTable<int> GetRowDNums() const { return row_dnums; }
@@ -182,15 +184,9 @@ namespace ngla
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
     virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
     
-    virtual AutoVector CreateRowVector () const override
-    {
-      return make_unique<VVector<>> (num*matrix.Width());
-    }
       
-    virtual AutoVector CreateColVector () const override
-    {
-      return make_unique<VVector<>> (num*matrix.Height());
-    }
+    VecFormat RowFormat () const override { return VVectorFormat<double> (num*matrix.Width()); }
+    VecFormat ColFormat () const override { return VVectorFormat<double> (num*matrix.Height()); }
 
     const Matrix<> & GetMatrix() const { return matrix; }
   };

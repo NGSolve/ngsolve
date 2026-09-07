@@ -21,14 +21,29 @@ add_custom_command(OUTPUT  matkernel_1.hpp matkernel_2.hpp matkernel_4.hpp matke
 
 add_custom_target(kernel_generated DEPENDS matkernel_1.hpp matkernel_2.hpp matkernel_4.hpp matkernel_8.hpp)
 
+if(NOT Python3_Interpreter_FOUND)
+  find_package(Python3 REQUIRED COMPONENTS Interpreter)
+endif()
+
+add_custom_command(OUTPUT matkernel32_1.hpp matkernel32_2.hpp matkernel32_4.hpp matkernel32_8.hpp
+  COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/generate_mat_kernels32.py ${CMAKE_CURRENT_BINARY_DIR}/matkernel32_1.hpp 1
+  COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/generate_mat_kernels32.py ${CMAKE_CURRENT_BINARY_DIR}/matkernel32_2.hpp 2
+  COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/generate_mat_kernels32.py ${CMAKE_CURRENT_BINARY_DIR}/matkernel32_4.hpp 4
+  COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/generate_mat_kernels32.py ${CMAKE_CURRENT_BINARY_DIR}/matkernel32_8.hpp 8
+  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/generate_mat_kernels32.py
+  VERBATIM
+)
+
+add_custom_target(kernel32_generated DEPENDS matkernel32_1.hpp matkernel32_2.hpp matkernel32_4.hpp matkernel32_8.hpp)
+
 add_library(ngbla ${NGS_LIB_TYPE}
         bandmatrix.cpp triangular.cpp calcinverse.cpp cholesky.cpp
         LUdecomposition.cpp householder.cpp svd.cpp
         eigensystem.cpp LapackGEP.cpp
-        python_bla.cpp ngblas.cpp ngblasc.cpp timing_ngblas.cpp
+        python_bla.cpp ngblas.cpp ngblas32.cpp ngblasc.cpp timing_ngblas.cpp
         )
 
-add_dependencies(ngbla kernel_generated)
+add_dependencies(ngbla kernel_generated kernel32_generated)
 
 target_include_directories(ngbla PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 target_compile_definitions(ngbla PRIVATE ${NGSOLVE_COMPILE_DEFINITIONS_PRIVATE})
@@ -46,4 +61,3 @@ install( FILES
         DESTINATION ${NGSOLVE_INSTALL_DIR_INCLUDE}
         COMPONENT ngsolve_devel
        )
-

@@ -12,12 +12,18 @@
 namespace ngcomp
 {
 
- // A reordered wrapper class for fespaces 
+  // in-place RCM reorder of an element subset (e.g. one element class),
+  // adjacency = sharing a dof of el2dof; disconnected components keep the
+  // relative input order via seeding
+  NGS_DLL_HEADER void RCMReorderSubset (FlatArray<size_t> els, FlatTable<int> el2dof, size_t ndof);
+
+ // A reordered wrapper class for fespaces
 
   class ReorderedFESpace : public FESpace
   {
   protected:
     Array<DofId> dofmap;
+    Array<int> elorder;   // element order used for first-touch numbering
     shared_ptr<FESpace> space;
     shared_ptr<Table<DofId>> clusters;
     
@@ -33,7 +39,17 @@ namespace ngcomp
     ProxyNode MakeProxyFunction (bool testfunction,
                                  const function<shared_ptr<ProxyFunction>(shared_ptr<ProxyFunction>)> & addblock) const override
     {
-      return GetBaseSpace()->MakeProxyFunction (testfunction, addblock);
+      // build the proxy (tree) via the base space (keeps compound structure),
+      // but bind every proxy to this wrapper space, so that assembly uses the
+      // reordered dof numbering (same pattern as PeriodicFESpace)
+      return GetBaseSpace()->MakeProxyFunction
+        (testfunction,
+         [&] (shared_ptr<ProxyFunction> proxy)
+         {
+           shared_ptr<FESpace> fes = dynamic_pointer_cast<FESpace> (const_cast<ReorderedFESpace*>(this)->shared_from_this());
+           proxy->SetFESpace(fes);
+           return addblock (proxy);
+         });
     }
     
     virtual string GetClassName() const override { return "Reordered" + space->GetClassName(); }
@@ -45,6 +61,9 @@ namespace ngcomp
     virtual void GetDofNrs (NodeId ni, Array<DofId> & dnums) const override;
 
     auto GetClusters() const { return clusters; }
+
+    // process elements in this order to profit from the first-touch dof numbering
+    FlatArray<int> GetElementOrder() const { return elorder; }
 
     
     virtual SymbolTable<shared_ptr<DifferentialOperator>> GetAdditionalEvaluators () const override

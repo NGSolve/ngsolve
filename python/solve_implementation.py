@@ -12,7 +12,7 @@ from ngsolve import (
 
 
 from .nonlinearsolvers import NewtonSolver
-from .krylovspace import GMResSolver, LinearSolver
+from .krylovspace import GMRESSolver, LinearSolver
 
 from .lazy_solve import VariationalEquationSolver
 
@@ -130,7 +130,7 @@ class LinearApplication(Application):
             ainv = self.a.mat.Inverse(self.a.space.FreeDofs(self.a.condense))
         else:
             if lin_solver is None:
-                lin_solver = GMResSolver
+                lin_solver = GMRESSolver
             if lin_solver_args is None:
                 lin_solver_args = {}
             if pre is None:

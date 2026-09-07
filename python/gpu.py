@@ -1,0 +1,79 @@
+"""
+Common GPU layer - one import for whichever backend this build has.
+
+    from ngsolve.gpu import *
+
+    dev = GetGPUDevice()
+    lib = dev.CompileSource(GPUKernelPrelude + src)
+
+Importing this module registers ngsmetal or ngscuda if one of them is available,
+and otherwise selects the host reference device, so GetGPUDevice() never returns
+None. Which one was taken is in `backend`: "metal", "cuda" or "host".
+
+Everything the backend module exports (device vectors, device matrices, ...) is
+re-exported here as well.
+"""
+
+from ngsolve.ngstd import (GPUDevice, GPUBuffer, GPUKernel, GPULibrary, GPUQueue, GPUProgram,
+                           MemType, GPUKernelPrelude, TinyBlaPrelude,
+                           GetGPUDevice, GetCPUDevice, HasGPUDevice, SetGPUDevice)
+
+
+class Recording:
+    """Record the device launches of a block of code, replay them with Run():
+
+        with Recording() as rec:
+            ... one iteration, device vectors and scalars only ...
+        for i in range(n): rec.Run()
+
+    Inside the block nothing is executed, so a host read (Get, Norm, a
+    transfer) raises. The recorded launches keep their buffers alive.
+    """
+    def __init__(self, queue=None):
+        self.queue = queue if queue is not None else GetGPUDevice().DefaultQueue()
+        self.program = None
+
+    def __enter__(self):
+        self.queue.BeginRecording()
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        self.program = self.queue.EndRecording()
+        return False
+
+    def Run(self):
+        self.program.Run()
+
+    def __len__(self):
+        return len(self.program) if self.program is not None else 0
+
+backend = None
+_backend_names = []
+
+for _tag, _module in (("metal", "ngsolve.ngsmetal"), ("cuda", "ngsolve.ngscuda")):
+    try:
+        _mod = __import__(_module, fromlist=["*"])
+    except ModuleNotFoundError:
+        continue          # not built - try the next one
+    except ImportError as _e:
+        # built, but failed to load (no runtime, or a binding error):
+        # say so rather than silently falling back to the host
+        import warnings
+        warnings.warn(f"{_module} is present but could not be loaded: {_e}")
+        continue
+    backend = _tag
+    for _name in dir(_mod):
+        if not _name.startswith("_"):
+            globals()[_name] = getattr(_mod, _name)
+            _backend_names.append(_name)
+    break
+
+# a backend may be built but find no device, so ask rather than assume
+if GetGPUDevice() is None:
+    SetGPUDevice(GetCPUDevice())
+    backend = "host"
+
+__all__ = ["GPUDevice", "GPUBuffer", "GPUKernel", "GPULibrary", "GPUQueue", "GPUProgram",
+           "Recording", "MemType", "GPUKernelPrelude", "TinyBlaPrelude",
+           "GetGPUDevice", "GetCPUDevice", "HasGPUDevice", "SetGPUDevice",
+           "backend"] + _backend_names

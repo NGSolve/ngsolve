@@ -66,17 +66,17 @@ namespace ngla
     void GetUmfpackMatrix (const S_BaseSparseMatrix<TSCAL> & a, TSUBSET subset);
 
     ///
-    int VHeight() const { return height/entrysize; }
+    int VHeight() const override { return height/entrysize; }
     ///
-    int VWidth() const { return height/entrysize; }
+    int VWidth() const override { return height/entrysize; }
     ///
-    virtual ostream & Print (ostream & ost) const;
+    virtual ostream & Print (ostream & ost) const override;
 
-    virtual bool SupportsUpdate() const { return true; }     
-    virtual void Update();
+    virtual bool SupportsUpdate() const override { return true; }     
+    virtual void Update() override;
 
     virtual Array<MemoryUsage> GetMemoryUsage () const
-    {
+ override {
       return { MemoryUsage ("Umfpack", nze*sizeof(TSCAL)*entrysize*entrysize, 1) };
     }
   };
@@ -101,8 +101,9 @@ namespace ngla
     using S_UmfpackInverse<SCAL>::S_UmfpackInverse;
     static constexpr bool is_vector_complex = ngbla::IsComplex<SCAL_VEC>();
     
-    AutoVector CreateRowVector () const override { return CreateBaseVector(height/entrysize, is_vector_complex, entrysize); }
-    AutoVector CreateColVector () const override { return CreateBaseVector(height/entrysize, is_vector_complex, entrysize); }
+    VecFormat RowFormat () const override
+    { return VecFormat (height/entrysize, is_vector_complex ? Scalar(Complex(0)) : Scalar(double(0)), entrysize); }
+    VecFormat ColFormat () const override { return RowFormat(); }
 
     void Mult (const BaseVector & x, BaseVector & y) const override;
     void MultTrans (const BaseVector & x, BaseVector & y) const override;

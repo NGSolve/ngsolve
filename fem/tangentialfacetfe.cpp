@@ -186,6 +186,29 @@ namespace ngfem
       }
   }
 
+  template <ELEMENT_TYPE ET>
+  void TangentialFacetFacetFE<ET>::
+  Evaluate (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceVector<> coefs,
+            BareSliceMatrix<SIMD<double>> values) const
+  {
+    constexpr int DIMSPACE = DIM+1;
+    auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIMSPACE>&> (bmir);
+    for (size_t i = 0; i < mir.Size(); i++)
+      {
+        Vec<DIMSPACE,SIMD<double>> sum(0.0);
+        T_CalcShape (GetTIP(mir[i]),
+                     SBLambda ([&] (size_t j, auto s)
+                               {
+                                 auto shape = s.Value();
+                                 double coef = coefs(j);
+                                 Iterate<DIMSPACE> ( [&] (auto ii) {
+                                     sum(ii.value) += coef * shape(ii.value);
+                                   });
+                               }));
+        for (size_t k = 0; k < DIMSPACE; k++)
+          values(k,i) = sum(k).Data();
+      }
+  }
 
   template <ELEMENT_TYPE ET>
   void TangentialFacetFacetFE<ET> :: CalcDualShape (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> shapes) const

@@ -123,7 +123,7 @@ namespace ngla
 
     size_t Size() const { return size; }
 
-    size_t NZE() const { return nze; }
+    size_t NZE() const override { return nze; }
 
     // full col-index array
     FlatArray<ColIdx> GetColIndices() const { return colnr; }
@@ -142,20 +142,18 @@ namespace ngla
     void EmbedHeight (size_t starti, size_t newheight);
     void EmbedWidth (size_t starti, size_t newwidth);
     
-    ostream & Print (ostream & ost) const;
+    ostream & Print (ostream & ost) const override;
 
-    virtual Array<MemoryUsage> GetMemoryUsage () const;    
+    virtual Array<MemoryUsage> GetMemoryUsage () const override;    
 
     const MemoryTracer & GetMemoryTracer() const
     {
       return mem_tracer;
     }
 
-    virtual AutoVector CreateRowVector () const
-    { throw Exception("MatrixGraph::CreateRowVector called"); }
-    
-    virtual AutoVector CreateColVector () const
-    { throw Exception("MatrixGraph::CreateRowVector called"); }
+    // the graph knows the shape only
+    VecFormat RowFormat () const override { return VecFormat (width); }
+    VecFormat ColFormat () const override { return VecFormat (size); }
 
   private:
     
@@ -528,8 +526,8 @@ namespace ngla
     virtual Array<MemoryUsage> GetMemoryUsage () const override;    
 
     virtual AutoVector CreateVector () const override;
-    virtual AutoVector CreateRowVector () const override;
-    virtual AutoVector CreateColVector () const override;
+    VecFormat RowFormat () const override;
+    VecFormat ColFormat () const override;
 
     // virtual tuple<int,int> EntrySizes() const override { return { mat_traits<TM>::HEIGHT, mat_traits<TM>::WIDTH }; }
     virtual tuple<int,int> EntrySizes() const override { return { ngbla::Height<TM>(), ngbla::Width<TM>() }; }
@@ -586,10 +584,12 @@ namespace ngla
 
     virtual shared_ptr<BaseMatrix> CreateMatrix () const override;
     // virtual BaseMatrix * CreateMatrix (const Array<int> & elsperrow) const;
+    // a DeviceSparseMatrix for scalar TM if a gpu backend is registered
+    virtual shared_ptr<BaseMatrix> CreateDeviceMatrix () const override;
     ///
     virtual AutoVector CreateVector () const override;
-    virtual AutoVector CreateRowVector () const override;
-    virtual AutoVector CreateColVector () const override;
+    VecFormat RowFormat () const override;
+    VecFormat ColFormat () const override;
 
 
     BaseMatrix::OperatorInfo GetOperatorInfo () const override
@@ -852,6 +852,8 @@ namespace ngla
   
   NGS_DLL_HEADER shared_ptr<SparseMatrixTM<double>>
   MatMult (const SparseMatrixTM<double> & mata, const SparseMatrixTM<double> & matb, bool sort_output = true);
+  NGS_DLL_HEADER shared_ptr<SparseMatrixTM<float>>
+  MatMult (const SparseMatrixTM<float> & mata, const SparseMatrixTM<float> & matb, bool sort_output = true);
   NGS_DLL_HEADER shared_ptr<SparseMatrixTM<Complex>>
   MatMult (const SparseMatrixTM<Complex> & mata, const SparseMatrixTM<Complex> & matb, bool sort_output = true);
 
@@ -982,15 +984,9 @@ shared_ptr<BaseMatrix> CreateSparseMatrixInverse(shared_ptr<const BaseSparseMatr
     
     tuple<int,int> EntrySizes() const override { return { bheight, bwidth }; }
     
-    AutoVector CreateRowVector () const override
-    {
-      return AutoVector(make_shared<S_BaseVectorPtr<TSCAL>> (this->width, this->bwidth));
-    }
     
-    AutoVector CreateColVector () const override
-    {
-      return AutoVector(make_shared<S_BaseVectorPtr<TSCAL>> (this->size, this->bheight));
-    }
+    VecFormat RowFormat () const override { return VecFormat (this->width, TSCAL(0), int(bwidth)); }
+    VecFormat ColFormat () const override { return VecFormat (this->size, TSCAL(0), int(bheight)); }
 
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
 

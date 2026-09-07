@@ -944,7 +944,7 @@ namespace ngfem
     
     if (cf->Dimension() != 1)
       throw Exception ("SymbolicLFI needs scalar-valued CoefficientFunction");
-    cf->TraverseTree
+    cf->TraverseDAG
       ([&] (CoefficientFunction & nodecf)
        {
          if (auto proxy = dynamic_cast<ProxyFunction*> (&nodecf))
@@ -1242,7 +1242,7 @@ namespace ngfem
     trial_cum.Append(0);
     test_cum.Append(0);
     has_interpolate = false;
-    cf->TraverseTree
+    cf->TraverseDAG
       ( [&] (CoefficientFunction & nodecf)
         {
           auto proxy = dynamic_cast<ProxyFunction*> (&nodecf);
@@ -1603,8 +1603,11 @@ namespace ngfem
           SIMD_BaseMappedIntegrationRule & mir = trafo(ir, lh);
           // NgProfiler::StopThreadTimer (timer_SymbBFIstart, TaskManager::GetThreadId());
 
-          ProxyUserData ud;
+          ProxyUserData ud(0, gridfunction_cfs.Size(), lh);
           const_cast<ElementTransformation&>(trafo).userdata = &ud;
+          for (CoefficientFunction * cfgf : gridfunction_cfs)
+            ud.AssignMemory (cfgf, ir.GetNIP(), cfgf->Dimension(), lh,
+                             cfgf->IsComplex());
           PrecomputeCacheCF(cache_cfs, mir, lh);
 
           // bool symmetric_so_far = true;
@@ -1861,8 +1864,11 @@ namespace ngfem
     const IntegrationRule& ir = GetIntegrationRule (fel, lh);
     BaseMappedIntegrationRule & mir = trafo(ir, lh);
     
-    ProxyUserData ud;
+    ProxyUserData ud(0, gridfunction_cfs.Size(), lh);
     const_cast<ElementTransformation&>(trafo).userdata = &ud;
+    for (CoefficientFunction * cfgf : gridfunction_cfs)
+      ud.AssignMemory (cfgf, ir.GetNIP(), cfgf->Dimension(), lh,
+                       cfgf->IsComplex());
     PrecomputeCacheCF(cache_cfs, mir, lh);
     
     // tstart.Stop();
@@ -3687,7 +3693,7 @@ namespace ngfem
     if (cf->Dimension() != 1)
       throw Exception ("SymbolicLFI needs scalar-valued CoefficientFunction");
     test_cum.Append(0);    
-    cf->TraverseTree
+    cf->TraverseDAG
       ( [&] (CoefficientFunction & nodecf)
         {
           auto proxy = dynamic_cast<ProxyFunction*> (&nodecf);
@@ -3897,7 +3903,7 @@ namespace ngfem
         throw Exception ("SymbolicBFI needs scalar-valued CoefficientFunction");
     trial_cum.Append(0);
     test_cum.Append(0);    
-    cf->TraverseTree
+    cf->TraverseDAG
       ( [&] (CoefficientFunction & nodecf)
         {
           auto proxy = dynamic_cast<ProxyFunction*> (&nodecf);
@@ -5098,7 +5104,7 @@ namespace ngfem
       throw Exception ("SymbolicEnergy needs scalar-valued CoefficientFunction");
     
     trial_cum.Append(0);
-    cf->TraverseTree
+    cf->TraverseDAG
       ( [&] (CoefficientFunction & nodecf)
         {
           auto proxy = dynamic_cast<ProxyFunction*> (&nodecf);
@@ -5580,6 +5586,7 @@ namespace ngfem
                     {
                       HeapReset hr(lh);
                       FlatMatrix<AutoDiff<1,SIMD<double>>> dval(dim_proxy1, mir.Size(), lh);
+                      ud.testfunction = nullptr;
                       for (int l = 0; l < dim_proxy2; l++)
                         {
                           ud.trialfunction = proxy2;
@@ -5999,7 +6006,7 @@ namespace ngfem
   {
     // check for DG terms
     bool has_other = false;
-    cf->TraverseTree ([&has_other] (CoefficientFunction & cf)
+    cf->TraverseDAG ([&has_other] (CoefficientFunction & cf)
                       {
                         if (dynamic_cast<ProxyFunction*> (&cf))
                           if (dynamic_cast<ProxyFunction&> (cf).IsOther())
@@ -6041,7 +6048,7 @@ namespace ngfem
 
   shared_ptr<LinearFormIntegrator> Integral :: MakeLinearFormIntegrator() const
   {
-    cf -> TraverseTree ([&] (CoefficientFunction& cf) {
+    cf -> TraverseDAG ([&] (CoefficientFunction& cf) {
                           if (auto * proxy = dynamic_cast<ProxyFunction*>(&cf))
                             {
                               if (proxy->IsTrialFunction())

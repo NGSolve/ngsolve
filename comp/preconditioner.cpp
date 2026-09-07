@@ -177,8 +177,8 @@ namespace ngcomp
         Matrix<Complex> mat(n_elim), mat2(n_elim), ev(n_elim);
         BaseVector & v1 = *amat.CreateColVector();
         BaseVector & v2 = *amat.CreateColVector();
-        FlatVector<Complex> fv1 = v1.FVComplex();
-        // FlatVector<Complex> fv2 = v2.FVComplex();
+        FlatVector<Complex> fv1 = v1.FV<Complex>();
+        // FlatVector<Complex> fv2 = v2.FV<Complex>();
         
 	int i_elim = 0, j_elim = 0;
         for (int i = 0; i < n; i++)
@@ -297,6 +297,9 @@ namespace ngcomp
 	lo_bfa = bfa->GetLowOrderBilinearForm();
 	lo_fes = fes->LowOrderFESpacePtr();
       }
+
+    if (flags.GetDefineFlag ("updateall"))
+      lo_bfa->SetGalerkin (true);
     /*
     else if (id == 0 && ntasks > 1 )  // not supported anymore
       {

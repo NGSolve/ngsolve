@@ -95,6 +95,7 @@ namespace ngla
 
 
   extern template class S_BaseVectorPtr<double>;
+  extern template class S_BaseVectorPtr<float>;
   extern template class S_BaseVectorPtr<Complex>;
 
 
@@ -207,6 +208,7 @@ namespace ngla
   };
 
   extern template class VVector<double>;
+  extern template class VVector<float>;
   extern template class VVector<Complex>;
 }
 

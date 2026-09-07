@@ -7,6 +7,7 @@
 
 #include <special_matrix.hpp>
 #include "sparsematrix.hpp"
+#include "devicevector.hpp"
 
 namespace ngla
 {
@@ -22,15 +23,7 @@ namespace ngla
     return ost;
   }
     
-  AutoVector TransposeVector :: CreateRowVector () const
-  {
-    return make_unique<VVector<double>> (h*w);
-  }
   
-  AutoVector TransposeVector :: CreateColVector () const
-  {
-    return make_unique<VVector<double>> (h*w);
-  }
       
   void TransposeVector :: Mult (const BaseVector & x, BaseVector & y) const
   {
@@ -45,45 +38,135 @@ namespace ngla
   
   
   
+  // runs the body with FlatVectors in the scalar type of y
+  template <typename FUNC>
+  static void VisitPerm (const BaseVector & x, BaseVector & y, FUNC f)
+  {
+    std::visit ([&] (auto proto)
+    {
+      typedef decltype(proto) T;
+      f (x.FV<T>(), y.FV<T>());
+    }, y.GetScalarType());
+  }
+
   void PermutationMatrix :: Mult (const BaseVector & x, BaseVector & y) const
   {
-    auto fvx = x.FV<double>();
-    auto fvy = y.FV<double>();
-    for (size_t i = 0; i < ind.Size(); i++)
-      if(ind[i] != size_t(-1))
-        fvy(i) = fvx(ind[i]);
+    y = 0;   // rows with index -1 stay zero
+    VisitPerm (x, y, [&] (auto fvx, auto fvy)
+    {
+      for (size_t i = 0; i < ind.Size(); i++)
+        if(ind[i] != size_t(-1))
+          fvy(i) = fvx(ind[i]);
+    });
   }
-  
+
   void PermutationMatrix :: MultTrans (const BaseVector & x, BaseVector & y) const
   {
-    auto fvx = x.FV<double>();
-    auto fvy = y.FV<double>();
     y = 0;
-    for (size_t i = 0; i < ind.Size(); i++)
-      if(ind[i] != size_t(-1))
-        fvy(ind[i]) += fvx(i);
+    VisitPerm (x, y, [&] (auto fvx, auto fvy)
+    {
+      for (size_t i = 0; i < ind.Size(); i++)
+        if(ind[i] != size_t(-1))
+          fvy(ind[i]) += fvx(i);
+    });
   }
 
   void PermutationMatrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
-    auto fvx = x.FV<double>();
-    auto fvy = y.FV<double>();
-    for (size_t i = 0; i < ind.Size(); i++)
-      if(ind[i] != size_t(-1))
-        fvy(i) += s * fvx(ind[i]);
+    VisitPerm (x, y, [&] (auto fvx, auto fvy)
+    {
+      for (size_t i = 0; i < ind.Size(); i++)
+        if(ind[i] != size_t(-1))
+          fvy(i) += s * fvx(ind[i]);
+    });
   }
-  
+
   void PermutationMatrix :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
   {
-    auto fvx = x.FV<double>();
-    auto fvy = y.FV<double>();
+    VisitPerm (x, y, [&] (auto fvx, auto fvy)
+    {
+      for (size_t i = 0; i < ind.Size(); i++)
+        if(ind[i] != size_t(-1))
+          fvy(ind[i]) += s * fvx(i);
+    });
+  }
+
+  shared_ptr<BaseSparseMatrix> PermutationMatrix :: CreateSparseMatrix() const
+  {
+    Array<int> ai, aj;
     for (size_t i = 0; i < ind.Size(); i++)
-      if(ind[i] != size_t(-1))
-        fvy(ind[i]) += s * fvx(i);
+      if (ind[i] != size_t(-1))
+        {
+          ai += int(i);
+          aj += int(ind[i]);
+        }
+    Array<double> vals(ai.Size());
+    vals = 1.0;
+    return SparseMatrix<double>::CreateFromCOO (ai, aj, vals, Height(), Width());
   }
 
 
   
+  class DeviceEmbedding : public Embedding
+  {
+  public:
+    using Embedding::Embedding;
+    VecFormat RowFormat () const override { return Embedding::RowFormat().OnDevice(MemType::Shared); }
+    VecFormat ColFormat () const override { return Embedding::ColFormat().OnDevice(MemType::Shared); }
+  };
+
+  class DeviceEmbeddingTranspose : public EmbeddingTranspose
+  {
+  public:
+    using EmbeddingTranspose::EmbeddingTranspose;
+    VecFormat RowFormat () const override { return EmbeddingTranspose::RowFormat().OnDevice(MemType::Shared); }
+    VecFormat ColFormat () const override { return EmbeddingTranspose::ColFormat().OnDevice(MemType::Shared); }
+  };
+
+  class DeviceEmbeddedMatrix : public EmbeddedMatrix
+  {
+  public:
+    using EmbeddedMatrix::EmbeddedMatrix;
+    VecFormat ColFormat () const override { return EmbeddedMatrix::ColFormat().OnDevice(MemType::Shared); }
+  };
+
+  class DeviceEmbeddedTransposeMatrix : public EmbeddedTransposeMatrix
+  {
+  public:
+    using EmbeddedTransposeMatrix::EmbeddedTransposeMatrix;
+    VecFormat RowFormat () const override { return EmbeddedTransposeMatrix::RowFormat().OnDevice(MemType::Shared); }
+  };
+
+
+  shared_ptr<BaseMatrix> Embedding :: CreateDeviceMatrix () const
+  {
+    if (ngs_gpu::HasDevice())
+      return make_shared<DeviceEmbedding> (height, range, is_complex);
+    return BaseMatrix::CreateDeviceMatrix();
+  }
+
+  shared_ptr<BaseMatrix> EmbeddingTranspose :: CreateDeviceMatrix () const
+  {
+    if (ngs_gpu::HasDevice())
+      return make_shared<DeviceEmbeddingTranspose> (width, range, is_complex);
+    return BaseMatrix::CreateDeviceMatrix();
+  }
+
+  shared_ptr<BaseMatrix> EmbeddedMatrix :: CreateDeviceMatrix () const
+  {
+    if (ngs_gpu::HasDevice())
+      return make_shared<DeviceEmbeddedMatrix> (height, range, mat->CreateDeviceMatrix());
+    return make_shared<EmbeddedMatrix> (height, range, mat->CreateDeviceMatrix());
+  }
+
+  shared_ptr<BaseMatrix> EmbeddedTransposeMatrix :: CreateDeviceMatrix () const
+  {
+    if (ngs_gpu::HasDevice())
+      return make_shared<DeviceEmbeddedTransposeMatrix> (width, range, mat->CreateDeviceMatrix());
+    return make_shared<EmbeddedTransposeMatrix> (width, range, mat->CreateDeviceMatrix());
+  }
+
+
   void Embedding :: Mult (const BaseVector & x, BaseVector & y) const
   {
     static Timer t("Embedding::Mult"); RegionTimer reg(t);
@@ -175,6 +258,8 @@ namespace ngla
   shared_ptr<BaseSparseMatrix> EmbeddedMatrix :: CreateSparseMatrix() const
   {
     auto mat1 = mat->CreateSparseMatrix();
+    if (mat1.get() == dynamic_cast<const BaseSparseMatrix*> (mat.get()))
+      mat1 = dynamic_pointer_cast<BaseSparseMatrix> (mat1->CreateMatrix());
     mat1 -> EmbedHeight(range.First(), Height());
     return mat1;
   }
@@ -270,16 +355,11 @@ namespace ngla
   }
   shared_ptr<BaseSparseMatrix> EmbeddedTransposeMatrix :: CreateSparseMatrix() const
   {
-    auto mat_sparse = mat->CreateSparseMatrix();
-    auto rest = EmbeddingTranspose(width, range, IsComplex());
-    auto rest_sparse = rest.CreateSparseMatrix();
-    auto mat_sp = dynamic_pointer_cast<SparseMatrixTM<double>>(mat_sparse);
-    if(!mat_sp)
-      throw Exception("EmbeddedTransposeMatrix::CreateSparseMatrix: cannot create sparse matrix for mat in embedding transpose");
-    auto rest_sp = dynamic_pointer_cast<SparseMatrixTM<double>>(rest_sparse);
-    if(!rest_sp)
-      throw Exception("EmbeddedTransposeMatrix::CreateSparseMatrix: cannot create sparse matrix for rest in embedding transpose");
-    return MatMult(*mat_sp, *rest_sp);
+    auto mat1 = mat->CreateSparseMatrix();
+    if (mat1.get() == dynamic_cast<const BaseSparseMatrix*> (mat.get()))
+      mat1 = dynamic_pointer_cast<BaseSparseMatrix> (mat1->CreateMatrix());
+    mat1 -> EmbedWidth(range.First(), width);
+    return mat1;
   }
 
 
@@ -308,19 +388,7 @@ namespace ngla
       }
   }
 
-  template <class TVR, class TVC>
-  AutoVector Real2ComplexMatrix<TVR,TVC> :: CreateRowVector() const
-  {
-    auto h = realmatrix->Width();
-    return make_unique<VVector<TVC>> (h);
-  }
     
-  template <class TVR, class TVC>
-  AutoVector Real2ComplexMatrix<TVR,TVC> :: CreateColVector() const
-  {
-    auto w = realmatrix->Width();
-    return make_unique<VVector<TVC>> (w);
-  }
     
 
 
@@ -690,21 +758,23 @@ namespace ngla
         }
   }
 
-  AutoVector BlockMatrix :: CreateRowVector () const {
-    Array<shared_ptr<BaseVector>> vecs(w);
-    for(auto col:Range(w)) {
-      vecs[col] = col_reps[col]->CreateRowVector();
-    }
-    return make_unique<BlockVector>(vecs);
+  VecFormat BlockMatrix :: RowFormat () const
+  {
+    VecFormat f;
+    for (auto col : Range(w))
+      f.blocks.push_back (col_reps[col]->RowFormat());
+    return f;
   }
+
+  VecFormat BlockMatrix :: ColFormat () const
+  {
+    VecFormat f;
+    for (auto row : Range(h))
+      f.blocks.push_back (row_reps[row]->ColFormat());
+    return f;
+  }
+
   
-  AutoVector BlockMatrix :: CreateColVector () const {
-    Array<shared_ptr<BaseVector>> vecs(h);
-    for (auto row:Range(h)) {
-      vecs[row] = row_reps[row]->CreateColVector();
-    }
-    return make_unique<BlockVector>(vecs);
-  }
 
 
 
@@ -723,17 +793,7 @@ namespace ngla
     y.FV<double>()(0) += s * InnerProduct(x, *vec);
   }
   
-  AutoVector BaseMatrixFromVector :: CreateRowVector () const
-  {
-    // missing parallel: 1 dof for all
-    shared_ptr<BaseVector> sp = make_shared<VVector<double>>(1);   
-    return sp;
-  }
   
-  AutoVector BaseMatrixFromVector :: CreateColVector () const
-  {
-    return vec->CreateVector();
-  }
 
 
 
@@ -757,17 +817,7 @@ namespace ngla
     y.FV<double>() += s *  tmp;
   }
   
-  AutoVector BaseMatrixFromMultiVector :: CreateRowVector () const
-  {
-    // missing parallel: 1 dof for all
-    shared_ptr<BaseVector> sp = make_shared<VVector<double>>(vec->Size());   
-    return sp;
-  }
   
-  AutoVector BaseMatrixFromMultiVector :: CreateColVector () const
-  {
-    return vec->RefVec()->CreateVector();
-  }
 
 
 
@@ -802,20 +852,7 @@ namespace ngla
 
 
   
-  template <typename T>    
-  AutoVector BaseMatrixFromMatrix<T> :: CreateRowVector () const
-  {
-    // missing parallel: 1 dof for all
-    shared_ptr<BaseVector> sp = make_shared<VVector<T>>(mat.Width());   
-    return sp;
-  }
 
-  template <typename T>    
-  AutoVector BaseMatrixFromMatrix<T> :: CreateColVector () const
-  {
-    shared_ptr<BaseVector> sp = make_shared<VVector<T>>(mat.Height());   
-    return sp;
-  }
 
   template class BaseMatrixFromMatrix<double>;
   template class BaseMatrixFromMatrix<Complex>;

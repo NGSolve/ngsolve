@@ -180,6 +180,15 @@ CUDA Device support:
    unit-5.5-cuda/wave_cuda.ipynb 
    unit-5.5-cuda/EulerEquations.ipynb 
 
+Common GPU programming (CUDA / Metal / host reference):
+
+.. toctree::
+   :maxdepth: 1
+
+   unit-5.6-gpu/commonGPU.ipynb
+   unit-5.6-gpu/poisson_gpu.ipynb
+   unit-5.6-gpu/matrixfree.ipynb
+
 some more MPI examples:
 
 .. toctree::

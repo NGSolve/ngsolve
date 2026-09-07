@@ -758,8 +758,8 @@ namespace ngbla
     /** allocate vector. 
 	If the dynamic size fits into the static size, use static memory. Otherwise use dynamic alloation
     */
-    explicit INLINE VectorMem (size_t as) : FlatVector<T> (as, (as <= S) ? 
-                                                           &mem[0] : new T[as]) { ; }
+    explicit INLINE VectorMem (size_t as) : FlatVector<T> (as, nullptr)
+    { this->AssignMemory (as, (as <= S) ? &mem[0] : new T[as]); }
 
     /// deallocates dynamic memory
     INLINE ~VectorMem() { if (this->Size() > S) delete [] this->Data(); }

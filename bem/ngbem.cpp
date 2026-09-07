@@ -1489,4 +1489,8 @@ namespace ngsbem
   template class GenericIntegralOperator<DiffHelmholtzSLKernel<3,3>>;
   template class GenericIntegralOperator<DiffHelmholtzSLKernel<3,1,Complex>>;
   template class GenericIntegralOperator<DiffHelmholtzSLKernel<3,3,Complex>>;
+  template class GenericIntegralOperator<DiffHelmholtzDLKernel<3>>;
+  template class GenericIntegralOperator<DiffHelmholtzDLKernel<3,3>>;
+  template class GenericIntegralOperator<DiffHelmholtzDLKernel<3,1,Complex>>;
+  template class GenericIntegralOperator<DiffHelmholtzDLKernel<3,3,Complex>>;
 }

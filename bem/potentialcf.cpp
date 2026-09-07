@@ -785,6 +785,10 @@ namespace ngsbem
   template class PotentialCF<DiffHelmholtzSLKernel<3,3>>;
   template class PotentialCF<DiffHelmholtzSLKernel<3,1,Complex>>;
   template class PotentialCF<DiffHelmholtzSLKernel<3,3,Complex>>;
+  template class PotentialCF<DiffHelmholtzDLKernel<3>>;
+  template class PotentialCF<DiffHelmholtzDLKernel<3,3>>;
+  template class PotentialCF<DiffHelmholtzDLKernel<3,1,Complex>>;
+  template class PotentialCF<DiffHelmholtzDLKernel<3,3,Complex>>;
 
 
 

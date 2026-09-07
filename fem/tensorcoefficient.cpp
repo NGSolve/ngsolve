@@ -98,7 +98,7 @@ namespace ngfem {
 
             Array<ProxyFunction *> trial_proxies, test_proxies;
 
-            cf->TraverseTree([&](CoefficientFunction &nodecf) {
+            cf->TraverseDAG([&](CoefficientFunction &nodecf) {
                 auto proxy = dynamic_cast<ProxyFunction *>(&nodecf);
                 if (proxy) {
                     if (proxy->IsTestFunction()) {

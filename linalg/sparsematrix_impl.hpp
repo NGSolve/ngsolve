@@ -587,11 +587,11 @@ namespace ngla
   template <class TM> AutoVector SparseMatrixTM<TM> :: CreateVector () const
   { throw Exception("SparseMatrixTM::CreateVector"); }
 
-  template <class TM> AutoVector SparseMatrixTM<TM> :: CreateRowVector () const
-  { throw Exception("SparseMatrixTM::CreateRowVector"); }
-
-  template <class TM> AutoVector SparseMatrixTM<TM> :: CreateColVector () const
-  { throw Exception("SparseMatrixTM::CreateColVector"); }
+  // the vector type is fixed in SparseMatrix, here only the shape
+  template <class TM> VecFormat SparseMatrixTM<TM> :: RowFormat () const
+  { return VecFormat (this->width); }
+  template <class TM> VecFormat SparseMatrixTM<TM> :: ColFormat () const
+  { return VecFormat (this->size); }
 
 
   template <class TM, class TV_ROW, class TV_COL>
@@ -599,6 +599,23 @@ namespace ngla
   CreateMatrix () const
   {
     return make_shared<SparseMatrix> (*this);
+  }
+
+  template <class TM, class TV_ROW, class TV_COL>
+  shared_ptr<BaseMatrix> SparseMatrix<TM,TV_ROW,TV_COL> ::
+  CreateDeviceMatrix () const
+  {
+    if constexpr ((is_same_v<TM,double> || is_same_v<TM,float>) &&
+                  is_same_v<TV_ROW,TM> && is_same_v<TV_COL,TM>)
+      if (ngs_gpu::HasDevice())
+        {
+          // double only where the device computes in fp64
+          if constexpr (is_same_v<TM,double>)
+            if (GetGpuDevice()->HasFloat64())
+              return make_shared<DeviceSparseMatrix<double>> (*this);
+          return make_shared<DeviceSparseMatrix<float>> (*this);
+        }
+    return BaseMatrix::CreateDeviceMatrix();
   }
 
   template <class TM, class TV_ROW, class TV_COL>
@@ -610,19 +627,15 @@ namespace ngla
     throw Exception ("SparseMatrix::CreateVector for rectangular does not make sense, use either CreateColVector or CreateRowVector");
   }
 
-  template <class TM, class TV_ROW, class TV_COL>
-  AutoVector SparseMatrix<TM,TV_ROW,TV_COL> ::
-  CreateRowVector () const
-  {
-    return make_unique<VVector<TVX>> (this->width);
-  }
+
 
   template <class TM, class TV_ROW, class TV_COL>
-  AutoVector SparseMatrix<TM,TV_ROW,TV_COL> ::
-  CreateColVector () const
-  {
-    return make_unique<VVector<TVY>> (this->size);
-  }
+  VecFormat SparseMatrix<TM,TV_ROW,TV_COL> :: RowFormat () const
+  { return VVectorFormat<TVX> (this->width); }
+
+  template <class TM, class TV_ROW, class TV_COL>
+  VecFormat SparseMatrix<TM,TV_ROW,TV_COL> :: ColFormat () const
+  { return VVectorFormat<TVY> (this->size); }
 
 
   template<class TM, class TV_ROW, class TV_COL>

@@ -301,6 +301,21 @@ namespace ngfem
     virtual shared_ptr<CoefficientFunction> Operator (shared_ptr<class DifferentialOperator> diffop) const;
     
     virtual void TraverseTree (const function<void(CoefficientFunction&)> & func);
+
+    typedef std::set<CoefficientFunction*> T_Visited;
+    // like TraverseTree, but visits every node of the expression DAG once.
+    void TraverseDAG (const function<void(CoefficientFunction&)> & func)
+    {
+      T_Visited visited;
+      TraverseDAG (func, visited);
+    }
+    void TraverseDAG (const function<void(CoefficientFunction&)> & func, T_Visited & visited)
+    {
+      if (!visited.insert(this).second) return;
+      for (auto & incf : InputCoefficientFunctions())
+        if (incf) incf->TraverseDAG (func, visited);
+      func(*this);
+    }
     virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const
     { return Array<shared_ptr<CoefficientFunction>>(); }
     virtual bool StoreUserData() const { return false; }
@@ -1313,12 +1328,14 @@ public:
   virtual shared_ptr<CoefficientFunction>
   DiffJacobi (const CoefficientFunction * var, T_DJC & cache) const override
   {
-    if (this == var) return make_shared<ConstantCoefficientFunction> (1);
+    if (this == var) return BASE::DiffJacobi(var, cache);
     if (this->Dimensions().Size() == 0)
       return lam.Diff(c1) * c1->DiffJacobi(var, cache);
-    else
+    else if (this->Dimensions().Size() == 1)
       return MakeMultDiagMatCoefficientFunction (lam.Diff(c1), 
                                              c1->DiffJacobi(var, cache));
+    else
+      return BASE::DiffJacobi(var, cache);
     // return BASE::DiffJacobi(var, cache);
   }
 
@@ -1895,7 +1912,7 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
   shared_ptr<CoefficientFunction> operator* (Complex v1, shared_ptr<CoefficientFunction> c2);
 
   INLINE
-  shared_ptr<CoefficientFunction> operator* (std::variant<double,float, Complex> v1, shared_ptr<CoefficientFunction> c2)
+  shared_ptr<CoefficientFunction> operator* (ngbla::Scalar v1, shared_ptr<CoefficientFunction> c2)
   {
     return std::visit ([&](auto val) {
       return val * c2; 

@@ -8,6 +8,7 @@
 #define FILE_SPARSEMATRIX_CPP
 
 #include "sparsematrix.hpp"
+#include "device_sparsematrix.hpp"
 #include "jacobi.hpp"
 #include "blockjacobi.hpp"
 #include "pardisoinverse.hpp"
@@ -1293,6 +1294,7 @@ namespace ngla
     firsti.Range(starti, starti+size+1) = tmp_firsti;
     firsti.Range(starti+size+1, newheight+1) = tmp_firsti.Last();
     size = newheight;
+    CalcBalancing ();
   }
   
   void MatrixGraph :: EmbedWidth (size_t starti, size_t newwidth)
@@ -1896,6 +1898,11 @@ namespace ngla
   {
     return MatMult<double, double, double>(mata, matb, sort_output);
   }
+  shared_ptr<SparseMatrixTM<float>> MatMult (const SparseMatrixTM<float> & mata,
+                                             const SparseMatrixTM<float> & matb, bool sort_output)
+  {
+    return MatMult<float, float, float>(mata, matb, sort_output);
+  }
   shared_ptr<SparseMatrixTM<std::complex<double>>> MatMult (const SparseMatrixTM<std::complex<double>> & mata,
                                                             const SparseMatrixTM<std::complex<double>> & matb,
                                                             bool sort_output)
@@ -2040,6 +2047,28 @@ namespace ngla
 
 
 
+  template <typename TSCAL>
+  shared_ptr<BaseSparseMatrix>
+  ReuseCoarseMatrix (shared_ptr<SparseMatrixTM<TSCAL>> prod, shared_ptr<BaseSparseMatrix> acmat)
+  {
+    auto cmat = dynamic_pointer_cast<SparseMatrix<TSCAL>> (acmat);
+    if (!cmat) return prod;
+    if (cmat->Height() != prod->Height() || cmat->Width() != prod->Width()) return prod;
+    if (cmat->NZE() != prod->NZE()) return prod;
+
+    for (size_t i = 0; i < prod->Height(); i++)
+      {
+        auto pi = prod->GetRowIndices(i);
+        auto ci = cmat->GetRowIndices(i);
+        if (pi.Size() != ci.Size()) return prod;
+        for (size_t j = 0; j < pi.Size(); j++)
+          if (pi[j] != ci[j]) return prod;
+      }
+
+    cmat->AsVector() = prod->AsVector();
+    return cmat;
+  }
+
   template <> shared_ptr<BaseSparseMatrix>
   SparseMatrix<double> :: Restrict (const SparseMatrixTM<double> & prol,
                                     shared_ptr<BaseSparseMatrix> acmat ) const
@@ -2052,7 +2081,7 @@ namespace ngla
 
     auto prod1 = MatMult<double, double, double>(*this, prol, true);
     auto prod = MatMult<double, double, double>(*prolT, *prod1, true);
-    return prod;
+    return ReuseCoarseMatrix<double> (prod, acmat);
   }
 
   template <> shared_ptr<BaseSparseMatrix>
@@ -2067,7 +2096,7 @@ namespace ngla
     
     auto prod1 = MatMult<std::complex<double>, std::complex<double>, double>(*this, prol, true);
     auto prod = MatMult<std::complex<double>, double, std::complex<double>>(*prolT, *prod1, true);
-    return prod;
+    return ReuseCoarseMatrix<std::complex<double>> (prod, acmat);
   }
 
 
@@ -2271,14 +2300,14 @@ namespace ngla
          int i = 0;
          for ( ; i + 4 <= x.Size(); i += 4)
            {
-             auto fx0 = x[i+0]->FVDouble();
-             auto fx1 = x[i+1]->FVDouble();
-             auto fx2 = x[i+2]->FVDouble();
-             auto fx3 = x[i+3]->FVDouble();
-             auto fy0 = y[i+0]->FVDouble();
-             auto fy1 = y[i+1]->FVDouble();
-             auto fy2 = y[i+2]->FVDouble();
-             auto fy3 = y[i+3]->FVDouble();
+             auto fx0 = x[i+0]->FV<double>();
+             auto fx1 = x[i+1]->FV<double>();
+             auto fx2 = x[i+2]->FV<double>();
+             auto fx3 = x[i+3]->FV<double>();
+             auto fy0 = y[i+0]->FV<double>();
+             auto fy1 = y[i+1]->FV<double>();
+             auto fy2 = y[i+2]->FV<double>();
+             auto fy3 = y[i+3]->FV<double>();
              double a0 = alpha[i+0];
              double a1 = alpha[i+1];
              double a2 = alpha[i+2];
@@ -2305,8 +2334,8 @@ namespace ngla
 
          for ( ; i+1 <= x.Size(); i++)
            {
-             auto fx0 = x[i+0]->FVDouble();
-             auto fy0 = y[i+0]->FVDouble();
+             auto fx0 = x[i+0]->FV<double>();
+             auto fy0 = y[i+0]->FV<double>();
              double a0 = alpha[i+0];
              for (auto row : myrange)
                {

@@ -107,6 +107,7 @@ namespace ngcomp
         evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdH1<3,2>>>();        
         flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradient<3>>>();
       }
+    needs_transform_vec=false;
   }
 
   DocInfo H1LumpingFESpace :: GetDocu()

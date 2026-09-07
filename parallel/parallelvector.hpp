@@ -154,9 +154,9 @@ namespace ngla
   {
   protected:
     using S_BaseVector<SCAL>::InnerProduct;
-    virtual SCAL InnerProduct (const BaseVector & v2, bool conjugate = false) const;
+    virtual SCAL InnerProduct (const BaseVector & v2, bool conjugate = false) const override;
     virtual BaseVector & SetScalar (double scal)
-    { return ParallelBaseVector::SetScalar(scal); }
+ override { return ParallelBaseVector::SetScalar(scal); }
   };
 
 
@@ -194,6 +194,13 @@ namespace ngla
     // virtual void  RecvVec ( int dest );
     virtual void AddRecvValues( int sender ) override;
     virtual AutoVector CreateVector () const override;
+    virtual VecFormat GetFormat () const override
+    {
+      auto f = BaseVector::GetFormat();
+      f.pardofs = paralleldofs;
+      f.parstatus = status;
+      return f;
+    }
     virtual unique_ptr<MultiVector> CreateMultiVector (size_t cnt) const override;
     
     virtual double L2Norm () const override;

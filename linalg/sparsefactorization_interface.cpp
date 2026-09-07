@@ -114,7 +114,40 @@ void SparseFactorizationInterface::Update() {
 
   shared_ptr<const MatrixGraph> p_mat = nullptr;
 
-  if (is_complex) {
+  auto [entry_h, entry_w] = m->EntrySizes();
+  if (entry_h != entry_w)
+    throw Exception("SparseFactorizationInterface: non-square matrix entries");
+
+  if (entry_h > 1) {
+    // blocked matrix - always copied out into scalar storage
+    map_inner_dofs.Init(inner, cluster, entry_h, m->Height());
+
+    shared_ptr<const BaseSparseMatrix> scalar_mat;
+    Switch<MAX_SYS_DIM>(entry_h - 1, [&](auto HM) {
+      constexpr int N = HM + 1;
+      if constexpr (N > 1) {
+        auto cached = dynamic_pointer_cast<SparseMatrixTM<double>>(
+            const_pointer_cast<BaseSparseMatrix>(inner_mat));
+        auto cached_c = dynamic_pointer_cast<SparseMatrixTM<Complex>>(
+            const_pointer_cast<BaseSparseMatrix>(inner_mat));
+        if (auto A = dynamic_pointer_cast<const SparseMatrix<Mat<N, N, double>>>(m))
+          scalar_mat = map_inner_dofs.ProjectMatrixBlocked<N, double>(A, cached);
+        else if (auto AC = dynamic_pointer_cast<const SparseMatrix<Mat<N, N, Complex>>>(m))
+          scalar_mat = map_inner_dofs.ProjectMatrixBlocked<N, Complex>(AC, cached_c);
+      }
+    });
+
+    if (!scalar_mat)
+      throw Exception("SparseFactorizationInterface: cannot expand matrix with entry size " +
+                      ToString(entry_h));
+
+    inner_mat = scalar_mat;
+    is_symmetric_storage = false;
+    if (is_symmetric.IsMaybeFalse())
+      is_symmetric = IsMatrixSymmetric(inner_mat);
+    p_mat = dynamic_pointer_cast<const MatrixGraph>(scalar_mat);
+  }
+  else if (is_complex) {
     shared_ptr<const SparseMatrixTM<Complex>> p_sparse_mat =
         dynamic_pointer_cast<const SparseMatrixTM<Complex>>(m);
 

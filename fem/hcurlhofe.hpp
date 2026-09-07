@@ -76,6 +76,8 @@ namespace ngfem
 
   public:
     using VertexOrientedFE<ET>::SetVertexNumbers;
+    HCurlHighOrderFE * SetVertexNumbers (FlatArray<int> vnums) override
+    { VertexOrientedFE<ELEMENT_TYPE(ET)>::SetVertexNumbers(vnums); return this; }
     /* INLINE */ HCurlHighOrderFE () { ; } 
 
     /* INLINE */ HCurlHighOrderFE (int aorder) 

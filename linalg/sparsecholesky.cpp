@@ -13,6 +13,7 @@
 
 // #include <la.hpp>
 #include "sparsecholesky.hpp"
+#include "device_sparsecholesky.hpp"
 
 
 typedef moodycamel::ConcurrentQueue<int> TQueue; 
@@ -181,7 +182,10 @@ namespace ngla
     clock_t starttime, endtime;
     starttime = clock();
     
+    static Timer tgraph("SparseCholesky - build mdo graph");
+    tgraph.Start();
     mdo = new MinimumDegreeOrdering (n);
+    mdo->approx = a->GetInverseFlags().GetDefineFlag("approxdegree") || getenv("NGS_MDO_APPROX");
     GetMemoryTracer().Track(*mdo, "MinimumDegreeOrdering");
 
     if (inner)
@@ -251,7 +255,7 @@ namespace ngla
     if (printstat)
       cout << IM(4) << "start ordering" << endl;
     
-    // mdo -> PrintCliques ();
+    tgraph.Stop();
     mdo->Order();
     nused = mdo->nused;
     endtime = clock();
@@ -2307,6 +2311,22 @@ namespace ngla
   static RegisterClassForArchive<SparseCholesky<double>, SparseCholeskyTM<double>> regscd;
   static RegisterClassForArchive<SparseCholesky<Complex>, SparseCholeskyTM<Complex>> regscc;
 
+
+  template <class TM, class TV_ROW, class TV_COL>
+  shared_ptr<BaseMatrix> SparseCholesky<TM,TV_ROW,TV_COL> ::
+  CreateDeviceMatrix () const
+  {
+    if constexpr ((is_same_v<TM,double> || is_same_v<TM,float>) &&
+                  is_same_v<TV_ROW,TM> && is_same_v<TV_COL,TM>)
+      if (ngs_gpu::HasDevice())
+        {
+          if constexpr (is_same_v<TM,double>)
+            if (GetGpuDevice()->HasFloat64())
+              return make_shared<DeviceSparseCholesky<double>> (*this);
+          return make_shared<DeviceSparseCholesky<float>> (*this);
+        }
+    return BaseMatrix::CreateDeviceMatrix();
+  }
 
   template class SparseCholesky<double>;
   template class SparseCholesky<float>;  

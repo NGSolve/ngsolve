@@ -195,7 +195,6 @@ namespace ngla
     if(a->IsSPD())
       spd = 1;
 
-    integer maxfct = 1, mnum = 1, phase = 12, nrhs = 1, msglevel = print, error = 0;
     integer * params = const_cast <integer*> (&hparams[0]);
 
     for (int i = 0; i < 64; i++)
@@ -241,94 +240,11 @@ namespace ngla
     
     SetMatrixType();
 
-    if (inner)
-      GetPardisoMatrix (*a, SubsetFree (*inner));
-    else if (cluster)
-      GetPardisoMatrix (*a, SubsetCluster (*cluster));
-    else
-      GetPardisoMatrix (*a, SubsetAll());
+    GetPardisoMatrix (*a);
 
     nze = rowstart[compressed_height];
 
-
-    // call pardiso for factorization:
-    // time1 = clock();
-    cout << IM(3) << "call pardiso ..." << flush;
-
-    if (auto *tm = GetTaskManager(); tm) tm -> StopWorkers();
-
-#ifdef USE_MKL
-    mkl_set_num_threads(mkl_max_threads);
-#endif // USE_MKL
-
-    // retvalue =
-    if (matrix.Size() > 0)
-      F77_FUNC(pardiso) ( pt, &maxfct, &mnum, &matrixtype, &phase, &compressed_height, 
-			reinterpret_cast<double *>(matrix.Data()),
-			rowstart.Data(), indices.Data(), NULL, &nrhs, params, &msglevel,
-			NULL, NULL, &error );
-#ifdef USE_MKL
-    mkl_set_num_threads(1);
-#endif // USE_MKL
-    
-    if (auto *tm = GetTaskManager(); tm) tm -> StartWorkers();
-
-    cout << IM(3) << " done" << endl;
-
-    if ( error != 0 )
-      {
-	cout << IM(1) << "Setup and Factorization: PARDISO returned error " << error << "!" << endl;
-	
-	string errmsg;
-	switch (error)
-	  {
-	  case -1: errmsg = "input inconsistent"; break;
-	  case -2: errmsg = "not enough memory"; break;
-	  case -3: errmsg = "reordering problem"; break;
-	  case -4: errmsg = "zero pivot, numerical factorization or iterative refinement problem"; break;
-	  case -5: errmsg = "unclassified (internal) error"; break;
-	  case -6: errmsg = "preordering failed"; break;
-	  default: ;
-	  }
-	
-	cout << "err = " << errmsg << endl;
-
-	switch (error)
-	  {
-	  case -4: 
-	    {
-	      cout << "iparam(20) = " << params[19] << endl; break;
-	    }
-	  default: ;
-	  }
-	
-	cout << "symmetric = " << symmetric << endl;
-	cout << "spd = " << spd << endl;
-	cout << "compressed = " << compressed << endl;
-	cout << "inner = " << inner << endl;
-	cout << "cluster = " << cluster << endl;
-	
-	if (compressed_height < 1000)
-	  {
-	    ofstream err("pardiso.err");
-	    err << "ngsolve-matrix = " << endl << a << endl;
-	    err << "pardiso matrix = " << endl;
-	    for (int i = 0; i < compressed_height; i++)
-	      {
-		err << "Row " << i << " start " << rowstart[i] << ": ";
-		if ( inner ) err << " free=" << inner->Test(i) << " ";
-		if ( cluster ) err << " cluster=" << (*cluster)[i] << " ";
-		for (int j = rowstart[i]; j < rowstart[i+1]; j++)
-		  err << "c=" << indices[j-1]-1 << ", v=" << matrix[j-1] << "   ";
-		err << "\n";
-	      }
-	    cout << "wrote matrix to file 'pardiso.err', please check" << endl;
-	  }
-	throw Exception("PardisoInverse: Setup and Factorization failed \n error = "+errmsg);
-      }
-
-    memory_allocated_in_pardiso_lib = 1024*params[15];
-    GetMemoryTracer().Alloc(memory_allocated_in_pardiso_lib);
+    CallFactorization (12);   // analyze + factorize
 
     /*
     (*testout) << endl << "Direct Solver: PARDISO by Schenk/Gaertner." << endl;
@@ -473,6 +389,153 @@ namespace ngla
   }
 
 
+  template<class TM>
+  void PardisoInverseTM<TM> :: GetPardisoMatrix (const SparseMatrixTM<TM> & a)
+  {
+    if (inner)
+      GetPardisoMatrix (a, SubsetFree (*inner));
+    else if (cluster)
+      GetPardisoMatrix (a, SubsetCluster (*cluster));
+    else
+      GetPardisoMatrix (a, SubsetAll());
+  }
+
+
+  template<class TM>
+  void PardisoInverseTM<TM> :: CallFactorization (integer phase)
+  {
+    integer maxfct = 1, mnum = 1, nrhs = 1, msglevel = print, error = 0;
+    integer * params = const_cast <integer*> (&hparams[0]);
+
+    cout << IM(3) << "call pardiso ..." << flush;
+
+    if (auto *tm = GetTaskManager(); tm) tm -> StopWorkers();
+
+#ifdef USE_MKL
+    mkl_set_num_threads(mkl_max_threads);
+#endif // USE_MKL
+
+    if (matrix.Size() > 0)
+      F77_FUNC(pardiso) ( pt, &maxfct, &mnum, &matrixtype, &phase, &compressed_height,
+			reinterpret_cast<double *>(matrix.Data()),
+			rowstart.Data(), indices.Data(), NULL, &nrhs, params, &msglevel,
+			NULL, NULL, &error );
+#ifdef USE_MKL
+    mkl_set_num_threads(1);
+#endif // USE_MKL
+
+    if (auto *tm = GetTaskManager(); tm) tm -> StartWorkers();
+
+    cout << IM(3) << " done" << endl;
+
+    if ( error != 0 )
+      {
+	cout << IM(1) << "Setup and Factorization: PARDISO returned error " << error << "!" << endl;
+
+	string errmsg;
+	switch (error)
+	  {
+	  case -1: errmsg = "input inconsistent"; break;
+	  case -2: errmsg = "not enough memory"; break;
+	  case -3: errmsg = "reordering problem"; break;
+	  case -4: errmsg = "zero pivot, numerical factorization or iterative refinement problem"; break;
+	  case -5: errmsg = "unclassified (internal) error"; break;
+	  case -6: errmsg = "preordering failed"; break;
+	  default: ;
+	  }
+
+	cout << "err = " << errmsg << endl;
+
+	switch (error)
+	  {
+	  case -4:
+	    {
+	      cout << "iparam(20) = " << params[19] << endl; break;
+	    }
+	  default: ;
+	  }
+
+	cout << "symmetric = " << symmetric << endl;
+	cout << "spd = " << spd << endl;
+	cout << "compressed = " << compressed << endl;
+	cout << "inner = " << inner << endl;
+	cout << "cluster = " << cluster << endl;
+
+	if (compressed_height < 1000)
+	  {
+	    ofstream err("pardiso.err");
+	    err << "ngsolve-matrix = " << endl << GetAMatrix() << endl;
+	    err << "pardiso matrix = " << endl;
+	    for (int i = 0; i < compressed_height; i++)
+	      {
+		err << "Row " << i << " start " << rowstart[i] << ": ";
+		if ( inner ) err << " free=" << inner->Test(i) << " ";
+		if ( cluster ) err << " cluster=" << (*cluster)[i] << " ";
+		for (int j = rowstart[i]; j < rowstart[i+1]; j++)
+		  err << "c=" << indices[j-1]-1 << ", v=" << matrix[j-1] << "   ";
+		err << "\n";
+	      }
+	    cout << "wrote matrix to file 'pardiso.err', please check" << endl;
+	  }
+	throw Exception("PardisoInverse: Setup and Factorization failed \n error = "+errmsg);
+      }
+
+    GetMemoryTracer().Free(memory_allocated_in_pardiso_lib);
+    memory_allocated_in_pardiso_lib = 1024*params[15];
+    GetMemoryTracer().Alloc(memory_allocated_in_pardiso_lib);
+  }
+
+
+  template<class TM>
+  void PardisoInverseTM<TM> :: ReleaseFactorization (integer size, FlatArray<integer> arowstart,
+                                                     FlatArray<integer> aindices)
+  {
+    integer maxfct = 1, mnum = 1, phase = -1, nrhs = 1, msglevel = print, error = 0;
+    integer * params = const_cast <integer*> (&hparams[0]);
+
+    if (auto *tm = GetTaskManager(); tm) tm -> StopWorkers();
+    F77_FUNC(pardiso) ( pt, &maxfct, &mnum, &matrixtype, &phase, &size, NULL,
+			arowstart.Data(), aindices.Data(), NULL, &nrhs, params, &msglevel,
+			NULL, NULL, &error );
+    if (auto *tm = GetTaskManager(); tm) tm -> StartWorkers();
+
+    for (int i = 0; i < 128; i++) pt[i] = 0;
+
+    GetMemoryTracer().Free(memory_allocated_in_pardiso_lib);
+    memory_allocated_in_pardiso_lib = 0;
+
+    if (error != 0)
+      cout << "Clean Up: PARDISO returned error " << error << "!" << endl;
+  }
+
+
+  template<class TM>
+  void PardisoInverseTM<TM> :: Update ()
+  {
+    static Timer timer("Pardiso Update");
+    RegionTimer reg (timer);
+
+    auto a = dynamic_pointer_cast<const SparseMatrixTM<TM>> (GetAMatrix());
+    if (!a)
+      throw Exception("PardisoInverse::Update: original matrix not available anymore");
+
+    Array<integer> old_rowstart = std::move(rowstart);
+    Array<integer> old_indices = std::move(indices);
+    integer old_compressed_height = compressed_height;
+
+    height = a->Height() * entrysize;
+    GetPardisoMatrix (*a);
+    nze = rowstart[compressed_height];
+
+    bool same_pattern = (compressed_height == old_compressed_height) &&
+      (FlatArray<integer>(rowstart) == FlatArray<integer>(old_rowstart)) &&
+      (FlatArray<integer>(indices) == FlatArray<integer>(old_indices));
+
+    if (!same_pattern)
+      ReleaseFactorization (old_compressed_height, old_rowstart, old_indices);
+
+    CallFactorization (same_pattern ? 22 : 12);
+  }
 
 
   template<class TM, class TV_ROW, class TV_COL>
@@ -645,22 +708,11 @@ namespace ngla
   template<class TM>
   PardisoInverseTM<TM> :: ~PardisoInverseTM()
   {
-    integer maxfct = 1, mnum = 1, phase = -1, nrhs = 1, msglevel = 1, error;
-    integer * params = const_cast <integer*> (&hparams[0]);
-
     //    cout << "call pardiso (clean up) ..." << endl;
-    if (auto *tm = GetTaskManager(); tm) tm -> StopWorkers();
-    F77_FUNC(pardiso) ( pt, &maxfct, &mnum, &matrixtype, &phase, &compressed_height, NULL,
-			rowstart.Data(), indices.Data(), NULL, &nrhs, params, &msglevel,
-			NULL, NULL, &error );
+    ReleaseFactorization (compressed_height, rowstart, indices);
 #ifdef MKL_PARDISO
     mkl_free_buffers();
 #endif // MKL_PARDISO
-    GetMemoryTracer().Free(memory_allocated_in_pardiso_lib);
-    memory_allocated_in_pardiso_lib = 0;
-    if (auto *tm = GetTaskManager(); tm) tm -> StartWorkers();
-    if (error != 0)
-      cout << "Clean Up: PARDISO returned error " << error << "!" << endl;
   }
 
 

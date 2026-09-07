@@ -13,7 +13,7 @@ namespace ngcomp
   public:
     NumberFiniteElement (ELEMENT_TYPE _et)
       : FiniteElement(1, 0), et(_et) { ; }
-    HD virtual ELEMENT_TYPE ElementType() const { return et; }
+    virtual ELEMENT_TYPE ElementType() const { return et; }
   };
 
 

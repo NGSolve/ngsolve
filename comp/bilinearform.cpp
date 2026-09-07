@@ -208,6 +208,16 @@ namespace ngcomp
     geom_free = flags.GetDefineFlag("geom_free");
     matrix_free_bdb = flags.GetDefineFlag("matrix_free_bdb");
     nonlinear_matrix_free_bdb = flags.GetDefineFlag("nonlinear_matrix_free_bdb");
+
+    if (flags.AnyFlagDefined ("mf"))
+      {
+        if (auto matfree_flags = std::any_cast<MatFreeOptions>(&flags.GetAnyFlag("mf")))
+          {
+            // cout << "got matfree_flags: " << *matfree_flags << endl;
+            matfree_opts = *matfree_flags;
+          }
+      }
+
     
     precompute = flags.GetDefineFlag ("precompute");
     checksum = flags.GetDefineFlag ("checksum");
@@ -1192,25 +1202,12 @@ namespace ngcomp
 
   AutoVector BilinearForm :: CreateRowVector() const
   {
-    auto afespace = this->GetTrialSpace();
-    
-    if (afespace->IsParallel())
-      // return make_unique<ParallelVVector<TV>> (afespace->GetParallelDofs());
-      return CreateParallelVector(afespace->GetParallelDofs(), CUMULATED);
-    else
-      // return make_unique<VVector<TV>> (afespace->GetNDof());
-      return CreateBaseVector(afespace->GetNDof(), afespace->IsComplex(), afespace->GetDimension());
+    return CreateBaseVector (GetTrialSpace()->GetVectorFormat());
   }
   
   AutoVector BilinearForm :: CreateColVector() const
   {
-    auto afespace = this->GetTestSpace();
-    if (afespace->IsParallel())
-      // return make_unique<ParallelVVector<TV>> (afespace->GetNDof(), afespace->GetParallelDofs());
-      return CreateParallelVector(afespace->GetParallelDofs(), CUMULATED);    
-    else
-      // return make_unique<VVector<TV>> (afespace->GetNDof());
-      return CreateBaseVector(afespace->GetNDof(), afespace->IsComplex(), afespace->GetDimension());    
+    return CreateBaseVector (GetTestSpace()->GetVectorFormat());
   }
 
 
@@ -1361,6 +1358,14 @@ namespace ngcomp
             int el1 = -1, el2 = -1;
                           
             ma->GetFacetElements(i,elnums);
+
+            {
+              bool alldef = true;
+              for (auto enr : elnums)
+                if (!fespace->DefinedOn(ElementId(VOL, enr)))
+                  alldef = false;
+              if (!alldef) continue;
+            }
 
             el1 = elnums[0];
 
@@ -2556,7 +2561,11 @@ namespace ngcomp
                           int fac = fnums[0];
                           ma->GetFacetElements(fac,elnums);
                           int el = elnums[0];
+                          for (auto enr : elnums)
+                            if (fespace->DefinedOn(ElementId(VOL, enr)))
+                              { el = enr; break; }
                           ElementId ei(VOL, el);
+                          if (!fespace->DefinedOn(ei)) continue;
                           fnums = ma->GetElFacets(ei);
                           const FiniteElement & fel = fespace->GetFE (ei, lh);
                           int facnr = 0;
@@ -2920,7 +2929,14 @@ namespace ngcomp
                           
                         ma->GetFacetElements(i,elnums);
 
-                        //if (i == asdf)
+                        {
+                          bool alldef = true;
+                          for (auto enr : elnums)
+                            if (!fespace->DefinedOn(ElementId(VOL, enr)) ||
+                                !fespace2->DefinedOn(ElementId(VOL, enr)))
+                              alldef = false;
+                          if (!alldef) continue;
+                        }
 
                         el1 = elnums[0];
 
@@ -3167,7 +3183,12 @@ namespace ngcomp
                           int fac = fnums[0];
                           ma->GetFacetElements(fac,elnums);
                           int el = elnums[0];
+                          for (auto enr : elnums)
+                            if (fespace->DefinedOn(ElementId(VOL, enr)) &&
+                                fespace2->DefinedOn(ElementId(VOL, enr)))
+                              { el = enr; break; }
                           ElementId ei(VOL, el);
+                          if (!fespace->DefinedOn(ei) || !fespace2->DefinedOn(ei)) continue;
                           fnums = ma->GetElFacets(ei);
                           //const FiniteElement & fel = fespace->GetFE (ei, lh);
 
@@ -6061,7 +6082,7 @@ namespace ngcomp
              int tid = TaskManager::GetThreadId();
              {
                RegionTimer r(tx;
-               auto fvx = x.FVDouble();
+               auto fvx = x.FV<double>();
                for (auto i : myrange)
                  {
                    fesx->GetDofNrs(ElementId(VOL,elclass_inds[i]), dofs);
@@ -7010,6 +7031,31 @@ namespace ngcomp
       }
   }      
 
+  template <> void T_BilinearFormDiagonal<float>::
+  AddElementMatrix (FlatArray<int> dnums1,
+                    FlatArray<int> dnums2,
+                    BareSliceMatrix<float> elmat,
+                    ElementId id, bool addatomic,
+                    LocalHeap & lh) 
+  {
+    // if (addatomic) throw Exception ("atomic add for DiagonalMatrix not implemented");
+
+    if (!addatomic)
+      {
+        
+        for (int i = 0; i < dnums1.Size(); i++)
+          if (IsRegularDof(dnums1[i]))
+            (*mymatrix)(dnums1[i]) += elmat(i, i);
+      }
+    else
+      {
+        
+        for (int i = 0; i < dnums1.Size(); i++)
+          if (IsRegularDof(dnums1[i]))
+            AtomicAdd ( (*mymatrix)(dnums1[i]), elmat(i, i));
+      }
+  }      
+
 
 
   ///
@@ -7067,6 +7113,18 @@ namespace ngcomp
         (*mymatrix)(dnums1[i]) += diag(i);
   }
 
+  template <> void T_BilinearFormDiagonal<float>::
+    AddDiagElementMatrix (FlatArray<int> dnums1,
+                          FlatVector<float> diag,
+                          bool inner_element, int elnr,
+                          LocalHeap & lh) 
+  {
+    for (int i = 0; i < dnums1.Size(); i++)
+      if (IsRegularDof(dnums1[i]))
+        (*mymatrix)(dnums1[i]) += diag(i);
+  }
+
+  
   ///
   template <> void T_BilinearFormDiagonal<Complex>::
     AddDiagElementMatrix (FlatArray<int> dnums1,
@@ -7332,9 +7390,15 @@ namespace ngcomp
         bf = CreateSymMatObject<T_BilinearFormDiagonal, BilinearForm> //, const FESpace, const string, const Flags>
           (space->GetDimension(), space->IsComplex(), *space, name, flags);
 	*/
-        CreateSymMatObject3 (bf, T_BilinearFormDiagonal, 
-                             space->GetDimension(), space->IsComplex(),   
-                             space, name, flags);
+
+        if (flags.GetDefineFlag("fp32"))
+          {
+            bf = new T_BilinearFormDiagonal<float>(space, name, flags);
+          }
+        else
+          CreateSymMatObject3 (bf, T_BilinearFormDiagonal, 
+                               space->GetDimension(), space->IsComplex(),   
+                               space, name, flags);
       }
     else
       {
@@ -7524,7 +7588,9 @@ namespace ngcomp
       {
         if ( space->IsComplex() )
           return make_shared<T_BilinearForm<Complex>> (space, space2, name, flags);
-        else 
+        else if (flags.GetDefineFlag("fp32"))
+          return make_shared<T_BilinearForm<float>> (space, space2, name, flags);
+        else
           return make_shared<T_BilinearForm<double>> (space, space2, name, flags);
       }
     // throw Exception ("cannot craeate mixes-space without nonassemble - flag");
@@ -7544,17 +7610,12 @@ namespace ngcomp
     return bf -> CreateRowVector();
   }
 
-  AutoVector BilinearFormApplication :: 
-  CreateRowVector () const
-  {
-    return bf -> CreateRowVector();
-  }
   
-  AutoVector BilinearFormApplication :: 
-  CreateColVector () const
-  {
-    return bf -> CreateColVector();
-  }
+
+  VecFormat BilinearFormApplication :: RowFormat () const
+  { return bf->GetTrialSpace()->GetVectorFormat(); }
+  VecFormat BilinearFormApplication :: ColFormat () const
+  { return bf->GetTestSpace()->GetVectorFormat(); }
   
   
   LinearizedBilinearFormApplication ::

@@ -269,8 +269,8 @@ namespace ngcomp
     HYPRE_IJVectorSetObjectType(x, HYPRE_PARCSR);
     HYPRE_IJVectorInitialize(x);
   
-    const FlatVector<double> fvf = f.FVDouble();
-    FlatVector<double> fu = u.FVDouble();
+    const FlatVector<double> fvf = f.FV<double>();
+    FlatVector<double> fu = u.FV<double>();
 	
     Array<int> nzglobal;
     Array<double> free_f;

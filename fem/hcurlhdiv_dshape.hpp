@@ -179,10 +179,8 @@ namespace ngfem
     {
       size_t nd_u = fel.GetNDof();
 
-      STACK_ARRAY(SIMD<double>, mem1, 2*DIM_STRESS*nd_u);
-      FlatMatrix<SIMD<double>> shape_u_tmp(nd_u*DIM_STRESS, 1, &mem1[0]);
-
-      FlatMatrix<SIMD<double>> dshape_u_ref(nd_u*DIM_STRESS, 1, &mem1[DIM_STRESS*nd_u]);
+      STACK_ARRAY(SIMD<double>, mem1, 4*DIM_STRESS*nd_u);
+      FlatMatrix<SIMD<double>> shape_u_tmp(nd_u*DIM_STRESS, 4, &mem1[0]);
 
       LocalHeapMem<10000> lh("diffopgrad-lh");
 
@@ -208,27 +206,26 @@ namespace ngfem
               SIMD_IntegrationRule ir(4, ipts);
               SIMD_MappedIntegrationRule<DIM,DIMSPACE> mirl(ir, eltrans, lh);
 
-              fel.CalcMappedShape (mirl[2], shape_u_tmp);
-              dshape_u_ref = 1.0/(12.0*eps) * shape_u_tmp;
-              fel.CalcMappedShape (mirl[3], shape_u_tmp);
-              dshape_u_ref -= 1.0/(12.0*eps) * shape_u_tmp;
-              fel.CalcMappedShape (mirl[0], shape_u_tmp);
-              dshape_u_ref -= 8.0/(12.0*eps) * shape_u_tmp;
-              fel.CalcMappedShape (mirl[1], shape_u_tmp);
-              dshape_u_ref += 8.0/(12.0*eps) * shape_u_tmp;
-
-              // dshape_u_ref =  (8.0*shape_ur-8.0*shape_ul-shape_urr+shape_ull);
+              fel.CalcMappedShape (mirl, shape_u_tmp);
               for (size_t l = 0; l < DIM_STRESS; l++)
                 for (size_t k = 0; k < nd_u; k++)
-                  mat(k*DIM_STRESS*DIM+j*DIM_STRESS+l, i) = dshape_u_ref(k*DIM_STRESS+l, 0);
+                  {
+                    size_t row = k*DIM_STRESS+l;
+                    mat(k*DIM_STRESS*DIMSPACE+j*DIM_STRESS+l, i) =
+                      1.0/(12.0*eps) * shape_u_tmp(row, 2)
+                      - 1.0/(12.0*eps) * shape_u_tmp(row, 3)
+                      - 8.0/(12.0*eps) * shape_u_tmp(row, 0)
+                      + 8.0/(12.0*eps) * shape_u_tmp(row, 1);
+                  }
             }
           
           for (size_t j = 0; j < DIM_STRESS; j++)
             for (size_t k = 0; k < nd_u; k++)
               {
-                Vec<DIM,SIMD<double>> dshape_u_ref, dshape_u;
+                Vec<DIM,SIMD<double>> dshape_u_ref;
+                Vec<DIMSPACE,SIMD<double>> dshape_u;
                 for (size_t l = 0; l < DIM; l++)
-                  dshape_u_ref(l) = mat(k*DIM_STRESS*DIM+l*DIM+j, i);
+                  dshape_u_ref(l) = mat(k*DIM_STRESS*DIMSPACE+l*DIM_STRESS+j, i);
                 
                 dshape_u = Trans(mir[i].GetJacobianInverse()) * dshape_u_ref;
                 
@@ -657,70 +654,8 @@ namespace ngfem
     static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
                                       const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> mat)
     {
-      /*
       CalcSIMDDShapeFE<FEL,DIM_SPACE,DIM_ELEMENT,ORIG::DIM_DMAT>
         (static_cast<const FEL&>(bfel), static_cast<const SIMD_MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> &>(bmir), mat, eps());
-      return;
-      */
-      
-      auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE>&> (bmir);      
-      // auto & fel_u = static_cast<const FEL&>(bfel);
-      size_t nd_u = bfel.GetNDof();
-
-      STACK_ARRAY(SIMD<double>, mem1, 5*ORIG::DIM_DMAT*nd_u);
-      FlatMatrix<SIMD<double>> shape_u_tmp(nd_u*ORIG::DIM_DMAT, 4, &mem1[0]);
-      FlatMatrix<SIMD<double>> dshape_u_ref(nd_u*ORIG::DIM_DMAT, 1, &mem1[4*ORIG::DIM_DMAT*nd_u]);
-
-      LocalHeapMem<10000> lh("diffopgrad-lh");
-
-      auto & ir = mir.IR();
-      for (size_t i = 0; i < mir.Size(); i++)
-        {
-          const SIMD<IntegrationPoint> & ip = ir[i];
-          const ElementTransformation & eltrans = mir[i].GetTransformation();
-
-          double dist[] = { 1, -1, 2, -2 };
-          double weight[] = { 8/12., -8/12., -1/12., 1/12. };
-          
-          for (int j = 0; j < DIM_ELEMENT; j++)   // d / dxj
-            {
-              HeapReset hr(lh);
-              SIMD<IntegrationPoint> ipts[4];
-              for (int i = 0; i < 4; i++)
-                {
-                  ipts[i] = ip;
-                  ipts[i](j) += dist[i]*eps();                  
-                }
-              SIMD_IntegrationRule ir(4, ipts);
-              SIMD_MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> mirl(ir, eltrans, lh);
-              ORIG::GenerateMatrixSIMDIR (bfel, mirl, shape_u_tmp);
-
-              dshape_u_ref.Col(0) =
-                weight[0]/eps() * shape_u_tmp.Col(0) +
-                weight[1]/eps() * shape_u_tmp.Col(1) +
-                weight[2]/eps() * shape_u_tmp.Col(2) +
-                weight[3]/eps() * shape_u_tmp.Col(3);
-              
-              for (size_t l = 0; l < ORIG::DIM_DMAT; l++)
-                for (size_t k = 0; k < nd_u; k++)
-                  mat(k*ORIG::DIM_DMAT*DIM_ELEMENT+j*ORIG::DIM_DMAT+l, i) = dshape_u_ref(k*ORIG::DIM_DMAT+l, 0);
-            }
-          
-          for (size_t j = 0; j < ORIG::DIM_DMAT; j++)
-            for (size_t k = 0; k < nd_u; k++)
-              {
-                Vec<DIM_ELEMENT,SIMD<double>> dshape_u_ref;
-                Vec<DIM_SPACE,SIMD<double>> dshape_u;
-                
-                for (size_t l = 0; l < DIM_ELEMENT; l++)
-                  dshape_u_ref(l) = mat(k*ORIG::DIM_DMAT*DIM_ELEMENT+l*DIM_ELEMENT+j, i);
-                
-                dshape_u = Trans(mir[i].GetJacobianInverse()) * dshape_u_ref;
-                
-                for (size_t l = 0; l < DIM_SPACE; l++)
-                  mat(k*ORIG::DIM_DMAT*DIM_SPACE+l*ORIG::DIM_DMAT+j, i) = dshape_u(l);
-              }
-        }
     }
 
 

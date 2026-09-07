@@ -101,8 +101,8 @@ namespace ngla
       jac->GSSmoothBack (y, x);
     }
     
-    AutoVector CreateRowVector() const override { return jac->CreateRowVector(); }
-    AutoVector CreateColVector() const override { return jac->CreateColVector(); }
+    VecFormat RowFormat () const override { return jac->RowFormat(); }
+    VecFormat ColFormat () const override { return jac->ColFormat(); }
   };
 
   
@@ -142,8 +142,8 @@ namespace ngla
     size_t Width() const { return mat->Width(); }
     int VWidth() const override { return mat->Width(); }
 
-    AutoVector CreateRowVector() const override { return mat->CreateColVector(); }
-    AutoVector CreateColVector() const override { return mat->CreateRowVector(); }
+    VecFormat RowFormat () const override { return mat->ColFormat(); }
+    VecFormat ColFormat () const override { return mat->RowFormat(); }
 
     BaseMatrix::OperatorInfo GetOperatorInfo () const override
     { return { string("BlockJacobi-")+typeid(TM).name(), this->Height(), this->Width() }; }
@@ -189,6 +189,8 @@ namespace ngla
     }
 
     virtual shared_ptr<BaseSparseMatrix> CreateSparseMatrix() const override;
+    // a DeviceBlockJacobi for scalar TM if a gpu backend is registered
+    virtual shared_ptr<BaseMatrix> CreateDeviceMatrix() const override;
     const Array<FlatMatrix<TM>> & GetInverses() const { return invdiag; }
     const Array<TM> & MatrixData() const { return bigmem; } 
   };
@@ -253,8 +255,8 @@ namespace ngla
     void MultTransAdd (TSCAL64 s, const BaseVector & x, BaseVector & y) const override;
 
     ///
-    AutoVector CreateRowVector () const override { return mat->CreateColVector(); }
-    AutoVector CreateColVector () const override { return mat->CreateRowVector(); }
+    VecFormat RowFormat () const override { return mat->ColFormat(); }
+    VecFormat ColFormat () const override { return mat->RowFormat(); }
 
 
     int Height() const { return mat->Height(); }

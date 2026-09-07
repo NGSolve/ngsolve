@@ -162,6 +162,8 @@ namespace ngfem
     }   
     
     using VertexOrientedFE<ET>::SetVertexNumbers;
+    T_HCurlDivFE * SetVertexNumbers (FlatArray<int> vnums) override
+    { VertexOrientedFE<ELEMENT_TYPE(ET)>::SetVertexNumbers(vnums); return this; }
 
     /*template <typename TA>
     void SetVertexNumbers(const TA & avnums)
@@ -1597,6 +1599,8 @@ namespace ngfem
 
   public:
     using VertexOrientedFE<ET>::SetVertexNumbers;
+    T_HCurlDivSurfaceFE * SetVertexNumbers (FlatArray<int> vnums) override
+    { VertexOrientedFE<ELEMENT_TYPE(ET)>::SetVertexNumbers(vnums); return this; }
     
     T_HCurlDivSurfaceFE (int aorder)
     {
@@ -1604,7 +1608,7 @@ namespace ngfem
       order_inner = aorder;
     }
     
-    virtual ELEMENT_TYPE ElementType() const { return ET; }
+    virtual ELEMENT_TYPE ElementType() const override { return ET; }
     const HCurlDivSurfaceFE<ET> * Cast() const { return static_cast<const HCurlDivSurfaceFE<ET>*> (this); } 
     
     INLINE void SetOrderInner (int order) { order_inner = order; }
@@ -1615,7 +1619,7 @@ namespace ngfem
     }
     
     virtual void CalcShape (const IntegrationPoint & ip, 
-                            BareSliceMatrix<double> shape) const
+                            BareSliceMatrix<double> shape) const override
     {
       Vec<DIM, AutoDiffDiff<DIM+1>> adp;
       for ( int i=0; i<DIM; i++)
@@ -1635,7 +1639,7 @@ namespace ngfem
 
     
     virtual void CalcMappedShape (const MappedIntegrationPoint<DIM,DIM+1> & mip,
-                            BareSliceMatrix<double> shape) const
+                            BareSliceMatrix<double> shape) const override
     {
       Vec<DIM, AutoDiff<DIM+1>> adp = mip;
       Vec<DIM, AutoDiffDiff<DIM+1>> addp;

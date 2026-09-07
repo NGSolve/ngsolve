@@ -113,7 +113,7 @@ namespace ngfem
       Array<shared_ptr<ProxyFunction>> proxies;
 
       for (auto & icf : icfs)
-        icf->cf->TraverseTree
+        icf->cf->TraverseDAG
           ( [&] (CoefficientFunction & nodecf)
           {
             auto proxy = dynamic_pointer_cast<ProxyFunction> ((&nodecf)->shared_from_this());

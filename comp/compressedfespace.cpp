@@ -1,5 +1,7 @@
 // #include <comp.hpp>
 #include "compressedfespace.hpp"
+#include <sparsematrix.hpp>
+#include <special_matrix.hpp>
 
 namespace ngcomp
 {
@@ -79,6 +81,23 @@ namespace ngcomp
          });
     }
 
+
+  // selection operators as type-agnostic permutations
+  shared_ptr<BaseMatrix> CompressedFESpace::GetEmbedding() const
+  {
+    Array<size_t> ind(all2comp.Size());
+    for (auto i : Range(all2comp))
+      ind[i] = all2comp[i] >= 0 ? size_t(all2comp[i]) : size_t(-1);
+    return make_shared<PermutationMatrix> (GetNDof(), std::move(ind));
+  }
+
+  shared_ptr<BaseMatrix> CompressedFESpace::GetRestriction() const
+  {
+    Array<size_t> ind(comp2all.Size());
+    for (auto i : Range(comp2all))
+      ind[i] = comp2all[i];
+    return make_shared<PermutationMatrix> (space->GetNDof(), std::move(ind));
+  }
 
   FiniteElement & CompressedFESpace::GetFE (ElementId ei, Allocator & lh) const
   {

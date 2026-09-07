@@ -265,7 +265,7 @@ namespace ngcomp
             IntegrationRule ir (1, &ip);
             auto & mir = trafo(ir, lh);
 
-            pe->cf->TraverseTree
+            pe->cf->TraverseDAG
               ([&] (CoefficientFunction& cf)
                {
                  if (auto * proxy = dynamic_cast<ProxyFunction*> (&cf))
@@ -995,7 +995,7 @@ namespace ngcomp
     shared_ptr<FESpace> fespace;
     shared_ptr<MeshAccess> ma;
     
-    cf->TraverseTree
+    cf->TraverseDAG
       ([&] (CoefficientFunction& cf)
        {
          if (auto * proxy = dynamic_cast<ProxyFunction*> (&cf))
@@ -1024,7 +1024,7 @@ namespace ngcomp
     IntegrationRule ir (1, &ip);
     auto & mir = trafo(ir, lh);
     
-    cf->TraverseTree
+    cf->TraverseDAG
       ([&] (CoefficientFunction& cfi)
        {
          if (auto * proxy = dynamic_cast<ProxyFunction*> (&cfi))

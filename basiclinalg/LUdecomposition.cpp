@@ -233,18 +233,20 @@ namespace ngbla
                 SIMD<double,4> scale1(&scale[0]);
                 */
 
-                SIMD<double,4> scale1 = 0.0;
-                SIMD<mask64,4> m1(rest);
-                scale1 = If (m1, scale1, SIMD<double,4>(invaii-1));
+                // pivot row right of the pivot, zero elsewhere; the multiplier
+                // a(j,i)/a(i,i) is computed directly and stored (folding the
+                // scaling into the update as a(j,i)*(1/a(i,i)-1) cancels for
+                // large pivots and loses eps*|a(i,i)| of accuracy)
                 SIMD<mask64,4> m2(rest+1);
-                scale1 = If (m2, scale1, -SIMD<double,4>(ptr)*invaii);
+                SIMD<double,4> urow = If (m2, SIMD<double,4>(0.0), SIMD<double,4>(ptr));
                 ptr += a.Dist();
                 for (size_t j = i+1; j < n; j++, ptr+=a.Dist())
                   {
                     SIMD<double,4> row1(ptr);
-                    double fac = ptr[rest];
-                    row1 += fac*scale1;
+                    double fac = ptr[rest]*invaii;
+                    row1 -= fac*urow;
                     row1.Store(ptr);
+                    ptr[rest] = fac;
                   }
               }
             /*
@@ -419,22 +421,36 @@ namespace ngbla
       cout << "info = " << info << endl;
     */
 
-    // static Timer t("InverseFromLU"); RegionTimer reg(t);
-    // t.AddFlops (2*n*n*n/3);
-
-    // static Timer tl("InvertL"); 
-    // static Timer tu("InvertU"); 
-    // static Timer tperm("permutation");
-    
-    // tl.Start();
-    TriangularInvert<LowerLeft,Normalized> (A);
-    // tl.Stop();
-    // tl.AddFlops (n*n*n/6);
-    // tu.Start();
+    // as lapack dgetri: invert U in place, then solve X L = inv(U) by
+    // column blocks from the right. Inverting L explicitly and forming
+    // inv(U)*inv(L) has the same cost but a worse residual for
+    // ill-conditioned matrices (Higham, Accuracy and Stability, 14.3)
     TriangularInvert<UpperRight> (A);
-    // tu.Stop();
-    // tu.AddFlops (n*n*n/6);    
-    MultUL (A);
+
+    constexpr size_t bs = 32;
+    ArrayMem<double, bs*128> mem(bs*n);
+    for (size_t j1 = n; j1 > 0; )
+      {
+        size_t j0 = (j1 > bs) ? j1-bs : 0;
+        IntRange J(j0, j1);
+        size_t nb = j1-j0;
+        // W = L(J, J) and L(j1:n, J), the strictly lower part of the columns J
+        FlatMatrix<> W(n-j0, nb, mem.Data());
+        W = 0.0;
+        for (size_t j = j0; j < j1; j++)
+          for (size_t i = j+1; i < n; i++)
+            {
+              W(i-j0, j-j0) = A(i,j);
+              A(i,j) = 0.0;
+            }
+        for (size_t j = j0; j < j1; j++) W(j-j0, j-j0) = 1.0;
+        // X(:,J) -= X(:, j1:n) * L(j1:n, J)
+        if (j1 < n)
+          A.Cols(J) -= A.Cols(j1, n) * W.Rows(nb, n-j0);
+        // X(:,J) = X(:,J) * inv(L(J,J)):  L(J,J)^T X(:,J)^T = X(:,J)^T
+        TriangularSolve<UpperRight,Normalized> (Trans(W.Rows(0,nb)), Trans(A.Cols(J)));
+        j1 = j0;
+      }
 
     // RegionTimer rperm(tperm);
     VectorMem<100> row(n);

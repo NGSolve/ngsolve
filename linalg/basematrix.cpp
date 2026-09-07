@@ -50,14 +50,32 @@ namespace ngla
     ;
   }
 
+  // size of a format: plain size, or the sum over blocks
+  static int FormatSize (const VecFormat & f, const char * what, const type_info & type)
+  {
+    if (f.size) return int(*f.size);
+    if (f.IsBlock())
+      {
+        int sum = 0;
+        for (auto & b : f.blocks) sum += FormatSize (b, what, type);
+        return sum;
+      }
+    throw Exception (string("BaseMatrix::") + what + " unknown, type = " + type.name());
+  }
+
   int BaseMatrix :: VHeight() const
   {
-    throw Exception (string("BaseMatrix::VHeight not overloaded, type = ")+typeid(*this).name());
+    return FormatSize (ColFormat(), "VHeight", typeid(*this));
   }
   
   int BaseMatrix :: VWidth() const
   {
-    throw Exception (string("BaseMatrix::VWidth not overloaded, type = ")+typeid(*this).name());
+    return FormatSize (RowFormat(), "VWidth", typeid(*this));
+  }
+
+  bool BaseMatrix :: IsComplex() const
+  {
+    return ColFormat().IsComplex();
   }
 
   BaseVector & BaseMatrix :: AsVector()
@@ -101,6 +119,16 @@ namespace ngla
   AutoVector BaseMatrix :: CreateVector () const
   {
     throw Exception (string("BaseMatrix::CreateVector not overloaded, type = ")+typeid(*this).name());            
+  }
+
+  AutoVector BaseMatrix :: CreateRowVector () const
+  {
+    return CreateBaseVector (RowFormat().WithDefaults());
+  }
+
+  AutoVector BaseMatrix :: CreateColVector () const
+  {
+    return CreateBaseVector (ColFormat().WithDefaults());
   }
 
   // AutoVector BaseMatrix :: CreateRowVector () const
@@ -412,7 +440,7 @@ namespace ngla
   BaseMatrix::OperatorInfo IdentityMatrix :: GetOperatorInfo () const
   {
     OperatorInfo info;
-    if (has_format)
+    if (fmt.size)
       {
         info.name = "Identity";
         info.height = Height();
@@ -543,11 +571,25 @@ namespace ngla
 
   
   
-  shared_ptr<BaseSparseMatrix> ProductMatrix :: CreateSparseMatrix() const 
+  shared_ptr<BaseSparseMatrix> ProductMatrix :: CreateSparseMatrix() const
   {
-    auto spa = dynamic_pointer_cast<SparseMatrixTM<double>> (spbma->CreateSparseMatrix());
-    auto spb = dynamic_pointer_cast<SparseMatrixTM<double>> (spbmb->CreateSparseMatrix());
-    return MatMult (*spa, *spb);
+    auto sa = spbma->CreateSparseMatrix();
+    auto sb = spbmb->CreateSparseMatrix();
+
+    if (auto spa = dynamic_pointer_cast<SparseMatrixTM<double>> (sa))
+      if (auto spb = dynamic_pointer_cast<SparseMatrixTM<double>> (sb))
+        return MatMult (*spa, *spb);
+
+    if (auto spa = dynamic_pointer_cast<SparseMatrixTM<float>> (sa))
+      if (auto spb = dynamic_pointer_cast<SparseMatrixTM<float>> (sb))
+        return MatMult (*spa, *spb);
+    
+    auto sap = sa.get(); // avoids warning
+    auto sbp = sb.get(); 
+    throw Exception ("ProductMatrix::CreateSparseMatrix: factors must both be "
+                     "real sparse matrices of the same precision, got "
+                     + string(sa ? typeid(*sap).name() : "null") + " and "
+                     + string(sb ? typeid(*sbp).name() : "null"));
   }
   
 

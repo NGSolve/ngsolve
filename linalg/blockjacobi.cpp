@@ -7,6 +7,7 @@
 
 // #include <la.hpp>
 #include "blockjacobi.hpp"
+#include "device_blockjacobi.hpp"
 #include "paralleldofs.hpp"
 
 namespace ngla
@@ -1320,6 +1321,22 @@ namespace ngla
 
 
   // compiled separately, for testing only
+  template <class TM, class TV_ROW, class TV_COL>
+  shared_ptr<BaseMatrix> BlockJacobiPrecond<TM, TV_ROW, TV_COL> ::
+  CreateDeviceMatrix () const
+  {
+    if constexpr ((is_same_v<TM,double> || is_same_v<TM,float>) &&
+                  is_same_v<TV_ROW,TM> && is_same_v<TV_COL,TM>)
+      if (ngs_gpu::HasDevice())
+        {
+          if constexpr (is_same_v<TM,double>)
+            if (GetGpuDevice()->HasFloat64())
+              return make_shared<DeviceBlockJacobi<double>> (*this);
+          return make_shared<DeviceBlockJacobi<float>> (*this);
+        }
+    return BaseMatrix::CreateDeviceMatrix();
+  }
+
   template class BlockJacobiPrecond<double>;
   template class BlockJacobiPrecond<float>;
   template class BlockJacobiPrecond<Complex>;

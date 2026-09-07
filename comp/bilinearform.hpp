@@ -29,9 +29,14 @@ namespace ngcomp
     bool atomic = true;           // use atomic for adding output vector
     bool only_loadstore = false;  // for timing elvec load stores
     bool only_loadstoreB = false; // for timing elvec load stores and mult with B and Bt
-    int BS_els = 4;         
-    int BS_ipts = 4;        
+    // measured H1o3: best on both apple gpus and cuda (the fused gpu
+    // kernel needs multiples of 8 anyway)
+    int BS_els = 16;
+    int BS_ipts = 8;
+    int warps = 4;
     bool timers = false;
+    bool nonlinear = false;       // evaluate the form pointwise
+    bool fp32 = false;            // single precision
 
     // additional options for GPU kernels:
     optional<string> write_GPU_kernel;   // if set, dump the generated GPU kernel to this file
@@ -39,11 +44,13 @@ namespace ngcomp
     MatFreeOptions() = default;
     MatFreeOptions(bool afused, bool agencode, bool aatomic,
                    bool aonly_loadstore, bool aonly_loadstoreB,
-                   int aBS_els, int aBS_ipts, bool atimers,
+                   int aBS_els, int aBS_ipts, int awarps, bool atimers,
+                   bool anonlinear, bool afp32,
                    optional<string> awrite_GPU_kernel)
       : fused(afused), generate_code(agencode), atomic(aatomic),
         only_loadstore(aonly_loadstore), only_loadstoreB(aonly_loadstoreB),
-        BS_els(aBS_els), BS_ipts(aBS_ipts), timers(atimers),
+        BS_els(aBS_els), BS_ipts(aBS_ipts), warps(awarps), timers(atimers),
+        nonlinear(anonlinear), fp32(afp32),
         write_GPU_kernel(std::move(awrite_GPU_kernel)) { }
   };
 
@@ -52,7 +59,9 @@ namespace ngcomp
         << "gencode = " << opts.generate_code << endl
         << "atomic  = " << opts.atomic << endl
         << "onlye_ls = " << opts.only_loadstore << endl
-        << "onlye_lsB = " << opts.only_loadstoreB << endl;
+        << "onlye_lsB = " << opts.only_loadstoreB << endl
+        << "nonlinear = " << opts.nonlinear << endl
+        << "fp32 = " << opts.fp32 << endl;
     return ost;
   }
     
@@ -467,15 +476,15 @@ namespace ngcomp
 
     /// biform object
     virtual string GetClassName () const
-    {
+ override {
       return "BilinearForm";
     }
 
     /// prints report to file
-    virtual void PrintReport (ostream & ost) const;
+    virtual void PrintReport (ostream & ost) const override;
 
     ///
-    virtual Array<MemoryUsage> GetMemoryUsage () const;
+    virtual Array<MemoryUsage> GetMemoryUsage () const override;
 
     /// creates a compatible vector
     virtual AutoVector CreateRowVector() const;
@@ -781,22 +790,22 @@ namespace ngcomp
                                const string & aname, const Flags & flags);
     // virtual ~T_BilinearFormSymmetric ();
 
-    virtual void AllocateMatrix () { cout << "S_BilinearFormNonAssemble :: Allocate: nothing to do" << endl; }
-    virtual void CleanUpLevel() { ; } 
+    virtual void AllocateMatrix () override { cout << "S_BilinearFormNonAssemble :: Allocate: nothing to do" << endl; }
+    virtual void CleanUpLevel() override { ; } 
 
     virtual void AddElementMatrix (FlatArray<int> dnums1,
 				   FlatArray<int> dnums2,
                                    BareSliceMatrix<TSCAL> elmat,
 				   ElementId id, bool addatomic,
 				   LocalHeap & lh)
-    {
+ override {
       throw Exception ("AddElementMatrix for non-assemble biform called");
     }
 
-    virtual bool SymmetricStorage() const { return true; }
+    virtual bool SymmetricStorage() const override { return true; }
 
     virtual void LapackEigenSystem(FlatMatrix<TSCAL> & elmat, LocalHeap & lh) const
-    { cout << "no eigensystem available" << endl; }
+ override { cout << "no eigensystem available" << endl; }
   };
 
 
@@ -811,64 +820,64 @@ namespace ngcomp
     int comp; // , ncomp;
   public:
     ComponentBilinearForm (shared_ptr<BilinearForm> abase_blf, int acomp, int ancomp);
-    virtual BilinearForm & AddIntegrator (shared_ptr<BilinearFormIntegrator> bfi);
+    virtual BilinearForm & AddIntegrator (shared_ptr<BilinearFormIntegrator> bfi) override;
 
     virtual void Assemble (LocalHeap & lh) { cerr << "comp - assemble is illegal" << endl; }
 
     virtual void AssembleLinearization (const BaseVector & lin,
 					LocalHeap & lh, 
 					bool reallocate = 0) 
-    { throw Exception ("comp-bf - AssembleLinearization is illegal"); }
+ override { throw Exception ("comp-bf - AssembleLinearization is illegal"); }
 
     virtual void AddMatrix (double val, const BaseVector & x,
 			    BaseVector & y, LocalHeap & lh) const
-      { throw Exception ("comp-bf - AddMatrix is illegal"); }
+ override { throw Exception ("comp-bf - AddMatrix is illegal"); }
 
     virtual void AddMatrix (Complex val, const BaseVector & x,
 			    BaseVector & y, LocalHeap & lh) const
-    { throw Exception ("comp-bf - AddMatrix is illegal"); }
+ override { throw Exception ("comp-bf - AddMatrix is illegal"); }
 
     virtual void AddMatrixTrans (double val, const BaseVector & x,
                                  BaseVector & y, LocalHeap & lh) const
-    { throw Exception ("comp-bf - AddMatrixTrans is illegal"); }
+ override { throw Exception ("comp-bf - AddMatrixTrans is illegal"); }
     
     virtual void ApplyLinearizedMatrixAdd (double val,
 					   const BaseVector & lin,
 					   const BaseVector & x,
 					   BaseVector & y, LocalHeap & lh) const 
-    { throw Exception ("comp-bf - AddMatrix is illegal"); }
+ override { throw Exception ("comp-bf - AddMatrix is illegal"); }
 
     virtual void ApplyLinearizedMatrixAdd (Complex val,
 					   const BaseVector & lin,
 					   const BaseVector & x,
 					   BaseVector & y, LocalHeap & lh) const 
-    { throw Exception ("comp-bf - AddMatrix is illegal"); }
+ override { throw Exception ("comp-bf - AddMatrix is illegal"); }
 
     virtual shared_ptr<BaseMatrix> GetHarmonicExtension () const 
-    { throw Exception ("comp-bf - GetHarmonicExt is illegal"); }
+ override { throw Exception ("comp-bf - GetHarmonicExt is illegal"); }
 
     virtual shared_ptr<BaseMatrix> GetHarmonicExtensionTrans () const
-    { throw Exception ("comp-bf - GetHarmonicExtTrans is illegal"); } 
+ override { throw Exception ("comp-bf - GetHarmonicExtTrans is illegal"); } 
     virtual shared_ptr<BaseMatrix> GetInnerSolve () const 
-    { throw Exception ("comp-bf - GetInnerSolve is illegal"); } 
+ override { throw Exception ("comp-bf - GetInnerSolve is illegal"); } 
     virtual shared_ptr<BaseMatrix> GetInnerMatrix () const
-    { throw Exception ("comp-bf - GetInnerMatrix is illegal"); } 
+ override { throw Exception ("comp-bf - GetInnerMatrix is illegal"); } 
     virtual void ComputeInternal (BaseVector & u, const BaseVector & f, LocalHeap & lh) const
-    { throw Exception ("comp-bf - ComputeInternal is illegal"); } 
+ override { throw Exception ("comp-bf - ComputeInternal is illegal"); } 
     virtual void ModifyRHS (BaseVector & f) const 
-    { throw Exception ("comp-bf - ModifyRHS is illegal"); } 
+ override { throw Exception ("comp-bf - ModifyRHS is illegal"); } 
     virtual AutoVector CreateRowVector() const 
-    { throw Exception ("comp-bf - CreateRowVector is illegal"); } 
+ override { throw Exception ("comp-bf - CreateRowVector is illegal"); } 
     virtual AutoVector CreateColVector() const 
-    { throw Exception ("comp-bf - CreateColVector is illegal"); } 
+ override { throw Exception ("comp-bf - CreateColVector is illegal"); } 
     virtual void DoAssemble (LocalHeap & lh) 
-    { throw Exception ("comp-bf - DoAssemble is illegal"); } 
+ override { throw Exception ("comp-bf - DoAssemble is illegal"); } 
     virtual void AllocateMatrix ()
-    { throw Exception ("comp-bf - AllocateMatrix is illegal"); } 
+ override { throw Exception ("comp-bf - AllocateMatrix is illegal"); } 
     virtual void AllocateInternalMatrices ()
-    { throw Exception ("comp-bf - AllocateInternalMatrices is illegal"); } 
+ override { throw Exception ("comp-bf - AllocateInternalMatrices is illegal"); } 
     virtual double Energy (const BaseVector & x, LocalHeap & lh) const 
-    { throw Exception ("comp-bf - Energy is illegal"); } 
+ override { throw Exception ("comp-bf - Energy is illegal"); } 
 
     /*
     virtual shared_ptr<BaseVector> GetVectorPtr() const
@@ -929,8 +938,8 @@ namespace ngcomp
     virtual void MultTransAdd (double val, const BaseVector & v, BaseVector & prod) const override;
     
     virtual AutoVector CreateVector () const override;
-    virtual AutoVector CreateRowVector () const override;
-    virtual AutoVector CreateColVector () const override;
+    VecFormat RowFormat () const override;
+    VecFormat ColFormat () const override;
     
     ///
     virtual int VHeight() const override
@@ -1001,8 +1010,8 @@ namespace ngcomp
                             Matrix<double> apoints, Matrix<double> anormals,
                             size_t adimx, size_t adimy, size_t anip);
     
-    AutoVector CreateColVector() const override;
-    AutoVector CreateRowVector() const override;
+    VecFormat RowFormat () const override;
+    VecFormat ColFormat () const override;
     
     virtual int VHeight() const override { return nip*dimy; }
     virtual int VWidth() const override { return nip*dimx; }
@@ -1040,7 +1049,15 @@ namespace ngcomp
   class MatrixFreeBTDTB : public BaseMatrix
   {
   public:
+    shared_ptr<BaseMatrix> CreateDeviceMatrix () const override;
+
     size_t height, width;
+    shared_ptr<CoefficientFunction> cf;   // the form
+    // owned copies: the pointers stay valid while cf (the form) is alive,
+    // the integrator that handed them over need not be
+    Array<ProxyFunction*> trial_proxies;
+    Array<ProxyFunction*> test_proxies;
+
     Array<size_t> elnums;
     Table<DofId> dofx;
     Table<DofId> dofy;
@@ -1050,11 +1067,26 @@ namespace ngcomp
     Array<shared_ptr<DifferentialOperator>> diffopsx, diffopsy;  // computing T
     Tensor<4> D; // element, dimy, dimx, nip
     Tensor<4> Jacobi; // element, dimr, dims, nip
+    // element-boundary integrals: facet of each integration point, and the
+    // reference normal per facet (nfacets x dim); both empty for volume integrals
+    Array<int> facetnr;
+    Matrix<> normals_ref;
+    Array<int> domains;
+    // element geometry as coefficients of an L2 (Dubiner) basis of order
+    // geo_order (1 for straight, the mesh curve order for curved elements):
+    // geocoefs(el, node, coordinate), Bgeo(node, refdir, ip) its gradients at
+    // the integration points; F = sum_node geocoefs (x) Bgeo
+    int geo_order = 1;
+    Tensor<3> geocoefs;
+    Tensor<3> Bgeo;
+    Matrix<> Sgeo;    // (node, ip) basis values, x(ip) = sum_node geocoefs Sgeo
+    Tensor<3> DDgeo;  // (node, refdir pair a*dims+b, ip) second derivatives; empty when straight
     MatFreeOptions opts;
     Array<IntRange> ranges_x, ranges_xref, ranges_y, ranges_yref;
-    
+    Array<Code> physics;    // code for d_form / d_test
     static constexpr int SW = 4*SIMD<double>::Size();    
     shared_ptr<SharedLibrary> library;
+
     
     typedef void (*lib_function)(double s, FlatVector<> fx, FlatVector<> fy,
                                  FlatTable<int>, FlatTable<int>, FlatTensor<4> Jacobi,
@@ -1063,7 +1095,10 @@ namespace ngcomp
     lib_function compiled_function = nullptr;
     
     // element geometry stored as VectorH1 ? 
-    MatrixFreeBTDTB (size_t h, size_t w,
+    MatrixFreeBTDTB (shared_ptr<CoefficientFunction> aform,
+                     const Array<ProxyFunction*>& atrial_proxies,
+                     const Array<ProxyFunction*>& atest_proxies,
+                     size_t h, size_t w,
                      Array<size_t> _elnums,
                      Table<DofId> _dofx, Table<DofId> _dofy,
                      Tensor<3> _Bx,  // locdofs, dim, nip
@@ -1076,9 +1111,11 @@ namespace ngcomp
                      Tensor<4> _Jacobi,
                      MatFreeOptions _opts);
 
-    AutoVector CreateColVector() const override;
-    AutoVector CreateRowVector() const override;
+    VecFormat RowFormat () const override;
+    VecFormat ColFormat () const override;
 
+    int VHeight() const override { return height; }
+    int VWidth() const override { return width; }
     
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
   };

@@ -1252,6 +1252,15 @@ public:
     typedef DiffOpGradientBoundaryHCurl<D> DIFFOP_TRACE;
     ///
 
+    static string GenerateTransformationCode (string invar, string outvar, bool trans)
+    {
+      // grad gives transpose jacobi matrix
+      if (!trans)
+        return outvar+ "= ToVec(Trans(Inv(F)) * (ToMat<3,3>("+invar+".Range<0,9>()) * Inv(F)));\n";
+      else
+        return outvar+ "= 0.0; "+outvar+".SetRange<0,9>(ToVec(Inv(F) * (ToMat<3,3>("+invar+") * Trans(Inv(F)))));\n";
+    }
+
     /*
     template <typename AFEL, typename SIP, typename MAT,
               typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
@@ -1357,6 +1366,15 @@ public:
                                 MAT mat, LocalHeap & lh)
     {
       CalcDShapeFE<FEL,D,D-1,D>(static_cast<const FEL&>(fel), mip, Trans(mat), lh, eps());
+    }
+
+    static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
+                                      const SIMD_BaseMappedIntegrationRule & bmir,
+                                      BareSliceMatrix<SIMD<double>> mat)
+    {
+      CalcSIMDDShapeFE<FEL,D,D-1,D>
+        (static_cast<const FEL&>(bfel),
+         static_cast<const SIMD_MappedIntegrationRule<D-1,D>&>(bmir), mat, eps());
     }
   };
   

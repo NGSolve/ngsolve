@@ -171,11 +171,11 @@ public:
     }
 
     
-    /*static void GenerateMatrixSIMDIR (const FiniteElement & fel,
+    static void GenerateMatrixSIMDIR (const FiniteElement & fel,
                                       const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> mat)
     {
       CalcSIMDDShapeFE<FEL,D,D-1,D>(static_cast<const FEL&>(fel), static_cast<const SIMD_MappedIntegrationRule<D-1,D> &>(bmir), mat, eps());
-      }*/
+    }
 
     
     using DiffOp<DiffOpGradientHDivSurface<D>>::ApplySIMDIR;

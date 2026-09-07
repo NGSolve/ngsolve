@@ -280,7 +280,7 @@ namespace ngfem
 
   void CoefficientFunction :: SetSpaceDim (int adim)
   {
-    TraverseTree ([adim](CoefficientFunction & cf) { cf.spacedim = adim; });
+    TraverseDAG ([adim](CoefficientFunction & cf) { cf.spacedim = adim; });
   }
   
   shared_ptr<CoefficientFunction> CoefficientFunctionNoDerivative ::
@@ -3944,7 +3944,7 @@ cl_BinaryOpCF<GenericMult>::Transform (CoefficientFunction::T_Transform & transf
     return transformation.cache[thisptr];
   if (transformation.replace.find(thisptr) != transformation.replace.end())
     return transformation.replace[thisptr];
-  auto newcf = c1->Transform(transformation)*c2->Transform(transformation);
+  auto newcf = CWMult (c1->Transform(transformation), c2->Transform(transformation));
   transformation.cache[thisptr] = newcf;
   return newcf;
 }
@@ -3970,6 +3970,9 @@ cl_BinaryOpCF<GenericMult>::DiffJacobi(const CoefficientFunction * var, T_DJC & 
   auto thisptr = const_pointer_cast<CoefficientFunction>(this->shared_from_this());
   if (cache.find(thisptr) != cache.end())
     return cache[thisptr];
+
+  if (Dimensions().Size() > 0)
+    return CoefficientFunction::DiffJacobi (var, cache);
 
   if (var == this) return make_shared<ConstantCoefficientFunction>(1);
   shared_ptr<CoefficientFunction> res;
@@ -6044,7 +6047,7 @@ public:
 shared_ptr<CoefficientFunction>
 MakeOtherCoefficientFunction (shared_ptr<CoefficientFunction> me)
 {
-  me->TraverseTree
+  me->TraverseDAG
     ( [&] (CoefficientFunction & nodecf)
       {
         if (dynamic_cast<const ProxyFunction*> (&nodecf))
@@ -6699,7 +6702,7 @@ class CompiledCoefficientFunction : public CompiledCoefficientFunctionInterface 
 
 
       SetDimensions (cf->Dimensions());
-      cf -> TraverseTree
+      cf -> TraverseDAG
         ([&] (CoefficientFunction & stepcf)
          {
            if (handled_functions.count(getKey(stepcf))==0)
@@ -6722,18 +6725,13 @@ class CompiledCoefficientFunction : public CompiledCoefficientFunctionInterface 
       inputs = DynamicTable<int> (steps.Size());
       max_inputsize = 0;
       
-      cf -> TraverseTree
-        ([&] (CoefficientFunction & stepcf)
-         {
-           int mypos = getIndex(stepcf);
-           if (!inputs[mypos].Size())
-             {
-               Array<shared_ptr<CoefficientFunction>> in = stepcf.InputCoefficientFunctions();
-               max_inputsize = max2(in.Size(), max_inputsize);
-               for (auto incf : in)
-                 inputs.Add (mypos, getIndex(*incf.get()));
-             }
-         });
+      for (auto i : Range(steps))
+        {
+          Array<shared_ptr<CoefficientFunction>> in = steps[i]->InputCoefficientFunctions();
+          max_inputsize = max2(in.Size(), max_inputsize);
+          for (auto incf : in)
+            inputs.Add (i, getIndex(*incf.get()));
+        }
       cout << IM(3) << "inputs = " << endl << inputs << endl;
 
     }
@@ -6794,7 +6792,7 @@ class CompiledCoefficientFunction : public CompiledCoefficientFunctionInterface 
       ar.Shallow(cf);
       if(ar.Input())
         {
-          cf -> TraverseTree
+          cf -> TraverseDAG
             ([&] (CoefficientFunction & stepcf)
              {
                if (!steps.Contains(&stepcf))
@@ -6810,18 +6808,13 @@ class CompiledCoefficientFunction : public CompiledCoefficientFunctionInterface 
           inputs = DynamicTable<int> (steps.Size());
           max_inputsize = 0;
 
-          cf -> TraverseTree
-            ([&] (CoefficientFunction & stepcf)
-             {
-               int mypos = steps.Pos (&stepcf);
-               if (!inputs[mypos].Size())
-                 {
-                   Array<shared_ptr<CoefficientFunction>> in = stepcf.InputCoefficientFunctions();
-                   max_inputsize = max2(in.Size(), max_inputsize);
-                   for (auto incf : in)
-                     inputs.Add (mypos, steps.Pos(incf.get()));
-                 }
-             });
+          for (auto i : Range(steps))
+            {
+              Array<shared_ptr<CoefficientFunction>> in = steps[i]->InputCoefficientFunctions();
+              max_inputsize = max2(in.Size(), max_inputsize);
+              for (auto incf : in)
+                inputs.Add (i, steps.Pos(incf.get()));
+            }
         }
     }
 
@@ -7071,6 +7064,13 @@ class CompiledCoefficientFunction : public CompiledCoefficientFunctionInterface 
                   FlatVector<> result) const override
     {
       cf->Evaluate (ip, result);      
+    }
+
+    void NonZeroPattern (const class ProxyUserData & ud,
+                         FlatArray<FlatVector<AutoDiffDiff<1,NonZero>>> input,
+                         FlatVector<AutoDiffDiff<1,NonZero>> values) const override
+    {
+      values = input[0];
     }
 
     void Evaluate(const BaseMappedIntegrationPoint & ip,
@@ -7540,7 +7540,7 @@ class RealImagCF : public CoefficientFunctionNoDerivative
 
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<double> values) const override
     {
-      BareSliceMatrix<Complex,RowMajor> cvalues(values.Height(), values.Width(), values.Dist()/2, (Complex*)(void*)values.Data());
+      BareSliceMatrix<Complex,RowMajor> cvalues(ir.Size(), cf->Dimension(), values.Dist()/2, (Complex*)(void*)values.Data());
       cf -> Evaluate (ir, cvalues);
     }
 
@@ -7758,7 +7758,7 @@ public:
                    FlatArray<BareSliceMatrix<T,ORD>> input,
                    BareSliceMatrix<T,ORD> values) const
   {
-    func->Evaluate(ir, input, values);
+    values.AddSize(Dimension(), ir.Size()) = input[0];
   }
 
   Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
@@ -7786,13 +7786,41 @@ public:
                        FlatArray<FlatVector<AutoDiffDiff<1,NonZero>>> input,
                        FlatVector<AutoDiffDiff<1,NonZero>> values) const override
   {
-    func->NonZeroPattern(ud, input, values);
+    values = input[0];
   }
   
   void TraverseTree (const function<void(CoefficientFunction&)> & func_) override
   {
     func->TraverseTree(func_);
     func_(*this);
+  }
+
+  shared_ptr<CoefficientFunction>
+  Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const override
+  {
+    if (this == var) return dir;
+    auto d = func->Diff(var, dir);
+    if (d->IsZeroCF()) return d;
+    return make_shared<CacheCoefficientFunction>(d);
+  }
+
+  shared_ptr<CoefficientFunction>
+  DiffJacobi (const CoefficientFunction * var, T_DJC & cache) const override
+  {
+    auto thisptr = const_pointer_cast<CoefficientFunction>(this->shared_from_this());
+    if (cache.find(thisptr) != cache.end())
+      return cache[thisptr];
+    if (this == var)
+      {
+        if (this->Dimensions().Size() == 0)
+          return make_shared<ConstantCoefficientFunction>(1);
+        return IdentityCF(this->Dimensions());
+      }
+    auto d = func->DiffJacobi(var, cache);
+    shared_ptr<CoefficientFunction> res =
+      d->IsZeroCF() ? d : make_shared<CacheCoefficientFunction>(d);
+    cache[thisptr] = res;
+    return res;
   }
 };
 
@@ -7805,7 +7833,7 @@ shared_ptr<CoefficientFunction> CacheCF(shared_ptr<CoefficientFunction> func)
 Array<CoefficientFunction*> FindCacheCF (CoefficientFunction & func)
 {
   Array<CoefficientFunction*> cachecf;
-  func.TraverseTree
+  func.TraverseDAG
     ( [&] (CoefficientFunction & nodecf)
       {
         if (dynamic_cast<CacheCoefficientFunction*> (&nodecf))
@@ -7891,7 +7919,7 @@ void PrecomputeCacheCF (CoefficientFunction & func, SIMD_BaseMappedIntegrationRu
   // cout << "precompute cachecf" << endl;
   // first we cnt number of Caches:
   ArrayMem<CacheCoefficientFunction*,10> cachecf;
-  func.TraverseTree
+  func.TraverseDAG
     ( [&] (CoefficientFunction & nodecf)
       {
         if (auto ccf = dynamic_cast<CacheCoefficientFunction*> (&nodecf))

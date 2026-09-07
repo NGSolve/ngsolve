@@ -137,18 +137,18 @@ namespace ngfem
   { 
   public:    
     ArrayMem<const FiniteElement *,2> elements;
-    HD NGS_DLL_HEADER 
+    NGS_DLL_HEADER 
     virtual void CalcShape (const IntegrationPoint & ip, 
                             SliceVector<> shape) const
     { cout << "calcshape ip" << endl; }
     
     /// compute dshape, matrix: ndof x spacedim
-    HD NGS_DLL_HEADER 
+    NGS_DLL_HEADER 
     virtual void CalcDShape (const IntegrationPoint & ip, 
 			     SliceMatrix<> dshape) const
     { cout << "calcdshape ip" << endl; }
 
-    HD NGS_DLL_HEADER 
+    NGS_DLL_HEADER 
     virtual void CalcShape (const IntegrationRule & irbase, SliceMatrix<> shape) const
     {
       const TPIntegrationRule & ir = dynamic_cast<const TPIntegrationRule &>(irbase);
@@ -173,7 +173,7 @@ namespace ngfem
     }
     INLINE const FiniteElement* Elements(int i) { return elements[i]; }
     //int NElements() { return elements.Size();}
-    HD virtual ELEMENT_TYPE ElementType() const { return ET_POINT; }
+    virtual ELEMENT_TYPE ElementType() const { return ET_POINT; }
 
     INLINE TPHighOrderFE (Array<const FiniteElement *> & els) 
     {
@@ -182,7 +182,7 @@ namespace ngfem
       ndof = elements[0]->GetNDof()*elements[1]->GetNDof();
       order = max2(elements[0]->Order(),elements[1]->Order());
     }
-    HD virtual NGS_DLL_HEADER ~TPHighOrderFE () { ; }
+    virtual NGS_DLL_HEADER ~TPHighOrderFE () { ; }
     
   };
 

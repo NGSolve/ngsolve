@@ -34,7 +34,7 @@ install( TARGETS ngcomp ${ngs_install_dir} )
 # endif(NETGEN_USE_GUI)
 
 install( FILES
-        bilinearform.hpp comp.hpp facetfespace.hpp	   
+        bilinearform.hpp comp.hpp facetfespace.hpp gpu_btdtb.hpp
         fespace.hpp gridfunction.hpp h1hofespace.hpp hcurlhdivfes.hpp	   
         hcurlhofespace.hpp hdivfes.hpp hdivhofespace.hpp hdivhosurfacefespace.hpp
         l2hofespace.hpp hdivdivsurfacespace.hpp HCTspace.hpp JKMspace.hpp tpfes.hpp

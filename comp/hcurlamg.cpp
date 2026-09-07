@@ -206,8 +206,8 @@ namespace ngcomp
     int VHeight() const override { return size; }
     int VWidth() const override { return size; }
     bool IsComplex() const override { return is_same<SCAL, Complex>(); }
-    AutoVector CreateRowVector() const override { return mat->CreateColVector(); }
-    AutoVector CreateColVector() const override { return mat->CreateRowVector(); }
+    VecFormat RowFormat () const override { return mat->ColFormat(); }
+    VecFormat ColFormat () const override { return mat->RowFormat(); }
 
     void Mult(const BaseVector& f, BaseVector& u) const override;
     

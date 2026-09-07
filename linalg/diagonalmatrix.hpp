@@ -19,7 +19,6 @@ namespace ngla
     Projector (shared_ptr<BitArray> abits, bool akeep_values = true)
       : bits(abits), keep_values(akeep_values) { ; }
     
-    virtual bool IsComplex() const override { return false; } 
 
     virtual int VHeight() const override { return bits->Size(); }
     virtual int VWidth() const override { return bits->Size(); }
@@ -34,12 +33,13 @@ namespace ngla
     bool KeepValues() const { return keep_values; }
     shared_ptr<BitArray> Mask() const { return bits; }
 
+    shared_ptr<BaseMatrix> CreateDeviceMatrix () const override;
+
     virtual shared_ptr<BaseSparseMatrix> CreateSparseMatrix() const override;
     
-    AutoVector CreateRowVector() const override
-    { throw Exception("CreateRowVector not implemented for Projector!"); }
-    AutoVector CreateColVector() const override
-    { throw Exception("CreateColVector not implemented for Projector!"); }
+    // type-agnostic, only the size is known
+    VecFormat RowFormat () const override { return VecFormat (bits->Size()); }
+    VecFormat ColFormat () const override { return VecFormat (bits->Size()); }
 
     AutoVector Evaluate(BaseVector & v) const override
     {
@@ -70,7 +70,6 @@ namespace ngla
     DiagonalMatrix(shared_ptr<VVector<TM>> diag_);
     virtual ~DiagonalMatrix();
     
-    bool IsComplex() const override { return false; } 
     TM & operator() (size_t i) { return (*diag)(i); }
     const TM & operator() (size_t i) const { return (*diag)(i); }
     int VHeight() const override { return diag->Size(); }
@@ -82,13 +81,16 @@ namespace ngla
 
     virtual shared_ptr<BaseSparseMatrix> CreateSparseMatrix() const override;
     
-    AutoVector CreateRowVector () const override;
-    AutoVector CreateColVector () const override;
+    VecFormat RowFormat () const override;
+    VecFormat ColFormat () const override;
 
     void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;    
     void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
 
     shared_ptr<BaseMatrix> InverseMatrix (shared_ptr<BitArray> subset = nullptr) const override;
+
+    // a DeviceDiagonalMatrix for scalar TM if a gpu backend is registered
+    shared_ptr<BaseMatrix> CreateDeviceMatrix() const override;
   };
 
 
@@ -101,15 +103,14 @@ namespace ngla
     // typedef double TSCAL;
     
     BlockDiagonalMatrix(Tensor<3,TM> _blockdiag);
-    bool IsComplex() const override { return ngbla::IsComplex<TM>(); } 
 
     int VHeight() const override { return blocks*dimy; }
     int VWidth() const override { return blocks*dimx; }
 
     ostream & Print (ostream & ost) const override;
     
-    AutoVector CreateRowVector () const override;
-    AutoVector CreateColVector () const override;
+    VecFormat RowFormat () const override;
+    VecFormat ColFormat () const override;
 
     void Mult (const BaseVector & x, BaseVector & y) const override;    
     void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;    
@@ -129,7 +130,6 @@ namespace ngla
     typedef double TSCAL;
     
     BlockDiagonalMatrixSoA(Tensor<3> _blockdiag);
-    bool IsComplex() const override { return false; } 
 
     int VHeight() const override { return blocks*dimy; }
     int VWidth() const override { return blocks*dimx; }
@@ -137,13 +137,14 @@ namespace ngla
     ostream & Print (ostream & ost) const override;
     virtual BaseMatrix::OperatorInfo GetOperatorInfo () const override;
     
-    AutoVector CreateRowVector () const override;
-    AutoVector CreateColVector () const override;
+    VecFormat RowFormat () const override;
+    VecFormat ColFormat () const override;
 
     void Mult (const BaseVector & x, BaseVector & y) const override;    
     void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
     void MultTrans (const BaseVector & x, BaseVector & y) const override;    
     void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
+    shared_ptr<BaseMatrix> CreateDeviceMatrix () const override;
     // shared_ptr<BaseMatrix> InverseMatrix (shared_ptr<BitArray> subset = nullptr) const override;
 
     FlatTensor<3> GetBlockDiag () const { return blockdiag; }

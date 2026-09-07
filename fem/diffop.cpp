@@ -336,7 +336,7 @@ namespace ngfem
   }
 
   string DifferentialOperator ::
-  GenerateTransformationCode (string invar, string outvar, bool trans) const
+  GenerateTransformationCode (string invar, string outvar, bool trans, bool curved) const
   {
     throw Exception (string("DiffOp::GetTransofmrationCode not overloaded, type = ") + typeid(*this).name() );    
   }

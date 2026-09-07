@@ -12,6 +12,8 @@
 #include "basescalar.hpp"
 
 
+namespace ngs_gpu { enum class MemType; }
+
 namespace ngla
 {
   using namespace ngbla;
@@ -103,6 +105,78 @@ namespace ngla
   }
   
 
+  class ParallelDofs;
+
+  /*
+    Describes a vector type along independent axes: size, scalar type,
+    entries per dof, MPI distribution, device placement, block structure.
+    Every axis may be left open. An operator fills in what it knows, and
+    Merge combines the knowledge of several sources.
+  */
+  class NGS_DLL_HEADER VecFormat
+  {
+  public:
+    optional<size_t> size;
+    optional<Scalar> scal;
+    optional<int> es;                     // entries per dof, in scalars
+    shared_ptr<ParallelDofs> pardofs;     // null: sequential or unknown
+    PARALLEL_STATUS parstatus = CUMULATED;
+    optional<ngs_gpu::MemType> device;    // engaged: DeviceVector
+    std::vector<VecFormat> blocks;        // non-empty: BlockVector
+
+    VecFormat () = default;
+    explicit VecFormat (size_t asize) : size(asize) { }
+    VecFormat (size_t asize, Scalar ascal, int aes = 1)
+      : size(asize), scal(ascal), es(aes) { }
+
+    bool IsBlock() const { return !blocks.empty(); }
+    bool IsComplex() const
+    {
+      if (scal) return std::holds_alternative<Complex>(*scal);
+      for (auto & b : blocks) if (b.IsComplex()) return true;
+      return false;
+    }
+    bool HasSize() const { return size.has_value() || IsBlock(); }
+
+    // scalar, entry size and placement; size, distribution and blocks dropped
+    VecFormat ValueAxes() const;
+    // open scalar -> double, open entry size -> 1
+    VecFormat WithDefaults() const;
+    VecFormat WithSize (size_t asize) const;
+    VecFormat WithScalar (Scalar ascal) const;
+    VecFormat OnDevice (ngs_gpu::MemType mt) const;
+    // combine with a scaling factor: real times Complex gives Complex
+    VecFormat Promote (Scalar ascal) const;
+
+    // fills open axes from the other side, throws on contradiction
+    static VecFormat Merge (const VecFormat & a, const VecFormat & b);
+    static Scalar MergeScalar (Scalar a, Scalar b);
+  };
+
+  NGS_DLL_HEADER string ScalarName (const Scalar & s);
+  NGS_DLL_HEADER ostream & operator<< (ostream & ost, const VecFormat & f);
+
+  // formats of the standard vector classes, without allocating them
+  template <typename T>
+  inline VecFormat VVectorFormat (size_t size)
+  {
+    typedef typename mat_traits<T>::TSCAL TSCAL;
+    return VecFormat (size, TSCAL(0), int(sizeof(T)/sizeof(TSCAL)));
+  }
+  template <typename T>
+  inline VecFormat DeviceVectorFormat (size_t size, ngs_gpu::MemType mt)
+  { return VVectorFormat<T>(size).OnDevice(mt); }
+  // scalar and entry size from the ParallelDofs, as CreateParallelVector does
+  NGS_DLL_HEADER VecFormat ParallelVectorFormat (shared_ptr<ParallelDofs> pardofs, PARALLEL_STATUS status = CUMULATED);
+  NGS_DLL_HEADER VecFormat ParallelFormat (shared_ptr<ParallelDofs> pardofs, Scalar scal, int es, PARALLEL_STATUS status);
+  template <typename T>
+  inline VecFormat ParallelVVectorFormat (shared_ptr<ParallelDofs> pardofs, PARALLEL_STATUS status = CUMULATED)
+  {
+    typedef typename mat_traits<T>::TSCAL TSCAL;
+    return ParallelFormat (pardofs, TSCAL(0), int(sizeof(T)/sizeof(TSCAL)), status);
+  }
+
+
   /**
      Base vector for linalg
   */
@@ -113,6 +187,7 @@ namespace ngla
     size_t size;
     /// number of reals per entry
     int entrysize = 1;
+    Scalar scaltype = double(0);   // set by S_BaseVector, or from the wrapped vector
     ///
     BaseVector () { ; }
     
@@ -228,10 +303,9 @@ namespace ngla
     int EntrySize() const throw () { return entrysize; }
     // one entry has the size of that many scalars (double or complex)
     virtual int EntrySizeScal() const throw () = 0;
-    virtual Scalar GetScalarType() const = 0;
+    Scalar GetScalarType() const { return scaltype; }
+    virtual VecFormat GetFormat () const;
     virtual void * Memory () const = 0;
-    virtual FlatVector<double> FVDouble () const = 0;
-    virtual FlatVector<Complex> FVComplex () const = 0;
 
     template <typename SCAL = double>
     FlatSysVector<SCAL> SV () const
@@ -242,6 +316,11 @@ namespace ngla
     template <typename T>
       FlatVector<T> FV () const;
     
+    [[deprecated("use FV<double>() instead")]]
+    auto FVDouble () const { return this->FV<double>(); }
+    [[deprecated("use FV<Complex>() instead")]]
+    auto FVComplex () const { return this->FV<Complex>(); }
+
     /*
     template <class TSCAL>
     TSCAL InnerProduct (const BaseVector & v2) const 
@@ -299,12 +378,14 @@ namespace ngla
     virtual void GetIndirect (FlatArray<int> ind, FlatVector<double> v) const = 0;
     virtual void GetIndirect (FlatArray<int> ind, FlatVector<float> v) const = 0;    
     virtual void GetIndirect (FlatArray<int> ind, FlatVector<Complex> v) const = 0;
-    void SetIndirect (FlatArray<int> ind, FlatVector<double> v);
-    void SetIndirect (FlatArray<int> ind, FlatVector<float> v);    
-    void SetIndirect (FlatArray<int> ind, FlatVector<Complex> v);
-    void AddIndirect (FlatArray<int> ind, FlatVector<double> v, bool use_atomic = false);
-    void AddIndirect (FlatArray<int> ind, FlatVector<float> v, bool use_atomic = false);    
-    void AddIndirect (FlatArray<int> ind, FlatVector<Complex> v, bool use_atomic = false);
+    
+    virtual void SetIndirect (FlatArray<int> ind, FlatVector<double> v) = 0;
+    virtual void SetIndirect (FlatArray<int> ind, FlatVector<float> v) = 0;    
+    virtual void SetIndirect (FlatArray<int> ind, FlatVector<Complex> v) = 0;
+    
+    virtual void AddIndirect (FlatArray<int> ind, FlatVector<double> v, bool use_atomic = false) = 0;
+    virtual void AddIndirect (FlatArray<int> ind, FlatVector<float> v, bool use_atomic = false) = 0;    
+    virtual void AddIndirect (FlatArray<int> ind, FlatVector<Complex> v, bool use_atomic = false) = 0;
 
     virtual shared_ptr<BaseVector> GetLocalVector () const 
     { return const_cast<BaseVector*>(this)->shared_from_this(); }
@@ -332,6 +413,8 @@ namespace ngla
   
 
   AutoVector CreateBaseVector(size_t size, bool is_complex = false, int es = 1);
+  // the one factory: VVector, S_BaseVectorPtr, parallel, device or block vector
+  NGS_DLL_HEADER AutoVector CreateBaseVector(const VecFormat & f);
   
   
   class NGS_DLL_HEADER AutoVector 
@@ -466,21 +549,11 @@ namespace ngla
     template <typename T>
     auto FV () const { return vec->FV<T>(); }
     
-
     void * Memory () const throw () 
     {
       return vec->Memory();
     }
 
-    FlatVector<double> FVDouble () const 
-    {
-      return vec->FVDouble();
-    }
-    
-    FlatVector<Complex> FVComplex () const
-    {
-      return vec->FVComplex();
-    }
 
     AutoVector CreateVector () const
     {
@@ -502,6 +575,7 @@ namespace ngla
       return vec->L2Norm();
     }
 
+    VecFormat GetFormat () const { return vec->GetFormat(); }
     bool IsComplex() const 
     {
       return vec->IsComplex();
@@ -619,30 +693,33 @@ namespace ngla
   }
   
 
-  template <>
-  inline FlatVector<double> BaseVector::FV<double> () const
+  /*
+    The host memory of the vector as FlatVector<T>. T's real type must be
+    the vector's real type: a complex vector may be viewed as complex or
+    as twice as many reals, a Vec<3,double> vector as double, but a float
+    vector never as double. Length in T's from the byte size.
+  */
+  template <typename T> inline string ScalarTypeName ()
   {
-    return FVDouble();
-  }
-
-  template <>
-  inline FlatVector<float> BaseVector::FV<float> () const
-  {
-    return FlatVector<float>(Size(), (float*)Memory());
-  }
-
-  
-  template <>
-  inline FlatVector<Complex> BaseVector::FV<Complex> () const
-  {
-    return FVComplex();
+    if constexpr (std::is_same_v<T,double>) return "double";
+    else if constexpr (std::is_same_v<T,float>) return "float";
+    else if constexpr (std::is_same_v<T,Complex>) return "Complex";
+    else return typeid(T).name();
   }
 
   template <typename T>
   inline FlatVector<T> BaseVector::FV () const
   {
-    typedef typename mat_traits<T>::TSCAL TSCAL;
-    return FlatVector<T> (Size(), static_cast<T*> (static_cast<void*>(FV<TSCAL>().Addr(0))));
+    typedef typename scal_traits<typename mat_traits<T>::TSCAL>::TSCAL_REAL TREAL;
+    size_t bytes = std::visit ([&] (auto proto) -> size_t
+    {
+      typedef typename scal_traits<decltype(proto)>::TSCAL_REAL VREAL;
+      if constexpr (!std::is_same_v<VREAL,TREAL>)
+        throw Exception ("BaseVector::FV<" + ScalarTypeName<T>() + "> called for a vector of "
+                         + ScalarTypeName<decltype(proto)>());
+      return size_t(size) * entrysize * sizeof(VREAL);
+    }, scaltype);
+    return FlatVector<T> (bytes / sizeof(T), static_cast<T*> (Memory()));
   }
 
 
@@ -660,7 +737,7 @@ namespace ngla
   class NGS_DLL_HEADER S_BaseVector : virtual public BaseVector
   {
   public:
-    S_BaseVector () throw () { ; }
+    S_BaseVector () throw () { scaltype = SCAL(0); }
     virtual ~S_BaseVector() { ; }
 
     S_BaseVector & operator= (double s);
@@ -679,24 +756,34 @@ namespace ngla
     virtual Complex InnerProductC (const BaseVector & v2, bool conjugate = false) const override;
 
 
-    virtual FlatVector<double> FVDouble () const override;
-    virtual FlatVector<Complex> FVComplex () const override;
 
     virtual FlatVector<SCAL> FVScal () const 
     {
-      return FlatVector<SCAL> (size * entrysize * sizeof(double)/sizeof(SCAL), 
+      return FlatVector<SCAL> (size * entrysize * sizeof(typename scal_traits<SCAL>::TSCAL_REAL)/sizeof(SCAL), 
                                (SCAL*)Memory());
     }
 
-    virtual Scalar GetScalarType() const override { return Scalar(SCAL(0)); }
-    
-    virtual void GetIndirect (FlatArray<int> ind, 
-                              FlatVector<double> v) const override;
-    virtual void GetIndirect (FlatArray<int> ind, 
-                              FlatVector<float> v) const override;
-    virtual void GetIndirect (FlatArray<int> ind, 
-                              FlatVector<Complex> v) const override;
 
+    template <typename T>
+      inline void T_GetIndirect (FlatArray<int> ind, FlatVector<T> v) const;
+    
+    virtual void GetIndirect (FlatArray<int> ind, FlatVector<double> v) const override;
+    virtual void GetIndirect (FlatArray<int> ind, FlatVector<float> v) const override;
+    virtual void GetIndirect (FlatArray<int> ind, FlatVector<Complex> v) const override;
+
+    template <typename T>
+      inline void T_SetIndirect (FlatArray<int> ind, FlatVector<T> v);
+    
+    void SetIndirect (FlatArray<int> ind, FlatVector<double> v) override;
+    void SetIndirect (FlatArray<int> ind, FlatVector<float> v) override;
+    void SetIndirect (FlatArray<int> ind, FlatVector<Complex> v) override;
+
+    template <typename T>
+      inline void T_AddIndirect (FlatArray<int> ind, FlatVector<T> v, bool use_atomic);
+
+    void AddIndirect (FlatArray<int> ind, FlatVector<double> v, bool use_atomic = false) override;
+    void AddIndirect (FlatArray<int> ind, FlatVector<float> v, bool use_atomic = false) override;
+    void AddIndirect (FlatArray<int> ind, FlatVector<Complex> v, bool use_atomic = false) override;
   };
 
 
@@ -728,15 +815,32 @@ namespace ngla
     virtual int EntrySizeScal() const throw () override { return vecs[0]->EntrySizeScal(); }
     shared_ptr<BaseVector> & operator[] (size_t i) const { return vecs[i]; }
 
-    virtual Scalar GetScalarType() const override { return vecs[0]->GetScalarType(); }
     void * Memory () const override;
-    FlatVector<double> FVDouble () const override;
-    FlatVector<Complex> FVComplex () const override;
     void GetIndirect (FlatArray<int> ind, FlatVector<double> v) const override;
     void GetIndirect (FlatArray<int> ind, FlatVector<float> v) const override;    
     void GetIndirect (FlatArray<int> ind, FlatVector<Complex> v) const override;
 
+    template <typename T>
+    void T_SetIndirect (FlatArray<int> ind, FlatVector<T> v) {
+      throw Exception("BlockVector SetIndirect not available");
+    }
+    
+    void SetIndirect (FlatArray<int> ind, FlatVector<double> v) override { T_SetIndirect (ind, v); }
+    void SetIndirect (FlatArray<int> ind, FlatVector<float> v) override { T_SetIndirect (ind, v); }
+    void SetIndirect (FlatArray<int> ind, FlatVector<Complex> v) override { T_SetIndirect (ind, v); }    
+
+
+    template <typename T>
+    void T_AddIndirect (FlatArray<int> ind, FlatVector<T> v, bool use_atomic) {
+      throw Exception("BlockVector AddIndirect not available");
+    }
+
+    void AddIndirect (FlatArray<int> ind, FlatVector<double> v, bool use_atomic = false) override { T_AddIndirect (ind, v, use_atomic); }
+    void AddIndirect (FlatArray<int> ind, FlatVector<float> v, bool use_atomic = false) override { T_AddIndirect (ind, v, use_atomic); }
+    void AddIndirect (FlatArray<int> ind, FlatVector<Complex> v, bool use_atomic = false) override { T_AddIndirect (ind, v, use_atomic); }    
+    
     bool IsComplex() const override;
+    VecFormat GetFormat () const override;
 
     AutoVector CreateVector () const override;
 
@@ -1079,14 +1183,14 @@ namespace ngla
   S_InnerProduct<ComplexConjugate> (const BaseVector & v1, const BaseVector & v2)
   {
     return v1.InnerProductC(v2, true);
-    // return InnerProduct( v1.FVComplex(), Conj(v2.FVComplex()) );
+    // return InnerProduct( v1.FV<Complex>(), Conj(v2.FV<Complex>()) );
   }
 
   template <>
   inline Complex S_InnerProduct<ComplexConjugate2> (const BaseVector & v1, const BaseVector & v2)
   {
     return v2.InnerProductC(v1, true);
-    // return InnerProduct( v2.FVComplex(), Conj(v1.FVComplex()) );
+    // return InnerProduct( v2.FV<Complex>(), Conj(v1.FV<Complex>()) );
   }
 
   ///

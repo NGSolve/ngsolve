@@ -119,7 +119,21 @@ namespace ngcomp
       mat.Col(0).Range(D) = static_cast<const MappedIntegrationPoint<D,D>&> (mip).GetNV();
     }
 
-    
+    // the generated element-boundary code provides the physical normal as normals(i,k)
+    static string GenerateTransformationCode (string invar, string outvar, bool trans)
+    {
+      string code;
+      if (!trans)
+        for (int k = 0; k < D; k++)
+          code += outvar + "(" + ToString(k) + ") = normals(0," + ToString(k) + ") * " + invar + "(0);\n";
+      else
+        {
+          code += outvar + "(0) = 0;\n";
+          for (int k = 0; k < D; k++)
+            code += outvar + "(0) += normals(0," + ToString(k) + ") * " + invar + "(" + ToString(k) + ");\n";
+        }
+      return code;
+    }
   };
   
   
@@ -3062,6 +3076,14 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
       mat = (1.0/mip.GetJacobiDet()) * mip.GetJacobian();      
     }
 
+    static string GenerateTransformationCode (string invar, string outvar, bool trans)
+    {
+      if (!trans)
+        return outvar + " = 1/J * (F * " + invar + ");\n";
+      else
+        return outvar + " = 1/J * (Trans(F) * " + invar + ");\n";
+    }
+
     
     template <typename FEL, typename MIP, typename MAT>
     static void GenerateMatrix (const FEL & bfel, const MIP & mip,
@@ -3431,6 +3453,36 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
             for (int l = 0; l < DIM_SPC; l++)
               mat(i*DIM_SPC+k,j*DIM_SPC+l) = cov_trans(k,l)*piola_trans(i,j);
     }    
+
+    static string GenerateTransformationCode (string invar, string outvar, bool trans,
+                                              bool curved = false)
+    {
+      string d = ToString(DIM_SPC), dmat = ToString(DIM_DMAT), dref = ToString(DimRef());
+      string M = "Mat<"+d+","+d+",Real>", mat = "ToMat<"+d+","+d+">";
+      // product rule for u = 1/J F uhat with the reference gradient G and, on
+      // curved classes, dF(b) = d_b F from the kernel:
+      //   grad u = 1/J (F G + dF uhat - (F uhat) (x) dlnJ) Finv,   dlnJ = Trace(Finv dF)
+      string code = "{\n" + M + " Finv = Inv(F);\n";
+      if (curved)
+        code += "Vec<"+d+",Real> dlnJ = Trace(Finv * dF);\n";
+      if (!trans)
+        {
+          code += M + " G = " + mat + "(" + invar + ".Range<0," + dmat + ">());\n";
+          if (curved)
+            code += "Vec<"+d+",Real> uh = " + invar + ".Range<" + dmat + "," + dref + ">();\n"
+              + outvar + " = ToVec(1/J * ((F * G + dF * uh - Outer(F * uh, dlnJ)) * Finv));\n";
+          else
+            code += outvar + " = ToVec(1/J * (F * (G * Finv)));\n";
+        }
+      else
+        {
+          code += M + " Q = 1/J * (" + mat + "(" + invar + ") * Trans(Finv));\n"
+            + outvar + " = 0.0; " + outvar + ".SetRange<0," + dmat + ">(ToVec(Trans(F) * Q));\n";
+          if (curved)
+            code += outvar + ".SetRange<" + dmat + "," + dref + ">(Trans(dF) * Q - Trans(F) * (Q * dlnJ));\n";
+        }
+      return code + "}\n";
+    }
     
     template <typename FEL, typename MIP, typename MAT>
     static void GenerateMatrix (const FEL & fel, const MIP & mip,

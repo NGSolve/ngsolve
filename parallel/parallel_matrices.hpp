@@ -95,8 +95,8 @@ namespace ngla
     shared_ptr<BaseMatrix> GetMatrix() const { return mat; }
     virtual shared_ptr<BaseMatrix> CreateMatrix () const override;
     virtual AutoVector CreateVector () const override;
-    virtual AutoVector CreateRowVector () const override;
-    virtual AutoVector CreateColVector () const override;
+    VecFormat RowFormat () const override;
+    VecFormat ColFormat () const override;
 
     virtual ostream & Print (ostream & ost) const override;
 
@@ -148,8 +148,8 @@ namespace ngla
     void MultTrans (const BaseVector & x, BaseVector & y) const override;
     void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
 
-    AutoVector CreateRowVector () const override;
-    AutoVector CreateColVector () const override;
+    VecFormat RowFormat () const override { return ParallelVectorFormat (pardofs, DISTRIBUTED); }
+    VecFormat ColFormat () const override { return ParallelVectorFormat (pardofs, CUMULATED); }
 
     int VHeight() const override;
     int VWidth() const override;
@@ -184,8 +184,8 @@ namespace ngla
     virtual int VHeight() const override { return paralleldofs->GetNDofLocal(); }
     virtual int VWidth() const override { return paralleldofs->GetNDofLocal(); }
 
-    AutoVector CreateRowVector() const override;
-    AutoVector CreateColVector() const override;
+    VecFormat RowFormat () const override { return ParallelVVectorFormat<double> (paralleldofs); }
+    VecFormat ColFormat () const override { return ParallelVVectorFormat<double> (paralleldofs); }
   };
 
 
@@ -199,8 +199,9 @@ namespace ngla
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
     virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
     
-    virtual AutoVector CreateRowVector () const override;
-    virtual AutoVector CreateColVector () const override;
+    VecFormat RowFormat () const override
+    { return u_paralleldofs ? ParallelVVectorFormat<double> (u_paralleldofs) : VVectorFormat<double> (VHeight()); }
+    VecFormat ColFormat () const override { return ParallelVVectorFormat<double> (jump_paralleldofs); }
 
     shared_ptr<ParallelDofs> GetRowParallelDofs () const { return u_paralleldofs; }
     shared_ptr<ParallelDofs> GetColParallelDofs () const { return jump_paralleldofs; }

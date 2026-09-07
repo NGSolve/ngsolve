@@ -1763,7 +1763,7 @@ used_idnrs : list of int = None
                     if(phase.has_value() && py::len(*phase) > 0)
                       {
                         auto lphase = *phase;
-                        if(py::isinstance<py::float_>(lphase[0]))
+                        if(py::isinstance<py::float_>(lphase[0]) || py::isinstance<py::int_>(lphase[0]))                          
                           {
                             auto a_phase = make_shared<Array<double>>(py::len(*phase));
                             for (auto i : Range(a_phase->Size()))
@@ -1973,6 +1973,16 @@ active_dofs : BitArray or None
          {
            return self.GetBaseSpace();
          })
+    .def("Embedding", [](CompressedFESpace & self)
+         {
+           return self.GetEmbedding();
+         }, "Embedding of the compressed space into its base space, a type-agnostic PermutationMatrix "
+            "(base ndof x compressed ndof): E * x scatters x to the active dofs")
+    .def("Restriction", [](CompressedFESpace & self)
+         {
+           return self.GetRestriction();
+         }, "Restriction of the base space to the compressed dofs, a type-agnostic PermutationMatrix "
+            "(compressed ndof x base ndof); the transpose of Embedding()")
     .def(py::pickle([](const CompressedFESpace* compr_fes)
                     {
                       return py::make_tuple(compr_fes->GetBaseSpace(),compr_fes->GetActiveDofs());
@@ -2128,12 +2138,14 @@ active_dofs : BitArray or None
                   return py::dict
                     (
                      py::arg("multidim") = "\n"
-                     " Multidimensional GridFunction",
+                     "  Multidimensional GridFunction",
                      py::arg("nested") = "bool = False\n"
-		             " Generates prolongation matrices for each mesh level and prolongates\n"
-		             " the solution onto the finer grid after a refinement.",
+		     "  Generates prolongation matrices for each mesh level and prolongates\n"
+		     "  the solution onto the finer grid after a refinement.",
                      py::arg("autoupdate") = "\n"
-                     " Automatically update on FE space update"
+                     "  Automatically update on FE space update.",
+                     py::arg("fp32") = "bool = False\n"
+                     "  create vector in fp32."
                      );
                 })
     .def(py::pickle([] (const GridFunction& gf) -> py::tuple
@@ -2184,7 +2196,7 @@ active_dofs : BitArray or None
                         {
                           auto vec = py::cast<shared_ptr<BaseVector>>(state[3]);
                           // cout << "unpickle cf, vec = " << *vec << endl;
-                          string str((char*)(void*)vec->FVDouble().Data(), 8*vec->Size());
+                          string str((char*)(void*)vec->FV<double>().Data(), 8*vec->Size());
                           istringstream in(str);
                           gf->Load(in);
                         }
@@ -2204,7 +2216,7 @@ active_dofs : BitArray or None
            if (parallel)
              self.Save(out);
            else
-             for (auto d : self.GetVector().FVDouble())
+             for (auto d : self.GetVector().FV<double>())
                SaveBin(out, d);
          },
          py::arg("filename"), py::arg("parallel")=false, docu_string(R"raw_string(
@@ -2227,7 +2239,7 @@ parallel : bool
            if (parallel)
              self.Load(in);
            else
-             for (auto & d : self.GetVector().FVDouble())
+             for (auto & d : self.GetVector().FV<double>())
                LoadBin(in, d);
          },
          py::arg("filename"), py::arg("parallel")=false, docu_string(R"raw_string(       
@@ -2659,7 +2671,7 @@ diffop : ngsolve.fem.DifferentialOperator
   py::class_<SumOfIntegrals, shared_ptr<SumOfIntegrals>>(m, "SumOfIntegrals")
     .def(py::self + py::self)
     .def(py::self - py::self)
-    .def(float() * py::self)
+    .def(double() * py::self)
     .def(Complex() * py::self)    
     .def_property("linearization",
                   [](const SumOfIntegrals& ints)
@@ -2709,11 +2721,11 @@ diffop : ngsolve.fem.DifferentialOperator
     ;
 
   py::class_<MatFreeOptions> (m, "MFOpts")
-    .def(py::init<bool,bool,bool,bool,bool,int,int,bool,optional<string>>(),
+    .def(py::init<bool,bool,bool,bool,bool,int,int,int,bool,bool,bool,optional<string>>(),
          py::arg("fused")=true, py::arg("gencode")=false, py::arg("atomic")=true,
          py::arg("only_loadstore")=false, py::arg("only_loadstoreB")=false,
-         py::arg("BS_els")=4, py::arg("BS_ipts")=4, py::arg("timers")=false,
-         py::arg("write_kernel")="")
+         py::arg("BS_els")=16, py::arg("BS_ipts")=8, py::arg("warps")=4, py::arg("timers")=false,
+         py::arg("nonlinear")=false, py::arg("fp32")=false, py::arg("write_kernel")="")
     .def("__str__", &ToString<MatFreeOptions>)
     ;
   
@@ -2757,7 +2769,7 @@ space : ngsolve.FESpace
                     shared_ptr<FESpace> trial_space, test_space;
                     bool found_trial=false, found_test=false;
                     for (auto igl : *igls)
-                      igl->cf -> TraverseTree ([&] (CoefficientFunction& cf) {
+                      igl->cf -> TraverseDAG ([&] (CoefficientFunction& cf) {
                           if (auto * proxy = dynamic_cast<ProxyFunction*>(&cf))
                             {
                               if (proxy->IsTrialFunction())
@@ -2818,6 +2830,8 @@ space : ngsolve.FESpace
                      "  BilinearForm will not allocate memory for assembling.\n"
                      "  optimization feature for (nonlinear) problems where the\n"
                      "  form is only applied but never assembled.",
+                     py::arg("fp32") = "bool = False\n"
+                     "  Compute stiffness matrix in single precision.\n",
                      py::arg("project") = "bool = False\n"
                      "  When calling bf.Assemble, all saved coarse matrices from\n"
                      "  mesh refinements are updated as well using a Galerkin projection\n"
@@ -2875,7 +2889,7 @@ integrator : ngsolve.fem.BFI
 
                // check for DG terms
                bool has_other = false;
-               icf->cf->TraverseTree ([&has_other] (CoefficientFunction & cf)
+               icf->cf->TraverseDAG ([&has_other] (CoefficientFunction & cf)
                                       {
                                         if (dynamic_cast<ProxyFunction*> (&cf))
                                           if (dynamic_cast<ProxyFunction&> (cf).IsOther())
@@ -3178,7 +3192,7 @@ flags : dict
                     shared_ptr<FESpace> test_space;
                     bool found = false;
                     for (auto igl : *igls)
-                      igl->cf -> TraverseTree ([&] (CoefficientFunction& cf) {
+                      igl->cf -> TraverseDAG ([&] (CoefficientFunction& cf) {
                           if (auto * proxy = dynamic_cast<ProxyFunction*>(&cf))
                             {
                               if (proxy->IsTrialFunction())
@@ -3209,7 +3223,9 @@ flags : dict
                      "  This file must be set by ngsolve.SetTestoutFile. Use\n"
                      "  ngsolve.SetNumThreads(1) for serial output.",
                      py::arg("printelvec") = "bool\n"
-                     "  print element vectors to testout file"
+                     "  print element vectors to testout file",
+                     py::arg("fp32") = "bool = False\n"
+                     "  Compute vector in single precision\n"                     
                      );
                 })
     .def("__str__",  [](LF & self ) { return ToString<LinearForm>(self); } )
@@ -3729,7 +3745,7 @@ integrator : ngsolve.fem.LFI
           if((region_wise || element_wise) && dim != 1)
             throw Exception("region_wise and element_wise only implemented for 1 dimensional coefficientfunctions");
 
-          cf -> TraverseTree
+          cf -> TraverseDAG
             ([&] (CoefficientFunction & stepcf)
              {
                if (dynamic_cast<ProxyFunction*>(&stepcf))
@@ -4137,7 +4153,7 @@ deformation : ngsolve.comp.GridFunction
              // check for DG terms
              bool has_other = false;
 
-             cf->TraverseTree ([&has_other] (CoefficientFunction & cf)
+             cf->TraverseDAG ([&has_other] (CoefficientFunction & cf)
                                {
                                  if (dynamic_cast<ProxyFunction*> (&cf))
                                    if (dynamic_cast<ProxyFunction&> (cf).IsOther())
@@ -4244,7 +4260,7 @@ deformation : ngsolve.comp.GridFunction
              // check for DG terms
              bool has_other = false;
 
-             cf->TraverseTree ([&has_other] (CoefficientFunction & cf)
+             cf->TraverseDAG ([&has_other] (CoefficientFunction & cf)
                                {
                                  if (dynamic_cast<ProxyFunction*> (&cf))
                                    if (dynamic_cast<ProxyFunction&> (cf).IsOther())
@@ -4361,7 +4377,7 @@ deformation : ngsolve.comp.GridFunction
              dynamic_cast<const BaseScalarFiniteElement& >(tpfes->Spaces(0)[0]->GetFE(ElementId(VOL,elnr),glh)).CalcShape(ip,shape);
              FlatVector<> result(ndofy,glh);
              result = Trans(elmat)*shape;
-             gf_k->GetVector().FVDouble() = result;
+             gf_k->GetVector().FV<double>() = result;
              
            });
   

@@ -353,9 +353,10 @@ namespace ngbla
     X = Identity(n);
     TriangularSolve<UpperRight,NonNormalized> (ainv, X);
     // ApplyHouseholderReflectionsTrans (ainv.Cols(0,n-1), Trans(SliceMatrix(X)));
+    // X^T <- Q^T X^T through the transposed view, i.e. X <- inv(R) Q^T
     MultiHouseholderReflection H(Trans(ainv.Cols(0,n-1)));
     H.MultTrans(Trans(AsSliceMatrix(X)));
-    ainv = Trans(X);
+    ainv = X;
   }
 
   

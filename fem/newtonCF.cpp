@@ -142,7 +142,7 @@ public:
 
     eq_dim = expression->Dimension();
 
-    expression->TraverseTree([&](CoefficientFunction &nodecf) {
+    expression->TraverseDAG([&](CoefficientFunction &nodecf) {
       auto nodeproxy = dynamic_cast<ProxyFunction *>(&nodecf);
       if (nodeproxy) {
         if (!nodeproxy->IsTestFunction()) {
@@ -615,7 +615,7 @@ public:
                  std::optional<int> amaxiter, std::optional<bool> aallow_fail)
       : expression(aexpression) {
 
-    expression->TraverseTree([&](CoefficientFunction &nodecf) {
+    expression->TraverseDAG([&](CoefficientFunction &nodecf) {
       auto nodeproxy = dynamic_cast<ProxyFunction *>(&nodecf);
       if (nodeproxy) {
         if (!nodeproxy->IsTestFunction()) {

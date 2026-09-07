@@ -36,92 +36,92 @@ namespace ngfem
     INLINE T_ScalarFiniteElement () { ; }
     // virtual ~T_ScalarFiniteElement() { ; }
 
-    HD virtual ELEMENT_TYPE ElementType() const final override { return ET; }
-    // HD NGS_DLL_HEADER virtual int Dim () const override { return DIM; } 
+    virtual ELEMENT_TYPE ElementType() const final override { return ET; }
+    // NGS_DLL_HEADER virtual int Dim () const override { return DIM; } 
 
     
-    HD NGS_DLL_HEADER virtual void CalcShape (const IntegrationPoint & ip, 
+    NGS_DLL_HEADER virtual void CalcShape (const IntegrationPoint & ip, 
 					      BareSliceVector<> shape) const override;
 
-    HD NGS_DLL_HEADER virtual void CalcDShape (const IntegrationPoint & ip, 
+    NGS_DLL_HEADER virtual void CalcDShape (const IntegrationPoint & ip, 
 					       BareSliceMatrix<> dshape) const override;
 
     
 #ifndef FASTCOMPILE
-    HD NGS_DLL_HEADER virtual void CalcShape (const IntegrationRule & ir, 
+    NGS_DLL_HEADER virtual void CalcShape (const IntegrationRule & ir, 
                                               BareSliceMatrix<> shape) const override;
     /// compute shape, row is shape nr, col is ip nr
-    HD NGS_DLL_HEADER 
+    NGS_DLL_HEADER 
     virtual void CalcShape (const SIMD_IntegrationRule & ir, 
                             BareSliceMatrix<SIMD<double>> shape) const override;
     
-    HD NGS_DLL_HEADER virtual double Evaluate (const IntegrationPoint & ip, 
+    NGS_DLL_HEADER virtual double Evaluate (const IntegrationPoint & ip, 
 					       BareSliceVector<double> x) const override;
     
-    HD NGS_DLL_HEADER virtual void Evaluate (const IntegrationRule & ir, 
+    NGS_DLL_HEADER virtual void Evaluate (const IntegrationRule & ir, 
 					     BareSliceVector<double> coefs, 
 					     BareSliceVector<double> vals) const override;
 
-    HD NGS_DLL_HEADER virtual void Evaluate (const SIMD_IntegrationRule & ir,
+    NGS_DLL_HEADER virtual void Evaluate (const SIMD_IntegrationRule & ir,
                                              BareSliceVector<> coefs,
                                              BareVector<SIMD<double>> values) const override;
 
-    HD NGS_DLL_HEADER virtual void Evaluate (const SIMD_IntegrationRule & ir,
+    NGS_DLL_HEADER virtual void Evaluate (const SIMD_IntegrationRule & ir,
                                              SliceMatrix<> coefs,
                                              BareSliceMatrix<SIMD<double>> values) const override;
     
-    HD NGS_DLL_HEADER virtual void Evaluate (const IntegrationRule & ir, SliceMatrix<> coefs, BareSliceMatrix<> values) const override;
+    NGS_DLL_HEADER virtual void Evaluate (const IntegrationRule & ir, SliceMatrix<> coefs, BareSliceMatrix<> values) const override;
 
-    HD NGS_DLL_HEADER virtual void EvaluateTrans (const IntegrationRule & ir, 
+    NGS_DLL_HEADER virtual void EvaluateTrans (const IntegrationRule & ir, 
                                                   BareSliceVector<> vals, 
                                                   BareSliceVector<double> coefs) const override;
     
-    HD NGS_DLL_HEADER virtual void AddTrans (const SIMD_IntegrationRule & ir,
+    NGS_DLL_HEADER virtual void AddTrans (const SIMD_IntegrationRule & ir,
                                              BareVector<SIMD<double>> values,
                                              BareSliceVector<> coefs) const override;
 
-    HD NGS_DLL_HEADER virtual void AddTrans (const SIMD_IntegrationRule & ir,
+    NGS_DLL_HEADER virtual void AddTrans (const SIMD_IntegrationRule & ir,
                                              BareSliceMatrix<SIMD<double>> values,
                                              SliceMatrix<> coefs) const override; 
 
-    HD NGS_DLL_HEADER virtual Vec<DIM> EvaluateGrad (const IntegrationPoint & ip, 
+    NGS_DLL_HEADER virtual Vec<DIM> EvaluateGrad (const IntegrationPoint & ip, 
                                                      BareSliceVector<> x) const override;
 
-    HD NGS_DLL_HEADER virtual void EvaluateGrad (const IntegrationRule & ir, 
+    NGS_DLL_HEADER virtual void EvaluateGrad (const IntegrationRule & ir, 
                                                  BareSliceVector<double> coefs, 
                                                  BareSliceMatrix<> vals) const override;
 
-    HD NGS_DLL_HEADER virtual void EvaluateGrad (const SIMD_BaseMappedIntegrationRule & ir,
+    NGS_DLL_HEADER virtual void EvaluateGrad (const SIMD_BaseMappedIntegrationRule & ir,
                                                  BareSliceVector<> coefs,
                                                  BareSliceMatrix<SIMD<double>> values) const override;
 
-    HD NGS_DLL_HEADER virtual void EvaluateGrad (const SIMD_IntegrationRule & ir,
+    NGS_DLL_HEADER virtual void EvaluateGrad (const SIMD_IntegrationRule & ir,
                                                  BareSliceVector<> coefs,
                                                  BareSliceMatrix<SIMD<double>> values) const override;
 
-    HD NGS_DLL_HEADER virtual void EvaluateGradTrans (const IntegrationRule & ir, 
+    NGS_DLL_HEADER virtual void EvaluateGradTrans (const IntegrationRule & ir, 
                                                       BareSliceMatrix<> vals, 
                                                       BareSliceVector<double> coefs) const override;
 
-    HD NGS_DLL_HEADER virtual void EvaluateGradTrans (const IntegrationRule & ir, 
+    NGS_DLL_HEADER virtual void EvaluateGradTrans (const IntegrationRule & ir, 
                                                       SliceMatrix<> values, 
                                                       SliceMatrix<> coefs) const override;
 
-    HD NGS_DLL_HEADER virtual void AddGradTrans (const SIMD_BaseMappedIntegrationRule & ir,
+    NGS_DLL_HEADER virtual void AddGradTrans (const SIMD_BaseMappedIntegrationRule & ir,
                                                  BareSliceMatrix<SIMD<double>> values,
                                                  BareSliceVector<> coefs) const override;
 
-    HD NGS_DLL_HEADER virtual void AddGradTrans (const SIMD_BaseMappedIntegrationRule & ir,
+    NGS_DLL_HEADER virtual void AddGradTrans (const SIMD_BaseMappedIntegrationRule & ir,
                                                  BareSliceMatrix<SIMD<double>> values,
                                                  SliceMatrix<> coefs) const override;
 
-    HD NGS_DLL_HEADER virtual void CalcMappedDShape (const BaseMappedIntegrationPoint & mip, 
+    NGS_DLL_HEADER virtual void CalcMappedDShape (const BaseMappedIntegrationPoint & mip, 
                                                      BareSliceMatrix<> dshape) const override;
 
-    HD NGS_DLL_HEADER virtual void CalcMappedDShape (const BaseMappedIntegrationRule & mip, 
+    NGS_DLL_HEADER virtual void CalcMappedDShape (const BaseMappedIntegrationRule & mip, 
                                                      BareSliceMatrix<> dshape) const override;
 
-    HD NGS_DLL_HEADER 
+    NGS_DLL_HEADER 
     virtual void CalcMappedDShape (const SIMD_BaseMappedIntegrationRule & mir, 
                                    BareSliceMatrix<SIMD<double>> dshapes) const override;
     
@@ -209,8 +209,8 @@ namespace ngfem
       this->ndof= 0;
       this->order = 0;
     }
-    HD NGS_DLL_HEADER virtual ~ScalarDummyFE() { ; }
-    HD NGS_DLL_HEADER virtual void GetDiagMassMatrix (FlatVector<> mass) const { ; } 
+    NGS_DLL_HEADER virtual ~ScalarDummyFE() { ; }
+    NGS_DLL_HEADER virtual void GetDiagMassMatrix (FlatVector<> mass) const { ; } 
     template<typename Tx, typename TFA>  
     INLINE static void T_CalcShape (TIP<ngfem::Dim(ET),Tx> ip, TFA & shape) 
     { ; }

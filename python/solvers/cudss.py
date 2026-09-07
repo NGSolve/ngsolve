@@ -3,6 +3,13 @@ import ngsolve.la as ngla
 import numpy as np
 from ngsolve import TimeFunction
 
+def _stream_package(solver):
+    # nvmath >= 1.0 dropped "numpy" from the stream package registry, leaving "cuda".
+    from nvmath.internal import package_wrapper
+    pkg = solver.rhs_package
+    return pkg if pkg in package_wrapper.PACKAGE else "cuda"
+
+
 class CudssSolver(ngla.SparseFactorizationInterface):
     solver = None
     dtype = np.float64
@@ -62,7 +69,7 @@ class CudssSolver(ngla.SparseFactorizationInterface):
             else:
                 values = mat.AsVector().FV().NumPy()
             values = values.astype(self.dtype, copy=False)
-            stream_holder = utils.get_or_create_stream(self.solver.device_id, None, self.solver.rhs_package)
+            stream_holder = utils.get_or_create_stream(self.solver.device_id, None, _stream_package(self.solver))
             values_tensor = NumpyTensor(values)
             self.solver.a.values.copy_(values_tensor, stream_holder)
         self.solver.factorize()
@@ -72,7 +79,7 @@ class CudssSolver(ngla.SparseFactorizationInterface):
     def Solve(self, b, sol):
         from nvmath.internal import utils
         from nvmath.internal.tensor_ifc_numpy import NumpyTensor
-        stream_holder = utils.get_or_create_stream(self.solver.device_id, None, self.solver.rhs_package)
+        stream_holder = utils.get_or_create_stream(self.solver.device_id, None, _stream_package(self.solver))
         self.solver.b.copy_(NumpyTensor(b.FV().NumPy().astype(self.dtype, copy=False)), stream_holder)
         result = self.solver.solve()
         sol.FV().NumPy()[:] = result

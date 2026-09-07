@@ -11,6 +11,7 @@
 #include <multigrid.hpp>
 // #include <parallelngs.hpp>
 #include <cg.hpp>
+#include <sparsefactorization_interface.hpp>
 
 namespace ngmg
 {
@@ -121,8 +122,14 @@ namespace ngmg
 	      checksumcgpre = checksum;
 	    */
 
+            auto fact = dynamic_pointer_cast<SparseFactorization> (coarsegridpre);
+            bool can_update = fact && fact->SupportsUpdate() &&
+              fact->GetAMatrix().get() == biform->GetMatrixPtr(0).get();
+
             bool condense = biform->UsesEliminateInternal();
-            shared_ptr<BitArray> freedofs = biform->GetFESpace()->GetFreeDofs(condense);
+            shared_ptr<BitArray> freedofs = fact ? fact->GetInner() : nullptr;
+            if (!freedofs)
+              freedofs = biform->GetFESpace()->GetFreeDofs(condense);
 
             /*
             auto additional_dirichlet_constraints = smoother -> GetAdditionalDirichletConstraints();
@@ -150,16 +157,19 @@ namespace ngmg
             
             
 
-	    if (!freedofs)
-	      coarsegridpre =
-		dynamic_cast<const BaseSparseMatrix&> (biform->GetMatrix(0)) .InverseMatrix();
+	    if (can_update)
+	      coarsegridpre->Update();
 	    else
 	      {
-		coarsegridpre =
-		  dynamic_cast<const BaseSparseMatrix&> (biform->GetMatrix(0)) .InverseMatrix(freedofs);
-	      }
+		if (!freedofs)
+		  coarsegridpre =
+		    dynamic_cast<const BaseSparseMatrix&> (biform->GetMatrix(0)) .InverseMatrix();
+		else
+		  coarsegridpre =
+		    dynamic_cast<const BaseSparseMatrix&> (biform->GetMatrix(0)) .InverseMatrix(freedofs);
 
-            GetMemoryTracer().Track(*coarsegridpre, "CoarseInverse");
+		GetMemoryTracer().Track(*coarsegridpre, "CoarseInverse");
+	      }
 
 	    /*
 	      }

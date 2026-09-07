@@ -27,6 +27,10 @@ namespace ngcomp
     static bool SupportsVB (VorB checkvb) { return (checkvb==VOL) || (checkvb==BND); }
     
     typedef DiffOpIdBoundary<D> DIFFOP_TRACE;
+
+    // identity: reference values are the physical values
+    static string GenerateTransformationCode (string invar, string outvar, bool trans)
+    { return outvar + " = " + invar + ";\n"; }
     
     template <typename FEL, typename MIP, typename MAT>
     static void GenerateMatrix (const FEL & bfel, const MIP & mip,
@@ -58,6 +62,12 @@ namespace ngcomp
                                       const SIMD_BaseMappedIntegrationRule & mir,
                                       BareSliceMatrix<SIMD<double>> mat)
     {
+      if (mir.DimElement() == D-1)
+        {
+          static_cast<const BaseScalarFiniteElement&>(fel).CalcShape (mir.IR(), mat);
+          return;
+        }
+
       int facetnr = mir.IR()[0].FacetNr();
       if (facetnr >= 0)
         {
@@ -77,6 +87,12 @@ namespace ngcomp
     static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
+      if (mir.DimElement() == D-1)
+        {
+          static_cast<const BaseScalarFiniteElement&>(bfel).Evaluate (mir.IR(), x, y.Row(0));
+          return;
+        }
+
       const FacetVolumeFiniteElement<D> & fel_facet = static_cast<const FacetVolumeFiniteElement<D>&> (bfel);
 
       int facetnr = mir.IR()[0].FacetNr();
@@ -92,6 +108,12 @@ namespace ngcomp
     static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
                                 BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
     {
+      if (mir.DimElement() == D-1)
+        {
+          static_cast<const BaseScalarFiniteElement&>(bfel).AddTrans (mir.IR(), y.Row(0), x);
+          return;
+        }
+
       const FacetVolumeFiniteElement<D> & fel_facet = static_cast<const FacetVolumeFiniteElement<D>&> (bfel);
 
       int facetnr = mir.IR()[0].FacetNr();
@@ -162,6 +184,9 @@ namespace ngcomp
     
     using FiniteElementType = FacetVolumeFiniteElement<D>;
     typedef DiffOpIdDual<D-1,D> DIFFOP_TRACE;
+
+    static string GenerateTransformationCode (string invar, string outvar, bool trans)
+    { return outvar + " = (1/meas) * " + invar + ";\n"; }
     
     template <typename FEL, typename MIP, typename MAT>
     static void GenerateMatrix (const FEL & bfel, const MIP & mip,
@@ -196,6 +221,15 @@ namespace ngcomp
                                       const SIMD_BaseMappedIntegrationRule & mir,
                                       BareSliceMatrix<SIMD<double>> mat)
     {
+      if (mir.DimElement() == D-1)
+        {
+          auto & sfel = static_cast<const BaseScalarFiniteElement&>(fel);
+          sfel.CalcShape (mir.IR(), mat);
+          for (size_t j = 0; j < mir.Size(); j++)
+            mat.Col(j).Range(sfel.GetNDof()) /= mir[j].GetMeasure();
+          return;
+        }
+
       int facetnr = mir.IR()[0].FacetNr();
       if (facetnr >= 0)
         {
@@ -217,6 +251,14 @@ namespace ngcomp
     static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
+      if (mir.DimElement() == D-1)
+        {
+          static_cast<const BaseScalarFiniteElement&>(bfel).Evaluate (mir.IR(), x, y.Row(0));
+          for (size_t j = 0; j < mir.Size(); j++)
+            y(0,j) /= mir[j].GetMeasure();
+          return;
+        }
+
       const FacetVolumeFiniteElement<D> & fel_facet = static_cast<const FacetVolumeFiniteElement<D>&> (bfel);
 
       int facetnr = mir.IR()[0].FacetNr();
@@ -236,6 +278,16 @@ namespace ngcomp
     static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
                                 BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
     {
+      if (mir.DimElement() == D-1)
+        {
+          VectorMem<40, SIMD<double>> hy(mir.Size());
+          hy = y.Row(0);
+          for (size_t j = 0; j < mir.Size(); j++)
+            hy(j) /= mir[j].GetMeasure();
+          static_cast<const BaseScalarFiniteElement&>(bfel).AddTrans (mir.IR(), hy, x);
+          return;
+        }
+
       const FacetVolumeFiniteElement<D> & fel_facet = static_cast<const FacetVolumeFiniteElement<D>&> (bfel);
 
       int facetnr = mir.IR()[0].FacetNr();
@@ -310,6 +362,8 @@ namespace ngcomp
     enum { DIFFORDER = 1 };
     using FiniteElementType = FacetVolumeFiniteElement<D>;
     static string Name() { return "grad"; }
+
+    typedef DiffOpGradientBoundary<D> DIFFOP_TRACE;
 
     template <typename FEL, typename MIP, typename MAT>
     static void GenerateMatrix (const FEL & bfel, const MIP & mip,
@@ -586,6 +640,7 @@ namespace ngcomp
   {
     name="FacetFESpace(facet)";
     type = "facet";
+    needs_transform_vec = false;
     // defined flags
     DefineNumFlag("relorder");
     DefineDefineFlag("variableorder"); 
@@ -668,8 +723,9 @@ namespace ngcomp
         evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<2>>>();
         integrator[BND] = make_shared<RobinIntegrator<2>> (one);
         flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradFacet<2>>>();
+        flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpGradientBoundary<2>>>();
 
-        additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpIdFacet<3>>>());
+        additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpIdFacetDual<2>>>());
       }
     else
       {
@@ -677,20 +733,44 @@ namespace ngcomp
 	evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<3>>>();
         integrator[BND] = make_shared<RobinIntegrator<3>> (one);
         flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradFacet<3>>>();
+        flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpGradientBoundary<3>>>();
 
-        additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpIdFacetDual<3>>>());        
+        additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpIdFacetDual<3>>>());
       }
 
     if (dimension > 1)
       {
         integrator[VOL] = make_shared<BlockBilinearFormIntegrator> (integrator[VOL], dimension);
         integrator[BND] = make_shared<BlockBilinearFormIntegrator> (integrator[BND], dimension);
-        
-        for (auto vb : { VOL,BND, BBND, BBBND })
-          if (evaluator[vb])
-            evaluator[vb] = make_shared<BlockDifferentialOperator> (evaluator[vb], dimension);
 
-        additional_evaluators.Set ("dual", make_shared<BlockDifferentialOperator> (additional_evaluators["dual"], dimension));        
+        if (ma->GetDimension() >= 2)
+          {
+            additional_evaluators.Set ("Grad", make_shared<BlockDifferentialOperatorTrans>(flux_evaluator[VOL], dimension));
+            additional_evaluators.Set ("Gradboundary", make_shared<BlockDifferentialOperatorTrans>(flux_evaluator[BND], dimension));
+          }
+
+        for (auto vb : { VOL,BND, BBND, BBBND })
+          {
+            if (evaluator[vb])
+              evaluator[vb] = make_shared<BlockDifferentialOperator> (evaluator[vb], dimension);
+            if (flux_evaluator[vb])
+              flux_evaluator[vb] = make_shared<BlockDifferentialOperator> (flux_evaluator[vb], dimension);
+          }
+
+        additional_evaluators.Set ("dual", make_shared<BlockDifferentialOperator> (additional_evaluators["dual"], dimension));
+      }
+    else
+      {
+        if (ma->GetDimension() == 2)
+          {
+            additional_evaluators.Set ("Grad", make_shared<T_DifferentialOperator<DiffOpGradFacet<2>>>());
+            additional_evaluators.Set ("Gradboundary", make_shared<T_DifferentialOperator<DiffOpGradientBoundary<2>>>());
+          }
+        else if (ma->GetDimension() == 3)
+          {
+            additional_evaluators.Set ("Grad", make_shared<T_DifferentialOperator<DiffOpGradFacet<3>>>());
+            additional_evaluators.Set ("Gradboundary", make_shared<T_DifferentialOperator<DiffOpGradientBoundary<3>>>());
+          }
       }
 
     if (flags.GetDefineFlag("hoprolongation"))

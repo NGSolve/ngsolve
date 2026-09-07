@@ -55,7 +55,6 @@ namespace ngla
     { c = ac; }
     ///
 
-    bool IsComplex() const override { return a->IsComplex(); }
     /// 
     void SetMaxSteps (int amaxsteps)
     { maxsteps = amaxsteps; }
@@ -89,8 +88,8 @@ namespace ngla
     { return steps; }
 
     ///
-    NGS_DLL_HEADER AutoVector CreateRowVector() const override { return a->CreateColVector(); }
-    NGS_DLL_HEADER AutoVector CreateColVector() const override { return a->CreateRowVector(); }
+    VecFormat RowFormat () const override { return a->ColFormat(); }
+    VecFormat ColFormat () const override { return a->RowFormat(); }
 
 
     int VHeight() const override {return a->VWidth();}
@@ -121,7 +120,7 @@ namespace ngla
       : KrylovSpaceSolver (aa, ac) { ; }
 
     ///
-    NGS_DLL_HEADER virtual void Mult (const BaseVector & v, BaseVector & prod) const;
+    NGS_DLL_HEADER virtual void Mult (const BaseVector & v, BaseVector & prod) const override;
   };
 
 
@@ -143,7 +142,7 @@ namespace ngla
       : KrylovSpaceSolver (aa, ac) { ; }
 
     ///
-    virtual void Mult (const BaseVector & v, BaseVector & prod) const;
+    virtual void Mult (const BaseVector & v, BaseVector & prod) const override;
   };
   
 
@@ -169,7 +168,7 @@ namespace ngla
     SimpleIterationSolver (shared_ptr<BaseMatrix> aa, shared_ptr<BaseMatrix> ac)
       : KrylovSpaceSolver (aa, ac) { tau = 1; }
     ///
-    virtual void Mult (const BaseVector & v, BaseVector & prod) const;
+    virtual void Mult (const BaseVector & v, BaseVector & prod) const override;
 
     void SetTau (SCAL atau) { tau = atau; }
   };
@@ -194,7 +193,7 @@ namespace ngla
       : KrylovSpaceSolver (aa, ac) { ; }
 
     ///
-    virtual void Mult (const BaseVector & v, BaseVector & prod) const;
+    virtual void Mult (const BaseVector & v, BaseVector & prod) const override;
   };
   
 
@@ -221,7 +220,7 @@ namespace ngla
       : KrylovSpaceSolver (aa, ac), c2(0) { ; }
 
     ///
-    virtual void Mult (const BaseVector & v, BaseVector & prod) const;
+    virtual void Mult (const BaseVector & v, BaseVector & prod) const override;
   };
   
 

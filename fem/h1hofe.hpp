@@ -61,8 +61,12 @@ namespace ngfem
     bool nodalp2 = false;
 
   public:
-    using VertexOrientedFE<ET>::SetVertexNumbers;    
-    using ET_trait<ET>::ElementType;
+    using VertexOrientedFE<ET>::SetVertexNumbers;
+    H1HighOrderFE * SetVertexNumbers (FlatArray<int> vnums) override
+    { VertexOrientedFE<ET>::SetVertexNumbers(vnums); return this; }
+
+    // using ET_trait<ET>::ElementType;
+    using BASE::ElementType;
     
     INLINE void SetNodalp2() { nodalp2 = true; }
     
@@ -119,7 +123,7 @@ namespace ngfem
       order = ho;
     }
 
-    HD virtual tuple<int,int,int,int> GetNDofVEFC () const override
+    virtual tuple<int,int,int,int> GetNDofVEFC () const override
     {
       int nv = N_VERTEX;
       int ne = 0, nf = 0, nc = 0;

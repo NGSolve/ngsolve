@@ -62,6 +62,9 @@ namespace ngcomp
 
     shared_ptr<BitArray> GetActiveDofs() const { return active_dofs; }
 
+    shared_ptr<BaseMatrix> GetEmbedding() const;
+    shared_ptr<BaseMatrix> GetRestriction() const;
+
     // a name for our new fe-space
     virtual string GetClassName () const override
     {

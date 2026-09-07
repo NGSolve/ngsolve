@@ -4209,17 +4209,21 @@ lot of new non-zero entries in the matrix!\n" << endl;
     return CreateBaseVector(fes->GetNDof(), fes->IsComplex(), fes->GetDimension());
   }
   
-  AutoVector ApplyMass :: CreateRowVector () const
+  VecFormat FESpace :: GetVectorFormat () const
   {
-    // should go to fespace    
-    return CreateBaseVector(fes->GetNDof(), fes->IsComplex(), fes->GetDimension());    
+    VecFormat f (GetNDof(), iscomplex ? Scalar(Complex(0)) : Scalar(double(0)), dimension);
+    if (IsParallel())
+      f.pardofs = GetParallelDofs();
+    return f;
   }
+
+  VecFormat ApplyMass :: RowFormat () const { return fes->GetVectorFormat(); }
+  VecFormat ApplyMass :: ColFormat () const { return fes->GetVectorFormat(); }
+  VecFormat ApplyTrace :: RowFormat () const { return fes->GetVectorFormat(); }
+  VecFormat ApplyTrace :: ColFormat () const
+  { return fes->GetVectorFormat().WithSize (festrace->GetNDof()); }
+
   
-  AutoVector ApplyMass :: CreateColVector () const
-  {
-    // should go to fespace
-    return CreateBaseVector(fes->GetNDof(), fes->IsComplex(), fes->GetDimension());    
-  }
 
 
 
@@ -4265,17 +4269,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     return CreateBaseVector(fes->GetNDof(), fes->IsComplex(), fes->GetDimension());
   }
   
-  AutoVector ApplyTrace :: CreateRowVector () const
-  {
-    // should go to fespace    
-    return CreateBaseVector(fes->GetNDof(), fes->IsComplex(), fes->GetDimension());    
-  }
   
-  AutoVector ApplyTrace :: CreateColVector () const
-  {
-    // should go to fespace
-    return CreateBaseVector(festrace->GetNDof(), fes->IsComplex(), fes->GetDimension());    
-  }
 
 
 

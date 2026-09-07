@@ -30,6 +30,7 @@ namespace std
 
 namespace ngcore
 {
+  using Complex32 = std::complex<float>;
   
 #ifdef USE_MYCOMPLEX
   typedef ngstd::MyComplex<double> Complex;
@@ -72,8 +73,17 @@ namespace ngcore
 namespace ngbla
 {
   using ngcore::Complex;
+  using ngcore::Complex32;
 
   using ngcore::AtomicAdd;
+  inline void AtomicAdd (Complex32 & x, Complex32 y)
+  {
+    auto real = y.real();
+    auto imag = y.imag();
+    ngcore::AtomicAdd (reinterpret_cast<float(&)[2]>(x)[0], real);
+    ngcore::AtomicAdd (reinterpret_cast<float(&)[2]>(x)[1], imag);
+  }
+
   inline void AtomicAdd (Complex & x, Complex y)
   {
     auto real = y.real();

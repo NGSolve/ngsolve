@@ -21,15 +21,12 @@ namespace ngla
     typedef double TSCAL;
     
     TransposeVector (int ah, int aw);
-    bool IsComplex() const override { return false; } 
 
-    int VHeight() const override { return h*w; }
-    int VWidth() const override { return h*w; }
 
     ostream & Print (ostream & ost) const override;
     
-    AutoVector CreateRowVector () const override;
-    AutoVector CreateColVector () const override;
+    VecFormat RowFormat () const override { return VVectorFormat<double> (h*w); }
+    VecFormat ColFormat () const override { return VVectorFormat<double> (h*w); }
 
     void Mult (const BaseVector & x, BaseVector & y) const override;    
     void MultTrans (const BaseVector & x, BaseVector & y) const override;    
@@ -45,26 +42,18 @@ namespace ngla
     PermutationMatrix (size_t awidth, Array<size_t> aind)
       : width(awidth), ind(aind) { ; } 
 
-    virtual bool IsComplex() const override { return false; } 
 
-    virtual int VHeight() const override { return ind.Size(); }
-    virtual int VWidth() const override { return width; }
 
-    virtual AutoVector CreateRowVector () const override
-    {
-      return CreateBaseVector(width, false, 1);
-    }
-    
-    virtual AutoVector CreateColVector () const override
-    {
-      return CreateBaseVector(ind.Size(), false, 1);
-    }
+    VecFormat RowFormat () const override { return VecFormat(width); }
+    VecFormat ColFormat () const override { return VecFormat(ind.Size()); }
 
     virtual void Mult (const BaseVector & x, BaseVector & y) const override;
     virtual void MultTrans (const BaseVector & x, BaseVector & y) const override;
 
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
     virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
+    virtual shared_ptr<BaseSparseMatrix> CreateSparseMatrix() const override;
+    FlatArray<size_t> GetIndices() const { return ind; }
   };
 
 
@@ -77,20 +66,13 @@ namespace ngla
     Embedding (size_t aheight, IntRange arange, bool ais_complex = false)
       : height(aheight), range(arange), is_complex(ais_complex) { ; }
 
-    virtual bool IsComplex() const override { return is_complex; } 
 
-    virtual int VHeight() const override { return height; }
-    virtual int VWidth() const override { return range.Size(); }
 
-    virtual AutoVector CreateRowVector () const override
-    {
-      return CreateBaseVector(range.Size(), is_complex, 1);
-    }
-    
-    virtual AutoVector CreateColVector () const override
-    {
-      return CreateBaseVector(height, is_complex, 1);
-    }
+    // complex if requested, otherwise the scalar stays open
+    VecFormat RowFormat () const override
+    { return is_complex ? VecFormat(range.Size(), Complex(0)) : VecFormat(range.Size()); }
+    VecFormat ColFormat () const override
+    { return is_complex ? VecFormat(height, Complex(0)) : VecFormat(height); }
 
     auto GetRange() const { return range; }
     
@@ -100,6 +82,8 @@ namespace ngla
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
     virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
     virtual shared_ptr<BaseSparseMatrix> CreateSparseMatrix() const override;    
+
+    NGS_DLL_HEADER shared_ptr<BaseMatrix> CreateDeviceMatrix () const override;
   };
 
 
@@ -113,22 +97,13 @@ namespace ngla
     EmbeddedMatrix (size_t aheight, IntRange arange, shared_ptr<BaseMatrix> amat)
       : height(aheight), range(arange), mat(amat) { ; }
 
-    virtual bool IsComplex() const override { return mat->IsComplex(); } 
 
-    virtual int VHeight() const override { return height; }
-    virtual int VWidth() const override { return mat->VWidth(); }
 
     virtual BaseMatrix::OperatorInfo GetOperatorInfo () const override;
 
-    virtual AutoVector CreateRowVector () const override
-    {
-      return mat->CreateRowVector();      
-    }
-    
-    virtual AutoVector CreateColVector () const override
-    {
-      return CreateBaseVector(height, IsComplex(), 1);      
-    }
+    VecFormat RowFormat () const override { return mat->RowFormat(); }
+    VecFormat ColFormat () const override
+    { return VecFormat::Merge (VecFormat(height), mat->ColFormat().ValueAxes()); }
 
     virtual void Mult (const BaseVector & x, BaseVector & y) const override;
     virtual void MultTrans (const BaseVector & x, BaseVector & y) const override;
@@ -142,12 +117,7 @@ namespace ngla
     virtual shared_ptr<BaseSparseMatrix> CreateSparseMatrix() const override;
     
     
-    /*
-    virtual shared_ptr<BaseMatrix> CreateDeviceMatrix() const override
-    {
-      return make_shared<EmbeddedMatrix>(height, range, mat->CreateDeviceMatrix());
-    }
-    */
+    NGS_DLL_HEADER shared_ptr<BaseMatrix> CreateDeviceMatrix() const override;
   };
 
 
@@ -160,20 +130,12 @@ namespace ngla
     EmbeddingTranspose (size_t awidth, IntRange arange, bool ais_complex = false)
       : width(awidth), range(arange), is_complex(ais_complex) { ; }
 
-    virtual bool IsComplex() const override { return is_complex; } 
     
-    virtual int VHeight() const override { return range.Size(); }
-    virtual int VWidth() const override { return width; }
 
-    virtual AutoVector CreateRowVector () const override
-    {
-      return CreateBaseVector(width, is_complex, 1);
-    }
-    
-    virtual AutoVector CreateColVector () const override
-    {
-      return CreateBaseVector(range.Size(), is_complex, 1);
-    }
+    VecFormat RowFormat () const override
+    { return is_complex ? VecFormat(width, Complex(0)) : VecFormat(width); }
+    VecFormat ColFormat () const override
+    { return is_complex ? VecFormat(range.Size(), Complex(0)) : VecFormat(range.Size()); }
 
     auto GetRange() const { return range; }
     
@@ -184,6 +146,7 @@ namespace ngla
     virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
 
     virtual shared_ptr<BaseSparseMatrix> CreateSparseMatrix() const override;    
+    NGS_DLL_HEADER shared_ptr<BaseMatrix> CreateDeviceMatrix () const override;
   };
 
 
@@ -196,22 +159,13 @@ namespace ngla
     EmbeddedTransposeMatrix (size_t awidth, IntRange arange, shared_ptr<BaseMatrix> amat)
       : width(awidth), range(arange), mat(amat) { ; }
 
-    virtual bool IsComplex() const override { return mat->IsComplex(); } 
 
     virtual BaseMatrix::OperatorInfo GetOperatorInfo () const override;
     
-    virtual int VHeight() const override { return mat->Height(); }
-    virtual int VWidth() const override { return width; }
 
-    virtual AutoVector CreateRowVector () const override
-    {
-      return CreateBaseVector(width, mat->IsComplex(), 1);
-    }
-    
-    virtual AutoVector CreateColVector () const override
-    {
-      return mat->CreateColVector();
-    }
+    VecFormat RowFormat () const override
+    { return VecFormat::Merge (VecFormat(width), mat->RowFormat().ValueAxes()); }
+    VecFormat ColFormat () const override { return mat->ColFormat(); }
 
     virtual void Mult (const BaseVector & x, BaseVector & y) const override;
     virtual void MultTrans (const BaseVector & x, BaseVector & y) const override;
@@ -223,12 +177,7 @@ namespace ngla
     virtual shared_ptr<BaseSparseMatrix> CreateSparseMatrix() const override;
     IntRange GetRange() const { return range; }
 
-    /*
-    virtual shared_ptr<BaseMatrix> CreateDeviceMatrix() const override
-    {
-      return make_shared<EmbeddedTransposeMatrix>(width, range, mat->CreateDeviceMatrix());
-    }
-    */
+    NGS_DLL_HEADER shared_ptr<BaseMatrix> CreateDeviceMatrix() const override;
   };
 
 
@@ -242,14 +191,13 @@ namespace ngla
     VVector<TVR> hx, hy;
   public:
     NGS_DLL_HEADER Real2ComplexMatrix (shared_ptr<BaseMatrix> arealmatrix = nullptr);
-    bool IsComplex() const override { return true; }     
     void SetMatrix (shared_ptr<BaseMatrix> arealmatrix);
     const BaseMatrix & GetMatrix () const { return *realmatrix; }
     void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
     void MultAdd (Complex s, const BaseVector & x, BaseVector & y) const override;
 
-    AutoVector CreateRowVector() const override;
-    AutoVector CreateColVector() const override;
+    VecFormat RowFormat () const override { return VVectorFormat<TVC> (realmatrix->Width()); }
+    VecFormat ColFormat () const override { return VVectorFormat<TVC> (realmatrix->Width()); }
   };
 
 
@@ -266,7 +214,7 @@ namespace ngla
     Sym2NonSymMatrix (const BaseMatrix * abasematrix = 0);
     void SetMatrix (const BaseMatrix * abasematrix);
     const BaseMatrix & GetMatrix () const { return *base; }
-    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
+    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
     //  virtual void MultAdd (Complex s, const BaseVector & x, BaseVector & y) const;
   };
 
@@ -288,10 +236,8 @@ namespace ngla
     //  virtual void MultAdd (Complex s, const BaseVector & x, BaseVector & y) const;
     void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
 
-    AutoVector CreateRowVector() const override
-    { throw Exception("CreateRowVector not implemented for Small2BigNonSymMatrix!"); }
-    AutoVector CreateColVector() const override
-    { throw Exception("CreateColVector not implemented for Small2BigNonSymMatrix!"); }
+    VecFormat RowFormat () const override { return VecFormat(); }
+    VecFormat ColFormat () const override { return VecFormat(); }
   };
 
 
@@ -324,8 +270,8 @@ namespace ngla
     virtual int VHeight() const override { throw Exception("VHeight does not make sense for BlockMatrix");}
     virtual int VWidth() const override { throw Exception("VWidth does not make sense for BlockMatrix");}
 
-    virtual AutoVector CreateRowVector () const override;
-    virtual AutoVector CreateColVector () const override;
+    VecFormat RowFormat () const override;
+    VecFormat ColFormat () const override;
   };
 
 
@@ -337,15 +283,13 @@ namespace ngla
   public:
     BaseMatrixFromVector (shared_ptr<BaseVector> avec);
 
-    bool IsComplex() const override { return vec->IsComplex(); }
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
     virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
 
-    virtual int VHeight() const override { return vec->Size(); }
-    virtual int VWidth() const override { return 1; }
 
-    virtual AutoVector CreateRowVector () const override;
-    virtual AutoVector CreateColVector () const override;
+    // missing parallel: 1 dof for all
+    VecFormat RowFormat () const override { return VVectorFormat<double> (1); }
+    VecFormat ColFormat () const override { return vec->GetFormat(); }
   };
 
 
@@ -356,15 +300,13 @@ namespace ngla
   public:
     BaseMatrixFromMultiVector (shared_ptr<MultiVector> avec);
 
-    bool IsComplex() const override { return vec->IsComplex(); }
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
     virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
 
-    virtual int VHeight() const override { return vec->RefVec()->Size(); }
-    virtual int VWidth() const override { return vec->Size(); }
 
-    virtual AutoVector CreateRowVector () const override;
-    virtual AutoVector CreateColVector () const override;
+    // missing parallel: 1 dof for all
+    VecFormat RowFormat () const override { return VVectorFormat<double> (vec->Size()); }
+    VecFormat ColFormat () const override { return vec->RefVec()->GetFormat(); }
   };
 
 
@@ -376,17 +318,14 @@ namespace ngla
   public:
     NGS_DLL_HEADER BaseMatrixFromMatrix (Matrix<T> amat);
 
-    bool IsComplex() const override { return typeid(T) == typeid(Complex); }
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
     virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
     virtual void MultAdd (Complex s, const BaseVector & x, BaseVector & y) const override;
     virtual void MultTransAdd (Complex s, const BaseVector & x, BaseVector & y) const override;
 
-    virtual int VHeight() const override { return mat.Height(); }
-    virtual int VWidth() const override { return mat.Width(); }
     virtual size_t NZE() const override { return mat.Height()*mat.Width(); }
-    virtual AutoVector CreateRowVector () const override;
-    virtual AutoVector CreateColVector () const override;
+    VecFormat RowFormat () const override { return VVectorFormat<T> (mat.Width()); }
+    VecFormat ColFormat () const override { return VVectorFormat<T> (mat.Height()); }
   };
 
 
@@ -402,9 +341,6 @@ namespace ngla
     LoggingMatrix (shared_ptr<BaseMatrix> amat, string alabel, string filename,
                    optional<NgMPI_Comm> acomm);
     ~LoggingMatrix ();
-    int VHeight() const override { return mat->VHeight(); }
-    int VWidth() const override { return mat->VWidth(); }
-    bool IsComplex() const override { return mat->IsComplex(); }
     
     BaseVector & AsVector() override;
     const BaseVector & AsVector() const override;
@@ -416,6 +352,8 @@ namespace ngla
 
     void Update() override { mat->Update(); }
     shared_ptr<BaseMatrix> CreateMatrix () const override { return mat->CreateMatrix(); }
+    VecFormat RowFormat () const override { return mat->RowFormat(); }
+    VecFormat ColFormat () const override { return mat->ColFormat(); }
     AutoVector CreateRowVector () const override;
     AutoVector CreateColVector () const override;
 

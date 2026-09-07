@@ -69,17 +69,38 @@ namespace ngfem
   struct GenericASinh {
     template <typename T> T operator() (T x) const { return asinh(x); }
     template <typename T> T Diff (T x) const { return 1.0 / sqrt(1.+x*x); }
+    shared_ptr<CoefficientFunction>
+    Diff (shared_ptr<CoefficientFunction> x) const;
     template <typename T>
-    AutoDiffDiff<1,T> operator() (AutoDiffDiff<1,T> x) const { throw Exception("no asinh for ADD"); }    
+    AutoDiffDiff<1,T> operator() (AutoDiffDiff<1,T> x) const
+    {
+      AutoDiffDiff<1,T> res(asinh(x.Value()));
+      T deriv = 1.0 / sqrt(1.0+x.Value()*x.Value());
+      res.DValue(0) = deriv*x.DValue(0);
+      res.DDValue(0) = -x.Value()*deriv*deriv*deriv*x.DValue(0)*x.DValue(0)
+        + deriv*x.DDValue(0);
+      return res;
+    }
     static string Name() { return "asinh"; }
     void DoArchive(Archive& ar) {}
   };
   
   struct GenericACosh {
     template <typename T> T operator() (T x) const { return acosh(x); }
-    template <typename T> T Diff (T x) const { return 1.0 / sqrt(1.-x*x); }
-    template <typename T>    
-    AutoDiffDiff<1,T> operator() (AutoDiffDiff<1,T> x) const { throw Exception("no acosh for ADD"); }        
+    template <typename T> T Diff (T x) const
+    { return 1.0 / (sqrt(x-1.)*sqrt(x+1.)); }
+    shared_ptr<CoefficientFunction>
+    Diff (shared_ptr<CoefficientFunction> x) const;
+    template <typename T>
+    AutoDiffDiff<1,T> operator() (AutoDiffDiff<1,T> x) const
+    {
+      AutoDiffDiff<1,T> res(acosh(x.Value()));
+      T deriv = 1.0 / (sqrt(x.Value()-1.0)*sqrt(x.Value()+1.0));
+      res.DValue(0) = deriv*x.DValue(0);
+      res.DDValue(0) = -x.Value()*deriv*deriv*deriv*x.DValue(0)*x.DValue(0)
+        + deriv*x.DDValue(0);
+      return res;
+    }
     static string Name() { return "acosh"; }
     void DoArchive(Archive& ar) {}
   };

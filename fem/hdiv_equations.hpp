@@ -86,7 +86,17 @@ public:
     auto & mip = static_cast<const MappedIntegrationPoint<D,D>&>(bmip);
     mat = 1./mip.GetJacobiDet() * mip.GetJacobian();
   }
-    
+
+
+  static string GenerateTransformationCode (string invar, string outvar, bool trans) 
+  {
+    if (!trans)
+      return outvar + " = 1/J * (F * " + invar + ");\n";
+    else
+      return outvar + " = 1/J * (Trans(F) * " + invar + ");\n";        
+  }
+
+  
   
   static void GenerateMatrixSIMDIR (const FiniteElement & fel,
                                     const SIMD_BaseMappedIntegrationRule & mir, BareSliceMatrix<SIMD<double>> mat)
@@ -584,7 +594,26 @@ public:
     typedef DiffOpGradientTraceHDiv<D> DIFFOP_TRACE;
     ///
 
+    static string GenerateTransformationCode (string invar, string outvar, bool trans) 
+    {
+      // grad gives transpose jacobi matrix
+      if (!trans)
+        return outvar+ "= ToVec(1/J*Trans(Inv(F)) * (ToMat<3,3>("+invar+".Range<0,9>()) * Trans(F)));\n";
+      else
+        return outvar+ "= 0.0; "+outvar+".SetRange<0,9>(ToVec(1/J*Inv(F) * (ToMat<3,3>("+invar+") * F)));\n";
 
+
+      /*
+         for curved elements:  (att: row-wise gradients)
+      // H(div), u = 1/J F uhat:
+      //   (grad u)_ij = 1/J F_ig [ d^_b uhat_g + (F^{-1})_gk H_kab uhat_a
+      //                                        - uhat_g (F^{-1})_ak H_kab ] (F^{-1})_bj
+      
+      auto R     = Finv * RowContract(H, uhat) - Outer(uhat, d);
+      auto gradd = (1.0f/J) * (F * (duhat + R) * Finv);
+      */
+    }
+    
     
 #ifdef UNUSED    
     template <typename AFEL, typename SIP, typename MAT,
@@ -686,6 +715,15 @@ public:
     static void GenerateMatrix (const AFEL & fel, const MIP & mip, MAT mat, LocalHeap & lh)
     {
       CalcDShapeFE<FEL,D,D-1,D>(static_cast<const FEL&>(fel), mip, Trans(mat), lh, eps());
+    }
+
+    static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
+                                      const SIMD_BaseMappedIntegrationRule & bmir,
+                                      BareSliceMatrix<SIMD<double>> mat)
+    {
+      CalcSIMDDShapeFE<FEL,D,D-1,D>
+        (static_cast<const FEL&>(bfel),
+         static_cast<const SIMD_MappedIntegrationRule<D-1,D>&>(bmir), mat, eps());
     }
   };  
 

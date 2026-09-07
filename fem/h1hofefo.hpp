@@ -50,6 +50,8 @@ namespace ngfem
       for (int i = 0; i < N_VERTEX; i++) vnums[i] = avnums[i]; 
       return this;
     }
+    H1HighOrderFEFO<ET_TRIG, ORDER> * SetVertexNumbers (FlatArray<int> avnums) override
+    { return SetVertexNumbers<FlatArray<int>> (avnums); }
 
     template<typename Tx, typename TFA>  
     INLINE void T_CalcShape (TIP<2,Tx> ip, TFA & shape) const; 
@@ -87,6 +89,8 @@ namespace ngfem
       for (int i = 0; i < N_VERTEX; i++) vnums[i] = avnums[i]; 
       return this;
     }
+    H1HighOrderFEFO<ET_TET, ORDER> * SetVertexNumbers (FlatArray<int> avnums) override
+    { return SetVertexNumbers<FlatArray<int>> (avnums); }
 
     template<typename Tx, typename TFA>  
     INLINE void T_CalcShape (TIP<3,Tx> ip, TFA & shape) const; 

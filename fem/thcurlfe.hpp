@@ -34,7 +34,7 @@ namespace ngfem
   public:
 
     NGS_DLL_HEADER T_HCurlHighOrderFiniteElement () { ; }
-    HD virtual ELEMENT_TYPE ElementType() const override { return ET; }
+    virtual ELEMENT_TYPE ElementType() const override { return ET; }
     
     template<typename Tx, typename TFA>  
     INLINE void T_CalcShape (TIP<DIM,Tx> tip, TFA & shape) const

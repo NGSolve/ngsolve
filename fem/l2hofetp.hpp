@@ -104,8 +104,8 @@ namespace ngfem
                             facx.Rows(shapenr*(order+1), shapenr*(order+1)+order+1-shapenr),
                             quad_coefs.RowSlice(shapenr, order).AddSize(shapenr+1, nipx));
                 */
-                quad_coefs.RowSlice(shapenr, order).AddSize(shapenr+1, nipx) =
-                  cube_coefs.RowSlice(shapenr, order).Cols(0, order+1-shapenr).AddSize(shapenr+1, order+1-shapenr)
+                quad_coefs.Rows(shapenr, shapenr+(shapenr+1)*order).RowSlice(0, order).Rows(0, shapenr+1).Cols(0, nipx) =
+                  cube_coefs.Rows(shapenr, shapenr+(shapenr+1)*order).RowSlice(0, order).Rows(0, shapenr+1).Cols(0, order+1-shapenr)
                   * facx.Rows(shapenr*(order+1), shapenr*(order+1)+order+1-shapenr);
               
                 txmult.AddFlops (nipx*(order+1-shapenr)*(shapenr+1));

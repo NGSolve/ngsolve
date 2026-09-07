@@ -385,6 +385,23 @@ public:
   {
     t2.Data() = nullptr;
   }
+
+  // empty tensor (all sizes 0), e.g. for members assigned later
+  template <int... I>
+  Tensor (std::integer_sequence<int,I...>) : FlatTensor<DIM,T> (size_t(0*I)...) { this->Data() = nullptr; }
+  Tensor () : Tensor (std::make_integer_sequence<int,DIM>()) { }
+
+  // take over shape and memory (FlatTensor::operator= copies elements)
+  Tensor & operator= (Tensor&& t2)
+  {
+    if (this != &t2)
+      {
+        delete [] this->Data();
+        new (static_cast<FlatTensor<DIM,T>*>(this)) FlatTensor<DIM,T> (static_cast<const FlatTensor<DIM,T>&>(t2));
+        t2.Data() = nullptr;
+      }
+    return *this;
+  }
   
   template <typename ... ARG>
   Tensor (ARG ... args) : FlatTensor<DIM,T> (args...)

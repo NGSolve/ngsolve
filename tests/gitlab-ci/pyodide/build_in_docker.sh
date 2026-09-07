@@ -14,7 +14,15 @@ export CMAKE_TOOLCHAIN_FILE=/root/emsdk/upstream/emscripten/cmake/Modules/Platfo
 
 echo "TARGETINSTALLDIR $TARGETINSTALLDIR"
 sed -i 's/TARGET_SUPPORTS_SHARED_LIBS FALSE/TARGET_SUPPORTS_SHARED_LIBS TRUE/' $CMAKE_TOOLCHAIN_FILE
-echo 'set(CMAKE_STRIP "${EMSCRIPTEN_ROOT_PATH}/emstrip${EMCC_SUFFIX}" CACHE FILEPATH "Emscripten strip")' >> ${CMAKE_TOOLCHAIN_FILE}
+# pybind11 strips every python module in a POST_BUILD step. Plain emstrip
+# (llvm-strip) drops the dylink.0 section, which makes the side modules
+# unloadable ("need the dylink section to be first"), so keep that section.
+cat > /root/emstrip_side_module <<EOF
+#!/bin/bash
+exec $(which emstrip) --keep-section=dylink.0 "\$@"
+EOF
+chmod +x /root/emstrip_side_module
+echo 'set(CMAKE_STRIP "/root/emstrip_side_module" CACHE FILEPATH "Emscripten strip")' >> ${CMAKE_TOOLCHAIN_FILE}
 export CCACHE_DIR=/ccache
 ccache -s
 

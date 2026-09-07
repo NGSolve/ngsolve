@@ -533,6 +533,86 @@ namespace ngmg
 
 
 
+  shared_ptr<SparseMatrix<double>> EdgeProlongation ::
+  CreateProlongationMatrix (int finelevel) const
+  {
+    if (finelevel >= space.GetNLevels())   // space created after refinement
+      return nullptr;
+
+    size_t nc = space.GetNDofLevel (finelevel-1);
+    size_t nf = space.GetNDofLevel (finelevel);
+
+    Array<Array<pair<int,double>>> rows(nf-nc);
+    Array<bool> done(nf-nc);
+    done = false;
+
+    auto resolve = [&] (auto & self, size_t i) -> void      // i in [nc,nf)
+    {
+      if (done[i-nc]) return;
+      auto & row = rows[i-nc];
+      for (int pa : { space.ParentEdge1(i), space.ParentEdge2(i) })
+        {
+          if (pa == -1) continue;
+          double s = (pa & 1) ? 0.5 : -0.5;
+          size_t j = pa/2;
+          if (j < nc)
+            row.Append (make_pair(int(j), s));
+          else
+            {
+              self (self, j);
+              for (auto [c, w] : rows[j-nc])
+                row.Append (make_pair(c, s*w));
+            }
+        }
+      QuickSort (row, [](auto a, auto b) { return a.first < b.first; });
+      int nr = 0;
+      for (int k = 0; k < row.Size(); k++)
+        if (nr > 0 && row[nr-1].first == row[k].first)
+          row[nr-1].second += row[k].second;
+        else
+          row[nr++] = row[k];
+      row.SetSize(nr);
+      done[i-nc] = true;
+    };
+    for (size_t i = nc; i < nf; i++)
+      resolve (resolve, i);
+
+    Array<int> perrow(nf);
+    for (size_t i = 0; i < nf; i++)
+      {
+        if (space.FineLevelOfEdge(i) < finelevel)
+          perrow[i] = 0;
+        else
+          perrow[i] = (i < nc) ? 1 : rows[i-nc].Size();
+      }
+
+    MatrixGraph mg(perrow, nc);
+    for (size_t i = 0; i < nf; i++)
+      {
+        if (!perrow[i]) continue;
+        if (i < nc)
+          mg.CreatePosition (i, i);
+        else
+          for (auto [c, w] : rows[i-nc])
+            mg.CreatePosition (i, c);
+      }
+
+    auto spprol = make_shared<SparseMatrix<double>> (std::move(mg));
+    auto & prol = *spprol;
+    prol.AsVector() = 0.;
+    for (size_t i = 0; i < nf; i++)
+      {
+        if (!perrow[i]) continue;
+        if (i < nc)
+          prol(i,i) = 1.;
+        else
+          for (auto [c, w] : rows[i-nc])
+            prol(i,c) = w;
+      }
+    return spprol;
+  }
+
+
   void EdgeProlongation :: ProlongateInline (int finelevel, BaseVector & v) const
   {
     size_t nc = space.GetNDofLevel (finelevel-1);

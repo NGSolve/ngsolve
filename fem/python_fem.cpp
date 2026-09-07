@@ -195,7 +195,8 @@ cl_UnaryOpCF<GenericBSpline>::Diff(const CoefficientFunction * var,
                                    shared_ptr<CoefficientFunction> dir) const
 {
   if (this == var) return dir;
-  return UnaryOpCF(c1, GenericBSpline(lam.sp->Differentiate())) * c1->Diff(var, dir);
+  return CWMult(UnaryOpCF(c1, GenericBSpline(lam.sp->Differentiate())),
+                c1->Diff(var, dir));
 }
 
 template <> shared_ptr<CoefficientFunction>
@@ -221,14 +222,14 @@ cl_BinaryOpCF<GenericATan2>::Diff(const CoefficientFunction * var,
                                   shared_ptr<CoefficientFunction> dir) const
 {
   if (var == this) return dir;    
-  return (c1->Diff(var,dir)*c2 - c2->Diff(var,dir)*c1) / (c1*c1+c2*c2);
+  return (CWMult(c1->Diff(var,dir),c2) - CWMult(c2->Diff(var,dir),c1))
+    / (CWMult(c1,c1)+CWMult(c2,c2));
 }
 
 template <> shared_ptr<CoefficientFunction>
 cl_BinaryOpCF<GenericATan2>::DiffJacobi(const CoefficientFunction * var, T_DJC & cache) const
 {
-  if (this == var) return make_shared<ConstantCoefficientFunction>(1);
-  return (c1->DiffJacobi(var,cache)*c2 - c2->DiffJacobi(var,cache)*c1) / (c1*c1+c2*c2);
+  return BASE::DiffJacobi(var, cache);
 }
 
 
@@ -252,18 +253,17 @@ cl_BinaryOpCF<GenericPow>::Diff(const CoefficientFunction * var,
                                  shared_ptr<CoefficientFunction> dir) const
 {
   if (this == var) return dir;
-  // return UnaryOpCF(c1,GenericLog(),"log")*c2->Diff(var, dir)*BinaryOpCF(c1,c2,GenericPow(), "pow") + c2*c1->Diff(var,dir)/c1*BinaryOpCF(c1,c2,GenericPow(), "pow");
-  return log(c1)*c2->Diff(var, dir)*BinaryOpCF(c1,c2,GenericPow(), "pow") + c2*c1->Diff(var,dir)/c1*BinaryOpCF(c1,c2,GenericPow(), "pow");
+  auto one = OneVectorCF(c1->Dimensions());
+  auto powcf = BinaryOpCF(c1,c2,GenericPow(), "pow");
+  auto powcf1 = BinaryOpCF(c1,c2-one,GenericPow(), "pow");
+  return CWMult(CWMult(c2,powcf1),c1->Diff(var,dir))
+    + CWMult(CWMult(log(c1),powcf),c2->Diff(var,dir));
 }
 
 template <> shared_ptr<CoefficientFunction>
 cl_BinaryOpCF<GenericPow>::DiffJacobi(const CoefficientFunction * var, T_DJC & cache) const
 {
-  if (this == var) return make_shared<ConstantCoefficientFunction>(1);
-  /// auto loga = UnaryOpCF( c1, GenericLog(), "log");
-  // auto exp_b_loga = UnaryOpCF(c2*loga, MakeSGenericExp(), "exp");
-  auto exp_b_loga = exp(c2*log(c1));
-  return exp_b_loga->DiffJacobi(var, cache);
+  return BASE::DiffJacobi(var, cache);
 }
 
 

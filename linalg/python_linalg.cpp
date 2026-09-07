@@ -28,6 +28,7 @@ protected:
   py::object pyop;
   size_t h, w;
   bool is_complex;
+  Scalar scal = double(0);
 public:
   PyLinearOperator (py::object apyop)
     : pyop(apyop)
@@ -40,13 +41,15 @@ public:
     // const auto pyarray_dtype = py::reinterpret_borrow<py::dtype>(dtype);
     auto pyarray_dtype = py::cast<py::dtype>(pyop.attr("dtype"));
     is_complex = pyarray_dtype.is(pybind11::dtype::of<Complex>());
+    if (is_complex) scal = Complex(0);
+    else if (pyarray_dtype.is(pybind11::dtype::of<float>())) scal = float(0);
   }
 
   bool IsComplex() const override { return is_complex; }
   int VHeight() const override { return h; }
   int VWidth() const override { return w; }
-  AutoVector CreateRowVector () const override { return CreateBaseVector(w, is_complex, 1); }
-  AutoVector CreateColVector () const override { return CreateBaseVector(h, is_complex, 1); }
+  VecFormat RowFormat () const override { return VecFormat(w, scal); }
+  VecFormat ColFormat () const override { return VecFormat(h, scal); }
 
   void Mult (const BaseVector & x, BaseVector & y) const override
   {
@@ -271,6 +274,28 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
       .def("__str__", [](BaseScalar &self) { return ToString(self); } )
       ;
     
+  py::class_<VecFormat> (m, "VecFormat",
+                         "Describes a vector type: size, scalar type, entry size, "
+                         "parallel, device, blocks. Axes an operator does not know stay open.")
+    .def(py::init<>())
+    .def(py::init<size_t>(), py::arg("size"))
+    .def("__str__", [] (const VecFormat & f) { return ToString(f); })
+    .def("__repr__", [] (const VecFormat & f) { return "VecFormat(" + ToString(f) + ")"; })
+    .def_property_readonly("size", [] (const VecFormat & f) -> py::object
+         { if (f.size) return py::cast(*f.size); return py::none(); })
+    .def_property_readonly("scalar", [] (const VecFormat & f) -> py::object
+         { if (f.scal) return py::cast(ScalarName(*f.scal)); return py::none(); })
+    .def_property_readonly("entrysize", [] (const VecFormat & f) -> py::object
+         { if (f.es) return py::cast(*f.es); return py::none(); })
+    .def_property_readonly("is_complex", &VecFormat::IsComplex)
+    .def_property_readonly("is_parallel", [] (const VecFormat & f) { return bool(f.pardofs); })
+    .def_property_readonly("is_device", [] (const VecFormat & f) { return f.device.has_value(); })
+    .def_property_readonly("blocks", [] (const VecFormat & f) { return f.blocks; })
+    .def("Merge", [] (const VecFormat & a, const VecFormat & b) { return VecFormat::Merge(a, b); })
+    .def("WithDefaults", &VecFormat::WithDefaults)
+    .def("CreateVector", [] (const VecFormat & f) { return shared_ptr<BaseVector>(CreateBaseVector(f.WithDefaults())); })
+    ;
+
   py::class_<BaseVector, shared_ptr<BaseVector>>(m, "BaseVector",
                                                  py::dynamic_attr(), // add dynamic attributes
                                                  py::buffer_protocol()
@@ -307,28 +332,28 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
       if (!self.IsComplex())
         return py::buffer_info
           (
-           self.FVDouble().Data(),                       /* Pointer to buffer */
+           self.FV<double>().Data(),                       /* Pointer to buffer */
            sizeof(double),                               /* Size of one scalar */
            py::format_descriptor<double>::format(),      /* Python struct-style format descriptor */
            1,                                            /* Number of dimensions */
-           { self.FVDouble().Size() },                              /* Buffer dimensions */
+           { self.FV<double>().Size() },                              /* Buffer dimensions */
            { sizeof(double)  }                           /* Strides (in bytes) for each index */
         );
       else
         return py::buffer_info
           (
-           self.FVComplex().Data(),                       /* Pointer to buffer */
+           self.FV<Complex>().Data(),                       /* Pointer to buffer */
            sizeof(Complex),                               /* Size of one scalar */
            py::format_descriptor<Complex>::format(),      /* Python struct-style format descriptor */
            1,                                            /* Number of dimensions */
-           { self.FVComplex().Size() },                              /* Buffer dimensions */
+           { self.FV<Complex>().Size() },                              /* Buffer dimensions */
            { sizeof(Complex)  }                           /* Strides (in bytes) for each index */
         );
     })
     
     .def(py::pickle([] (const BaseVector& bv)
                     {
-                      MemoryView mv((void*) &bv.FVDouble()[0], sizeof(double) * bv.FVDouble().Size());
+                      MemoryView mv((void*) &bv.FV<double>()[0], sizeof(double) * bv.FV<double>().Size());
                       return py::make_tuple(bv.Size(),bv.IsComplex(),bv.EntrySize(),mv);
                     },
                     [] (py::tuple state) -> shared_ptr<BaseVector>
@@ -358,6 +383,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def_property_readonly("is_complex", &BaseVector::IsComplex)
     .def_property_readonly ("comm", [](const BaseVector & self) { return self.GetCommunicator(); })
     
+    .def("GetFormat", &BaseVector::GetFormat, "vector type as VecFormat")
     .def("CreateVector", [] (BaseVector & self, bool copy)
          {
            auto newvec = self.CreateVector();
@@ -395,7 +421,10 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
          },
          "creates a new vector of same type, copy contents (scipy compatibility)")
     .def_property_readonly("dtype", [](BaseVector & self)
-      { return self.IsComplex() ? py::dtype::of<Complex>() : py::dtype::of<double>(); })
+      {
+        return std::visit ([] (auto proto) { return py::dtype::of<decltype(proto)>(); },
+                           self.GetScalarType());
+      })
     
     .def("Assign",[](BaseVector & self, BaseVector & v2, py::object s)->void
                                    { 
@@ -444,9 +473,9 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
              if(entrysize == 1)
              {
                  if( !self.IsComplex() )
-                     return py::cast(self.FVDouble()[ind]);
+                     return py::cast(self.FV<double>()[ind]);
                  else
-                     return py::cast(self.FVComplex()[ind]);
+                     return py::cast(self.FV<Complex>()[ind]);
              }
              else
              {
@@ -601,6 +630,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
          { b.AddTo(-1, *a); return a; })
 
     .def("__neg__", [] (shared_ptr<BaseVector> a) { return (-1.0)*a; })
+    .def("__imul__", [] (shared_ptr<BaseVector> a, BaseScalar & scal) { a->Scale(scal); return a; })
     .def("__rmul__", [] (shared_ptr<BaseVector> a, double scal) { return scal*a; })
     .def("__rmul__", [] (shared_ptr<BaseVector> a, Complex scal) { return scal*a; })
     .def("__rmul__", [] (shared_ptr<BaseVector> a, shared_ptr<BaseScalar> scal) { return scal*a; })    
@@ -633,14 +663,14 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def("FV", [] (BaseVector & self)
                                 {
                                   if (!self.IsComplex())
-                                    return py::cast(self.FVDouble());
+                                    return py::cast(self.FV<double>());
                                   else
-                                    return py::cast(self.FVComplex());
+                                    return py::cast(self.FV<Complex>());
                                 }, py::keep_alive<0,1>())
     .def("Reshape", [] (BaseVector & self, size_t w)
          {
            size_t h = self.Size()/w;
-           return FlatMatrix<> (h, w, &self.FVDouble()(0));
+           return FlatMatrix<> (h, w, &self.FV<double>()(0));
          }, py::arg("width"))
     .def("SetRandom", [] (BaseVector & self, optional<unsigned int> seed)
          {
@@ -927,25 +957,47 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
         return get<1>(Shape());
       }
       
+
+
+      // python classes may define the formats, or the vectors (old style)
       AutoVector CreateRowVector () const override {
         py::gil_scoped_acquire gil;
-
         if (auto overload = pybind11::get_overload(this, "CreateRowVector"))
           return py::cast<shared_ptr<BaseVector>> (overload());
         if (auto overload = pybind11::get_overload(this, "CreateVector"))
           return py::cast<shared_ptr<BaseVector>> (overload(false));
-        
-        throw Exception ("CreateRowVector not overloaded from python");        
+        return BaseMatrix::CreateRowVector();
       }
 
       AutoVector CreateColVector () const override {
         py::gil_scoped_acquire gil;
-
         if (auto overload = pybind11::get_overload(this, "CreateColVector"))
           return py::cast<shared_ptr<BaseVector>> (overload());
         if (auto overload = pybind11::get_overload(this, "CreateVector"))
           return py::cast<shared_ptr<BaseVector>> (overload(true));
-        throw Exception ("CreateColVector not overloaded from python");        
+        return BaseMatrix::CreateColVector();
+      }
+
+      VecFormat RowFormat () const override {
+        py::gil_scoped_acquire gil;
+        if (auto overload = pybind11::get_overload(this, "RowFormat"))
+          return py::cast<VecFormat> (overload());
+        if (pybind11::get_overload(this, "CreateRowVector") || pybind11::get_overload(this, "CreateVector"))
+          return CreateRowVector().GetFormat();
+        // shape only, from Height/Width or Shape
+        try { return VecFormat (size_t(VWidth())); }
+        catch (Exception &) { return VecFormat(); }
+      }
+
+      VecFormat ColFormat () const override {
+        py::gil_scoped_acquire gil;
+        if (auto overload = pybind11::get_overload(this, "ColFormat"))
+          return py::cast<VecFormat> (overload());
+        if (pybind11::get_overload(this, "CreateColVector") || pybind11::get_overload(this, "CreateVector"))
+          return CreateColVector().GetFormat();
+        // shape only, from Height/Width or Shape
+        try { return VecFormat (size_t(VHeight())); }
+        catch (Exception &) { return VecFormat(); }
       }
 
       void Mult (const BaseVector & x, BaseVector & y) const override {
@@ -1056,6 +1108,14 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
         { return shared_ptr<BaseVector>(self.CreateRowVector()); } )
     .def("CreateColVector", [] ( BaseMatrix & self)
         { return shared_ptr<BaseVector>(self.CreateColVector()); } )
+    .def("CreateRowVector", [] ( BaseMatrix & self, const BaseVector & like)
+        { return shared_ptr<BaseVector>(self.CreateRowVectorFor(like)); }, py::arg("like"),
+         "row vector, open axes (scalar, device, ...) taken from the given vector")
+    .def("CreateColVector", [] ( BaseMatrix & self, const BaseVector & like)
+        { return shared_ptr<BaseVector>(self.CreateColVectorFor(like)); }, py::arg("like"),
+         "col vector, open axes (scalar, device, ...) taken from the given vector")
+    .def("RowFormat", &BaseMatrix::RowFormat, "what the operator knows about its row vectors")
+    .def("ColFormat", &BaseMatrix::ColFormat, "what the operator knows about its col vectors")
     .def("CreateVector", [] ( BaseMatrix & self, bool colvec)
         {
           if (colvec)
@@ -1213,6 +1273,249 @@ inverse : string
     .def("Update", [](BM &m) { m.Update(); }, py::call_guard<py::gil_scoped_release>(), "Update matrix")
     .def("CreateDeviceMatrix", &BaseMatrix::CreateDeviceMatrix)
     ;
+
+  /*
+    Device scalars in python. Arithmetic builds an expression, assigned
+    to a scalar with  alpha.data = wd / as_s  - one kernel, no host
+    round-trip. Get() reads the value back and waits for the queue.
+  */
+  using ngs_gpu::KernelArg;
+  struct PyDevScalExpr
+  {
+    string type;    // "double" or "float"
+    std::function<void(string & code, string & params, std::vector<KernelArg> & args)> emit;
+  };
+  py::class_<PyDevScalExpr> (m, "DeviceScalarExpr", "expression of device scalars, evaluated on assignment");
+
+  auto bind_devicescalar = [&m] (auto proto, const char * name, const char * doc)
+  {
+    typedef decltype(proto) T;
+    typedef DeviceScalar<T> DS;
+    const string tname = DevScalTypeName<T>();
+
+    // leaf and constant expressions of this precision
+    auto leaf = [tname] (shared_ptr<DS> s) -> PyDevScalExpr
+    {
+      return { tname, [s, tname] (string & code, string & params, std::vector<KernelArg> & args)
+        {
+          auto nm = "s" + ToString(args.size());
+          params += ", GLOBAL_IN(" + tname + "," + nm + ")";
+          code += nm + "[0]";
+          args.push_back (s->DevArg());
+        } };
+    };
+    auto constant = [tname] (double v) -> PyDevScalExpr
+    {
+      return { tname, [v, tname] (string & code, string & params, std::vector<KernelArg> & args)
+        {
+          auto nm = "s" + ToString(args.size());
+          params += ", VALUE(" + tname + "," + nm + ")";
+          code += nm;
+          if (tname == "double") args.push_back (KernelArg(double(v)));
+          else args.push_back (KernelArg(float(v)));
+        } };
+    };
+    auto assign = [tname] (DS & self, const PyDevScalExpr & e)
+    {
+      if (e.type != tname)
+        throw Exception("DeviceScalar: expression of another precision");
+      std::vector<KernelArg> args;
+      string body = "s0[0] = ", params = ", GLOBAL(" + tname + ",s0)";
+      args.push_back (self.DevArg());
+      e.emit (body, params, args);
+      body += ";";
+      EvalScalarExpr (params, body, args);
+    };
+
+    py::class_<DS, shared_ptr<DS>, BaseScalar> (m, name, doc)
+      .def(py::init<double>(), py::arg("value")=0.0)
+      .def("Get", [] (DS & self) { return self.GetD(); }, "value on the host, waits for the queue")
+      .def("Set", [] (DS & self, double v) { self.Set(v); })
+      .def("__float__", [] (DS & self) { return self.GetD(); })
+      .def("__repr__", [] (DS & self) { return string(DevScalTypeName<T>()) + " device scalar " + ToString(self.GetD()); })
+      .def_property("data", [] (DS & self) { return self.GetD(); },
+                    [assign, leaf] (shared_ptr<DS> self, py::object rhs)
+                    {
+                      if (py::isinstance<PyDevScalExpr>(rhs))
+                        assign (*self, py::cast<PyDevScalExpr>(rhs));
+                      else if (py::isinstance<DS>(rhs))
+                        assign (*self, leaf (py::cast<shared_ptr<DS>>(rhs)));
+                      else
+                        self->Set (py::cast<double>(rhs));
+                    }, "assign an expression, a device scalar or a number")
+      .def("expr", [leaf] (shared_ptr<DS> self) { return leaf(self); })
+      ;
+
+    // operators: any combination of scalar, expression and number
+    auto is_operand = [] (py::object o)
+    {
+      return py::isinstance<PyDevScalExpr>(o) || py::isinstance<DS>(o) ||
+        py::isinstance<py::float_>(o) || py::isinstance<py::int_>(o);
+    };
+    auto to_expr = [leaf, constant] (py::object o) -> PyDevScalExpr
+    {
+      if (py::isinstance<PyDevScalExpr>(o)) return py::cast<PyDevScalExpr>(o);
+      if (py::isinstance<DS>(o)) return leaf (py::cast<shared_ptr<DS>>(o));
+      return constant (py::cast<double>(o));
+    };
+    auto binop = [to_expr, is_operand, tname] (char op, py::object a, py::object b) -> py::object
+    {
+      if (!is_operand(a) || !is_operand(b))   // e.g. scalar * vector: let the vector handle it
+        return py::reinterpret_borrow<py::object>(Py_NotImplemented);
+      auto ea = to_expr(a), eb = to_expr(b);
+      if (ea.type != tname || eb.type != tname)
+        throw Exception("DeviceScalar: expression mixes precisions");
+      return py::cast (PyDevScalExpr{ tname, [ea, eb, op] (string & code, string & params, std::vector<KernelArg> & args)
+        { code += "("; ea.emit (code, params, args); code += op; eb.emit (code, params, args); code += ")"; } });
+    };
+    auto func = [to_expr] (const char * f, py::object a) -> PyDevScalExpr
+    {
+      auto ea = to_expr(a);
+      return { ea.type, [ea, f] (string & code, string & params, std::vector<KernelArg> & args)
+        { code += string(f) + "("; ea.emit (code, params, args); code += ")"; } };
+    };
+
+    auto cls = py::cast<py::object>(m.attr(name));
+    for (auto [pyname, op, reflected] : { std::tuple{"__add__",'+',false}, std::tuple{"__radd__",'+',true},
+                                          std::tuple{"__sub__",'-',false}, std::tuple{"__rsub__",'-',true},
+                                          std::tuple{"__mul__",'*',false}, std::tuple{"__rmul__",'*',true},
+                                          std::tuple{"__truediv__",'/',false}, std::tuple{"__rtruediv__",'/',true} })
+      {
+        char c = op; bool r = reflected;
+        cls.attr(pyname) = py::cpp_function ([binop, c, r] (py::object self, py::object other)
+                                             { return r ? binop (c, other, self) : binop (c, self, other); },
+                                             py::is_method(cls));
+      }
+    cls.attr("__neg__") = py::cpp_function ([func] (py::object self) { return func ("-", self); }, py::is_method(cls));
+    cls.attr("Sqrt") = py::cpp_function ([func] (py::object self) { return func ("sqrt", self); }, py::is_method(cls));
+
+    // the same operators on expressions of this precision
+    auto ecls = py::cast<py::object>(m.attr("DeviceScalarExpr"));
+    if (!py::hasattr(ecls, "__add__"))
+      {
+        for (auto [pyname, op, reflected] : { std::tuple{"__add__",'+',false}, std::tuple{"__radd__",'+',true},
+                                              std::tuple{"__sub__",'-',false}, std::tuple{"__rsub__",'-',true},
+                                              std::tuple{"__mul__",'*',false}, std::tuple{"__rmul__",'*',true},
+                                              std::tuple{"__truediv__",'/',false}, std::tuple{"__rtruediv__",'/',true} })
+          {
+            char c = op; bool r = reflected;
+            ecls.attr(pyname) = py::cpp_function ([c, r] (py::object self, py::object other) -> py::object
+              {
+                if (!(py::isinstance<PyDevScalExpr>(other) || py::isinstance<DeviceScalar<double>>(other) ||
+                      py::isinstance<DeviceScalar<float>>(other) || py::isinstance<py::float_>(other) ||
+                      py::isinstance<py::int_>(other)))
+                  return py::reinterpret_borrow<py::object>(Py_NotImplemented);
+                // resolve the precision from the expression operand
+                auto e = py::cast<PyDevScalExpr>(self);
+                auto conv = [&e] (py::object o) -> PyDevScalExpr
+                {
+                  if (py::isinstance<PyDevScalExpr>(o)) return py::cast<PyDevScalExpr>(o);
+                  if (e.type == "double")
+                    if (py::isinstance<DeviceScalar<double>>(o))
+                      return py::cast<PyDevScalExpr>(o.attr("expr")());
+                  if (e.type == "float")
+                    if (py::isinstance<DeviceScalar<float>>(o))
+                      return py::cast<PyDevScalExpr>(o.attr("expr")());
+                  double v = py::cast<double>(o); string t = e.type;
+                  return { t, [v, t] (string & code, string & params, std::vector<KernelArg> & args)
+                    {
+                      auto nm = "s" + ToString(args.size());
+                      params += ", VALUE(" + t + "," + nm + ")";
+                      code += nm;
+                      if (t == "double") args.push_back (KernelArg(double(v)));
+                      else args.push_back (KernelArg(float(v)));
+                    } };
+                };
+                PyDevScalExpr ea = e, eb = conv(other);
+                if (ea.type != eb.type) throw Exception("DeviceScalar: expression mixes precisions");
+                if (r) std::swap (ea, eb);
+                return py::cast (PyDevScalExpr{ ea.type, [ea, eb, c] (string & code, string & params, std::vector<KernelArg> & args)
+                  { code += "("; ea.emit (code, params, args); code += c; eb.emit (code, params, args); code += ")"; } });
+              }, py::is_method(ecls));
+          }
+        ecls.attr("__neg__") = py::cpp_function ([] (py::object self)
+          {
+            auto ea = py::cast<PyDevScalExpr>(self);
+            return PyDevScalExpr{ ea.type, [ea] (string & code, string & params, std::vector<KernelArg> & args)
+              { code += "-("; ea.emit (code, params, args); code += ")"; } };
+          }, py::is_method(ecls));
+        ecls.attr("Sqrt") = py::cpp_function ([] (py::object self)
+          {
+            auto ea = py::cast<PyDevScalExpr>(self);
+            return PyDevScalExpr{ ea.type, [ea] (string & code, string & params, std::vector<KernelArg> & args)
+              { code += "sqrt("; ea.emit (code, params, args); code += ")"; } };
+          }, py::is_method(ecls));
+      }
+  };
+  bind_devicescalar (double(), "DeviceScalarD", "scalar on the gpu, fp64");
+  bind_devicescalar (float(), "DeviceScalarF", "scalar on the gpu, fp32");
+
+  auto bind_devicevector = [&m] (auto proto, const char * name, const char * doc)
+  {
+    typedef DeviceVector<decltype(proto)> DV;
+    py::class_<DV, shared_ptr<DV>, BaseVector> (m, name, doc)
+      .def(py::init<size_t>(), py::arg("size"))
+      .def(py::init<const BaseVector&>(), py::arg("vec"))
+      .def("D2H", [] (DV & self)
+           {
+             // a copy in host-visible memory
+             auto tmp = make_shared<DV> (self.Size(), MemType::Shared);
+             tmp->Set (1.0, self);
+             return tmp;
+           }, "copy into a host-visible device vector")
+      .def("WaitUntilCompleted", [] (DV & self) { self.GetQueue()->Finish(); },
+           "wait until all queued kernels writing this vector are done")
+      .def_property_readonly("memtype", [] (DV & self) { return self.GetMemType(); })
+      .def_property_readonly("__cuda_array_interface__", [] (DV & self)
+           {
+             // the consumer may write through the pointer: device made current,
+             // host copy invalidated, queued kernels finished
+             typedef decltype(proto) T;
+             auto buf = self.DevBufferRW();
+             auto ptr = buf->DevicePtr();
+             if (!ptr) throw Exception("__cuda_array_interface__: not a cuda vector");
+             self.GetQueue()->Finish();
+             py::dict cai;
+             cai["version"] = 3;
+             cai["shape"] = py::make_tuple(self.Size());
+             cai["typestr"] = py::dtype::of<T>().attr("str");
+             cai["data"] = py::make_tuple(ptr + self.DevOffset()*sizeof(T), false);
+             cai["strides"] = py::none();
+             return cai;
+           }, "cuda array interface (cuda backend only), for cupy, numba, torch")
+      ;
+  };
+  bind_devicevector (double(), "DeviceVectorD", "vector on the gpu, fp64");
+  bind_devicevector (float(), "DeviceVectorF", "vector on the gpu, fp32");
+  bind_devicevector (Complex(), "DeviceVectorC", "vector on the gpu, complex fp64");
+
+  py::class_<DeviceSparseMatrix<double>, shared_ptr<DeviceSparseMatrix<double>>, BaseMatrix>
+    (m, "DeviceSparseMatrixD", "csr matrix on the gpu, fp64");
+  py::class_<DeviceSparseMatrix<float>, shared_ptr<DeviceSparseMatrix<float>>, BaseMatrix>
+    (m, "DeviceSparseMatrixF", "csr matrix on the gpu, fp32");
+  py::class_<DeviceBlockJacobi<double>, shared_ptr<DeviceBlockJacobi<double>>, BaseMatrix>
+    (m, "DeviceBlockJacobiD", "block-Jacobi preconditioner on the gpu, fp64");
+  py::class_<DeviceBlockJacobi<float>, shared_ptr<DeviceBlockJacobi<float>>, BaseMatrix>
+    (m, "DeviceBlockJacobiF", "block-Jacobi preconditioner on the gpu, fp32");
+  py::class_<DeviceDiagonalMatrix<double>, shared_ptr<DeviceDiagonalMatrix<double>>, BaseMatrix>
+    (m, "DeviceDiagonalMatrixD", "diagonal matrix on the gpu, fp64");
+  py::class_<DeviceDiagonalMatrix<float>, shared_ptr<DeviceDiagonalMatrix<float>>, BaseMatrix>
+    (m, "DeviceDiagonalMatrixF", "diagonal matrix on the gpu, fp32");
+  // explicit constructors from a host factorization, to choose the precision
+  auto chol_of = [] (shared_ptr<BaseMatrix> mat) -> const SparseCholeskyTM<double> &
+  {
+    auto p = dynamic_pointer_cast<SparseCholeskyTM<double>> (mat);
+    if (!p) throw Exception("DeviceSparseCholesky: expected a SparseCholesky factorization");
+    return *p;
+  };
+  py::class_<DeviceSparseCholesky<double>, shared_ptr<DeviceSparseCholesky<double>>, BaseMatrix>
+    (m, "DeviceSparseCholeskyD", "sparse Cholesky solver on the gpu, fp64")
+    .def(py::init([chol_of] (shared_ptr<BaseMatrix> mat)
+                  { return make_shared<DeviceSparseCholesky<double>> (chol_of(mat)); }), py::arg("factorization"));
+  py::class_<DeviceSparseCholesky<float>, shared_ptr<DeviceSparseCholesky<float>>, BaseMatrix>
+    (m, "DeviceSparseCholeskyF", "sparse Cholesky solver on the gpu, fp32")
+    .def(py::init([chol_of] (shared_ptr<BaseMatrix> mat)
+                  { return make_shared<DeviceSparseCholesky<float>> (chol_of(mat)); }), py::arg("factorization"));
 
   py::class_<BaseSparseMatrix, shared_ptr<BaseSparseMatrix>, BaseMatrix>
     (m, "BaseSparseMatrix", "sparse matrix of any type")
@@ -1452,6 +1755,7 @@ inverse : string
 
   
   ExportSparseMatrix<double>(m);
+  ExportSparseMatrix<float>(m);
   ExportSparseMatrix<Complex>(m);
 #if MAX_SYS_DIM >= 2  
   ExportSparseMatrix<Mat<2,2,double>>(m);

@@ -4,7 +4,6 @@ pip_linux:
   tags:
     - pip
     - linux
-    - docker
   when: manual
   script:
     - ./tests/build_pip.sh
@@ -31,10 +30,8 @@ pip_windows:
 pip_pyodide:
   stage: build
   tags:
-    - bash
-    - avx
     - linux
-    - docker
+    - pip
   script:
     - ./tests/gitlab-ci/pyodide/build.sh
   when: manual
