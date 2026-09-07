@@ -18,8 +18,6 @@ namespace ngla
   }
 
 
-  /******************** DevMatrix ********************/
-
   shared_ptr<BaseMatrix> CreateDevMatrix (BaseMatrix & mat)
   {
     if (auto res = mat.CreateDeviceMatrix())

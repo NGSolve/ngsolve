@@ -22,10 +22,6 @@ PYBIND11_MODULE(_ngscuda, m) {
 
   m.def("InitCuLinalg", &InitCuLinalg, "Initializing cuda linalg.");
   
-  py::class_<DevMatrix, BaseMatrix, shared_ptr<DevMatrix>>
-    (m, "DevBaseMatrix", "device matrix for CUDA applications");
-
-
   m.def("CreateDevMatrix", [] (BaseMatrix &mat)
           {
             return CreateDevMatrix(mat);

@@ -45,15 +45,6 @@ namespace ngla
   }
 
 
-  class DevMatrix : public BaseMatrix
-  {
-  public:
-    DevMatrix() { }
-
-    VecFormat RowFormat () const override { return DeviceVectorFormat<double> (Width(), PreferredMemType()); }
-    VecFormat ColFormat () const override { return DeviceVectorFormat<double> (Height(), PreferredMemType()); }
-  };
-
   shared_ptr<BaseMatrix> CreateDevMatrix (BaseMatrix &mat);
 
 }
