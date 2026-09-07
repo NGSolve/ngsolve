@@ -232,17 +232,7 @@ namespace ngla
   }
 
 
-  template <typename T>
-  AutoVector DeviceConstantEBEMatrix<T> :: CreateRowVector () const
-  {
-    return make_unique<DeviceVector<T>> (width, memtype);
-  }
 
-  template <typename T>
-  AutoVector DeviceConstantEBEMatrix<T> :: CreateColVector () const
-  {
-    return make_unique<DeviceVector<T>> (height, memtype);
-  }
 
   template <typename T>
   BaseMatrix::OperatorInfo DeviceConstantEBEMatrix<T> :: GetOperatorInfo () const

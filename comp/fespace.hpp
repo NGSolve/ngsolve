@@ -1303,8 +1303,6 @@ ANY                  1 1 1 1 | 15
     virtual void MultTransAdd (double val, const BaseVector & v, BaseVector & prod) const override;
     
     virtual AutoVector CreateVector () const override;
-    virtual AutoVector CreateRowVector () const override;
-    virtual AutoVector CreateColVector () const override;
     VecFormat RowFormat () const override;
     VecFormat ColFormat () const override;
     
@@ -1345,8 +1343,6 @@ ANY                  1 1 1 1 | 15
     virtual void MultTransAdd (double val, const BaseVector & v, BaseVector & prod) const override;
     
     virtual AutoVector CreateVector () const override;
-    virtual AutoVector CreateRowVector () const override;
-    virtual AutoVector CreateColVector () const override;
     VecFormat RowFormat () const override;
     VecFormat ColFormat () const override;
   };

@@ -938,8 +938,6 @@ namespace ngcomp
     virtual void MultTransAdd (double val, const BaseVector & v, BaseVector & prod) const override;
     
     virtual AutoVector CreateVector () const override;
-    virtual AutoVector CreateRowVector () const override;
-    virtual AutoVector CreateColVector () const override;
     VecFormat RowFormat () const override;
     VecFormat ColFormat () const override;
     
@@ -1012,8 +1010,6 @@ namespace ngcomp
                             Matrix<double> apoints, Matrix<double> anormals,
                             size_t adimx, size_t adimy, size_t anip);
     
-    AutoVector CreateColVector() const override;
-    AutoVector CreateRowVector() const override;
     VecFormat RowFormat () const override;
     VecFormat ColFormat () const override;
     
@@ -1113,8 +1109,6 @@ namespace ngcomp
                      Tensor<4> _Jacobi,
                      MatFreeOptions _opts);
 
-    AutoVector CreateColVector() const override;
-    AutoVector CreateRowVector() const override;
     VecFormat RowFormat () const override;
     VecFormat ColFormat () const override;
 

@@ -55,7 +55,6 @@ namespace ngla
     { c = ac; }
     ///
 
-    bool IsComplex() const override { return a->IsComplex(); }
     /// 
     void SetMaxSteps (int amaxsteps)
     { maxsteps = amaxsteps; }
@@ -89,8 +88,6 @@ namespace ngla
     { return steps; }
 
     ///
-    NGS_DLL_HEADER AutoVector CreateRowVector() const override { return a->CreateColVector(); }
-    NGS_DLL_HEADER AutoVector CreateColVector() const override { return a->CreateRowVector(); }
     VecFormat RowFormat () const override { return a->ColFormat(); }
     VecFormat ColFormat () const override { return a->RowFormat(); }
 

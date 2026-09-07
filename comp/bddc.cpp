@@ -527,8 +527,6 @@ namespace ngcomp
     ~BDDCMatrix()  { } 
 
 
-    AutoVector CreateRowVector() const override { return bfa->GetMatrix().CreateColVector(); }
-    AutoVector CreateColVector() const override { return bfa->GetMatrix().CreateRowVector(); }
     VecFormat RowFormat () const override { return bfa->GetMatrix().ColFormat(); }
     VecFormat ColFormat () const override { return bfa->GetMatrix().RowFormat(); }
 

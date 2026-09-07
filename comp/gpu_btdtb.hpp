@@ -58,12 +58,6 @@ namespace ngcomp
 
     
     
-    AutoVector CreateRowVector() const override {
-      return make_unique<DeviceVector<REAL>>(w, PreferredMemType());
-    }
-    AutoVector CreateColVector() const override {
-      return make_unique<DeviceVector<REAL>>(h, PreferredMemType());
-    }
     VecFormat RowFormat () const override { return DeviceVectorFormat<REAL> (w, PreferredMemType()); }
     VecFormat ColFormat () const override { return DeviceVectorFormat<REAL> (h, PreferredMemType()); }
 

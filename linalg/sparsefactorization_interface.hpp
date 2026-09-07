@@ -240,13 +240,7 @@ public:
 
   void SetSubset(shared_ptr<BitArray> inner, shared_ptr<const Array<int>> cluster) override;
 
-  AutoVector CreateRowVector() const override {
-    return matrix.lock()->CreateColVector();
-  }
 
-  AutoVector CreateColVector() const override {
-    return matrix.lock()->CreateRowVector();
-  }
   VecFormat RowFormat () const override { return matrix.lock()->ColFormat(); }
   VecFormat ColFormat () const override { return matrix.lock()->RowFormat(); }
 

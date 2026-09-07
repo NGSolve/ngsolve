@@ -258,18 +258,7 @@ namespace ngla
     return MultAdd (s, x, y);
   }
 
-  template <typename TM>  
-  AutoVector DiagonalMatrix<TM> :: CreateRowVector () const 
-  {
-    // return CreateBaseVector(diag->Size(), mat_traits<TM>::IS_COMPLEX, mat_traits<TM>::WIDTH);
-    return CreateBaseVector(diag->Size(), ngbla::IsComplex<TM>(), ngbla::Width<TM>());
-  }
 
-  template <typename TM>    
-  AutoVector DiagonalMatrix<TM> :: CreateColVector () const 
-  {
-    return CreateBaseVector(diag->Size(), ngbla::IsComplex<TM>(), ngbla::Height<TM>());
-  }
 
   template <typename TM>
   VecFormat DiagonalMatrix<TM> :: RowFormat () const 
@@ -426,17 +415,7 @@ namespace ngla
     return ost;
   }
 
-  template <typename T>    
-  AutoVector BlockDiagonalMatrix<T> :: CreateRowVector () const
-  {
-    return make_unique<VVector<T>>(VWidth());
-  }
 
-  template <typename T>      
-  AutoVector BlockDiagonalMatrix<T> :: CreateColVector () const
-  {
-    return make_unique<VVector<T>>(VHeight());    
-  }
 
   template <typename T>
   VecFormat BlockDiagonalMatrix<T> :: RowFormat () const { return VVectorFormat<T> (VWidth()); }
@@ -591,15 +570,7 @@ namespace ngla
     return info;
   }
     
-  AutoVector BlockDiagonalMatrixSoA :: CreateRowVector () const
-  {
-    return make_unique<VVector<double>>(VWidth());
-  }
   
-  AutoVector BlockDiagonalMatrixSoA :: CreateColVector () const
-  {
-    return make_unique<VVector<double>>(VHeight());    
-  }
 
   VecFormat BlockDiagonalMatrixSoA :: RowFormat () const { return VVectorFormat<double> (VWidth()); }
   VecFormat BlockDiagonalMatrixSoA :: ColFormat () const { return VVectorFormat<double> (VHeight()); }

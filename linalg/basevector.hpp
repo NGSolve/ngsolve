@@ -130,7 +130,12 @@ namespace ngla
       : size(asize), scal(ascal), es(aes) { }
 
     bool IsBlock() const { return !blocks.empty(); }
-    bool IsComplex() const { return scal && std::holds_alternative<Complex>(*scal); }
+    bool IsComplex() const
+    {
+      if (scal) return std::holds_alternative<Complex>(*scal);
+      for (auto & b : blocks) if (b.IsComplex()) return true;
+      return false;
+    }
     bool HasSize() const { return size.has_value() || IsBlock(); }
 
     // scalar, entry size and placement; size, distribution and blocks dropped

@@ -4223,15 +4223,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
   VecFormat ApplyTrace :: ColFormat () const
   { return fes->GetVectorFormat().WithSize (festrace->GetNDof()); }
 
-  AutoVector ApplyMass :: CreateRowVector () const
-  {
-    return CreateBaseVector (RowFormat());
-  }
   
-  AutoVector ApplyMass :: CreateColVector () const
-  {
-    return CreateBaseVector (ColFormat());
-  }
 
 
 
@@ -4277,15 +4269,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     return CreateBaseVector(fes->GetNDof(), fes->IsComplex(), fes->GetDimension());
   }
   
-  AutoVector ApplyTrace :: CreateRowVector () const
-  {
-    return CreateBaseVector (RowFormat());
-  }
   
-  AutoVector ApplyTrace :: CreateColVector () const
-  {
-    return CreateBaseVector (ColFormat());
-  }
 
 
 

@@ -50,8 +50,6 @@ public:
   int VWidth() const override { return w; }
   VecFormat RowFormat () const override { return VecFormat(w, scal); }
   VecFormat ColFormat () const override { return VecFormat(h, scal); }
-  AutoVector CreateRowVector () const override { return CreateBaseVector(RowFormat()); }
-  AutoVector CreateColVector () const override { return CreateBaseVector(ColFormat()); }
 
   void Mult (const BaseVector & x, BaseVector & y) const override
   {
@@ -959,39 +957,47 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
         return get<1>(Shape());
       }
       
+
+
+      // python classes may define the formats, or the vectors (old style)
       AutoVector CreateRowVector () const override {
         py::gil_scoped_acquire gil;
-
         if (auto overload = pybind11::get_overload(this, "CreateRowVector"))
           return py::cast<shared_ptr<BaseVector>> (overload());
         if (auto overload = pybind11::get_overload(this, "CreateVector"))
           return py::cast<shared_ptr<BaseVector>> (overload(false));
-        
-        throw Exception ("CreateRowVector not overloaded from python");        
+        return BaseMatrix::CreateRowVector();
       }
 
       AutoVector CreateColVector () const override {
         py::gil_scoped_acquire gil;
-
         if (auto overload = pybind11::get_overload(this, "CreateColVector"))
           return py::cast<shared_ptr<BaseVector>> (overload());
         if (auto overload = pybind11::get_overload(this, "CreateVector"))
           return py::cast<shared_ptr<BaseVector>> (overload(true));
-        throw Exception ("CreateColVector not overloaded from python");        
+        return BaseMatrix::CreateColVector();
       }
 
       VecFormat RowFormat () const override {
         py::gil_scoped_acquire gil;
         if (auto overload = pybind11::get_overload(this, "RowFormat"))
           return py::cast<VecFormat> (overload());
-        return BaseMatrix::RowFormat();
+        if (pybind11::get_overload(this, "CreateRowVector") || pybind11::get_overload(this, "CreateVector"))
+          return CreateRowVector().GetFormat();
+        // shape only, from Height/Width or Shape
+        try { return VecFormat (size_t(VWidth())); }
+        catch (Exception &) { return VecFormat(); }
       }
 
       VecFormat ColFormat () const override {
         py::gil_scoped_acquire gil;
         if (auto overload = pybind11::get_overload(this, "ColFormat"))
           return py::cast<VecFormat> (overload());
-        return BaseMatrix::ColFormat();
+        if (pybind11::get_overload(this, "CreateColVector") || pybind11::get_overload(this, "CreateVector"))
+          return CreateColVector().GetFormat();
+        // shape only, from Height/Width or Shape
+        try { return VecFormat (size_t(VHeight())); }
+        catch (Exception &) { return VecFormat(); }
       }
 
       void Mult (const BaseVector & x, BaseVector & y) const override {

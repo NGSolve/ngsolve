@@ -384,17 +384,7 @@ namespace ngla
   }
 
 
-  template <typename T>
-  AutoVector DeviceSparseMatrix<T> :: CreateRowVector () const
-  {
-    return make_unique<DeviceVector<T>> (width, memtype);
-  }
 
-  template <typename T>
-  AutoVector DeviceSparseMatrix<T> :: CreateColVector () const
-  {
-    return make_unique<DeviceVector<T>> (height, memtype);
-  }
 
   template <typename T>
   BaseMatrix::OperatorInfo DeviceSparseMatrix<T> :: GetOperatorInfo () const

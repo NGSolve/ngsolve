@@ -902,17 +902,7 @@ namespace ngla
   }
 
 
-  template <typename T>
-  AutoVector DeviceSparseCholesky<T> :: CreateRowVector () const
-  {
-    return make_unique<DeviceVector<T>> (width, memtype);
-  }
 
-  template <typename T>
-  AutoVector DeviceSparseCholesky<T> :: CreateColVector () const
-  {
-    return make_unique<DeviceVector<T>> (height, memtype);
-  }
 
   template <typename T>
   BaseMatrix::OperatorInfo DeviceSparseCholesky<T> :: GetOperatorInfo () const

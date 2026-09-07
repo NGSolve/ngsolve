@@ -50,14 +50,32 @@ namespace ngla
     ;
   }
 
+  // size of a format: plain size, or the sum over blocks
+  static int FormatSize (const VecFormat & f, const char * what, const type_info & type)
+  {
+    if (f.size) return int(*f.size);
+    if (f.IsBlock())
+      {
+        int sum = 0;
+        for (auto & b : f.blocks) sum += FormatSize (b, what, type);
+        return sum;
+      }
+    throw Exception (string("BaseMatrix::") + what + " unknown, type = " + type.name());
+  }
+
   int BaseMatrix :: VHeight() const
   {
-    throw Exception (string("BaseMatrix::VHeight not overloaded, type = ")+typeid(*this).name());
+    return FormatSize (ColFormat(), "VHeight", typeid(*this));
   }
   
   int BaseMatrix :: VWidth() const
   {
-    throw Exception (string("BaseMatrix::VWidth not overloaded, type = ")+typeid(*this).name());
+    return FormatSize (RowFormat(), "VWidth", typeid(*this));
+  }
+
+  bool BaseMatrix :: IsComplex() const
+  {
+    return ColFormat().IsComplex();
   }
 
   BaseVector & BaseMatrix :: AsVector()
@@ -103,30 +121,14 @@ namespace ngla
     throw Exception (string("BaseMatrix::CreateVector not overloaded, type = ")+typeid(*this).name());            
   }
 
-  // operators not overriding the format functions describe themselves by
-  // the vectors they create; unable to create means nothing known
-  VecFormat BaseMatrix :: RowFormat () const
+  AutoVector BaseMatrix :: CreateRowVector () const
   {
-    try
-      {
-        return CreateRowVector().GetFormat();
-      }
-    catch (Exception &)
-      {
-        return VecFormat();
-      }
+    return CreateBaseVector (RowFormat().WithDefaults());
   }
 
-  VecFormat BaseMatrix :: ColFormat () const
+  AutoVector BaseMatrix :: CreateColVector () const
   {
-    try
-      {
-        return CreateColVector().GetFormat();
-      }
-    catch (Exception &)
-      {
-        return VecFormat();
-      }
+    return CreateBaseVector (ColFormat().WithDefaults());
   }
 
   // AutoVector BaseMatrix :: CreateRowVector () const

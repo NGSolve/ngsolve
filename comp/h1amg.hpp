@@ -47,8 +47,6 @@ namespace ngcomp
     virtual int VWidth() const override { return size; }
     virtual bool IsComplex() const override { return is_same<SCAL,Complex>(); }
     
-    virtual AutoVector CreateRowVector () const override { return mat->CreateColVector(); }
-    virtual AutoVector CreateColVector () const override { return mat->CreateRowVector(); }
     VecFormat RowFormat () const override { return mat->ColFormat(); }
     VecFormat ColFormat () const override { return mat->RowFormat(); }
 

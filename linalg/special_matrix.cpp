@@ -23,15 +23,7 @@ namespace ngla
     return ost;
   }
     
-  AutoVector TransposeVector :: CreateRowVector () const
-  {
-    return make_unique<VVector<double>> (h*w);
-  }
   
-  AutoVector TransposeVector :: CreateColVector () const
-  {
-    return make_unique<VVector<double>> (h*w);
-  }
       
   void TransposeVector :: Mult (const BaseVector & x, BaseVector & y) const
   {
@@ -396,19 +388,7 @@ namespace ngla
       }
   }
 
-  template <class TVR, class TVC>
-  AutoVector Real2ComplexMatrix<TVR,TVC> :: CreateRowVector() const
-  {
-    auto h = realmatrix->Width();
-    return make_unique<VVector<TVC>> (h);
-  }
     
-  template <class TVR, class TVC>
-  AutoVector Real2ComplexMatrix<TVR,TVC> :: CreateColVector() const
-  {
-    auto w = realmatrix->Width();
-    return make_unique<VVector<TVC>> (w);
-  }
     
 
 
@@ -794,21 +774,7 @@ namespace ngla
     return f;
   }
 
-  AutoVector BlockMatrix :: CreateRowVector () const {
-    Array<shared_ptr<BaseVector>> vecs(w);
-    for(auto col:Range(w)) {
-      vecs[col] = col_reps[col]->CreateRowVector();
-    }
-    return make_unique<BlockVector>(vecs);
-  }
   
-  AutoVector BlockMatrix :: CreateColVector () const {
-    Array<shared_ptr<BaseVector>> vecs(h);
-    for (auto row:Range(h)) {
-      vecs[row] = row_reps[row]->CreateColVector();
-    }
-    return make_unique<BlockVector>(vecs);
-  }
 
 
 
@@ -827,17 +793,7 @@ namespace ngla
     y.FV<double>()(0) += s * InnerProduct(x, *vec);
   }
   
-  AutoVector BaseMatrixFromVector :: CreateRowVector () const
-  {
-    // missing parallel: 1 dof for all
-    shared_ptr<BaseVector> sp = make_shared<VVector<double>>(1);   
-    return sp;
-  }
   
-  AutoVector BaseMatrixFromVector :: CreateColVector () const
-  {
-    return vec->CreateVector();
-  }
 
 
 
@@ -861,17 +817,7 @@ namespace ngla
     y.FV<double>() += s *  tmp;
   }
   
-  AutoVector BaseMatrixFromMultiVector :: CreateRowVector () const
-  {
-    // missing parallel: 1 dof for all
-    shared_ptr<BaseVector> sp = make_shared<VVector<double>>(vec->Size());   
-    return sp;
-  }
   
-  AutoVector BaseMatrixFromMultiVector :: CreateColVector () const
-  {
-    return vec->RefVec()->CreateVector();
-  }
 
 
 
@@ -906,20 +852,7 @@ namespace ngla
 
 
   
-  template <typename T>    
-  AutoVector BaseMatrixFromMatrix<T> :: CreateRowVector () const
-  {
-    // missing parallel: 1 dof for all
-    shared_ptr<BaseVector> sp = make_shared<VVector<T>>(mat.Width());   
-    return sp;
-  }
 
-  template <typename T>    
-  AutoVector BaseMatrixFromMatrix<T> :: CreateColVector () const
-  {
-    shared_ptr<BaseVector> sp = make_shared<VVector<T>>(mat.Height());   
-    return sp;
-  }
 
   template class BaseMatrixFromMatrix<double>;
   template class BaseMatrixFromMatrix<Complex>;

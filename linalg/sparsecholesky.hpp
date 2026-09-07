@@ -312,8 +312,6 @@ namespace ngla
       MultAdd (s, x, y);
     }
 
-    AutoVector CreateRowVector () const override { return make_unique<VVector<TV>> (height); }
-    AutoVector CreateColVector () const override { return make_unique<VVector<TV>> (height); }
     VecFormat RowFormat () const override { return VVectorFormat<TV> (height); }
     VecFormat ColFormat () const override { return VVectorFormat<TV> (height); }
 

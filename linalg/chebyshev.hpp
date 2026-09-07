@@ -29,14 +29,11 @@ namespace ngla
     ///
     ChebyshevIteration (const BaseMatrix & aa, const BaseMatrix & ac, int steps);
     
-    bool IsComplex() const override { return a->IsComplex(); } 
     ///
     void SetBounds (double almin, double almax);
     ///
     void Mult (const BaseVector & v, BaseVector & prod) const override;
     ///
-    AutoVector CreateRowVector () const override { return a->CreateColVector(); }
-    AutoVector CreateColVector () const override { return a->CreateRowVector(); }
     VecFormat RowFormat () const override { return a->ColFormat(); }
     VecFormat ColFormat () const override { return a->RowFormat(); }
   };

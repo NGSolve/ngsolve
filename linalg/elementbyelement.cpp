@@ -960,17 +960,7 @@ namespace ngla
   }
 
   
-  template <typename SCAL>  
-  AutoVector ConstantElementByElementMatrix<SCAL> :: CreateRowVector () const
-  {
-    return make_unique<VVector<SCAL>> (w);
-  }
 
-  template <typename SCAL>  
-  AutoVector ConstantElementByElementMatrix<SCAL> :: CreateColVector () const 
-  {
-    return make_unique<VVector<SCAL>> (h);
-  }
 
   template <typename SCAL>  
   BaseMatrix::OperatorInfo ConstantElementByElementMatrix<SCAL> :: GetOperatorInfo () const

@@ -49,10 +49,6 @@ namespace ngla
     virtual void Mult (const BaseVector & x, BaseVector & y) const override;
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
     
-    AutoVector CreateRowVector() const override
-    { return make_unique<VVector<TSCAL>> (VWidth()); }
-    AutoVector CreateColVector() const override
-    { return make_unique<VVector<TSCAL>> (VHeight()); }
     VecFormat RowFormat () const override { return VVectorFormat<TSCAL> (VWidth()); }
     VecFormat ColFormat () const override { return VVectorFormat<TSCAL> (VHeight()); }
     
@@ -81,8 +77,6 @@ namespace ngla
 
     void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
 
-    AutoVector CreateRowVector () const override;
-    AutoVector CreateColVector () const override;
     VecFormat RowFormat () const override { return VVectorFormat<TSCAL> (width); }
     VecFormat ColFormat () const override { return VVectorFormat<TSCAL> (height); }
   };

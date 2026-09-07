@@ -50,8 +50,6 @@ namespace ngla
   public:
     DevMatrix() { }
 
-    AutoVector CreateRowVector() const override { return make_unique<DeviceVector<double>>(Width(), PreferredMemType()); }
-    AutoVector CreateColVector() const override { return make_unique<DeviceVector<double>>(Height(), PreferredMemType()); }
     VecFormat RowFormat () const override { return DeviceVectorFormat<double> (Width(), PreferredMemType()); }
     VecFormat ColFormat () const override { return DeviceVectorFormat<double> (Height(), PreferredMemType()); }
   };

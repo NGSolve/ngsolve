@@ -67,14 +67,11 @@ namespace ngla
 
     virtual int VHeight() const override { return height; }
     virtual int VWidth() const override { return width; }
-    virtual bool IsComplex() const override { return false; }
 
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
     virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override
     { MultAdd (s, x, y); }
 
-    virtual AutoVector CreateRowVector () const override;
-    virtual AutoVector CreateColVector () const override;
     VecFormat RowFormat () const override { return DeviceVectorFormat<T> (width, memtype); }
     VecFormat ColFormat () const override { return DeviceVectorFormat<T> (height, memtype); }
 

@@ -101,8 +101,6 @@ namespace ngla
     using S_UmfpackInverse<SCAL>::S_UmfpackInverse;
     static constexpr bool is_vector_complex = ngbla::IsComplex<SCAL_VEC>();
     
-    AutoVector CreateRowVector () const override { return CreateBaseVector(height/entrysize, is_vector_complex, entrysize); }
-    AutoVector CreateColVector () const override { return CreateBaseVector(height/entrysize, is_vector_complex, entrysize); }
     VecFormat RowFormat () const override
     { return VecFormat (height/entrysize, is_vector_complex ? Scalar(Complex(0)) : Scalar(double(0)), entrysize); }
     VecFormat ColFormat () const override { return RowFormat(); }

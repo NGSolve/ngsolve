@@ -35,7 +35,6 @@ namespace ngla
 
     virtual int VHeight() const override { return diag.Size(); }
     virtual int VWidth() const override { return diag.Size(); }
-    virtual bool IsComplex() const override { return false; }
 
     virtual void Mult (const BaseVector & x, BaseVector & y) const override;
     virtual void MultTrans (const BaseVector & x, BaseVector & y) const override
@@ -49,8 +48,6 @@ namespace ngla
     virtual const BaseVector & AsVector() const override { return diag; }
     const DeviceVector<T> & Diag() const { return diag; }
 
-    virtual AutoVector CreateRowVector () const override;
-    virtual AutoVector CreateColVector () const override;
     VecFormat RowFormat () const override;
     VecFormat ColFormat () const override;
 
@@ -82,15 +79,12 @@ namespace ngla
 
     virtual int VHeight() const override { return blocks*dimy; }
     virtual int VWidth() const override { return blocks*dimx; }
-    virtual bool IsComplex() const override { return false; }
 
     virtual void Mult (const BaseVector & x, BaseVector & y) const override;
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
     virtual void MultTrans (const BaseVector & x, BaseVector & y) const override;
     virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
 
-    virtual AutoVector CreateRowVector () const override;
-    virtual AutoVector CreateColVector () const override;
     VecFormat RowFormat () const override;
     VecFormat ColFormat () const override;
 

@@ -585,12 +585,6 @@ namespace ngla
   template <class TM> AutoVector SparseMatrixTM<TM> :: CreateVector () const
   { throw Exception("SparseMatrixTM::CreateVector"); }
 
-  template <class TM> AutoVector SparseMatrixTM<TM> :: CreateRowVector () const
-  { throw Exception("SparseMatrixTM::CreateRowVector"); }
-
-  template <class TM> AutoVector SparseMatrixTM<TM> :: CreateColVector () const
-  { throw Exception("SparseMatrixTM::CreateColVector"); }
-
   // the vector type is fixed in SparseMatrix, here only the shape
   template <class TM> VecFormat SparseMatrixTM<TM> :: RowFormat () const
   { return VecFormat (this->width); }
@@ -631,19 +625,7 @@ namespace ngla
     throw Exception ("SparseMatrix::CreateVector for rectangular does not make sense, use either CreateColVector or CreateRowVector");
   }
 
-  template <class TM, class TV_ROW, class TV_COL>
-  AutoVector SparseMatrix<TM,TV_ROW,TV_COL> ::
-  CreateRowVector () const
-  {
-    return make_unique<VVector<TVX>> (this->width);
-  }
 
-  template <class TM, class TV_ROW, class TV_COL>
-  AutoVector SparseMatrix<TM,TV_ROW,TV_COL> ::
-  CreateColVector () const
-  {
-    return make_unique<VVector<TVY>> (this->size);
-  }
 
   template <class TM, class TV_ROW, class TV_COL>
   VecFormat SparseMatrix<TM,TV_ROW,TV_COL> :: RowFormat () const

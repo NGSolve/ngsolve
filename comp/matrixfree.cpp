@@ -202,15 +202,7 @@ namespace ngcomp
       { ; } 
   }
 
-  AutoVector ApplyIntegrationPoints :: CreateColVector() const
-  {
-    return make_unique<VVector<double>> (nip*dimy);
-  }
 
-  AutoVector ApplyIntegrationPoints :: CreateRowVector() const
-  {
-    return make_unique<VVector<double>> (nip*dimx);
-  }
 
   VecFormat ApplyIntegrationPoints :: RowFormat () const { return VVectorFormat<double> (nip*dimx); }
   VecFormat ApplyIntegrationPoints :: ColFormat () const { return VVectorFormat<double> (nip*dimy); }
@@ -672,15 +664,7 @@ namespace ngcomp
   }
   
 
-  AutoVector MatrixFreeBTDTB :: CreateColVector() const
-  {
-    return make_unique<VVector<double>> (height);
-  }
 
-  AutoVector MatrixFreeBTDTB :: CreateRowVector() const
-  {
-    return make_unique<VVector<double>> (width);
-  }
 
   VecFormat MatrixFreeBTDTB :: RowFormat () const { return VVectorFormat<double> (width); }
   VecFormat MatrixFreeBTDTB :: ColFormat () const { return VVectorFormat<double> (height); }

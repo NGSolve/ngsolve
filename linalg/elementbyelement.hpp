@@ -50,7 +50,6 @@ namespace ngla
                             bool isymmetric, bool adisjointrows, bool adisjointcols);
     
     ~ElementByElementMatrix();
-    bool IsComplex() const override { return typeid(SCAL)==typeid(Complex); }
 
     void SetDisjointRows(bool newval){disjointrows=newval;}
     void SetDisjointCols(bool newval){disjointcols=newval;}
@@ -58,8 +57,6 @@ namespace ngla
     int VWidth() const override { return width; }
     size_t GetNumElMats() const { return elmats.Size(); }
 
-    AutoVector CreateRowVector () const override { return make_unique<VVector<double>> (width); } 
-    AutoVector CreateColVector () const override { return make_unique<VVector<double>> (height); }
     VecFormat RowFormat () const override { return VVectorFormat<double> (width); }
     VecFormat ColFormat () const override { return VVectorFormat<double> (height); }
 
@@ -153,8 +150,6 @@ namespace ngla
     virtual void MultAdd (TSCAL64 s, const BaseVector & x, BaseVector & y) const override;
     virtual void MultTransAdd (TSCAL64 s, const BaseVector & x, BaseVector & y) const override;
     
-    virtual AutoVector CreateRowVector () const override;
-    virtual AutoVector CreateColVector () const override;
     VecFormat RowFormat () const override { return VVectorFormat<SCAL> (w); }
     VecFormat ColFormat () const override { return VVectorFormat<SCAL> (h); }
 
@@ -188,15 +183,7 @@ namespace ngla
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
     virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
     
-    virtual AutoVector CreateRowVector () const override
-    {
-      return make_unique<VVector<>> (num*matrix.Width());
-    }
       
-    virtual AutoVector CreateColVector () const override
-    {
-      return make_unique<VVector<>> (num*matrix.Height());
-    }
     VecFormat RowFormat () const override { return VVectorFormat<double> (num*matrix.Width()); }
     VecFormat ColFormat () const override { return VVectorFormat<double> (num*matrix.Height()); }
 

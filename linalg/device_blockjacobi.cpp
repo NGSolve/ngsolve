@@ -232,17 +232,7 @@ namespace ngla
   }
 
 
-  template <typename T>
-  AutoVector DeviceBlockJacobi<T> :: CreateRowVector () const
-  {
-    return make_unique<DeviceVector<T>> (width, memtype);
-  }
 
-  template <typename T>
-  AutoVector DeviceBlockJacobi<T> :: CreateColVector () const
-  {
-    return make_unique<DeviceVector<T>> (height, memtype);
-  }
 
   template <typename T>
   BaseMatrix::OperatorInfo DeviceBlockJacobi<T> :: GetOperatorInfo () const

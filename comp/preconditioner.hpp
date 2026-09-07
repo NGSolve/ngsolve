@@ -134,15 +134,7 @@ namespace ngcomp
     virtual const char * ClassName() const
     { return "base-class Preconditioner"; }
 
-    virtual AutoVector CreateRowVector () const override
-    {
-      return GetAMatrix().CreateColVector();
-    }
 
-    virtual AutoVector CreateColVector () const override
-    {
-      return GetAMatrix().CreateRowVector();
-    }
     VecFormat RowFormat () const override { return GetAMatrix().ColFormat(); }
     VecFormat ColFormat () const override { return GetAMatrix().RowFormat(); }
 

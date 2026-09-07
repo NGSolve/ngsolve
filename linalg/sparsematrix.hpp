@@ -151,11 +151,9 @@ namespace ngla
       return mem_tracer;
     }
 
-    virtual AutoVector CreateRowVector () const
-    { throw Exception("MatrixGraph::CreateRowVector called"); }
-    
-    virtual AutoVector CreateColVector () const
-    { throw Exception("MatrixGraph::CreateRowVector called"); }
+    // the graph knows the shape only
+    VecFormat RowFormat () const override { return VecFormat (width); }
+    VecFormat ColFormat () const override { return VecFormat (size); }
 
   private:
     
@@ -528,8 +526,6 @@ namespace ngla
     virtual Array<MemoryUsage> GetMemoryUsage () const override;    
 
     virtual AutoVector CreateVector () const override;
-    virtual AutoVector CreateRowVector () const override;
-    virtual AutoVector CreateColVector () const override;
     VecFormat RowFormat () const override;
     VecFormat ColFormat () const override;
 
@@ -592,8 +588,6 @@ namespace ngla
     virtual shared_ptr<BaseMatrix> CreateDeviceMatrix () const override;
     ///
     virtual AutoVector CreateVector () const override;
-    virtual AutoVector CreateRowVector () const override;
-    virtual AutoVector CreateColVector () const override;
     VecFormat RowFormat () const override;
     VecFormat ColFormat () const override;
 
@@ -990,15 +984,7 @@ shared_ptr<BaseMatrix> CreateSparseMatrixInverse(shared_ptr<const BaseSparseMatr
     
     tuple<int,int> EntrySizes() const override { return { bheight, bwidth }; }
     
-    AutoVector CreateRowVector () const override
-    {
-      return AutoVector(make_shared<S_BaseVectorPtr<TSCAL>> (this->width, this->bwidth));
-    }
     
-    AutoVector CreateColVector () const override
-    {
-      return AutoVector(make_shared<S_BaseVectorPtr<TSCAL>> (this->size, this->bheight));
-    }
     VecFormat RowFormat () const override { return VecFormat (this->width, TSCAL(0), int(bwidth)); }
     VecFormat ColFormat () const override { return VecFormat (this->size, TSCAL(0), int(bheight)); }
 

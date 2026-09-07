@@ -171,17 +171,7 @@ namespace ngla
         */
   }
 
-  template <typename TSCAL>  
-  AutoVector SparseMatrixVariableBlocks<TSCAL> :: CreateRowVector () const
-  {
-    return CreateBaseVector(width, false, 1);    
-  }
 
-  template <typename TSCAL>  
-  AutoVector SparseMatrixVariableBlocks<TSCAL> :: CreateColVector () const
-  {
-    return CreateBaseVector(height, false, 1);        
-  }
 
   template class SparseMatrixVariableBlocks<double>;  
 

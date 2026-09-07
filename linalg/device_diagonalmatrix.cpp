@@ -193,10 +193,6 @@ namespace ngla
     void MultTrans (const BaseVector & x, BaseVector & y) const override { Mult (x, y); }
     void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override { MultAdd (s, x, y); }
 
-    AutoVector CreateRowVector () const override
-    { return make_unique<DeviceVector<double>> (Mask()->Size(), memtype); }
-    AutoVector CreateColVector () const override
-    { return make_unique<DeviceVector<double>> (Mask()->Size(), memtype); }
     VecFormat RowFormat () const override { return DeviceVectorFormat<double> (Mask()->Size(), memtype); }
     VecFormat ColFormat () const override { return RowFormat(); }
 
@@ -256,17 +252,7 @@ namespace ngla
   }
 
 
-  template <typename T>
-  AutoVector DeviceDiagonalMatrix<T> :: CreateRowVector () const
-  {
-    return make_unique<DeviceVector<T>> (diag.Size(), diag.GetMemType());
-  }
 
-  template <typename T>
-  AutoVector DeviceDiagonalMatrix<T> :: CreateColVector () const
-  {
-    return make_unique<DeviceVector<T>> (diag.Size(), diag.GetMemType());
-  }
 
   template <typename T>
   VecFormat DeviceDiagonalMatrix<T> :: RowFormat () const
@@ -387,17 +373,7 @@ namespace ngla
     Launch (x, y, T(s), T(1), true);
   }
 
-  template <typename T>
-  AutoVector DeviceBlockDiagonalMatrixSoA<T> :: CreateRowVector () const
-  {
-    return make_unique<DeviceVector<T>> (size_t(dimx)*blocks, memtype);
-  }
 
-  template <typename T>
-  AutoVector DeviceBlockDiagonalMatrixSoA<T> :: CreateColVector () const
-  {
-    return make_unique<DeviceVector<T>> (size_t(dimy)*blocks, memtype);
-  }
 
   template <typename T>
   VecFormat DeviceBlockDiagonalMatrixSoA<T> :: RowFormat () const

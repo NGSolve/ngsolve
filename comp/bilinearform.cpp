@@ -1202,25 +1202,12 @@ namespace ngcomp
 
   AutoVector BilinearForm :: CreateRowVector() const
   {
-    auto afespace = this->GetTrialSpace();
-    
-    if (afespace->IsParallel())
-      // return make_unique<ParallelVVector<TV>> (afespace->GetParallelDofs());
-      return CreateParallelVector(afespace->GetParallelDofs(), CUMULATED);
-    else
-      // return make_unique<VVector<TV>> (afespace->GetNDof());
-      return CreateBaseVector(afespace->GetNDof(), afespace->IsComplex(), afespace->GetDimension());
+    return CreateBaseVector (GetTrialSpace()->GetVectorFormat());
   }
   
   AutoVector BilinearForm :: CreateColVector() const
   {
-    auto afespace = this->GetTestSpace();
-    if (afespace->IsParallel())
-      // return make_unique<ParallelVVector<TV>> (afespace->GetNDof(), afespace->GetParallelDofs());
-      return CreateParallelVector(afespace->GetParallelDofs(), CUMULATED);    
-    else
-      // return make_unique<VVector<TV>> (afespace->GetNDof());
-      return CreateBaseVector(afespace->GetNDof(), afespace->IsComplex(), afespace->GetDimension());    
+    return CreateBaseVector (GetTestSpace()->GetVectorFormat());
   }
 
 
@@ -7623,17 +7610,7 @@ namespace ngcomp
     return bf -> CreateRowVector();
   }
 
-  AutoVector BilinearFormApplication :: 
-  CreateRowVector () const
-  {
-    return bf -> CreateRowVector();
-  }
   
-  AutoVector BilinearFormApplication :: 
-  CreateColVector () const
-  {
-    return bf -> CreateColVector();
-  }
 
   VecFormat BilinearFormApplication :: RowFormat () const
   { return bf->GetTrialSpace()->GetVectorFormat(); }

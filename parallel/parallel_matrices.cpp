@@ -19,12 +19,6 @@ namespace ngla
 
 #ifdef PARALLEL
   
-  template <typename TM> AutoVector MasterInverse<TM> :: CreateRowVector () const
-  // { return make_unique<ParallelVVector<double>> (paralleldofs->GetNDofLocal(), paralleldofs); }
-  { return make_unique<ParallelVVector<double>> (paralleldofs); }
-  template <typename TM> AutoVector MasterInverse<TM> :: CreateColVector () const
-  // { return make_unique<ParallelVVector<double>> (paralleldofs->GetNDofLocal(), paralleldofs); }
-  { return make_unique<ParallelVVector<double>> (paralleldofs); }
   
   template <typename TM>
   MasterInverse<TM> :: MasterInverse (const SparseMatrixTM<TM> & mat, 
@@ -456,32 +450,6 @@ auto _dummy_init = [] () {
   }
 
   
-  AutoVector ParallelMatrix :: CreateRowVector () const
-  {
-    auto pd = row_paralleldofs ? row_paralleldofs : paralleldofs;
-    if (pd)
-      return CreateParallelVector (pd, RowType(op));
-    else
-      return mat->CreateRowVector();
-    /*
-    if (IsComplex()) {
-      if (row_paralleldofs == nullptr)
-	return make_unique<S_ParallelBaseVectorPtr<Complex>>
-	  (mat->Width(), paralleldofs->GetEntrySize(), paralleldofs, DISTRIBUTED);
-      else
-	return make_unique<S_ParallelBaseVectorPtr<Complex>>
-	  (mat->Width(), row_paralleldofs->GetEntrySize(), row_paralleldofs, DISTRIBUTED);
-    }
-    else {
-      if (row_paralleldofs == nullptr)
-	return make_unique<S_ParallelBaseVectorPtr<double>>
-	  (mat->Width(), paralleldofs->GetEntrySize(), paralleldofs, DISTRIBUTED);
-      else
-	return make_unique<S_ParallelBaseVectorPtr<double>>
-	  (mat->Width(), row_paralleldofs->GetEntrySize(), row_paralleldofs, DISTRIBUTED);
-    }
-    */
-  }
   
   VecFormat ParallelMatrix :: RowFormat () const
   {
@@ -495,32 +463,6 @@ auto _dummy_init = [] () {
     return pd ? ParallelVectorFormat (pd, ColType(op)) : mat->ColFormat();
   }
 
-  AutoVector ParallelMatrix :: CreateColVector () const
-  {
-    auto pd = col_paralleldofs ? col_paralleldofs : paralleldofs;
-    if (pd)
-      return CreateParallelVector (pd, ColType(op));
-    else
-      return mat->CreateColVector();
-    /*
-    if (IsComplex()) {
-      if (col_paralleldofs==nullptr)
-	return make_unique<S_ParallelBaseVectorPtr<Complex>>
-	  (mat->Height(), paralleldofs->GetEntrySize(), paralleldofs, DISTRIBUTED);
-      else
-	return make_unique<S_ParallelBaseVectorPtr<Complex>>
-	  (mat->Height(), col_paralleldofs->GetEntrySize(), col_paralleldofs, DISTRIBUTED);
-    }
-    else {
-      if (col_paralleldofs==nullptr)
-	return make_unique<S_ParallelBaseVectorPtr<double>>
-	  (mat->Height(), paralleldofs->GetEntrySize(), paralleldofs, DISTRIBUTED);
-      else
-	return make_unique<S_ParallelBaseVectorPtr<double>>
-	  (mat->Height(), col_paralleldofs->GetEntrySize(), col_paralleldofs, DISTRIBUTED);
-    }
-    */
-  }
 
 
   ParallelMatrix :: ~ParallelMatrix ()
@@ -790,15 +732,7 @@ auto _dummy_init = [] () {
     // throw Exception ("CumulationOp, multtransadd not implemented");
   }
 
-  AutoVector CumulationOperator :: CreateRowVector () const
-  {
-    return CreateParallelVector(pardofs, DISTRIBUTED);
-  }
   
-  AutoVector CumulationOperator :: CreateColVector () const
-  {
-    return CreateParallelVector(pardofs, CUMULATED);    
-  }
 
   int CumulationOperator :: VHeight() const
   {
@@ -889,24 +823,7 @@ auto _dummy_init = [] () {
   }
 
   
-  AutoVector FETI_Jump_Matrix :: CreateRowVector () const
-  {
-    // throw Exception("Called FETI_Jump_Matrix :: CreateRowVector, this is not well defined");
-    if (u_paralleldofs==nullptr) {
-      return make_unique<VVector<double>>(VHeight());
-    }
-    /*
-    return make_unique<ParallelVVector<double>> (u_paralleldofs->GetNDofLocal(),
-						 u_paralleldofs);
-    */
-    return make_unique<ParallelVVector<double>> (u_paralleldofs);
-  }
   
-  AutoVector FETI_Jump_Matrix :: CreateColVector () const
-  {
-    return make_unique<ParallelVVector<double>> (// jump_paralleldofs->GetNDofLocal(),
-						 jump_paralleldofs);
-  }
   
 #endif
   
