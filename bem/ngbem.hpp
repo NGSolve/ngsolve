@@ -126,9 +126,6 @@ namespace ngsbem
     virtual shared_ptr<BaseMatrix> CreateMatrixFMM(LocalHeap & lh) const = 0;
     virtual shared_ptr<BaseMatrix> CreateNearFieldMatrix(LocalHeap & lh) const = 0;
 
-    virtual shared_ptr<BasePotentialCF> GetPotential(shared_ptr<GridFunction> gf,
-                                                     optional<int> io, bool nearfield_experimental) const = 0;
-
     shared_ptr<BaseMatrix> GetNearFieldMatrix() const
     {
       if (!nearfield_matrix)
@@ -238,12 +235,6 @@ namespace ngsbem
       return sum;
     }
 
-    shared_ptr<BasePotentialCF> GetPotential(shared_ptr<GridFunction> gf,
-                                             optional<int> io, bool nearfield_experimental) const override
-    {
-      throw Exception("GetPotential not implemented for SumIntegralOperator");
-    }
-
     shared_ptr<BaseMatrix> CreateNearFieldMatrix(LocalHeap & lh) const override
     {
       shared_ptr<BaseMatrix> sum;
@@ -305,12 +296,6 @@ namespace ngsbem
     shared_ptr<BaseMatrix> CreateNearFieldMatrix(LocalHeap & lh) const override
     {
       return make_shared<VScaleMatrix<TSCAL>>(op->GetNearFieldMatrix(), fac);
-    }
-
-    shared_ptr<BasePotentialCF> GetPotential(shared_ptr<GridFunction> gf,
-                                             optional<int> io, bool nearfield_experimental) const override
-    {
-      throw Exception("GetPotential not implemented for ScaledIntegralOperator");
     }
 
     std::variant<Matrix<double>, Matrix<Complex>> CalcSubMatrix (FlatArray<DofId> rowids, FlatArray<DofId> colids, LocalHeap &lh) const override
@@ -403,9 +388,6 @@ namespace ngsbem
     shared_ptr<BaseMatrix> CreateMatrixFMM(LocalHeap & lh) const override;
     shared_ptr<BaseMatrix> CreateNearFieldMatrix(LocalHeap & lh) const override;
     virtual std::variant<Matrix<double>, Matrix<Complex>> CalcSubMatrix (FlatArray<DofId> rowids, FlatArray<DofId> colids, LocalHeap &lh) const override;
-
-    virtual shared_ptr<BasePotentialCF> GetPotential(shared_ptr<GridFunction> gf,
-                                                         optional<int> io, bool nearfield_experimental) const override;
 
     FMMOperatorInfo GetFMMInfo() const override
     {
@@ -528,7 +510,7 @@ namespace ngsbem
     
     shared_ptr<BasePotentialCF> MakePotentialCF(shared_ptr<GridFunction> gf) override
     {
-      return make_shared<PotentialCF<KERNEL>>(gf, source_vb, definedon, evaluator, kernel, 2+intorder, true, io_params);
+      return make_shared<PotentialCF<KERNEL>>(gf, source_vb, definedon, evaluator, kernel, 2+intorder, io_params);
     }
 
     shared_ptr<BasePotentialOperator> MakeDiffBasePotential(string name) override

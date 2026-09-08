@@ -180,58 +180,6 @@ namespace ngsbem
     }
   };
 
-  // HelmholtzHS source: packs charges + kappa²-scaled normal dipoles
-  class HelmholtzHSSource : public FMMInterface<Vec<6,Complex>, Complex>
-  {
-    double kappa;
-    using Base = FMMInterface<Vec<6,Complex>, Complex>;
-  public:
-    static constexpr bool needs_normal = true;
-    HelmholtzHSSource (double _kappa) : Base(_kappa), kappa(_kappa) {}
-
-    void AddSource (SingularMLExpansion<Vec<6,Complex>> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const override
-    {
-      Vec<6,Complex> charge;
-      charge.Range(0,3) = val.Range(0,3);
-      charge.Range(3,6) = -kappa * kappa * val(3) * nv;
-      mp.AddCharge(pnt, charge);
-    }
-  };
-
-  // HelmholtzHS target: unpacks eval + dot product with normal
-  class HelmholtzHSTarget : public FMMInterface<Vec<6,Complex>, Complex>
-  {
-    using Base = FMMInterface<Vec<6,Complex>, Complex>;
-  public:
-    static constexpr bool needs_normal = true;
-    HelmholtzHSTarget (double kappa) : Base(kappa) {}
-
-    void EvaluateMP (RegularMLExpansion<Vec<6,Complex>> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const override
-    {
-      Vec<6,Complex> eval = mp.Evaluate (pnt);
-      val.Range(0,3) = eval.Range(0,3);
-      val(3) = InnerProduct(eval.Range(3,6), nv);
-    }
-  };
-
-  // MaxwellSL source: kappa-scaled 4-component charges
-  class MaxwellSLSource : public FMMInterface<Vec<4,Complex>, Complex>
-  {
-    double kappa;
-    using Base = FMMInterface<Vec<4,Complex>, Complex>;
-  public:
-    static constexpr bool needs_normal = false;
-    MaxwellSLSource (double _kappa) : Base(_kappa), kappa(_kappa) {}
-
-    void AddSource (SingularMLExpansion<Vec<4,Complex>> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const override
-    {
-      Vec<4,Complex> charge;
-      charge.Range(0,3) = kappa * val.Range(0, 3);
-      charge(3) = -1.0/kappa * val(3);
-      mp.AddCharge(pnt, charge);
-    }
-  };
-
   // MaxwellDL source/target: cross-product dipoles + direct eval (self-symmetric)
   template <typename T_Kappa = double>
   class MaxwellCurlDipoles : public FMMInterface<Vec<3,Complex>, Complex, T_Kappa>
@@ -334,8 +282,6 @@ namespace ngsbem
   /** CombinedFieldKernel is a kernel for the combined field integral equation
       is considered for the Helmholtz equation. */
   template <int DIM, int COMPS=1,typename T_Kappa = double> class CombinedFieldKernel;
-
-  template <int D> class MaxwellSLKernel;
 
   template <int D, typename T_Kappa=double> class MaxwellDLKernel;
 
@@ -666,46 +612,6 @@ namespace ngsbem
     }
   };
 
-
-  template <int DIM> class HelmholtzHSKernel;
-  
-  template<>
-  class HelmholtzHSKernel<3> : public BaseKernel
-  {
-    double kappa;
-  public:
-    using source_type = HelmholtzHSSource;
-    using target_type = HelmholtzHSTarget;
-
-    source_type source;
-    target_type target;
-
-    typedef Complex value_type;
-    static string Name() { return "HelmholtzHS"; }
-    static auto Shape() { return IVec<2>(4,4); }
-
-    HelmholtzHSKernel (double _kappa) : kappa(_kappa), source(_kappa), target(_kappa) { }
-    template <typename T>
-    auto Evaluate (Vec<3,T> x, Vec<3,T> y, Vec<3,T> nx, Vec<3,T> ny) const
-    {
-      T norm = L2Norm(x-y);
-      T nxny = InnerProduct(nx, ny);
-      auto kern = exp(Complex(0,kappa)*norm) / (4 * M_PI * norm);
-      auto kernnxny = -kappa * kappa * kern * nxny;
-      // return kern;
-      return Vec<2,decltype(kern)> ({kern, kernnxny});
-    }
-    double GetKappa() const { return kappa; }
-    Array<KernelTerm> terms =
-      {
-        KernelTerm{1.0, 0, 0, 0},
-        KernelTerm{1.0, 0, 1, 1},
-        KernelTerm{1.0, 0, 2, 2},
-    	KernelTerm{1.0, 1, 3, 3},
-      };
-  };
-
-
   /** CombinedFieldKernel in 3D reads
       $$ G(x-y) = \frac{1}{4\,\pi} \, \frac{e^{i\,\kappa\,|x-y|}}{|x-y|^3} \, 
           \left( \langle n_y, x-y\rangle (1- i\,\kappa\, | x-y|) - i\,\kappa\,|x-y|^2 \right), 
@@ -744,44 +650,6 @@ namespace ngsbem
     T_Kappa GetKappa() const { return kappa; }
     Array<KernelTerm> terms;
   };
-
-
-
-  template<>
-  class MaxwellSLKernel<3> : public BaseKernel
-  {
-    double kappa;
-  public:
-    using source_type = MaxwellSLSource;
-    using target_type = DirectEval<Vec<4,Complex>, Complex>;
-
-    source_type source;
-    target_type target;
-
-    typedef Complex value_type;
-    static string Name() { return "MaxwellSL"; }
-    static auto Shape() { return IVec<2>(4,4); }
-
-    MaxwellSLKernel (const MaxwellSLKernel&) = default;
-    MaxwellSLKernel (MaxwellSLKernel&&) = default;
-    MaxwellSLKernel (double _kappa) : kappa(_kappa), source(_kappa), target(_kappa)
-    {
-      for (size_t i = 0; i < 3; i++)
-        terms += KernelTerm { kappa, 0, i, i };
-      terms += KernelTerm { -1.0/kappa, 0, 3, 3 };
-    }
-
-    template <typename T>
-    auto Evaluate (Vec<3,T> x, Vec<3,T> y, Vec<3,T> nx, Vec<3,T> ny) const
-    {
-      T norm = L2Norm(x-y);
-      auto kern = exp(Complex(0,kappa)*norm) / (4 * M_PI * norm);
-      return Vec<1,decltype(kern)> (kern);
-    }
-    double GetKappa() const { return kappa; }
-    Array<KernelTerm> terms;
-  };
-
 
   // https://weggler.github.io/ngbem/short_and_sweet/Maxwell_Formulations.html
   /** MaxwellDLkernel for 3D in matrix representation reads
