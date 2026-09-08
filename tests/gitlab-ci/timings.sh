@@ -14,11 +14,11 @@ then
     -DUSE_MKL=ON
     -DMKL_ROOT=/opt/intel/mkl
     -DCMAKE_BUILD_TYPE=Release
-  make -j install
+  cmake --build . -j --target install
   export NETGENDIR=$CI_PROJECT_DIR/install/bin
   export PATH=$CI_PROJECT_DIR/install/bin:$PATH
   export PYTHONPATH=$CI_PROJECT_DIR/install/lib/python3.6/site-packages:.
   export LD_LIBRARY_PATH=$CI_PROJECT_DIR/install/lib:.:$LD_LIBRARY_PATH
   cd ngsolve
-  make timings;
+  cmake --build . --target timings;
 fi

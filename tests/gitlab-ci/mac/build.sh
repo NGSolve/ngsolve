@@ -11,7 +11,7 @@ cd $BUILD_DIR
 
 pip3 install --upgrade pybind11-stubgen netgen-occt netgen-occt-devel
 
-cmake $SRC_DIR \
+cmake $SRC_DIR -G Ninja \
       -DCMAKE_INSTALL_PREFIX=$CMAKE_INSTALL_PREFIX \
       -DCMAKE_BUILD_TYPE=Release \
       -DUSE_NATIVE_ARCH=OFF \
@@ -24,7 +24,7 @@ cmake $SRC_DIR \
       -DPython3_EXECUTABLE=`which python3` \
       -DUSE_OCC=ON
 
-make -j5 install
+cmake --build . --target install
 
 cd $BUILD_DIR/ngsolve
 pip3 install scipy

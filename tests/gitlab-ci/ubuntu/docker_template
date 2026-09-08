@@ -38,6 +38,7 @@ RUN apt-get update && apt-get -y install \
         libxfixes3 \
         libxkbcommon0 \
         libxrandr2 \
+        ninja-build \
         wget \
         zip
 RUN pip3 install --break-system-packages mpi4py cython pip setuptools wheel numpy scipy

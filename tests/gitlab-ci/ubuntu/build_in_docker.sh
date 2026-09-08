@@ -44,7 +44,12 @@ mkdir -p /logs/
 # pip3 freeze > /logs/pip_freeze.log
 # chmod 666 /logs/*
 
+# Ninja compiles all targets in parallel; the Makefile generator serializes
+# them (ngstd -> ngbla -> ngfem -> ngcomp), which halves core utilization.
+export CMAKE_BUILD_PARALLEL_LEVEL=12
+
 cmake ../../src/ngsolve \
+  -G Ninja \
   -DCMAKE_CXX_FLAGS="$CMAKE_CXX_FLAGS" \
   -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE \
   -DUSE_NATIVE_ARCH=$USE_NATIVE_ARCH \
@@ -61,8 +66,8 @@ cmake ../../src/ngsolve \
   -DCMAKE_INSTALL_PREFIX=/usr \
   $CMAKE_ARGS
 
-make -j12
-make install
+cmake --build .
+cmake --build . --target install
 cd ngsolve
 
 if [ "$IMAGE_NAME" == "avx" ]
@@ -91,9 +96,9 @@ then
   # export SHOW_LOGS=1
   if [[ $SHOW_LOGS ]];
   then
-    make docs
+    cmake --build . --target docs
   else
-      make docs > /logs/build_docs.log 2>&1 || { chmod 666 /logs/build_docs.log; false; }
+      cmake --build . --target docs > /logs/build_docs.log 2>&1 || { chmod 666 /logs/build_docs.log; false; }
       chmod 666 /logs/build_docs.log
   fi
   find ~/src/ngsolve/docs/i-tutorials -name '*.ipynb' -print0 | xargs -0 nbstripout

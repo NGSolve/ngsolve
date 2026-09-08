@@ -27,4 +27,4 @@ docker run \
       -v /mnt/ccache:/ccache \
       -v "$PWD/logs:/logs" \
       ngsolve_${CI_PIPELINE_ID}:${IMAGE_NAME} \
-      bash -c '/root/src/ngsolve/tests/gitlab-ci/ubuntu/build_in_docker.sh && if [ "$RUN_TESTS_AFTER_BUILD" = "1" ]; then cd /root/build/ngsolve && make test_ngsolve ARGS="--output-on-failure"; fi'
+      bash -c '/root/src/ngsolve/tests/gitlab-ci/ubuntu/build_in_docker.sh && if [ "$RUN_TESTS_AFTER_BUILD" = "1" ]; then cd /root/build/ngsolve/ngsolve && ctest --output-on-failure; fi'
