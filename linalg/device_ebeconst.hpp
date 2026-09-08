@@ -15,6 +15,10 @@
   multiply with M (or M^T), scatter into y. Overlapping output dofs
   accumulate with atomic adds, disjoint ones with plain stores.
 
+  On simd-32 devices a group of blocks is staged in group memory and
+  multiplied in 8x8 warp tiles (tinybla gemm, compiled per shape); the
+  host reference backend uses a plain per-lane kernel.
+
   Created by ConstantElementByElementMatrix::CreateDeviceMatrix.
 */
 
@@ -23,6 +27,7 @@
 
 namespace ngla
 {
+  template <typename T> class DeviceEBEGemmKernels;
 
   template <typename T>
   class NGS_DLL_HEADER DeviceConstantEBEMatrix : public BaseMatrix
@@ -34,12 +39,14 @@ namespace ngla
     shared_ptr<ngs_gpu::Device> device;
     shared_ptr<ngs_gpu::Queue> queue;
 
-    ngs_gpu::TypedBuffer<T> dev_mat;            // hm x wm, row-major
+    ngs_gpu::TypedBuffer<T> dev_mat;            // M^T, row-major, zero padded to multiples of 8
+    ngs_gpu::TypedBuffer<T> dev_mat_trans;      // M, padded likewise
     ngs_gpu::TypedBuffer<int> dev_rowdnums;     // nblocks x wm, input dofs
     ngs_gpu::TypedBuffer<int> dev_coldnums;     // nblocks x hm, output dofs
     bool disjoint_rows, disjoint_cols;
     bool onto_cols, onto_rows;                  // disjoint and covering: Mult may store
-    int lanes, lanes_trans;                     // work-items per block
+    int lanes, lanes_trans;                     // work-items per block, lane kernel
+    shared_ptr<const DeviceEBEGemmKernels<T>> gemm, gemm_trans;   // null: lane kernel
 
     void Launch (const BaseVector & x, BaseVector & y, T s, T beta, bool trans) const;
 

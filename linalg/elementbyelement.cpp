@@ -1061,7 +1061,7 @@ namespace ngla
                      for (size_t i = 0; i < num; i++)
                        hx.Row(i) = fx(row_dnums[bi+i]);
                      
-                     hy.Rows(bi,li) = hx.Rows(0, num) * Trans(matrix);
+                     hy.Rows(bi,li) += s * hx.Rows(0, num) * Trans(matrix);
                    }
                }
              else
