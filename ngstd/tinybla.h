@@ -21,6 +21,8 @@
 #define constant
 #define threadgroup
 #define TB_DEVICE
+// the lane shuffles of the host reference backend, defined in gpukernel.h
+namespace ngs_cpu { unsigned LaneId (); template <unsigned W, typename T> T SubgroupShuffle (T x, unsigned src); }
 
 #else
 #include <metal_stdlib>
@@ -480,6 +482,16 @@ namespace tinybla {
   { return __shfl_sync (0xffffffff, x, lane); }
   template <typename T> __device__ T simd_shuffle_xor (T x, unsigned mask)
   { return __shfl_xor_sync (0xffffffff, x, mask); }
+#endif
+
+#ifdef TB_CPU
+  // the metal simd/quad primitives on the host reference backend
+  template <typename T> T quad_broadcast (T x, unsigned lane)
+  { return ngs_cpu::SubgroupShuffle<4> (x, lane); }
+  template <typename T> T simd_shuffle (T x, unsigned lane)
+  { return ngs_cpu::SubgroupShuffle<32> (x, lane); }
+  template <typename T> T simd_shuffle_xor (T x, unsigned mask)
+  { return ngs_cpu::SubgroupShuffle<32> (x, (ngs_cpu::LaneId() % 32) ^ mask); }
 #endif
 
 

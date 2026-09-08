@@ -105,6 +105,7 @@
   #include <atomic>
   #include <cmath>
   #include <cstddef>
+  #include <cstring>
   #include <deque>
   #include <thread>
   #include <vector>
@@ -141,20 +142,45 @@
     {
       Barrier barrier;
       std::deque<Barrier> rowbarriers;   // one per (y,z) row of x-lanes
+      std::deque<Barrier> quadbarriers, warpbarriers;   // 4 / 32 consecutive work-items
       std::vector<double> rowscratch;    // SIMD_SUM / SIMD_BROADCAST slots, one per work-item
+      std::vector<double> subscratch;    // quad / warp shuffle slots, one per work-item
       std::vector<char> arena;
       std::size_t used = 0;
       void * last = nullptr;
       Group (unsigned sx, unsigned sy, unsigned sz, std::size_t sh)
-        : barrier(sx*sy*sz), rowscratch(sx*sy*sz), arena(sh)
+        : barrier(sx*sy*sz), rowscratch(sx*sy*sz), subscratch(sx*sy*sz), arena(sh)
       {
+        unsigned n = sx*sy*sz;
         for (unsigned i = 0; i < sy*sz; i++) rowbarriers.emplace_back (sx);
+        for (unsigned i = 0; i < n; i += 4) quadbarriers.emplace_back (std::min(4u, n-i));
+        for (unsigned i = 0; i < n; i += 32) warpbarriers.emplace_back (std::min(32u, n-i));
       }
     };
 
     thread_local unsigned lid[3] = {0,0,0}, gid[3] = {0,0,0};
     thread_local unsigned gsz[3] = {1,1,1}, ngr[3] = {1,1,1};
     thread_local Group * group = nullptr;
+
+    // value of lane src of the quad (W=4) / warp (W=32) of consecutive
+    // work-items, the tinybla quad_broadcast / simd_shuffle; all lanes call it
+    inline unsigned LaneId () { return lid[0] + gsz[0]*(lid[1] + gsz[1]*lid[2]); }
+
+    template <unsigned W, typename T> inline T SubgroupShuffle (T x, unsigned src)
+    {
+      static_assert (sizeof(T) <= sizeof(double), "shuffle of a scalar");
+      unsigned t = LaneId();
+      unsigned base = t - t%W;
+      auto & bars = (W == 4) ? group->quadbarriers : group->warpbarriers;
+      Barrier & b = bars[t/W];
+      double * slots = group->subscratch.data() + base;
+      std::memcpy (&slots[t-base], &x, sizeof(T));
+      b.Wait();
+      T v;
+      std::memcpy (&v, &slots[src], sizeof(T));
+      b.Wait();    // slots free for the next call
+      return v;
+    }
 
     // all work-items reach this in the same order, so one of them bumps
     inline void * SharedAlloc (std::size_t bytes)
