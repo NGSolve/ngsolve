@@ -736,6 +736,7 @@ namespace ngla
     
     ///
     virtual ~SparseMatrixSymmetric ();
+    virtual shared_ptr<BaseMatrix> CreateDeviceMatrix () const override;
 
     SparseMatrixSymmetric & operator= (double s)
     {

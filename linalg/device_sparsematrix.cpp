@@ -43,6 +43,31 @@ namespace ngla
         STORE_ROW(row, sum);
       }
 
+      KERNEL(scale_vec, GLOBAL(SCAL,y), VALUE(SCAL,beta), VALUE(int,n))
+      {
+        int i = int(GLOBAL_ID_X);
+        if (i >= n) return;
+        y[i] = (beta == SCAL(0)) ? SCAL(0) : beta*y[i];
+      }
+
+      KERNEL(spmv_sym, GLOBAL_IN(int,firsti), GLOBAL_IN(int,colnr), GLOBAL_IN(SCAL,val),
+                       GLOBAL_IN(SCAL,x), GLOBAL(SCAL,y), VALUE(SCAL,s), VALUE(int,h))
+      {
+        int row = int(GLOBAL_ID_X);
+        if (row >= h) return;
+        SCAL xr = x[row];
+        SCAL sum = 0;
+        int last = firsti[row+1];
+        for (int j = firsti[row]; j < last; j++)
+          {
+            int c = colnr[j];
+            SCAL v = val[j];
+            sum += v*x[c];
+            if (c != row) ATOMIC_ADD (&y[c], s*v*xr);
+          }
+        ATOMIC_ADD (&y[row], s*sum);
+      }
+
       // lanes consecutive work-items share a row (lanes a power of two
       // dividing the group size), partial sums reduced in group memory
       KERNEL(spmv_lanes, GLOBAL_IN(int,firsti), GLOBAL_IN(int,colnr), GLOBAL_IN(SCAL,val),
@@ -121,7 +146,7 @@ namespace ngla
     public:
       shared_ptr<Device> device;
       shared_ptr<ngs_gpu::Queue> queue;
-      shared_ptr<Kernel> spmv_row, spmv_lanes, spmv_rows2u2;
+      shared_ptr<Kernel> spmv_row, spmv_lanes, spmv_rows2u2, spmv_sym, scale_vec;
       unsigned groupsize;
       string forced_variant;     // NGS_GPU_SPMV=lanes|rows2u2 skips the timing
       int forced_lanes = 0;      // NGS_GPU_SPMV_LANES
@@ -140,6 +165,8 @@ namespace ngla
         spmv_row     = library->GetKernel ("spmv_row");
         spmv_lanes   = library->GetKernel ("spmv_lanes");
         spmv_rows2u2 = library->GetKernel ("spmv_rows2u2");
+        spmv_sym     = library->GetKernel ("spmv_sym");
+        scale_vec    = library->GetKernel ("scale_vec");
         queue = device->DefaultQueue();
         // the cpu reference backend runs one OS thread per work-item
         groupsize = (device->SimdWidth() > 1) ? 256 : 64;
@@ -167,8 +194,9 @@ namespace ngla
 
   template <typename T>
   template <typename TM>
-  DeviceSparseMatrix<T> :: DeviceSparseMatrix (const SparseMatrixTM<TM> & mat)
+  DeviceSparseMatrix<T> :: DeviceSparseMatrix (const SparseMatrixTM<TM> & mat, bool asymmetric)
   {
+    symmetric = asymmetric;
     height = mat.Height();
     width = mat.Width();
     nze = mat.NZE();
@@ -198,10 +226,31 @@ namespace ngla
     dev_colnr.H2D (mat.GetColIndices().Data(), nze);
     dev_values.H2D (values.Data(), nze);
 
+    if (symmetric)
+      {
+        choice.kernel = kern.spmv_sym;
+        cout << IM(7) << "DeviceSparseMatrix<" << (is_same_v<T,double> ? "double" : "float")
+             << "> symmetric storage, height = " << height << ", nze = " << nze << endl;
+        return;
+      }
     choice = AutoTune (dev_firsti, dev_colnr, dev_values, height, width);
     cout << IM(7) << "DeviceSparseMatrix<" << (is_same_v<T,double> ? "double" : "float")
          << "> height = " << height << ", width = " << width << ", nze = " << nze
          << ", kernel " << choice.kernel->Name() << ", lanes = " << choice.lanes << endl;
+  }
+
+
+  template <typename T>
+  void DeviceSparseMatrix<T> :: LaunchSym (KernelArg x, KernelArg y, T s, T beta) const
+  {
+    const auto & kern = DeviceSparseKernels<T>::Get();
+    unsigned groups = (height + kern.groupsize-1) / kern.groupsize;
+    if (beta != T(1))
+      queue->Launch (*kern.scale_vec, Dim3(groups), Dim3(kern.groupsize),
+                     { y, KernelArg(beta), KernelArg(int(height)) });
+    queue->Launch (*kern.spmv_sym, Dim3(groups), Dim3(kern.groupsize),
+                   { KernelArg(dev_firsti), KernelArg(dev_colnr), KernelArg(dev_values),
+                     x, y, KernelArg(s), KernelArg(int(height)) });
   }
 
 
@@ -336,6 +385,7 @@ namespace ngla
       throw Exception("DeviceSparseMatrix::Mult - size mismatch");
     DeviceVectorWrapper<T> ux(x, memtype);
     DeviceVectorWrapper<T> uy(y, memtype);
+    if (symmetric) { LaunchSym (ux.DevArgRO(), uy.DevArgW(), T(1), T(0)); return; }
     LaunchSpMV (dev_firsti, dev_colnr, dev_values, choice, height,
                 ux.DevArgRO(), uy.DevArgW(), T(1), T(0));
   }
@@ -346,9 +396,10 @@ namespace ngla
     static Timer t("DeviceSparseMatrix::MultTrans"); RegionTimer reg(t);
     if (x.Size() != height || y.Size() != width)
       throw Exception("DeviceSparseMatrix::MultTrans - size mismatch");
-    BuildTranspose();
     DeviceVectorWrapper<T> ux(x, memtype);
     DeviceVectorWrapper<T> uy(y, memtype);
+    if (symmetric) { LaunchSym (ux.DevArgRO(), uy.DevArgW(), T(1), T(0)); return; }
+    BuildTranspose();
     LaunchSpMV (devt_firsti, devt_colnr, devt_values, choice_trans, width,
                 ux.DevArgRO(), uy.DevArgW(), T(1), T(0));
   }
@@ -363,6 +414,7 @@ namespace ngla
 
     DeviceVectorWrapper<T> ux(x, memtype);
     DeviceVectorWrapper<T> uy(y, memtype);
+    if (symmetric) { LaunchSym (ux.DevArgRO(), uy.DevArgRW(), T(s), T(1)); return; }
     LaunchSpMV (dev_firsti, dev_colnr, dev_values, choice, height,
                 ux.DevArgRO(), uy.DevArgRW(), T(s), T(1));
   }
@@ -375,10 +427,10 @@ namespace ngla
     if (x.Size() != height || y.Size() != width)
       throw Exception("DeviceSparseMatrix::MultTransAdd - size mismatch");
 
-    if (!devt_firsti) BuildTranspose();
-
     DeviceVectorWrapper<T> ux(x, memtype);
     DeviceVectorWrapper<T> uy(y, memtype);
+    if (symmetric) { LaunchSym (ux.DevArgRO(), uy.DevArgRW(), T(s), T(1)); return; }
+    if (!devt_firsti) BuildTranspose();
     LaunchSpMV (devt_firsti, devt_colnr, devt_values, choice_trans, width,
                 ux.DevArgRO(), uy.DevArgRW(), T(s), T(1));
   }
@@ -390,7 +442,7 @@ namespace ngla
   BaseMatrix::OperatorInfo DeviceSparseMatrix<T> :: GetOperatorInfo () const
   {
     return { string("DeviceSparseMatrix<") + (is_same_v<T,double> ? "double" : "float")
-             + "> (nze=" + ToString(nze) + ")", height, width };
+             + (symmetric ? "> symmetric (nze=" : "> (nze=") + ToString(nze) + ")", height, width };
   }
 
   template <typename T>
@@ -405,8 +457,8 @@ namespace ngla
 
   template class DeviceSparseMatrix<double>;
   template class DeviceSparseMatrix<float>;
-  template DeviceSparseMatrix<double>::DeviceSparseMatrix (const SparseMatrixTM<double> &);
-  template DeviceSparseMatrix<double>::DeviceSparseMatrix (const SparseMatrixTM<float> &);
-  template DeviceSparseMatrix<float>::DeviceSparseMatrix (const SparseMatrixTM<double> &);
-  template DeviceSparseMatrix<float>::DeviceSparseMatrix (const SparseMatrixTM<float> &);
+  template DeviceSparseMatrix<double>::DeviceSparseMatrix (const SparseMatrixTM<double> &, bool);
+  template DeviceSparseMatrix<double>::DeviceSparseMatrix (const SparseMatrixTM<float> &, bool);
+  template DeviceSparseMatrix<float>::DeviceSparseMatrix (const SparseMatrixTM<double> &, bool);
+  template DeviceSparseMatrix<float>::DeviceSparseMatrix (const SparseMatrixTM<float> &, bool);
 }

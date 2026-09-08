@@ -36,6 +36,7 @@ namespace ngla
     shared_ptr<ngs_gpu::Queue> queue;
 
     ngs_gpu::TypedBuffer<int> dev_firsti, dev_colnr;   // int32 indices
+    bool symmetric = false;
     ngs_gpu::TypedBuffer<T> dev_values;
 
     // kernel and work-items per row, chosen by timing on this matrix
@@ -53,6 +54,7 @@ namespace ngla
                          const ngs_gpu::TypedBuffer<int> & colnr,
                          const ngs_gpu::TypedBuffer<T> & values,
                          size_t rows, size_t cols) const;
+    void LaunchSym (ngs_gpu::KernelArg x, ngs_gpu::KernelArg y, T s, T beta) const;
     void LaunchSpMV (const ngs_gpu::TypedBuffer<int> & firsti,
                      const ngs_gpu::TypedBuffer<int> & colnr,
                      const ngs_gpu::TypedBuffer<T> & values,
@@ -62,7 +64,7 @@ namespace ngla
   public:
     // values are converted to T
     template <typename TM>
-    DeviceSparseMatrix (const SparseMatrixTM<TM> & mat);
+    DeviceSparseMatrix (const SparseMatrixTM<TM> & mat, bool symmetric = false);
     virtual ~DeviceSparseMatrix () { }
 
     virtual int VHeight() const override { return height; }
