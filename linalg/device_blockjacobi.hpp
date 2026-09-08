@@ -15,6 +15,10 @@
 
   Created by BlockJacobiPrecond::CreateDeviceMatrix. Overlapping blocks
   accumulate with atomic adds, disjoint blocks with plain stores.
+
+  Empty blocks are dropped. Small blocks share a few lanes per block,
+  large ones take a whole warp with the block's x staged in group
+  memory. Symmetric inverses make the transpose free.
 */
 
 #include "devicevector.hpp"
@@ -22,6 +26,7 @@
 
 namespace ngla
 {
+  template <typename T> class DeviceBlockJacobiWarpKernels;
 
   template <typename T>
   class NGS_DLL_HEADER DeviceBlockJacobi : public BaseMatrix
@@ -35,9 +40,14 @@ namespace ngla
     ngs_gpu::TypedBuffer<int> dev_blockfirst;   // nblocks+1, into dev_indices
     ngs_gpu::TypedBuffer<int> dev_indices;      // dofs of all blocks
     ngs_gpu::TypedBuffer<int> dev_matfirst;     // nblocks+1, into dev_mats
-    ngs_gpu::TypedBuffer<T> dev_mats;           // inverses, row-major, block after block
-    int lanes;                                  // work-items per block
+    ngs_gpu::TypedBuffer<T> dev_mats;           // inverses, block after block
+    ngs_gpu::TypedBuffer<int> dev_small, dev_large;   // block numbers per size class
+    size_t nsmall, nlarge;
+    int maxbs;
+    int lanes;                                  // work-items per small block
     bool overlapping;                           // a dof in more than one block
+    bool symmetric, colmajor;
+    shared_ptr<const DeviceBlockJacobiWarpKernels<T>> warpkern;
 
     void Launch (const BaseVector & x, BaseVector & y, T s, bool trans) const;
 
