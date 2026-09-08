@@ -53,6 +53,49 @@ namespace ngla
 
 
   template <typename T>
+  template <typename TM, typename TV>
+  DeviceBlockJacobi<T> :: DeviceBlockJacobi (const BlockJacobiPrecondSymmetric<TM,TV> & pre)
+  {
+    height = pre.Height();
+    width = pre.Width();
+    const Table<int> & blocktable = *pre.GetBlockTable();
+    nblocks = blocktable.Size();
+
+    device = GetGpuDevice();
+    memtype = PreferredMemType();
+
+    // the inverse of a symmetric block is symmetric: one gemv serves both
+    symmetric = true;
+    BlockGemvBuilder<T> builder;
+    size_t maxbs = 0;
+    for (size_t i = 0; i < nblocks; i++) maxbs = max (maxbs, size_t(blocktable[i].Size()));
+    Vector<TM> e(maxbs), col(maxbs);
+    Matrix<TM> inv(maxbs, maxbs);
+    for (size_t i = 0; i < nblocks; i++)
+      {
+        size_t bs = blocktable[i].Size();
+        if (bs == 0) continue;
+        auto factor = pre.InvDiag (i);
+        FlatVector<TM> fe = e.Range(0, bs), fcol = col.Range(0, bs);
+        // solve against the unit vectors: column k of the dense inverse
+        for (size_t k = 0; k < bs; k++)
+          {
+            fe = TM(0); fe(k) = TM(1);
+            factor.Mult (fe, fcol);
+            for (size_t r = 0; r < bs; r++) inv(r,k) = fcol(r);
+          }
+        builder.AddBlock (blocktable[i], blocktable[i], [&] (size_t r, size_t c) { return inv(r,c); });
+      }
+
+    gemv = make_shared<DeviceBlockGemv<T>> (device, builder, width, height);
+    gemv_trans = gemv;
+
+    cout << IM(7) << "DeviceBlockJacobi<" << (is_same_v<T,double> ? "double" : "float")
+         << "> from band factors, " << gemv->Info() << ", symmetric" << endl;
+  }
+
+
+  template <typename T>
   void DeviceBlockJacobi<T> :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
     static Timer t("DeviceBlockJacobi::MultAdd"); RegionTimer reg(t);
@@ -97,4 +140,7 @@ namespace ngla
   template DeviceBlockJacobi<double>::DeviceBlockJacobi (const BlockJacobiPrecond<float> &);
   template DeviceBlockJacobi<float>::DeviceBlockJacobi (const BlockJacobiPrecond<double> &);
   template DeviceBlockJacobi<float>::DeviceBlockJacobi (const BlockJacobiPrecond<float> &);
+  template DeviceBlockJacobi<double>::DeviceBlockJacobi (const BlockJacobiPrecondSymmetric<double,double> &);
+  template DeviceBlockJacobi<float>::DeviceBlockJacobi (const BlockJacobiPrecondSymmetric<double,double> &);
+  template DeviceBlockJacobi<float>::DeviceBlockJacobi (const BlockJacobiPrecondSymmetric<float,float> &);
 }
