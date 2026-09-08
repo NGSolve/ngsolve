@@ -71,6 +71,8 @@
   #define SIMD_SUM(x)            ngs_simd_sum(x)
   // value of lane src, all lanes of the warp must call it
   #define SIMD_BROADCAST(x,src)  __shfl_sync(0xffffffff, x, src)
+  // value of lane (mylane ^ mask), all lanes of the warp must call it
+  #define SIMD_SHUFFLE_XOR(x,mask)  __shfl_xor_sync(0xffffffff, x, mask)
 
   #define NGS_CPLX_FUNC          __host__ __device__ inline
   #define NGS_CPLX_SQRT          sqrt
@@ -330,9 +332,22 @@
       b.Wait();
       return T(v);
     }
+    // value of lane (mylane ^ mask) of the row, all lanes must call it
+    template <typename T> inline T SimdShuffleXor (T x, int mask)
+    {
+      unsigned row = lid[1] + gsz[1]*lid[2], sx = gsz[0];
+      double * slots = group->rowscratch.data() + row*sx;
+      Barrier & b = group->rowbarriers[row];
+      slots[lid[0]] = double(x);
+      b.Wait();
+      double v = slots[(lid[0] ^ mask) % sx];
+      b.Wait();
+      return T(v);
+    }
   }
   #define SIMD_SUM(x)            ngs_cpu::SimdSum(x)
   #define SIMD_BROADCAST(x,src)  ngs_cpu::SimdBroadcast(x, src)
+  #define SIMD_SHUFFLE_XOR(x,mask)  ngs_cpu::SimdShuffleXor(x, mask)
 
   #define NGS_CPLX_FUNC          inline
   #define NGS_CPLX_SQRT          std::sqrt
@@ -397,6 +412,7 @@
   #define DEVICE_FENCE()         atomic_thread_fence(mem_flags::mem_device, metal::memory_order_seq_cst, metal::thread_scope_device)
   #define SIMD_SUM(x)            metal::simd_sum(x)
   #define SIMD_BROADCAST(x,src)  metal::simd_broadcast(x, ushort(src))
+  #define SIMD_SHUFFLE_XOR(x,mask)  metal::simd_shuffle_xor(x, ushort(mask))
 
   #define NGS_CPLX_FUNC          inline
   #define NGS_CPLX_SQRT          sqrt

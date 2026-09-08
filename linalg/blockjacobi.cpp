@@ -1337,6 +1337,16 @@ namespace ngla
     return BaseMatrix::CreateDeviceMatrix();
   }
 
+  template <class TM, class TV_ROW, class TV_COL>
+  shared_ptr<BaseMatrix> BlockJacobiPrecond<TM, TV_ROW, TV_COL> ::
+  CreateDeviceGaussSeidel () const
+  {
+    if constexpr ((is_same_v<TM,double> || is_same_v<TM,float>) &&
+                  is_same_v<TV_ROW,TM> && is_same_v<TV_COL,TM>)
+      return CreateDeviceBlockGaussSeidel (*this);
+    return nullptr;
+  }
+
   template class BlockJacobiPrecond<double>;
   template class BlockJacobiPrecond<float>;
   template class BlockJacobiPrecond<Complex>;

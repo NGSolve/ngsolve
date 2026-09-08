@@ -1832,6 +1832,18 @@ inverse : string
 
   py::class_<SymmetricBlockGaussSeidelPrecond, shared_ptr<SymmetricBlockGaussSeidelPrecond>, BaseMatrix>
     (m, "SymmetricBlockGaussSeidelPreconditioner");
+
+  py::class_<BaseMSMPrecond, shared_ptr<BaseMSMPrecond>, BaseMatrix>
+    (m, "MSMPrecond", "smoother with forward and backward sweeps")
+    .def("Smooth", &BaseMSMPrecond::Smooth, py::call_guard<py::gil_scoped_release>(),
+         py::arg("x"), py::arg("b"), py::arg("steps")=1)
+    .def("SmoothBack", &BaseMSMPrecond::SmoothBack, py::call_guard<py::gil_scoped_release>(),
+         py::arg("x"), py::arg("b"), py::arg("steps")=1)
+    ;
+  py::class_<DeviceBlockGaussSeidel<double>, shared_ptr<DeviceBlockGaussSeidel<double>>, BaseMSMPrecond>
+    (m, "DeviceBlockGaussSeidelD", "block Gauss-Seidel on the gpu, fp64");
+  py::class_<DeviceBlockGaussSeidel<float>, shared_ptr<DeviceBlockGaussSeidel<float>>, BaseMSMPrecond>
+    (m, "DeviceBlockGaussSeidelF", "block Gauss-Seidel on the gpu, fp32");
   py::class_<SymmetricGaussSeidelPrecond, shared_ptr<SymmetricGaussSeidelPrecond>, BaseMatrix>
     (m, "SymmetricGaussSeidelPreconditioner");
   

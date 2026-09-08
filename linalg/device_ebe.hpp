@@ -1,7 +1,13 @@
 #ifndef FILE_DEVICE_EBE_HPP
 #define FILE_DEVICE_EBE_HPP
 
-#include "devicevector.hpp"
+/*
+  Backend-independent ElementByElementMatrix on the gpu: the element
+  matrices with their individual dof lists, applied by the batched block
+  gemv of DeviceBlockGemv (the transpose is a view of the same data).
+*/
+
+#include "device_blockgemv.hpp"
 #include "elementbyelement.hpp"
 
 namespace ngla
@@ -10,16 +16,10 @@ namespace ngla
   class NGS_DLL_HEADER DeviceEBEMatrix : public BaseMatrix
   {
   protected:
-    size_t height, width, nel;
+    size_t height, width;
     MemType memtype;
     shared_ptr<ngs_gpu::Device> device;
-    shared_ptr<ngs_gpu::Queue> queue;
-    ngs_gpu::TypedBuffer<int> dev_rowfirst, dev_colfirst, dev_matfirst;   // nel+1 each
-    ngs_gpu::TypedBuffer<int> dev_rowidx, dev_colidx;                     // dofs of all elements
-    ngs_gpu::TypedBuffer<T> dev_mats;                                     // row-major, element after element
-    int lanes, lanes_trans;                     // work-items per element
-
-    void Launch (const BaseVector & x, BaseVector & y, T s, bool trans) const;
+    shared_ptr<DeviceBlockGemv<T>> gemv, gemv_trans;
 
   public:
     template <typename TM>
@@ -33,8 +33,6 @@ namespace ngla
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
     virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
 
-    virtual AutoVector CreateRowVector () const override;
-    virtual AutoVector CreateColVector () const override;
     VecFormat RowFormat () const override { return DeviceVectorFormat<T> (width, memtype); }
     VecFormat ColFormat () const override { return DeviceVectorFormat<T> (height, memtype); }
 
