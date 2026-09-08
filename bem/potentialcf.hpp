@@ -140,7 +140,6 @@ namespace ngsbem
   {
     KERNEL kernel;
     int intorder;
-    bool nearfield;
 
     using LOCAL_EXPANSION = typename std::invoke_result_t<decltype(&KERNEL::target_type::CreateLocalExpansion),typename KERNEL::target_type,Vec<3>,double,FMM_Parameters>;
 
@@ -151,7 +150,7 @@ namespace ngsbem
                  VorB _source_vb,
                  optional<Region> _definedon,
                  shared_ptr<DifferentialOperator> _evaluator,
-                 KERNEL _kernel, int _intorder, bool anearfield,
+                 KERNEL _kernel, int _intorder,
                  IntOp_Parameters _io_params = IntOp_Parameters());
 
     virtual shared_ptr<CoefficientFunction> Operator (const string & name) const override
@@ -164,11 +163,11 @@ namespace ngsbem
             return std::visit([&](auto const & dk) -> shared_ptr<CoefficientFunction>
             {
               using DK = std::decay_t<decltype(dk)>;
-              return make_shared<PotentialCF<DK>>(this->gf, this->source_vb, this->definedon, this->evaluator, dk, intorder, nearfield, io_params);
+              return make_shared<PotentialCF<DK>>(this->gf, this->source_vb, this->definedon, this->evaluator, dk, intorder, io_params);
             }, diffkernel);
           }
         else
-          return make_shared<PotentialCF<decltype(diffkernel)>>(this->gf, this->source_vb, this->definedon, this->evaluator, diffkernel, intorder, nearfield, io_params);
+          return make_shared<PotentialCF<decltype(diffkernel)>>(this->gf, this->source_vb, this->definedon, this->evaluator, diffkernel, intorder, io_params);
       }
       else
         throw Exception("Kernel does not support differentiated kernel '"+name+"'");

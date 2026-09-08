@@ -1435,23 +1435,6 @@ namespace ngsbem
     return mat;
   }
 
-
-  // ********************************* Potential **********************************************
-
-
-
-
-
-
-  template <typename KERNEL>
-  shared_ptr<BasePotentialCF> GenericIntegralOperator<KERNEL> ::
-  GetPotential(shared_ptr<GridFunction> gf, optional<int> io, bool nearfield_experimental) const
-  {
-    return  make_shared<PotentialCF<KERNEL>> (gf, trial_vb, trial_definedon, trial_evaluator,
-                                              kernel, io.value_or(intorder), nearfield_experimental, io_params);
-  }
-
-
   template class GenericIntegralOperator<LaplaceSLKernel<3>>;
   template class GenericIntegralOperator<LaplaceSLKernel<3,3>>;
   template class GenericIntegralOperator<LaplaceSLKernel<3,1,Complex>>;
@@ -1470,14 +1453,11 @@ namespace ngsbem
   template class GenericIntegralOperator<HelmholtzDLKernel<3,3>>;
   template class GenericIntegralOperator<HelmholtzDLKernel<3,1,Complex>>;
   template class GenericIntegralOperator<HelmholtzDLKernel<3,3,Complex>>;
-  template class GenericIntegralOperator<HelmholtzHSKernel<3>>;
-
   template class GenericIntegralOperator<CombinedFieldKernel<3>>;
   template class GenericIntegralOperator<CombinedFieldKernel<3,3>>;
   template class GenericIntegralOperator<CombinedFieldKernel<3,1,Complex>>;
   template class GenericIntegralOperator<CombinedFieldKernel<3,3,Complex>>;
 
-  template class GenericIntegralOperator<MaxwellSLKernel<3>>;
   template class GenericIntegralOperator<MaxwellDLKernel<3>>;
   template class GenericIntegralOperator<MaxwellDLKernel<3,Complex>>;
 
