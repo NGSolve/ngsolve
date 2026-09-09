@@ -265,6 +265,7 @@ namespace ngla
     }
 
     void ComputeBlockFactor (FlatArray<int> block, int bw, FlatBandCholeskyFactors<TM> & inv) const;
+    shared_ptr<BaseMatrix> CreateDeviceMatrix () const override;
   
     ///
     void MultAdd (TSCAL64 s, const BaseVector & x, BaseVector & y) const override;

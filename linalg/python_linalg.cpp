@@ -1271,7 +1271,18 @@ inverse : string
 
     .def("__timing__", &BaseMatrix::Timing, py::arg("runs")=10)
     .def("Update", [](BM &m) { m.Update(); }, py::call_guard<py::gil_scoped_release>(), "Update matrix")
-    .def("CreateDeviceMatrix", &BaseMatrix::CreateDeviceMatrix)
+    .def("CreateDeviceMatrix",
+         [] (shared_ptr<BaseMatrix> self, bool fp32) -> shared_ptr<BaseMatrix>
+         {
+           if (!fp32) return self->CreateDeviceMatrix();
+           if (auto p = dynamic_pointer_cast<BlockJacobiPrecondSymmetric<double,double>> (self))
+             return make_shared<DeviceBlockJacobi<float>> (*p);
+           if (auto p = dynamic_pointer_cast<BlockJacobiPrecond<double,double,double>> (self))
+             return make_shared<DeviceBlockJacobi<float>> (*p);
+           throw Exception ("CreateDeviceMatrix(fp32=True) is only implemented for "
+                            "block smoothers, got " + string(typeid(*self).name()));
+         }, py::arg("fp32")=false,
+         "matrix on the device; fp32 stores block-Jacobi inverses in single precision")
     ;
 
   /*
