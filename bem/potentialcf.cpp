@@ -289,30 +289,33 @@ namespace ngsbem
 
   IntegrationRule GetIntegrationRule(Vec<3> x, const ElementTransformation & trafo, int intorder)
   {
-    if (trafo.GetElementType() != ET_TRIG)
-      return IntegrationRule(trafo.GetElementType(), intorder);
+    auto et = trafo.GetElementType();
+    if (et != ET_TRIG && et != ET_QUAD)
+      return IntegrationRule(et, intorder);
 
 
-    IntegrationPoint ip(1.0/3, 1.0/3);
+    IntegrationPoint ip = et == ET_TRIG ? IntegrationPoint(1./3, 1./3) : IntegrationPoint(1./2, 1./2);
     MappedIntegrationPoint<2,3>  mip(ip, trafo);
     double elsize = L2Norm(mip.GetJacobian());
     double dist = L2Norm(x-mip.GetPoint());
 
     if (dist < elsize)
       {
-        // use SQP to find projection of x onto (curved) triangle
+        // Find the projection of x onto the curved triangle/quad.
         IntegrationPoint ip = ProjectPointToReference(x, trafo);
 
-        // generate Duffy integration rules on split triangles
+        // Split the reference element into triangles meeting at the projection.
         IntegrationRule irsegm(ET_SEGM, intorder);
-        IntegrationRule irtrig(trafo.GetElementType(), intorder);
         IntegrationRule ir;
 
-        Vec<2> corners[] = { Vec<2>(0,0), Vec<2>(1,0), Vec<2>(0,1) };
-        for (int j = 0; j < 3; j++)
+        Vec<2> corners[] = {Vec<2>(0,0), Vec<2>(1,0), Vec<2>(1,1), Vec<2>(0,1)};
+        int ncorners = et == ET_TRIG ? 3 : 4;
+        if (et == ET_TRIG)
+          corners[2] = Vec<2>(0,1);
+        for (int j = 0; j < ncorners; j++)
           {
             Vec<2> v0 = corners[j];
-            Vec<2> v1 = corners[(j+1)%3];
+            Vec<2> v1 = corners[(j+1)%ncorners];
             Vec<2> v2 { ip(0), ip(1) };
             Mat<2,2> sides;
             sides.Col(0) = v0-v2;
@@ -330,7 +333,7 @@ namespace ngsbem
           }
         return ir;
       }
-    return IntegrationRule(trafo.GetElementType(), intorder);
+    return IntegrationRule(et, intorder);
   }
 
 
@@ -416,6 +419,7 @@ namespace ngsbem
   void PotentialCF<KERNEL> ::
   AddTangentCorrection(const BaseMappedIntegrationPoint & mip,
                        ElementId ei,
+                       const IntegrationRule & ir,
                        FlatVector<T> result,
                        LocalHeap & lh) const
   {
@@ -458,7 +462,7 @@ namespace ngsbem
     double scalar_correction = 0.0;
     Vec<3> grad_correction { 0.0, 0.0, 0.0 };
     double measure0 = mip0.GetMeasure();
-    IntegrationRule ir(et, intorder);
+    // Subtract the tangent kernel using the same rule as the curved kernel.
     Vec<3> nx{0.0};
     Vec<3> ny = mip0.GetNV();
 
@@ -551,21 +555,14 @@ namespace ngsbem
             if (!IsPotentialNearfieldSourceElement(x, trafo))
               continue;
 
-            if constexpr (KERNEL::analytic_triangle_formula != AnalyticTriangleFormula::none)
-              {
-                AddTangentCorrection(mip, ei, row, lh);
-                continue;
-              }
-
-            // Duffy if kernel has no analytic formula (only for trigs)
-            if (trafo.GetElementType() != ET_TRIG)
-              continue;
-
-            IntegrationRule standard_ir(trafo.GetElementType(), intorder);
             IntegrationRule near_ir = GetIntegrationRule(x, trafo, intorder);
-
+            // Replace the expansion's standard source quadrature by Duffy.
+            IntegrationRule standard_ir(trafo.GetElementType(), intorder);
             AddSourceElementContribution(mip, ei, standard_ir, row, T(-1.0), lh);
             AddSourceElementContribution(mip, ei, near_ir, row, T(1.0), lh);
+
+            if constexpr (KERNEL::analytic_triangle_formula != AnalyticTriangleFormula::none)
+              AddTangentCorrection(mip, ei, near_ir, row, lh);
           }
       }
   }
@@ -604,11 +601,7 @@ namespace ngsbem
           if constexpr (KERNEL::analytic_triangle_formula != AnalyticTriangleFormula::none)
             use_tangent_correction = IsPotentialNearfieldSourceElement(mip.GetPoint(), trafo);
 
-          // IntegrationRule ir(fel.ElementType(), intorder);
-          IntegrationRule ir =
-            use_tangent_correction ?
-            IntegrationRule(trafo.GetElementType(), intorder) :
-            GetIntegrationRule(mip.GetPoint(), trafo, intorder);
+          IntegrationRule ir = GetIntegrationRule(mip.GetPoint(), trafo, intorder);
 
           SIMD_IntegrationRule simd_ir(ir);
 
@@ -647,7 +640,7 @@ namespace ngsbem
             }
           if constexpr (KERNEL::analytic_triangle_formula != AnalyticTriangleFormula::none)
             if (use_tangent_correction)
-              AddTangentCorrection(mip, ei, correction_result, lh);
+              AddTangentCorrection(mip, ei, ir, correction_result, lh);
         }
     for (int i = 0; i < Dimension(); i++)
       result(i) = HSum(simd_result(i)) + correction_result(i);

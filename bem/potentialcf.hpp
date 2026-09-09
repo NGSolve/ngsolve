@@ -212,6 +212,7 @@ namespace ngsbem
     template <typename T>
     void AddTangentCorrection(const BaseMappedIntegrationPoint & mip,
                               ElementId ei,
+                              const IntegrationRule & ir,
                               FlatVector<T> result,
                               LocalHeap & lh) const;
     template <typename T>
