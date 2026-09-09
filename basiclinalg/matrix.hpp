@@ -2426,26 +2426,31 @@ namespace ngbla
     return m;
   }
 
-  // cofactor matrix by minors, for D >= 4. The unrolled 4x4 formula
-  // made clang spend seconds in SROA for autodiff scalar types
+
+  // cofactor matrix by minors for D >= 4, compile-time unrolled with Iterate
   template <int D, typename T>
-  Mat<D,D,T> Cof (Mat<D,D,T> m)
+  INLINE Mat<D,D,T> Cof (Mat<D,D,T> m)
   {
     Mat<D,D,T> cof;
-    for (int i = 0; i < D; i++)
-      for (int j = 0; j < D; j++)
+    Iterate<D> ([&] (auto i)
+    {
+      Iterate<D> ([&] (auto j)
+      {
+        Mat<D-1,D-1,T> minor;
+        Iterate<D-1> ([&] (auto r)
         {
-          Mat<D-1,D-1,T> minor;
-          for (int r = 0, rr = 0; r < D; r++)
-            if (r != i)
-              {
-                for (int c = 0; c < j; c++) minor(rr,c) = m(r,c);
-                for (int c = j+1; c < D; c++) minor(rr,c-1) = m(r,c);
-                rr++;
-              }
-          T d = Det(minor);
-          cof(i,j) = ((i+j) & 1) ? -d : d;
-        }
+          constexpr int rr = (r.value < i.value) ? r.value : r.value+1;
+          Iterate<D-1> ([&] (auto c)
+          {
+            constexpr int cc = (c.value < j.value) ? c.value : c.value+1;
+            minor(r.value, c.value) = m(rr, cc);
+          });
+        });
+        T d = Det(minor);
+        if constexpr ((i.value+j.value) & 1) cof(i.value,j.value) = -d;
+        else cof(i.value,j.value) = d;
+      });
+    });
     return cof;
   }
 
