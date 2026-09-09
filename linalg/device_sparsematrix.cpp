@@ -211,11 +211,11 @@ namespace ngla
     // row starts to int32, values to T
     Array<int> firsti (height+1);
     auto hfirsti = mat.GetFirstArray();
-    for (size_t i = 0; i <= height; i++) firsti[i] = int(hfirsti[i]);
+    ParallelFor (height+1, [&] (size_t i) { firsti[i] = int(hfirsti[i]); });
 
     Array<T> values (nze);
     auto hvalues = mat.GetValues();
-    for (size_t j = 0; j < nze; j++) values[j] = T(hvalues(j));
+    ParallelFor (nze, [&] (size_t j) { values[j] = T(hvalues(j)); });
 
     // the index buffers are never written by a kernel, keep them off the host
     dev_firsti = device->NewBuffer<int> (height+1, MemType::Device);
