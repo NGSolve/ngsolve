@@ -5,6 +5,7 @@
 #include "../parallel/parallel_matrices.hpp"
 #include "../ngstd/python_ngstd.hpp"
 #include "sparsefactorization_interface.hpp"
+#include "acceleratesparseinverse.hpp"
 
 using namespace ngla;
 // include netgen-header to get access to PyMPI
@@ -188,6 +189,10 @@ void ExportSparseMatrix(py::module m)
 }
 
 void NGS_DLL_HEADER ExportNgla(py::module &m) {
+
+#ifdef USE_ACCELERATE_SPARSE
+  RegisterAccelerateSparseInverse();
+#endif
 
   py::enum_<PARALLEL_STATUS>(m, "PARALLEL_STATUS", "enum of possible parallel statuses")
     .value("DISTRIBUTED", DISTRIBUTED)

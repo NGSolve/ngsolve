@@ -11,6 +11,11 @@ add_library(ngla ${NGS_LIB_TYPE}
         sparsefactorization_interface.cpp devicevector.cpp device_sparsematrix.cpp device_blockgemv.cpp device_blockjacobi.cpp device_blockgs.cpp device_ebeconst.cpp device_ebe.cpp device_diagonalmatrix.cpp device_sparsecholesky.cpp
 )
 
+if(USE_ACCELERATE_SPARSE)
+    target_sources(ngla PRIVATE acceleratesparseinverse.cpp)
+    target_link_libraries(ngla PRIVATE ${ACCELERATE_FRAMEWORK})
+endif()
+
 target_include_directories(ngla PRIVATE ${UMFPACK_INCLUDE_DIR} ${NETGEN_PYTHON_INCLUDE_DIRS})
 target_compile_definitions(ngla PRIVATE ${NGSOLVE_COMPILE_DEFINITIONS_PRIVATE})
 
@@ -46,7 +51,7 @@ install( FILES
         umfpackinverse.hpp vvector.hpp python_linalg.hpp
         elementbyelement.hpp arnoldi.hpp paralleldofs.hpp
         sparsefactorization_interface.hpp devicevector.hpp device_sparsematrix.hpp device_blockgemv.hpp device_blockjacobi.hpp device_blockgs.hpp device_ebeconst.hpp device_ebe.hpp device_diagonalmatrix.hpp device_sparsecholesky.hpp
+        acceleratesparseinverse.hpp
         DESTINATION ${NGSOLVE_INSTALL_DIR_INCLUDE}
         COMPONENT ngsolve_devel
        )
-

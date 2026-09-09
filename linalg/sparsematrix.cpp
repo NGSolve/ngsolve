@@ -15,6 +15,7 @@
 #include "umfpackinverse.hpp"
 #include "superluinverse.hpp"
 #include "mumpsinverse.hpp"
+#include "acceleratesparseinverse.hpp"
 
 
 namespace ngla
@@ -2376,6 +2377,9 @@ shared_ptr<BaseMatrix> CreateSparseMatrixInverse(shared_ptr<const BaseSparseMatr
                                                  shared_ptr<BitArray> subset,
                                                  shared_ptr<const Array<int>> clusters)
 {
+#ifdef USE_ACCELERATE_SPARSE
+  RegisterAccelerateSparseInverse();
+#endif
   if (baseA->invcreator)
     return baseA->invcreator(const_pointer_cast<BaseSparseMatrix>(baseA), subset, clusters);
 
