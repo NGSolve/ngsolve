@@ -448,6 +448,54 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
 
   
   py::class_<BasePotentialCF, CoefficientFunction, shared_ptr<BasePotentialCF>> (m, "PotentialCF")
+    .def("__call__", [](shared_ptr<BasePotentialCF> self, py::args args, py::kwargs kwargs) -> py::object
+    {
+      auto base_call = py::type::of<CoefficientFunction>().attr("__call__");
+      if (args.size() != 1 || !kwargs.empty())
+        return base_call(self, *args, **kwargs);
+
+      // Keep structured mesh-point arrays on the inherited call path.
+      bool coordinate_array = py::isinstance<py::array>(args[0]) &&
+        py::cast<py::array>(args[0]).dtype().kind() != 'V';
+      if (!(py::isinstance<py::tuple>(args[0]) || py::isinstance<py::list>(args[0]) || coordinate_array))
+        return base_call(self, *args, **kwargs);
+
+      auto coordinates = py::reinterpret_borrow<py::sequence>(args[0]);
+      if ((coordinate_array && py::cast<py::array>(args[0]).ndim() != 1) || coordinates.size() != 3)
+        throw py::value_error("Potential evaluation requires one point with 3 coordinates");
+      Vec<3> point;
+      for (int i = 0; i < 3; i++)
+        {
+          point(i) = py::cast<double>(coordinates[i]);
+          if (!std::isfinite(point(i)))
+            throw py::value_error("Potential evaluation requires finite coordinates");
+        }
+
+      // Only the physical target coordinates are needed for a potential.
+      FE_ElementTransformation<3,3> trafo(ET_TET);
+      MappedIntegrationPoint<3,3> mip(IntegrationPoint(0,0,0), trafo, point, Id<3>());
+      auto evaluate = [&](auto values) -> py::object
+        {
+          self->Evaluate(mip, values);
+          if (self->Dimensions().Size() == 0)
+            return py::cast(values(0));
+          py::tuple result(self->Dimension());
+          for (int i = 0; i < self->Dimension(); i++)
+            result[i] = py::cast(values(i));
+          return result;
+        };
+      if (self->IsComplex())
+        return evaluate(Vector<Complex>(self->Dimension()));
+      return evaluate(Vector<double>(self->Dimension()));
+    }, "Evaluate the potential at a physical coordinate tuple, list or NumPy array of length 3, "
+       "without a target mesh. Mapped-point and mesh-point-array evaluation are also supported.")
+    .def("Operator", [](shared_ptr<BasePotentialCF> self, string name) -> py::object
+    {
+      auto result = self->Operator(name);
+      if (auto potential = dynamic_pointer_cast<BasePotentialCF>(result))
+        return py::cast(potential);
+      return py::cast(result);
+    })
     .def("BuildLocalExpansion", [](shared_ptr<BasePotentialCF> potcf, const Region & region)
     {
       potcf->BuildLocalExpansion(region);
