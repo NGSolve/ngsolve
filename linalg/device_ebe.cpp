@@ -29,16 +29,51 @@ namespace ngla
 
     // input dofs are the columns, output dofs the rows of the element matrix
     BlockGemvBuilder<T> builder;
-    for (size_t i = 0; i < mat.GetNumElMats(); i++)
-      {
-        if (!ElementUsed (mat, i)) continue;
-        auto rdi = mat.GetElementRowDNums(i);
-        auto cdi = mat.GetElementColumnDNums(i);
-        auto m = mat.GetElementMatrix(i);
-        if (m.Height() != rdi.Size() || m.Width() != cdi.Size())
-          throw Exception("DeviceEBEMatrix: element matrix does not match its dof lists");
-        builder.AddBlock (cdi, rdi, [&] (size_t r, size_t c) { return m(r,c); });
-      }
+    {
+      size_t n = mat.GetNumElMats();
+      Array<size_t> used(n);
+      builder.infirst.SetSize (n+1);
+      builder.outfirst.SetSize (n+1);
+      builder.matfirst.SetSize (n+1);
+      builder.infirst[0] = builder.outfirst[0] = builder.matfirst[0] = 0;
+      size_t nb = 0;
+      for (size_t i = 0; i < n; i++)
+        {
+          if (!ElementUsed (mat, i)) continue;
+          size_t nin = mat.GetElementColumnDNums(i).Size();
+          size_t nout = mat.GetElementRowDNums(i).Size();
+          auto m = mat.GetElementMatrix(i);
+          if (size_t(m.Height()) != nout || size_t(m.Width()) != nin)
+            throw Exception("DeviceEBEMatrix: element matrix does not match its dof lists");
+          used[nb] = i;
+          builder.infirst[nb+1] = builder.infirst[nb] + int(nin);
+          builder.outfirst[nb+1] = builder.outfirst[nb] + int(nout);
+          builder.matfirst[nb+1] = builder.matfirst[nb] + int(nin*nout);
+          nb++;
+        }
+      used.SetSize (nb);
+      builder.infirst.SetSize (nb+1);
+      builder.outfirst.SetSize (nb+1);
+      builder.matfirst.SetSize (nb+1);
+      builder.inidx.SetSize (builder.infirst[nb]);
+      builder.outidx.SetSize (builder.outfirst[nb]);
+      builder.mats.SetSize (builder.matfirst[nb]);
+
+      ParallelFor (nb, [&] (size_t j)
+        {
+          size_t i = used[j];
+          auto rdi = mat.GetElementRowDNums(i);
+          auto cdi = mat.GetElementColumnDNums(i);
+          auto m = mat.GetElementMatrix(i);
+          size_t nin = cdi.Size(), nout = rdi.Size();
+          for (size_t k = 0; k < nin; k++) builder.inidx[builder.infirst[j]+k] = cdi[k];
+          for (size_t k = 0; k < nout; k++) builder.outidx[builder.outfirst[j]+k] = rdi[k];
+          T * dst = builder.mats.Data() + builder.matfirst[j];
+          for (size_t c = 0; c < nin; c++)          // builder stores column-major
+            for (size_t r = 0; r < nout; r++)
+              dst[c*nout + r] = T(m(r,c));
+        });
+    }
 
     gemv = make_shared<DeviceBlockGemv<T>> (device, builder, width, height);
     gemv_trans = gemv->Transpose();
