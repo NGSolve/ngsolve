@@ -86,7 +86,7 @@ namespace ngla
 
     {
       RegionTimer r(tgemv);
-      gemv = make_shared<DeviceBlockGemv<T>> (device, builder, width, height, true);
+      gemv = make_shared<DeviceBlockGemv<T>> (device, builder, width, height);
     }
     {
       RegionTimer r(ttrans);

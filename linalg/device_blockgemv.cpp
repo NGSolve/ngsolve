@@ -224,8 +224,8 @@ namespace ngla
 
   template <typename T>
   DeviceBlockGemv<T> :: DeviceBlockGemv (shared_ptr<Device> adevice, const BlockGemvBuilder<T> & b,
-                                         size_t width, size_t height, bool rowmajor)
-    : device(adevice), strided(rowmajor)
+                                         size_t width, size_t height)
+    : device(adevice), strided(false)
   {
     queue = device->DefaultQueue();
     LaneKernels<T>::Get (device);   // checks fp64 support
