@@ -32,10 +32,11 @@ namespace ngla
       ttrans("DeviceEBEMatrix ctor transpose");
     // input dofs are the columns, output dofs the rows of the element matrix
     BlockGemvBuilder<T> builder;
+    Array<size_t> used;
     {
       tscan.Start();
       size_t n = mat.GetNumElMats();
-      Array<size_t> used(n);
+      used.SetSize(n);
       builder.infirst.SetSize (n+1);
       builder.outfirst.SetSize (n+1);
       builder.matfirst.SetSize (n+1);
@@ -64,7 +65,6 @@ namespace ngla
       talloc.Start();
       builder.inidx.SetSize (builder.infirst[nb]);
       builder.outidx.SetSize (builder.outfirst[nb]);
-      builder.mats.SetSize (builder.matfirst[nb]);
       talloc.Stop();
 
       RegionTimer rpack(tpack);
@@ -73,16 +73,20 @@ namespace ngla
           size_t i = used[j];
           auto rdi = mat.GetElementRowDNums(i);
           auto cdi = mat.GetElementColumnDNums(i);
-          auto m = mat.GetElementMatrix(i);
           size_t nin = cdi.Size(), nout = rdi.Size();
           for (size_t k = 0; k < nin; k++) builder.inidx[builder.infirst[j]+k] = cdi[k];
           for (size_t k = 0; k < nout; k++) builder.outidx[builder.outfirst[j]+k] = rdi[k];
-          T * dst = builder.mats.Data() + builder.matfirst[j];
-          for (size_t c = 0; c < nin; c++)          // builder stores column-major
-            for (size_t r = 0; r < nout; r++)
-              dst[c*nout + r] = T(m(r,c));
         });
     }
+    // element matrices are packed during the upload, no host copy
+    builder.genmat = [&mat, &used] (size_t j, T * dst)
+      {
+        auto m = mat.GetElementMatrix (used[j]);
+        size_t nin = m.Width(), nout = m.Height();
+        for (size_t c = 0; c < nin; c++)          // column-major
+          for (size_t r = 0; r < nout; r++)
+            dst[c*nout + r] = T(m(r,c));
+      };
 
     {
       RegionTimer r(tgemv);

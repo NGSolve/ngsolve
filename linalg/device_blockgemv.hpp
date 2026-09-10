@@ -35,6 +35,9 @@ namespace ngla
     Array<int> infirst = { 0 }, outfirst = { 0 }, matfirst = { 0 };
     Array<int> inidx, outidx;
     Array<T> mats;
+    // alternative to mats: writes block j (column-major, matfirst[j+1]-matfirst[j]
+    // entries) on demand, straight into device or staging memory
+    std::function<void(size_t j, T * dst)> genmat;
 
     // mat(r,c) with r over out, c over in
     template <typename FUNC>

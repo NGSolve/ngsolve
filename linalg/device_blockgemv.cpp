@@ -241,10 +241,11 @@ namespace ngla
       }
 
     static Timer tup("DeviceBlockGemv ctor upload");
+    auto memtype = PreferredMemType();
     auto upload = [&] (auto & buf, const auto & arr)
     {
       using TB = typename std::remove_reference_t<decltype(arr)>::value_type;
-      buf = device->NewBuffer<TB> (max<size_t>(arr.Size(),1), MemType::Device);
+      buf = device->NewBuffer<TB> (max<size_t>(arr.Size(),1), memtype);
       if (arr.Size()) buf.H2D (arr.Data(), arr.Size());
     };
     tup.Start();
@@ -253,7 +254,31 @@ namespace ngla
     upload (dev_matfirst, b.matfirst);
     upload (dev_inidx, b.inidx);
     upload (dev_outidx, b.outidx);
-    upload (dev_mats, b.mats);
+    if (!b.genmat)
+      upload (dev_mats, b.mats);
+    else
+      {
+        // blocks generated into the buffer (unified memory) or the staging
+        // chunks; a block cut by a chunk boundary goes through a temporary
+        const int * mf = b.matfirst.Data();
+        size_t total = b.matfirst[nblocks];
+        dev_mats = device->NewBuffer<T> (max<size_t>(total,1), memtype);
+        if (total)
+          dev_mats.Fill (total, [&] (T * dst, size_t off, size_t n)
+            {
+              size_t end = off+n;
+              size_t j0 = std::upper_bound (mf, mf+nblocks+1, int(off)) - mf - 1;
+              size_t j1 = std::lower_bound (mf, mf+nblocks+1, int(end)) - mf;
+              ParallelFor (j1-j0, [&] (size_t k)
+                {
+                  size_t j = j0+k, b0 = mf[j], b1 = mf[j+1];
+                  if (b0 >= off && b1 <= end) { b.genmat (j, dst+(b0-off)); return; }
+                  Array<T> tmp(b1-b0);
+                  b.genmat (j, tmp.Data());
+                  for (size_t i = max(b0,off); i < min(b1,end); i++) dst[i-off] = tmp[i-b0];
+                });
+            });
+      }
     tup.Stop();
 
     Classify ();
