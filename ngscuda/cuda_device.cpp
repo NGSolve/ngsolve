@@ -204,7 +204,7 @@ namespace ngs_cuda
       int slot = BeginTrace (label, TransferValue(bytes));
       copy (Current());
       EndTrace (slot);
-      Check (cuStreamSynchronize (Current()), "cuStreamSynchronize");
+      DoFinish();   // sync + flush, the trace may end without a Finish
     }
 
     // host-side transfer (managed memory), on the same trace row
