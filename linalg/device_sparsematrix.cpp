@@ -51,7 +51,7 @@ namespace ngla
       }
 
       KERNEL(spmv_sym, GLOBAL_IN(int,firsti), GLOBAL_IN(int,colnr), GLOBAL_IN(SCAL,val),
-                       GLOBAL_IN(SCAL,x), GLOBAL(SCAL,y), VALUE(SCAL,s), VALUE(int,h))
+                       GLOBAL_IN(SCAL,x), GLOBAL_ATOMIC(SCAL,y), VALUE(SCAL,s), VALUE(int,h))
       {
         int row = int(GLOBAL_ID_X);
         if (row >= h) return;
