@@ -148,8 +148,6 @@ namespace ngla
       shared_ptr<ngs_gpu::Queue> queue;
       shared_ptr<Kernel> spmv_row, spmv_lanes, spmv_rows2u2, spmv_sym, scale_vec;
       unsigned groupsize;
-      string forced_variant;     // NGS_GPU_SPMV=lanes|rows2u2 skips the timing
-      int forced_lanes = 0;      // NGS_GPU_SPMV_LANES
 
       DeviceSparseKernels (shared_ptr<Device> adevice)
         : device(adevice)
@@ -170,10 +168,7 @@ namespace ngla
         queue = device->DefaultQueue();
         // the cpu reference backend runs one OS thread per work-item
         groupsize = (device->SimdWidth() > 1) ? 256 : 64;
-        if (getenv("NGS_GPU_SPMV_GROUP")) groupsize = atoi (getenv("NGS_GPU_SPMV_GROUP"));
         groupsize = min<size_t> (groupsize, device->MaxThreadsPerGroup());
-        forced_variant = getenv("NGS_GPU_SPMV") ? getenv("NGS_GPU_SPMV") : "";
-        forced_lanes = getenv("NGS_GPU_SPMV_LANES") ? atoi (getenv("NGS_GPU_SPMV_LANES")) : 0;
       }
 
       static const DeviceSparseKernels & Get()
@@ -208,7 +203,7 @@ namespace ngla
     queue = kern.queue;
     memtype = PreferredMemType();
 
-    static Timer tup("DeviceSparseMatrix ctor upload"), ttune("DeviceSparseMatrix ctor autotune");
+    static Timer tup("DeviceSparseMatrix ctor upload");
     auto hfirsti = mat.GetFirstArray();
     auto hcolnr = mat.GetColIndices();
     auto hvalues = mat.GetValues();
@@ -234,9 +229,7 @@ namespace ngla
              << "> symmetric storage, height = " << height << ", nze = " << nze << endl;
         return;
       }
-    ttune.Start();
-    choice = AutoTune (dev_firsti, dev_colnr, dev_values, height, width);
-    ttune.Stop();
+    choice = ChooseKernel (height);
     cout << IM(7) << "DeviceSparseMatrix<" << (is_same_v<T,double> ? "double" : "float")
          << "> height = " << height << ", width = " << width << ", nze = " << nze
          << ", kernel " << choice.kernel->Name() << ", lanes = " << choice.lanes << endl;
@@ -258,53 +251,36 @@ namespace ngla
 
 
   /*
-    The best kernel and lane count differ between gpus: a discrete card
-    hides the gather latency by occupancy and wants more lanes per row,
-    unified-memory gpus want few lanes and several rows in flight per
-    lane. Timing the candidates on the matrix itself costs a few solves
-    once and decides it for this matrix.
+    Fixed choice, from sweeps on an M4 Pro and an RTX 5090 (2026-09-10):
+    a discrete card hides the gather latency by occupancy and wants
+    spmv_lanes with lanes growing with the row length (4 / 8 / 16 for
+    average rows below 16 / 48 / above); unified-memory gpus want few
+    lanes and two rows in flight per lane (spmv_rows2u2, 4 lanes, 8 for
+    rows of 48+). Timing the candidates per matrix was tried and dropped:
+    it cost a few solves per matrix and mis-picked on a cold or busy gpu.
   */
   template <typename T>
   typename DeviceSparseMatrix<T>::SpMVChoice
-  DeviceSparseMatrix<T> :: AutoTune (const TypedBuffer<int> & firsti, const TypedBuffer<int> & colnr,
-                                     const TypedBuffer<T> & values, size_t rows, size_t cols) const
+  DeviceSparseMatrix<T> :: ChooseKernel (size_t rows) const
   {
     const auto & kern = DeviceSparseKernels<T>::Get();
-    SpMVChoice best;
-    best.kernel = kern.spmv_row;
-    if (device->SimdWidth() <= 1 || rows == 0 || nze == 0) return best;
+    SpMVChoice ch;
+    ch.kernel = kern.spmv_row;
+    if (device->SimdWidth() <= 1 || rows == 0 || nze == 0) return ch;
 
-    std::vector<SpMVChoice> candidates;
-    std::vector<int> lanes_list;
-    for (int l = 4; l <= 32 && size_t(l) <= device->SimdWidth() && size_t(l) <= kern.groupsize; l *= 2)
-      lanes_list.push_back (l);
-    if (kern.forced_lanes) lanes_list = { kern.forced_lanes };
-    for (int l : lanes_list)
-      {
-        if (kern.forced_variant != "rows2u2") candidates.push_back ({ kern.spmv_lanes, l, 1 });
-        if (kern.forced_variant != "lanes")   candidates.push_back ({ kern.spmv_rows2u2, l, 2 });
-      }
-    if (candidates.size() == 1) return candidates[0];
+    double avg = double(nze) / rows;
+    bool unified = device->IsUnifiedMemory();
+    int lanes;
+    if (unified)
+      lanes = avg < 48 ? 4 : 8;
+    else
+      lanes = avg < 16 ? 4 : avg < 48 ? 8 : 16;
+    lanes = int(min<size_t> (lanes, min (device->SimdWidth(), size_t(kern.groupsize))));
 
-    auto x = device->NewBuffer<T> (cols, MemType::Device);
-    auto y = device->NewBuffer<T> (rows, MemType::Device);
-    {
-      Array<T> zeros(max(rows, cols)); zeros = T(0);
-      x.H2D (zeros.Data(), cols); y.H2D (zeros.Data(), rows);
-    }
-    double best_time = 1e300;
-    for (auto & c : candidates)
-      {
-        LaunchSpMV (firsti, colnr, values, c, rows, KernelArg(x), KernelArg(y), T(1), T(1));
-        queue->Finish();
-        auto t0 = std::chrono::steady_clock::now();
-        for (int i = 0; i < 3; i++)
-          LaunchSpMV (firsti, colnr, values, c, rows, KernelArg(x), KernelArg(y), T(1), T(1));
-        queue->Finish();
-        double t = std::chrono::duration<double>(std::chrono::steady_clock::now()-t0).count();
-        if (t < best_time) { best_time = t; best = c; }
-      }
-    return best;
+    ch.kernel = unified ? kern.spmv_rows2u2 : kern.spmv_lanes;
+    ch.lanes = lanes;
+    ch.rows_per_group = unified ? 2 : 1;
+    return ch;
   }
 
 
@@ -347,7 +323,7 @@ namespace ngla
     tc.H2D (tcolnr.Data(), nze);
     tv.H2D (tvalues.Data(), nze);
 
-    choice_trans = AutoTune (tf, tc, tv, width, height);
+    choice_trans = ChooseKernel (width);
     devt_colnr = tc;
     devt_values = tv;
     devt_firsti = tf;    // last: its presence marks the transpose as ready

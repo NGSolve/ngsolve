@@ -39,7 +39,7 @@ namespace ngla
     bool symmetric = false;
     ngs_gpu::TypedBuffer<T> dev_values;
 
-    // kernel and work-items per row, chosen by timing on this matrix
+    // kernel and work-items per row, chosen from device type and row length
     struct SpMVChoice { shared_ptr<ngs_gpu::Kernel> kernel; int lanes = 1, rows_per_group = 1; };
     SpMVChoice choice;
 
@@ -50,10 +50,7 @@ namespace ngla
     mutable std::mutex trans_mutex;
 
     void BuildTranspose() const;
-    SpMVChoice AutoTune (const ngs_gpu::TypedBuffer<int> & firsti,
-                         const ngs_gpu::TypedBuffer<int> & colnr,
-                         const ngs_gpu::TypedBuffer<T> & values,
-                         size_t rows, size_t cols) const;
+    SpMVChoice ChooseKernel (size_t rows) const;
     void LaunchSym (ngs_gpu::KernelArg x, ngs_gpu::KernelArg y, T s, T beta) const;
     void LaunchSpMV (const ngs_gpu::TypedBuffer<int> & firsti,
                      const ngs_gpu::TypedBuffer<int> & colnr,
