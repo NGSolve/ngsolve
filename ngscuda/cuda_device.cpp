@@ -16,6 +16,7 @@
 #include <vector>
 
 #include <core/paje_trace.hpp>
+#include <core/taskmanager.hpp>
 
 #include "cuda_device.hpp"
 
@@ -69,6 +70,7 @@ namespace ngs_cuda
 
     void DoH2D (const void * src, size_t bytes, size_t offset) override;
     void DoD2H (void * dst, size_t bytes, size_t offset) const override;
+    void DoFill (size_t bytes, size_t offset, const FillFunc & fill) override;
   };
 
 
@@ -136,6 +138,72 @@ namespace ngs_cuda
     CUstream forced = nullptr;           // launches go here while set
 
     CUstream Current() const { return forced ? forced : (tracking ? ngs_cuda_stream : stream); }
+
+    /*
+      Transfers from pageable memory are staged by the driver through a
+      pinned buffer with a single-threaded memcpy (~10 GB/s here). Own
+      pinned ring: chunks filled with a parallel memcpy while the previous
+      chunk is on the bus.
+    */
+    static constexpr size_t STAGE_CHUNK = size_t(32) << 20;
+    static constexpr int STAGE_N = 2;
+    static constexpr size_t STAGE_MIN = size_t(1) << 20;   // below: driver path
+    void * stage[STAGE_N] = { };
+    CUevent stage_event[STAGE_N] = { };
+
+    void InitStaging()
+    {
+      if (stage[0]) return;
+      for (int i = 0; i < STAGE_N; i++)
+        {
+          Check (cuMemHostAlloc (&stage[i], STAGE_CHUNK, CU_MEMHOSTALLOC_PORTABLE), "cuMemHostAlloc");
+          Check (cuEventCreate (&stage_event[i], CU_EVENT_DISABLE_TIMING), "cuEventCreate");
+          Check (cuEventRecord (stage_event[i], Current()), "cuEventRecord");
+        }
+    }
+
+    static void ParallelMemcpy (void * dst, const void * src, size_t bytes)
+    {
+      ngcore::ParallelForRange (bytes, [&] (ngcore::IntRange r)
+        { std::memcpy ((char*)dst+r.First(), (const char*)src+r.First(), r.Size()); });
+    }
+
+    // produce(chunk, off, n) writes bytes [off, off+n) into the pinned chunk
+    void UploadStaged (CUdeviceptr dst, size_t bytes, const Buffer::FillFunc & produce)
+    {
+      InitStaging();
+      int k = 0;
+      for (size_t off = 0; off < bytes; off += STAGE_CHUNK, k = (k+1) % STAGE_N)
+        {
+          size_t n = std::min (STAGE_CHUNK, bytes-off);
+          Check (cuEventSynchronize (stage_event[k]), "cuEventSynchronize");   // chunk free again
+          produce (stage[k], off, n);
+          Check (cuMemcpyHtoDAsync (dst+off, stage[k], n, Current()), "cuMemcpyHtoDAsync");
+          Check (cuEventRecord (stage_event[k], Current()), "cuEventRecord");
+        }
+    }
+
+    void DownloadStaged (void * dst, CUdeviceptr src, size_t bytes)
+    {
+      InitStaging();
+      int k = 0;
+      size_t prev_off = 0, prev_n = 0; int prev_k = -1;
+      for (size_t off = 0; off < bytes; off += STAGE_CHUNK, k = (k+1) % STAGE_N)
+        {
+          size_t n = std::min (STAGE_CHUNK, bytes-off);
+          Check (cuEventSynchronize (stage_event[k]), "cuEventSynchronize");
+          Check (cuMemcpyDtoHAsync (stage[k], src+off, n, Current()), "cuMemcpyDtoHAsync");
+          Check (cuEventRecord (stage_event[k], Current()), "cuEventRecord");
+          if (prev_k >= 0)     // copy the previous chunk out while this one is on the bus
+            {
+              Check (cuEventSynchronize (stage_event[prev_k]), "cuEventSynchronize");
+              ParallelMemcpy ((char*)dst+prev_off, stage[prev_k], prev_n);
+            }
+          prev_off = off; prev_n = n; prev_k = k;
+        }
+      Check (cuEventSynchronize (stage_event[prev_k]), "cuEventSynchronize");
+      ParallelMemcpy ((char*)dst+prev_off, stage[prev_k], prev_n);
+    }
 
     static constexpr size_t TRACE_CAPACITY = 4096;
     ngcore::TraceContainer tracer{"GPU cuda"};
@@ -212,6 +280,45 @@ namespace ngs_cuda
                     ngcore::TTimePoint t0, ngcore::TTimePoint t1)
     { tracer.AddTicks (label, t0, t1, TransferValue(bytes)); }
 
+    void H2D (CUdeviceptr dst, const void * src, size_t bytes)
+    {
+      Transfer (TransferLabel ("H2D", bytes), bytes, [&] (CUstream s)
+        {
+          if (bytes < STAGE_MIN)
+            Check (cuMemcpyHtoDAsync (dst, src, bytes, s), "cuMemcpyHtoDAsync");
+          else
+            UploadStaged (dst, bytes, [&] (void * chunk, size_t off, size_t n)
+                          { ParallelMemcpy (chunk, (const char*)src+off, n); });
+        });
+    }
+
+    void Fill (CUdeviceptr dst, size_t bytes, const Buffer::FillFunc & fill)
+    {
+      Transfer (TransferLabel ("H2D", bytes), bytes, [&] (CUstream s)
+        {
+          if (bytes < STAGE_MIN)
+            {
+              std::vector<char> tmp (bytes);
+              fill (tmp.data(), 0, bytes);
+              Check (cuMemcpyHtoDAsync (dst, tmp.data(), bytes, s), "cuMemcpyHtoDAsync");
+              Check (cuStreamSynchronize (s), "cuStreamSynchronize");   // tmp dies here
+            }
+          else
+            UploadStaged (dst, bytes, fill);
+        });
+    }
+
+    void D2H (void * dst, CUdeviceptr src, size_t bytes)
+    {
+      Transfer (TransferLabel ("D2H", bytes), bytes, [&] (CUstream s)
+        {
+          if (bytes < STAGE_MIN)
+            Check (cuMemcpyDtoHAsync (dst, src, bytes, s), "cuMemcpyDtoHAsync");
+          else
+            DownloadStaged (dst, src, bytes);
+        });
+    }
+
     // launches follow the current ngs_cuda_stream, so they stay ordered
     // with cuda libraries and are recorded during graph capture
     struct TrackNgsStream { };
@@ -219,6 +326,8 @@ namespace ngs_cuda
 
     ~CudaQueue()
     {
+      for (int i = 0; i < STAGE_N; i++)
+        if (stage[i]) { cuMemFreeHost (stage[i]); cuEventDestroy (stage_event[i]); }
       for (auto ev : trace_events) cuEventDestroy (ev);
       if (trace_anchor) cuEventDestroy (trace_anchor);
       if (owned) cuStreamDestroy (stream);
@@ -321,8 +430,15 @@ namespace ngs_cuda
         queue->TraceHost (label, bytes, t0, ngcore::GetTimeCounter());
       }
     else
-      queue->Transfer (label, bytes, [&] (CUstream s)
-        { Check (cuMemcpyHtoDAsync (ptr+offset, src, bytes, s), "cuMemcpyHtoDAsync"); });
+      queue->H2D (ptr+offset, src, bytes);
+  }
+
+  // device memory only (managed is filled in place by Buffer::H2D)
+  void CudaBuffer :: DoFill (size_t bytes, size_t offset, const FillFunc & fill)
+  {
+    if (offset+bytes > size)
+      throw std::runtime_error ("ngscuda: H2D out of range");
+    queue->Fill (ptr+offset, bytes, fill);
   }
 
   void CudaBuffer :: DoD2H (void * dst, size_t bytes, size_t offset) const
@@ -337,8 +453,7 @@ namespace ngs_cuda
         queue->TraceHost (label, bytes, t0, ngcore::GetTimeCounter());
       }
     else
-      queue->Transfer (label, bytes, [&] (CUstream s)
-        { Check (cuMemcpyDtoHAsync (dst, ptr+offset, bytes, s), "cuMemcpyDtoHAsync"); });
+      queue->D2H (dst, ptr+offset, bytes);
   }
 
 

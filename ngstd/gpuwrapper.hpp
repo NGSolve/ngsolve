@@ -66,6 +66,8 @@ namespace ngs_gpu
     virtual void * DoHostPtr() const = 0;
     virtual void DoH2D (const void * src, size_t bytes, size_t offset) = 0;
     virtual void DoD2H (void * dst, size_t bytes, size_t offset) const = 0;
+    // upload through a callback, default: host temporary + DoH2D
+    virtual void DoFill (size_t bytes, size_t offset, const std::function<void(void*,size_t,size_t)> & fill);
     // device address usable by other libraries (cuda), 0 if there is none
     virtual uintptr_t DoDevicePtr() const { return 0; }
 
@@ -91,6 +93,12 @@ namespace ngs_gpu
     // transfers are host synchronisation, not allowed inside a recording
     void H2D (const void * src, size_t bytes, size_t offset = 0);
     void D2H (void * dst, size_t bytes, size_t offset = 0) const;
+
+    // upload without a host copy of the data: fill(dst, off, n) writes the
+    // bytes [off, off+n) of the range into dst, host visible memory the
+    // backend provides (the buffer itself, or its pinned staging chunks)
+    typedef std::function<void(void * dst, size_t off, size_t n)> FillFunc;
+    void H2D (size_t bytes, size_t offset, const FillFunc & fill);
   };
 
   // trace label for a transfer, e.g. "H2D 4.2 MB"
@@ -130,6 +138,14 @@ namespace ngs_gpu
     { buf->H2D (src, n*sizeof(T), offset*sizeof(T)); }
     void D2H (T * dst, size_t n, size_t offset = 0) const
     { buf->D2H (dst, n*sizeof(T), offset*sizeof(T)); }
+
+    // f(dst, off, n) produces elements [off, off+n) into dst, see Buffer::H2D
+    template <typename F>
+    void Fill (size_t n, F f, size_t offset = 0) const
+    {
+      buf->H2D (n*sizeof(T), offset*sizeof(T), [&] (void * dst, size_t off, size_t nb)
+                { f ((T*)dst, off/sizeof(T), nb/sizeof(T)); });
+    }
   };
 
 
