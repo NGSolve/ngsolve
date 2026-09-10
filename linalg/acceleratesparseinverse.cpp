@@ -324,7 +324,7 @@ namespace ngla
     static const bool registered = []
     {
       BaseMatrix::RegisterInverseCreator(
-        "acceleratesparse",
+        "accelerate",
         [](shared_ptr<BaseMatrix> matrix, shared_ptr<BitArray> subset,
            shared_ptr<const Array<int>> clusters) -> shared_ptr<BaseMatrix>
         {
