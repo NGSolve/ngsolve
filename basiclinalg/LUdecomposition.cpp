@@ -206,6 +206,13 @@ namespace ngbla
                   }
               }
             }
+            // singular if the pivot is negligible relative to its own row
+            // (row-scaling invariant); also catches an exact 0 and NaN
+            double rowmax = 0;
+            for (size_t j = i+1; j < r.Next(); j++)
+              rowmax = max(rowmax, fabs(a(imax,j)));
+            if (!(valmax > 1e-20*rowmax))
+              throw Exception ("CalcLU: matrix singular");
             if (imax != i)
               {
                 // RegionTimer reg(calcLUSwap);                

@@ -189,7 +189,7 @@ namespace ngbla
   extern NGS_DLL_HEADER void CalcInverse (FlatMatrix<double> inv, INVERSE_LIB il)
   {
     if (il == INVERSE_LIB::INV_CHOOSE)
-      il = inv.Height() >= 100 ? INVERSE_LIB::INV_LAPACK : INVERSE_LIB::INV_NGBLA;
+      il = inv.Height() >= 100 ? INVERSE_LIB::INV_LAPACK : INVERSE_LIB::INV_NGBLA_LU;
 
     if (il == INVERSE_LIB::INV_NGBLA_QR)
       {
@@ -202,7 +202,7 @@ namespace ngbla
         // Matrix save = inv;
         ArrayMem<int,100> p(inv.Height());
         CalcLU (inv, p);
-        InverseFromLU (inv, p); // has issues with numerical stability
+        InverseFromLU (inv, p);
 
         /*
           // stable as lapack degetri (but not as stable as old CalcInverse)
