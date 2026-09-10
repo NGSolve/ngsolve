@@ -27,9 +27,13 @@ namespace ngla
     height = mat.Height();
     width = mat.Width();
 
+    static Timer tscan("DeviceEBEMatrix ctor scan"), talloc("DeviceEBEMatrix ctor alloc"),
+      tpack("DeviceEBEMatrix ctor pack"), tgemv("DeviceEBEMatrix ctor gemv"),
+      ttrans("DeviceEBEMatrix ctor transpose");
     // input dofs are the columns, output dofs the rows of the element matrix
     BlockGemvBuilder<T> builder;
     {
+      tscan.Start();
       size_t n = mat.GetNumElMats();
       Array<size_t> used(n);
       builder.infirst.SetSize (n+1);
@@ -55,10 +59,15 @@ namespace ngla
       builder.infirst.SetSize (nb+1);
       builder.outfirst.SetSize (nb+1);
       builder.matfirst.SetSize (nb+1);
+      tscan.Stop();
+
+      talloc.Start();
       builder.inidx.SetSize (builder.infirst[nb]);
       builder.outidx.SetSize (builder.outfirst[nb]);
       builder.mats.SetSize (builder.matfirst[nb]);
+      talloc.Stop();
 
+      RegionTimer rpack(tpack);
       ParallelFor (nb, [&] (size_t j)
         {
           size_t i = used[j];
@@ -75,8 +84,14 @@ namespace ngla
         });
     }
 
-    gemv = make_shared<DeviceBlockGemv<T>> (device, builder, width, height);
-    gemv_trans = gemv->Transpose();
+    {
+      RegionTimer r(tgemv);
+      gemv = make_shared<DeviceBlockGemv<T>> (device, builder, width, height, true);
+    }
+    {
+      RegionTimer r(ttrans);
+      gemv_trans = gemv->Transpose();
+    }
 
     cout << IM(7) << "DeviceEBEMatrix<" << (is_same_v<T,double> ? "double" : "float")
          << "> " << gemv->Info() << endl;

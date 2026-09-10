@@ -208,7 +208,10 @@ namespace ngla
     queue = kern.queue;
     memtype = PreferredMemType();
 
+    static Timer tconv("DeviceSparseMatrix ctor convert"), tup("DeviceSparseMatrix ctor upload"),
+      ttune("DeviceSparseMatrix ctor autotune");
     // row starts to int32, values to T
+    tconv.Start();
     Array<int> firsti (height+1);
     auto hfirsti = mat.GetFirstArray();
     ParallelFor (height+1, [&] (size_t i) { firsti[i] = int(hfirsti[i]); });
@@ -216,8 +219,10 @@ namespace ngla
     Array<T> values (nze);
     auto hvalues = mat.GetValues();
     ParallelFor (nze, [&] (size_t j) { values[j] = T(hvalues(j)); });
+    tconv.Stop();
 
     // the index buffers are never written by a kernel, keep them off the host
+    tup.Start();
     dev_firsti = device->NewBuffer<int> (height+1, MemType::Device);
     dev_colnr  = device->NewBuffer<int> (max<size_t>(nze,1), MemType::Device);
     dev_values = device->NewBuffer<T> (max<size_t>(nze,1), MemType::Device);
@@ -225,6 +230,7 @@ namespace ngla
     dev_firsti.H2D (firsti.Data(), height+1);
     dev_colnr.H2D (mat.GetColIndices().Data(), nze);
     dev_values.H2D (values.Data(), nze);
+    tup.Stop();
 
     if (symmetric)
       {
@@ -233,7 +239,9 @@ namespace ngla
              << "> symmetric storage, height = " << height << ", nze = " << nze << endl;
         return;
       }
+    ttune.Start();
     choice = AutoTune (dev_firsti, dev_colnr, dev_values, height, width);
+    ttune.Stop();
     cout << IM(7) << "DeviceSparseMatrix<" << (is_same_v<T,double> ? "double" : "float")
          << "> height = " << height << ", width = " << width << ", nze = " << nze
          << ", kernel " << choice.kernel->Name() << ", lanes = " << choice.lanes << endl;

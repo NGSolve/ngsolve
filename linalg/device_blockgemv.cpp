@@ -224,8 +224,8 @@ namespace ngla
 
   template <typename T>
   DeviceBlockGemv<T> :: DeviceBlockGemv (shared_ptr<Device> adevice, const BlockGemvBuilder<T> & b,
-                                         size_t width, size_t height)
-    : device(adevice), strided(false)
+                                         size_t width, size_t height, bool rowmajor)
+    : device(adevice), strided(rowmajor)
   {
     queue = device->DefaultQueue();
     LaneKernels<T>::Get (device);   // checks fp64 support
@@ -240,18 +240,21 @@ namespace ngla
         nout[i] = b.outfirst[i+1]-b.outfirst[i];
       }
 
+    static Timer tup("DeviceBlockGemv ctor upload");
     auto upload = [&] (auto & buf, const auto & arr)
     {
       using TB = typename std::remove_reference_t<decltype(arr)>::value_type;
       buf = device->NewBuffer<TB> (max<size_t>(arr.Size(),1), MemType::Device);
       if (arr.Size()) buf.H2D (arr.Data(), arr.Size());
     };
+    tup.Start();
     upload (dev_infirst, b.infirst);
     upload (dev_outfirst, b.outfirst);
     upload (dev_matfirst, b.matfirst);
     upload (dev_inidx, b.inidx);
     upload (dev_outidx, b.outidx);
     upload (dev_mats, b.mats);
+    tup.Stop();
 
     Classify ();
   }
@@ -260,6 +263,10 @@ namespace ngla
   template <typename T>
   void DeviceBlockGemv<T> :: Classify ()
   {
+    static Timer t("DeviceBlockGemv classify"), tdown("DeviceBlockGemv classify outidx D2H"),
+      tatomic("DeviceBlockGemv classify atomic scan");
+    RegionTimer reg(t);
+
     int large_from = 16;
     if (auto e = getenv("NGS_BG_LARGE")) large_from = atoi(e);
 
@@ -286,7 +293,10 @@ namespace ngla
 
     // output dofs in more than one block need atomic accumulation
     Array<int> outidx (dev_outidx.Size());
+    tdown.Start();
     dev_outidx.D2H (outidx.Data(), outidx.Size());
+    tdown.Stop();
+    tatomic.Start();
     size_t total = 0;
     for (size_t i = 0; i < nblocks; i++) total += nout[i];
     int maxdof = -1;
@@ -299,6 +309,7 @@ namespace ngla
         if (seen.Test(outidx[i])) atomic = true;
         seen.SetBit (outidx[i]);
       }
+    tatomic.Stop();
 
     dev_small = device->NewBuffer<int> (max<size_t>(nsmall,1), MemType::Device);
     dev_large = device->NewBuffer<int> (max<size_t>(nlarge,1), MemType::Device);
