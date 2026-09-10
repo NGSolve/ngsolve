@@ -1280,14 +1280,20 @@ inverse : string
          [] (shared_ptr<BaseMatrix> self, bool fp32) -> shared_ptr<BaseMatrix>
          {
            if (!fp32) return self->CreateDeviceMatrix();
+           if (auto p = dynamic_pointer_cast<SparseMatrixSymmetric<double>> (self))
+             return make_shared<DeviceSparseMatrix<float>> (*p, true);
+           if (auto p = dynamic_pointer_cast<SparseMatrix<double>> (self))
+             return make_shared<DeviceSparseMatrix<float>> (*p);
+           if (dynamic_pointer_cast<SparseMatrix<float>> (self))
+             return self->CreateDeviceMatrix();
            if (auto p = dynamic_pointer_cast<BlockJacobiPrecondSymmetric<double,double>> (self))
              return make_shared<DeviceBlockJacobi<float>> (*p);
            if (auto p = dynamic_pointer_cast<BlockJacobiPrecond<double,double,double>> (self))
              return make_shared<DeviceBlockJacobi<float>> (*p);
            throw Exception ("CreateDeviceMatrix(fp32=True) is only implemented for "
-                            "block smoothers, got " + string(typeid(*self).name()));
+                            "sparse matrices and block smoothers, got " + string(typeid(*self).name()));
          }, py::arg("fp32")=false,
-         "matrix on the device; fp32 stores block-Jacobi inverses in single precision")
+         "matrix on the device; fp32 uploads sparse values and block-Jacobi inverses in single precision")
     ;
 
   /*
