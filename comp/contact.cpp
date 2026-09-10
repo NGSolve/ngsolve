@@ -836,7 +836,8 @@ namespace ngcomp
                                             LocalHeap& lh)
   {
     static Timer t("ContactIntegrator::CalcLinearizedAdd");
-    // static Timer teval("ContactIntegrator::CalcLinearizedAdd-Evaluate");
+    static Timer teval("ContactIntegrator::CalcLinearizedAdd-Evaluate");
+    static Timer tbdb("ContactIntegrator::CalcLinearizedAdd-BDB");
     RegionTimer rt(t);
     HeapReset hr(lh);
     ProxyUserData ud(trial_proxies.Size(), cf_gridfunctions.Size(), lh);
@@ -883,7 +884,7 @@ namespace ngcomp
 
           if (ddcf_dtest_dtrial(l1, k1))
             {
-              // RegionTimer rtcf(tdcf);
+              RegionTimer rteval(teval);
               ddcf_dtest_dtrial(l1, k1)->Evaluate(primary_mir, proxyvalues2);
               for (int k = 0; k < proxy1->Dimension(); k++)
                 for (int l = 0; l < proxy2->Dimension(); l++)
@@ -892,7 +893,7 @@ namespace ngcomp
             }
           else
           {
-            // RegionTimer rt(teval);
+            RegionTimer rteval(teval);
             for (int k = 0; k < proxy1->Dimension(); k++)
               for (int l = 0; l < proxy2->Dimension(); l++)
                 {
@@ -928,6 +929,7 @@ namespace ngcomp
           bdbmat1 = 0.;
           bbmat2 = 0.;
 
+          RegionTimer rtbdb(tbdb);
           const auto& s_mir = *primary_mir.GetOtherMIR();
 
           for (size_t j = 0; j < bs; j++)
