@@ -43,15 +43,13 @@ namespace ngla
     struct SpMVChoice { shared_ptr<ngs_gpu::Kernel> kernel; int lanes = 1, rows_per_group = 1; };
     SpMVChoice choice;
 
-    // transposed csr, built on demand
-    mutable ngs_gpu::TypedBuffer<int> devt_firsti, devt_colnr;
-    mutable ngs_gpu::TypedBuffer<T> devt_values;
-    mutable SpMVChoice choice_trans;
-    mutable std::mutex trans_mutex;
+    // the transposed product scatters with atomic adds, no transposed copy
+    int lanes_trans = 1;
 
-    void BuildTranspose() const;
     SpMVChoice ChooseKernel (size_t rows) const;
+    int ChooseLanesTrans (size_t rows) const;
     void LaunchSym (ngs_gpu::KernelArg x, ngs_gpu::KernelArg y, T s, T beta) const;
+    void LaunchSpMVT (ngs_gpu::KernelArg x, ngs_gpu::KernelArg y, T s, T beta) const;
     void LaunchSpMV (const ngs_gpu::TypedBuffer<int> & firsti,
                      const ngs_gpu::TypedBuffer<int> & colnr,
                      const ngs_gpu::TypedBuffer<T> & values,
