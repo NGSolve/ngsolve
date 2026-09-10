@@ -21,6 +21,8 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <climits>
+#include <algorithm>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -90,6 +92,12 @@ namespace ngs_gpu
     void H2D (const void * src, size_t bytes, size_t offset = 0);
     void D2H (void * dst, size_t bytes, size_t offset = 0) const;
   };
+
+  // trace label for a transfer, e.g. "H2D 4.2 MB"
+  string TransferLabel (const char * dir, size_t bytes);
+  // byte count as the event's integer value
+  inline int TransferValue (size_t bytes)
+  { return int(std::min<size_t>(bytes, size_t(INT_MAX))); }
 
 
   /*

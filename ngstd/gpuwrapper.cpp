@@ -9,6 +9,7 @@
 #include <atomic>
 #include <stdexcept>
 #include <cctype>
+#include <cstdio>
 
 namespace ngs_gpu
 {
@@ -320,6 +321,18 @@ namespace ngs_gpu
     if (IsRecording())
       throw std::runtime_error ("device-to-host transfer inside a device recording");
     DoD2H (dst, bytes, offset);
+  }
+
+  string TransferLabel (const char * dir, size_t bytes)
+  {
+    char buf[64];
+    if (bytes >= 1u<<20)
+      snprintf (buf, sizeof(buf), "%s %.1f MB", dir, bytes/double(1u<<20));
+    else if (bytes >= 1u<<10)
+      snprintf (buf, sizeof(buf), "%s %.1f kB", dir, bytes/double(1u<<10));
+    else
+      snprintf (buf, sizeof(buf), "%s %zu B", dir, bytes);
+    return buf;
   }
 
   void Queue :: NoteWrites (const Kernel & kernel, const std::vector<KernelArg> & args)

@@ -38,11 +38,15 @@ namespace ngs_cuda
   }
 
 
+  class CudaQueue;
+
   class CudaBuffer : public Buffer
   {
     CUdeviceptr ptr;
+    shared_ptr<CudaQueue> queue;   // transfers run (and are traced) on it
   public:
-    CudaBuffer (size_t bytes, MemType mt) : Buffer(bytes, mt)
+    CudaBuffer (size_t bytes, MemType mt, shared_ptr<CudaQueue> aqueue)
+      : Buffer(bytes, mt), queue(std::move(aqueue))
     {
       if (mt == MemType::Shared)
         Check (cuMemAllocManaged (&ptr, bytes, CU_MEM_ATTACH_GLOBAL), "cuMemAllocManaged");
@@ -63,25 +67,8 @@ namespace ngs_cuda
 
     uintptr_t DoDevicePtr() const override { return uintptr_t(ptr); }
 
-    void DoH2D (const void * src, size_t bytes, size_t offset) override
-    {
-      if (offset+bytes > size)
-        throw std::runtime_error ("ngscuda: H2D out of range");
-      if (memtype == MemType::Shared)
-        std::memcpy ((char*)ptr+offset, src, bytes);
-      else
-        Check (cuMemcpyHtoD (ptr+offset, src, bytes), "cuMemcpyHtoD");
-    }
-
-    void DoD2H (void * dst, size_t bytes, size_t offset) const override
-    {
-      if (offset+bytes > size)
-        throw std::runtime_error ("ngscuda: D2H out of range");
-      if (memtype == MemType::Shared)
-        std::memcpy (dst, (const char*)ptr+offset, bytes);
-      else
-        Check (cuMemcpyDtoH (dst, ptr+offset, bytes), "cuMemcpyDtoH");
-    }
+    void DoH2D (const void * src, size_t bytes, size_t offset) override;
+    void DoD2H (void * dst, size_t bytes, size_t offset) const override;
   };
 
 
@@ -154,11 +141,12 @@ namespace ngs_cuda
     ngcore::TraceContainer tracer{"GPU cuda"};
     std::vector<CUevent> trace_events;     // start/stop pair per slot
     std::vector<std::string> trace_labels;
+    std::vector<int> trace_values;
     size_t trace_slots = 0;
     CUevent trace_anchor = nullptr;
 
     // records a start event on the stream, returns the slot, -1 if not traced
-    int BeginTrace (const std::string & label)
+    int BeginTrace (const std::string & label, int value = 0)
     {
       if (!tracer.Active()) return -1;
       // events recorded into a graph carry no readable time
@@ -170,6 +158,7 @@ namespace ngs_cuda
         {
           trace_events.resize (2*TRACE_CAPACITY);
           trace_labels.resize (TRACE_CAPACITY);
+          trace_values.resize (TRACE_CAPACITY);
           for (auto & ev : trace_events)
             Check (cuEventCreate (&ev, CU_EVENT_DEFAULT), "cuEventCreate");
           Check (cuEventCreate (&trace_anchor, CU_EVENT_DEFAULT), "cuEventCreate");
@@ -177,6 +166,7 @@ namespace ngs_cuda
       if (trace_slots == TRACE_CAPACITY) FlushTrace();
       Check (cuEventRecord (trace_events[2*trace_slots], Current()), "cuEventRecord");
       trace_labels[trace_slots] = label;
+      trace_values[trace_slots] = value;
       return int(trace_slots);
     }
 
@@ -198,7 +188,7 @@ namespace ngs_cuda
           float t0 = 0, t1 = 0;
           cuEventElapsedTime (&t0, trace_events[2*i], trace_anchor);
           cuEventElapsedTime (&t1, trace_events[2*i+1], trace_anchor);
-          tracer.AddInterval (trace_labels[i], -1e-3*t0, -1e-3*t1);
+          tracer.AddInterval (trace_labels[i], -1e-3*t0, -1e-3*t1, trace_values[i]);
         }
       trace_slots = 0;
     }
@@ -206,6 +196,21 @@ namespace ngs_cuda
   public:
     CudaQueue() : owned(true)
     { Check (cuStreamCreate (&stream, CU_STREAM_NON_BLOCKING), "cuStreamCreate"); }
+
+    // a synchronous transfer on the queue's stream, traced like a launch
+    template <typename F>
+    void Transfer (const std::string & label, size_t bytes, F copy)
+    {
+      int slot = BeginTrace (label, TransferValue(bytes));
+      copy (Current());
+      EndTrace (slot);
+      Check (cuStreamSynchronize (Current()), "cuStreamSynchronize");
+    }
+
+    // host-side transfer (managed memory), on the same trace row
+    void TraceHost (const std::string & label, size_t bytes,
+                    ngcore::TTimePoint t0, ngcore::TTimePoint t1)
+    { tracer.AddTicks (label, t0, t1, TransferValue(bytes)); }
 
     // launches follow the current ngs_cuda_stream, so they stay ordered
     // with cuda libraries and are recorded during graph capture
@@ -304,6 +309,39 @@ namespace ngs_cuda
   };
 
 
+  void CudaBuffer :: DoH2D (const void * src, size_t bytes, size_t offset)
+  {
+    if (offset+bytes > size)
+      throw std::runtime_error ("ngscuda: H2D out of range");
+    auto label = TransferLabel ("H2D", bytes);
+    if (memtype == MemType::Shared)
+      {
+        auto t0 = ngcore::GetTimeCounter();
+        std::memcpy ((char*)ptr+offset, src, bytes);
+        queue->TraceHost (label, bytes, t0, ngcore::GetTimeCounter());
+      }
+    else
+      queue->Transfer (label, bytes, [&] (CUstream s)
+        { Check (cuMemcpyHtoDAsync (ptr+offset, src, bytes, s), "cuMemcpyHtoDAsync"); });
+  }
+
+  void CudaBuffer :: DoD2H (void * dst, size_t bytes, size_t offset) const
+  {
+    if (offset+bytes > size)
+      throw std::runtime_error ("ngscuda: D2H out of range");
+    auto label = TransferLabel ("D2H", bytes);
+    if (memtype == MemType::Shared)
+      {
+        auto t0 = ngcore::GetTimeCounter();
+        std::memcpy (dst, (const char*)ptr+offset, bytes);
+        queue->TraceHost (label, bytes, t0, ngcore::GetTimeCounter());
+      }
+    else
+      queue->Transfer (label, bytes, [&] (CUstream s)
+        { Check (cuMemcpyDtoHAsync (dst, ptr+offset, bytes, s), "cuMemcpyDtoHAsync"); });
+  }
+
+
   // if NGS_CUDA_DUMP_PTX is set, the generated ptx and a summary of the
   // compiled kernels are written to that directory ("1" -> current dir)
   static const char * PtxDumpDir()
@@ -376,7 +414,7 @@ namespace ngs_cuda
   class CudaDevice : public Device
   {
     CUdevice dev;
-    shared_ptr<Queue> defqueue;
+    shared_ptr<CudaQueue> defqueue;
     int ccmajor, ccminor;
 
     int Attr (CUdevice_attribute a) const
@@ -412,7 +450,7 @@ namespace ngs_cuda
     { return Attr (CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT); }
 
     shared_ptr<Buffer> DoNewBuffer (size_t bytes, MemType mt) override
-    { return std::make_shared<CudaBuffer> (bytes, mt); }
+    { return std::make_shared<CudaBuffer> (bytes, mt, defqueue); }
 
     shared_ptr<Queue> DefaultQueue() override { return defqueue; }
 
