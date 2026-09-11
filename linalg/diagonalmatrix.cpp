@@ -208,15 +208,22 @@ namespace ngla
   template <typename TM>  
   shared_ptr<BaseSparseMatrix> DiagonalMatrix<TM> :: CreateSparseMatrix() const
   {
-    Array<int> indi(Height()), indj(Width());
-    Array<TM> vals(Height());
-    for (int i : Range(Height()))
+    // one entry per row, filled directly
+    Array<int> cnt(Height());
+    cnt = 1;
+    auto mat = make_shared<SparseMatrix<TM>> (cnt, Width());
+    auto colnr = mat->GetColIndices();
+    auto vals = mat->GetValues();
+    auto sd = diag->FV();
+    ParallelForRange (Height(), [colnr, vals, sd] (IntRange r)
       {
-        indi[i] = i;
-        indj[i] = i;
-        vals[i] = (*diag)(i);
-      }
-    return SparseMatrix<TM>::CreateFromCOO (indi, indj, vals, Height(), Height());           
+        for (size_t i : r)
+          {
+            colnr[i] = i;
+            vals(i) = sd(i);
+          }
+      });
+    return mat;
   }
 
   
