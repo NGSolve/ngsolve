@@ -170,7 +170,18 @@ Whetting the Appetite
 More on PETSc coupling is available by Stefano Zampini and Umberto Zerbinati at
 https://ngspetsc.readthedocs.io/en/latest/
 
-   
+5.4 More MPI examples (historic):
+
+.. toctree::
+   :maxdepth: 1
+
+   historic/unit-5.0-mpi_basics/MPI-Parallelization_in_NGSolve.ipynb
+   historic/unit-5.1-mpi_ngsolve/mpi_basics.ipynb
+   historic/unit-5.2-fetidp_point2d/feti-dp-i.ipynb
+   historic/unit-5.3-fetidp_point3d/feti-dp-ii.ipynb
+   historic/unit-5.4-fetidp_edge/feti-dp-iii.ipynb
+   historic/unit-5.5-fetidp_inexact/feti-dp-iv.ipynb
+
 CUDA Device support:
 
 .. toctree::
@@ -189,19 +200,6 @@ Common GPU programming (CUDA / Metal / host reference):
    unit-5.6-gpu/poisson_gpu.ipynb
    unit-5.6-gpu/matrixfree.ipynb
 
-some more MPI examples:
-
-.. toctree::
-   :maxdepth: 1
-
-   historic/unit-5.0-mpi_basics/MPI-Parallelization_in_NGSolve.ipynb
-   historic/unit-5.1-mpi_ngsolve/mpi_basics.ipynb
-   historic/unit-5.2-fetidp_point2d/feti-dp-i.ipynb
-   historic/unit-5.3-fetidp_point3d/feti-dp-ii.ipynb
-   historic/unit-5.4-fetidp_edge/feti-dp-iii.ipynb
-   historic/ unit-5.5-fetidp_inexact/feti-dp-iv.ipynb
-   
-   
 6. Various Topics
 =========================
 
