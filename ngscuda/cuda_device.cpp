@@ -8,6 +8,7 @@
 #include <cuda.h>
 #include <nvrtc.h>
 
+#include <cstdint>
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
@@ -45,17 +46,10 @@ namespace ngs_cuda
   {
     CUdeviceptr ptr;
     shared_ptr<CudaQueue> queue;   // transfers run (and are traced) on it
+    bool pooled;                   // stream-ordered allocation from the driver pool
   public:
-    CudaBuffer (size_t bytes, MemType mt, shared_ptr<CudaQueue> aqueue)
-      : Buffer(bytes, mt), queue(std::move(aqueue))
-    {
-      if (mt == MemType::Shared)
-        Check (cuMemAllocManaged (&ptr, bytes, CU_MEM_ATTACH_GLOBAL), "cuMemAllocManaged");
-      else
-        Check (cuMemAlloc (&ptr, bytes), "cuMemAlloc");
-    }
-
-    ~CudaBuffer() { cuMemFree (ptr); }
+    CudaBuffer (size_t bytes, MemType mt, shared_ptr<CudaQueue> aqueue, bool pool);
+    ~CudaBuffer();
 
     CUdeviceptr Get() const { return ptr; }
 
@@ -340,6 +334,44 @@ namespace ngs_cuda
       FlushTrace();
     }
 
+    /*
+      Stream-ordered allocation: cuMemAlloc/cuMemFree cost ~100 us and
+      cuMemFree synchronizes the device; the async pair is ordered on the
+      current stream and freed blocks stay in the driver's pool (release
+      threshold set in CudaDevice). A free while a stream is capturing
+      would become a graph node for memory not owned by the graph, so
+      frees are deferred until capture has ended.
+    */
+    std::vector<CUdeviceptr> deferred_free;
+
+    bool Capturing() const
+    {
+      CUstreamCaptureStatus st;
+      return cuStreamIsCapturing (Current(), &st) != CUDA_SUCCESS
+        || st != CU_STREAM_CAPTURE_STATUS_NONE;
+    }
+
+    void FlushDeferredFree()
+    {
+      for (auto p : deferred_free) cuMemFreeAsync (p, Current());
+      deferred_free.clear();
+    }
+
+    CUdeviceptr AllocAsync (size_t bytes)
+    {
+      if (!deferred_free.empty() && !Capturing()) FlushDeferredFree();
+      CUdeviceptr p = 0;
+      Check (cuMemAllocAsync (&p, bytes, Current()), "cuMemAllocAsync");
+      return p;
+    }
+
+    void FreeAsync (CUdeviceptr p)
+    {
+      if (Capturing()) { deferred_free.push_back (p); return; }
+      FlushDeferredFree();
+      cuMemFreeAsync (p, Current());
+    }
+
   protected:
     void DoLaunch (Kernel & kernel, Dim3 groups, Dim3 groupsize,
                    const std::vector<KernelArg> & args,
@@ -406,8 +438,9 @@ namespace ngs_cuda
                 DoLaunch (*n.kernel, n.groups, n.groupsize, n.args, n.dynamic_group_memory);
               Check (cuStreamEndCapture (capture_stream, &cache->graph), "cuStreamEndCapture");
             }
-          catch (...) { forced = nullptr; throw; }
+          catch (...) { forced = nullptr; FlushDeferredFree(); throw; }
           forced = nullptr;
+          FlushDeferredFree();
           Check (cuGraphInstantiate (&cache->exec, cache->graph, 0), "cuGraphInstantiate");
           prog.backend_cache = cache;
         }
@@ -417,6 +450,23 @@ namespace ngs_cuda
     }
   };
 
+
+  CudaBuffer :: CudaBuffer (size_t bytes, MemType mt, shared_ptr<CudaQueue> aqueue, bool pool)
+    : Buffer(bytes, mt), queue(std::move(aqueue)), pooled(pool && mt != MemType::Shared)
+  {
+    if (mt == MemType::Shared)   // managed memory is not poolable
+      Check (cuMemAllocManaged (&ptr, bytes, CU_MEM_ATTACH_GLOBAL), "cuMemAllocManaged");
+    else if (pooled)
+      ptr = queue->AllocAsync (bytes);
+    else
+      Check (cuMemAlloc (&ptr, bytes), "cuMemAlloc");
+  }
+
+  CudaBuffer :: ~CudaBuffer()
+  {
+    if (pooled) queue->FreeAsync (ptr);
+    else cuMemFree (ptr);
+  }
 
   void CudaBuffer :: DoH2D (const void * src, size_t bytes, size_t offset)
   {
@@ -531,6 +581,7 @@ namespace ngs_cuda
     CUdevice dev;
     shared_ptr<CudaQueue> defqueue;
     int ccmajor, ccminor;
+    bool pooled = false;
 
     int Attr (CUdevice_attribute a) const
     { int v = 0; cuDeviceGetAttribute (&v, a, dev); return v; }
@@ -541,6 +592,17 @@ namespace ngs_cuda
       ccmajor = Attr (CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR);
       ccminor = Attr (CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR);
       defqueue = std::make_shared<CudaQueue> (CudaQueue::TrackNgsStream{});
+
+      // keep freed blocks in the pool instead of returning them at every sync
+      if (Attr (CU_DEVICE_ATTRIBUTE_MEMORY_POOLS_SUPPORTED))
+        {
+          CUmemoryPool pool;
+          cuuint64_t threshold = UINT64_MAX;
+          if (cuDeviceGetDefaultMemPool (&pool, dev) == CUDA_SUCCESS &&
+              cuMemPoolSetAttribute (pool, CU_MEMPOOL_ATTR_RELEASE_THRESHOLD, &threshold) == CUDA_SUCCESS)
+            pooled = true;
+        }
+      if (std::getenv ("NGS_CUDA_NOPOOL")) pooled = false;
     }
 
     string Name() const override
@@ -565,7 +627,7 @@ namespace ngs_cuda
     { return Attr (CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT); }
 
     shared_ptr<Buffer> DoNewBuffer (size_t bytes, MemType mt) override
-    { return std::make_shared<CudaBuffer> (bytes, mt, defqueue); }
+    { return std::make_shared<CudaBuffer> (bytes, mt, defqueue, pooled); }
 
     shared_ptr<Queue> DefaultQueue() override { return defqueue; }
 
