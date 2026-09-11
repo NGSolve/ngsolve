@@ -44,12 +44,12 @@
     when: always
     paths:
       - logs/
+  after_script:
+    - docker run --rm -v "$PWD:/w" alpine chown -R $(id -u):$(id -g) /w/logs || true
 
 ubuntu_avx_build:
   <<: *ubuntu_avx
   <<: *build_linux
-  after_script:
-    - docker run --rm -v "$PWD:/w" alpine chown -R $(id -u):$(id -g) /w/logs || true
 
 .ubuntu_avx512_build:
   <<: *ubuntu_avx512
