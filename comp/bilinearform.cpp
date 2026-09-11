@@ -665,18 +665,23 @@ namespace ngcomp
 	  }
 
         
-        for (int i = 0; i < specialelements.Size(); i++)
-          {
-            specialelements[i]->GetDofNrs (dnums);
-            QuickSort(dnums);
-            int last = -1;
-            for (int d : dnums)
-              {
-                if (d!=last && IsRegularDof(d))
-                    creator.Add (neV+neB+neBB+i, d);
-                last = d;
-              }
-          }
+        ParallelForRange
+          (specialelements.Size(), [&] (IntRange r)
+           {
+             Array<DofId> dnums;
+             for (auto i : r)
+               {
+                 specialelements[i]->GetDofNrs (dnums);
+                 QuickSort(dnums);
+                 int last = -1;
+                 for (int d : dnums)
+                   {
+                     if (d!=last && IsRegularDof(d))
+                       creator.Add (neV+neB+neBB+i, d);
+                     last = d;
+                   }
+               }
+           });
 
         size_t base = neV+neB+neBB+specialelements.Size();
         for (auto seg : se_groups)
@@ -761,33 +766,58 @@ namespace ngcomp
 	      {
 		int nre = ma->GetNE(vb);
                 offset += nre;
-		for (int i = 0; i < nre; i++)
-		  {
-		    auto eid = ElementId(vb,i);
-		    if (!fespace2->DefinedOn (vb,ma->GetElIndex(eid))) continue;
-		    
-		    if (vb == VOL && eliminate_internal)
-		      fespace2->GetDofNrs (eid, dnums, EXTERNAL_DOF);
-		    else if (vb == VOL && eliminate_hidden)
-		      fespace2->GetDofNrs (eid, dnums, VISIBLE_DOF);
-		    else
-		      fespace2->GetDofNrs (eid, dnums);
-		    
-		    int shift = (vb==VOL) ? 0 : ((vb==BND) ? neV : neV + neB);
-		    for (int d : dnums)
-		      if (IsRegularDof(d)) creator2.Add (shift+i, d);
-		  }
+                int shift = (vb==VOL) ? 0 : ((vb==BND) ? neV : neV + neB);
+                ParallelForRange
+                  (nre, [&] (IntRange r)
+                   {
+                     Array<DofId> dnums;
+                     for (auto i : r)
+                       {
+                         auto eid = ElementId(vb,i);
+                         if (!fespace2->DefinedOn (vb,ma->GetElIndex(eid))) continue;
+
+                         bool has_integrator=false;
+                         for (auto & bfip : VB_parts[vb])
+                           if (bfip->DefinedOn (ma->GetElIndex(eid)) &&
+                               bfip->DefinedOnElement(i))
+                             has_integrator=true;
+                         if (facetwise_skeleton_parts[BND].Size()) has_integrator=true;
+                         if (!has_integrator) continue;
+
+                         if (vb == VOL && eliminate_internal)
+                           fespace2->GetDofNrs (eid, dnums, EXTERNAL_DOF);
+                         else if (vb == VOL && eliminate_hidden)
+                           fespace2->GetDofNrs (eid, dnums, VISIBLE_DOF);
+                         else
+                           fespace2->GetDofNrs (eid, dnums);
+
+                         QuickSort (dnums);
+                         int last = -1;
+                         for (DofId d : dnums)
+                           {
+                             if (d!=last && IsRegularDof(d)) creator2.Add (shift+i, d);
+                             last = d;
+                           }
+                       }
+                   });
               }
-		
-            // just not tested ...
-            for (int i = 0; i < specialelements.Size(); i++)
-            {
-              specialelements[i]->GetDofNrs2 (dnums);
-		
-              for (int j = 0; j < dnums.Size(); j++)
-                if (dnums[j] != -1)
-                  creator2.Add (offset+i, dnums[j]);
-            }
+
+            ParallelForRange
+              (specialelements.Size(), [&] (IntRange r)
+               {
+                 Array<DofId> dnums;
+                 for (auto i : r)
+                   {
+                     specialelements[i]->GetDofNrs2 (dnums);
+                     QuickSort (dnums);
+                     int last = -1;
+                     for (DofId d : dnums)
+                       {
+                         if (d!=last && IsRegularDof(d)) creator2.Add (offset+i, d);
+                         last = d;
+                       }
+                   }
+               });
             offset += specialelements.Size();	
             if (fespace2->UsesDGCoupling())
               //add dofs of neighbour elements as well
