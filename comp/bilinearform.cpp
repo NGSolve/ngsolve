@@ -665,18 +665,23 @@ namespace ngcomp
 	  }
 
         
-        for (int i = 0; i < specialelements.Size(); i++)
-          {
-            specialelements[i]->GetDofNrs (dnums);
-            QuickSort(dnums);
-            int last = -1;
-            for (int d : dnums)
-              {
-                if (d!=last && IsRegularDof(d))
-                    creator.Add (neV+neB+neBB+i, d);
-                last = d;
-              }
-          }
+        ParallelForRange
+          (specialelements.Size(), [&] (IntRange r)
+           {
+             Array<DofId> dnums;
+             for (auto i : r)
+               {
+                 specialelements[i]->GetDofNrs (dnums);
+                 QuickSort(dnums);
+                 int last = -1;
+                 for (int d : dnums)
+                   {
+                     if (d!=last && IsRegularDof(d))
+                       creator.Add (neV+neB+neBB+i, d);
+                     last = d;
+                   }
+               }
+           });
 
         size_t base = neV+neB+neBB+specialelements.Size();
         for (auto seg : se_groups)
