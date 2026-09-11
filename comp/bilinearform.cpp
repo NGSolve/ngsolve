@@ -783,16 +783,23 @@ namespace ngcomp
 		      if (IsRegularDof(d)) creator2.Add (shift+i, d);
 		  }
               }
-		
-            // just not tested ...
-            for (int i = 0; i < specialelements.Size(); i++)
-            {
-              specialelements[i]->GetDofNrs2 (dnums);
-		
-              for (int j = 0; j < dnums.Size(); j++)
-                if (dnums[j] != -1)
-                  creator2.Add (offset+i, dnums[j]);
-            }
+
+            ParallelForRange
+              (specialelements.Size(), [&] (IntRange r)
+               {
+                 Array<DofId> dnums;
+                 for (auto i : r)
+                   {
+                     specialelements[i]->GetDofNrs2 (dnums);
+                     QuickSort (dnums);
+                     int last = -1;
+                     for (DofId d : dnums)
+                       {
+                         if (d!=last && IsRegularDof(d)) creator2.Add (offset+i, d);
+                         last = d;
+                       }
+                   }
+               });
             offset += specialelements.Size();	
             if (fespace2->UsesDGCoupling())
               //add dofs of neighbour elements as well
