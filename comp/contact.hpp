@@ -38,19 +38,31 @@ namespace ngcomp
 
     virtual void Update(shared_ptr<GridFunction> gf, int intorder_, double h_,
                         bool both_sides) = 0;
+    virtual void ShareSearchTree(const GapFunction & other_gap) = 0;
     void Draw();
   };
 
   template <int DIM>
   class T_GapFunction : public GapFunction
   {
-    unique_ptr<netgen::BoxTree<DIM, int>> searchtree;
+    shared_ptr<netgen::BoxTree<DIM, int>> searchtree;
   public:
     T_GapFunction( shared_ptr<MeshAccess> mesh_, Region primary_, Region secondary_)
       : GapFunction(mesh_, primary_, secondary_)
     { }
 
     void Update(shared_ptr<GridFunction> gf, int intorder_, double h, bool both_sides) override;
+
+    void ShareSearchTree(const GapFunction & other_gap) override
+    {
+      auto & o = dynamic_cast<const T_GapFunction<DIM>&> (other_gap);
+      if (!o.searchtree)
+        throw Exception("ContactBoundary: the shared gap function has no search tree yet, update the primary first");
+      searchtree = o.searchtree;
+      displacement = o.displacement;
+      h = o.h;
+      both_sides = o.both_sides;
+    }
 
     const netgen::BoxTree<DIM, int>& GetSearchTree() { return *searchtree; }
 

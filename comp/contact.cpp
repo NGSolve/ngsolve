@@ -308,71 +308,59 @@ namespace ngcomp
 
     displacement = displacement_;
 
-    LocalHeap lh(1000000, "T_GapFunction::Update");
+    auto & mask = other.Mask();
+    Array<netgen::Box<DIM>> elboxes(ma->GetNE(BND));
+    Array<double> maxh_thread(TaskManager::GetMaxThreads());
+    maxh_thread = 0.0;
+    LocalHeap clh(32*1000*1000, "T_GapFunction::Update");
+    ma->IterateElements
+      (BND, clh, [&] (Ngs_Element el2, LocalHeap & lh)
+       {
+         if (!mask.Test(el2.GetIndex())) return;
+         auto & trafo2 = ma->GetTrafo (el2, lh);
+         auto & trafo2_def = trafo2.AddDeformation(displacement.get(), lh);
+         IntegrationRule ir2_(trafo2.GetElementType(), intorder2);
+         netgen::Box<DIM> elbox{netgen::Box<DIM>::EMPTY_BOX};
+         double & maxh = maxh_thread[TaskManager::GetThreadId()];
+         for(auto ir2 : ir2_.Split())
+           {
+             HeapReset hr(lh);
+             MappedIntegrationRule<DIM-1, DIM> mir2_def(ir2, trafo2_def, lh);
+             netgen::Box<DIM> partbox{netgen::Box<DIM>::EMPTY_BOX};
+             for (auto & mip : mir2_def)
+               {
+                 netgen::Point<DIM> p;
+                 for (int j = 0; j < DIM; j++)
+                   p(j) = mip.GetPoint()(j);
+                 partbox.Add(p);
+               }
+             maxh = max(maxh, partbox.Diam());
+             elbox.Add(partbox.PMin());
+             elbox.Add(partbox.PMax());
+           }
+         elboxes[el2.Nr()] = elbox;
+       });
+
     netgen::Box<DIM> bbox{netgen::Box<DIM>::EMPTY_BOX};
     double maxh = 0;
+    for (auto v : maxh_thread) maxh = max(maxh, v);
     for (Ngs_Element el2 : ma->Elements(BND))
-      {
-        HeapReset hr(lh);
-        auto & mask = other.Mask();
-        if (!mask.Test(el2.GetIndex())) continue;
-
-        auto & trafo2 = ma->GetTrafo (el2, lh);
-        auto & trafo2_def = trafo2.AddDeformation(displacement.get(), lh);
-
-        IntegrationRule ir2_(trafo2.GetElementType(), intorder2);
-        for(auto ir2 : ir2_.Split())
+      if (mask.Test(el2.GetIndex()))
         {
-            HeapReset hr(lh);
-            MappedIntegrationRule<DIM-1, DIM> mir2(ir2, trafo2, lh);
-            MappedIntegrationRule<DIM-1, DIM> mir2_def(ir2, trafo2_def, lh);
-
-            netgen::Box<DIM> el_box{netgen::Box<DIM>::EMPTY_BOX};
-            for (auto & mip : mir2_def)
-              {
-                netgen::Point<DIM> p;
-                for (int j = 0; j < DIM; j++)
-                  p(j) = mip.GetPoint()(j);
-                bbox.Add(p);
-                if(h==0.0)
-                  el_box.Add(p);
-              }
-            maxh = max(maxh, el_box.Diam());
+          bbox.Add(elboxes[el2.Nr()].PMin());
+          bbox.Add(elboxes[el2.Nr()].PMax());
         }
-      }
 
     // Default-value for h is 2 * maximum_element_diameter
     if(h==0.0)
       h = 2*maxh;
 
     bbox.Scale(2); // make sure we don't add boxes outside of tree bounding box
-    searchtree = make_unique<netgen::BoxTree<DIM, int>>(bbox);
+    searchtree = make_shared<netgen::BoxTree<DIM, int>>(bbox);
     for (Ngs_Element el2 : ma->Elements(BND))
       {
-        HeapReset hr(lh);
-        auto & mask = other.Mask();
         if (!mask.Test(el2.GetIndex())) continue;
-
-        auto & trafo2 = ma->GetTrafo (el2, lh);
-        auto & trafo2_def = trafo2.AddDeformation(displacement.get(), lh);
-
-        IntegrationRule ir2_(trafo2.GetElementType(), intorder2);
-        netgen::Box<DIM> elbox{netgen::Box<DIM>::EMPTY_BOX};
-        for(auto ir2 : ir2_.Split())
-          {
-            HeapReset hr(lh);
-            MappedIntegrationRule<DIM-1, DIM> mir2(ir2, trafo2, lh);
-            MappedIntegrationRule<DIM-1, DIM> mir2_def(ir2, trafo2_def, lh);
-
-            for (auto & mip : mir2_def)
-              {
-                netgen::Point<DIM> p;
-                for (int j = 0; j < DIM; j++)
-                  p(j) = mip.GetPoint()(j);
-                elbox.Add(p);
-              }
-
-        }
+        auto elbox = elboxes[el2.Nr()];
         elbox.Scale(1.1);
         searchtree->Insert(elbox, el2.Nr());
       }
@@ -1066,7 +1054,9 @@ namespace ngcomp
         displacement->Update();
         displacement->GetVector() = displacement_->GetVector();
       }
-    if (displacement)
+    if (other_cb)
+      gap->ShareSearchTree(*other_cb->gap);
+    else if (displacement)
       gap->Update(displacement, 10*displacement->GetFESpace()->GetOrder(), h,
                   both_sides);
     else
