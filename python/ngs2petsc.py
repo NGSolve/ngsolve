@@ -194,25 +194,25 @@ class DMPlexMapping:
             if comm.rank == 0:
                 V = self.ngmesh.Coordinates()
                 T = self.ngmesh.Elements3D().NumPy()["nodes"]
-                T = np.array([list(np.trim_zeros(a, 'b')) for a in list(T)])-1
+                T = np.array([list(np.trim_zeros(a, 'b')) for a in list(T)])-ngm.PointId.base
                 surfMesh, dim = False, 3
                 if len(T) == 0:
                     surfMesh, dim = True, 2
                     T = self.ngmesh.Elements2D().NumPy()["nodes"]
-                    T = np.array([list(np.trim_zeros(a, 'b')) for a in list(T)])-1
+                    T = np.array([list(np.trim_zeros(a, 'b')) for a in list(T)])-ngm.PointId.base
                 plex = psc.DMPlex().createFromCellList(dim, T, V)
                 plex.setName(self.name)
                 vStart, vEnd = plex.getDepthStratum(0)
                 if surfMesh:
                     for e in self.ngmesh.Elements1D():
-                        join = plex.getJoin([vStart+v.nr-1 for v in e.vertices])
+                        join = plex.getJoin([vStart+v.nr0 for v in e.vertices])
                         plex.setLabelValue(FACE_SETS_LABEL, join[0], int(e.surfaces[1]))
                 else:
                     for e in self.ngmesh.Elements2D():
-                        join = plex.getFullJoin([vStart+v.nr-1 for v in e.vertices])
+                        join = plex.getFullJoin([vStart+v.nr0 for v in e.vertices])
                         plex.setLabelValue(FACE_SETS_LABEL, join[0], int(e.index))
                     for e in self.ngmesh.Elements1D():
-                        join = plex.getJoin([vStart+v.nr-1 for v in e.vertices])
+                        join = plex.getJoin([vStart+v.nr0 for v in e.vertices])
                         plex.setLabelValue(EDGE_SETS_LABEL, join[0], int(e.index))
                 self.plex = plex
             else:
@@ -224,16 +224,16 @@ class DMPlexMapping:
             if comm.rank == 0:
                 V = self.ngmesh.Coordinates()
                 T = self.ngmesh.Elements2D().NumPy()["nodes"]
-                T = np.array([list(np.trim_zeros(a, 'b')) for a in list(T)])-1
+                T = np.array([list(np.trim_zeros(a, 'b')) for a in list(T)])-ngm.PointId.base
                 plex = psc.DMPlex().createFromCellList(2, T, V)
                 plex.setName(self.name)
                 vStart, vEnd = plex.getDepthStratum(0)   # vertices
                 for e in self.ngmesh.Elements1D():
-                    join = plex.getJoin([vStart+v.nr-1 for v in e.vertices])
+                    join = plex.getJoin([vStart+v.nr0 for v in e.vertices])
                     plex.setLabelValue(FACE_SETS_LABEL, join[0], int(e.index))
                 if not ((1 == self.ngmesh.Elements2D().NumPy()["index"]).all()):
                     for e in self.ngmesh.Elements2D():
-                        join = plex.getFullJoin([vStart+v.nr-1 for v in e.vertices])
+                        join = plex.getFullJoin([vStart+v.nr0 for v in e.vertices])
                         plex.setLabelValue(CELL_SETS_LABEL, join[0], int(e.index))
 
                 self.plex = plex

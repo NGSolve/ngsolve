@@ -102,9 +102,9 @@ def InterpolateLevelSetToElems(levelset_p1, val1, val2, func_p0, mesh, EPS ):
     nCutElems = 0
     for i,el in enumerate(mesh.ngmesh.Elements2D()):
 
-        psi0 = levelset_p1.vec[el.vertices[0].nr-1]
-        psi1 = levelset_p1.vec[el.vertices[1].nr-1]
-        psi2 = levelset_p1.vec[el.vertices[2].nr-1]
+        psi0 = levelset_p1.vec[el.vertices[0].nr0]
+        psi1 = levelset_p1.vec[el.vertices[1].nr0]
+        psi2 = levelset_p1.vec[el.vertices[2].nr0]
         
         if psi0 < 0 and psi1 < 0 and psi2 < 0:
             func_p0.vec[i] = val1
