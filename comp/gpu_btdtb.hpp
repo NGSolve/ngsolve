@@ -8,7 +8,7 @@
 /* Date:   3. Aug. 2026                                              */
 /*********************************************************************/
 
-#include <comp.hpp>
+#include "bilinearform.hpp"
 #include <gpuwrapper.hpp>
 #include <gpukernel.hpp>
 #include <tinybla.hpp>

@@ -12,7 +12,7 @@ remove file
    Hierarchical error estimator
 */
 
-#include <comp.hpp>
+#include "fespace.hpp"
 
 namespace ngcomp
 {

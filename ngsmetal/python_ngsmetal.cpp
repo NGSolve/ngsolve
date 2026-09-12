@@ -1,7 +1,6 @@
 #include <Foundation/Foundation.hpp>
 #include <Metal/Metal.hpp>
 
-#include <comp.hpp>
 #include <python_comp.hpp>
 
 #include <devicevector.hpp>

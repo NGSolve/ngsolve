@@ -10,9 +10,6 @@
 #include <la.hpp>
 #include "mumpsinverse.hpp"
 
-#include <comp.hpp>
-// #include <parallelngs.hpp>
-
 namespace ngla
 {
   using namespace ngcomp;
