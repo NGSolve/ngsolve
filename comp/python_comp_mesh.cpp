@@ -5,7 +5,6 @@
 #include <core/python_ngcore.hpp>
 
 #include "../ngstd/python_ngstd.hpp"
-// #include <comp.hpp>
 #include "meshaccess.hpp"
 #include "gridfunction.hpp"
 #include "pmltrafo.hpp"

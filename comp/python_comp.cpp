@@ -3,7 +3,6 @@
 
 #include "../ngstd/python_ngstd.hpp"
 #include "python_comp.hpp"
-// #include <comp.hpp>
 #include "gridfunction.hpp"
 #include "linearform.hpp"
 #include "bilinearform.hpp"

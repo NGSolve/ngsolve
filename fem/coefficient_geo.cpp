@@ -8,7 +8,6 @@
    Geometric coefficient functions
 */
 
-// #include <fem.hpp>
 #include <coefficient.hpp>
 #include "scalarfe.hpp"
 #include "tpintrule.hpp"

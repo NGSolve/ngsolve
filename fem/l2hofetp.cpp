@@ -1,4 +1,3 @@
-// #include <fem.hpp>
 #include "l2hofe.hpp"
 #include "l2hofetp.hpp"
 #include "../fem/tscalarfe_impl.hpp"

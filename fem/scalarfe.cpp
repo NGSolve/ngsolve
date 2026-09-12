@@ -12,7 +12,6 @@
 #define FILE_SCALARFE_CPP
 
 
-// #include <fem.hpp>
 #include "tscalarfe_impl.hpp"
 #include "h1lofe.hpp"
 #include "l2hofe.hpp"

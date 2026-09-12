@@ -5,7 +5,6 @@
 /*********************************************************************/
 
 
-// #include <comp.hpp>
 #include "hcurlcurlfespace.hpp"
 #include "../fem/hcurlcurlfe.hpp"
 #include "../fem/hcurlhdiv_dshape.hpp"

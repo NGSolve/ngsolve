@@ -12,7 +12,6 @@
 */
 
 
-// #include <comp.hpp>
 
 /// namespace for multigrid components
 

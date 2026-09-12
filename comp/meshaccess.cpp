@@ -16,7 +16,6 @@
 #include <ngstd.hpp>
 #include <nginterface.h>
 
-// #include <comp.hpp>
 #include "meshaccess.hpp"
 #include "gridfunction.hpp"
 #include "pmltrafo.hpp"

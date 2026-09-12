@@ -8,7 +8,6 @@
    High Order Finite Element Space for L2
 */
 
-// #include <comp.hpp>
 #include "l2hofespace.hpp"
 #include <prolongation.hpp>
 

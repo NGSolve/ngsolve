@@ -8,8 +8,6 @@
 #include "l2hofe.hpp"
 #include "hdivfe.hpp"
 #include "hdivdivfe.hpp"
-// #include <fem.hpp>
-// #include <comp.hpp>
 #include "meshaccess.hpp"
 #include <mutex>
 #include <meshing/fieldlines.hpp>

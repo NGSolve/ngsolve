@@ -8,7 +8,6 @@
    High Order Finite Element Space
 */
 
-// #include <comp.hpp>
 #include <h1hofespace.hpp>
 #include <prolongation.hpp> 
 #include "../fem/h1hofe.hpp"

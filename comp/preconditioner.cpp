@@ -1,4 +1,3 @@
-// #include <comp.hpp>
 #include "bilinearform.hpp"
 #include "preconditioner.hpp"
 #include <multigrid.hpp>

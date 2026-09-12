@@ -1,4 +1,3 @@
-// #include <comp.hpp>
 #include "numberfespace.hpp"
 #include <diffop_impl.hpp>
 #include <paralleldofs.hpp>

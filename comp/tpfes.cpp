@@ -1,4 +1,3 @@
-// #include <comp.hpp>
 #include "../fem/tensorproductintegrator.hpp"
 #include "../fem/tpdiffop.hpp"
 #include "../fem/tpintrule.hpp"

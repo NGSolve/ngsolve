@@ -8,7 +8,6 @@
 #include <hcurlhdiv_dshape.hpp>
 #include <bdbequations.hpp>
 
-// #include <comp.hpp>
 #include "hcurldivfespace.hpp"
 #include <diffop_impl.hpp>
 

@@ -1,4 +1,3 @@
-// #include <comp.hpp>
 // #include <solve.hpp>
 #include "preconditioner.hpp"
 #include "hypre_precond.hpp"

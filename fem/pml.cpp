@@ -25,7 +25,6 @@
 // *****************************************************************   
 
 
-// #include <fem.hpp>
 #include "hdiv_equations.hpp"
 #include "hcurl_equations.hpp"
 #include "elasticity_equations.hpp"

@@ -5,7 +5,6 @@
 /*********************************************************************/
 
 // #include <cmath>
-// #include <fem.hpp>
 // #include <ngstd.hpp>
 #include <cassert>
 #include "symbolicintegrator.hpp"

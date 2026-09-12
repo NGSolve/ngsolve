@@ -6,7 +6,6 @@
 
 #define FILE_HDIVDIVFE_CPP
 
-// #include <fem.hpp>
 #include "scalarfe.hpp"
 #include "hdivdivfe.hpp"
 

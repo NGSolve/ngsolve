@@ -5,7 +5,6 @@
 /*********************************************************************/
 
 
-// #include <comp.hpp>
 #include "hdivdivfespace.hpp"
 #include "../fem/hdivdivfe.hpp"
 

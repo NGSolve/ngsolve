@@ -15,7 +15,6 @@
 
 
 
-// #include <comp.hpp>
 #include "hdivhofespace.hpp"
 #include "../fem/hdiv_equations.hpp"
 #include <../fem/hdivlofe.hpp>  

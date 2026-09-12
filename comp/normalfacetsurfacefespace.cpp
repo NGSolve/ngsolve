@@ -4,8 +4,6 @@
 /* Date:   2020                                                      */
 /*********************************************************************/
 
-// #include <comp.hpp>
-// #include <fem.hpp>
 #include "normalfacetsurfacefespace.hpp"
 #include <../fem/hdiv_equations.hpp>
 #include <../fem/normalfacetfe.hpp>

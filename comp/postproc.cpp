@@ -8,7 +8,6 @@
    Postprocessing functions
 */
 
-// #include <comp.hpp>
 #include <paralleldofs.hpp>
 #include "gridfunction.hpp"
 

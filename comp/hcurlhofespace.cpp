@@ -1,7 +1,6 @@
 /**
    High Order Finite Element Space for H(Curl) 
 */
-// #include <comp.hpp>
 #include "hcurlhofespace.hpp"
 #include "hcurlhdivfes.hpp"
 #include <../fem/hcurlhofe.hpp> 

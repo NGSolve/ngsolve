@@ -6,7 +6,6 @@
 
 #define FILE_L2HOFE_CPP
 
-// #include <fem.hpp>
 #include "l2hofe.hpp"
 #include "l2hofefo.hpp"
 

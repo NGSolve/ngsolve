@@ -8,7 +8,6 @@
     Finite Element Integrators 
 */
   
-// #include <fem.hpp>
 #include "facetfe.hpp"
 #include "hdivfe.hpp"
 #include "coefficient.hpp"

@@ -8,7 +8,6 @@
 /*********************************************************************/
 
 
-// #include <fem.hpp>
 #include "thdivfe.hpp"
 #include "recursive_pol.hpp"
 #include <cassert>

@@ -9,7 +9,6 @@
 
 #include <cassert>
 #include <variant>
-// #include <fem.hpp>
 #include "integratorcf.hpp"
 #include "symbolicintegrator.hpp"
 #include "diffop.hpp"

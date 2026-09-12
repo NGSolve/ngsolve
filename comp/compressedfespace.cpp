@@ -1,4 +1,3 @@
-// #include <comp.hpp>
 #include "compressedfespace.hpp"
 #include <sparsematrix.hpp>
 #include <special_matrix.hpp>

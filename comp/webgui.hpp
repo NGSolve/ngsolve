@@ -3,7 +3,6 @@
 
 #include <core/archive.hpp>
 
-// #include "comp.hpp"
 #include "meshaccess.hpp"
 
 

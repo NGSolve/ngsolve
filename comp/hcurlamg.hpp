@@ -1,7 +1,6 @@
 #ifndef HCURLAMG_HPP
 #define HCURLAMG_HPP
 
-// #include <comp.hpp>
 #include <basematrix.hpp>
 #include <sparsematrix.hpp>
 #include "preconditioner.hpp"

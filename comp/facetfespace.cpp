@@ -1,5 +1,3 @@
-// #include <comp.hpp>
-// #include <fem.hpp>
 #include "facetfespace.hpp"
 #include <bdbequations.hpp>
 #include <prolongation.hpp>

@@ -4,8 +4,6 @@
 /* Date:   2008                                                      */
 /*********************************************************************/
 
-// #include <comp.hpp>
-// #include <fem.hpp>
 #include "normalfacetfespace.hpp"
 #include "../fem/hdiv_equations.hpp"
 #include "../fem/normalfacetfe.hpp"

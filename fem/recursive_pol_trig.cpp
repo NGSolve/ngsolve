@@ -9,7 +9,6 @@
 
 
 
-// #include <fem.hpp>
 #include "recursive_pol_trig.hpp"
 
 namespace ngfem

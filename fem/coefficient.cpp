@@ -13,7 +13,6 @@
 #include <bla.hpp>
 
 #include <../basiclinalg/complex_wrapper.hpp>
-// #include <fem.hpp>
 #include <coefficient.hpp>
 #include <coefficient_impl.hpp>
 #include "code_generation.hpp"

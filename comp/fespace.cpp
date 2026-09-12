@@ -9,7 +9,6 @@
    Finite Element Space
 */
 
-// #include <comp.hpp>
 #include "fespace.hpp"
 #include <multigrid.hpp>
 #include <diagonalmatrix.hpp>

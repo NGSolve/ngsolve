@@ -8,7 +8,6 @@
    integrators for tensor product spaces
 */
 
-// #include <fem.hpp>
 #include "scalarfe.hpp"
 #include "tensorproductintegrator.hpp"
 #include "tpdiffop.hpp"

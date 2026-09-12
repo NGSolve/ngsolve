@@ -1,4 +1,3 @@
-// #include <comp.hpp>
 
 // #include <parallelngs.hpp>
 #include <parallelvector.hpp>
