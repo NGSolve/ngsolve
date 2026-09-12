@@ -640,6 +640,7 @@ file : string
 
   ExportArray<COUPLING_TYPE> (m);
   
+  RegisterPyArchiveCaster<FESpace>();
   auto fes_class = py::class_<FESpace, shared_ptr<FESpace>, NGS_Object>(m, "FESpace",
 		    docu_string(R"raw_string(Finite Element Space
 
@@ -2119,6 +2120,7 @@ active_dofs : BitArray or None
 
   ////////////////////////////////////// GridFunction //////////////////////////
   
+  RegisterPyArchiveCaster<GridFunction>();
   auto gf_class = py::class_<GF,shared_ptr<GF>, CoefficientFunction>
     (m, "GridFunction",  "a field approximated in some finite element space", py::dynamic_attr());
   gf_class
@@ -2720,6 +2722,7 @@ diffop : ngsolve.fem.DifferentialOperator
     .def ("Compile", &Variation::Compile, py::arg("realcompile")=false, py::arg("wait")=false, py::arg("keep_files")=false)
     ;
 
+  RegisterPyArchiveCaster<MatFreeOptions>();
   py::class_<MatFreeOptions> (m, "MFOpts")
     .def(py::init<bool,bool,bool,bool,bool,int,int,int,bool,bool,bool,optional<string>>(),
          py::arg("fused")=true, py::arg("gencode")=false, py::arg("atomic")=true,

@@ -398,6 +398,7 @@ nr : int
   
   //////////////////////////////////////////////////////////////////////////////////////////
 
+  RegisterPyArchiveCaster<Region>();
   auto cls_region = py::class_<Region> (m, "Region", "a subset of volume or boundary elements")
     .def(py::init<shared_ptr<MeshAccess>,VorB,string>(), py::arg("mesh"), py::arg("vb"), py::arg("name"))
     .def(py::init<shared_ptr<MeshAccess>,VorB,BitArray>(), py::arg("mesh"), py::arg("vb"), py::arg("mask"))
@@ -477,6 +478,7 @@ nr : int
   
   typedef PML_Transformation PML;
   
+  RegisterPyArchiveCaster<MeshAccess>();
   py::class_<MeshAccess, shared_ptr<MeshAccess>> mesh_access(m, "Mesh", docu_string(R"raw_string(
 NGSolve interface to the Netgen mesh. Provides access and functionality
 to use the mesh for finite element calculations.

@@ -596,6 +596,7 @@ direction : int
   py::class_<CoordinateTrafo>(m, "CoordinateTrafo")
     .def(py::init<shared_ptr<CoefficientFunction>, ngcomp::Region>());
 
+  RegisterPyArchiveCaster<CoefficientFunction>();
   auto cf_class = py::class_<CoefficientFunction, shared_ptr<CoefficientFunction>>
     (m, "CoefficientFunction",
 R"raw(A CoefficientFunction (CF) is some function defined on a mesh.
