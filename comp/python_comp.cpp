@@ -583,6 +583,9 @@ when building the system matrices.
     .def_property_readonly("name", [](DirichletBC & cond) { return cond.dirbnd.vbn.name; })    
     .def_property_readonly("val", [](DirichletBC & cond) { return cond.val; })    
     ;
+  // both may be passed as flag values (e.g. additional_dirbc=[...])
+  RegisterPyArchiveCaster<DirichletBoundary>();
+  RegisterPyArchiveCaster<DirichletBC>();
 
 
   py::class_<VariationalEquation> (m, "VariationalEquation")
