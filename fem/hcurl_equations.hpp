@@ -1408,6 +1408,16 @@ public:
   HCURL_EQUATIONS_EXTERN template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpCurlEdge<2> >;
   HCURL_EQUATIONS_EXTERN template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpCurlEdge<3> >;
   HCURL_EQUATIONS_EXTERN template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpCurlBoundaryEdge<> >;
+  HCURL_EQUATIONS_EXTERN template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpIdBBoundaryEdge<3> >;
+  HCURL_EQUATIONS_EXTERN template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpCurlBoundaryEdgeVec<> >;
+  HCURL_EQUATIONS_EXTERN template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpHCurlDual<2> >;
+  HCURL_EQUATIONS_EXTERN template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpHCurlDual<3> >;
+  HCURL_EQUATIONS_EXTERN template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpHCurlDualBoundary<2> >;
+  HCURL_EQUATIONS_EXTERN template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpHCurlDualBoundary<3> >;
+  HCURL_EQUATIONS_EXTERN template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpGradientHCurl<2> >;
+  HCURL_EQUATIONS_EXTERN template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpGradientHCurl<3> >;
+  HCURL_EQUATIONS_EXTERN template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpGradientBoundaryHCurl<2,HCurlFiniteElement<1>> >;
+  HCURL_EQUATIONS_EXTERN template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpGradientBoundaryHCurl<3,HCurlFiniteElement<2>> >;
 
   // HCURL_EQUATIONS_EXTERN template class MassEdgeIntegrator<2>;
   // HCURL_EQUATIONS_EXTERN template class MassEdgeIntegrator<3>;

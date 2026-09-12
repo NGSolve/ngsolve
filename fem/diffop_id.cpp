@@ -70,4 +70,10 @@ namespace ngfem
   template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpIdVectorH1<3,BND>>;
   //Here the explicit case should be already handled!!
   template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpIdVectorH1<3,BBND>>;
+
+  template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpIdDual<1,2> >;
+  template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpIdDual<2,3> >;
+  template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpIdH1<3,0> >;
+  template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpIdH1<3,1> >;
+  template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpIdH1<3,2> >;
 }

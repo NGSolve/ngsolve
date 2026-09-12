@@ -2797,6 +2797,12 @@ namespace ngfem
   extern template class NGS_DLL_HEADER DiffOpIdDual<2,2>;
   extern template class NGS_DLL_HEADER DiffOpIdDual<3,3>;
 
+  extern template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpIdDual<1,2> >;
+  extern template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpIdDual<2,3> >;
+  extern template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpIdH1<3,0> >;
+  extern template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpIdH1<3,1> >;
+  extern template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpIdH1<3,2> >;
+
   
   extern template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpId<1> >;
   extern template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpId<2> >;
@@ -2836,6 +2842,11 @@ namespace ngfem
   extern template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpGradBoundaryVectorH1<1> >;
   extern template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpGradBoundaryVectorH1<2> >;
   extern template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpGradBoundaryVectorH1<3> >;
+
+  extern template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpDivVectorH1<2> >;
+  extern template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpDivVectorH1<3> >;
+  extern template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpDivBoundaryVectorH1<2> >;
+  extern template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpDivBoundaryVectorH1<3> >;
 
   
 

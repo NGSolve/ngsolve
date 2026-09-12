@@ -918,6 +918,15 @@ HDIV_EQUATIONS_EXTERN template class NGS_DLL_HEADER T_DifferentialOperator<DiffO
 HDIV_EQUATIONS_EXTERN template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpIdHDiv<3> >;
 HDIV_EQUATIONS_EXTERN template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpDivHDiv<2> >;
 HDIV_EQUATIONS_EXTERN template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpDivHDiv<3> >;
+HDIV_EQUATIONS_EXTERN template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpIdHDivSurface<3> >;
+HDIV_EQUATIONS_EXTERN template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpIdVecHDivBoundary<2> >;
+HDIV_EQUATIONS_EXTERN template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpIdVecHDivBoundary<3> >;
+HDIV_EQUATIONS_EXTERN template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpHDivDual<2> >;
+HDIV_EQUATIONS_EXTERN template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpHDivDual<3> >;
+HDIV_EQUATIONS_EXTERN template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpGradientHDiv<2> >;
+HDIV_EQUATIONS_EXTERN template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpGradientHDiv<3> >;
+HDIV_EQUATIONS_EXTERN template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpGradientTraceHDiv<2,HDivNormalFiniteElement<1>> >;
+HDIV_EQUATIONS_EXTERN template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpGradientTraceHDiv<3,HDivNormalFiniteElement<2>> >;
 
 HDIV_EQUATIONS_EXTERN template class MassHDivIntegrator<2>;
 HDIV_EQUATIONS_EXTERN template class DivDivHDivIntegrator<2>;

@@ -213,6 +213,16 @@ namespace ngfem
 
 
 
+
+  extern template class HDivFiniteElement<0>;
+  extern template class HDivFiniteElement<1>;
+  extern template class HDivFiniteElement<2>;
+  extern template class HDivFiniteElement<3>;
+  extern template class HDivNormalFiniteElement<0>;
+  extern template class HDivNormalFiniteElement<1>;
+  extern template class HDivNormalFiniteElement<2>;
+  extern template class HDivNormalFiniteElement<3>;
+
 }
 
 #endif

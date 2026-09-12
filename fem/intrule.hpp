@@ -2542,6 +2542,40 @@ namespace ngfem
     virtual void TransformGradient (BareSliceMatrix<SIMD<double>> grad) const override;
     virtual void TransformGradientTrans (BareSliceMatrix<SIMD<double>> grad) const override;
   };
+
+  extern template class MappedIntegrationPoint<0,0>;
+  extern template class MappedIntegrationPoint<0,1>;
+  extern template class MappedIntegrationPoint<0,2>;
+  extern template class MappedIntegrationPoint<0,3>;
+  extern template class MappedIntegrationPoint<1,1>;
+  extern template class MappedIntegrationPoint<1,2>;
+  extern template class MappedIntegrationPoint<1,3>;
+  extern template class MappedIntegrationPoint<2,2>;
+  extern template class MappedIntegrationPoint<2,3>;
+  extern template class MappedIntegrationPoint<3,3>;
+
+  extern template class MappedIntegrationRule<0,0>;
+  extern template class MappedIntegrationRule<0,1>;
+  extern template class MappedIntegrationRule<0,2>;
+  extern template class MappedIntegrationRule<0,3>;
+  extern template class MappedIntegrationRule<1,1>;
+  extern template class MappedIntegrationRule<1,2>;
+  extern template class MappedIntegrationRule<1,3>;
+  extern template class MappedIntegrationRule<2,2>;
+  extern template class MappedIntegrationRule<2,3>;
+  extern template class MappedIntegrationRule<3,3>;
+
+  extern template class MappedIntegrationRule<0,0,Complex>;
+  extern template class MappedIntegrationRule<0,1,Complex>;
+  extern template class MappedIntegrationRule<0,2,Complex>;
+  extern template class MappedIntegrationRule<0,3,Complex>;
+  extern template class MappedIntegrationRule<1,1,Complex>;
+  extern template class MappedIntegrationRule<1,2,Complex>;
+  extern template class MappedIntegrationRule<1,3,Complex>;
+  extern template class MappedIntegrationRule<2,2,Complex>;
+  extern template class MappedIntegrationRule<2,3,Complex>;
+  extern template class MappedIntegrationRule<3,3,Complex>;
+
 }
 
 
