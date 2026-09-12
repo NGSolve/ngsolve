@@ -388,6 +388,8 @@ namespace ngcomp
   DocInfo MGPreconditioner :: GetDocu ()
   {
     DocInfo docu = Preconditioner::GetDocu();
+    docu.Arg("inverse_flags") = "dict = {}\n"
+      "  flags passed to the inverse";
     docu.short_docu = "A multigrid preconditioner.";
     docu.long_docu =
       R"raw_string(TODO
@@ -475,6 +477,12 @@ namespace ngcomp
     invtype = dynamic_cast<const BaseSparseMatrix & > (bfa->GetMatrix()).SetInverseType (inversetype);
     if (lo_bfa)
       loinvtype = dynamic_cast<const BaseSparseMatrix & > (lo_bfa->GetMatrix()) .SetInverseType (inversetype);
+    if (flags.FlagsFlagDefined("inverse_flags"))
+      {
+        bfa->GetMatrix().SetInverseFlags (flags.GetFlagsFlag("inverse_flags"));
+        if (lo_bfa)
+          lo_bfa->GetMatrix().SetInverseFlags (flags.GetFlagsFlag("inverse_flags"));
+      }
 
 
     mgp->Update();
@@ -615,6 +623,8 @@ namespace ngcomp
 
     docu.Arg("inverse") = "string = "+default_inversetype+"\n"
       "  use block Jacobi/Gauss-Seidel";
+    docu.Arg("inverse_flags") = "dict = {}\n"
+      "  flags passed to the inverse";
     
     /*
     docu.Arg("block") = "bool = false\n"
@@ -657,6 +667,8 @@ namespace ngcomp
           }
         
         bfa->GetMatrix().SetInverseType (inversetype);
+        if (flags.FlagsFlagDefined("inverse_flags"))
+          bfa->GetMatrix().SetInverseFlags (flags.GetFlagsFlag("inverse_flags"));
         /*
         shared_ptr<BitArray> freedofs = 
           bfa->GetFESpace()->GetFreeDofs (bfa->UsesEliminateInternal());

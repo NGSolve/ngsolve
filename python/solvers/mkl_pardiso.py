@@ -120,6 +120,24 @@ class MKLPardiso(ngla.SparseFactorizationInterface):
         self._error = int_arg_t(0)
         self._n = int_arg_t(0)
 
+        if args and hasattr(args[0], "inverse_flags"):
+            self._apply_flags(args[0].inverse_flags.ToDict())
+
+    _orderings = {"minimum_degree": 0, "metis": 2, "parallel_metis": 3}
+
+    def _apply_flags(self, flags):
+        """ordering: minimum_degree|metis|parallel_metis, refinement: max iterative refinement
+        steps, msglevel, iparmN: raw MKL iparm[N]"""
+        for key, value in flags.items():
+            if key == "ordering":
+                self._params[1] = self._orderings[value]
+            elif key == "refinement":
+                self._params[7] = int(value)
+            elif key == "msglevel":
+                self._msglevel[0] = int(value)
+            elif key.startswith("iparm"):
+                self._params[int(key[5:])] = int(value)
+
     def _call_pardiso(self, phase):
         self._phase[0] = phase
         null = ctypes.c_void_p(0)
