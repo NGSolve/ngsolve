@@ -5,7 +5,9 @@
 #include "myAssembling.cpp"
 
    
-extern "C" void mymodule(py::object & res) {
+// NGCORE_API_EXPORT: gcc gives pybind11 types hidden visibility, and passes it
+// on to this function - without it the symbol is not exported and not found
+extern "C" NGCORE_API_EXPORT void mymodule(py::object & res) {
   // import ngsolve such that python base classes are defined    
   auto ngs = py::module::import("ngsolve");    
 
