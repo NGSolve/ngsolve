@@ -699,14 +699,10 @@ namespace ngcomp
 
         int steps = compiledcf->Steps().Size();
         IntRange rangey = pmat -> ranges_y[k];
-        if (rangey.Size()==1)
-          phys += "yvals("+ToString(rangey[0])+") = var_"+ToString(steps-1)+";\n";          
-        else
-          {
-            auto dims = compiledcf->Dimensions();
-            for (int l : Range(rangey))
-              phys += "yvals("+ToString(rangey[l])+") = " + Var(steps-1, l, dims).S() + ";\n";
-          }
+        // Var handles scalars (no dims) and 1x1 results alike
+        auto dims = compiledcf->Dimensions();
+        for (int l : Range(rangey))
+          phys += "yvals("+ToString(rangey[l])+") = " + Var(steps-1, l, dims).S() + ";\n";
         phys += "}\n";
       }
       

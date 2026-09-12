@@ -294,6 +294,25 @@ public:
 
   static const FEL & Cast (const FiniteElement & fel) 
   { return static_cast<const FEL&> (fel); }
+
+  static int DimRef() { return 1; }
+
+  template <typename IP, typename MAT>
+  static void GenerateMatrixRef (const FiniteElement & fel, const IP & ip,
+                                 MAT && mat, LocalHeap & lh)
+  {
+    Cast(fel).CalcDivShape (ip, mat.Row(0));
+  }
+
+  template <typename MIP, typename MAT>
+  static void CalcTransformationMatrix (const MIP & mip,
+                                        MAT & mat, LocalHeap & lh)
+  {
+    mat(0,0) = 1.0/mip.GetJacobiDet();
+  }
+
+  static string GenerateTransformationCode (string invar, string outvar, bool trans)
+  { return outvar + " = 1/J * " + invar + ";\n"; }
   
   template <typename AFEL, typename MIP, typename MAT>
   static void GenerateMatrix (const AFEL & fel, const MIP & mip,

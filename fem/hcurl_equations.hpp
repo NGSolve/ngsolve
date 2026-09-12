@@ -92,6 +92,14 @@ namespace ngfem
     {
       mat = Trans(static_cast<const MappedIntegrationPoint<D,D>&>(mip).GetJacobianInverse());
     }
+
+    static string GenerateTransformationCode (string invar, string outvar, bool trans)
+    {
+      if (!trans)
+        return outvar + " = 1/J * (Cof(F) * " + invar + ");\n";
+      else
+        return outvar + " = 1/J * (Trans(Cof(F)) * " + invar + ");\n";
+    }
     
 
 
@@ -232,6 +240,25 @@ namespace ngfem
 
     static constexpr bool SUPPORT_PML = true;
 
+    static int DimRef() { return 1; }
+
+    template <typename IP, typename MAT>
+    static void GenerateMatrixRef (const FiniteElement & fel, const IP & ip,
+                                   MAT && mat, LocalHeap & lh)
+    {
+      static_cast<const FEL&>(fel).CalcCurlShape (ip, Trans(mat));
+    }
+
+    template <typename MIP, typename MAT>
+    static void CalcTransformationMatrix (const MIP & mip,
+                                          MAT & mat, LocalHeap & lh)
+    {
+      mat(0,0) = 1.0/mip.GetJacobiDet();
+    }
+
+    static string GenerateTransformationCode (string invar, string outvar, bool trans)
+    { return outvar + " = 1/J * " + invar + ";\n"; }
+
     template <typename AFEL, typename MIP, typename MAT>
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
 				MAT && mat, LocalHeap & lh)
@@ -297,6 +324,31 @@ namespace ngfem
     static string Name() { return "curl"; }
 
     static constexpr bool SUPPORT_PML = true;
+
+    static int DimRef() { return 3; }
+
+    template <typename IP, typename MAT>
+    static void GenerateMatrixRef (const FiniteElement & fel, const IP & ip,
+                                   MAT && mat, LocalHeap & lh)
+    {
+      static_cast<const FEL&>(fel).CalcCurlShape (ip, Trans(mat));
+    }
+
+    // Piola: curl u = 1/J F curlref
+    template <typename MIP, typename MAT>
+    static void CalcTransformationMatrix (const MIP & mip,
+                                          MAT & mat, LocalHeap & lh)
+    {
+      mat = (1.0/mip.GetJacobiDet()) * mip.GetJacobian();
+    }
+
+    static string GenerateTransformationCode (string invar, string outvar, bool trans)
+    {
+      if (!trans)
+        return outvar + " = 1/J * (F * " + invar + ");\n";
+      else
+        return outvar + " = 1/J * (Trans(F) * " + invar + ");\n";
+    }
 
 
     template <typename MIP, typename MAT>

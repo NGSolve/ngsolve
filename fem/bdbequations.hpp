@@ -1987,6 +1987,9 @@ namespace ngfem
     {
       mat = Identity(DIM_SPC);
     }
+
+    static string GenerateTransformationCode (string invar, string outvar, bool trans)
+    { return outvar + " = " + invar + ";\n"; }
     
     
 
