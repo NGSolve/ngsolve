@@ -784,6 +784,66 @@ namespace ngcomp
 
 
     void Apply (const FiniteElement & inner_fel,
+                const BaseMappedIntegrationRule & mir,
+                BareSliceVector<Complex> x,
+                BareSliceMatrix<Complex> flux,
+                LocalHeap & lh) const override
+    {
+      HeapReset hr(lh);
+
+      const ElementTransformation & trafo = mir.GetTransformation();
+      ElementId ei = trafo.GetElementId();
+      auto & interpol_fel = fes->GetFE(ei, lh);
+
+      FlatMatrix<double> elmat(interpol_fel.GetNDof(), lh);
+      elmat = 0.0;
+      bool symmetric_so_far = false;
+
+      try
+        {
+          for (auto & sbfi : single_bli)
+            sbfi->CalcElementMatrixAdd (interpol_fel, trafo, elmat, symmetric_so_far, lh);
+        }
+      catch (const ExceptionNOSIMD& e)
+        {
+          cout << IM(6) << e.What() << endl
+               << "switching to scalar evaluation" << endl;
+          for (auto & sbfi : single_bli)
+            sbfi->SetSimdEvaluate(false);
+          for (auto & sbfi : m3_bli)
+            sbfi->SetSimdEvaluate(false);
+          Apply (inner_fel, mir, x, flux, lh);
+          return;
+        }
+
+      CalcInverse(elmat);
+
+      auto save_ud = trafo.PushUserData();
+
+      MixedFiniteElement mfe = (testfunction)
+        ? MixedFiniteElement (interpol_fel, inner_fel)
+        : MixedFiniteElement (inner_fel, interpol_fel);
+
+      if (testfunction)
+        throw Exception("ApplyInterpolation only makes sense for trialfunctions");
+
+      FlatVector<Complex> rhs(interpol_fel.GetNDof(), lh);
+      FlatVector<Complex> rhsi(interpol_fel.GetNDof(), lh);
+      rhs = 0;
+      FlatVector<Complex> fvx(inner_fel.GetNDof(), lh);
+      fvx = x;
+      for (auto & sbfi : m3_bli)
+        {
+          sbfi->ApplyElementMatrix (mfe, trafo, fvx, rhsi, nullptr, lh);
+          rhs += rhsi;
+        }
+
+      rhsi = elmat * rhs;
+      diffop->Apply(interpol_fel, mir, rhsi, flux, lh);
+    }
+
+
+    void Apply (const FiniteElement & inner_fel,
                 const SIMD_BaseMappedIntegrationRule & mir,
                 BareSliceVector<double> x,
                 BareSliceMatrix<SIMD<double>> flux) const override
@@ -857,6 +917,19 @@ namespace ngcomp
     }
 
     
+    NGS_DLL_HEADER virtual void
+    ApplyTrans (const FiniteElement & fel,
+		const BaseMappedIntegrationRule & mir,
+		FlatMatrix<Complex> flux,
+		BareSliceVector<Complex> x,
+		LocalHeap & lh) const override
+    {
+      HeapReset hr(lh);
+      FlatMatrix<double,ColMajor> mat(flux.Height()*flux.Width(), fel.GetNDof(), lh);
+      CalcMatrix (fel, mir, mat, lh);
+      x.Range(0,fel.GetNDof()) = Trans(mat)*flux.AsVector();
+    }
+
     NGS_DLL_HEADER virtual void
     ApplyLinearizedTrans (const FiniteElement & fel,
                           const BaseMappedIntegrationRule & mir,
