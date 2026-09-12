@@ -547,6 +547,7 @@ namespace ngcomp
       // RegionTimer reg (t);
 
       size_t ndof = dnums.Size();
+      if (ndof == 0) return;   // nothing to add, and the bordered matrix would be the singular 1x1 zero
       BitArray used(ndof, lh);
 
       FlatMatrix<SCAL> ext_elmat(ndof+1, ndof+1, lh);
