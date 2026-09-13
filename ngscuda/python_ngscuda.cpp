@@ -10,10 +10,6 @@ using namespace ngbla;
 using namespace ngla;
 using namespace ngs_cuda;
 
-namespace ngla {
-  extern bool synckernels;
-}
-
 PYBIND11_MODULE(_ngscuda, m) {
 
   InitCUDA(1);
@@ -30,9 +26,6 @@ PYBIND11_MODULE(_ngscuda, m) {
 
   m.def("__time_tracer__", TimeProfiler);
   m.def("SetCudaTimer", CudaRegionTimer::SetCudaTimer);
-  
-  m.def("SetSyncKernels", [](bool sync) { synckernels = sync; });
-  
 
 
   // ExportDemo(m);

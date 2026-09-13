@@ -25,6 +25,4 @@ namespace ngla
     else
       throw Exception(string("matrix type not supported: ") + typeid(mat).name());
   }
-
-  bool synckernels = true;
 }
