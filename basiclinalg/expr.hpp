@@ -332,6 +332,7 @@ namespace ngbla
   inline ostream & operator<< (ostream & ost, undefined_size s) { ost << "undefined("<<size_t(s)<<")"; return ost; }
   inline constexpr auto operator/ (undefined_size ud, size_t i) { return undefined_size(size_t(ud)/i); }
   inline constexpr auto operator- (undefined_size ud, size_t i) { return undefined_size(size_t(ud)-i); }
+  inline constexpr auto operator- (undefined_size ud, undefined_size ud2) { return undefined_size(size_t(ud)-size_t(ud2)); }  
   inline constexpr auto operator+ (undefined_size ud, size_t i) { return undefined_size(size_t(ud)+i); }
   inline constexpr auto operator* (undefined_size ud, size_t i) { return undefined_size(size_t(ud)*i); }
   inline constexpr auto operator* (size_t i, undefined_size ud) { return undefined_size(size_t(ud)*i); }    
