@@ -102,7 +102,6 @@ SparseFactorizationInterface::SparseFactorizationInterface(
   height = m->Height();
 
   is_complex = m->IsComplex();
-  is_symmetric = m->IsSymmetric();
 }
 
 void SparseFactorizationInterface::SetSubset(shared_ptr<BitArray> inner, shared_ptr<const Array<int>> cluster) {

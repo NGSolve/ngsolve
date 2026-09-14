@@ -6500,7 +6500,6 @@ namespace ngcomp
 
     auto spmat = make_shared<SparseMatrix<TM,TV,TV>> (std::move(graph));
     spmat->SetHermitian(this->hermitean);
-    if (this->symmetric) spmat->SetSymmetric(true);
     this->GetMemoryTracer().Track(*spmat, "mymatrix");
     mymatrix = spmat; // .get();
     
@@ -6662,7 +6661,6 @@ namespace ngcomp
 
     auto spmat = make_shared<SparseMatrixSymmetric<TM,TV>> (std::move(graph));
     spmat->SetHermitian(this->hermitean);
-    if (this->symmetric) spmat->SetSymmetric(true);
     mymatrix = spmat; // .get();
     this->GetMemoryTracer().Track(*spmat, "mymatrix");
     

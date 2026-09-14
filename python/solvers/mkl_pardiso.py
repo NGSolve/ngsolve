@@ -120,6 +120,8 @@ class MKLPardiso(ngla.SparseFactorizationInterface):
         self._error = int_arg_t(0)
         self._n = int_arg_t(0)
 
+        self._force_symmetric = False
+
         if args and hasattr(args[0], "inverse_flags"):
             self._apply_flags(args[0].inverse_flags.ToDict())
 
@@ -127,12 +129,15 @@ class MKLPardiso(ngla.SparseFactorizationInterface):
 
     def _apply_flags(self, flags):
         """ordering: minimum_degree|metis|parallel_metis, refinement: max iterative refinement
-        steps, msglevel, iparmN: raw MKL iparm[N]"""
+        steps, symmetric: use the symmetric matrix type (caller asserts A == A^T),
+        msglevel, iparmN: raw MKL iparm[N]"""
         for key, value in flags.items():
             if key == "ordering":
                 self._params[1] = self._orderings[value]
             elif key == "refinement":
                 self._params[7] = int(value)
+            elif key == "symmetric":
+                self._force_symmetric = bool(value)
             elif key == "msglevel":
                 self._msglevel[0] = int(value)
             elif key.startswith("iparm"):
@@ -164,7 +169,7 @@ class MKLPardiso(ngla.SparseFactorizationInterface):
 
     def get_csr(self):
         mat = self.GetInnerMatrix()
-        if self.is_symmetric.is_true:
+        if self.is_symmetric.is_true or self._force_symmetric:
             mat = (
                 mat.CreateTranspose()
                 if self.is_symmetric_storage
@@ -186,7 +191,7 @@ class MKLPardiso(ngla.SparseFactorizationInterface):
         self._indices_np = data[1]  # view kept alive by self._csr_mat
         self._indptr_np = data[2]  # already a copy (dtype conversion)
 
-        is_symmetric = self.is_symmetric.is_true
+        is_symmetric = self.is_symmetric.is_true or self._force_symmetric
         self._params[12] = 0 if is_symmetric else 1  # slicing + matching
 
         if self.is_complex:
