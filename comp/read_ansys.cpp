@@ -1045,11 +1045,7 @@ namespace ngcomp
 
     // ---- finalize ----
     if (have_surface) mesh->RebuildSurfaceElementLists();
-<<<<<<< HEAD
-    Point<3> pmin, pmax;
-=======
     netgen::Point<3> pmin, pmax;
->>>>>>> 82262a026 (update webgui: Point<3>, update Netgen: ClosedHashTable)
     mesh->GetBox(pmin, pmax);
     mesh->UpdateTopology();
 
