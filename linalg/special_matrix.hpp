@@ -54,6 +54,8 @@ namespace ngla
     virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
     virtual shared_ptr<BaseSparseMatrix> CreateSparseMatrix() const override;
     FlatArray<size_t> GetIndices() const { return ind; }
+
+    NGS_DLL_HEADER shared_ptr<BaseMatrix> CreateDeviceMatrix () const override;
   };
 
 
