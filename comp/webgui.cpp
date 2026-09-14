@@ -332,11 +332,11 @@ unique_ptr<WebguiData> GenerateWebguiData(shared_ptr<MeshAccess> ma,
 
   for (const auto &mat : ma->GetMaterials(VOL)) d->names.push_back(string(mat));
 
-  netgen::Point3d pmin, pmax;
+  netgen::Point<3> pmin, pmax;
   ma->GetNetgenMesh()->GetBox(pmin, pmax);
   d->mesh_radius = (pmax - pmin).Length() / 2;
   auto c = Center(pmin, pmax);
-  d->mesh_center = {c.X(), c.Y(), c.Z()};
+  d->mesh_center = {c[0], c[1], c[2]};
 
   d->edges = GenerateEdgeData(ma, cf, order);
   d->Bezier_points = GenerateWireframeData(ma, cf, d->order2d);

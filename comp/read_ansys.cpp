@@ -621,7 +621,7 @@ namespace ngcomp
     for (size_t i = 0; i < m.node_id.size(); i++)
       {
         const auto & c = m.node_xyz[i];
-        PointIndex pi = mesh->AddPoint(Point3d(scale*c[0], scale*c[1], scale*c[2]));
+        PointIndex pi = mesh->AddPoint(Point<3>(scale*c[0], scale*c[1], scale*c[2]));
         id2pi[m.node_id[i]]     = pi.Nr1();
         id2vertex[m.node_id[i]] = pi.Nr0();   // 0-based vertex nr
       }
@@ -1045,7 +1045,7 @@ namespace ngcomp
 
     // ---- finalize ----
     if (have_surface) mesh->RebuildSurfaceElementLists();
-    Point3d pmin, pmax;
+    Point<3> pmin, pmax;
     mesh->GetBox(pmin, pmax);
     mesh->UpdateTopology();
 
