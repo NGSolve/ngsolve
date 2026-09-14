@@ -622,8 +622,8 @@ namespace ngcomp
       {
         const auto & c = m.node_xyz[i];
         PointIndex pi = mesh->AddPoint(Point3d(scale*c[0], scale*c[1], scale*c[2]));
-        id2pi[m.node_id[i]]     = (int)pi;
-        id2vertex[m.node_id[i]] = (int)pi - PointIndex::BASE;   // 0-based vertex nr
+        id2pi[m.node_id[i]]     = pi.Nr1();
+        id2vertex[m.node_id[i]] = pi.Nr0();   // 0-based vertex nr
       }
 
     // ---- reverse membership: element id -> set names containing it ----
@@ -703,7 +703,7 @@ namespace ngcomp
           int pid = (nid >= 1 && nid < (int)id2pi.size()) ? id2pi[nid] : -1;
           if (pid < 0) throw Exception("ReadAnsysInp: element " + ToString(ae.id) +
                                        " references undefined node " + ToString(nid));
-          el[j] = PointIndex(pid);
+          el[j] = PointIndex::FromNr1(pid);
         }
     };
 
@@ -811,7 +811,7 @@ namespace ngcomp
         {
           int nc = (f.GetType()==QUAD || f.GetType()==QUAD6 || f.GetType()==QUAD8) ? 4 : 3;
           vector<int> key;
-          for (int c = 0; c < nc; c++) key.push_back((int)f[c]);
+          for (int c = 0; c < nc; c++) key.push_back(f[c].Nr1());
           std::sort(key.begin(), key.end());
           return key;
         };
@@ -962,7 +962,7 @@ namespace ngcomp
               int nc = (f.GetType()==QUAD || f.GetType()==QUAD6 || f.GetType()==QUAD8) ? 4 : 3;
               std::map<string,int> cnt;
               for (int c = 0; c < nc; c++)
-                { auto it = pi2nodenames.find((int)f[c]);
+                { auto it = pi2nodenames.find(f[c].Nr1());
                   if (it != pi2nodenames.end()) for (auto & nm : it->second) cnt[nm]++; }
               for (auto & [nm, k] : cnt) if (k == nc) lab.insert(nm);   // all corners covered
             }
@@ -1016,7 +1016,7 @@ namespace ngcomp
         for (int i = 1; i <= nopen; i++)
           {
             Segment seg = mesh->GetOpenSegment(i);
-            int a = pi2id[(int)seg[0]], b = pi2id[(int)seg[1]];
+            int a = pi2id[seg[0].Nr1()], b = pi2id[seg[1].Nr1()];
             vector<string> label;
             if (a > 0 && b > 0)
               {
