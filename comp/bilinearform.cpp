@@ -6660,7 +6660,7 @@ namespace ngcomp
     MatrixGraph graph = this->GetGraph (this->ma->GetNLevels()-1, true);
 
     auto spmat = make_shared<SparseMatrixSymmetric<TM,TV>> (std::move(graph));
-    spmat->SetHermitian(this->hermitean);    
+    spmat->SetHermitian(this->hermitean);
     mymatrix = spmat; // .get();
     this->GetMemoryTracer().Track(*spmat, "mymatrix");
     

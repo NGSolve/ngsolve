@@ -1161,7 +1161,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def("GetInverseType", &BM::GetInverseType)
     .def("SetInverseType", &BM::SetInverseType)
     .def("Inverse", [](BM &m, shared_ptr<BitArray> freedofs,
-                       std::variant<std::monostate,string,py::object> inverse, const Flags & flags)
+                       std::variant<std::monostate,string,py::object> inverse, std::optional<Flags> flags)
     {
       if (string * invstr = get_if<string>(&inverse))
         if (*invstr != "")
@@ -1180,10 +1180,11 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
           m.SetInverseCreator(func);
         }
       
-      m.SetInverseFlags (flags);
+      if (flags)
+        m.SetInverseFlags (*flags);
       return m.InverseMatrix(freedofs);
     }
-      ,"Inverse", py::arg("freedofs")=nullptr, py::arg("inverse")=nullopt, py::arg("flags")=Flags(),
+      ,"Inverse", py::arg("freedofs")=nullptr, py::arg("inverse")=nullopt, py::arg("flags")=nullopt,
       docu_string(R"raw_string(Calculate inverse of sparse matrix
 Parameters:
 
@@ -1541,6 +1542,10 @@ inverse : string
 
   py::class_<BaseSparseMatrix, shared_ptr<BaseSparseMatrix>, BaseMatrix>
     (m, "BaseSparseMatrix", "sparse matrix of any type")
+    .def_property("inverse_flags",
+                  [](BaseSparseMatrix & self) { return self.GetInverseFlags(); },
+                  [](BaseSparseMatrix & self, const Flags & flags) { self.SetInverseFlags(flags); },
+                  "flags passed to the inverse (direct solver) created for this matrix")
     
     .def("CreateSmoother", [](shared_ptr<BaseSparseMatrix> m, shared_ptr<BitArray> ba,
                               bool GS) 
