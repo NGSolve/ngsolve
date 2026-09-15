@@ -37,6 +37,7 @@ namespace ngla
     VecFormat ColFormat () const override { return DeviceVectorFormat<T> (height, memtype); }
 
     virtual BaseMatrix::OperatorInfo GetOperatorInfo () const override;
+    Array<MemoryUsage> GetMemoryUsage () const override;
     virtual ostream & Print (ostream & ost) const override;
   };
 
