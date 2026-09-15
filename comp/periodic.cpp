@@ -40,6 +40,7 @@ namespace ngcomp {
 	dofmap[i] = i;
       for (int i : Range(vertex_map.Size()))
         vertex_map[i] = i;
+      Array<Array<int>> minion_ids(vertex_map.Size());
 
       for (auto idnr : Range(ma->GetNPeriodicIdentifications()))
         {
@@ -52,7 +53,11 @@ namespace ngcomp {
               if(node_type==NT_VERTEX)
                 {
                   for (const auto& per_verts : periodic_nodes)
-                    vertex_map[per_verts[1]] = vertex_map[per_verts[0]];
+                    {
+                      vertex_map[per_verts[1]] = vertex_map[per_verts[0]];
+                      if (per_verts[0] != per_verts[1])
+                        minion_ids[per_verts[1]].Append(idnr);
+                    }
                 }
               for(const auto& node_pair : periodic_nodes)
                 {
@@ -94,6 +99,26 @@ namespace ngcomp {
                 }
             }
         }
+
+      Array<int> order(vertex_map.Size());
+      for (auto i : Range(order))
+        order[i] = i;
+      QuickSort (order, [&] (int a, int b)
+                 {
+                   if (vertex_map[a] != vertex_map[b])
+                     return vertex_map[a] < vertex_map[b];
+                   FlatArray<int> ida = minion_ids[a], idb = minion_ids[b];
+                   for (size_t k = 1; k <= min(ida.Size(), idb.Size()); k++)
+                     if (ida[ida.Size()-k] != idb[idb.Size()-k])
+                       return ida[ida.Size()-k] < idb[idb.Size()-k];
+                   if (ida.Size() != idb.Size())
+                     return ida.Size() < idb.Size();
+                   return a < b;
+                 });
+      vertex_orientation.SetSize(order.Size());
+      for (auto i : Range(order))
+        vertex_orientation[order[i]] = i;
+
       ctofdof.SetSize(dofmap.Size());
       for (auto i : Range(ctofdof.Size()))
         ctofdof[i] = space->GetDofCouplingType(i);
@@ -125,7 +150,7 @@ namespace ngcomp {
                 });
       */
 
-      fe.SetVertexNumbers( ArrayMem<int,8> (vertex_map[ngel.Vertices()]) );
+      fe.SetVertexNumbers( ArrayMem<int,8> (vertex_orientation[ngel.Vertices()]) );
 
       /*
       switch (ngel.GetType())
