@@ -88,6 +88,7 @@ namespace ngla
     size_t NBlocks() const { return nblocks; }
     bool IsAtomic() const { return atomic; }
     string Info() const;
+    MemorySize Bytes (const DeviceBlockGemv * shared = nullptr) const;
 
     // y += s * A x, both device-side arguments
     void MultAdd (T s, ngs_gpu::KernelArg x, ngs_gpu::KernelArg y) const;

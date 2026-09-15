@@ -131,6 +131,12 @@ namespace ngla
   }
 
   template <typename T>
+  Array<MemoryUsage> DeviceEBEMatrix<T> :: GetMemoryUsage () const
+  {
+    return { { "DeviceEBEMatrix", gemv->Bytes() + gemv_trans->Bytes (gemv.get()), this } };
+  }
+
+  template <typename T>
   ostream & DeviceEBEMatrix<T> :: Print (ostream & ost) const
   {
     ost << "DeviceEBEMatrix<" << (is_same_v<T,double> ? "double" : "float")
