@@ -2371,7 +2371,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     
     FlatArray<int> vertex_map;
     if (const PeriodicFESpace * periodic = dynamic_cast<const PeriodicFESpace*> (this))
-      vertex_map.Assign (periodic->GetVertexMap());
+      vertex_map.Assign (periodic->GetVertexOrientation());
     
     ma->IterateElements
       (VOL, lh, [&] (auto el, LocalHeap & llh)
