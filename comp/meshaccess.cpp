@@ -1212,19 +1212,19 @@ namespace ngcomp
       {
         for(auto sei : Range(nmesh.SurfaceElements()))
           {
-            int el1, el2;
-            topology.GetSurface2VolumeElement(sei+1, el1, el2);
-            const auto& sel = nmesh.SurfaceElements()[sei];
+            netgen::ElementIndex el1, el2;
+            topology.GetSurface2VolumeElement(sei, el1, el2);
+            const auto& sel = nmesh[sei];
             auto bc = nmesh.GetFaceDescriptor(sel.GetIndex()).BCProperty()-1;
-            if(el1 > 0)
+            if(el1.IsValid())
               {
-                auto index1 = nmesh.VolumeElement(el1).GetIndex()-1;
+                auto index1 = nmesh[el1].GetIndex()-1;
                 neighbours[BND][VOL].AddUnique(bc, index1);
                 neighbours[VOL][BND].AddUnique(index1, bc);
               }
-            if(el2 > 0)
+            if(el2.IsValid())
               {
-                auto index2 = nmesh.VolumeElement(el2).GetIndex()-1;
+                auto index2 = nmesh[el2].GetIndex()-1;
                 neighbours[BND][VOL].AddUnique(bc, index2);
                 neighbours[VOL][BND].AddUnique(index2, bc);
               }

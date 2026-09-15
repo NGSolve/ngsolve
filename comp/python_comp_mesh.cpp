@@ -54,7 +54,7 @@ inline auto Nr2VolElement(size_t nr) {  return ElementId(VOL,nr); };
        result = 0.0;
        if((ma->GetDimension() == 3 && ei.VB() == BND) || (ma->GetDimension()==2 && ei.VB() == VOL))
        {
-           const auto & el = ma->GetNetgenMesh()->SurfaceElement(ei.Nr()+1);
+           const auto & el = (*ma->GetNetgenMesh())[netgen::SurfaceElementIndex::FromNr0(ei.Nr())];
            Mat<4,2> vals;
            auto np = el.GetNP();
            for(auto i : Range(np))

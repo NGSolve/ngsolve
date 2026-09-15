@@ -29,7 +29,7 @@ namespace ngcomp
       return ma.GetNetgenMesh()->GetFaceDescriptor(el.GetIndex()+1).DomainIn();
     else
     {
-      auto& seg = ma.GetNetgenMesh()->LineSegments()[el.Nr()];
+      auto& seg = (*ma.GetNetgenMesh())[netgen::SegmentIndex::FromNr0(el.Nr())];
       return ma.GetNetgenMesh()->GetEdgeDescriptor(seg.GetIndex()).DomainIn();
     }
   }
