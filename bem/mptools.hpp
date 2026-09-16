@@ -10,6 +10,7 @@
 #include <bla.hpp>
 #include <coefficient.hpp>
 #include <recursive_pol.hpp>
+#include "fmminterface.hpp"
 
 
 namespace ngsbem
@@ -58,38 +59,6 @@ namespace ngsbem
   
   extern NGS_DLL_HEADER PrecomputedSqrts presqrt;
   
-
-
-  class FMM_Parameters
-  {
-  public:
-    int maxdirect = 100;
-    int minorder = 20;
-    double order_factor = 2.0;    // order = minorder + order_factor kappa r
-    double separation = 2.0;
-    double eval_separation = 3.0;
-    double split_kr = 5.0;
-    int maxlevel = 20;
-  };
-
-
-  struct FMMTreeStats
-  {
-    int max_level = 0;                           // Deepest tree level reached by any node.
-    size_t num_nodes = 0;                        // Total number of nodes in the tree, including internal nodes.
-    size_t num_leaves = 0;                       // Number of leaf nodes, including empty leaves.
-    size_t active_leaves = 0;                    // Number of leaves containing at least one source or target item.
-    Array<size_t> nodes_per_level;               // Histogram of node counts by tree level.
-    size_t leaf_size_min = std::numeric_limits<size_t>::max(); // Minimum number of source or target items in a leaf.
-    size_t leaf_size_max = 0;                    // Maximum number of source or target items in a leaf.
-    double leaf_size_sum = 0;                    // Sum of leaf sizes, used to compute the mean leaf size.
-    int order_min = std::numeric_limits<int>::max(); // Minimum allocated spherical expansion order.
-    int order_max = -1;                          // Maximum allocated spherical expansion order.
-    double order_sum = 0;                        // Sum of allocated orders, used to compute the mean order.
-    size_t num_allocated_multipoles = 0;         // Number of nodes whose multipole/local expansion is allocated.
-    size_t total_coefficients = 0;               // Total number of stored spherical harmonic coefficients.
-    size_t multipole_bytes = 0;                  // Memory used by stored spherical harmonic coefficients.
-  };
 
 
   inline std::tuple<double, double, double> SphericalCoordinates(Vec<3> dist){
@@ -652,7 +621,7 @@ namespace ngsbem
 
 
   template <typename entry_type=Complex, typename T_Kappa = double>
-  class SingularMLExpansion
+  class SingularMLExpansion : public BaseSingularMLExpansion
   {
     using complex_type = typename SphericalHarmonics<entry_type>::complex_type;
     using real_type = typename SphericalHarmonics<entry_type>::real_type;
@@ -1437,6 +1406,7 @@ namespace ngsbem
     }
 
     T_Kappa Kappa() const { return root.mp.Kappa(); }
+    std::variant<double,Complex> GetKappa() const override { return Kappa(); }
     
     void AddCharge(Vec<3> x, entry_type c)
     {
@@ -1493,7 +1463,7 @@ namespace ngsbem
       return root.NumCoefficients();
     }
 
-    void CollectStatistics(FMMTreeStats & stats) const
+    void CollectStatistics(FMMTreeStats & stats) const override
     {
       const_cast<Node&>(root).TraverseTree([&](Node & node) {
         stats.num_nodes++;
@@ -1527,7 +1497,7 @@ namespace ngsbem
       });
     }
 
-    void CalcMP()
+    void CalcMP() override
     {
       static Timer t("mptool compute singular MLMP"); RegionTimer rg(t);
       static Timer ts2mp("mptool compute singular MLMP - source2mp");
@@ -1691,7 +1661,7 @@ namespace ngsbem
   
 
   template <typename elem_type=Complex, typename T_Kappa=double>
-  class NGS_DLL_HEADER RegularMLExpansion
+  class NGS_DLL_HEADER RegularMLExpansion : public BaseRegularMLExpansion
   {
     using complex_type = typename SphericalHarmonics<elem_type>::complex_type;
     static Array<size_t> nodes_on_level;
@@ -2328,24 +2298,26 @@ namespace ngsbem
     nodes_on_level[0] = 1;
   }
   
-    void AddTarget (Vec<3> t)
+    void AddTarget (Vec<3> t) override
     {
       root.AddTarget (t);
     }
 
-    void AddVolumeTarget (Vec<3> t, double r)
+    void AddVolumeTarget (Vec<3> t, double r) override
     {
       root.AddVolumeTarget (t, r);
     }
 
-    void CalcMP(shared_ptr<SingularMLExpansion<elem_type,T_Kappa>> asingmp, bool onlytargets = true)
+    void CalcMP(shared_ptr<BaseSingularMLExpansion> asingmp, bool onlytargets = true) override
     {
       static Timer t("mptool regular MLMP"); RegionTimer rg(t);
       static Timer tremove("removeempty");
       static Timer trec("mptool regular MLMP - recording");
       static Timer tsort("mptool regular MLMP - sort");
       
-      singmp = asingmp;
+      auto typed = dynamic_pointer_cast<SingularMLExpansion<elem_type,T_Kappa>>(asingmp);
+      if (!typed) throw Exception("FMM source and target expansion types do not match");
+      singmp = std::move(typed);
 
       
       root.CalcTotalTargets();
@@ -2492,7 +2464,7 @@ namespace ngsbem
       return root.NumCoefficients();
     }
 
-    void CollectStatistics(FMMTreeStats & stats) const
+    void CollectStatistics(FMMTreeStats & stats) const override
     {
       const_cast<Node&>(root).TraverseTree([&](Node & node) {
         stats.num_nodes++;
@@ -2526,21 +2498,17 @@ namespace ngsbem
     }
 
     // Run the S2R planning walk to populate target-tree multipoles and count translations / direct-evaluation work
-    struct M2LCounts
-    {
-      size_t num_s2r = 0;                        // Number of recorded source-to-regular box translations.
-      size_t num_direct_evaluations = 0;         // Estimated quadrature-point interactions handled by direct fallback.
-    };
-
     M2LCounts CollectM2LStatistics
-      (shared_ptr<SingularMLExpansion<elem_type, T_Kappa>> singmp_in)
+      (shared_ptr<BaseSingularMLExpansion> singmp_in) override
     {
-      singmp = singmp_in;
-      singmp_in->root.CalcTotalSources();
+      auto typed = dynamic_pointer_cast<SingularMLExpansion<elem_type,T_Kappa>>(singmp_in);
+      if (!typed) throw Exception("FMM source and target expansion types do not match");
+      singmp = std::move(typed);
+      singmp->root.CalcTotalSources();
       root.CalcTotalTargets();
       root.AllocateMemory();
       Array<RecordingSR> recording;
-      root.AddSingularNode(singmp_in->root, false, recording);
+      root.AddSingularNode(singmp->root, false, recording);
 
       M2LCounts counts;
       counts.num_s2r = recording.Size();

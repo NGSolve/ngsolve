@@ -77,13 +77,13 @@ namespace ngsbem
   */
 
 
-  template <typename KERNEL>
-  GenericIntegralOperator<KERNEL> ::
+  template <typename TSCAL>
+  GenericIntegralOperator<TSCAL> ::
   GenericIntegralOperator(shared_ptr<FESpace> _trial_space, shared_ptr<FESpace> _test_space,
                           optional<Region> _definedon_trial, optional<Region> _definedon_test,
                           shared_ptr<DifferentialOperator> _trial_evaluator,
                           shared_ptr<DifferentialOperator> _test_evaluator,
-                          KERNEL _kernel,
+                          shared_ptr<const BaseIntegralKernel<TSCAL>> _kernel,
                           int _intorder, const IntOp_Parameters & _io_params,
                           VorB _trial_vb, VorB _test_vb)
   : IntegralOperator(_trial_space, _test_space, _definedon_trial, _definedon_test,
@@ -115,8 +115,8 @@ namespace ngsbem
 
 
 
-  template <typename KERNEL>
-  shared_ptr<BaseMatrix> GenericIntegralOperator<KERNEL> ::
+  template <typename TSCAL>
+  shared_ptr<BaseMatrix> GenericIntegralOperator<TSCAL> ::
   CreateMatrixFMM(LocalHeap & lh) const
   {
     static Timer tall("ngbem fmm setup"); RegionTimer r(tall);
@@ -260,7 +260,7 @@ namespace ngsbem
                 xdofsout[i][j] = first_ip_nr[compress_els[elclass_inds[i]]]*dim+j;
             }
 
-          auto part_evalx = make_shared<ConstantElementByElementMatrix<typename KERNEL::value_type>>
+          auto part_evalx = make_shared<ConstantElementByElementMatrix<TSCAL>>
             // (mesh->GetNE(BND)*ir.Size()*dim, fes.GetNDof(),
             (total_npts*dim, fes.GetNDof(),
              bmat, std::move(xdofsout), std::move(xdofsin));
@@ -273,7 +273,7 @@ namespace ngsbem
 
       // Tensor<3, typename KERNEL::value_type> weights(cnt*ir.Size(),
       //                                                evaluator.Dim(), evaluator.DimRef());
-      Tensor<3, typename KERNEL::value_type> weights(total_npts,
+      Tensor<3, TSCAL> weights(total_npts,
                                                      evaluator.Dim(), evaluator.DimRef());
       Matrix<double> transformation(evaluator.Dim(), evaluator.DimRef());
 
@@ -293,15 +293,14 @@ namespace ngsbem
                   mir[j].GetWeight()*transformation;
               }
           }
-      auto diagmat = make_shared<BlockDiagonalMatrix<typename KERNEL::value_type>>(std::move(weights));
+      auto diagmat = make_shared<BlockDiagonalMatrix<TSCAL>>(std::move(weights));
 
       return diagmat*evalx;
     };
 
     auto evalx = create_eval(*trial_space, compress_trial_els, *trial_evaluator, trial_vb);
     auto evaly = create_eval(*test_space, compress_test_els, *test_evaluator, test_vb);
-    auto fmmop = make_shared<FMM_Operator<KERNEL>> (kernel, std::move(xpts), std::move(ypts),
-                                                    std::move(xnv), std::move(ynv), io_params);
+    auto fmmop = kernel->CreateFMMOperator(std::move(xpts), std::move(ypts), std::move(xnv), std::move(ynv), io_params);
 
 
     if (trial_mesh != test_mesh)
@@ -440,34 +439,14 @@ namespace ngsbem
             test_evaluator -> CalcMatrix(test_fel, test_mir, Trans(shapesi), lh);
             trial_evaluator-> CalcMatrix(trial_fel, trial_mir, Trans(shapesj), lh);
 
-            for (auto term : kernel.terms)
+            for (auto term : kernel->Terms())
               {
                 HeapReset hr(lh);
                 // FlatMatrix<value_type> kernel_ixiy(ir.Size(), ir.Size(), lh);
                 // for (int ix = 0; ix < ir.Size(); ix++)
                 //   for (int iy = 0; iy < ir.Size(); iy++)
                 FlatMatrix<value_type> kernel_ixiy(ir_test.Size(), ir_trial.Size(), lh);
-                for (int ix = 0; ix < ir_test.Size(); ix++)
-                  {
-                    for (int iy = 0; iy < ir_trial.Size(); iy++)
-                      {
-                        Vec<3> x = test_mir[ix].GetPoint();
-                        Vec<3> y = trial_mir[iy].GetPoint();
-
-                        Vec<3> nx(0.0), ny(0.0);
-                        if (test_vb == BND)
-                          {
-                            nx = static_cast<const MappedIntegrationPoint<2,3>&>(test_mir[ix]).GetNV();
-                            ny = static_cast<const MappedIntegrationPoint<2,3>&>(trial_mir[iy]).GetNV();
-                          }
-                        value_type kernel_ = 0.0;
-                        if (L2Norm2(x-y) > 0)
-                          kernel_ = kernel.Evaluate(x, y, nx, ny)(term.kernel_comp);
-
-                        double fac = test_mir[ix].GetWeight()*trial_mir[iy].GetWeight();
-                        kernel_ixiy(ix, iy) = term.fac*fac*kernel_;
-                      }
-                  }
+                kernel->EvaluateMatrix(test_mir, trial_mir, term.kernel_comp, term.fac, kernel_ixiy, true);
 
                 // FlatMatrix<value_type> kernel_shapesj(ir.Size(), trial_fel.GetNDof(), lh);
                 // FlatMatrix<> shapesi1(test_fel.GetNDof(), ir.Size(), lh);
@@ -508,9 +487,9 @@ namespace ngsbem
 
 
 
-  template <typename KERNEL>
+  template <typename TSCAL>
   shared_ptr<BaseMatrix>
-  GenericIntegralOperator<KERNEL> :: CreateNearFieldMatrix(LocalHeap & lh) const
+  GenericIntegralOperator<TSCAL> :: CreateNearFieldMatrix(LocalHeap & lh) const
   {
     if (trial_vb != test_vb)
       throw Exception("BEM assembly for mixed source and test domains is not implemented");
@@ -615,8 +594,8 @@ namespace ngsbem
   }
 
 
-  template <typename KERNEL>
-  void GenericIntegralOperator<KERNEL> ::
+  template <typename TSCAL>
+  void GenericIntegralOperator<TSCAL> ::
   CalcElementMatrix(FlatMatrix<value_type> matrix,
                     ElementId ei_trial, ElementId ei_test,
                     LocalHeap &lh) const
@@ -632,9 +611,6 @@ namespace ngsbem
     // t1.Start();
     matrix = 0.;
     // t1.Stop();
-
-    Vec<3> x,y,nx,ny;
-    typedef decltype(kernel.Evaluate (x,y,nx,ny)) KERNEL_COMPS_T;
 
     if ((trial_vb == VOL) != (test_vb == VOL))
       throw Exception("mixed boundary-volume element matrices are not implemented");
@@ -674,19 +650,15 @@ namespace ngsbem
           test_evaluator->CalcMatrix(feli, mirx, mshapesi);
           trial_evaluator->CalcMatrix(felj, miry, mshapesj);
 
-          FlatVector<Vec<KERNEL_COMPS_T::SIZE, SIMD<value_type>>> kernel_values(mirx.Size(), lh);
-          Vec<3,SIMD<double>> zero(0.0);
-          for (int k2 = 0; k2 < mirx.Size(); k2++)
-            kernel_values(k2) = mirx[k2].GetMeasure()*miry[k2].GetMeasure()
-              * simd_irx[k2].Weight()
-              * kernel.Evaluate(mirx[k2].Point(), miry[k2].Point(), zero, zero);
+          FlatMatrix<SIMD<value_type>> kernel_values(kernel->NumKernelComponents(), mirx.Size(), lh);
+          kernel->EvaluatePairs(mirx, miry, kernel_values);
 
-          for (auto term : kernel.terms)
+          for (auto term : kernel->Terms())
             {
               auto mshapesi_comp = mshapesi.RowSlice(term.test_comp, test_evaluator->Dim());
-              for (int k2 = 0; k2 < mirx.Size(); k2++)
-                mshapesi_kern.Col(k2) = term.fac*kernel_values(k2)(term.kernel_comp)
-                  * mshapesi_comp.Col(k2);
+              for (int i : test_range)
+                for (int k2 = 0; k2 < mirx.Size(); k2++)
+                  mshapesi_kern(i,k2) = term.fac*kernel_values(term.kernel_comp,k2)*mshapesi_comp(i,k2);
 
               AddABt(mshapesi_kern.Rows(test_range),
                      mshapesj.RowSlice(term.trial_comp, trial_evaluator->Dim()).AddSize(felj.GetNDof(), miry.Size()).Rows(trial_range),
@@ -717,15 +689,11 @@ namespace ngsbem
             test_evaluator->CalcMatrix(feli, mirx, Trans(shapesi), lh);
             trial_evaluator->CalcMatrix(felj, miry, Trans(shapesj), lh);
 
-            Vec<3> zero(0.0);
-            for (auto term : kernel.terms)
+            for (auto term : kernel->Terms())
               {
                 HeapReset hr(lh);
                 FlatMatrix<value_type> kernel_ixiy(iri.Size(), irj.Size(), lh);
-                for (int ix = 0; ix < iri.Size(); ix++)
-                  for (int iy = 0; iy < irj.Size(); iy++)
-                    kernel_ixiy(ix,iy) = term.fac * mirx[ix].GetWeight() * miry[iy].GetWeight()
-                      * kernel.Evaluate(mirx[ix].GetPoint(), miry[iy].GetPoint(), zero, zero)(term.kernel_comp);
+                kernel->EvaluateMatrix(mirx, miry, term.kernel_comp, term.fac, kernel_ixiy);
 
                 FlatMatrix<value_type> kernel_shapesj(iri.Size(), felj.GetNDof(), lh);
                 FlatMatrix<> shapesi1(feli.GetNDof(), iri.Size(), lh);
@@ -839,24 +807,14 @@ namespace ngsbem
       test_evaluator->CalcMatrix(feli, mirx, mshapesi);  // only used are set for compound fe !!!
       trial_evaluator->CalcMatrix(felj, miry, mshapesj);
 
-      FlatVector<Vec<KERNEL_COMPS_T::SIZE, SIMD<value_type>>> kernel_values(mirx.Size(), lh);
-      for (int k2 = 0; k2 < mirx.Size(); k2++)
-        {
-          Vec<3,SIMD<double>> x = mirx[k2].Point();
-          Vec<3,SIMD<double>> y = miry[k2].Point();
-          Vec<3,SIMD<double>> nx = mirx[k2].GetNV();
-          Vec<3,SIMD<double>> ny = miry[k2].GetNV();
-          kernel_values(k2) = mirx[k2].GetMeasure()*miry[k2].GetMeasure()*simd_irx[k2].Weight() *
-            kernel.Evaluate(x, y, nx, ny);
-        }
-      for (auto term : kernel.terms)
+      FlatMatrix<SIMD<value_type>> kernel_values(kernel->NumKernelComponents(), mirx.Size(), lh);
+      kernel->EvaluatePairs(mirx, miry, kernel_values);
+      for (auto term : kernel->Terms())
         {
           auto mshapesi_comp = mshapesi.RowSlice(term.test_comp, test_evaluator->Dim());
-          for (int k2 = 0; k2 < mirx.Size(); k2++)
-            {
-              SIMD<value_type> kernel_ = kernel_values(k2)(term.kernel_comp);
-              mshapesi_kern.Col(k2) = term.fac*kernel_ * mshapesi_comp.Col(k2);
-            }
+          for (int i : test_range)
+            for (int k2 = 0; k2 < mirx.Size(); k2++)
+              mshapesi_kern(i,k2) = term.fac*kernel_values(term.kernel_comp,k2)*mshapesi_comp(i,k2);
 
           AddABt (mshapesi_kern.Rows(test_range),
                   mshapesj.RowSlice(term.trial_comp, trial_evaluator->Dim()).AddSize(felj.GetNDof(), miry.Size()).Rows(trial_range),
@@ -1282,25 +1240,11 @@ namespace ngsbem
           test_evaluator -> CalcMatrix(feli, mirx, Trans(shapesi), lh);
           trial_evaluator-> CalcMatrix(felj, miry, Trans(shapesj), lh);
 
-          for (auto term : kernel.terms)
+          for (auto term : kernel->Terms())
             {
               HeapReset hr(lh);
               FlatMatrix<value_type> kernel_ixiy(iri.Size(), irj.Size(), lh);
-              for (int ix = 0; ix < iri.Size(); ix++)
-                {
-                  for (int iy = 0; iy < irj.Size(); iy++)
-                    {
-                      Vec<3> x = mirx[ix].GetPoint();
-                      Vec<3> y = miry[iy].GetPoint();
-
-                      Vec<3> nx = mirx[ix].GetNV();
-                      Vec<3> ny = miry[iy].GetNV();
-                      value_type kernel_ = kernel.Evaluate(x, y, nx, ny)(term.kernel_comp);
-
-                      double fac = mirx[ix].GetWeight()*miry[iy].GetWeight();
-                      kernel_ixiy(ix, iy) = term.fac*fac*kernel_;
-                    }
-                }
+              kernel->EvaluateMatrix(mirx, miry, term.kernel_comp, term.fac, kernel_ixiy);
 
 
               FlatMatrix<value_type> kernel_shapesj(iri.Size(), felj.GetNDof(), lh);
@@ -1324,8 +1268,8 @@ namespace ngsbem
 
 
 
-  template <typename KERNEL>
-  std::variant<Matrix<double>, Matrix<Complex>> GenericIntegralOperator<KERNEL> ::
+  template <typename TSCAL>
+  std::variant<Matrix<double>, Matrix<Complex>> GenericIntegralOperator<TSCAL> ::
   CalcSubMatrix (FlatArray<DofId> target_ids, FlatArray<DofId> source_ids, LocalHeap &lh) const
   {
     auto nearfield = dynamic_pointer_cast<SparseMatrix<value_type>>(GetNearFieldMatrix());
@@ -1435,77 +1379,73 @@ namespace ngsbem
     return mat;
   }
 
-  template class GenericIntegralOperator<LaplaceSLKernel<3>>;
-  template class GenericIntegralOperator<LaplaceSLKernel<3,3>>;
-  template class GenericIntegralOperator<LaplaceSLKernel<3,1,Complex>>;
-  template class GenericIntegralOperator<LaplaceSLKernel<3,3,Complex>>;
-  template class GenericIntegralOperator<LaplaceSLKernel<3,1,double,float>>;
-  template class GenericIntegralOperator<LaplaceSLKernel<3,3,double,float>>;
-  template class GenericIntegralOperator<LaplaceSLKernel<3,1,Complex,Complex32>>;
-  template class GenericIntegralOperator<LaplaceSLKernel<3,3,Complex,Complex32>>;
-  template class GenericIntegralOperator<LaplaceDLKernel<3>>;
-  template class GenericIntegralOperator<LaplaceDLKernel<3,3>>;
-  template class GenericIntegralOperator<LaplaceDLKernel<3,1,Complex>>;
-  template class GenericIntegralOperator<LaplaceDLKernel<3,3,Complex>>;
-  template class GenericIntegralOperator<LaplaceDLKernel<3,1,double,float>>;
-  template class GenericIntegralOperator<LaplaceDLKernel<3,3,double,float>>;
-  template class GenericIntegralOperator<LaplaceDLKernel<3,1,Complex,Complex32>>;
-  template class GenericIntegralOperator<LaplaceDLKernel<3,3,Complex,Complex32>>;
-  template class GenericIntegralOperator<LameSLKernel<3>>;
-  template class GenericIntegralOperator<LameSLKernel<3,float>>;
+  template <typename TSCAL>
+  PotentialOperator<TSCAL> ::
+  PotentialOperator (shared_ptr<ProxyFunction> _proxy, VorB _source_vb, optional<Region> _definedon,
+                     shared_ptr<DifferentialOperator> _evaluator,
+                     shared_ptr<const BaseIntegralKernel<TSCAL>> _kernel, int _intorder)
+    : PotentialOperator(_proxy, _source_vb, _definedon, _evaluator, std::move(_kernel), IntOp_Parameters(), _intorder)
+  { ; }
 
-  template class GenericIntegralOperator<HelmholtzSLKernel<3>>;
-  template class GenericIntegralOperator<HelmholtzSLKernel<3,3>>;
-  template class GenericIntegralOperator<HelmholtzSLKernel<3,1,Complex>>;
-  template class GenericIntegralOperator<HelmholtzSLKernel<3,3,Complex>>;
-  template class GenericIntegralOperator<HelmholtzSLKernel<3,1,double,Complex32>>;
-  template class GenericIntegralOperator<HelmholtzSLKernel<3,3,double,Complex32>>;
-  template class GenericIntegralOperator<HelmholtzSLKernel<3,1,Complex,Complex32>>;
-  template class GenericIntegralOperator<HelmholtzSLKernel<3,3,Complex,Complex32>>;
-  template class GenericIntegralOperator<HelmholtzDLKernel<3>>;
-  template class GenericIntegralOperator<HelmholtzDLKernel<3,3>>;
-  template class GenericIntegralOperator<HelmholtzDLKernel<3,1,Complex>>;
-  template class GenericIntegralOperator<HelmholtzDLKernel<3,3,Complex>>;
-  template class GenericIntegralOperator<HelmholtzDLKernel<3,1,double,Complex32>>;
-  template class GenericIntegralOperator<HelmholtzDLKernel<3,3,double,Complex32>>;
-  template class GenericIntegralOperator<HelmholtzDLKernel<3,1,Complex,Complex32>>;
-  template class GenericIntegralOperator<HelmholtzDLKernel<3,3,Complex,Complex32>>;
-  template class GenericIntegralOperator<CombinedFieldKernel<3>>;
-  template class GenericIntegralOperator<CombinedFieldKernel<3,3>>;
-  template class GenericIntegralOperator<CombinedFieldKernel<3,1,Complex>>;
-  template class GenericIntegralOperator<CombinedFieldKernel<3,3,Complex>>;
-  template class GenericIntegralOperator<CombinedFieldKernel<3,1,double,Complex32>>;
-  template class GenericIntegralOperator<CombinedFieldKernel<3,3,double,Complex32>>;
-  template class GenericIntegralOperator<CombinedFieldKernel<3,1,Complex,Complex32>>;
-  template class GenericIntegralOperator<CombinedFieldKernel<3,3,Complex,Complex32>>;
+  template <typename TSCAL>
+  PotentialOperator<TSCAL> ::
+  PotentialOperator (shared_ptr<ProxyFunction> _proxy, VorB _source_vb, optional<Region> _definedon,
+                     shared_ptr<DifferentialOperator> _evaluator,
+                     shared_ptr<const BaseIntegralKernel<TSCAL>> _kernel, IntOp_Parameters _io_params, int _intorder)
+    : BasePotentialOperator(_proxy, _source_vb, _definedon, _evaluator, _io_params, _intorder), kernel(std::move(_kernel))
+  { ; }
 
-  template class GenericIntegralOperator<MaxwellDLKernel<3>>;
-  template class GenericIntegralOperator<MaxwellDLKernel<3,Complex>>;
-  template class GenericIntegralOperator<MaxwellDLKernel<3,double,Complex32>>;
-  template class GenericIntegralOperator<MaxwellDLKernel<3,Complex,Complex32>>;
+  template <typename TSCAL>
+  shared_ptr<IntegralOperator> PotentialOperator<TSCAL> ::
+  MakeIntegralOperator(shared_ptr<ProxyFunction> test_proxy, DifferentialSymbol dx)
+  {
+    auto festest = test_proxy->GetFESpace();
 
-  template class GenericIntegralOperator<DiffLaplaceSLKernel<3>>;
-  template class GenericIntegralOperator<DiffLaplaceSLKernel<3,3>>;
-  template class GenericIntegralOperator<DiffLaplaceSLKernel<3,1,Complex>>;
-  template class GenericIntegralOperator<DiffLaplaceSLKernel<3,3,Complex>>;
-  template class GenericIntegralOperator<DiffLaplaceSLKernel<3,1,double,float>>;
-  template class GenericIntegralOperator<DiffLaplaceSLKernel<3,3,double,float>>;
-  template class GenericIntegralOperator<DiffLaplaceSLKernel<3,1,Complex,Complex32>>;
-  template class GenericIntegralOperator<DiffLaplaceSLKernel<3,3,Complex,Complex32>>;
-  template class GenericIntegralOperator<DiffHelmholtzSLKernel<3>>;
-  template class GenericIntegralOperator<DiffHelmholtzSLKernel<3,3>>;
-  template class GenericIntegralOperator<DiffHelmholtzSLKernel<3,1,Complex>>;
-  template class GenericIntegralOperator<DiffHelmholtzSLKernel<3,3,Complex>>;
-  template class GenericIntegralOperator<DiffHelmholtzSLKernel<3,1,double,Complex32>>;
-  template class GenericIntegralOperator<DiffHelmholtzSLKernel<3,3,double,Complex32>>;
-  template class GenericIntegralOperator<DiffHelmholtzSLKernel<3,1,Complex,Complex32>>;
-  template class GenericIntegralOperator<DiffHelmholtzSLKernel<3,3,Complex,Complex32>>;
-  template class GenericIntegralOperator<DiffHelmholtzDLKernel<3>>;
-  template class GenericIntegralOperator<DiffHelmholtzDLKernel<3,3>>;
-  template class GenericIntegralOperator<DiffHelmholtzDLKernel<3,1,Complex>>;
-  template class GenericIntegralOperator<DiffHelmholtzDLKernel<3,3,Complex>>;
-  template class GenericIntegralOperator<DiffHelmholtzDLKernel<3,1,double,Complex32>>;
-  template class GenericIntegralOperator<DiffHelmholtzDLKernel<3,3,double,Complex32>>;
-  template class GenericIntegralOperator<DiffHelmholtzDLKernel<3,1,Complex,Complex32>>;
-  template class GenericIntegralOperator<DiffHelmholtzDLKernel<3,3,Complex,Complex32>>;
+    auto tmpfes = festest;
+    auto tmpeval = proxy->Evaluator();
+    while (auto compeval = dynamic_pointer_cast<CompoundDifferentialOperator>(tmpeval))
+      {
+        int component = compeval->Component();
+        tmpfes = (*dynamic_pointer_cast<CompoundFESpace>(tmpfes))[component];
+        tmpeval = compeval->BaseDiffOp();
+      }
+
+    optional<Region> definedon_test;
+    if (dx.definedon)
+      definedon_test = Region(festest->GetMeshAccess(), dx.vb, get<1> (*(dx.definedon)));
+
+    return make_shared<GenericIntegralOperator<TSCAL>> (proxy->GetFESpace(), festest, definedon, definedon_test,
+                                                       proxy->Evaluator(), test_proxy->Evaluator(), kernel,
+                                                       2 + intorder + tmpfes->GetOrder()+dx.bonus_intorder,
+                                                       io_params, source_vb, dx.vb);
+  }
+
+  template <typename TSCAL>
+  shared_ptr<BasePotentialCF> PotentialOperator<TSCAL> ::
+  MakePotentialCF(shared_ptr<GridFunction> gf)
+  {
+    return make_shared<PotentialCF<TSCAL>>(gf, source_vb, definedon, evaluator, kernel, 2+intorder, io_params);
+  }
+
+  template <typename TSCAL>
+  shared_ptr<BasePotentialOperator> PotentialOperator<TSCAL> ::
+  MakeDiffBasePotential(string name)
+  {
+    return make_shared<PotentialOperator<TSCAL>>(proxy, source_vb, definedon, evaluator,
+                                                kernel->GetDifferentiatedKernel(name), io_params, intorder);
+  }
+
+  template <typename TSCAL>
+  void PotentialOperator<TSCAL> :: Print (ostream & ost) const
+  {
+    ost << "Potential operator:" << endl;
+    ost << "Kernel: " << kernel->Name() << endl;
+    ost << io_params << endl;
+  }
+
+  template class PotentialOperator<double>;
+  template class PotentialOperator<Complex>;
+
+  template class GenericIntegralOperator<double>;
+  template class GenericIntegralOperator<Complex>;
 }

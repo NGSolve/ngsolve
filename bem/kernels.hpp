@@ -2,6 +2,8 @@
 #define KERNELS_hpp
 
 #include "mptools.hpp"
+#include "integralkernel.hpp"
+#include <cassert>
 #include <type_traits>
 #include <variant>
 
@@ -11,22 +13,6 @@
 namespace ngsbem
 {
 
-  struct KernelTerm
-  {
-    double fac;
-    size_t kernel_comp;
-    size_t trial_comp;
-    size_t test_comp;
-  };
-
-  enum class AnalyticTriangleFormula
-  {
-    none,
-    laplace_sl,
-    laplace_dl,
-    laplace_grad_sl
-  };
-  
 
   class BaseKernel
   {
@@ -46,7 +32,7 @@ namespace ngsbem
   // *********** FMM Source/Target Interface **********************
 
   template <typename T_MP, typename T_VALUE, typename T_Kappa = double>
-  class FMMInterface
+  class NGS_DLL_HEADER FMMInterface : public BaseFMMInterface
   {
   public:
     using mp_type = T_MP;
@@ -55,27 +41,22 @@ namespace ngsbem
 
     FMMInterface (T_Kappa _kappa = 1e-16) : kappa(_kappa) {}
 
-    virtual shared_ptr<SingularMLExpansion<mp_type, T_Kappa>> CreateMultipoleExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const
+    shared_ptr<BaseSingularMLExpansion> CreateMultipoleExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const override;
+    shared_ptr<BaseRegularMLExpansion> CreateLocalExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const override;
+
+  protected:
+    // These interfaces create their own expansion type; check it in debug builds.
+    static SingularMLExpansion<mp_type,T_Kappa> & Cast(BaseSingularMLExpansion & mp)
     {
-      return make_shared<SingularMLExpansion<mp_type, T_Kappa>> (c, r, kappa, fmm_params);
+      assert((dynamic_cast<SingularMLExpansion<mp_type,T_Kappa>*>(&mp)));
+      return static_cast<SingularMLExpansion<mp_type,T_Kappa>&>(mp);
     }
 
-    virtual shared_ptr<RegularMLExpansion<mp_type, T_Kappa>> CreateLocalExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const
+    static RegularMLExpansion<mp_type,T_Kappa> & Cast(BaseRegularMLExpansion & mp)
     {
-      return make_shared<RegularMLExpansion<mp_type, T_Kappa>> (c, r, kappa, fmm_params);
+      assert((dynamic_cast<RegularMLExpansion<mp_type,T_Kappa>*>(&mp)));
+      return static_cast<RegularMLExpansion<mp_type,T_Kappa>&>(mp);
     }
-
-    virtual void AddSource (SingularMLExpansion<mp_type, T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<value_type> val) const
-    {
-      throw Exception("AddSource not implemented for this FMM type");
-    }
-
-    virtual void EvaluateMP (RegularMLExpansion<mp_type, T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<value_type> val) const
-    {
-      throw Exception("EvaluateMP not implemented for this FMM type");
-    }
-
-    virtual ~FMMInterface() = default;
   };
 
   template <int COMPS, typename T_VALUE, typename T_FMM = T_VALUE, typename T_Kappa = double>
@@ -87,15 +68,18 @@ namespace ngsbem
     using mp_type = Vec<COMPS, coefficient_type>;
     using Base = FMMInterface<mp_type, value_type, T_Kappa>;
     static constexpr bool needs_normal = false;
+    bool NeedsNormal() const override { return needs_normal; }
     Charges (T_Kappa kappa = 1e-16) : Base(kappa) {}
 
-    void AddSource (SingularMLExpansion<mp_type, T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<value_type> val) const override
+    void AddSource (BaseSingularMLExpansion & amp, Vec<3> pnt, Vec<3> nv, BareSliceVector<value_type> val) const override
     {
+      auto & mp = this->Cast(amp);
       mp.AddCharge (pnt, val);
     }
 
-    void EvaluateMP (RegularMLExpansion<mp_type, T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<value_type> val) const override
+    void EvaluateMP (BaseRegularMLExpansion & amp, Vec<3> pnt, Vec<3> nv, BareSliceVector<value_type> val) const override
     {
+      auto & mp = this->Cast(amp);
       if constexpr (!IsComplex<value_type>())
         val = Real(mp.Evaluate (pnt));
       else
@@ -112,15 +96,18 @@ namespace ngsbem
     using mp_type = Vec<COMPS, coefficient_type>;
     using Base = FMMInterface<mp_type, value_type, T_Kappa>;
     static constexpr bool needs_normal = true;
+    bool NeedsNormal() const override { return needs_normal; }
     Dipoles (T_Kappa kappa = 1e-16) : Base(kappa) {}
 
-    void AddSource (SingularMLExpansion<mp_type, T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<value_type> val) const override
+    void AddSource (BaseSingularMLExpansion & amp, Vec<3> pnt, Vec<3> nv, BareSliceVector<value_type> val) const override
     {
+      auto & mp = this->Cast(amp);
       mp.AddDipole (pnt, -nv, val);
     }
 
-    void EvaluateMP (RegularMLExpansion<mp_type, T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<value_type> val) const override
+    void EvaluateMP (BaseRegularMLExpansion & amp, Vec<3> pnt, Vec<3> nv, BareSliceVector<value_type> val) const override
     {
+      auto & mp = this->Cast(amp);
       if constexpr (!IsComplex<value_type>())
         val = Real(mp.EvaluateDirectionalDerivative (pnt, nv));
       else
@@ -138,10 +125,12 @@ namespace ngsbem
     using mp_type = Vec<COMPS, coefficient_type>;
     using Base = FMMInterface<mp_type, value_type, T_Kappa>;
     static constexpr bool needs_normal = false;
+    bool NeedsNormal() const override { return needs_normal; }
     GradientEval (T_Kappa kappa = 1e-16) : Base(kappa) {}
 
-    void EvaluateMP (RegularMLExpansion<mp_type, T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<value_type> val) const override
+    void EvaluateMP (BaseRegularMLExpansion & amp, Vec<3> pnt, Vec<3> nv, BareSliceVector<value_type> val) const override
     {
+      auto & mp = this->Cast(amp);
       for (int i = 0; i < 3; i++)
         {
           Vec<3> ei = 0;
@@ -162,10 +151,12 @@ namespace ngsbem
     using Base = FMMInterface<mp_type, value_type, T_Kappa>;
   public:
     static constexpr bool needs_normal = false;
+    bool NeedsNormal() const override { return needs_normal; }
     DirectEval (T_Kappa kappa = 1e-16) : Base(kappa) {}
 
-    void EvaluateMP (RegularMLExpansion<mp_type, T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<value_type> val) const override
+    void EvaluateMP (BaseRegularMLExpansion & amp, Vec<3> pnt, Vec<3> nv, BareSliceVector<value_type> val) const override
     {
+      auto & mp = this->Cast(amp);
       if constexpr (std::is_same_v<mp_type, Complex> || std::is_same_v<mp_type, Complex32>)
         val(0) = mp.Evaluate (pnt);
       else
@@ -182,10 +173,12 @@ namespace ngsbem
     using mp_type = Vec<COMPS, coefficient_type>;
     using Base = FMMInterface<mp_type, Complex, T_Kappa>;
     static constexpr bool needs_normal = true;
+    bool NeedsNormal() const override { return needs_normal; }
     ChargeDipoles (T_Kappa kappa) : Base(kappa) {}
 
-    void AddSource (SingularMLExpansion<mp_type, T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const override
+    void AddSource (BaseSingularMLExpansion & amp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const override
     {
+      auto & mp = this->Cast(amp);
       Vec<COMPS,coefficient_type> fmm_val = val;
       coefficient_type imag(0,1);
       mp.AddChargeDipole (pnt, -coefficient_type(this->kappa) * imag*fmm_val, -nv, fmm_val);
@@ -201,10 +194,12 @@ namespace ngsbem
     using Base = FMMInterface<mp_type, Complex, T_Kappa>;
   public:
     static constexpr bool needs_normal = false;
+    bool NeedsNormal() const override { return needs_normal; }
     MaxwellCurlDipoles (T_Kappa kappa) : Base(kappa) {}
 
-    void AddSource (SingularMLExpansion<mp_type,T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const override
+    void AddSource (BaseSingularMLExpansion & amp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const override
     {
+      auto & mp = this->Cast(amp);
       Vec<3,coefficient_type> n_cross_m = val.Range(0, 3);
       for (int k = 0; k < 3; k++)
         {
@@ -217,8 +212,9 @@ namespace ngsbem
         }
     }
 
-    void EvaluateMP (RegularMLExpansion<mp_type,T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const override
+    void EvaluateMP (BaseRegularMLExpansion & amp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const override
     {
+      auto & mp = this->Cast(amp);
       val = mp.Evaluate (pnt);
     }
   };
@@ -232,10 +228,12 @@ namespace ngsbem
     using Base = FMMInterface<mp_type, double>;
   public:
     static constexpr bool needs_normal = false;
+    bool NeedsNormal() const override { return needs_normal; }
     LameSource () : Base(1e-16) {}
 
-    void AddSource (SingularMLExpansion<mp_type> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<double> val) const override
+    void AddSource (BaseSingularMLExpansion & amp, Vec<3> pnt, Vec<3> nv, BareSliceVector<double> val) const override
     {
+      auto & mp = this->Cast(amp);
       Vec<6,coefficient_type> charge = coefficient_type(0.0);
       charge.Range(0,3) = val;
       mp.AddCharge(pnt, charge);
@@ -261,10 +259,12 @@ namespace ngsbem
     using Base = FMMInterface<mp_type, double>;
   public:
     static constexpr bool needs_normal = false;
+    bool NeedsNormal() const override { return needs_normal; }
     LameTarget (double _nu, double _alpha) : Base(1e-16), nu(_nu), alpha(_alpha) {}
 
-    void EvaluateMP (RegularMLExpansion<mp_type> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<double> val) const override
+    void EvaluateMP (BaseRegularMLExpansion & amp, Vec<3> pnt, Vec<3> nv, BareSliceVector<double> val) const override
     {
+      auto & mp = this->Cast(amp);
       Vec<6> mpval = Real(mp.Evaluate (pnt));
       val.Range(0,3) = 0;
       val += (3-4*nu)*alpha * mpval.Range(0,3);

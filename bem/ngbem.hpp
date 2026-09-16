@@ -10,7 +10,7 @@
 
 #include "bem_diffops.hpp"
 #include "diffopwithfactor.hpp"
-#include "kernels.hpp"
+#include "integralkernel.hpp"
 #include "fmmoperator.hpp"
 #include "potentialcf.hpp"
 
@@ -330,14 +330,13 @@ namespace ngsbem
 
 
   
-  /** The GenericIntegralOperator is a templated #IntegralOperator, the template type is 
-      the kernel the specific potential,i.e. a fundamental solution or its 
-      derivative of specific pde. */
-  template <typename KERNEL>
-  class GenericIntegralOperator : public IntegralOperator // <typename KERNEL::value_type>
+  /** Element assembly is instantiated only for the external scalar type.
+      Kernel and FMM coefficient types are handled by BaseIntegralKernel. */
+  template <typename TSCAL>
+  class GenericIntegralOperator : public IntegralOperator
   {
-    KERNEL kernel;
-    typedef typename KERNEL::value_type value_type;
+    shared_ptr<const BaseIntegralKernel<TSCAL>> kernel;
+    typedef TSCAL value_type;
     typedef IntegralOperator BASE;
 
     static size_t CountSparseCorrectionNZE(const BaseMatrix * mat)
@@ -369,7 +368,7 @@ namespace ngsbem
                             optional<Region> _definedon_trial, optional<Region> _definedon_test,
                             shared_ptr<DifferentialOperator> _trial_evaluator, 
                             shared_ptr<DifferentialOperator> _test_evaluator, 
-                            KERNEL _kernel,
+                            shared_ptr<const BaseIntegralKernel<TSCAL>> _kernel,
                             int _intorder, const IntOp_Parameters & _io_params = IntOp_Parameters(),
                             VorB _trial_vb = BND, VorB _test_vb = BND);
     /*
@@ -454,94 +453,36 @@ namespace ngsbem
     return ost;
   }
   
-  template  <typename KERNEL>
-  class PotentialOperator : public BasePotentialOperator
+  template <typename TSCAL>
+  class NGS_DLL_HEADER PotentialOperator : public BasePotentialOperator
   {
   public:
-    KERNEL kernel;
+    shared_ptr<const BaseIntegralKernel<TSCAL>> kernel;
   public:
     PotentialOperator (shared_ptr<ProxyFunction> _proxy,
-                       // shared_ptr<CoefficientFunction> _factor,                       
                        VorB _source_vb,
-                       optional<Region> _definedon,    
+                       optional<Region> _definedon,
                        shared_ptr<DifferentialOperator> _evaluator,
-                       KERNEL _kernel, int _intorder)
-      : BasePotentialOperator (_proxy, /* _factor, */ _source_vb, _definedon, _evaluator, _intorder), kernel(_kernel) { ; }
+                       shared_ptr<const BaseIntegralKernel<TSCAL>> _kernel, int _intorder);
 
     PotentialOperator (shared_ptr<ProxyFunction> _proxy,
-                       // shared_ptr<CoefficientFunction> _factor,                       
                        VorB _source_vb,
-                       optional<Region> _definedon,    
+                       optional<Region> _definedon,
                        shared_ptr<DifferentialOperator> _evaluator,
-                       KERNEL _kernel,
-                       IntOp_Parameters _io_params, 
-                       int _intorder)
-      : BasePotentialOperator (_proxy, _source_vb, _definedon, _evaluator, _io_params, _intorder), kernel(_kernel) { ; }
+                       shared_ptr<const BaseIntegralKernel<TSCAL>> _kernel,
+                       IntOp_Parameters _io_params,
+                       int _intorder);
 
-    shared_ptr<IntegralOperator> MakeIntegralOperator(shared_ptr<ProxyFunction> test_proxy,
-                                                      // shared_ptr<CoefficientFunction> test_factor,
-                                                      DifferentialSymbol dx) override
-    {
-      auto festest = test_proxy->GetFESpace();
-      
-      auto tmpfes = festest;
-      auto tmpeval = proxy->Evaluator();
-      while (auto compeval = dynamic_pointer_cast<CompoundDifferentialOperator>(tmpeval))
-        {
-          int component = compeval->Component();
-          tmpfes = (*dynamic_pointer_cast<CompoundFESpace>(tmpfes))[component];
-          tmpeval = compeval->BaseDiffOp();
-        }
-      
-      optional<Region> definedon_test;
-      if (dx.definedon)
-        definedon_test = Region(festest->GetMeshAccess(), dx.vb, get<1> (*(dx.definedon)));
-      
-      return make_shared<GenericIntegralOperator<KERNEL>> (proxy->GetFESpace(),
-                                                           festest, 
-                                                           definedon,
-                                                           definedon_test,
-                                                           proxy->Evaluator(), // nullptr, // factor,
-                                                           test_proxy->Evaluator(), // nullptr, // test_factor, 
-                                                           kernel,
-                                                           2 + intorder + tmpfes->GetOrder()+dx.bonus_intorder,
-                                                           io_params, source_vb, dx.vb);
-    }
-    
-    shared_ptr<BasePotentialCF> MakePotentialCF(shared_ptr<GridFunction> gf) override
-    {
-      return make_shared<PotentialCF<KERNEL>>(gf, source_vb, definedon, evaluator, kernel, 2+intorder, io_params);
-    }
+    shared_ptr<IntegralOperator> MakeIntegralOperator(shared_ptr<ProxyFunction> test_proxy, DifferentialSymbol dx) override;
+    shared_ptr<BasePotentialCF> MakePotentialCF(shared_ptr<GridFunction> gf) override;
+    shared_ptr<BasePotentialOperator> MakeDiffBasePotential(string name) override;
+    void Print (ostream & ost) const override;
+  };
 
-    shared_ptr<BasePotentialOperator> MakeDiffBasePotential(string name) override
-    {
-      if constexpr (HasDiffKernelOverload<KERNEL>::value)
-      {
-        auto diffkernel = kernel.GetDifferentiatedKernel(name);
-        if constexpr (IsStdVariant<decltype(diffkernel)>::value)
-        {
-          return std::visit([&](auto const & dk) -> shared_ptr<BasePotentialOperator>
-          {
-            using DK = std::decay_t<decltype(dk)>;
-            return std::make_shared<PotentialOperator<DK>>(this->proxy, this->source_vb, this->definedon, this->evaluator, dk, this->io_params, this->intorder);
-          }, diffkernel);
-        }
-        else
-          return make_shared<PotentialOperator<decltype(diffkernel)>>(this->proxy, this->source_vb, this->definedon, this->evaluator, diffkernel, this->io_params, this->intorder);
-      }
-      else
-        throw Exception("Kernel does not support differentiated kernel '"+name+"'");
-    }
+  extern template class PotentialOperator<double>;
+  extern template class PotentialOperator<Complex>;
 
-    virtual void Print (ostream & ost) const override
-    {
-      ost << "Potential operator:" << endl;
-      ost << "Kernel: " << kernel.Name() << endl;
-      ost << io_params << endl;
-    }
-  };  
 
-  
   class SumOfPotentialOperators
   {
     Array<tuple<Scalar, shared_ptr<BasePotentialOperator>>> summands;

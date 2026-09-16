@@ -11,6 +11,7 @@
 #include "mptools.hpp"
 #include "potentialtools.hpp"
 #include "ngbem.hpp"
+#include "kernels.hpp"
 #include "mp_coefficient.hpp"
 
 
@@ -28,11 +29,9 @@ namespace
   shared_ptr<BasePotentialOperator>
   MakePotentialWithPrecision(shared_ptr<ProxyFunction> proxy, VorB source_vb, optional<Region> definedon, shared_ptr<DifferentialOperator> eval, IntOp_Parameters ioparams, int intorder, bool fp32, T_ARGS... args)
   {
-    if (fp32)
-      return make_shared<PotentialOperator<Kernel32>>(proxy, source_vb, definedon, eval,
-                                                       Kernel32(args...), ioparams, intorder);
-    return make_shared<PotentialOperator<Kernel64>>(proxy, source_vb, definedon, eval,
-                                                     Kernel64(args...), ioparams, intorder);
+    auto kernel = fp32 ? MakeIntegralKernel(Kernel32(args...)) : MakeIntegralKernel(Kernel64(args...));
+    return make_shared<PotentialOperator<typename Kernel64::value_type>>(proxy, source_vb, definedon, eval,
+                                                                        std::move(kernel), ioparams, intorder);
   }
 
   template <class KernelReal, class KernelComplex, class KernelReal32, class KernelComplex32>
