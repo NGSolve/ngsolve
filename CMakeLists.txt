@@ -254,6 +254,11 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     list(APPEND NGSOLVE_COMPILE_OPTIONS $<$<COMPILE_LANGUAGE:CXX>:-Wno-undefined-var-template -Wno-vla-extension>)
 endif()
 
+if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    # plain complex multiplication instead of the __muldc3 call with NaN/Inf recovery
+    list(APPEND NGSOLVE_COMPILE_OPTIONS $<$<COMPILE_LANGUAGE:CXX>:-fcx-limited-range>)
+endif()
+
 
 #######################################################################
 if (NETGEN_USE_GUI)

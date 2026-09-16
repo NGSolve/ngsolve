@@ -1628,7 +1628,7 @@ namespace ngcomp
           {
 	    mattimer1a.Start();
 
-            BaseStatusHandler::PushStatus ("Assemble Matrix");
+            PushStatus ("Assemble Matrix");
  
             size_t ndof = fespace->GetNDof();
             Array<bool> useddof(ndof);
@@ -2391,7 +2391,7 @@ namespace ngcomp
                                gcnt++;
                                if (cnt % 10 == 0)
                                  cout << IM(3) << "\rassemble inner facet element " << cnt << "/" << nf << flush;
-                               BaseStatusHandler::SetThreadPercentage ( 100.0*(gcnt) / (loopsteps) );
+                               SetThreadPercent ( 100.0*(gcnt) / (loopsteps) );
                              }
                              */
                              
@@ -2580,7 +2580,7 @@ namespace ngcomp
                             gcnt++;
                             // if (cnt % 10 == 0)
                               // cout << "\rassemble facet surface element " << cnt << "/" << ne << flush;
-                            BaseStatusHandler::SetThreadPercentage ( 100.0*(gcnt) / (loopsteps) );
+                            SetThreadPercent ( 100.0*(gcnt) / (loopsteps) );
                           }
                           
                           HeapReset hr(lh);
@@ -2688,7 +2688,7 @@ namespace ngcomp
                 // cout << "\rassemble facet surface element " << ne << "/" << ne << endl;  
               } // if facetwise_skeleton_parts[BND].size
             
-            BaseStatusHandler::SetThreadPercentage ( 100.0 );
+            SetThreadPercent ( 100.0 );
             
 	    RegionTimer reg(mattimer_finalize);
             
@@ -2721,7 +2721,7 @@ namespace ngcomp
                     nspecel++;
                     if (i % 10 == 0)
                       cout << IM(3) << "\rassemble special element " << nspecel << "/" << specialelements.Size() << flush;
-                    BaseStatusHandler::SetThreadPercentage ( 100.0*(gcnt) / (loopsteps) );
+                    SetThreadPercent ( 100.0*(gcnt) / (loopsteps) );
                   }
                   
                   const SpecialElement & el = *specialelements[i];
@@ -2830,14 +2830,14 @@ namespace ngcomp
                   }
             
 
-            BaseStatusHandler::PopStatus ();
+            PopStatus ();
           }
 
         else // MixedSpaces()
 
           {
             cout << IM(3) << "assemble mixed bilinearform" << endl;
-            BaseStatusHandler::Region ("Assemble Matrix");
+            StatusRegion status_region ("Assemble Matrix");
       
             BaseMatrix & mat = GetMatrix();
             mat = 0.0;
@@ -3405,7 +3405,7 @@ namespace ngcomp
 
     try
       {
-        BaseStatusHandler::PushStatus ("Compute Internal");
+        PushStatus ("Compute Internal");
 
         int ne = ma->GetNE();
 
@@ -3529,7 +3529,7 @@ namespace ngcomp
                 
               }//end of keep_internal-if
           }
-        BaseStatusHandler::PopStatus ();
+        PopStatus ();
       }
 
     catch (Exception & e)
@@ -3596,7 +3596,7 @@ namespace ngcomp
     }
 
     RegionTimer reg (timer);
-    BaseStatusHandler::Region ("Assemble Linearization");
+    StatusRegion status_region ("Assemble Linearization");
 
     if (specialelements_timestamp > graph_timestamp)
       {
@@ -4194,7 +4194,7 @@ namespace ngcomp
         throw (Exception (string(e.what()) +
                           string("\n in AssembleLinearization\n")));
       }
-    // BaseStatusHandler::PopStatus();
+    // PopStatus();
   }
 
 

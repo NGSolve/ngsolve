@@ -2800,7 +2800,7 @@ namespace ngcomp
 	  if (is_root)
 	    {
 	      cout << IM(3) << "\r" << task << " " << nr << "/" << total << flush;
-              BaseStatusHandler::SetThreadPercentage ( 100.0*nr / total);
+              SetThreadPercent ( 100.0*nr / total);
 	    }
 #ifdef PARALLEL
 	  else if (use_mpi)
@@ -2856,7 +2856,7 @@ namespace ngcomp
 		cout << IM(3) 
 		     << "\r" << task << " " << sum << "/" << total
 		     << " (" << num_working << " procs working) " << flush;
-                BaseStatusHandler::SetThreadPercentage ( 100.0*sum / total );
+                SetThreadPercent ( 100.0*sum / total );
 		if (!num_working) break;
 		if (!got_flag) std::this_thread::sleep_for(std::chrono::microseconds(1000));
 	      }

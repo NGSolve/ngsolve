@@ -29,24 +29,8 @@ namespace ngstd
 
 }
 
-namespace std
-{
-  template <int I1, int I2>
-  constexpr INLINE integral_constant<int,I1+I2> 
-  operator+ (integral_constant<int,I1> /* i1 */,
-             integral_constant<int,I2> /* i2 */)
-  {
-    return integral_constant<int,I1+I2>();
-  }
-}
-
 namespace ngstd
 {
-  template <typename T>
-  struct my_is_integral : std::is_integral<T> {};
-  
-  template <int N>
-  struct my_is_integral<ngstd::IC<N>> : std::true_type {};
     
   /*
   // may be used as an index e.g. for FlatVector

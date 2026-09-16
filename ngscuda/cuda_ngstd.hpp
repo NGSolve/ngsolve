@@ -25,7 +25,7 @@ namespace ngcore {
   };
 }
 
-namespace ngstd
+namespace ngcore
 {
   template <typename T>
   struct my_is_integral<ngs_cuda::Dev<T>> : my_is_integral<T>{};

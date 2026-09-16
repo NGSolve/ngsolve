@@ -25,8 +25,7 @@ add_custom_command(
 add_library( ngstd ${NGS_LIB_TYPE}
         evalfunc.cpp templates.cpp
         gpuwrapper.cpp gpu_cpu.cpp
-        stringops.cpp statushandler.cpp
-        python_ngstd.cpp
+        stringops.cpp python_ngstd.cpp
         bspline.cpp
         ${CMAKE_CURRENT_BINARY_DIR}/tinybla_code.cpp
         ${CMAKE_CURRENT_BINARY_DIR}/gpukernel_code.cpp
@@ -48,8 +47,7 @@ install( FILES
         bessel.hpp evalfunc.hpp
         memusage.hpp ngstd.hpp
         stringops.hpp
-        statushandler.hpp ngsstream.hpp 
-        mycomplex.hpp python_ngstd.hpp ngs_utils.hpp
+        python_ngstd.hpp ngs_utils.hpp
         bspline.hpp sample_sort.hpp gpuwrapper.hpp gpukernel.hpp gpukernel.h tinybla.hpp tinybla.h
         DESTINATION ${NGSOLVE_INSTALL_DIR_INCLUDE}
         COMPONENT ngsolve_devel

@@ -49,7 +49,6 @@ namespace ngstd
 
 // #include "polorder.hpp"
 #include "stringops.hpp"
-#include "statushandler.hpp"
 
 namespace ngstd
 {
