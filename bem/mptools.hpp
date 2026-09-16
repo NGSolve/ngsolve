@@ -6,6 +6,7 @@
  */
 
 
+#include <ngstd.hpp>
 #include <bla.hpp>
 #include <coefficient.hpp>
 #include <recursive_pol.hpp>

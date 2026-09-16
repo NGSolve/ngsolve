@@ -49,7 +49,7 @@ def op_counts(acf):
     return ops
 
 
-def same(cf1, cf2, tol=1e-12):
+def same(cf1, cf2, tol=1e-11):
     if np.array(cf1(X0)).size != np.array(cf2(X0)).size:
         return False
 

@@ -25,7 +25,7 @@ namespace ngstd
 
    Generic container classes: FlatArray, Array, ArrayMem
 
-Specific data types Exception, BlockAllocator, EvalFunction, AutoDiff, AutoDiffDiff
+Specific data types Exception, EvalFunction, AutoDiff, AutoDiffDiff
 */
 
 
@@ -42,7 +42,6 @@ namespace ngstd
 
 #include "ngs_utils.hpp"
 
-#include "blockalloc.hpp"
 #include "memusage.hpp"
 
 #include "evalfunc.hpp"
@@ -50,7 +49,6 @@ namespace ngstd
 
 // #include "polorder.hpp"
 #include "stringops.hpp"
-#include "statushandler.hpp"
 
 namespace ngstd
 {

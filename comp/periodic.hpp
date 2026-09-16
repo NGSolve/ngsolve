@@ -20,6 +20,7 @@ namespace ngcomp
   protected:
     Array<int> dofmap; // mapping of dofs
     Array<int> vertex_map; // mapping of vertices
+    Array<int> vertex_orientation;
     shared_ptr<FESpace> space;
     shared_ptr<Array<int>> used_idnrs;
     
@@ -82,6 +83,7 @@ namespace ngcomp
     { space->VTransformVC(ei, vec, tt); }    
 
     auto & GetVertexMap() const { return vertex_map; }
+    auto & GetVertexOrientation() const { return vertex_orientation; }
     auto & GetDofMap() const { return dofmap; }    
     FlatArray<VorB> GetDualShapeNodes (VorB vb) const override
     {

@@ -301,6 +301,17 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def("CreateVector", [] (const VecFormat & f) { return shared_ptr<BaseVector>(CreateBaseVector(f.WithDefaults())); })
     ;
 
+  py::class_<MemoryUsage> (m, "MemoryUsage", "bytes held by one storage block of an object")
+    .def_property_readonly("name", &MemoryUsage::Name)
+    .def_property_readonly("host", &MemoryUsage::NBytes, "bytes in host ram")
+    .def_property_readonly("device", &MemoryUsage::NDeviceBytes, "bytes in device memory")
+    .def_property_readonly("owner", [] (const MemoryUsage & self) { return uintptr_t(self.Owner()); },
+                           "address of the object holding the memory, 0 if unknown")
+    .def("__repr__", [] (const MemoryUsage & self)
+         { return "MemoryUsage(" + self.Name() + ", host=" + ToString(self.NBytes())
+             + ", device=" + ToString(self.NDeviceBytes()) + ")"; })
+    ;
+
   py::class_<BaseVector, shared_ptr<BaseVector>>(m, "BaseVector",
                                                  py::dynamic_attr(), // add dynamic attributes
                                                  py::buffer_protocol()
@@ -1094,6 +1105,13 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def_property_readonly("local_mat", [](shared_ptr<BaseMatrix> & mat) { return mat; })
     .def_property_readonly ("comm", [](const BaseVector & self) { return self.GetCommunicator(); })
     
+    .def("GetMemoryUsage", [] (const BaseMatrix & self)
+         {
+           py::list ret;
+           for (auto & mu : self.GetMemoryUsage())
+             ret.append (py::cast (mu));
+           return ret;
+         }, "memory held by the operator, one entry per storage block")
     .def("GetOperatorInfo", [] (BaseMatrix & self)
          {
            stringstream str;

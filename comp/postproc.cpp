@@ -73,7 +73,7 @@ namespace ngcomp
 
     shared_ptr<MeshAccess> ma = fesflux->GetMeshAccess();
 
-    BaseStatusHandler::PushStatus ("Post-processing");
+    PushStatus ("Post-processing");
     
 
     auto vb = bli->VB();
@@ -206,7 +206,7 @@ namespace ngcomp
 	  flux.SetElementVector (dnumsflux, fluxi);
 	}
     
-    BaseStatusHandler::PopStatus ();
+    PopStatus ();
   }
 
 
@@ -403,7 +403,7 @@ namespace ngcomp
     auto fes = u.GetFESpace();
     shared_ptr<MeshAccess> ma = fes->GetMeshAccess(); 
     int dim   = fes->GetDimension();
-    BaseStatusHandler::PushStatus("setvalues");
+    PushStatus("setvalues");
 
     Array<int> cnti(fes->GetNDof());
     cnti = 0;
@@ -900,7 +900,7 @@ namespace ngcomp
              }
        });
     
-    BaseStatusHandler::PopStatus ();
+    PopStatus ();
   }
   
   NGS_DLL_HEADER void SetValues (shared_ptr<CoefficientFunction> coef,
@@ -957,7 +957,7 @@ namespace ngcomp
 
     shared_ptr<MeshAccess> ma = u.GetFESpace()->GetMeshAccess();
 
-    BaseStatusHandler::PushStatus ("Error estimator");
+    PushStatus ("Error estimator");
 
     const FESpace & fes = *u.GetFESpace();
     const FESpace & fesflux = *flux.GetFESpace();
@@ -984,7 +984,7 @@ namespace ngcomp
         ElementId ei(vb,i);
 
 	HeapReset hr(lh);
-        BaseStatusHandler::SetThreadPercentage ( 100.0*i / ne );
+        SetThreadPercent ( 100.0*i / ne );
 
 	int eldom = ma->GetElIndex(ei);
         // bound ? ma->GetSElIndex(i) : ma->GetElIndex(i);
@@ -1034,7 +1034,7 @@ namespace ngcomp
 	err(i) += elerr;
 	// sum += elerr;
       }
-    BaseStatusHandler::PopStatus ();
+    PopStatus ();
   }
   
 
@@ -1090,7 +1090,7 @@ namespace ngcomp
 		       int domain, LocalHeap & lh)
   {
     shared_ptr<MeshAccess> ma = u1.GetFESpace()->GetMeshAccess();
-    BaseStatusHandler::PushStatus ("Calc Difference");
+    PushStatus ("Calc Difference");
 
     const FESpace & fes1 = *u1.GetFESpace();
     const FESpace & fes2 = *u2.GetFESpace();
@@ -1130,7 +1130,7 @@ namespace ngcomp
       {
         ElementId ei(bound1 ? BND : VOL, i);
 	HeapReset hr (lh);
-        BaseStatusHandler::SetThreadPercentage ( 100.0*i / ne );
+        SetThreadPercent ( 100.0*i / ne );
 
 	int eldom = ma->GetElIndex(ei);
         // bound1 ? ma->GetSElIndex(i) : ma->GetElIndex(i);
@@ -1181,7 +1181,7 @@ namespace ngcomp
 	// sum += elerr;
       }
     // cout << "difference = " << sqrt(sum) << endl;
-    BaseStatusHandler::PopStatus ();
+    PopStatus ();
   }
   
   template void CalcDifference<double> (const S_GridFunction<double> & bu1,
@@ -1211,7 +1211,7 @@ namespace ngcomp
   {
     shared_ptr<MeshAccess> ma = u1.GetFESpace()->GetMeshAccess();
 
-    BaseStatusHandler::PushStatus ("Calc Difference");
+    PushStatus ("Calc Difference");
 
     const FESpace & fes1 = *u1.GetFESpace();
 
@@ -1231,7 +1231,7 @@ namespace ngcomp
       {
         ElementId ei(bound1 ? BND : VOL, i);
 
-        BaseStatusHandler::SetThreadPercentage ( 100.0*i / ne );
+        SetThreadPercent ( 100.0*i / ne );
         
 	lh.CleanUp();
 
@@ -1342,7 +1342,7 @@ namespace ngcomp
 	  }
       }
     cout << "difference = " << sqrt(sum) << endl;
-    BaseStatusHandler::PopStatus ();
+    PopStatus ();
   }
 
   NGS_DLL_HEADER void CalcDifference (const GridFunction & u1,

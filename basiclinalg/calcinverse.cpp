@@ -35,7 +35,7 @@ namespace ngbla
 
     int n = inv.Height();
 
-    ngstd::ArrayMem<int,100> p(n);   // pivot-permutation
+    ArrayMem<int,100> p(n);   // pivot-permutation
     for (int j = 0; j < n; j++) p[j] = j;
     
     for (int j = 0; j < n; j++)

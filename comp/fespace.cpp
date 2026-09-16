@@ -1732,6 +1732,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
             for(auto & per_faces : ma->GetPeriodicNodes(NT_FACE, idnr))
               facet_map[per_faces[1]] = per_faces[0];
           }
+        for (auto i : Range(vertex_map))
+          while (vertex_map[vertex_map[i]] != vertex_map[i])
+            vertex_map[i] = vertex_map[vertex_map[i]];
         for(auto i : Range(ma->GetNV()))
           if (int v = vertex_map[i]; v == i)
             patchentry[i] = nentries++;
@@ -1827,9 +1830,16 @@ lot of new non-zero entries in the matrix!\n" << endl;
             if (filtered_blocktypes.count("vertexpatch"))
               {
                 optional<string> filter = filtered_blocktypes[string("vertexpatch")];
-                bool periodic = filter.has_value() && filter.value().find("periodic") != string::npos;
-                if(periodic)
-                  filter = filter.value().substr(0, filter.value().find("periodic")-1);
+                bool periodic = false;
+                if (filter)
+                  if (auto pos = filter->find("periodic"); pos != string::npos)
+                    {
+                      periodic = true;
+                      string rest = filter->substr(0, pos);
+                      while (rest.size() && (rest.back() == ',' || rest.back() == ' '))
+                        rest.pop_back();
+                      filter = rest.empty() ? nullopt : optional<string>(rest);
+                    }
                 if (filter)
                   {
                     SelectDofs (*filter, filtermask);
@@ -2371,7 +2381,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     
     FlatArray<int> vertex_map;
     if (const PeriodicFESpace * periodic = dynamic_cast<const PeriodicFESpace*> (this))
-      vertex_map.Assign (periodic->GetVertexMap());
+      vertex_map.Assign (periodic->GetVertexOrientation());
     
     ma->IterateElements
       (VOL, lh, [&] (auto el, LocalHeap & llh)

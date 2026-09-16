@@ -648,6 +648,14 @@ namespace ngla
     
   }
 
+  template <class SCAL>
+  Array<MemoryUsage> ElementByElementMatrix<SCAL> :: GetMemoryUsage () const
+  {
+    size_t bytes = elmats.Size()*sizeof(FlatMatrix<SCAL>) + (rowdnums.Size()+coldnums.Size())*sizeof(FlatArray<int>);
+    bytes += (allrow.Size()+allcol.Size())*sizeof(int) + allvalues.Size()*sizeof(SCAL);
+    return { { "ElementByElementMatrix", bytes, this } };
+  }
+
   template<class SCAL>
   void ElementByElementMatrix<SCAL>::InitMemoryTracing() const
   {

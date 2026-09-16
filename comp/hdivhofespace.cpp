@@ -229,6 +229,7 @@ namespace ngcomp
   {
     type = "hdivho";
     name="HDivHighOrderFESpace(hdivho)";
+    needs_transform_vec = false;
     // allowed flags
     DefineNumFlag("relorder");
     // DefineNumFlag("relcurlorder");
@@ -479,9 +480,9 @@ namespace ngcomp
 	    pc = curl_order; 
 	  } 
     
-	order_facet = pc;
-	order_inner = p;
-	order_inner_curl = pc;
+	order_facet = IVec<2>(pc);
+	order_inner = IVec<3>(p);
+	order_inner_curl = IVec<3>(pc);
 	fine_facet = 0; //!!!! 
 
 
@@ -568,8 +569,8 @@ namespace ngcomp
 	ma->AllReduceNodalData ((ma->GetDimension()==2) ? NT_EDGE : NT_FACE,
 				fine_facet, NG_MPI_LOR);
 
-	if(uniform_order_inner > -1) order_inner = uniform_order_inner;
-	if(uniform_order_facet > -1) order_facet = uniform_order_facet;
+	if(uniform_order_inner > -1) order_inner = IVec<3>(uniform_order_inner);
+	if(uniform_order_facet > -1) order_facet = IVec<2>(uniform_order_facet);
 
 	for (auto i : Range(nfa)) if (!fine_facet[i]) order_facet[i] = IVec<2> (0,0); 
 

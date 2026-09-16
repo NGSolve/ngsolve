@@ -363,6 +363,25 @@ namespace ngla
   }
 
   template <typename T>
+  MemorySize DeviceBlockGemv<T> :: Bytes (const DeviceBlockGemv * shared) const
+  {
+    auto buffers = [] (const DeviceBlockGemv & g)
+    {
+      return std::array<const ngs_gpu::Buffer*,8>
+        { g.dev_infirst.Raw().get(), g.dev_outfirst.Raw().get(), g.dev_matfirst.Raw().get(),
+          g.dev_inidx.Raw().get(), g.dev_outidx.Raw().get(), g.dev_mats.Raw().get(),
+          g.dev_small.Raw().get(), g.dev_large.Raw().get() };
+    };
+    std::array<const ngs_gpu::Buffer*,8> other { };
+    if (shared) other = buffers (*shared);
+    size_t dev = 0;
+    for (auto b : buffers (*this))
+      if (b && std::find (other.begin(), other.end(), b) == other.end())
+        dev += b->Size();
+    return { sizeof(int) * (nin.Size()+nout.Size()), dev };
+  }
+
+  template <typename T>
   string DeviceBlockGemv<T> :: Info () const
   {
     return ToString(nblocks) + " blocks (" + ToString(nsmall) + " small, " + ToString(nlarge) + " large, max in "

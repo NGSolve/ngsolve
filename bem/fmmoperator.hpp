@@ -1,6 +1,7 @@
 #ifndef FILE_FMMOPERATOR
 #define FILE_FMMOPERATOR
 #include <mptools.hpp>
+#include <ngstd.hpp>
 #include <bla.hpp>
 #include <variant>
 #include "../linalg/basematrix.hpp"

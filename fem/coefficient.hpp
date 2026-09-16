@@ -7,6 +7,7 @@
 /* Date:   25. Mar. 2000                                             */
 /*********************************************************************/
 
+#include <ngstd.hpp>
 #include <bla.hpp>
 #include "code_generation.hpp"
 

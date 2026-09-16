@@ -46,9 +46,12 @@ add_library(ngbla ${NGS_LIB_TYPE}
 add_dependencies(ngbla kernel_generated kernel32_generated)
 
 target_include_directories(ngbla PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+target_include_directories(ngbla PUBLIC ${NGSOLVE_INCLUDE_DIRS})
+target_compile_definitions(ngbla PUBLIC ${NGSOLVE_COMPILE_DEFINITIONS})
 target_compile_definitions(ngbla PRIVATE ${NGSOLVE_COMPILE_DEFINITIONS_PRIVATE})
+target_compile_options(ngbla PUBLIC ${NGSOLVE_COMPILE_OPTIONS})
 
-target_link_libraries(ngbla PUBLIC ngstd ${MPI_CXX_LIBRARIES} PRIVATE "$<BUILD_INTERFACE:netgen_python>")
+target_link_libraries(ngbla PUBLIC netgen_core_lib ${MPI_CXX_LIBRARIES} PRIVATE "$<BUILD_INTERFACE:netgen_python>")
 target_link_libraries(ngbla ${LAPACK_CMAKE_LINK_INTERFACE} "$<BUILD_INTERFACE:ngs_lapack>")
 
 install( TARGETS ngbla ${ngs_install_dir} )

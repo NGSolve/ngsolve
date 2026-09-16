@@ -22,6 +22,7 @@ namespace ngcomp {
         integrator[vorb] = space->GetIntegrator(vorb);
       }    
     iscomplex = space->IsComplex();
+    needs_transform_vec = space->NeedsTransformVec();
     /*
       // not yet implemented ...
       if (space->LowOrderFESpacePtr() && false)

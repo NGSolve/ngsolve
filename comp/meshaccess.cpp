@@ -1212,19 +1212,19 @@ namespace ngcomp
       {
         for(auto sei : Range(nmesh.SurfaceElements()))
           {
-            int el1, el2;
-            topology.GetSurface2VolumeElement(sei+1, el1, el2);
-            const auto& sel = nmesh.SurfaceElements()[sei];
+            netgen::ElementIndex el1, el2;
+            topology.GetSurface2VolumeElement(sei, el1, el2);
+            const auto& sel = nmesh[sei];
             auto bc = nmesh.GetFaceDescriptor(sel.GetIndex()).BCProperty()-1;
-            if(el1 > 0)
+            if(el1.IsValid())
               {
-                auto index1 = nmesh.VolumeElement(el1).GetIndex()-1;
+                auto index1 = nmesh[el1].GetIndex()-1;
                 neighbours[BND][VOL].AddUnique(bc, index1);
                 neighbours[VOL][BND].AddUnique(index1, bc);
               }
-            if(el2 > 0)
+            if(el2.IsValid())
               {
-                auto index2 = nmesh.VolumeElement(el2).GetIndex()-1;
+                auto index2 = nmesh[el2].GetIndex()-1;
                 neighbours[BND][VOL].AddUnique(bc, index2);
                 neighbours[VOL][BND].AddUnique(index2, bc);
               }
@@ -2186,39 +2186,11 @@ namespace ngcomp
 
 
   
-  void NGSolveTaskManager (function<void(int,int)> func)
-  {
-    // cout << "call ngsolve taskmanager from netgen, tm = " << task_manager << endl;
-    if (!GetTaskManager())
-      func(0,1);
-    else
-      TaskManager::CreateJob
-        ([&](TaskInfo & info)
-         {
-           func(info.task_nr, info.ntasks);
-         }, TasksPerThread(4));
-  }
-
-  map<string, unique_ptr<Timer<>>> ngtimers;
-  void NGSolveTracer (string name, bool stop)
-  {
-    // cout << "************* tracer: " << name << ", stop = " << stop << endl;
-    int count = ngtimers.count(name);
-    if (count == 0)
-      ngtimers[name] = make_unique<Timer<>> (name);
-    Timer<> * timer = ngtimers[name].get();
-    if (!stop)
-      timer->Start();
-    else
-      timer->Stop();
-  }
-  
-  
   void MeshAccess :: Refine (bool onlyonce)
   {
     static Timer t("MeshAccess::Refine"); RegionTimer reg(t);
     nlevels = std::numeric_limits<int>::max();
-    mesh.Refine(NG_REFINE_H, onlyonce, &NGSolveTaskManager, &NGSolveTracer);
+    mesh.Refine(NG_REFINE_H, onlyonce);
     UpdateBuffers();
     updateSignal.Emit();
   }
@@ -2828,7 +2800,7 @@ namespace ngcomp
 	  if (is_root)
 	    {
 	      cout << IM(3) << "\r" << task << " " << nr << "/" << total << flush;
-              BaseStatusHandler::SetThreadPercentage ( 100.0*nr / total);
+              SetThreadPercent ( 100.0*nr / total);
 	    }
 #ifdef PARALLEL
 	  else if (use_mpi)
@@ -2884,7 +2856,7 @@ namespace ngcomp
 		cout << IM(3) 
 		     << "\r" << task << " " << sum << "/" << total
 		     << " (" << num_working << " procs working) " << flush;
-                BaseStatusHandler::SetThreadPercentage ( 100.0*sum / total );
+                SetThreadPercent ( 100.0*sum / total );
 		if (!num_working) break;
 		if (!got_flag) std::this_thread::sleep_for(std::chrono::microseconds(1000));
 	      }

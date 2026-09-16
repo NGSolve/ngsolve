@@ -1,3 +1,4 @@
+#include <ngstd.hpp>
 #include <bla.hpp>
 
 namespace ngsbem

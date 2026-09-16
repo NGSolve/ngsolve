@@ -80,7 +80,7 @@ namespace ngla
     // virtual AutoVector Range (size_t begin, size_t end) const override;
     virtual AutoVector Range (T_Range<size_t> range) const override;
 
-    template<typename TIND, typename std::enable_if<ngstd::my_is_integral<TIND>::value, int>::type = 0>
+    template<typename TIND, typename std::enable_if<ngcore::my_is_integral<TIND>::value, int>::type = 0>
     FlatVector<TSCAL> operator() (TIND i) const
     {
       return FlatVector<TSCAL> (es, pdata+i*es);

@@ -410,7 +410,7 @@ namespace ngfem
       for (int i = 0; i < N_VERTEX; i++) vnums[i] = i;
 
       order_inner = aorder;
-      order_facet = aorder;
+      order_facet = IVec<DIM-1>(aorder);
 
       ComputeNDof();
     }

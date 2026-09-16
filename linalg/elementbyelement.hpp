@@ -56,6 +56,7 @@ namespace ngla
     int VHeight() const override { return height; }
     int VWidth() const override { return width; }
     size_t GetNumElMats() const { return elmats.Size(); }
+    Array<MemoryUsage> GetMemoryUsage () const override;
 
     VecFormat RowFormat () const override { return VVectorFormat<double> (width); }
     VecFormat ColFormat () const override { return VVectorFormat<double> (height); }
