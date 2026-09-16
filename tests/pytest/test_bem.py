@@ -137,8 +137,10 @@ def _maxwell_sl(u, v, kappa, **kwargs):
     ) * div(v.Trace()) * ds
 
 
-def _fmm_direct_operators(operator_name, mesh, kappa=1.5, order=20):
+def _fmm_direct_operators(operator_name, mesh, kappa=1.5, order=20, fmm_options=None):
     fmm_kwargs = {"use_fmm": True, "fmm_minorder": order}
+    if fmm_options:
+        fmm_kwargs.update(fmm_options)
 
     if operator_name in (
         "LaplaceSL",
@@ -255,6 +257,79 @@ def test_fmm_and_direct_matrix_action(operator_name, geometry, kappa, order):
     relerr = np.linalg.norm(diff) / np.linalg.norm(y_direct.FV().NumPy())
     tol = 1e-7 if operator_name == "MaxwellDL" and geometry == "quad_sphere" else 1e-8
     assert relerr < tol
+
+
+@pytest.mark.parametrize(
+    "operator_name, kappa, order, maxdirect",
+    [
+        ("LaplaceSL", 1.5, 20, 5),
+        ("LaplaceSL", 1.5, 100, 5),
+        ("LaplaceDL", 1.5, 20, 5),
+        ("HelmholtzSL", 1.5, 20, 5),
+        ("HelmholtzDL", 1.5, 20, 5),
+        ("HelmholtzCF", 8.0, 20, 5),
+        ("MaxwellDL", 1.5, 20, 5),
+        ("LameSL", 1.5, 20, 5),
+        ("HelmholtzCF", 100.0, 20, 25),
+    ] + [
+        (operator_name, kappa, order, 25)
+        for operator_name, kappa in [
+            ("HelmholtzSL", 1.5),
+            ("HelmholtzDL", 1.5),
+            ("MaxwellDL", 1.5),
+            ("HelmholtzSL", 7.5 + 10j),
+            ("HelmholtzDL", 7.5 + 10j),
+            ("HelmholtzCF", 1.0 + 5.0j),
+        ]
+        for order in (30, 100)
+    ],
+)
+def test_fp32_fmm_matches_fp64_far_field(operator_name, kappa, order, maxdirect):
+    mesh = _sphere_mesh(maxh=0.4)
+
+    with TaskManager():
+        op64, _ = _fmm_direct_operators(
+            operator_name, mesh, kappa, order=order,
+            fmm_options={"fmm_maxdirect": maxdirect},
+        )
+        op32, _ = _fmm_direct_operators(
+            operator_name, mesh, kappa, order=order,
+            fmm_options={"fmm_maxdirect": maxdirect, "fp32": True},
+        )
+
+    info64 = op64.GetFMMInfo()
+    info32 = op32.GetFMMInfo()
+    assert info32["total_multipole_coefficients"] == info64["total_multipole_coefficients"]
+    assert info32["multipole_memory_mb"] == pytest.approx(0.5 * info64["multipole_memory_mb"])
+    assert info32["num_s2r"] > 0
+    assert info32["direct_fallback_fraction"] < 1.0
+
+    vec = op64.mat.CreateRowVector()
+    expected_dtype = np.float64 if operator_name == "LameSL" else np.complex128
+    assert vec.FV().NumPy().dtype == expected_dtype
+    values = np.linspace(0.25, 1.25, op64.mat.width)
+    vec.FV().NumPy()[:] = values
+    if np.iscomplexobj(vec.FV().NumPy()):
+        vec.FV().NumPy()[:] += 0.2j * values[::-1]
+    out64 = op64.mat.CreateColVector()
+    out32 = op32.mat.CreateColVector()
+    with TaskManager():
+        out64.data = op64.mat * vec
+        out32.data = op32.mat * vec
+
+    diff = out32.FV().NumPy() - out64.FV().NumPy()
+    assert np.all(np.isfinite(out32.FV().NumPy()))
+    relerr = np.linalg.norm(diff) / np.linalg.norm(out64.FV().NumPy())
+    assert relerr < 1e-5
+
+    reference32 = out32.FV().NumPy().copy()
+    for _ in range(3):
+        repeated = op32.mat.CreateColVector()
+        with TaskManager():
+            repeated.data = op32.mat * vec
+        repeat_diff = repeated.FV().NumPy() - reference32
+        repeat_relerr = np.linalg.norm(repeat_diff) / np.linalg.norm(reference32)
+        assert repeat_relerr < 1e-5
 
 
 @pytest.mark.parametrize("operator_name", ["LaplaceSL", "HelmholtzSL"])
