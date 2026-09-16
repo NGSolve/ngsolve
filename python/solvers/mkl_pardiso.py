@@ -1,12 +1,15 @@
 import numpy as np
 import ctypes
 import ctypes.util
+from contextlib import contextmanager
 
 from .. import la as ngla
 from .. import config, TimeFunction
+from pyngcore import GetNumThreads, SuspendTaskManager
 
 _mkl_free_buffers = None
 _pardiso = None
+_mkl_set_num_threads_local = None
 
 
 def _find_mkl():
@@ -16,7 +19,7 @@ def _find_mkl():
 
     import importlib.metadata
 
-    global _mkl_free_buffers, _pardiso
+    global _mkl_free_buffers, _pardiso, _mkl_set_num_threads_local
 
     if _mkl_free_buffers is not None and _pardiso is not None:
         return
@@ -58,8 +61,28 @@ def _find_mkl():
     except AttributeError:
         _pardiso = None
 
+    try:
+        _mkl_set_num_threads_local = mkl_rt.MKL_Set_Num_Threads_Local
+        _mkl_set_num_threads_local.restype = ctypes.c_int
+        _mkl_set_num_threads_local.argtypes = [ctypes.c_int]
+    except AttributeError:
+        _mkl_set_num_threads_local = None
+
     if _pardiso is not None and _mkl_free_buffers is not None and mkl_from_pip:
         ngla.BaseMatrix.SetDefaultInverseType("pardiso")
+
+
+@contextmanager
+def _mkl_threads():
+    nthreads = GetNumThreads()
+    old = _mkl_set_num_threads_local(nthreads) if _mkl_set_num_threads_local else None
+    suspend = SuspendTaskManager()
+    try:
+        yield
+    finally:
+        del suspend
+        if old is not None:
+            _mkl_set_num_threads_local(old)
 
 
 class MKLPardiso(ngla.SparseFactorizationInterface):
@@ -94,7 +117,6 @@ class MKLPardiso(ngla.SparseFactorizationInterface):
 
         self._params[0] = 1  # no pardiso defaults
         self._params[1] = 0  # fill in 0..MDO, 2..metis
-        self._params[2] = 8  # nthreads
         self._params[7] = 16
         self._params[9] = 13  # perturbation 1E-10
         self._params[10] = 1
@@ -146,24 +168,25 @@ class MKLPardiso(ngla.SparseFactorizationInterface):
     def _call_pardiso(self, phase):
         self._phase[0] = phase
         null = ctypes.c_void_p(0)
-        _pardiso(
-            self._pt,
-            self._maxfct,
-            self._mnum,
-            self._matrixtype,
-            self._phase,
-            self._n,
-            self._data,
-            self._indptr,
-            self._indices,
-            null,
-            self._nrhs,
-            self._params,
-            self._msglevel,
-            self._b,
-            self._x,
-            self._error,
-        )
+        with _mkl_threads():
+            _pardiso(
+                self._pt,
+                self._maxfct,
+                self._mnum,
+                self._matrixtype,
+                self._phase,
+                self._n,
+                self._data,
+                self._indptr,
+                self._indices,
+                null,
+                self._nrhs,
+                self._params,
+                self._msglevel,
+                self._b,
+                self._x,
+                self._error,
+            )
         if self._error[0] != 0:
             raise RuntimeError(f"MKL Pardiso error in phase {phase}: {self._error[0]}")
 
@@ -266,24 +289,25 @@ class MKLPardiso(ngla.SparseFactorizationInterface):
             try:
                 self._phase[0] = -1
                 null = ctypes.c_void_p(0)
-                _pardiso(
-                    self._pt,
-                    self._maxfct,
-                    self._mnum,
-                    self._matrixtype,
-                    self._phase,
-                    self._n,
-                    null,
-                    self._indptr,
-                    self._indices,
-                    null,
-                    self._nrhs,
-                    self._params,
-                    self._msglevel,
-                    null,
-                    null,
-                    self._error,
-                )
+                with _mkl_threads():
+                    _pardiso(
+                        self._pt,
+                        self._maxfct,
+                        self._mnum,
+                        self._matrixtype,
+                        self._phase,
+                        self._n,
+                        null,
+                        self._indptr,
+                        self._indices,
+                        null,
+                        self._nrhs,
+                        self._params,
+                        self._msglevel,
+                        null,
+                        null,
+                        self._error,
+                    )
             except Exception:
                 pass
 

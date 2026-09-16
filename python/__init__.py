@@ -57,7 +57,7 @@ from .ngslib import __version__, ngstd, bla, la, fem, comp, solve
 
 from netgen import Redraw, TimeFunction
 
-from pyngcore import BitArray, TaskManager, SetNumThreads, PajeTrace, Timers, Timer
+from pyngcore import BitArray, TaskManager, SetNumThreads, GetNumThreads, PajeTrace, Timers, Timer
 from .ngstd import IntRange
 from .bla import Matrix, Vector, InnerProduct, Norm
 from .la import BaseMatrix, BaseVector, BlockVector, MultiVector, BlockMatrix, \
