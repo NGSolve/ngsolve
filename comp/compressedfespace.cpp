@@ -16,6 +16,7 @@ namespace ngcomp
       integrator[vb] = space->GetIntegrator(vb);
     }
     iscomplex = space->IsComplex();
+    needs_transform_vec = space->NeedsTransformVec();
   }
 
   void CompressedFESpace::Update()

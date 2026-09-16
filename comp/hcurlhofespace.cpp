@@ -26,6 +26,7 @@ namespace ngcomp
   {
     type = "hcurlho";
     name="HCurlHighOrderFESpace(hcurlho)";
+    needs_transform_vec = false;
 
     // define flags
     DefineDefineFlag("hcurlho");

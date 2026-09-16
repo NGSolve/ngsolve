@@ -229,6 +229,7 @@ namespace ngcomp
   {
     type = "hdivho";
     name="HDivHighOrderFESpace(hdivho)";
+    needs_transform_vec = false;
     // allowed flags
     DefineNumFlag("relorder");
     // DefineNumFlag("relcurlorder");
