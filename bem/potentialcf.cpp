@@ -4,30 +4,40 @@
 #include "../comp/gridfunction.hpp"
 
 #include "analytic_integrals.hpp"
+#include "kernels.hpp"
 
 
 namespace ngsbem
 {
-  template <typename KERNEL>
-  PotentialCF<KERNEL> ::
+  template <typename TSCAL>
+  PotentialCF<TSCAL> ::
   PotentialCF (shared_ptr<GridFunction> _gf,
                VorB _source_vb,
                optional<Region> _definedon,
                shared_ptr<DifferentialOperator> _evaluator,
-               KERNEL _kernel, int _intorder,
+               shared_ptr<const BaseIntegralKernel<TSCAL>> _kernel, int _intorder,
                IntOp_Parameters _io_params)
-    : BasePotentialCF(_gf, _source_vb, _definedon, _evaluator, std::is_same<typename KERNEL::value_type,Complex>()),
-      kernel(_kernel), intorder(_intorder)
+    : BasePotentialCF(_gf, _source_vb, _definedon, _evaluator, std::is_same<TSCAL,Complex>()),
+      kernel(std::move(_kernel)), intorder(_intorder)
   {
     io_params = _io_params;
-    IVec<2> shape = kernel.Shape();
+    IVec<2> shape = kernel->Shape();
     if (shape[0] > 1)
       this->SetDimensions( Array<int>( { shape[0] } ));
   }
 
 
-  template <typename KERNEL>
-  void PotentialCF<KERNEL> ::
+  template <typename TSCAL>
+  shared_ptr<CoefficientFunction> PotentialCF<TSCAL> ::
+  Operator (const string & name) const
+  {
+    return make_shared<PotentialCF<TSCAL>>(gf, source_vb, definedon, evaluator,
+                                          kernel->GetDifferentiatedKernel(name), intorder, io_params);
+  }
+
+
+  template <typename TSCAL>
+  void PotentialCF<TSCAL> ::
   BuildLocalExpansion(const Region & reg)
   {
     LocalHeapMem<100000> lh("PotentialCF::BuildLocalExpansion");
@@ -61,9 +71,11 @@ namespace ngsbem
     Vec<3> cs = 0.5*(smin+smax);
     double rs = MaxNorm(smax-smin);
 
-    auto singmp = kernel.source.CreateMultipoleExpansion(cs, rs, io_params);
+    auto & source = kernel->Source();
+    bool source_needs_normal = source.NeedsNormal();
+    auto singmp = source.CreateMultipoleExpansion(cs, rs, io_params);
 
-    typedef typename KERNEL::value_type T;
+    typedef TSCAL T;
     for (size_t i = 0; i < mesh->GetNE(source_vb); i++)
       {
         HeapReset hr(lh);
@@ -91,13 +103,13 @@ namespace ngsbem
           {
             vals.Row(j) *= miry[j].GetWeight();
             Vec<3> ny = 0.0;
-            if constexpr (KERNEL::source_type::needs_normal)
+            if (source_needs_normal)
               {
                 if (source_vb != BND)
                   throw Exception("kernel requires boundary source normals");
                 ny = static_cast<const MappedIntegrationPoint<2,3>&>(miry[j]).GetNV();
               }
-            kernel.source.AddSource (*singmp, miry[j].GetPoint(), ny, make_BareSliceVector(vals.Row(j)));
+            source.AddSource (*singmp, miry[j].GetPoint(), ny, make_BareSliceVector(vals.Row(j)));
           }
       }
 
@@ -133,7 +145,7 @@ namespace ngsbem
     double l2 = ceil (log2 (rt/rs));
     rt = exp2 (l2) * rs;
 
-    local_expansion = kernel.target.CreateLocalExpansion(ct, rt, io_params);
+    local_expansion = kernel->Target().CreateLocalExpansion(ct, rt, io_params);
 
     for (auto el : reg.GetElements())
       {
@@ -352,8 +364,8 @@ namespace ngsbem
   }
 
 
-  template <typename KERNEL> template <typename T>
-  void PotentialCF<KERNEL> ::
+  template <typename TSCAL> template <typename T>
+  void PotentialCF<TSCAL> ::
   AddSourceElementContribution(const BaseMappedIntegrationPoint & mip,
                                ElementId ei,
                                const IntegrationRule & ir,
@@ -385,29 +397,7 @@ namespace ngsbem
         FlatMatrix<SIMD<T>> vals(evaluator->Dim(), miry.Size(), lh);
 
         evaluator->Apply(fel, miry, elvec, vals);
-        for (int iy = 0; iy < miry.Size(); iy++)
-          {
-            Vec<3,SIMD<double>> x = mip.GetPoint();
-            Vec<3,SIMD<double>> nx{0.0};
-            if constexpr (KERNEL::target_type::needs_normal)
-              nx = dynamic_cast<const MappedIntegrationPoint<2,3>&>(mip).GetNV();
-
-            Vec<3,SIMD<double>> y = miry[iy].GetPoint();
-            Vec<3,SIMD<double>> ny{0.0};
-            if constexpr (KERNEL::source_type::needs_normal)
-              {
-                if (source_vb != BND)
-                  throw Exception("kernel requires boundary source normals");
-                ny = static_cast<const SIMD<MappedIntegrationPoint<2,3>>&>(miry[iy]).GetNV();
-              }
-
-            auto eval = kernel.Evaluate(x, y, nx, ny);
-            for (auto term : kernel.terms)
-              {
-                auto kernel_ = term.fac * eval(term.kernel_comp);
-                simd_result(term.test_comp) += miry[iy].GetWeight() * kernel_ * vals(term.trial_comp, iy);
-              }
-          }
+        kernel->AddPotential(mip, miry, vals, simd_result, source_vb);
       }
 
     for (int i = 0; i < Dimension(); i++)
@@ -415,17 +405,17 @@ namespace ngsbem
   }
 
 
-  template <typename KERNEL> template <typename T>
-  void PotentialCF<KERNEL> ::
+  template <typename TSCAL> template <typename T>
+  void PotentialCF<TSCAL> ::
   AddTangentCorrection(const BaseMappedIntegrationPoint & mip,
                        ElementId ei,
                        const IntegrationRule & ir,
                        FlatVector<T> result,
                        LocalHeap & lh) const
   {
-    constexpr auto formula = KERNEL::analytic_triangle_formula;
-    if constexpr (formula == AnalyticTriangleFormula::none)
-      throw Exception("no analytic triangle formula available for "+KERNEL::Name());
+    auto formula = kernel->GetAnalyticTriangleFormula();
+    if (formula == AnalyticTriangleFormula::none)
+      throw Exception("no analytic triangle formula available for "+kernel->Name());
 
     auto space = this->gf->GetFESpace();
     auto mesh = space->GetMeshAccess();
@@ -466,7 +456,7 @@ namespace ngsbem
     Vec<3> nx{0.0};
     Vec<3> ny = mip0.GetNV();
 
-    if constexpr (formula == AnalyticTriangleFormula::laplace_sl)
+    if (formula == AnalyticTriangleFormula::laplace_sl)
       {
         double flat_numeric = 0.0;
         double analytic = LaplaceSL_Polygon(polygon, x);
@@ -482,7 +472,7 @@ namespace ngsbem
           }
         scalar_correction = analytic - flat_numeric;
       }
-    else if constexpr (formula == AnalyticTriangleFormula::laplace_dl)
+    else if (formula == AnalyticTriangleFormula::laplace_dl)
       {
         double flat_numeric = 0.0;
         double analytic = LaplaceDL_Polygon(polygon, x, ny);
@@ -498,7 +488,7 @@ namespace ngsbem
           }
         scalar_correction = analytic - flat_numeric;
       }
-    else if constexpr (formula == AnalyticTriangleFormula::laplace_grad_sl)
+    else if (formula == AnalyticTriangleFormula::laplace_grad_sl)
       {
         Vec<3> flat_numeric { 0.0, 0.0, 0.0 };
         Vec<3> analytic = LaplaceGradSL_Polygon(polygon, x);
@@ -517,7 +507,7 @@ namespace ngsbem
 
     FlatVector<T> vals(evaluator->Dim(), lh);
     evaluator->Apply(fel, mip0, elvec, vals, lh);
-    for (auto term : kernel.terms)
+    for (auto term : kernel->Terms())
       {
         double correction =
           formula == AnalyticTriangleFormula::laplace_grad_sl ?
@@ -527,14 +517,15 @@ namespace ngsbem
   }
 
 
-  template <typename KERNEL> template <typename T>
-  void PotentialCF<KERNEL> ::
+  template <typename TSCAL> template <typename T>
+  void PotentialCF<TSCAL> ::
   AddLocalExpansionNearfieldCorrection(const BaseMappedIntegrationRule & bmir,
                                        BareSliceMatrix<T> result) const
   {
     LocalHeap lh(10*1000*1000, "Potential::LocalExpansionNearfieldCorrection");
     auto space = this->gf->GetFESpace();
     auto mesh = space->GetMeshAccess();
+    auto formula = kernel->GetAnalyticTriangleFormula();
 
     // TODO: find a better way to identify nearfield source elements.
     // The current path scans all source elements for every target point.
@@ -561,27 +552,28 @@ namespace ngsbem
             AddSourceElementContribution(mip, ei, standard_ir, row, T(-1.0), lh);
             AddSourceElementContribution(mip, ei, near_ir, row, T(1.0), lh);
 
-            if constexpr (KERNEL::analytic_triangle_formula != AnalyticTriangleFormula::none)
+            if (formula != AnalyticTriangleFormula::none)
               AddTangentCorrection(mip, ei, near_ir, row, lh);
           }
       }
   }
 
 
-  template <typename KERNEL> template <typename T>
-  void PotentialCF<KERNEL> :: T_Evaluate(const BaseMappedIntegrationPoint & mip,
+  template <typename TSCAL> template <typename T>
+  void PotentialCF<TSCAL> :: T_Evaluate(const BaseMappedIntegrationPoint & mip,
                                          FlatVector<T> result) const
   {
     static Timer t("ngbem evaluate potential (ip)"); RegionTimer reg(t);
     LocalHeapMem<100000> lh("Potential::Eval");
     auto space = this->gf->GetFESpace();
     auto mesh = space->GetMeshAccess();
+    auto formula = kernel->GetAnalyticTriangleFormula();
 
     Vector<SIMD<T>> simd_result(Dimension());
     simd_result = SIMD<T>(0.0);
     Vector<T> correction_result(Dimension());
     correction_result = T(0.0);
-    if constexpr (std::is_same<typename KERNEL::value_type,T>())
+    if constexpr (std::is_same<TSCAL,T>())
       for (size_t i = 0; i < mesh->GetNE(source_vb); i++)
         {
           HeapReset hr(lh);
@@ -598,7 +590,7 @@ namespace ngsbem
           gf->GetElementVector(dnums, elvec);
 
           bool use_tangent_correction = false;
-          if constexpr (KERNEL::analytic_triangle_formula != AnalyticTriangleFormula::none)
+          if (formula != AnalyticTriangleFormula::none)
             use_tangent_correction = IsPotentialNearfieldSourceElement(mip.GetPoint(), trafo);
 
           IntegrationRule ir = GetIntegrationRule(mip.GetPoint(), trafo, intorder);
@@ -614,31 +606,9 @@ namespace ngsbem
               FlatMatrix<SIMD<T>> vals(evaluator->Dim(), miry.Size(), lh);
 
               evaluator->Apply (fel, miry, elvec, vals);
-              for (int iy = 0; iy < miry.Size(); iy++)
-                {
-                  Vec<3,SIMD<double>> x = mip.GetPoint();
-                  Vec<3,SIMD<double>> nx{0.0};
-                  if constexpr (KERNEL::target_type::needs_normal)
-                    nx = dynamic_cast<const MappedIntegrationPoint<2,3>&>(mip).GetNV();
-
-                  Vec<3,SIMD<double>> y = miry[iy].GetPoint();
-                  Vec<3,SIMD<double>> ny{0.0};
-                  if constexpr (KERNEL::source_type::needs_normal)
-                    {
-                      if (source_vb != BND)
-                        throw Exception("kernel requires boundary source normals");
-                      ny = static_cast<const SIMD<MappedIntegrationPoint<2,3>>&>(miry[iy]).GetNV();
-                    }
-
-                  auto eval = kernel.Evaluate(x, y, nx, ny);
-                  for (auto term : kernel.terms)
-                    {
-                      auto kernel_ = term.fac * eval(term.kernel_comp);
-                      simd_result(term.test_comp) += miry[iy].GetWeight()*kernel_ * vals(term.trial_comp,iy);
-                    }
-                }
+              kernel->AddPotential(mip, miry, vals, simd_result, source_vb);
             }
-          if constexpr (KERNEL::analytic_triangle_formula != AnalyticTriangleFormula::none)
+          if (formula != AnalyticTriangleFormula::none)
             if (use_tangent_correction)
               AddTangentCorrection(mip, ei, ir, correction_result, lh);
         }
@@ -647,25 +617,27 @@ namespace ngsbem
   }
 
 
-  template <typename KERNEL> template <typename T>
-  void PotentialCF<KERNEL> :: T_Evaluate(const BaseMappedIntegrationRule & bmir,
+  template <typename TSCAL> template <typename T>
+  void PotentialCF<TSCAL> :: T_Evaluate(const BaseMappedIntegrationRule & bmir,
                                          BareSliceMatrix<T> result) const
   {
-    if constexpr (std::is_same<typename KERNEL::value_type,T>())
+    if constexpr (std::is_same<TSCAL,T>())
       if (local_expansion)
         {
           // static Timer t("ngbem evaluate potential, local expansion (bmir)"); RegionTimer reg(t);
 
+          auto & target = kernel->Target();
+          bool target_needs_normal = target.NeedsNormal();
           const MappedIntegrationRule<2,3> * mir23 = nullptr;
-          if constexpr (KERNEL::target_type::needs_normal)
+          if (target_needs_normal)
             mir23 = &dynamic_cast<const MappedIntegrationRule<2,3>&>(bmir);
 
           for (int j = 0; j < bmir.Size(); j++)
             {
               Vec<3> nx = 0.0;
-              if constexpr (KERNEL::target_type::needs_normal)
+              if (target_needs_normal)
                 nx = (*mir23)[j].GetNV();
-              kernel.target.EvaluateMP (*local_expansion, Vec<3>(bmir[j].GetPoint()), nx, make_BareSliceVector(result.Row(j)));
+              target.EvaluateMP (*local_expansion, Vec<3>(bmir[j].GetPoint()), nx, make_BareSliceVector(result.Row(j)));
             }
           AddLocalExpansionNearfieldCorrection(bmir, result);
           return;
@@ -676,8 +648,8 @@ namespace ngsbem
   }
 
 
-  template <typename KERNEL> template <typename T>
-  void PotentialCF<KERNEL> :: T_Evaluate(const SIMD_BaseMappedIntegrationRule & ir,
+  template <typename TSCAL> template <typename T>
+  void PotentialCF<TSCAL> :: T_Evaluate(const SIMD_BaseMappedIntegrationRule & ir,
                                          BareSliceMatrix<SIMD<T>> result) const
   {
     static Timer t("ngbem evaluate potential (ir-simd), throwing"); RegionTimer reg(t);
@@ -688,43 +660,6 @@ namespace ngsbem
   }
 
 
-  template class PotentialCF<LaplaceSLKernel<3>>;
-  template class PotentialCF<LaplaceSLKernel<3,3>>;
-  template class PotentialCF<LaplaceSLKernel<3,1,Complex>>;
-  template class PotentialCF<LaplaceSLKernel<3,3,Complex>>;
-  template class PotentialCF<LaplaceDLKernel<3>>;
-  template class PotentialCF<LaplaceDLKernel<3,3>>;
-  template class PotentialCF<LaplaceDLKernel<3,1,Complex>>;
-  template class PotentialCF<LaplaceDLKernel<3,3,Complex>>;
-  template class PotentialCF<LameSLKernel<3>>;
-  template class PotentialCF<HelmholtzSLKernel<3>>;
-  template class PotentialCF<HelmholtzSLKernel<3,3>>;
-  template class PotentialCF<HelmholtzSLKernel<3,1,Complex>>;
-  template class PotentialCF<HelmholtzSLKernel<3,3,Complex>>;
-  template class PotentialCF<HelmholtzDLKernel<3>>;
-  template class PotentialCF<HelmholtzDLKernel<3,3>>;
-  template class PotentialCF<HelmholtzDLKernel<3,1,Complex>>;
-  template class PotentialCF<HelmholtzDLKernel<3,3,Complex>>;
-  template class PotentialCF<CombinedFieldKernel<3>>;
-  template class PotentialCF<CombinedFieldKernel<3,3>>;
-  template class PotentialCF<CombinedFieldKernel<3,1,Complex>>;
-  template class PotentialCF<CombinedFieldKernel<3,3,Complex>>;
-  template class PotentialCF<MaxwellDLKernel<3>>;
-  template class PotentialCF<MaxwellDLKernel<3,Complex>>;
-
-  template class PotentialCF<DiffLaplaceSLKernel<3>>;
-  template class PotentialCF<DiffLaplaceSLKernel<3,3>>;
-  template class PotentialCF<DiffLaplaceSLKernel<3,1,Complex>>;
-  template class PotentialCF<DiffLaplaceSLKernel<3,3,Complex>>;
-  template class PotentialCF<DiffHelmholtzSLKernel<3>>;
-  template class PotentialCF<DiffHelmholtzSLKernel<3,3>>;
-  template class PotentialCF<DiffHelmholtzSLKernel<3,1,Complex>>;
-  template class PotentialCF<DiffHelmholtzSLKernel<3,3,Complex>>;
-  template class PotentialCF<DiffHelmholtzDLKernel<3>>;
-  template class PotentialCF<DiffHelmholtzDLKernel<3,3>>;
-  template class PotentialCF<DiffHelmholtzDLKernel<3,1,Complex>>;
-  template class PotentialCF<DiffHelmholtzDLKernel<3,3,Complex>>;
-
-
-
+  template class PotentialCF<double>;
+  template class PotentialCF<Complex>;
 }

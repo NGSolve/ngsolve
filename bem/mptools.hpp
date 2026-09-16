@@ -10,6 +10,7 @@
 #include <bla.hpp>
 #include <coefficient.hpp>
 #include <recursive_pol.hpp>
+#include "fmminterface.hpp"
 
 
 namespace ngsbem
@@ -19,8 +20,8 @@ namespace ngsbem
   template<typename T>
   constexpr int VecLength = 1;  // Default: Complex has length 1
 
-  template<int N>
-  constexpr int VecLength<Vec<N, Complex>> = N;  // Specialization: Vec<N,Complex> has length N
+  template<int N, typename T>
+  constexpr int VecLength<Vec<N, T>> = N;  // Specialization: Vec<N,T> has length N
 
 
 
@@ -60,38 +61,6 @@ namespace ngsbem
   
 
 
-  class FMM_Parameters
-  {
-  public:
-    int maxdirect = 100;
-    int minorder = 20;
-    double order_factor = 2.0;    // order = minorder + order_factor kappa r
-    double separation = 2.0;
-    double eval_separation = 3.0;
-    double split_kr = 5.0;
-    int maxlevel = 20;
-  };
-
-
-  struct FMMTreeStats
-  {
-    int max_level = 0;                           // Deepest tree level reached by any node.
-    size_t num_nodes = 0;                        // Total number of nodes in the tree, including internal nodes.
-    size_t num_leaves = 0;                       // Number of leaf nodes, including empty leaves.
-    size_t active_leaves = 0;                    // Number of leaves containing at least one source or target item.
-    Array<size_t> nodes_per_level;               // Histogram of node counts by tree level.
-    size_t leaf_size_min = std::numeric_limits<size_t>::max(); // Minimum number of source or target items in a leaf.
-    size_t leaf_size_max = 0;                    // Maximum number of source or target items in a leaf.
-    double leaf_size_sum = 0;                    // Sum of leaf sizes, used to compute the mean leaf size.
-    int order_min = std::numeric_limits<int>::max(); // Minimum allocated spherical expansion order.
-    int order_max = -1;                          // Maximum allocated spherical expansion order.
-    double order_sum = 0;                        // Sum of allocated orders, used to compute the mean order.
-    size_t num_allocated_multipoles = 0;         // Number of nodes whose multipole/local expansion is allocated.
-    size_t total_coefficients = 0;               // Total number of stored spherical harmonic coefficients.
-    size_t multipole_bytes = 0;                  // Memory used by stored spherical harmonic coefficients.
-  };
-
-
   inline std::tuple<double, double, double> SphericalCoordinates(Vec<3> dist){
     double len, theta, phi;
     len = L2Norm(dist);
@@ -114,6 +83,9 @@ namespace ngsbem
     Vector<entry_type> coefs;
 
   public:
+    using complex_type = typename mat_traits<entry_type>::TSCAL;
+    using real_type = typename scal_traits<complex_type>::TSCAL_REAL;
+
     SphericalHarmonics (int aorder)
       : order(aorder), coefs(sqr(order+1)) { coefs=0.0; }
 
@@ -168,7 +140,7 @@ namespace ngsbem
   
     void EvalOrders (double theta, double phi, FlatVector<entry_type> vals) const;
     
-    void Calc (Vec<3> x, FlatVector<Complex> shapes);
+    void Calc (Vec<3> x, FlatVector<complex_type> shapes);
 
 
     void FlipZ ();    
@@ -179,9 +151,9 @@ namespace ngsbem
     {
       if (order < 0) return;
       
-      Vector<Complex> exp_imalpha(order+1);
-      Complex exp_ialpha(cos(alpha), sin(alpha));
-      Complex prod = 1.0;
+      Vector<complex_type> exp_imalpha(order+1);
+      complex_type exp_ialpha(cos(alpha), sin(alpha));
+      complex_type prod = 1.0;
       for (int i = 0; i <= order; i++)
         {
           exp_imalpha(i) = prod;
@@ -203,9 +175,9 @@ namespace ngsbem
     {
       if (order < 0) return;
       
-      Vector<Complex> exp_imalpha(order+1);
-      Complex exp_ialpha(cos(alpha), sin(alpha));
-      Complex prod = 1.0;
+      Vector<complex_type> exp_imalpha(order+1);
+      complex_type exp_ialpha(cos(alpha), sin(alpha));
+      complex_type prod = 1.0;
       for (int i = 0; i <= order; i++)
         {
           exp_imalpha(i) = prod;
@@ -214,7 +186,7 @@ namespace ngsbem
       
       int ii = 0;
 
-      auto FlipFactor = [] (int n, int m, bool flip)->double
+      auto FlipFactor = [] (int n, int m, bool flip)->real_type
       {
         if (flip)
           return ((n-m)%2) == 1 ? -1 : 1;
@@ -236,7 +208,7 @@ namespace ngsbem
 
     
     
-    static double CalcAmn (int m, int n)
+    static real_type CalcAmn (int m, int n)
     {
       if (m < 0) m=-m;
       if (n < m) return 0;
@@ -247,9 +219,9 @@ namespace ngsbem
         return sqrt( (n+1.0+m)*(n+1.0-m) / ( (2*n+1)*(2*n+3) ));
     }
   
-    static double CalcBmn (int m, int n)
+    static real_type CalcBmn (int m, int n)
     {
-      double sgn = (m >= 0) ? 1 : -1;
+      real_type sgn = (m >= 0) ? 1 : -1;
       if ( (m >= n) || (-m > n) ) return 0;
       if (n <= presqrt.inv_sqrt_2np1_2np3.Size())
         return sgn * presqrt.sqrt_n_np1[n-m-1] * presqrt.inv_sqrt_2np1_2np3[n-1];
@@ -257,72 +229,72 @@ namespace ngsbem
         return sgn * sqrt( (n-m-1.0)*(n-m) / ( (2*n-1.0)*(2*n+1)));
     }
   
-    static double CalcDmn (int m, int n)
+    static real_type CalcDmn (int m, int n)
     {
-      double sgn = (m >= 0) ? 1 : -1;
+      real_type sgn = (m >= 0) ? 1 : -1;
       return sgn/2 * sqrt((n-m)*(n+m+1));
     }
     
     // Nail A. Gumerov and Ramani Duraiswami book, formula (2.2.12)
     // add directional derivative divided by kappa to res, both multipoles need same scaling
-    void DirectionalDiffAdd (Vec<3> d, SphericalHarmonics<entry_type> & res, double scale = 1) const;
+    void DirectionalDiffAdd (Vec<3> d, SphericalHarmonics<entry_type> & res, real_type scale = 1) const;
 
   };
 
 
-  template <>
-  class NGS_DLL_HEADER SphericalHarmonics<Vector<Complex>>
+  template <typename TSCAL>
+  class NGS_DLL_HEADER SphericalHarmonics<Vector<TSCAL>>
   {
     int order;
     size_t dim;
-    Matrix<Complex,RowMajor> coefs;
+    Matrix<TSCAL,RowMajor> coefs;
 
   public:
+    using real_type = typename scal_traits<TSCAL>::TSCAL_REAL;
+    using complex_type = TSCAL;
+
     SphericalHarmonics (int aorder, size_t adim)
-      : order(aorder), dim(adim), coefs(sqr(order+1), dim) { coefs = Complex(0.0); }
+      : order(aorder), dim(adim), coefs(sqr(order+1), dim) { coefs = TSCAL(0.0); }
 
     int Order() const { return order; }
     size_t Dim() const { return dim; }
 
-    FlatMatrix<Complex,RowMajor> Coefs() const { return coefs; }
+    FlatMatrix<TSCAL,RowMajor> Coefs() const { return coefs; }
 
-    FlatVector<Complex> Coef(int n, int m) const
+    FlatVector<TSCAL> Coef(int n, int m) const
     {
       return coefs.Row(n*(n+1) + m);
     }
 
-    FlatMatrix<Complex,RowMajor> CoefsN (int n) const
+    FlatMatrix<TSCAL,RowMajor> CoefsN (int n) const
     {
       return coefs.Rows(n*n, (n+1)*(n+1));
     }
 
     void RotateY (double alpha, bool parallel = false);
 
-    static double CalcAmn (int m, int n)
+    static real_type CalcAmn (int m, int n)
     {
-      return SphericalHarmonics<Complex>::CalcAmn(m, n);
+      return SphericalHarmonics<TSCAL>::CalcAmn(m, n);
     }
 
-    static double CalcBmn (int m, int n)
+    static real_type CalcBmn (int m, int n)
     {
-      return SphericalHarmonics<Complex>::CalcBmn(m, n);
+      return SphericalHarmonics<TSCAL>::CalcBmn(m, n);
     }
 
-    static double CalcDmn (int m, int n)
+    static real_type CalcDmn (int m, int n)
     {
-      return SphericalHarmonics<Complex>::CalcDmn(m, n);
+      return SphericalHarmonics<TSCAL>::CalcDmn(m, n);
     }
   };
 
 
   // https://fortran-lang.discourse.group/t/looking-for-spherical-bessel-and-hankel-functions-of-first-and-second-kind-and-arbitrary-order/2308/2
+  template <typename T>
   NGS_DLL_HEADER  
-  void besseljs3d (int nterms, double z, double scale,
-                   SliceVector<double> fjs, SliceVector<double> fjder = FlatVector<double>(0, nullptr));
-
-  NGS_DLL_HEADER  
-  void besseljs3d (int nterms, Complex z, double scale,
-                   SliceVector<Complex> fjs, SliceVector<Complex> fjder = FlatVector<Complex>(0, nullptr));
+  void besseljs3d (int nterms, T z, double scale,
+                   SliceVector<T> fjs, SliceVector<T> fjder = {0, 1, nullptr});
 
   
   /*
@@ -346,7 +318,8 @@ namespace ngsbem
   template <typename T, typename U>
   void SphericalBessel (int n, U rho, double scale, T && values)
   {
-    besseljs3d (n, rho, scale,  values);
+    using value_type = std::remove_cvref_t<decltype(values(0))>;
+    besseljs3d<value_type> (n, value_type(rho), scale, values);
     /*
     Vector<double> j(n+1), jp(n+1);
     besseljs3d (n, rho, scale,  j, jp);
@@ -355,25 +328,32 @@ namespace ngsbem
   }
 
 
-  template <typename T, typename T_Kappa>
-  void SphericalHankel1 (int n, T_Kappa rho, double scale, T && values)
+  template <typename T, typename T_Kappa, typename T_FACTOR = double>
+  void SphericalHankel1 (int n, T_Kappa rho, double scale, T && values, T_FACTOR hankel_prefactor = 1.0)
   {
-    if (abs(rho) < 1e-100)
+    using complex_type = std::remove_cvref_t<decltype(values(0))>;
+    using real_type = typename scal_traits<complex_type>::TSCAL_REAL;
+
+    complex_type crho(rho);
+    constexpr real_type tiny = std::is_same_v<real_type,float> ? 1e-30f : 1e-100;
+    if (abs(crho) < tiny)
     {
-      values = Complex(0);
+      values = complex_type(0);
       return;
     }
 
-    Complex imag(0,1);
-    Complex irho = imag * Complex(rho);
-    values(0) = exp(irho) / irho;
+    complex_type imag(0,1);
+    complex_type irho = imag * crho;
+    real_type rhankel_prefactor = hankel_prefactor;
+    values(0) = rhankel_prefactor * exp(irho) / irho;
+    real_type rscale = scale;
     if (n >= 1)
-      values(1) = scale * values(0) * (1.0/rho-imag);
+      values(1) = rscale * values(0) * (complex_type(1.0)/crho-imag);
 
-    double scale2 = scale*scale;
-    T_Kappa zinv = scale/rho;
+    real_type scale2 = rscale*rscale;
+    complex_type zinv = rscale/crho;
     for (int i = 1; i < n; i++)
-      values(i+1) = double(2*i+1)*zinv*values(i) - scale2*values(i-1);
+      values(i+1) = real_type(2*i+1)*zinv*values(i) - scale2*values(i-1);
 
     // if (abs(rho) < 1e-100)
     //   {
@@ -411,8 +391,8 @@ namespace ngsbem
   class Singular
   {
   public:
-    template <typename T>
-    static void Eval (int order, double r, double scale, T && values)
+    template <typename T, typename T_Rho>
+    static void Eval (int order, T_Rho r, double scale, T && values)
     {
       SphericalHankel1(order, r, scale,  values);
     }
@@ -437,8 +417,8 @@ namespace ngsbem
   class Regular
   {
   public:
-    template <typename T>
-    static void Eval (int order, double r, double scale, T && values)
+    template <typename T, typename T_Rho>
+    static void Eval (int order, T_Rho r, double scale, T && values)
     {
       SphericalBessel (order, r, 1.0/scale, values);
     }
@@ -468,12 +448,14 @@ namespace ngsbem
     T_Kappa kappa;
     double rtyp;
   public:
+    using real_type = typename SphericalHarmonics<entry_type>::real_type;
+    using complex_type = typename SphericalHarmonics<entry_type>::complex_type;
 
     SphericalExpansion (int aorder, T_Kappa akappa, double artyp) 
     : sh(aorder), kappa(akappa), rtyp(artyp) { }
 
     SphericalExpansion (int aorder, T_Kappa akappa, double artyp, size_t adim)
-      requires std::is_same_v<entry_type,Vector<Complex>>
+      requires std::is_same_v<entry_type,Vector<complex_type>>
     : sh(aorder, adim), kappa(akappa), rtyp(artyp) { }
 
   
@@ -481,10 +463,15 @@ namespace ngsbem
     auto & SH() { return sh; }
     const auto & SH() const { return sh; }
     T_Kappa Kappa() const { return kappa; }
-    double Scale() const { return RADIAL::Scale(kappa, rtyp); }
+    double Scale() const
+    {
+      // Balance before capping the radial scale, without a jump between levels.
+      constexpr double basis_scale = std::is_same_v<real_type,float> ? 32 : 1;
+      return RADIAL::Scale(kappa, rtyp/basis_scale);
+    }
     double RTyp() const { return rtyp; }
     int Order() const { return sh.Order(); }
-    size_t Dim() const requires std::is_same_v<entry_type,Vector<Complex>>
+    size_t Dim() const requires std::is_same_v<entry_type,Vector<complex_type>>
     {
       return sh.Dim();
     }
@@ -517,16 +504,17 @@ namespace ngsbem
     }
     
     void AddPlaneWave (Vec<3> d, entry_type c);    
-    void AddCurrent (Vec<3> ap, Vec<3> ep, Complex j, int num=100);
+    void AddCurrent (Vec<3> ap, Vec<3> ep, complex_type j, int num=100);
     
 
     void ChangeRTypTo (double new_rtyp)
     {
-      double fac = RADIAL::Scale(kappa, rtyp) / RADIAL::Scale(kappa, new_rtyp);
-      double prod = 1;
+      double old_scale = Scale();
+      rtyp = new_rtyp;
+      real_type fac = old_scale / Scale();
+      real_type prod = 1;
       for (int n = 0; n <= sh.Order(); n++, prod*= fac)
         sh.CoefsN(n) *= prod;
-      rtyp = new_rtyp;
     }
     
 
@@ -578,7 +566,8 @@ namespace ngsbem
       if (SH().Order() < 0) return;
       if (target.SH().Order() < 0) return;      
       
-      SphericalExpansion<TARGET,entry_type,T_Kappa> tmp{target};
+      // The target coefficients may be updated concurrently.
+      SphericalExpansion<TARGET,entry_type,T_Kappa> tmp(target.Order(), target.Kappa(), target.RTyp());
       Transform(tmp, dist);
       if (!atomic)
         target.SH().Coefs() += tmp.SH().Coefs();
@@ -594,10 +583,10 @@ namespace ngsbem
     template <typename TARGET>
     void In2Out (SphericalExpansion<TARGET,entry_type,T_Kappa> & target, double r) const
     {
-      Vector<Complex> rad(Order()+1);
-      Vector<Complex> radout(target.Order()+1);      
-      RADIAL::Eval(Order(), kappa, r, RTyp(), rad);
-      TARGET::Eval(target.Order(), kappa, r, target.RTyp(), radout);
+      Vector<complex_type> rad(Order()+1);
+      Vector<complex_type> radout(target.Order()+1);
+      RADIAL::Eval(Order(), kappa*r, Scale(), rad);
+      TARGET::Eval(target.Order(), kappa*r, target.Scale(), radout);
       target.SH().Coefs() = 0;
       for (int j = 0; j <= std::min(Order(), target.Order()); j++)
         target.SH().CoefsN(j) = rad(j)/radout(j) * SH().CoefsN(j);
@@ -623,16 +612,19 @@ namespace ngsbem
     return FlatMatrixFixWidth<S,SCAL> (vec.Size(), vec.Data()->Data());
   }
   
-  inline auto VecVector2Matrix (FlatVector<Complex> vec)
+  template <typename TSCAL>
+    requires (IsScalar<TSCAL>())
+  inline auto VecVector2Matrix (FlatVector<TSCAL> vec)
   {
-    return FlatMatrixFixWidth<1,Complex> (vec.Size(), vec.Data());    
+    return FlatMatrixFixWidth<1,TSCAL> (vec.Size(), vec.Data());
   }
 
 
   template <typename entry_type=Complex, typename T_Kappa = double>
-  class SingularMLExpansion
+  class SingularMLExpansion : public BaseSingularMLExpansion
   {
-    using simd_entry_type = decltype(MakeSimd(declval<std::array<entry_type,FMM_SW>>()));
+    using complex_type = typename SphericalHarmonics<entry_type>::complex_type;
+    using real_type = typename SphericalHarmonics<entry_type>::real_type;
     static Array<size_t> nodes_on_level;    
     
     struct RecordingSS
@@ -685,8 +677,8 @@ namespace ngsbem
       int so = batch[0]->mp_source->Order();
       int to = batch[0]->mp_target->Order();
 
-      SphericalExpansion<Singular, Vector<Complex>, T_Kappa> vec_source(so, kappa, batch[0]->mp_source->RTyp(), dim);
-      SphericalExpansion<Singular, Vector<Complex>, T_Kappa> vec_target(to, kappa, batch[0]->mp_target->RTyp(), dim);
+      SphericalExpansion<Singular, Vector<complex_type>, T_Kappa> vec_source(so, kappa, batch[0]->mp_source->RTyp(), dim);
+      SphericalExpansion<Singular, Vector<complex_type>, T_Kappa> vec_target(to, kappa, batch[0]->mp_target->RTyp(), dim);
 
       // Copy multipoles into vectorized multipole
       for (int i = 0; i < batch.Size(); i++)
@@ -694,7 +686,7 @@ namespace ngsbem
           auto source_i = VecVector2Matrix (batch[i]->mp_source->SH().Coefs());
           auto source_mati = vec_source.SH().Coefs().Cols(i*vec_length, (i+1)*vec_length);
           batch[i]->mp_source->SH().RotateZFlip(batch[i]->phi, batch[i]->flipz,
-                                            [source_i, source_mati] (size_t ii, Complex factor)
+                                            [source_i, source_mati] (size_t ii, complex_type factor)
                                             {
                                               source_mati.Row(ii) = factor * source_i.Row(ii);
                                             });
@@ -710,7 +702,7 @@ namespace ngsbem
           auto source_mati = vec_target.SH().Coefs().Cols(i*vec_length, (i+1)*vec_length);
           auto target_mati = VecVector2Matrix (batch[i]->mp_target->SH().Coefs());
           batch[i]->mp_target->SH().RotateZFlip(-batch[i]->phi, batch[i]->flipz,
-                                      [source_mati, target_mati] (size_t ii, Complex factor)
+                                      [source_mati, target_mati] (size_t ii, complex_type factor)
                                       {
                                         AtomicAdd (VectorView(target_mati.Row(ii)), factor * source_mati.Row(ii));
                                       });
@@ -728,8 +720,10 @@ namespace ngsbem
       Array<tuple<Vec<3>, entry_type>> charges;
       Array<tuple<Vec<3>, Vec<3>, entry_type>> dipoles;
       Array<tuple<Vec<3>, entry_type, Vec<3>, entry_type>> chargedipoles;
-      Array<tuple<Vec<3>, Vec<3>, Complex,int>> currents;
+      Array<tuple<Vec<3>, Vec<3>, complex_type,int>> currents;
 
+      using simd_real_type = SIMD<real_type,FMM_SW>;
+      using simd_complex_type = SIMD<complex_type,FMM_SW>;
       using simd_entry_type = decltype(MakeSimd(declval<std::array<entry_type,FMM_SW>>()));      
       Array<tuple<Vec<3,SIMD<double,FMM_SW>>, simd_entry_type>> simd_charges;
       Array<tuple<Vec<3,SIMD<double,FMM_SW>>, Vec<3,SIMD<double,FMM_SW>>, simd_entry_type>> simd_dipoles;
@@ -885,7 +879,7 @@ namespace ngsbem
 
       
       // not parallel yet
-      void AddCurrent (Vec<3> sp, Vec<3> ep, Complex j, int num)
+      void AddCurrent (Vec<3> sp, Vec<3> ep, complex_type j, int num)
       {
         if (childs[0])
           {
@@ -924,15 +918,23 @@ namespace ngsbem
       }
 
 
-      static SIMD<Complex,FMM_SW> PhaseFactor(T_Kappa kappa, SIMD<double,FMM_SW> rho)
+      static simd_real_type ToFMMReal (SIMD<double,FMM_SW> value)
+      {
+        if constexpr (std::is_same_v<real_type,double>)
+          return value;
+        else
+          return simd_real_type([&](int i) { return real_type(value[i]); });
+      }
+
+      static simd_complex_type PhaseFactor(complex_type kappa, simd_real_type rho)
       {
         auto [si,co] = sincos(Real(kappa)*rho);
-        if constexpr (std::is_same_v<T_Kappa,double>)
-          return SIMD<Complex,FMM_SW>(co,si);
+        if constexpr (!IsComplex<T_Kappa>())
+          return simd_complex_type(co,si);
         else
           {
             auto decay = exp(-Imag(kappa)*rho);
-            return SIMD<Complex,FMM_SW>(co*decay,si*decay);
+            return simd_complex_type(co*decay,si*decay);
           }
       }
 
@@ -949,6 +951,10 @@ namespace ngsbem
             return sum;
           }
 
+        const real_type inv4pi = 1.0/(4*M_PI);
+        const complex_type kappa(mp.Kappa());
+        const simd_complex_type ikappa = complex_type(0,1)*kappa;
+
         if (simd_charges.Size())
           {
             // static Timer t("mptool singmp, evaluate, simd charges"); RegionTimer r(t);
@@ -959,10 +965,9 @@ namespace ngsbem
               {
                 for (auto [x,c] : simd_charges)
                   {
-                    auto rho = L2Norm(p-x);
-                    auto kernel = 1/(4*M_PI)/rho;
-                    kernel = If(rho > 0.0, kernel, SIMD<double,FMM_SW>(0.0));
-                    vsum += kernel * c;
+                    auto rho = ToFMMReal(L2Norm(p-x));
+                    auto kernel = inv4pi*IfPos(rho, 1/rho, simd_real_type(0.0));
+                    vsum += simd_complex_type(kernel) * c;
 
                     /*
                     auto rho2 = L2Norm2(p-x);
@@ -975,20 +980,19 @@ namespace ngsbem
             else if (abs(mp.Kappa()) < 1e-8)
               for (auto [x,c] : simd_charges)
                 {
-                  auto rho = L2Norm(p-x);
-                  auto kernel = (1/(4*M_PI))*(SIMD<Complex,FMM_SW> (1,0) + rho*mp.Kappa() * SIMD<Complex,FMM_SW> (0,1)) / rho;
-                  kernel = If(rho > 0.0, kernel, SIMD<Complex,FMM_SW>(0.0));
+                  auto rho = ToFMMReal(L2Norm(p-x));
+                  auto invrho = IfPos(rho, 1/rho, simd_real_type(0.0));
+                  auto kernel = inv4pi*(simd_complex_type(1.0)+rho*ikappa)*invrho;
                   vsum += kernel * c;
                 }
             else
               {
-                auto kappa = mp.Kappa();
                 for (auto [x,c] : simd_charges)
                   {
-                    auto rho = L2Norm(p-x);
-                    auto invrho = If(rho > 0.0, 1.0/rho, SIMD<double,FMM_SW>(0.0));
+                    auto rho = ToFMMReal(L2Norm(p-x));
+                    auto invrho = IfPos(rho, 1/rho, simd_real_type(0.0));
                     auto phase_factor = PhaseFactor(kappa, rho);
-                    vsum += (1/(4*M_PI))*invrho*phase_factor * c;
+                    vsum += inv4pi*invrho*phase_factor * c;
                   }
               }
             
@@ -1000,12 +1004,18 @@ namespace ngsbem
               {
                 for (auto [x,c] : charges)
                   if (double rho = L2Norm(p-x); rho > 0)
-                    sum += (1/(4*M_PI))*(Complex(1,0) + rho*mp.Kappa()*Complex(0,1)) / rho * c;
+                    {
+                      real_type frho = rho;
+                      sum += inv4pi*(complex_type(1,0) + frho*kappa*complex_type(0,1)) / frho * c;
+                    }
               }
             else
               for (auto [x,c] : charges)
                 if (double rho = L2Norm(p-x); rho > 0)
-                  sum += (1/(4*M_PI))*exp(mp.Kappa()*Complex(0,rho)) / rho * c;
+                  {
+                    real_type frho = rho;
+                    sum += inv4pi*exp(kappa*complex_type(0,frho))/frho*c;
+                  }
           }
 
         if (simd_dipoles.Size())
@@ -1013,31 +1023,31 @@ namespace ngsbem
             // static Timer t("mptool singmp, evaluate, simd dipoles"); RegionTimer r(t);
             
             simd_entry_type vsum{0.0};
-            auto kappa = mp.Kappa();
-            if (abs(kappa) < 1e-12)
+            if (abs(mp.Kappa()) < 1e-12)
               for (auto [x,d,c] : simd_dipoles)
                 {
-                  auto rho = L2Norm(p-x);
-                  auto drhodp = (1.0/rho) * (p-x);
+                  auto delta = p-x;
+                  auto rho = ToFMMReal(L2Norm(delta));
+                  auto invrho = IfPos(rho, 1/rho, simd_real_type(0.0));
                   auto phase = Real(kappa) * rho;
                   auto decay = exp(-Imag(kappa)*rho);
                   auto [si,co] = sincos(phase);
-                  auto dGdrho = (1/(4*M_PI))*SIMD<Complex,FMM_SW>(co*decay,si*decay) *
-                    (-1.0/(rho*rho) + kappa * SIMD<Complex,FMM_SW>(0, 1)/rho);
-                  auto kernel = dGdrho * InnerProduct(drhodp, d);
-                  kernel = If(rho > 0.0, kernel, SIMD<Complex,FMM_SW>(0.0));
-                  vsum += kernel * c;
+                  auto dGdrho = inv4pi*simd_complex_type(co*decay,si*decay) *
+                    (ikappa*invrho + (-invrho*invrho));
+                  auto direction = invrho*ToFMMReal(InnerProduct(delta,d));
+                  vsum += dGdrho * direction * c;
                 }
             else
               for (auto [x,d,c] : simd_dipoles)
                 {
                   auto delta = p-x;
-                  auto rho = L2Norm(delta);
-                  auto invrho = If(rho > 0.0, 1.0/rho, SIMD<double,FMM_SW>(0.0));
+                  auto rho = ToFMMReal(L2Norm(delta));
+                  auto invrho = IfPos(rho, 1/rho, simd_real_type(0.0));
                   auto phase_factor = PhaseFactor(kappa, rho);
-                  auto dGdrho = (1/(4*M_PI))*phase_factor *
-                    (-invrho*invrho + kappa * SIMD<Complex,FMM_SW>(0, 1)*invrho);
-                  vsum += dGdrho * invrho * InnerProduct(delta, d) * c;
+                  auto dGdrho = inv4pi*phase_factor *
+                    (ikappa*invrho + (-invrho*invrho));
+                  auto direction = invrho*ToFMMReal(InnerProduct(delta,d));
+                  vsum += dGdrho * direction * c;
                 }
             sum += HSum(vsum);
           }
@@ -1047,9 +1057,10 @@ namespace ngsbem
               if (double rho = L2Norm(p-x); rho > 0)
                 {
                   Vec<3> drhodp = 1.0/rho * (p-x);
-                  Complex dGdrho = (1/(4*M_PI))*exp(mp.Kappa()*Complex(0,rho)) *
-                    (mp.Kappa()*Complex(0, 1)/rho - 1.0/sqr(rho));
-                  sum += dGdrho * InnerProduct(drhodp, d) * c;
+                  real_type frho = rho;
+                  complex_type dGdrho = inv4pi*exp(kappa*complex_type(0,frho)) *
+                    (kappa*complex_type(0,1)/frho-1/sqr(frho));
+                  sum += dGdrho*real_type(InnerProduct(drhodp,d))*c;
                 }
           }
       
@@ -1061,22 +1072,22 @@ namespace ngsbem
           // t.AddFlops (simd_chargedipoles.Size()*FMM_SW);
           
           simd_entry_type vsum{0.0};
-          auto kappa = mp.Kappa();
-          if (abs(kappa) < 1e-12)
+          if (abs(mp.Kappa()) < 1e-12)
             for (auto [x,c,d,c2] : simd_chargedipoles)
               {
-                auto rho = L2Norm(p-x);
-                auto rhokappa = rho*kappa;
-                auto invrho = If(rho>0.0, 1.0/rho, SIMD<double,FMM_SW>(0.0));
+                auto delta = p-x;
+                auto rho = ToFMMReal(L2Norm(delta));
+                auto invrho = IfPos(rho, 1/rho, simd_real_type(0.0));
                 auto phase = Real(kappa) * rho;
                 auto decay = exp(-Imag(kappa)*rho);
                 auto [si,co] = sincos(phase);
-                auto kernelc = (1/(4*M_PI))*invrho*SIMD<Complex,FMM_SW>(co*decay,si*decay);
+                auto kernelc = inv4pi*invrho*simd_complex_type(co*decay,si*decay);
+                auto rhokappa = rho*simd_complex_type(kappa);
 
                 vsum += kernelc * c;
                 auto kernel =
-                  invrho*invrho * InnerProduct(p-x, d) *
-                  kernelc * (SIMD<Complex,FMM_SW>(-1.0,0) + rhokappa * SIMD<Complex,FMM_SW>(0, 1));
+                  invrho*invrho * ToFMMReal(InnerProduct(delta, d)) *
+                  kernelc * (simd_complex_type(-1.0,0) + rhokappa * simd_complex_type(0,1));
 
                 vsum += kernel * c2;
               }
@@ -1084,16 +1095,16 @@ namespace ngsbem
             for (auto [x,c,d,c2] : simd_chargedipoles)
               {
                 auto delta = p-x;
-                auto rho = L2Norm(delta);
-                auto rhokappa = rho*kappa;
-                auto invrho = If(rho>0.0, 1.0/rho, SIMD<double,FMM_SW>(0.0));
+                auto rho = ToFMMReal(L2Norm(delta));
+                auto invrho = IfPos(rho, 1/rho, simd_real_type(0.0));
                 auto phase_factor = PhaseFactor(kappa, rho);
-                auto kernelc = (1/(4*M_PI))*invrho*phase_factor;
+                auto kernelc = inv4pi*invrho*phase_factor;
+                auto rhokappa = rho*simd_complex_type(kappa);
 
                 vsum += kernelc * c;
                 auto kernel =
-                  invrho*invrho * InnerProduct(delta, d) *
-                  kernelc * (SIMD<Complex,FMM_SW>(-1.0,0) + rhokappa * SIMD<Complex,FMM_SW>(0, 1));
+                  invrho*invrho * ToFMMReal(InnerProduct(delta, d)) *
+                  kernelc * (simd_complex_type(-1.0,0) + rhokappa * simd_complex_type(0,1));
 
                 vsum += kernel * c2;
               }
@@ -1107,13 +1118,14 @@ namespace ngsbem
           for (auto [x,c,d,c2] : chargedipoles)
             if (double rho = L2Norm(p-x); rho > 0)
               {
-                sum += (1/(4*M_PI))*exp(mp.Kappa()*Complex(0,rho)) / rho * c;
+                real_type frho = rho;
+                sum += inv4pi*exp(kappa*complex_type(0,frho))/frho*c;
                 
                 Vec<3> drhodp = 1.0/rho * (p-x);
-                Complex dGdrho = (1/(4*M_PI))*exp(mp.Kappa() * Complex(0,rho)) *
-                  mp.Kappa()*(Complex(0, 1)/rho - 1.0/sqr(rho));
+                complex_type dGdrho = inv4pi*exp(kappa*complex_type(0,frho)) *
+                  kappa*(complex_type(0,1)/frho-1/sqr(frho));
                 
-                sum += dGdrho * InnerProduct(drhodp, d) * c2;
+                sum += dGdrho*real_type(InnerProduct(drhodp,d))*c2;
               }
         }
 
@@ -1134,11 +1146,12 @@ namespace ngsbem
                 if (double rho = L2Norm(p-x); rho > 0)
                   {
                     Vec<3> drhodp = 1.0/rho * (p-x);
-                    Complex dGdrho = (1/(4*M_PI))*exp(mp.Kappa()*Complex(0,rho)) *
-                      (mp.Kappa()*Complex(0,1)/rho - 1.0/sqr(rho));
+                    real_type frho = rho;
+                    complex_type dGdrho = inv4pi*exp(kappa*complex_type(0,frho)) *
+                      (kappa*complex_type(0,1)/frho-1/sqr(frho));
 
-                    if constexpr (std::is_same<entry_type, Vec<3,Complex>>())
-                      sum += j*dGdrho * Cross(drhodp, tau_num);
+                    if constexpr (std::is_same<entry_type, Vec<3,complex_type>>())
+                      sum += Complex(j*dGdrho) * Cross(drhodp, tau_num);
                   }
               }
           }
@@ -1168,31 +1181,34 @@ namespace ngsbem
         if (chargedipoles.Size())
             throw Exception("EvaluateDeriv not implemented for dipoles in SingularMLExpansion");
 
+        const real_type inv4pi = 1.0/(4*M_PI);
+        const complex_type kappa(mp.Kappa());
+
         if (abs(mp.Kappa()) < 1e-12)
           {
             for (auto [x,c] : charges)
               if (double rho = L2Norm(p-x); rho > 0)
                 {
                   Vec<3> drhodp = 1.0/rho * (p-x);
-                  Complex dGdrho = (1/(4*M_PI))*exp(mp.Kappa()*Complex(0,rho)) *
-                    (mp.Kappa()*Complex(0,1)/rho - 1.0/sqr(rho));
-                  sum += dGdrho * InnerProduct(drhodp, d) * c;
+                  real_type frho = rho;
+                  complex_type dGdrho = inv4pi*exp(kappa*complex_type(0,frho)) *
+                    (kappa*complex_type(0,1)/frho-1/sqr(frho));
+                  sum += dGdrho*real_type(InnerProduct(drhodp,d))*c;
                 }
           }
         else if (simd_charges.Size())
           {
             simd_entry_type vsum{0.0};
-            auto kappa = mp.Kappa();
+            const simd_complex_type ikappa = complex_type(0,1)*kappa;
             for (auto [x,c] : simd_charges)
               {
                 auto delta = p-x;
-                auto rho = L2Norm(delta);
-                auto invrho = If(rho > 0.0, 1.0/rho, SIMD<double,FMM_SW>(0.0));
+                auto rho = ToFMMReal(L2Norm(delta));
+                auto invrho = IfPos(rho, 1/rho, simd_real_type(0.0));
                 auto phase_factor = PhaseFactor(kappa, rho);
-                auto radial = (1/(4*M_PI))*phase_factor *
-                  (kappa*SIMD<Complex,FMM_SW>(0,1)*invrho*invrho
-                   + SIMD<Complex,FMM_SW>(-invrho*invrho*invrho, 0.0));
-                vsum += radial * InnerProduct(delta, d) * c;
+                auto radial = inv4pi*phase_factor *
+                  (ikappa*invrho*invrho + simd_complex_type(-invrho*invrho*invrho, 0.0));
+                vsum += radial * ToFMMReal(InnerProduct(delta, d)) * c;
               }
             sum += HSum(vsum);
           }
@@ -1202,9 +1218,10 @@ namespace ngsbem
               if (double rho = L2Norm(p-x); rho > 0)
                 {
                   Vec<3> drhodp = 1.0/rho * (p-x);
-                  Complex dGdrho = (1/(4*M_PI))*exp(mp.Kappa()*Complex(0,rho)) *
-                    (mp.Kappa()*Complex(0,1)/rho - 1.0/sqr(rho));
-                  sum += dGdrho * InnerProduct(drhodp, d) * c;
+                  real_type frho = rho;
+                  complex_type dGdrho = inv4pi*exp(kappa*complex_type(0,frho)) *
+                    (kappa*complex_type(0,1)/frho-1/sqr(frho));
+                  sum += dGdrho*real_type(InnerProduct(drhodp,d))*c;
                 }
           }
         return sum;
@@ -1389,6 +1406,7 @@ namespace ngsbem
     }
 
     T_Kappa Kappa() const { return root.mp.Kappa(); }
+    std::variant<double,Complex> GetKappa() const override { return Kappa(); }
     
     void AddCharge(Vec<3> x, entry_type c)
     {
@@ -1405,9 +1423,9 @@ namespace ngsbem
       root.AddChargeDipole(x, c, dir, c2);
     }
     
-    void AddCurrent (Vec<3> sp, Vec<3> ep, Complex j, int num)
+    void AddCurrent (Vec<3> sp, Vec<3> ep, complex_type j, int num)
     {
-      if constexpr (!std::is_same<entry_type, Vec<3,Complex>>())
+      if constexpr (!std::is_same<entry_type, Vec<3,complex_type>>())
         throw Exception("AddCurrent needs a singular vectorial MP");
       
       root.AddCurrent (sp, ep, j, num);
@@ -1445,7 +1463,7 @@ namespace ngsbem
       return root.NumCoefficients();
     }
 
-    void CollectStatistics(FMMTreeStats & stats) const
+    void CollectStatistics(FMMTreeStats & stats) const override
     {
       const_cast<Node&>(root).TraverseTree([&](Node & node) {
         stats.num_nodes++;
@@ -1479,7 +1497,7 @@ namespace ngsbem
       });
     }
 
-    void CalcMP()
+    void CalcMP() override
     {
       static Timer t("mptool compute singular MLMP"); RegionTimer rg(t);
       static Timer ts2mp("mptool compute singular MLMP - source2mp");
@@ -1643,8 +1661,9 @@ namespace ngsbem
   
 
   template <typename elem_type=Complex, typename T_Kappa=double>
-  class NGS_DLL_HEADER RegularMLExpansion
+  class NGS_DLL_HEADER RegularMLExpansion : public BaseRegularMLExpansion
   {
+    using complex_type = typename SphericalHarmonics<elem_type>::complex_type;
     static Array<size_t> nodes_on_level;
 
     
@@ -1703,7 +1722,7 @@ namespace ngsbem
       constexpr int vec_length = VecLength<elem_type>;
       if (batch.Size() <= 1)
         for (auto* rec : batch)
-          rec->mpS->TransformAdd(*rec->mpR, rec->dist);
+          rec->mpS->TransformAdd(*rec->mpR, rec->dist, true);
       else if (batch.Size()*vec_length <= FMM_DYNAMIC_BATCH_LANES)
         ProcessDynamicBatchSR(batch, len, theta);
       else
@@ -1723,9 +1742,9 @@ namespace ngsbem
       constexpr int vec_length = VecLength<elem_type>;
       size_t dim = batch.Size()*vec_length;
 
-      SphericalExpansion<Singular, Vector<Complex>, T_Kappa> vec_source(batch[0]->mpS->Order(), batch[0]->mpS->Kappa(), batch[0]->mpS->RTyp(), dim);
-      SphericalExpansion<Regular,elem_type,T_Kappa> tmp_target{*batch[0]->mpR};
-      SphericalExpansion<Regular, Vector<Complex>, T_Kappa> vec_target(batch[0]->mpR->Order(), batch[0]->mpR->Kappa(), batch[0]->mpR->RTyp(), dim);
+      SphericalExpansion<Singular, Vector<complex_type>, T_Kappa> vec_source(batch[0]->mpS->Order(), batch[0]->mpS->Kappa(), batch[0]->mpS->RTyp(), dim);
+      SphericalExpansion<Regular,elem_type,T_Kappa> tmp_target(batch[0]->mpR->Order(), batch[0]->mpR->Kappa(), batch[0]->mpR->RTyp());
+      SphericalExpansion<Regular, Vector<complex_type>, T_Kappa> vec_target(batch[0]->mpR->Order(), batch[0]->mpR->Kappa(), batch[0]->mpR->RTyp(), dim);
 
       // Copy multipoles into vectorized multipole
       for (int i = 0; i < batch.Size(); i++)
@@ -1733,7 +1752,7 @@ namespace ngsbem
         auto source_i = VecVector2Matrix (batch[i]->mpS->SH().Coefs());
         auto source_mati = vec_source.SH().Coefs().Cols(i*vec_length, (i+1)*vec_length);
         batch[i]->mpS->SH().RotateZFlip(batch[i]->phi, batch[i]->flipz,
-            [source_i, source_mati] (size_t ii, Complex factor)
+            [source_i, source_mati] (size_t ii, complex_type factor)
             {
                 source_mati.Row(ii) = factor * source_i.Row(ii);
             });
@@ -1750,7 +1769,7 @@ namespace ngsbem
         auto targeti = VecVector2Matrix(batch[i]->mpR->SH().Coefs());
         
         tmp_target.SH().RotateZFlip(-batch[i]->phi, batch[i]->flipz,
-                                [source_mati, targeti] (size_t ii, Complex factor)
+                                [source_mati, targeti] (size_t ii, complex_type factor)
                                           {
                                             // source_i.Row(ii) = factor * source_mati.Row(ii);
                                             AtomicAdd (VectorView(targeti.Row(ii)), factor * source_mati.Row(ii));
@@ -1783,16 +1802,16 @@ namespace ngsbem
       constexpr int vec_length = VecLength<elem_type>;
       size_t dim = batch.Size()*vec_length;
 
-      SphericalExpansion<Regular, Vector<Complex>, T_Kappa> vec_source(batch[0]->mp_source->Order(), batch[0]->mp_source->Kappa(), batch[0]->mp_source->RTyp(), dim);
+      SphericalExpansion<Regular, Vector<complex_type>, T_Kappa> vec_source(batch[0]->mp_source->Order(), batch[0]->mp_source->Kappa(), batch[0]->mp_source->RTyp(), dim);
       SphericalExpansion<Regular, elem_type, T_Kappa> tmp_target{*batch[0]->mp_target};
-      SphericalExpansion<Regular, Vector<Complex>, T_Kappa> vec_target(batch[0]->mp_target->Order(), batch[0]->mp_target->Kappa(), batch[0]->mp_target->RTyp(), dim);
+      SphericalExpansion<Regular, Vector<complex_type>, T_Kappa> vec_target(batch[0]->mp_target->Order(), batch[0]->mp_target->Kappa(), batch[0]->mp_target->RTyp(), dim);
 
       for (int i = 0; i < batch.Size(); i++)
       {
         auto source_i = VecVector2Matrix (batch[i]->mp_source->SH().Coefs());
         auto source_mati = vec_source.SH().Coefs().Cols(i*vec_length, (i+1)*vec_length);
         batch[i]->mp_source->SH().RotateZFlip(batch[i]->phi, batch[i]->flipz,
-            [source_i, source_mati] (size_t ii, Complex factor)
+            [source_i, source_mati] (size_t ii, complex_type factor)
             {
                 source_mati.Row(ii) = factor * source_i.Row(ii);
             });
@@ -1807,7 +1826,7 @@ namespace ngsbem
         auto targeti = VecVector2Matrix(batch[i]->mp_target->SH().Coefs());
 
         tmp_target.SH().RotateZFlip(-batch[i]->phi, batch[i]->flipz,
-                                [source_mati, targeti] (size_t ii, Complex factor)
+                                [source_mati, targeti] (size_t ii, complex_type factor)
                                           {
                                             auto target_row = targeti.Row(ii);
                                             auto source_row = source_mati.Row(ii);
@@ -2279,24 +2298,26 @@ namespace ngsbem
     nodes_on_level[0] = 1;
   }
   
-    void AddTarget (Vec<3> t)
+    void AddTarget (Vec<3> t) override
     {
       root.AddTarget (t);
     }
 
-    void AddVolumeTarget (Vec<3> t, double r)
+    void AddVolumeTarget (Vec<3> t, double r) override
     {
       root.AddVolumeTarget (t, r);
     }
 
-    void CalcMP(shared_ptr<SingularMLExpansion<elem_type,T_Kappa>> asingmp, bool onlytargets = true)
+    void CalcMP(shared_ptr<BaseSingularMLExpansion> asingmp, bool onlytargets = true) override
     {
       static Timer t("mptool regular MLMP"); RegionTimer rg(t);
       static Timer tremove("removeempty");
       static Timer trec("mptool regular MLMP - recording");
       static Timer tsort("mptool regular MLMP - sort");
       
-      singmp = asingmp;
+      auto typed = dynamic_pointer_cast<SingularMLExpansion<elem_type,T_Kappa>>(asingmp);
+      if (!typed) throw Exception("FMM source and target expansion types do not match");
+      singmp = std::move(typed);
 
       
       root.CalcTotalTargets();
@@ -2443,7 +2464,7 @@ namespace ngsbem
       return root.NumCoefficients();
     }
 
-    void CollectStatistics(FMMTreeStats & stats) const
+    void CollectStatistics(FMMTreeStats & stats) const override
     {
       const_cast<Node&>(root).TraverseTree([&](Node & node) {
         stats.num_nodes++;
@@ -2477,21 +2498,17 @@ namespace ngsbem
     }
 
     // Run the S2R planning walk to populate target-tree multipoles and count translations / direct-evaluation work
-    struct M2LCounts
-    {
-      size_t num_s2r = 0;                        // Number of recorded source-to-regular box translations.
-      size_t num_direct_evaluations = 0;         // Estimated quadrature-point interactions handled by direct fallback.
-    };
-
     M2LCounts CollectM2LStatistics
-      (shared_ptr<SingularMLExpansion<elem_type, T_Kappa>> singmp_in)
+      (shared_ptr<BaseSingularMLExpansion> singmp_in) override
     {
-      singmp = singmp_in;
-      singmp_in->root.CalcTotalSources();
+      auto typed = dynamic_pointer_cast<SingularMLExpansion<elem_type,T_Kappa>>(singmp_in);
+      if (!typed) throw Exception("FMM source and target expansion types do not match");
+      singmp = std::move(typed);
+      singmp->root.CalcTotalSources();
       root.CalcTotalTargets();
       root.AllocateMemory();
       Array<RecordingSR> recording;
-      root.AddSingularNode(singmp_in->root, false, recording);
+      root.AddSingularNode(singmp->root, false, recording);
 
       M2LCounts counts;
       counts.num_s2r = recording.Size();

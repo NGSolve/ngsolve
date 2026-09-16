@@ -34,11 +34,12 @@ namespace ngsbem
   {
     // static Timer t("mptool sh evaluate"); RegionTimer rg(t);
 
-    Matrix legfunc(order+1, order+1);
-    NormalizedLegendreFunctions (order, order, cos(theta), legfunc);
-    Vector<Complex> exp_imphi(order+1);
-    Complex exp_iphi(cos(phi), sin(phi));
-    Complex prod = 1.0;
+    Matrix<real_type> legfunc(order+1, order+1);
+    real_type costheta = cos(theta);
+    NormalizedLegendreFunctions (order, order, costheta, legfunc);
+    Vector<complex_type> exp_imphi(order+1);
+    complex_type exp_iphi(cos(phi), sin(phi));
+    complex_type prod = 1.0;
     for (int i = 0; i <= order; i++)
       {
         exp_imphi(i) = prod;
@@ -67,11 +68,12 @@ namespace ngsbem
 
     RegionTimer rg(t);
       
-    Matrix legfunc(order+1, order+1);
-    NormalizedLegendreFunctions (order, order, cos(theta), legfunc);
-    Vector<Complex> exp_imphi(order+1);
-    Complex exp_iphi(cos(phi), sin(phi));
-    Complex prod = 1.0;
+    Matrix<real_type> legfunc(order+1, order+1);
+    real_type costheta = cos(theta);
+    NormalizedLegendreFunctions (order, order, costheta, legfunc);
+    Vector<complex_type> exp_imphi(order+1);
+    complex_type exp_iphi(cos(phi), sin(phi));
+    complex_type prod = 1.0;
     for (int i = 0; i <= order; i++)
       {
         exp_imphi(i) = prod;
@@ -103,13 +105,14 @@ namespace ngsbem
     // RegionTimer rg(order < 30 ? ts : tl);
     // if (order > 30) tl.Start();
 
-    ArrayMem<double,1600> mem(sqr(order+1));
-    FlatMatrix<double> legfunc(order+1, order+1, mem.Data());
-    NormalizedLegendreFunctions (order, order, cos(theta), legfunc);
+    ArrayMem<real_type,1600> mem(sqr(order+1));
+    FlatMatrix<real_type> legfunc(order+1, order+1, mem.Data());
+    real_type costheta = cos(theta);
+    NormalizedLegendreFunctions (order, order, costheta, legfunc);
 
-    VectorMem<40,Complex> exp_imphi(order+1);
-    Complex exp_iphi(cos(phi), sin(phi));
-    Complex prod = 1.0 / sqrt(4*M_PI);
+    VectorMem<40,complex_type> exp_imphi(order+1);
+    complex_type exp_iphi(cos(phi), sin(phi));
+    complex_type prod = 1.0 / sqrt(4*M_PI);
     for (int i = 0; i <= order; i++)
       {
         exp_imphi(i) = prod;
@@ -133,18 +136,19 @@ namespace ngsbem
 
   
   template <typename entry_type>
-  void SphericalHarmonics<entry_type> :: Calc (Vec<3> x, FlatVector<Complex> shapes)
+  void SphericalHarmonics<entry_type> :: Calc (Vec<3> x, FlatVector<complex_type> shapes)
   {
     auto [theta, phi] = Polar(x);
 
-    ArrayMem<double,1600> mem(sqr(order+1));
-    FlatMatrix<double> legfunc(order+1, order+1, mem.Data());
-    NormalizedLegendreFunctions (order, order, cos(theta), legfunc);
+    ArrayMem<real_type,1600> mem(sqr(order+1));
+    FlatMatrix<real_type> legfunc(order+1, order+1, mem.Data());
+    real_type costheta = cos(theta);
+    NormalizedLegendreFunctions (order, order, costheta, legfunc);
     
-    VectorMem<50,Complex> exp_imphi(order+1);
-    Complex exp_iphi(cos(phi), sin(phi));
+    VectorMem<50,complex_type> exp_imphi(order+1);
+    complex_type exp_iphi(cos(phi), sin(phi));
     
-    Complex prod = 1.0/sqrt(4*M_PI);
+    complex_type prod = 1.0/sqrt(4*M_PI);
     for (int i = 0; i <= order; i++)
       {
         exp_imphi(i) = prod;
@@ -172,29 +176,29 @@ namespace ngsbem
   // add directional derivative divided by kappa to res, both multipoles need same scaling
   template <typename entry_type>  
   void SphericalHarmonics<entry_type> ::
-  DirectionalDiffAdd (Vec<3> d, SphericalHarmonics<entry_type> & res, double scale) const
+  DirectionalDiffAdd (Vec<3> d, SphericalHarmonics<entry_type> & res, real_type scale) const
   {
     // static Timer t("mptool Directional Diff Add"); RegionTimer rg(t);
     
-    double fx = d(0);
-    double fy = d(1);
-    double fz = d(2);
-    double invscale = 1./scale;
+    real_type fx = d(0);
+    real_type fy = d(1);
+    real_type fz = d(2);
+    real_type invscale = 1.0/scale;
       
     for (int n = 0; n < order; n++)
       for (int m = -n; m <= n; m++)
         {
-          double amn = CalcAmn(m,n);
-          double bmn1 = CalcBmn(-m-1, n+1);
-          double bmn2 = CalcBmn(m-1,n+1);
+          real_type amn = CalcAmn(m,n);
+          real_type bmn1 = CalcBmn(-m-1, n+1);
+          real_type bmn2 = CalcBmn(m-1,n+1);
             
-          res.Coef(n+1, m-1) += invscale * Complex(0.5*fx,0.5*fy)*bmn2 * Coef(n,m);
+          res.Coef(n+1, m-1) += invscale * complex_type(0.5*fx,0.5*fy)*bmn2 * Coef(n,m);
           res.Coef(n+1, m  ) -= invscale * fz*amn * Coef(n,m);                
-          res.Coef(n+1, m+1) += invscale * Complex(0.5*fx,-0.5*fy)*bmn1 * Coef(n,m);
+          res.Coef(n+1, m+1) += invscale * complex_type(0.5*fx,-0.5*fy)*bmn1 * Coef(n,m);
             
-          res.Coef(n, m) += scale * Complex(-0.5*fx,0.5*fy)*bmn2 * Coef(n+1,m-1);
+          res.Coef(n, m) += scale * complex_type(-0.5*fx,0.5*fy)*bmn2 * Coef(n+1,m-1);
           res.Coef(n, m) += scale * fz*amn * Coef(n+1,m);
-          res.Coef(n, m) += scale * Complex(-0.5*fx,-0.5*fy)*bmn1 * Coef(n+1,m+1);
+          res.Coef(n, m) += scale * complex_type(-0.5*fx,-0.5*fy)*bmn1 * Coef(n+1,m+1);
         }
   }
 
@@ -215,9 +219,9 @@ namespace ngsbem
     // static Timer t("mptool sh RotateZ"); RegionTimer rg(t);
     if (order < 0) return;
 
-    VectorMem<40,Complex> exp_imalpha(order+1);
-    Complex exp_ialpha(cos(alpha), sin(alpha));
-    Complex prod = 1.0;
+    VectorMem<40,complex_type> exp_imalpha(order+1);
+    complex_type exp_ialpha(cos(alpha), sin(alpha));
+    complex_type prod = 1.0;
     for (int i = 0; i <= order; i++)
       {
         exp_imalpha(i) = prod;
@@ -239,6 +243,7 @@ namespace ngsbem
   template <typename SH, typename APPLY>
   static void RotateYImpl (SH & sh, double alpha, bool parallel, size_t apply_heapsize, APPLY apply)
   {
+    using real_type = typename SH::real_type;
     int order = sh.Order();
     LocalHeap lh(8*6*sqr(order) + 8*15*order + apply_heapsize + 500, nullptr, parallel);
     // static Timer t("mptool sh RotateY"+ToString(sizeof(entry_type)/sizeof(Complex)));
@@ -272,8 +277,8 @@ namespace ngsbem
       {
         HeapReset hr(lh);
           
-        FlatVector<> Dmn(2*order+1, lh);
-        FlatMatrix<double,RowMajor> trafo(n+1, 2*n+1, lh); 
+        FlatVector<real_type> Dmn(2*order+1, lh);
+        FlatMatrix<real_type,RowMajor> trafo(n+1, 2*n+1, lh);
         /*
           Recursive Computation of Spherical Harmonic Rotation Coefficients of Large Degree
           Nail A. Gumerov and Ramani Duraiswami
@@ -302,7 +307,7 @@ namespace ngsbem
 
         for (int mp = 1; mp < n; mp++)
           {
-            double invDmn = 1.0 / Dmn(order+mp);
+            real_type invDmn = 1.0 / Dmn(order+mp);
             for (int m = mp; m < n; m++)
               trafo(m, n+mp+1) = invDmn  * ( Dmn(order+mp-1) *trafo(m  ,n+mp-1)
                                              -Dmn(order+m-1)*trafo(m-1,n+mp)
@@ -316,7 +321,7 @@ namespace ngsbem
         // diamond - recursion, negative      
         for (int mp = 0; mp > -n; mp--)
           {
-            double invDmn = 1.0 / Dmn(order+mp-1);              
+            real_type invDmn = 1.0 / Dmn(order+mp-1);
             for (int m = -mp+1; m < n; m++)
               trafo(m, n+mp-1) = invDmn * (  Dmn(order+mp,n)*trafo(m  ,n+mp+1)
                                              +Dmn(order+m-1,n)*trafo(m-1,n+mp)
@@ -382,7 +387,7 @@ namespace ngsbem
   template <typename entry_type>
   void SphericalHarmonics<entry_type> :: RotateY (double alpha, bool parallel)
   {
-    auto apply = [this] (int n, FlatMatrix<double,RowMajor> trafo, LocalHeap & lh)
+    auto apply = [this] (int n, FlatMatrix<real_type,RowMajor> trafo, LocalHeap & lh)
       {
         FlatVector<entry_type> cn = CoefsN(n);
         FlatVector<entry_type> old = cn | lh;
@@ -412,20 +417,27 @@ namespace ngsbem
     return SliceMatrix<T>(m.Height(), m.Width(), -m.Dist(), m.Addr(m.Height()-1, 0));
   }
 
-  inline auto AsDouble (SliceMatrix<Complex> m)
+  template <typename TSCAL, ORDERING ORD, typename TH, typename TW, typename TDIST>
+  inline auto AsReal (MatrixView<TSCAL,ORD,TH,TW,TDIST> m)
   {
-    return SliceMatrix<double> (m.Height(), 2*m.Width(), 2*m.Dist(), (double*)(void*)m.Addr(0,0));
+    static_assert(ORD == RowMajor);
+    using TREAL = typename scal_traits<TSCAL>::TSCAL_REAL;
+    size_t dist = m.Width();
+    if constexpr (!std::is_same_v<TDIST,unused_dist>)
+      dist = m.Dist();
+    return SliceMatrix<TREAL> (m.Height(), 2*m.Width(), 2*dist, reinterpret_cast<TREAL*>(m.Addr(0,0)));
   }
   
-  void SphericalHarmonics<Vector<Complex>> :: RotateY (double alpha, bool parallel)
+  template <typename TSCAL>
+  void SphericalHarmonics<Vector<TSCAL>> :: RotateY (double alpha, bool parallel)
   {
-    auto apply = [this] (int n, FlatMatrix<double,RowMajor> trafo, LocalHeap & lh)
+    auto apply = [this] (int n, FlatMatrix<real_type,RowMajor> trafo, LocalHeap & lh)
       {
         auto cn = CoefsN(n);
-        FlatMatrix<Complex,RowMajor> old = cn | lh;
+        FlatMatrix<TSCAL,RowMajor> old = cn | lh;
 
-        AsDouble(cn) = Trans(trafo) * AsDouble(old.Rows(n, 2*n+1));
-        AsDouble(ReversedRows(cn)) += Trans(trafo.Rows(1,n+1)) * AsDouble(ReversedRows(old.Rows(0,n)));
+        AsReal(cn) = Trans(trafo) * AsReal(old.Rows(n, 2*n+1));
+        AsReal(ReversedRows(cn)) += Trans(trafo.Rows(1,n+1)) * AsReal(ReversedRows(old.Rows(0,n)));
 
         for (int m = 1; m <= n; m+=2)
           {
@@ -435,8 +447,8 @@ namespace ngsbem
       };
 
     RotateYImpl(*this, alpha, parallel,
-                sizeof(double)*sqr(2*order+1)
-                + 2*sizeof(Complex)*dim*(order+3), apply);
+                sizeof(real_type)*sqr(2*order+1)
+                + 2*sizeof(TSCAL)*dim*(order+3), apply);
   }
 
 
@@ -448,7 +460,10 @@ namespace ngsbem
     int os = sh.Order();
     int ot = target.SH().Order();
 
-    constexpr bool is_dynamic = std::is_same_v<entry_type,Vector<Complex>>;
+    constexpr bool is_ss = std::is_same<RADIAL,Singular>::value && std::is_same<TARGET,Singular>::value;
+    constexpr bool is_sr = std::is_same<RADIAL,Singular>::value && std::is_same<TARGET,Regular>::value;
+    constexpr bool is_rr = std::is_same<RADIAL,Regular>::value && std::is_same<TARGET,Regular>::value;
+    constexpr bool is_dynamic = std::is_same_v<entry_type,Vector<complex_type>>;
     size_t dim = 1;
     if constexpr (is_dynamic)
       {
@@ -457,32 +472,36 @@ namespace ngsbem
         dim = Dim();
       }
 
-    double scale = Scale();
-    double inv_scale = 1.0/scale;
-    double tscale = target.Scale();
-    double inv_tscale = 1.0/tscale;
+    real_type scale = Scale();
+    real_type inv_scale = 1/scale;
+    real_type tscale = target.Scale();
+    real_type inv_tscale = 1/tscale;
+    // Balance the Hankel 1/kappa against kappa in the source coefficients.
+    real_type hankel_prefactor = 1;
+    if constexpr (is_sr)
+      if (abs(kappa) > 0 && abs(kappa) < 1)
+        hankel_prefactor = abs(kappa);
+    real_type inv_hankel_prefactor = 1/hankel_prefactor;
 
     target.SH().Coefs()=0.0;
 
-    size_t entry_size = is_dynamic ? sizeof(Complex)*dim : sizeof(entry_type);
+    size_t entry_size = is_dynamic ? sizeof(complex_type)*dim : sizeof(entry_type);
     LocalHeap lh(( 32*( (os+ot+1)*(os+ot+1) + (os+1 + ot+1) ) + 2*entry_size*(os+ot+3)+ 8*4*(os+ot+1) + 500));
 
-    constexpr bool is_ss = std::is_same<RADIAL,Singular>::value && std::is_same<TARGET,Singular>::value;
-    constexpr bool is_sr = std::is_same<RADIAL,Singular>::value && std::is_same<TARGET,Regular>::value;
-    constexpr bool is_rr = std::is_same<RADIAL,Regular>::value && std::is_same<TARGET,Regular>::value;
     using trafo_type =
         std::conditional_t<
-            is_sr || std::is_same<T_Kappa, Complex>::value,
-            Complex,
-            double
+            is_sr || IsComplex<T_Kappa>(),
+            complex_type,
+            real_type
         >;
+    using trafo_type64 = typename scal_traits<trafo_type>::TSCAL64;
 
     FlatMatrix<trafo_type> trafo(os+ot+1, max(os,ot)+1, lh);
     FlatMatrix<trafo_type> oldtrafo(os+ot+1, max(os,ot)+1, lh);
     auto make_hv = [&] (int height)
       {
         if constexpr (is_dynamic)
-          return FlatMatrix<Complex,RowMajor>(height, dim, lh);
+          return FlatMatrix<complex_type,RowMajor>(height, dim, lh);
         else
           return FlatVector<entry_type>(height, lh);
       };
@@ -491,16 +510,15 @@ namespace ngsbem
 
     trafo = trafo_type(0.0);
 
-    FlatVector<double> scale_inv_amn(os+ot+1, lh);
-    FlatVector<double> amn(os+ot+1, lh);
-    FlatVector<double> tscale_inv_amn(os+ot+1, lh);
+    FlatVector<real_type> amn(os+ot+1, lh);
+    FlatVector<real_type> tscale_inv_amn(os+ot+1, lh);
     FlatVector<double> powscale(os+ot+1, lh);
     
     // initial values
     if constexpr (is_ss)
       SphericalBessel (os+ot, kappa*abs(z), tscale, trafo.Col(0));
     if constexpr (is_sr)
-      SphericalHankel1 (os+ot, kappa*abs(z), inv_tscale, trafo.Col(0));
+      SphericalHankel1 (os+ot, kappa*abs(z), inv_tscale, trafo.Col(0), hankel_prefactor);
     if constexpr (is_rr)
     {
       std::swap(scale, inv_tscale);
@@ -509,8 +527,16 @@ namespace ngsbem
       SphericalBessel (os+ot, kappa*abs(z), tscale, trafo.Col(0));
     }
 
+    const real_type scale_tscale = scale*tscale;
+    const real_type scale_inv_tscale = scale*inv_tscale;
+    const real_type scale2 = scale*scale;
+    const real_type inv_tscale2 = inv_tscale*inv_tscale;
+    const real_type inv_scale_inv_tscale = inv_scale*inv_tscale;
+
+    // Scale powers can exceed FP32 range; multiply in FP64 before narrowing.
+    double scaleprod = -double(scale)*tscale;
     double prod = 1;
-    for (int i = 0; i <= max(os,ot); i++, prod *= -scale*tscale)
+    for (int i = 0; i <= max(os,ot); i++, prod *= scaleprod)
       powscale(i) = prod;
     
     // (185) from paper 'fast, exact, stable, Gumerov+Duraiswami
@@ -521,30 +547,27 @@ namespace ngsbem
     for (int l = 0; l <= os+ot; l++)
       trafo(l,0) *= sqrt(2*l+1);
 
-    for (int l = 0; l < os+ot; l++)
-      scale_inv_amn(l) = scale/sh.CalcAmn(0,l);
-
     if (os > 0)
     {
       for (int l = 1; l < os+ot; l++)
-        trafo(l,1) = -scale_inv_amn(0) * (sh.CalcAmn(0,l)*tscale*trafo(l+1,0)
-              -sh.CalcAmn(0,l-1)*inv_tscale*trafo(l-1,0));
-      trafo(0,1) = powscale(1)*trafo(1,0);
+        trafo(l,1) = -sh.CalcAmn(0,l)/sh.CalcAmn(0,0)*scale_tscale*trafo(l+1,0)
+          +sh.CalcAmn(0,l-1)/sh.CalcAmn(0,0)*scale_inv_tscale*trafo(l-1,0);
+      trafo(0,1) = powscale(1)*trafo_type64(trafo(1,0));
     }
 
     for (int n = 1; n < trafo.Width()-1; n++)
     {
       for (int l = n; l < os+ot-n; l++)
-        trafo(l,n+1) = -scale_inv_amn(n) * (sh.CalcAmn(0,l)*tscale*trafo(l+1,n)
-              -sh.CalcAmn(0,l-1)*inv_tscale*trafo(l-1,n)
-              -sh.CalcAmn(0,n-1)*scale*trafo(l,n-1));
-      trafo(0,n+1) = powscale(n+1)*trafo(n+1,0);
+        trafo(l,n+1) = -sh.CalcAmn(0,l)/sh.CalcAmn(0,n)*scale_tscale*trafo(l+1,n)
+          +sh.CalcAmn(0,l-1)/sh.CalcAmn(0,n)*scale_inv_tscale*trafo(l-1,n)
+          +sh.CalcAmn(0,n-1)/sh.CalcAmn(0,n)*scale2*trafo(l,n-1);
+      trafo(0,n+1) = powscale(n+1)*trafo_type64(trafo(n+1,0));
     }
 
     // use symmetry of matrix (up to scaling)
     for (int n = 0; n < trafo.Width(); n++)
       for (int l = n+1; l < trafo.Width(); l++)
-        trafo(n,l) = powscale(l-n) * trafo(l,n);
+        trafo(n,l) = powscale(l-n) * trafo_type64(trafo(l,n));
 
     auto apply = [&] (int sm)
       {
@@ -552,12 +575,12 @@ namespace ngsbem
         if constexpr (is_dynamic)
           {
             for (int n = m; n <= os; n++)
-              hv1.Row(n) = sh.Coef(n,sm);
+              hv1.Row(n) = inv_hankel_prefactor*sh.Coef(n,sm);
 
-            if constexpr (std::is_same_v<trafo_type,double>)
+            if constexpr (std::is_same_v<trafo_type,real_type>)
               {
-                FlatMatrix<double,RowMajor> hv1_real(hv1.Height(), 2*hv1.Width(), (double*)hv1.Data());
-                FlatMatrix<double,RowMajor> hv2_real(hv2.Height(), 2*hv2.Width(), (double*)hv2.Data());
+                FlatMatrix<real_type,RowMajor> hv1_real(hv1.Height(), 2*hv1.Width(), reinterpret_cast<real_type*>(hv1.Data()));
+                FlatMatrix<real_type,RowMajor> hv2_real(hv2.Height(), 2*hv2.Width(), reinterpret_cast<real_type*>(hv2.Data()));
                 if constexpr (is_rr)
                   hv2_real.Rows(m,ot+1) = Trans(trafo.Rows(m,os+1).Cols(m,ot+1)) * hv1_real.Rows(m,os+1);
                 else
@@ -577,7 +600,7 @@ namespace ngsbem
         else
           {
             for (int n = m; n <= os; n++)
-              hv1(n) = sh.Coef(n,sm);
+              hv1(n) = inv_hankel_prefactor*sh.Coef(n,sm);
 
             if constexpr (is_rr)
               hv2.Range(m,ot+1) = Trans(trafo.Rows(m,os+1).Cols(m,ot+1)) * hv1.Range(m,os+1);
@@ -603,10 +626,9 @@ namespace ngsbem
       trafo.Swap (oldtrafo);
         
       // fill recursive formula (187)
-      double scale_inv_bmm = scale/sh.CalcBmn(-m,m);
       for (int l = m; l <= trafo.Height()-1-m; l++)
-        trafo(l,m) = scale_inv_bmm * (sh.CalcBmn(-m, l)*inv_tscale*oldtrafo(l-1, m-1)
-              -sh.CalcBmn(m-1,l+1)*tscale*oldtrafo(l+1,m-1));  
+        trafo(l,m) = sh.CalcBmn(-m,l)/sh.CalcBmn(-m,m)*scale_inv_tscale*oldtrafo(l-1,m-1)
+          -sh.CalcBmn(m-1,l+1)/sh.CalcBmn(-m,m)*scale_tscale*oldtrafo(l+1,m-1);
 
       if constexpr (is_sr)
       {
@@ -616,30 +638,26 @@ namespace ngsbem
         {
           int wall_start_l = m+wall;
           if (m+1 < trafo.Width())
-            trafo(wall_start_l,m+1) = scale/sh.CalcBmn(-m,m+1) *
-              (-sh.CalcBmn(m-1,wall_start_l+1)*tscale*oldtrafo(wall_start_l+1,m)
-               + sh.CalcBmn(-m,wall_start_l)*inv_tscale*oldtrafo(wall_start_l-1,m));
+            trafo(wall_start_l,m+1) = -sh.CalcBmn(m-1,wall_start_l+1)/sh.CalcBmn(-m,m+1)*scale_tscale*oldtrafo(wall_start_l+1,m)
+              +sh.CalcBmn(-m,wall_start_l)/sh.CalcBmn(-m,m+1)*scale_inv_tscale*oldtrafo(wall_start_l-1,m);
 
           for (int n = m+1; n < trafo.Width()-1; n++)
           {
             int l = n+wall;
-            trafo(l,n+1) = scale/sh.CalcBmn(-m,n+1) *
-              (sh.CalcBmn(m-1,n)*scale*trafo(l,n-1)
-               - sh.CalcBmn(m-1,l+1)*tscale*oldtrafo(l+1,n)
-               + sh.CalcBmn(-m,l)*inv_tscale*oldtrafo(l-1,n));
-            trafo(l+1,n) = 1.0/(tscale*amn(l)) *
-              (amn(l-1)*inv_tscale*trafo(l-1,n)
-               + amn(n-1)*scale*trafo(l,n-1)
-               - amn(n)*inv_scale*trafo(l,n+1));
+            trafo(l,n+1) = sh.CalcBmn(m-1,n)/sh.CalcBmn(-m,n+1)*scale2*trafo(l,n-1)
+              -sh.CalcBmn(m-1,l+1)/sh.CalcBmn(-m,n+1)*scale_tscale*oldtrafo(l+1,n)
+              +sh.CalcBmn(-m,l)/sh.CalcBmn(-m,n+1)*scale_inv_tscale*oldtrafo(l-1,n);
+            trafo(l+1,n) = amn(l-1)/amn(l)*inv_tscale2*trafo(l-1,n)
+              +amn(n-1)/amn(l)*scale_inv_tscale*trafo(l,n-1)
+              -amn(n)/amn(l)*inv_scale_inv_tscale*trafo(l,n+1);
           }
         }
 
         for (int l = m; l < trafo.Height()-1; l++)
           for (int n = m+1; n < min<int>(trafo.Height()-1-l,l-1); n++)
-            trafo(l+1,n) = 1.0/(tscale*amn(l)) *
-              (amn(l-1)*inv_tscale*trafo(l-1,n)
-               + amn(n-1)*scale*trafo(l,n-1)
-               - amn(n)*inv_scale*trafo(l,n+1));
+            trafo(l+1,n) = amn(l-1)/amn(l)*inv_tscale2*trafo(l-1,n)
+              +amn(n-1)/amn(l)*scale_inv_tscale*trafo(l,n-1)
+              -amn(n)/amn(l)*inv_scale_inv_tscale*trafo(l,n+1);
       }
       else
       {
@@ -678,7 +696,7 @@ namespace ngsbem
       int symmetry_order = is_rr ? ot : os;
       for (int n = m; n < symmetry_order; n++)
         for (int l = n+1; l <= symmetry_order; l++)
-          trafo(n,l) = powscale(l-n) * trafo(l,n);
+          trafo(n,l) = powscale(l-n) * trafo_type64(trafo(l,n));
 
       apply(m);
       apply(-m);
@@ -698,9 +716,16 @@ namespace ngsbem
   template void SphericalExpansion<Singular,Vec<1,Complex>> :: ShiftZ (double z, SphericalExpansion<Regular,Vec<1,Complex>> & target);  
   template void SphericalExpansion<Singular,Vec<1,Complex>> :: ShiftZ (double z, SphericalExpansion<Singular,Vec<1,Complex>> & target);
 
+  template void SphericalExpansion<Regular,Vec<1,Complex32>> :: ShiftZ (double z, SphericalExpansion<Regular,Vec<1,Complex32>> & target);
+  template void SphericalExpansion<Singular,Vec<1,Complex32>> :: ShiftZ (double z, SphericalExpansion<Regular,Vec<1,Complex32>> & target);
+  template void SphericalExpansion<Singular,Vec<1,Complex32>> :: ShiftZ (double z, SphericalExpansion<Singular,Vec<1,Complex32>> & target);
+
   template void SphericalExpansion<Regular,Vec<3,Complex>> :: ShiftZ (double z, SphericalExpansion<Regular,Vec<3,Complex>> & target);
   template void SphericalExpansion<Singular,Vec<3,Complex>> :: ShiftZ (double z, SphericalExpansion<Regular,Vec<3,Complex>> & target);  
   template void SphericalExpansion<Singular,Vec<3,Complex>> :: ShiftZ (double z, SphericalExpansion<Singular,Vec<3,Complex>> & target);
+  template void SphericalExpansion<Regular,Vec<3,Complex32>> :: ShiftZ (double z, SphericalExpansion<Regular,Vec<3,Complex32>> & target);
+  template void SphericalExpansion<Singular,Vec<3,Complex32>> :: ShiftZ (double z, SphericalExpansion<Regular,Vec<3,Complex32>> & target);
+  template void SphericalExpansion<Singular,Vec<3,Complex32>> :: ShiftZ (double z, SphericalExpansion<Singular,Vec<3,Complex32>> & target);
 
   template void SphericalExpansion<Regular,Vec<4,Complex>> :: ShiftZ (double z, SphericalExpansion<Regular,Vec<4,Complex>> & target);
   template void SphericalExpansion<Singular,Vec<4,Complex>> :: ShiftZ (double z, SphericalExpansion<Regular,Vec<4,Complex>> & target);  
@@ -709,10 +734,17 @@ namespace ngsbem
   template void SphericalExpansion<Regular,Vec<6,Complex>> :: ShiftZ (double z, SphericalExpansion<Regular,Vec<6,Complex>> & target);
   template void SphericalExpansion<Singular,Vec<6,Complex>> :: ShiftZ (double z, SphericalExpansion<Regular,Vec<6,Complex>> & target);
   template void SphericalExpansion<Singular,Vec<6,Complex>> :: ShiftZ (double z, SphericalExpansion<Singular,Vec<6,Complex>> & target);
+  template void SphericalExpansion<Regular,Vec<6,Complex32>> :: ShiftZ (double z, SphericalExpansion<Regular,Vec<6,Complex32>> & target);
+  template void SphericalExpansion<Singular,Vec<6,Complex32>> :: ShiftZ (double z, SphericalExpansion<Regular,Vec<6,Complex32>> & target);
+  template void SphericalExpansion<Singular,Vec<6,Complex32>> :: ShiftZ (double z, SphericalExpansion<Singular,Vec<6,Complex32>> & target);
 
   template void SphericalExpansion<Regular,Vector<Complex>> :: ShiftZ (double z, SphericalExpansion<Regular,Vector<Complex>> & target);
   template void SphericalExpansion<Singular,Vector<Complex>> :: ShiftZ (double z, SphericalExpansion<Regular,Vector<Complex>> & target);
   template void SphericalExpansion<Singular,Vector<Complex>> :: ShiftZ (double z, SphericalExpansion<Singular,Vector<Complex>> & target);
+
+  template void SphericalExpansion<Regular,Vector<Complex32>> :: ShiftZ (double z, SphericalExpansion<Regular,Vector<Complex32>> & target);
+  template void SphericalExpansion<Singular,Vector<Complex32>> :: ShiftZ (double z, SphericalExpansion<Regular,Vector<Complex32>> & target);
+  template void SphericalExpansion<Singular,Vector<Complex32>> :: ShiftZ (double z, SphericalExpansion<Singular,Vector<Complex32>> & target);
 
 
   template void SphericalExpansion<Regular,Complex,Complex> :: ShiftZ (double z, SphericalExpansion<Regular,Complex,Complex> & target);
@@ -722,10 +754,16 @@ namespace ngsbem
   template void SphericalExpansion<Regular,Vec<1,Complex>,Complex> :: ShiftZ (double z, SphericalExpansion<Regular,Vec<1,Complex>,Complex> & target);
   template void SphericalExpansion<Singular,Vec<1,Complex>,Complex> :: ShiftZ (double z, SphericalExpansion<Regular,Vec<1,Complex>,Complex> & target);
   template void SphericalExpansion<Singular,Vec<1,Complex>,Complex> :: ShiftZ (double z, SphericalExpansion<Singular,Vec<1,Complex>,Complex> & target);
+  template void SphericalExpansion<Regular,Vec<1,Complex32>,Complex> :: ShiftZ (double z, SphericalExpansion<Regular,Vec<1,Complex32>,Complex> & target);
+  template void SphericalExpansion<Singular,Vec<1,Complex32>,Complex> :: ShiftZ (double z, SphericalExpansion<Regular,Vec<1,Complex32>,Complex> & target);
+  template void SphericalExpansion<Singular,Vec<1,Complex32>,Complex> :: ShiftZ (double z, SphericalExpansion<Singular,Vec<1,Complex32>,Complex> & target);
 
   template void SphericalExpansion<Regular,Vec<3,Complex>,Complex> :: ShiftZ (double z, SphericalExpansion<Regular,Vec<3,Complex>,Complex> & target);
   template void SphericalExpansion<Singular,Vec<3,Complex>,Complex> :: ShiftZ (double z, SphericalExpansion<Regular,Vec<3,Complex>,Complex> & target);
   template void SphericalExpansion<Singular,Vec<3,Complex>,Complex> :: ShiftZ (double z, SphericalExpansion<Singular,Vec<3,Complex>,Complex> & target);
+  template void SphericalExpansion<Regular,Vec<3,Complex32>,Complex> :: ShiftZ (double z, SphericalExpansion<Regular,Vec<3,Complex32>,Complex> & target);
+  template void SphericalExpansion<Singular,Vec<3,Complex32>,Complex> :: ShiftZ (double z, SphericalExpansion<Regular,Vec<3,Complex32>,Complex> & target);
+  template void SphericalExpansion<Singular,Vec<3,Complex32>,Complex> :: ShiftZ (double z, SphericalExpansion<Singular,Vec<3,Complex32>,Complex> & target);
 
   template void SphericalExpansion<Regular,Vec<4,Complex>,Complex> :: ShiftZ (double z, SphericalExpansion<Regular,Vec<4,Complex>,Complex> & target);
   template void SphericalExpansion<Singular,Vec<4,Complex>,Complex> :: ShiftZ (double z, SphericalExpansion<Regular,Vec<4,Complex>,Complex> & target);
@@ -734,10 +772,16 @@ namespace ngsbem
   template void SphericalExpansion<Regular,Vec<6,Complex>,Complex> :: ShiftZ (double z, SphericalExpansion<Regular,Vec<6,Complex>,Complex> & target);
   template void SphericalExpansion<Singular,Vec<6,Complex>,Complex> :: ShiftZ (double z, SphericalExpansion<Regular,Vec<6,Complex>,Complex> & target);
   template void SphericalExpansion<Singular,Vec<6,Complex>,Complex> :: ShiftZ (double z, SphericalExpansion<Singular,Vec<6,Complex>,Complex> & target);
+  template void SphericalExpansion<Regular,Vec<6,Complex32>,Complex> :: ShiftZ (double z, SphericalExpansion<Regular,Vec<6,Complex32>,Complex> & target);
+  template void SphericalExpansion<Singular,Vec<6,Complex32>,Complex> :: ShiftZ (double z, SphericalExpansion<Regular,Vec<6,Complex32>,Complex> & target);
+  template void SphericalExpansion<Singular,Vec<6,Complex32>,Complex> :: ShiftZ (double z, SphericalExpansion<Singular,Vec<6,Complex32>,Complex> & target);
 
   template void SphericalExpansion<Regular,Vector<Complex>,Complex> :: ShiftZ (double z, SphericalExpansion<Regular,Vector<Complex>,Complex> & target);
   template void SphericalExpansion<Singular,Vector<Complex>,Complex> :: ShiftZ (double z, SphericalExpansion<Regular,Vector<Complex>,Complex> & target);
   template void SphericalExpansion<Singular,Vector<Complex>,Complex> :: ShiftZ (double z, SphericalExpansion<Singular,Vector<Complex>,Complex> & target);
+  template void SphericalExpansion<Regular,Vector<Complex32>,Complex> :: ShiftZ (double z, SphericalExpansion<Regular,Vector<Complex32>,Complex> & target);
+  template void SphericalExpansion<Singular,Vector<Complex32>,Complex> :: ShiftZ (double z, SphericalExpansion<Regular,Vector<Complex32>,Complex> & target);
+  template void SphericalExpansion<Singular,Vector<Complex32>,Complex> :: ShiftZ (double z, SphericalExpansion<Singular,Vector<Complex32>,Complex> & target);
 
 
 
@@ -747,9 +791,13 @@ namespace ngsbem
 
   // adapted from fmm3d
   template <typename Tz> 
-  void T_besseljs3d (int nterms, Tz z, double scale,
+  void besseljs3d (int nterms, Tz z, double scale,
                      SliceVector<Tz> fjs, SliceVector<Tz> fjder)
   {
+    using real_type = typename scal_traits<Tz>::TSCAL_REAL;
+    const real_type rscale = scale;
+    const real_type upper2 = std::is_same_v<real_type,float> ? 1e20f : 1e40;
+    const real_type rescale = std::is_same_v<real_type,float> ? 1e-10f : 1e-40;
     /*
       c**********************************************************************
       c
@@ -780,8 +828,8 @@ namespace ngsbem
   
     // c ... Initializing ...
 
-    // set to asymptotic values if argument is sufficiently small
-    if (abs(z) < 1e-200)
+    // For FP32, only exact zero may bypass the scaled small-z series.
+    if (std::is_same_v<real_type,float> ? z == Tz(0) : abs(z) < 1e-200)
       {
         fjs(0) = 1;
         for (int i = 1; i <= nterms; i++)
@@ -790,15 +838,52 @@ namespace ngsbem
         if (fjder.Size())
           {
             fjder = 0.0;
-            fjder(1) = 1.0/(3*scale);
+            if (nterms >= 1)
+              fjder(1) = 1/(3*rscale);
           }
         return;
       }
 
+    if constexpr (std::is_same_v<real_type,float>)
+      if (abs(z) < 1e-2f)
+        {
+          Tz leading = 1;
+          Tz dleading = 0;
+          Tz zscaled = z/rscale;
+          for (int n = 0; n <= nterms; n++)
+            {
+              Tz term = 1;
+              Tz dterm = 0;
+              Tz sum = 1;
+              Tz dsum = 0;
+              for (int k = 0; k < 3; k++)
+                {
+                  real_type denom = 2*(k+1)*(2*n+2*k+3);
+                  Tz factor = -z*z/denom;
+                  dterm = dterm*factor-term*real_type(2)*z/denom;
+                  term *= factor;
+                  sum += term;
+                  dsum += dterm;
+                }
+
+              fjs(n) = leading*sum;
+              if (fjder.Size())
+                fjder(n) = dleading*sum+leading*dsum;
+
+              // Advance independently of leading, which may already have underflowed.
+              if (n == 0)
+                dleading = Tz(1)/(3*rscale);
+              else
+                dleading *= real_type(n+1)*zscaled/real_type(n*(2*n+3));
+              leading *= zscaled/real_type(2*n+3);
+            }
+          return;
+        }
+
 
     //  ... Step 1: recursion up to find ntop, starting from nterms
 
-    Tz zinv=1.0/z;
+    Tz zinv=Tz(1.0)/z;
 
     Tz fjm1 = 0.0;
     Tz fj0 = 1.0;
@@ -818,10 +903,10 @@ namespace ngsbem
 
     for (int i = nterms; ; i++)
       {
-        double dcoef = 2*i+1.0;
+        real_type dcoef = 2*i+1;
         Tz fj1 = dcoef*zinv*fj0-fjm1;
-        double dd = sqr(abs(fj1));
-        if (dd > 1e40)
+        real_type dd = sqr(abs(fj1));
+        if (dd > upper2)
           {
             ntop=i+1;
             break;
@@ -848,13 +933,13 @@ namespace ngsbem
     fjtmp(ntop-1) = 1.0;
     for (int i = ntop-1; i>=1; i--)
       {
-        double dcoef = 2*i+1.0;
+        real_type dcoef = 2*i+1;
         fjtmp(i-1) = dcoef*zinv*fjtmp(i)-fjtmp(i+1);
-        double dd = sqr(abs(fjtmp(i-1)));
-        if (dd > 1e40)
+        real_type dd = sqr(abs(fjtmp(i-1)));
+        if (dd > upper2)
           {
-            fjtmp(i) *= 1e-40;
-            fjtmp(i-1) *= 1e-40;
+            fjtmp(i) *= rescale;
+            fjtmp(i-1) *= rescale;
             iscale[i] = true;
           }
       }
@@ -869,13 +954,13 @@ namespace ngsbem
       c
     */
   
-    double scalinv = 1.0/scale;
-    double sctot = 1.0;
+    real_type scalinv = 1/rscale;
+    real_type sctot = 1.0;
     for (int i = 1; i <= ntop; i++)
       {
         sctot *= scalinv;
         if (iscale[i-1])
-          sctot *= 1e-40;
+          sctot *= rescale;
         fjtmp(i) *= sctot;
       }
   
@@ -885,15 +970,15 @@ namespace ngsbem
     Tz fj1=fj0*zinv-cos(z)*zinv;
     if (abs(z) < 1e-2)
       {
-        fj1 = 1.0/3 * z - 1.0/30 * z*z*z + 1.0/840 * z*z*z*z*z;
+        fj1 = real_type(1.0/3.0) * z - real_type(1.0/30.0) * z*z*z + real_type(1.0/840.0) * z*z*z*z*z;
         // |err| < 8/9! * 0.01**7  = 2e-19
       }
     
-    double d0=abs(fj0);
-    double d1=abs(fj1);
+    real_type d0=abs(fj0);
+    real_type d1=abs(fj1);
     Tz zscale;
     if (d1 > d0) 
-      zscale=fj1/(fjtmp(1)*scale);
+      zscale=fj1/(fjtmp(1)*rscale);
     else
       zscale=fj0/fjtmp(0);
 
@@ -908,27 +993,23 @@ namespace ngsbem
 
     if (fjder.Size())
       {
-        fjder(0) = -fjs(1)*scale;
+        fjder(0) = -(fjtmp(1)*ztmp)*rscale;
         for (int i = 1; i <= nterms; i++)
           {
-            double dc1=i/(2*i+1.0);
-            double dc2=1.0-dc1;
+            real_type dc1=real_type(i)/(2*i+1);
+            real_type dc2=1-dc1;
             dc1=dc1*scalinv;
-            dc2=dc2*scale;
+            dc2=dc2*rscale;
             fjder(i)=(dc1*fjtmp(i-1)-dc2*fjtmp(i+1))*ztmp;
           }
       }
   }
   
 
-  void besseljs3d (int nterms, double z, double scale, SliceVector<double> fjs, SliceVector<double> fjder)
-  {
-    T_besseljs3d (nterms, z, scale, fjs, fjder);
-  }
-  void besseljs3d (int nterms, Complex z, double scale, SliceVector<Complex> fjs, SliceVector<Complex> fjder)
-  {
-    T_besseljs3d (nterms, z, scale, fjs, fjder);
-  }
+  template void besseljs3d (int, double, double, SliceVector<double>, SliceVector<double>);
+  template void besseljs3d (int, float, double, SliceVector<float>, SliceVector<float>);
+  template void besseljs3d (int, Complex, double, SliceVector<Complex>, SliceVector<Complex>);
+  template void besseljs3d (int, Complex32, double, SliceVector<Complex32>, SliceVector<Complex32>);
 
   /*
   // from A. Barnett 
@@ -1022,11 +1103,11 @@ namespace ngsbem
   {
     if (sh.Order() < 0) return entry_type{0.0};
 
-    Vector<Complex> radial(sh.Order()+1);
+    Vector<complex_type> radial(sh.Order()+1);
     Vector<entry_type> shvals(sh.Order()+1);
       
     // RADIAL::Eval(sh.Order(), kappa*L2Norm(x), scale, radial);
-    RADIAL::Eval(sh.Order(), kappa, L2Norm(x), rtyp, radial);
+    RADIAL::Eval(sh.Order(), kappa*L2Norm(x), Scale(), radial);
     sh.EvalOrders (x, shvals);
       
     entry_type sum{0.0};
@@ -1042,7 +1123,7 @@ namespace ngsbem
     if (sh.Order() < 0) return entry_type{0.0};
     SphericalExpansion<RADIAL, entry_type,T_Kappa> tmp(Order(), kappa, RTyp());
     this->SH().DirectionalDiffAdd(d, tmp.SH(), Scale());
-    return kappa * tmp.Eval(x);
+    return complex_type(kappa) * tmp.Eval(x);
   }
 
 
@@ -1054,16 +1135,17 @@ namespace ngsbem
     if constexpr (!std::is_same<RADIAL,Singular>())
       throw Exception("AddCharge assumes singular MP");
     
-    VectorMem<50,T_Kappa> radial(sh.Order()+1);
-    VectorMem<1000,Complex> sh_shapes(sqr (sh.Order()+1));
+    using radial_type = std::conditional_t<IsComplex<T_Kappa>(),complex_type,real_type>;
+    VectorMem<50,radial_type> radial(sh.Order()+1);
+    VectorMem<1000,complex_type> sh_shapes(sqr (sh.Order()+1));
     
     // SphericalBessel(sh.Order(), kappa*L2Norm(x), Scale(), radial);
-    besseljs3d(sh.Order(), kappa*L2Norm(x), Scale(), radial);
+    besseljs3d<radial_type>(sh.Order(), radial_type(kappa)*real_type(L2Norm(x)), Scale(), radial);
     sh.Calc(x, sh_shapes);
 
     for (int i = 0; i <= sh.Order(); i++)
       {
-        entry_type radc = kappa*radial(i) * Complex(0,1) * c;
+        entry_type radc = complex_type(kappa)*radial(i) * complex_type(0,1) * c;
         for (auto j : IntRange(sqr(i), sqr(i+1)))
           sh.Coefs()(j) += Conj(sh_shapes(j)) * radc;
       }
@@ -1084,7 +1166,7 @@ namespace ngsbem
       throw Exception("AddDipole assumes singular MP");
 
     SphericalExpansion<Singular, entry_type, T_Kappa> tmp(Order(), kappa, RTyp());
-    tmp.AddCharge(x, kappa*c);
+    tmp.AddCharge(x, complex_type(kappa)*c);
     tmp.SH().DirectionalDiffAdd (d, this->SH(), Scale());
   }
 
@@ -1096,11 +1178,11 @@ namespace ngsbem
       throw Exception("AddPlaneWave assumes regular MP");
 
     SphericalExpansion<RADIAL, entry_type, T_Kappa> tmp(Order(), kappa, RTyp());
-    entry_type fac = kappa / sqrt(M_PI) * c;
+    entry_type fac = complex_type(kappa) / real_type(sqrt(M_PI)) * c;
     for (int i = 0; i <= Order(); i++)
       {
-        tmp.Coef(i,0) += sqrt(2*i+1) * fac;
-        fac *= Complex(0,1);
+        tmp.Coef(i,0) += real_type(sqrt(2*i+1)) * fac;
+        fac *= complex_type(0,1);
       }
 
     auto [theta, phi] = SH().Polar(d);
@@ -1113,9 +1195,9 @@ namespace ngsbem
   
   
   template <typename RADIAL, typename entry_type, typename T_Kappa>
-  void SphericalExpansion<RADIAL, entry_type, T_Kappa> :: AddCurrent (Vec<3> sp, Vec<3> ep, Complex j, int num)
+  void SphericalExpansion<RADIAL, entry_type, T_Kappa> :: AddCurrent (Vec<3> sp, Vec<3> ep, complex_type j, int num)
   {
-    if constexpr (!std::is_same<RADIAL,Singular>() || !std::is_same<entry_type, Vec<3,Complex>>())
+    if constexpr (!std::is_same<RADIAL,Singular>() || !std::is_same<entry_type, Vec<3,complex_type>>())
       throw Exception("AddCurrent needs a singular vectorial MP");
 
     Vec<3> tau = ep-sp;
@@ -1126,9 +1208,9 @@ namespace ngsbem
           {
             Vec<3> ek{0.0}; ek(k) = 1;
             Vec<3> cp = Cross(tau, ek);
-            Vec<3,Complex> source{0.0};
-            source(k) = j/double(num);
-            if constexpr (std::is_same<entry_type, Vec<3,Complex>>())
+            Vec<3,complex_type> source{0.0};
+            source(k) = j/real_type(num);
+            if constexpr (std::is_same<entry_type, Vec<3,complex_type>>())
               AddDipole (sp+(i+0.5)*tau_num, cp, source);
           }
       }
@@ -1145,32 +1227,49 @@ namespace ngsbem
   }
 
   template class SphericalHarmonics<Complex>;
+  template class SphericalHarmonics<Vector<Complex>>;
+  template class SphericalHarmonics<Vector<Complex32>>;
   template class SphericalHarmonics<Vec<1,Complex>>;    
+  template class SphericalHarmonics<Vec<1,Complex32>>;
   template class SphericalHarmonics<Vec<3,Complex>>;  
+  template class SphericalHarmonics<Vec<3,Complex32>>;
   template class SphericalHarmonics<Vec<4,Complex>>;
   template class SphericalHarmonics<Vec<6,Complex>>;
+  template class SphericalHarmonics<Vec<6,Complex32>>;
 
   template class SphericalExpansion<Singular>;
   template class SphericalExpansion<Regular>;
   template class SphericalExpansion<Singular, Vec<1,Complex>>;
   template class SphericalExpansion<Regular, Vec<1,Complex>>;    
+  template class SphericalExpansion<Singular, Vec<1,Complex32>>;
+  template class SphericalExpansion<Regular, Vec<1,Complex32>>;
   template class SphericalExpansion<Singular, Vec<3,Complex>>;
   template class SphericalExpansion<Regular, Vec<3,Complex>>;    
+  template class SphericalExpansion<Singular, Vec<3,Complex32>>;
+  template class SphericalExpansion<Regular, Vec<3,Complex32>>;
   template class SphericalExpansion<Singular, Vec<4,Complex>>;
   template class SphericalExpansion<Regular, Vec<4,Complex>>;    
   template class SphericalExpansion<Singular, Vec<6,Complex>>;
   template class SphericalExpansion<Regular, Vec<6,Complex>>;
+  template class SphericalExpansion<Singular, Vec<6,Complex32>>;
+  template class SphericalExpansion<Regular, Vec<6,Complex32>>;
 
   template class SphericalExpansion<Singular, Complex, Complex>;
   template class SphericalExpansion<Regular, Complex, Complex>;
   template class SphericalExpansion<Singular, Vec<1,Complex>, Complex>;
   template class SphericalExpansion<Regular, Vec<1,Complex>, Complex>;
+  template class SphericalExpansion<Singular, Vec<1,Complex32>, Complex>;
+  template class SphericalExpansion<Regular, Vec<1,Complex32>, Complex>;
   template class SphericalExpansion<Singular, Vec<3,Complex>, Complex>;
   template class SphericalExpansion<Regular, Vec<3,Complex>, Complex>;
+  template class SphericalExpansion<Singular, Vec<3,Complex32>, Complex>;
+  template class SphericalExpansion<Regular, Vec<3,Complex32>, Complex>;
   template class SphericalExpansion<Singular, Vec<4,Complex>, Complex>;
   template class SphericalExpansion<Regular, Vec<4,Complex>, Complex>;
   template class SphericalExpansion<Singular, Vec<6,Complex>, Complex>;
   template class SphericalExpansion<Regular, Vec<6,Complex>, Complex>;
+  template class SphericalExpansion<Singular, Vec<6,Complex32>, Complex>;
+  template class SphericalExpansion<Regular, Vec<6,Complex32>, Complex>;
 
   
   template class SingularMLExpansionCF<Complex>;
@@ -1185,9 +1284,17 @@ namespace ngsbem
   template<>
   Array<size_t> SingularMLExpansion<Vec<1,Complex>>::nodes_on_level(100);
   template<>
+  Array<size_t> RegularMLExpansion<Vec<1,Complex32>>::nodes_on_level(100);
+  template<>
+  Array<size_t> SingularMLExpansion<Vec<1,Complex32>>::nodes_on_level(100);
+  template<>
   Array<size_t> RegularMLExpansion<Vec<3,Complex>>::nodes_on_level(100);
   template<>
   Array<size_t> SingularMLExpansion<Vec<3,Complex>>::nodes_on_level(100);
+  template<>
+  Array<size_t> RegularMLExpansion<Vec<3,Complex32>>::nodes_on_level(100);
+  template<>
+  Array<size_t> SingularMLExpansion<Vec<3,Complex32>>::nodes_on_level(100);
   template<>
   Array<size_t> RegularMLExpansion<Vec<4,Complex>>::nodes_on_level(100);
   template<>
@@ -1196,6 +1303,10 @@ namespace ngsbem
   Array<size_t> RegularMLExpansion<Vec<6,Complex>>::nodes_on_level(100);
   template<>
   Array<size_t> SingularMLExpansion<Vec<6,Complex>>::nodes_on_level(100);
+  template<>
+  Array<size_t> RegularMLExpansion<Vec<6,Complex32>>::nodes_on_level(100);
+  template<>
+  Array<size_t> SingularMLExpansion<Vec<6,Complex32>>::nodes_on_level(100);
 
   template<>
   Array<size_t> RegularMLExpansion<Complex,Complex>::nodes_on_level(100);
@@ -1206,9 +1317,17 @@ namespace ngsbem
   template<>
   Array<size_t> SingularMLExpansion<Vec<1,Complex>,Complex>::nodes_on_level(100);
   template<>
+  Array<size_t> RegularMLExpansion<Vec<1,Complex32>,Complex>::nodes_on_level(100);
+  template<>
+  Array<size_t> SingularMLExpansion<Vec<1,Complex32>,Complex>::nodes_on_level(100);
+  template<>
   Array<size_t> RegularMLExpansion<Vec<3,Complex>,Complex>::nodes_on_level(100);
   template<>
   Array<size_t> SingularMLExpansion<Vec<3,Complex>,Complex>::nodes_on_level(100);
+  template<>
+  Array<size_t> RegularMLExpansion<Vec<3,Complex32>,Complex>::nodes_on_level(100);
+  template<>
+  Array<size_t> SingularMLExpansion<Vec<3,Complex32>,Complex>::nodes_on_level(100);
   template<>
   Array<size_t> RegularMLExpansion<Vec<4,Complex>,Complex>::nodes_on_level(100);
   template<>
@@ -1217,6 +1336,10 @@ namespace ngsbem
   Array<size_t> RegularMLExpansion<Vec<6,Complex>,Complex>::nodes_on_level(100);
   template<>
   Array<size_t> SingularMLExpansion<Vec<6,Complex>,Complex>::nodes_on_level(100);
+  template<>
+  Array<size_t> RegularMLExpansion<Vec<6,Complex32>,Complex>::nodes_on_level(100);
+  template<>
+  Array<size_t> SingularMLExpansion<Vec<6,Complex32>,Complex>::nodes_on_level(100);
 
 
   template class SingularMLExpansion<Complex>;

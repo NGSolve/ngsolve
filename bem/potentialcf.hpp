@@ -9,24 +9,13 @@
 #include "../comp/fespace.hpp"
 
 #include "intop_parameters.hpp"
-#include "kernels.hpp"
+#include "integralkernel.hpp"
 
 
 namespace ngsbem
 {
   using namespace ngcomp;
   using namespace ngla;
-
-  template <typename T>
-  struct IsStdVariant : std::false_type { };
-  template <typename... Ts>
-  struct IsStdVariant<std::variant<Ts...>> : std::true_type { };
-
-  // BaseKernel::GetDifferentiatedKernel returns void; a real overload returns a kernel object.
-  template <class K>
-  struct HasDiffKernelOverload
-    : std::integral_constant<bool,
-        !std::is_void<decltype(std::declval<const K&>().GetDifferentiatedKernel(std::declval<const string&>()))>::value> { };
 
   class BasePotentialCF : public CoefficientFunctionNoDerivative
   {
@@ -135,43 +124,23 @@ namespace ngsbem
   };
 
 
-  template <typename KERNEL>
-  class PotentialCF : public BasePotentialCF
+  template <typename TSCAL>
+  class NGS_DLL_HEADER PotentialCF : public BasePotentialCF
   {
-    KERNEL kernel;
+    shared_ptr<const BaseIntegralKernel<TSCAL>> kernel;
     int intorder;
 
-    using LOCAL_EXPANSION = typename std::invoke_result_t<decltype(&KERNEL::target_type::CreateLocalExpansion),typename KERNEL::target_type,Vec<3>,double,FMM_Parameters>;
-
-    LOCAL_EXPANSION local_expansion;
+    shared_ptr<BaseRegularMLExpansion> local_expansion;
 
   public:
     PotentialCF (shared_ptr<GridFunction> _gf,
                  VorB _source_vb,
                  optional<Region> _definedon,
                  shared_ptr<DifferentialOperator> _evaluator,
-                 KERNEL _kernel, int _intorder,
+                 shared_ptr<const BaseIntegralKernel<TSCAL>> _kernel, int _intorder,
                  IntOp_Parameters _io_params = IntOp_Parameters());
 
-    virtual shared_ptr<CoefficientFunction> Operator (const string & name) const override
-    {
-      if constexpr (HasDiffKernelOverload<KERNEL>::value)
-      {
-        auto diffkernel = kernel.GetDifferentiatedKernel(name);
-        if constexpr (IsStdVariant<decltype(diffkernel)>::value)
-          {
-            return std::visit([&](auto const & dk) -> shared_ptr<CoefficientFunction>
-            {
-              using DK = std::decay_t<decltype(dk)>;
-              return make_shared<PotentialCF<DK>>(this->gf, this->source_vb, this->definedon, this->evaluator, dk, intorder, io_params);
-            }, diffkernel);
-          }
-        else
-          return make_shared<PotentialCF<decltype(diffkernel)>>(this->gf, this->source_vb, this->definedon, this->evaluator, diffkernel, intorder, io_params);
-      }
-      else
-        throw Exception("Kernel does not support differentiated kernel '"+name+"'");
-    }
+    shared_ptr<CoefficientFunction> Operator (const string & name) const override;
 
     void BuildLocalExpansion(const Region & reg) override;
 
@@ -228,6 +197,9 @@ namespace ngsbem
     void T_Evaluate(const SIMD_BaseMappedIntegrationRule & ir,
                     BareSliceMatrix<SIMD<T>> result) const;
   };
+
+  extern template class PotentialCF<double>;
+  extern template class PotentialCF<Complex>;
 }
 
 #endif

@@ -3,7 +3,8 @@ include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 add_library( ngsbem ${NGS_LIB_TYPE}
         ${ngsbem_object_libs}
         mptools.cpp potentialtools.cpp python_bem.cpp ngbem.cpp potentialcf.cpp
-        intrules_SauterSchwab.cpp analytic_integrals.cpp
+        integralkernel.cpp fmmoperator.cpp intrules_SauterSchwab.cpp
+        analytic_integrals.cpp
         )
 
 target_include_directories(ngsbem PRIVATE ${NETGEN_PYTHON_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/../ngstd ${CMAKE_CURRENT_SOURCE_DIR}/../linalg)
@@ -13,10 +14,9 @@ target_link_libraries(ngsbem ${LAPACK_CMAKE_LINK_INTERFACE} "$<BUILD_INTERFACE:n
 install( TARGETS ngsbem ${ngs_install_dir} )
 
 install( FILES
-        mptools.hpp potentialtools.hpp mp_coefficient.hpp
-        kernels.hpp bem_diffops.hpp diffopwithfactor.hpp
+        mptools.hpp fmminterface.hpp potentialtools.hpp mp_coefficient.hpp
+        kernels.hpp integralkernel.hpp bem_diffops.hpp diffopwithfactor.hpp
         intrules_SauterSchwab.hpp analytic_integrals.hpp
         DESTINATION ${NGSOLVE_INSTALL_DIR_INCLUDE}
         COMPONENT ngsolve_devel
        )
-
