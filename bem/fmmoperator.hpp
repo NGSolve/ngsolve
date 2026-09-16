@@ -171,8 +171,8 @@ namespace ngsbem
         static Timer tall("ngbem fmm apply Trans "+KERNEL::Name()); RegionTimer reg(tall);
 
         auto shape = KERNEL::Shape();
-        auto matx = x.FV<typename KERNEL::value_type>().AsMatrix(xpts.Size(), shape[0]);
-        auto maty = y.FV<typename KERNEL::value_type>().AsMatrix(ypts.Size(), shape[1]);
+        auto matx = x.FV<typename KERNEL::value_type>().AsMatrix(ypts.Size(), shape[0]);
+        auto maty = y.FV<typename KERNEL::value_type>().AsMatrix(xpts.Size(), shape[1]);
 
         maty = 0;
         auto singmp = kernel.target.CreateMultipoleExpansion (cy, ry, fmm_params);
