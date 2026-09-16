@@ -294,7 +294,7 @@ namespace ngsbem
   template <typename T>
   NGS_DLL_HEADER  
   void besseljs3d (int nterms, T z, double scale,
-                   SliceVector<T> fjs, SliceVector<T> fjder = FlatVector<T>(0, nullptr));
+                   SliceVector<T> fjs, SliceVector<T> fjder = {0, 1, nullptr});
 
   
   /*

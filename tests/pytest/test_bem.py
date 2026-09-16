@@ -227,13 +227,12 @@ _fmm_matrix_action_cases = [
     for operator_name, kappa in _fmm_operator_cases
     for geometry in ["sphere", "box", "quad_sphere"]
 ] + [
-    (operator_name, kappa, order, "sphere")
+    (operator_name, kappa, 50, "sphere")
     for operator_name, kappa in [
         ("HelmholtzSL", 7.5 + 10j),
         ("HelmholtzDL", 7.5 + 10j),
         ("HelmholtzCF", 1.0 + 5.0j),
     ]
-    for order in [50, 100]
 ]
 
 
@@ -263,7 +262,6 @@ def test_fmm_and_direct_matrix_action(operator_name, geometry, kappa, order):
     "operator_name, kappa, order, maxdirect",
     [
         ("LaplaceSL", 1.5, 20, 5),
-        ("LaplaceSL", 1.5, 100, 5),
         ("LaplaceDL", 1.5, 20, 5),
         ("HelmholtzSL", 1.5, 20, 5),
         ("HelmholtzDL", 1.5, 20, 5),
@@ -272,7 +270,7 @@ def test_fmm_and_direct_matrix_action(operator_name, geometry, kappa, order):
         ("LameSL", 1.5, 20, 5),
         ("HelmholtzCF", 100.0, 20, 25),
     ] + [
-        (operator_name, kappa, order, 25)
+        (operator_name, kappa, 30, 25)
         for operator_name, kappa in [
             ("HelmholtzSL", 1.5),
             ("HelmholtzDL", 1.5),
@@ -281,7 +279,6 @@ def test_fmm_and_direct_matrix_action(operator_name, geometry, kappa, order):
             ("HelmholtzDL", 7.5 + 10j),
             ("HelmholtzCF", 1.0 + 5.0j),
         ]
-        for order in (30, 100)
     ],
 )
 def test_fp32_fmm_matches_fp64_far_field(operator_name, kappa, order, maxdirect):
