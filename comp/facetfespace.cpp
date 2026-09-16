@@ -862,7 +862,7 @@ for the two neighbouring elements. This allows a simple implementation of the Le
 	if(!var_order) p = order; 
     
 	order_facet.SetSize(nfa);
-	order_facet = p;
+	order_facet = IVec<2>(p);
 
 	fine_facet.SetSize(nfa);
 	fine_facet = false; 
@@ -1195,7 +1195,7 @@ for the two neighbouring elements. This allows a simple implementation of the Le
               fe2d -> SetVertexNumbers (vnums);
               int p = order_facet[ma->GetSElFace(ei.Nr())][0];
               if (highest_order_dc) p--;
-              fe2d -> SetOrder (p);   // SZ not yet anisotropic order for facet fe !!! 
+              fe2d -> SetOrder (IVec<2>(p));   // SZ not yet anisotropic order for facet fe !!! 
               fe2d -> ComputeNDof();
               return *fe2d;
             }
@@ -1205,7 +1205,7 @@ for the two neighbouring elements. This allows a simple implementation of the Le
               fe2d -> SetVertexNumbers (vnums);
               int p = order_facet[ma->GetSElFace(ei.Nr())][0];
               if (highest_order_dc) p--;
-              fe2d -> SetOrder (p);   // SZ not yet anisotropic order for facet fe !!! 
+              fe2d -> SetOrder (IVec<2>(p));   // SZ not yet anisotropic order for facet fe !!! 
               fe2d -> ComputeNDof();
               return *fe2d;
             }

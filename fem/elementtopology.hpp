@@ -814,7 +814,9 @@ namespace ngfem
     static constexpr ELEMENT_TYPE ElementType() { return ET_POINT; }
     constexpr operator ELEMENT_TYPE() const { return ET_POINT; }
     
+    static constexpr int PolDimension (int order) { return 1; }
     static INLINE int PolDimension (IVec<1> order) { return 1; }
+    static constexpr int PolBubbleDimension (int order) { return 0; }
     static INLINE int PolBubbleDimension (IVec<1> order) { return 0; }
 
     static INLINE ELEMENT_TYPE FaceType(int i) { return ET_POINT; }  // dummy
@@ -885,7 +887,9 @@ namespace ngfem
     static constexpr ELEMENT_TYPE ElementType() { return ET_SEGM; }
     constexpr operator ELEMENT_TYPE() const { return ET_SEGM; }
     
+    static constexpr int PolDimension (int order) { return order+1; }
     static INLINE int PolDimension (IVec<1> order) { return order[0]+1; }
+    static constexpr int PolBubbleDimension (int order) { return (order <= 1) ? 0 : order-1; }
     static INLINE int PolBubbleDimension (IVec<1> order) { return (order[0] <= 1) ? 0 : order[0]-1; }
 
     static INLINE ELEMENT_TYPE FaceType(int i) { return ET_TRIG; }
@@ -1190,6 +1194,7 @@ namespace ngfem
     
     static constexpr INLINE int PolDimension (int p) { return (p+1)*(p+2)*(p+3)/6; }
     static INLINE int PolDimension (IVec<3> p) { return (p[0]+1)*(p[0]+2)*(p[0]+3)/6; }
+    static INLINE int PolBubbleDimension (int order) { return PolBubbleDimension (IVec<3>(order)); }
     static INLINE int PolBubbleDimension (IVec<3> p) { return (p[0] <= 3) ? 0 : (p[0]-1)*(p[0]-2)*(p[0]-3)/6;  }
 
     static INLINE ELEMENT_TYPE FaceType(int i) { return ET_TRIG; }
@@ -1287,7 +1292,9 @@ namespace ngfem
     static constexpr ELEMENT_TYPE ElementType() { return ET_PRISM; }
     constexpr operator ELEMENT_TYPE() const { return ET_PRISM; }
     
+    static INLINE int PolDimension (int order) { return PolDimension (IVec<3>(order)); }
     static INLINE int PolDimension (IVec<3> order) { return (order[0]+1)*(order[0]+2)*(order[2]+1)/2; }
+    static INLINE int PolBubbleDimension (int order) { return PolBubbleDimension (IVec<3>(order)); }
     static INLINE int PolBubbleDimension (IVec<3> p) { return (p[0] <= 2) ? 0 : (p[0]-1)*(p[0]-2)*(p[2]-1)/2; }
 
     static INLINE ELEMENT_TYPE FaceType(int i) { return (i < 2) ? ET_TRIG : ET_QUAD; }
@@ -1398,7 +1405,9 @@ namespace ngfem
     
     static INLINE ELEMENT_TYPE FaceType(int i) { return (i < 4) ? ET_TRIG : ET_QUAD; }
 
+    static INLINE int PolDimension (int order) { return PolDimension (IVec<3>(order)); }
     static INLINE int PolDimension (IVec<3> order) { return (order[0]+2)*(order[0]+1)*(2*order[0]+3) / 6; }
+    static INLINE int PolBubbleDimension (int order) { return PolBubbleDimension (IVec<3>(order)); }
     static INLINE int PolBubbleDimension (IVec<3> p) { return (p[0] <= 2) ? 0 :  (p[0]-1)*(p[0]-2)*(2*p[0]-3)/6; }
 
     static INLINE IVec<2> GetEdge (int i)
@@ -1505,11 +1514,13 @@ namespace ngfem
     static INLINE ELEMENT_TYPE FaceType(int i) { return (i==1||i==4) ? ET_TRIG : ET_QUAD; }
 
     // TODO
+    static INLINE int PolDimension (int order) { return PolDimension (IVec<3>(order)); }
     static INLINE int PolDimension (IVec<3> order) {
       int p = order[0];
       return (p+1)*(p+1)*(p+1) - (p-1) - p*(p-1);
     }
     // TODO
+    static INLINE int PolBubbleDimension (int order) { return PolBubbleDimension (IVec<3>(order)); }
     static INLINE int PolBubbleDimension (IVec<3> p) { return (p[0] < 2) ? 0 :  (p[0]-1)*(p[0]-1)*(p[0]-1); }
 
     static INLINE IVec<2> GetEdge (int i)
@@ -1623,7 +1634,9 @@ namespace ngfem
     
     static ELEMENT_TYPE FaceType(int i) { return ET_QUAD; }
 
+    static INLINE int PolDimension (int order) { return PolDimension (IVec<3>(order)); }
     static inline int PolDimension (IVec<3> order) { return (order[0]+1)*(order[1]+1)*(order[2]+1); }
+    static INLINE int PolBubbleDimension (int order) { return PolBubbleDimension (IVec<3>(order)); }
     static inline int PolBubbleDimension (IVec<3> p) { return (p[0] <= 1) ? 0 : (p[0]-1)*(p[1]-1)*(p[2]-1); }
 
     static IVec<2> GetEdge (int i)

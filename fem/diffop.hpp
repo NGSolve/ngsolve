@@ -31,7 +31,7 @@ namespace ngfem
     static string Name() { return typeid(DiffOp<DOP>()).name(); }
     static constexpr bool SUPPORT_PML = false;
     // static Array<int> GetDimensions() { return Array<int> ( { DOP::DIM_DMAT } ); };
-    static IVec<1> GetDimensions() { return { DOP::DIM_DMAT }; };
+    static IVec<1> GetDimensions() { return IVec<1> (DOP::DIM_DMAT); };
     static bool SupportsVB (VorB checkvb) { return int(DOP::DIM_SPACE)-int(DOP::DIM_ELEMENT) == int(checkvb); }
 
 

@@ -786,7 +786,7 @@ namespace ngfem
     
     if(order_cell[0] > 1 && order_cell[2] > 0) 
       {
-        IVec<3> p = order_cell[0];
+        IVec<3> p (order_cell[0]);
         if (usegrad_cell && p[0] > 1 && p[2] > 0)
           {
             // gradientfields
@@ -959,7 +959,7 @@ namespace ngfem
 
     
     {
-    IVec<3> p = order_cell[0];
+    IVec<3> p (order_cell[0]);
     if(usegrad_cell)
       if (p[0] >= 1 && p[1] >= 1 && p[2] >= 1)
         {

@@ -1163,7 +1163,7 @@ namespace ngcomp
           
           if(ma->GetElType(ei) == ET_SEGM)
             {
-              hofe -> SetOrderCell (order_edge[ngel.edges[0]]);  // old style
+              hofe -> SetOrderCell (IVec<3>(order_edge[ngel.edges[0]]));  // old style
               FlatArray<TORDER> aoe(1, &order_edge[ngel.edges[0]]);
               hofe -> SetOrderEdge (aoe);
               if (highest_order_dc)
@@ -1205,7 +1205,7 @@ namespace ngcomp
           
           if(ma->GetElement(ei).GetType() == ET_SEGM)
             {
-              hofe -> SetOrderCell (order_edge[ngel.edges[0]]);  // old style
+              hofe -> SetOrderCell (IVec<3>(order_edge[ngel.edges[0]]));  // old style
               FlatArray<TORDER> aoe(1, &order_edge[ngel.edges[0]]);
               hofe -> SetOrderEdge (aoe);
               hofe -> SetUseGradCell (usegrad_edge[ngel.edges[0]]);  // old style
@@ -3627,12 +3627,12 @@ namespace ngcomp
     for(int i=0; i < ne; i++){
       ElementId ei(VOL,i);
       if(!gradientdomains[ma->GetElIndex(ei)]){
-	fesh1->SetElementOrder(i, 1);
+	fesh1->SetElementOrder(i, IVec<3>(1));
 	for(auto edge : ma->GetElement(ei).Edges()) {
 	  fesh1->SetEdgeOrder(edge,1);
 	}
 	for(auto face : ma->GetElement(ei).Faces()) {
-	  fesh1->SetFaceOrder(face,1);
+	  fesh1->SetFaceOrder(face, IVec<2>(1));
 	}
       }
     }
@@ -3652,7 +3652,7 @@ namespace ngcomp
 	  fesh1->SetEdgeOrder(eledges[j],value);
 	}
 	if(ma->GetDimension()==3) {
-	  fesh1->SetFaceOrder(ma->GetSElFace(i),value);
+	  fesh1->SetFaceOrder(ma->GetSElFace(i), IVec<2>(value));
 	}
     }
     fesh1->UpdateDofTables();

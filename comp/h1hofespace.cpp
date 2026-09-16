@@ -640,8 +640,8 @@ into the wirebasket.
 	int p = var_order ?  1 : order; 
     
 	order_edge = p; 
-	order_face = p; 
-	order_inner = p;
+	order_face = IVec<2,TORDER>(p); 
+	order_inner = IVec<3,TORDER>(p);
 	
 	if(var_order) 
 	  for (Ngs_Element el : ma->Elements<VOL>())
@@ -753,9 +753,9 @@ into the wirebasket.
 	// timer3.Start();
     
 	if(uniform_order_inner > -1)  
-	  order_inner = uniform_order_inner;
+	  order_inner = IVec<3,TORDER>(uniform_order_inner);
 	if(uniform_order_face > -1 && dim == 3) 
-	  order_face = uniform_order_face;
+	  order_face = IVec<2,TORDER>(uniform_order_face);
 	if(uniform_order_edge > -1)   
 	  order_edge = uniform_order_edge; 
 

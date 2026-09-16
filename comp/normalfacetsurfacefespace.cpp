@@ -107,7 +107,7 @@ namespace ngcomp
 	order_facet.SetSize(nfacets);
 	fine_facet.SetSize(nfacets);
 
-	order_facet = p;
+	order_facet = IVec<2>(p);
 	fine_facet = 0; 
     
 	for (Ngs_Element el : ma->Elements<BND>())

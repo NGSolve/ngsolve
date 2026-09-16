@@ -308,13 +308,13 @@ void HDivHighOrderSurfaceFESpace :: Average (BaseVector & vec) const
     order_inner.SetSize(nel);
 
     if(uniform_order_inner > -1)
-      order_inner = uniform_order_inner;
+      order_inner = IVec<3>(uniform_order_inner);
     else
-      order_inner = order;
+      order_inner = IVec<3>(order);
     if(uniform_order_facet > -1)
-      order_facet = uniform_order_facet;
+      order_facet = IVec<2>(uniform_order_facet);
     else
-      order_facet = order;
+      order_facet = IVec<2>(order);
     
     fine_facet.SetSize(nfa); 
     fine_facet = 0; //!!!! 
@@ -588,7 +588,7 @@ void HDivHighOrderSurfaceFESpace :: Average (BaseVector & vec) const
     Ngs_Element ngel = ma->GetElement(ei);
     if(!DefinedOn(ngel)) return *new (lh) HDivDummyFE<ET>();
     HDivHighOrderFE<ET>* hofe = new (lh)HDivHighOrderFE<ET>();
-    hofe->SetOrderInner(order_inner[ei.Nr()][0]);
+    hofe->SetOrderInner(IVec<ET_trait<ET>::DIM>(order_inner[ei.Nr()][0]));
     hofe->SetHODivFree (ho_div_free);
     hofe->SetVertexNumbers(ngel.Vertices());
     hofe->SetRT(RT);
