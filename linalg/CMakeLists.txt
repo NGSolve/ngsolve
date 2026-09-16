@@ -8,7 +8,7 @@ add_library(ngla ${NGS_LIB_TYPE}
         mumpsinverse.cpp elementbyelement.cpp arnoldi.cpp paralleldofs.cpp diagonalmatrix.cpp
         python_linalg.cpp umfpackinverse.cpp
         ../parallel/parallelvvector.cpp ../parallel/parallel_matrices.cpp 
-        sparsefactorization_interface.cpp devicevector.cpp device_sparsematrix.cpp device_blockgemv.cpp device_blockjacobi.cpp device_blockgs.cpp device_ebeconst.cpp device_ebe.cpp device_diagonalmatrix.cpp device_sparsecholesky.cpp
+        sparsefactorization_interface.cpp devicevector.cpp device_sparsematrix.cpp device_blockgemv.cpp device_blockjacobi.cpp device_blockgs.cpp device_ebeconst.cpp device_ebe.cpp device_diagonalmatrix.cpp device_permutation.cpp device_sparsecholesky.cpp
 )
 
 if(USE_ACCELERATE_SPARSE)

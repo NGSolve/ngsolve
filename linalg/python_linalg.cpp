@@ -1309,8 +1309,11 @@ inverse : string
              return make_shared<DeviceBlockJacobi<float>> (*p);
            if (auto p = dynamic_pointer_cast<BlockJacobiPrecond<double,double,double>> (self))
              return make_shared<DeviceBlockJacobi<float>> (*p);
+           if (dynamic_pointer_cast<PermutationMatrix> (self))
+             return self->CreateDeviceMatrix();
            throw Exception ("CreateDeviceMatrix(fp32=True) is only implemented for "
-                            "sparse matrices and block smoothers, got " + string(typeid(*self).name()));
+                            "sparse matrices and block smoothers, got "
+                            + string(typeid(*self).name()));
          }, py::arg("fp32")=false,
          "matrix on the device; fp32 uploads sparse values and block-Jacobi inverses in single precision")
     ;
