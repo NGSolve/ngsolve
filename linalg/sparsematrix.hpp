@@ -200,6 +200,10 @@ namespace ngla
     BaseSparseMatrix (const MatrixGraph & agraph)
       : MatrixGraph (agraph)
     { ; }
+
+    BaseSparseMatrix (MatrixGraph && agraph)
+      : MatrixGraph (std::move(agraph))
+    { ; }
     
     BaseSparseMatrix (const BaseSparseMatrix & amat)
       : MatrixGraph (amat)
