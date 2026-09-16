@@ -21,6 +21,7 @@ namespace ngcomp {
           integrator[vb] = space->GetIntegrator(vb);
         }
       iscomplex = space->IsComplex();
+      needs_transform_vec = space->NeedsTransformVec();
       // not yet working...
       if (space->LowOrderFESpacePtr() && false)
         {
@@ -271,7 +272,9 @@ namespace ngcomp {
   template<typename TSCAL>
   QuasiPeriodicFESpace<TSCAL> :: QuasiPeriodicFESpace(shared_ptr<FESpace> fespace, const Flags & flags, shared_ptr<Array<int>> aused_idnrs, shared_ptr<Array<TSCAL>> afactors) :
     PeriodicFESpace(fespace, flags, aused_idnrs), factors(afactors)
-  {  }
+  {
+    needs_transform_vec = true;
+  }
 
   template<typename TSCAL>
   void QuasiPeriodicFESpace<TSCAL> :: Update()

@@ -217,6 +217,10 @@ namespace ngcomp
       FlatMatrix<SCAL> elmat(felb.GetNDof() * dimb, fela.GetNDof() * dima, lh);
       elmat = bbmat * bamat;
 
+      space_a->TransformMat(ei, elmat, TRANSFORM_MAT_RIGHT);
+      for (auto j : Range(elmat.Width()))
+        space_b->TransformVec(ei, elmat.Col(j), TRANSFORM_SOL_INVERSE);
+
       // cout << " elmat " << endl << elmat << endl;
 
       // cout << " add elmat, dofs B " << endl << dnums_b << endl;
@@ -294,6 +298,9 @@ namespace ngcomp
     RegionTimer regt(t);
 
     auto ma = space_b->GetMeshAccess();
+
+    if (space_a->NeedsTransformVec() || space_b->NeedsTransformVec())
+      throw Exception("ConvertOperatorGF not implemented for spaces that needs transformvec");
 
     if ( parmat && (space_a->IsParallel() != space_b->IsParallel()) )
       { throw Exception("Cannot form ConvertOperator between a parallel and a local space!"); }

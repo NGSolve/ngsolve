@@ -25,6 +25,7 @@ namespace ngcomp {
       integrator[vorb] = space->GetIntegrator(vorb);
     }    
     iscomplex = space->IsComplex();
+    needs_transform_vec = space->NeedsTransformVec();
     for(auto vb : Range(4))
       definedon[vb] = space->DefinedOn(VorB(vb));
     /*
