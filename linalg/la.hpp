@@ -1,6 +1,7 @@
 #ifndef FILE_NGLA
 #define FILE_NGLA
 
+#include <ngstd.hpp>
 #include <bla.hpp>
 
 /** namespace for linear algebra.

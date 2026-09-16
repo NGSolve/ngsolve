@@ -1,6 +1,7 @@
 #ifndef FILE_SPECIALELEMENTGROUP
 #define FILE_SPECIALELEMENTGROUP
 
+#include <ngstd.hpp>
 #include <bla.hpp>
 using namespace ngbla;
 

@@ -254,9 +254,13 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     list(APPEND NGSOLVE_COMPILE_OPTIONS $<$<COMPILE_LANGUAGE:CXX>:-Wno-undefined-var-template -Wno-vla-extension>)
 endif()
 
-if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    # plain complex multiplication instead of the __muldc3 call with NaN/Inf recovery
+# plain complex multiplication instead of the __muldc3 call with NaN/Inf recovery (gcc, clang >= 18)
+include(CheckCXXCompilerFlag)
+check_cxx_compiler_flag(-fcx-limited-range NGS_HAVE_CX_LIMITED_RANGE)
+if (NGS_HAVE_CX_LIMITED_RANGE)
     list(APPEND NGSOLVE_COMPILE_OPTIONS $<$<COMPILE_LANGUAGE:CXX>:-fcx-limited-range>)
+elseif (NOT MSVC)
+    message(WARNING "compiler does not support -fcx-limited-range, complex multiplication will be slow (use clang >= 18 / Xcode >= 16.3 or gcc)")
 endif()
 
 

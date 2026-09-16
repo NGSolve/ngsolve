@@ -7,6 +7,7 @@
 /* Date:   7. Feb. 2003                                              */
 /*********************************************************************/
 
+#include <ngstd.hpp>
 #include <bla.hpp>
 #include <core/mpi_wrapper.hpp>
 #include "basescalar.hpp"

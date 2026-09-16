@@ -2,7 +2,11 @@
 #define FILE_NGBLA
 
 
-#include <ngstd.hpp>
+#include <ngs_stdcpp_include.hpp>
+#include <ngs_defines.hpp>
+#include <core/ngcore.hpp>
+#include <core/autodiff.hpp>
+#include <core/autodiffdiff.hpp>
 
 
 #include "complex_wrapper.hpp"

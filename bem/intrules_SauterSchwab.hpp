@@ -1,6 +1,7 @@
 #ifndef INTRULES_HPP
 #define INTRULES_HPP
 
+#include <ngstd.hpp>
 #include <bla.hpp>
 
 namespace ngsbem

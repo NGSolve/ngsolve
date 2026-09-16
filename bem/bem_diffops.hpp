@@ -1,6 +1,7 @@
 #ifndef DIFFOPS_HPP
 #define DIFFOPS_HPP
 
+#include <ngstd.hpp>
 #include <bla.hpp>
 #include <scalarfe.hpp>
 #include <hcurlfe.hpp>

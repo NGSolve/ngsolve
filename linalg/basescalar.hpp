@@ -7,6 +7,7 @@
 /* Date:   Mar. 2026                                                 */
 /*********************************************************************/
 
+#include <ngstd.hpp>
 #include <bla.hpp>
 
 namespace ngla

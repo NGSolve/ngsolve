@@ -15,11 +15,6 @@ namespace ngstd
 {
   using namespace std;
   
-  template <typename T>
-  INLINE T RemoveConst (const T & x)
-  {
-    return x;
-  }
   
 
   // ////////////////    integral constants
@@ -45,12 +40,6 @@ namespace ngstd
 
   
 
-#define aligned_alloca(size,align)  (( (size_t)alloca(size+align-1)+align-1) & -align)
-#ifdef VLA
-#define STACK_ARRAY(TYPE,VAR,SIZE) TYPE VAR[SIZE]
-#else
-#define STACK_ARRAY(TYPE,VAR,SIZE) TYPE * VAR = (TYPE*)aligned_alloca((SIZE)*sizeof(TYPE), alignof(TYPE))
-#endif
 
 
 
