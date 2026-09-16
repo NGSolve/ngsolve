@@ -160,7 +160,7 @@ namespace ngla
     ///
     MDOPriorityQueue priqueue;
     ///
-    ngstd::BlockAllocator ball;
+    ngcore::BlockAllocator ball;
     /// approximate degrees (the AMD bound) instead of exact ones: about twice as fast, similar fill
     bool approx = false;
     int curstamp = 0;

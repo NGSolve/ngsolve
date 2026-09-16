@@ -23,7 +23,7 @@ add_custom_command(
         )
 
 add_library( ngstd ${NGS_LIB_TYPE}
-        blockalloc.cpp evalfunc.cpp templates.cpp
+        evalfunc.cpp templates.cpp
         gpuwrapper.cpp gpu_cpu.cpp
         stringops.cpp statushandler.cpp
         python_ngstd.cpp
@@ -45,7 +45,7 @@ target_link_libraries(ngstd ${LAPACK_CMAKE_LINK_INTERFACE} "$<BUILD_INTERFACE:ng
 install( TARGETS ngstd ${ngs_install_dir} )
 
 install( FILES
-        bessel.hpp blockalloc.hpp evalfunc.hpp
+        bessel.hpp evalfunc.hpp
         memusage.hpp ngstd.hpp
         stringops.hpp
         statushandler.hpp ngsstream.hpp 
