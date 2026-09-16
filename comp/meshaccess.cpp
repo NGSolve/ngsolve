@@ -2186,39 +2186,11 @@ namespace ngcomp
 
 
   
-  void NGSolveTaskManager (function<void(int,int)> func)
-  {
-    // cout << "call ngsolve taskmanager from netgen, tm = " << task_manager << endl;
-    if (!GetTaskManager())
-      func(0,1);
-    else
-      TaskManager::CreateJob
-        ([&](TaskInfo & info)
-         {
-           func(info.task_nr, info.ntasks);
-         }, TasksPerThread(4));
-  }
-
-  map<string, unique_ptr<Timer<>>> ngtimers;
-  void NGSolveTracer (string name, bool stop)
-  {
-    // cout << "************* tracer: " << name << ", stop = " << stop << endl;
-    int count = ngtimers.count(name);
-    if (count == 0)
-      ngtimers[name] = make_unique<Timer<>> (name);
-    Timer<> * timer = ngtimers[name].get();
-    if (!stop)
-      timer->Start();
-    else
-      timer->Stop();
-  }
-  
-  
   void MeshAccess :: Refine (bool onlyonce)
   {
     static Timer t("MeshAccess::Refine"); RegionTimer reg(t);
     nlevels = std::numeric_limits<int>::max();
-    mesh.Refine(NG_REFINE_H, onlyonce, &NGSolveTaskManager, &NGSolveTracer);
+    mesh.Refine(NG_REFINE_H, onlyonce);
     UpdateBuffers();
     updateSignal.Emit();
   }
