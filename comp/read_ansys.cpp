@@ -784,7 +784,7 @@ namespace ngcomp
       {
         // ===========  edge (codim 2) = 1D elements (line loads, edge BCs) ======
         Partition(1, /*isMaterial*/false, BodyLabel, bbnd_regions,
-          [&](int regnr, const string & name) { mesh->SetCD2Name(regnr+1, name); },  // 1-based
+          [&](int regnr, const string & name) { mesh->EnsureEdgeDescriptor(regnr+1).SetName(name); },  // 1-based
           [&](const AnsysElement & ae, int regnr)
           { Segment seg; SetPNums(seg, ae); seg.SetIndex(regnr+1); mesh->AddSegment(seg); });
 
