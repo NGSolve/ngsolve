@@ -33,6 +33,8 @@
 #include <initializer_list>
 #include <ostream>
 
+#include <core/memtrace.hpp>
+
 namespace ngs_gpu
 {
   using std::string;
@@ -72,7 +74,7 @@ namespace ngs_gpu
     virtual uintptr_t DoDevicePtr() const { return 0; }
 
   public:
-    virtual ~Buffer() = default;
+    virtual ~Buffer() { ngcore::MemTraceDeviceFree (this, size); }
 
     size_t Size() const { return size; }
     MemType GetMemType() const { return memtype; }
@@ -413,11 +415,15 @@ namespace ngs_gpu
 
     // raw bytes
     shared_ptr<Buffer> NewBuffer (size_t bytes, MemType mt = MemType::Device)
-    { return DoNewBuffer (bytes, mt); }
+    {
+      auto buf = DoNewBuffer (bytes, mt);
+      ngcore::MemTraceDeviceAlloc (buf.get(), bytes);
+      return buf;
+    }
     // n elements of T
     template <typename T>
     TypedBuffer<T> NewBuffer (size_t n, MemType mt = MemType::Device)
-    { return TypedBuffer<T> (DoNewBuffer (n*sizeof(T), mt)); }
+    { return TypedBuffer<T> (NewBuffer (n*sizeof(T), mt)); }
 
     // the source's KERNEL declarations are kept for checking launches
     shared_ptr<Library> CompileSource (const string & source)

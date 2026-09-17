@@ -142,10 +142,6 @@ namespace ngla
   { 
     static Timer timer("Pardiso Inverse");
     RegionTimer reg (timer);
-    GetMemoryTracer().SetName("PardisoInverseTM<" + Demangle(typeid(TM).name()) + ">");
-    GetMemoryTracer().Track(rowstart, "rowstart",
-                            indices, "indices",
-                            matrix, "matrix");
 
 
     if (getenv ("PARDISOMSG"))
@@ -480,9 +476,7 @@ namespace ngla
 	throw Exception("PardisoInverse: Setup and Factorization failed \n error = "+errmsg);
       }
 
-    GetMemoryTracer().Free(memory_allocated_in_pardiso_lib);
     memory_allocated_in_pardiso_lib = 1024*params[15];
-    GetMemoryTracer().Alloc(memory_allocated_in_pardiso_lib);
   }
 
 
@@ -501,7 +495,6 @@ namespace ngla
 
     for (int i = 0; i < 128; i++) pt[i] = 0;
 
-    GetMemoryTracer().Free(memory_allocated_in_pardiso_lib);
     memory_allocated_in_pardiso_lib = 0;
 
     if (error != 0)

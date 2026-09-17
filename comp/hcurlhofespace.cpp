@@ -190,21 +190,6 @@ namespace ngcomp
         ;
       }
 
-    this->GetMemoryTracer().Track(
-        order_edge, "order_edge",
-        fine_edge, "fine_edge",
-        fine_face, "fine_face",
-        cell_ngrad, "cell_ngrad",
-        face_ngrad, "face_ngrad",
-        order_face, "order_face",
-        order_inner, "order_inner",
-        order_avertex, "order_avertex",
-        usegrad_edge, "usegrad_edge",
-        usegrad_face, "usegrad_face",
-        usegrad_cell, "usegrad_cell",
-        dom_order_min, "dom_order_min",
-        dom_order_max, "dom_order_max"
-        );
   }
   
   HCurlHighOrderFESpace :: ~HCurlHighOrderFESpace () { ; }
