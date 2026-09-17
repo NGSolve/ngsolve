@@ -750,7 +750,7 @@ namespace ngcomp
         mesh->SetMaterial(regnr+1, name);                       // 1-based
         if (meshdim == 2)
           {
-            int fdnr = mesh->AddFaceDescriptor(FaceDescriptor(regnr+1, regnr+1, 0, 0));
+            int fdnr = mesh->AddFaceDescriptor(FaceDescriptor(regnr+1, regnr+1, 0, 0)).Nr1();
             mesh->GetFaceDescriptor(fdnr).SetBCProperty(regnr+1);
           }
       },
@@ -910,7 +910,7 @@ namespace ngcomp
           auto it = regdom2fd.find(k);
           if (it == regdom2fd.end())
             {
-              fdnr = mesh->AddFaceDescriptor(FaceDescriptor(regnr+1, dom, 0, 0));
+              fdnr = mesh->AddFaceDescriptor(FaceDescriptor(regnr+1, dom, 0, 0)).Nr1();
               mesh->GetFaceDescriptor(fdnr).SetBCProperty(regnr+1);
               regdom2fd[k] = fdnr;
             }
