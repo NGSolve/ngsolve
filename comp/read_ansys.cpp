@@ -860,7 +860,7 @@ namespace ngcomp
         std::map<vector<int>, FaceRec> faces;
         for (ElementIndex ei : mesh->VolumeElements().Range())
           {
-            const Element & el = (*mesh)[ei];
+            auto el = (*mesh)[ei];
             for (int j = 1; j <= el.GetNFaces(); j++)
               {
                 Element2d f;
@@ -876,7 +876,7 @@ namespace ngcomp
         // robust to GetFace's winding, which differs for high-order elements)
         auto OrientOutward = [&](Element2d & f, ElementIndex ei)
         {
-          const Element & el = (*mesh)[ei];
+          auto el = (*mesh)[ei];
           double ex=0, ey=0, ez=0; int np = el.GetNP();
           for (int k = 0; k < np; k++)
             { auto p = mesh->Point(el[k]); ex+=p(0); ey+=p(1); ez+=p(2); }
