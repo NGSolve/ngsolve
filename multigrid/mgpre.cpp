@@ -39,7 +39,6 @@ namespace ngmg
     SetUpdateAlways (0);
     checksumcgpre = -17;
 
-    GetMemoryTracer().Track(*smoother, "Smoother");
     //    Update ();
   }
 
@@ -168,7 +167,6 @@ namespace ngmg
 		  coarsegridpre =
 		    dynamic_cast<const BaseSparseMatrix&> (biform->GetMatrix(0)) .InverseMatrix(freedofs);
 
-		GetMemoryTracer().Track(*coarsegridpre, "CoarseInverse");
 	      }
 
 	    /*

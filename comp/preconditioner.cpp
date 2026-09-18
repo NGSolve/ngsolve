@@ -381,7 +381,6 @@ namespace ngcomp
 
     tlp = 0;
     inversetype = flags.GetStringFlag("inverse", default_inversetype);
-    GetMemoryTracer().Track(*mgp, "MultiGridPreconditioner");
   }
 
 
@@ -499,7 +498,6 @@ namespace ngcomp
           flags.SetFlag ("additional_dirichlet_boundaries", std::any(additional_dirichlet_boundaries));
         auto fine_smoother = make_shared<BlockSmoother> (*bfa->GetMeshAccess(), *bfa, flags);
         fine_smoother -> SetAdditionalDirichletBoundaries(additional_dirichlet_boundaries);
-        GetMemoryTracer().Track(*fine_smoother, "FineSmoother");
         tlp = make_shared<TwoLevelMatrix> (&bfa->GetMatrix(),
                                            &*mgp,
                                            fine_smoother,
@@ -682,7 +680,6 @@ namespace ngcomp
                            e.what() + 
                          "\nneeds a sparse matrix (or has memory problems)");
       }
-    GetMemoryTracer().Track(*inverse, "Inverse");
   }
 
 

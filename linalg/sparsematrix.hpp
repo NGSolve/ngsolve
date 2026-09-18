@@ -146,22 +146,9 @@ namespace ngla
 
     virtual Array<MemoryUsage> GetMemoryUsage () const override;    
 
-    const MemoryTracer & GetMemoryTracer() const
-    {
-      return mem_tracer;
-    }
-
     // the graph knows the shape only
     VecFormat RowFormat () const override { return VecFormat (width); }
     VecFormat ColFormat () const override { return VecFormat (size); }
-
-  private:
-    
-    MemoryTracer mem_tracer = {"MatrixGraph",
-      colnr, "colnr",
-      firsti, "firsti",
-      same_nze, "same_nze"
-    };
   };
 
 
@@ -386,9 +373,6 @@ namespace ngla
       // SetEntrySize (Height<TM>(), Width<TM>(), sizeof(TM)/sizeof(TSCAL));
       SetEntrySize ();
       asvec.AssignMemory (nze*sizeof(TM)/sizeof(TSCAL), (void*)data.Addr(0));
-      GetMemoryTracer().Track(*static_cast<MatrixGraph*>(this), "MatrixGraph",
-                              data, "data");
-      GetMemoryTracer().SetName("SparseMatrix");
     }
 
     SparseMatrixTM (const Array<int> & elsperrow, int awidth)
@@ -398,9 +382,6 @@ namespace ngla
       // SetEntrySize (mat_traits<TM>::HEIGHT, mat_traits<TM>::WIDTH, sizeof(TM)/sizeof(TSCAL));
       SetEntrySize ();      
       asvec.AssignMemory (nze*sizeof(TM)/sizeof(TSCAL), (void*)data.Addr(0));
-      GetMemoryTracer().Track(*static_cast<MatrixGraph*>(this), "MatrixGraph",
-                              data, "data");
-      GetMemoryTracer().SetName("SparseMatrix");
 
     }
 
@@ -412,9 +393,6 @@ namespace ngla
       // SetEntrySize (mat_traits<TM>::HEIGHT, mat_traits<TM>::WIDTH, sizeof(TM)/sizeof(TSCAL));
       SetEntrySize ();            
       asvec.AssignMemory (nze*sizeof(TM)/sizeof(TSCAL), (void*)data.Addr(0));
-      GetMemoryTracer().Track(*static_cast<MatrixGraph*>(this), "MatrixGraph",
-                              data, "data");
-      GetMemoryTracer().SetName("SparseMatrix");
 
     }
 
@@ -426,9 +404,6 @@ namespace ngla
       SetEntrySize ();      
       asvec.AssignMemory (nze*sizeof(TM)/sizeof(TSCAL), (void*)data.Addr(0));
       FindSameNZE();
-      GetMemoryTracer().Track(*static_cast<MatrixGraph*>(this), "MatrixGraph",
-                              data, "data");
-      GetMemoryTracer().SetName("SparseMatrix");
     }
 
     SparseMatrixTM (MatrixGraph && agraph)
@@ -439,9 +414,6 @@ namespace ngla
       SetEntrySize ();      
       asvec.AssignMemory (nze*sizeof(TM)/sizeof(TSCAL), (void*)data.Addr(0));
       FindSameNZE();
-      GetMemoryTracer().Track(*static_cast<MatrixGraph*>(this), "MatrixGraph",
-                              data, "data");
-      GetMemoryTracer().SetName("SparseMatrix");
     }
     
     SparseMatrixTM (const SparseMatrixTM & amat)
@@ -452,9 +424,6 @@ namespace ngla
       SetEntrySize ();            
       asvec.AssignMemory (nze*sizeof(TM)/sizeof(TSCAL), (void*)data.Addr(0));      
       AsVector() = amat.AsVector();
-      GetMemoryTracer().Track(*static_cast<MatrixGraph*>(this), "MatrixGraph",
-                              data, "data");
-      GetMemoryTracer().SetName("SparseMatrix");
     }
 
     SparseMatrixTM (SparseMatrixTM && amat)
@@ -462,9 +431,6 @@ namespace ngla
     {
       // SetEntrySize (mat_traits<TM>::HEIGHT, mat_traits<TM>::WIDTH, sizeof(TM)/sizeof(TSCAL));
       SetEntrySize ();
-      GetMemoryTracer().Track(*static_cast<MatrixGraph*>(this), "MatrixGraph",
-                              data, "data");
-      GetMemoryTracer().SetName("SparseMatrix");
       data.Swap(amat.data);
       asvec.AssignMemory (nze*sizeof(TM)/sizeof(TSCAL), (void*)data.Addr(0));            
     }
@@ -538,9 +504,6 @@ namespace ngla
     
     shared_ptr<BaseSparseMatrix>
       CreateTransposeTM (const function<shared_ptr<SparseMatrixTM<decltype(ngbla::Trans(TM()))>>(const Array<int>&, int)> & creator, bool sorted) const;
-
-  public:
-    using BaseMatrix::GetMemoryTracer;
   };
   
 
@@ -963,9 +926,6 @@ shared_ptr<BaseMatrix> CreateSparseMatrixInverse(shared_ptr<const BaseSparseMatr
           
           asvec.AssignMemory (nze*bheight*bwidth, (void*)data.Addr(0));
           // FindSameNZE();
-          GetMemoryTracer().Track(*static_cast<MatrixGraph*>(this), "MatrixGraph",
-                                  data, "data");
-          GetMemoryTracer().SetName("SparseMatrix");
         }
 
     SparseBlockMatrix (MatrixGraph && agraph, size_t abheight, size_t abwidth)
@@ -980,9 +940,6 @@ shared_ptr<BaseMatrix> CreateSparseMatrixInverse(shared_ptr<const BaseSparseMatr
           
           asvec.AssignMemory (nze*bheight*bwidth, (void*)data.Addr(0));
           // FindSameNZE();
-          GetMemoryTracer().Track(*static_cast<MatrixGraph*>(this), "MatrixGraph",
-                                  data, "data");
-          GetMemoryTracer().SetName("SparseMatrix");
         }
     
 
@@ -1007,21 +964,6 @@ shared_ptr<BaseMatrix> CreateSparseMatrixInverse(shared_ptr<const BaseSparseMatr
                                   bool use_atomic = false);
 
     ostream & Print (ostream & ost) const override;
-
-    
-    const MemoryTracer & GetMemoryTracer() const
-    {
-      return mem_tracer;
-    }
-    
-  private:
-    MemoryTracer mem_tracer =
-      {"MatrixGraph",
-       colnr, "colnr",
-       firsti, "firsti"
-       // same_nze, "same_nze"
-      };
-    
   };
 
 

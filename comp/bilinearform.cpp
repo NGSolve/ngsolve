@@ -859,6 +859,8 @@ namespace ngcomp
 
 
 
+  static Timer timer_allocatematrix ("BilinearForm::AllocateMatrix");
+
   void BilinearForm :: Assemble (LocalHeap & lh)
   {
     if (mats.Size() == ma->GetNLevels())
@@ -975,6 +977,7 @@ namespace ngcomp
     
     try
       {
+        RegionTimer reg (timer_allocatematrix);
         AllocateMatrix ();
         graph_timestamp = GetNextTimeStamp();
       }
@@ -1344,11 +1347,6 @@ namespace ngcomp
                                                          this->GetTrialSpace()->GetParallelDofs(),
                                                          this->GetTestSpace()->GetParallelDofs(), C2D);
           }
-        if(harmonicext)
-          GetMemoryTracer().Track(*harmonicext, "HarmonicExt",
-                                  *harmonicexttrans, "HarmonicExtTrans");
-        if(innermatrix)
-          GetMemoryTracer().Track(*innermatrix, "InnerMatrix");
       }
   }
 
@@ -3609,6 +3607,7 @@ namespace ngcomp
 
     if (this->mats.Size() < this->ma->GetNLevels())
       {
+        RegionTimer reg (timer_allocatematrix);
         AllocateMatrix();
         graph_timestamp = GetNextTimeStamp();
       }
@@ -6500,7 +6499,6 @@ namespace ngcomp
 
     auto spmat = make_shared<SparseMatrix<TM,TV,TV>> (std::move(graph));
     spmat->SetHermitian(this->hermitean);
-    this->GetMemoryTracer().Track(*spmat, "mymatrix");
     mymatrix = spmat; // .get();
     
     if (this->spd) spmat->SetSPD();
@@ -6662,7 +6660,6 @@ namespace ngcomp
     auto spmat = make_shared<SparseMatrixSymmetric<TM,TV>> (std::move(graph));
     spmat->SetHermitian(this->hermitean);
     mymatrix = spmat; // .get();
-    this->GetMemoryTracer().Track(*spmat, "mymatrix");
     
     if (this->spd) spmat->SetSPD();
     shared_ptr<BaseMatrix> mat = spmat;
@@ -6806,7 +6803,6 @@ namespace ngcomp
     auto spmat = make_shared<SparseBlockMatrix<TSCAL>>
       (std::move(graph), blockheight, blockwidth);
     
-    this->GetMemoryTracer().Track(*spmat, "mymatrix");
     mymatrix = spmat; // .get();
     
     if (this->spd) spmat->SetSPD();

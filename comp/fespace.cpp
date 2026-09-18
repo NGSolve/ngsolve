@@ -346,13 +346,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
     
-    this->GetMemoryTracer().Track(
-        dirichlet_dofs, "dirichlet_dofs",
-        dirichlet_vertex, "dirichlet_vertex",
-        dirichlet_edge, "dirichlet_edge",
-        dirichlet_face, "dirichlet_face",
-        ctofdof, "ctofdof"
-    );
   }
 
   

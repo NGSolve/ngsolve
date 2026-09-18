@@ -144,20 +144,6 @@ namespace ngla
     static Timer t("SparseCholesky - total");
     static Timer ta("SparseCholesky - allocate");
     RegionTimer reg(t);
-    GetMemoryTracer().SetName("SparseCholesky");
-    GetMemoryTracer().Track(order, "order",
-                            inv_order, "inv_order",
-                            lfact, "lfact",
-                            firstinrow, "firstinrow",
-                            diag, "diag",
-                            rowindex2, "rowindex2",
-                            firstinrow_ri, "firstinrow_ri",
-                            blocknrs, "blocknrs",
-                            blocks, "blocks",
-                            microtasks, "microtasks",
-                            block_dependency, "block_dependency",
-                            micro_dependency, "micro_dependency",
-                            micro_dependency_trans, "mirco_dependency_trans");
 
     // (*testout) << "matrix = " << a << endl;
     // (*testout) << "diag a = ";
@@ -186,7 +172,6 @@ namespace ngla
     tgraph.Start();
     mdo = new MinimumDegreeOrdering (n);
     mdo->approx = a->GetInverseFlags().GetDefineFlag("approxdegree") || getenv("NGS_MDO_APPROX");
-    GetMemoryTracer().Track(*mdo, "MinimumDegreeOrdering");
 
     if (inner)
       ParallelFor (n, [&] (size_t i)
