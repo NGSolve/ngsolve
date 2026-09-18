@@ -55,7 +55,7 @@ namespace ngmg
 #include "interpolate.hpp"
 
 #include "tpfes.hpp"
-#include "hcurlhdivfes.hpp"
+#include "hcurlfes.hpp"
 #include "hdivfes.hpp"
 #include "h1hofespace.hpp"
 #include "l2hofespace.hpp"
