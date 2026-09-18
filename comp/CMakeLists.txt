@@ -3,7 +3,7 @@ include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 add_library( ngcomp ${NGS_LIB_TYPE}
         ${ngcomp_object_libs}
         bilinearform.cpp facetfespace.cpp fespace.cpp 
-        gridfunction.cpp h1hofespace.cpp hcurlhdivfes.cpp hcurlhofespace.cpp 
+        gridfunction.cpp h1hofespace.cpp hcurlfes.cpp hcurlhofespace.cpp 
         hdivfes.cpp hdivhofespace.cpp hdivhosurfacefespace.cpp l2hofespace.cpp     
         linearform.cpp meshaccess.cpp ngsobject.cpp postproc.cpp	     
         preconditioner.cpp tangentialfacetfespace.cpp
@@ -35,7 +35,7 @@ install( TARGETS ngcomp ${ngs_install_dir} )
 
 install( FILES
         bilinearform.hpp comp.hpp facetfespace.hpp gpu_btdtb.hpp
-        fespace.hpp gridfunction.hpp h1hofespace.hpp hcurlhdivfes.hpp	   
+        fespace.hpp gridfunction.hpp h1hofespace.hpp hcurlfes.hpp	   
         hcurlhofespace.hpp hdivfes.hpp hdivhofespace.hpp hdivhosurfacefespace.hpp
         l2hofespace.hpp hdivdivsurfacespace.hpp HCTspace.hpp JKMspace.hpp tpfes.hpp
         linearform.hpp meshaccess.hpp ngsobject.hpp specialelementgroup.hpp	   

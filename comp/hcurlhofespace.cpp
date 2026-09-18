@@ -2,7 +2,7 @@
    High Order Finite Element Space for H(Curl) 
 */
 #include "hcurlhofespace.hpp"
-#include "hcurlhdivfes.hpp"
+#include "hcurlfes.hpp"
 #include <../fem/hcurlhofe.hpp> 
 #include <../fem/hcurllofe.hpp>
 #include <../fem/hcurl_equations.hpp> 

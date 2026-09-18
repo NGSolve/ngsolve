@@ -252,6 +252,7 @@ namespace ngfem
 
   HCURLFE_EXTERN template class T_HCurlHighOrderFiniteElement<ET_TRIG,FE_NedelecTrig1>;
 
+  /*
   class FE_NedelecTrig2 : public T_HCurlFiniteElementFO<FE_NedelecTrig2,ET_TRIG,6,1>
   {
   public:
@@ -270,7 +271,10 @@ namespace ngfem
         }
     }
   };
+  */
 
+  
+  /*
   HCURLFE_EXTERN template class T_HCurlHighOrderFiniteElement<ET_TRIG,FE_NedelecTrig2>;
 
   class FE_NedelecTrig3 : public T_HCurlFiniteElementFO<FE_NedelecTrig3,ET_TRIG,12,2>
@@ -304,8 +308,10 @@ namespace ngfem
 
     }
   };
-
+  
   HCURLFE_EXTERN template class T_HCurlHighOrderFiniteElement<ET_TRIG,FE_NedelecTrig3>;
+  */
+
 
   /*
  /// Lowest order Nedelec
@@ -425,6 +431,7 @@ namespace ngfem
 
   HCURLFE_EXTERN template class T_HCurlHighOrderFiniteElement<ET_TET,FE_NedelecTet1>;
 
+  /*
   class FE_NedelecTet2 : public T_HCurlFiniteElementFO<FE_NedelecTet2,ET_TET,12,1>
   {
   public:
@@ -445,7 +452,9 @@ namespace ngfem
     }
   };
   HCURLFE_EXTERN template class T_HCurlHighOrderFiniteElement<ET_TET,FE_NedelecTet2>;
+  */
 
+  /*
   class FE_NedelecTet3 : public T_HCurlFiniteElementFO<FE_NedelecTet3,ET_TET,30,2>
   {
   public:
@@ -476,7 +485,7 @@ namespace ngfem
     }
   };
   HCURLFE_EXTERN template class T_HCurlHighOrderFiniteElement<ET_TET,FE_NedelecTet3>;
-
+  */
 
   /*
     class FE_NedelecTet1o : public HCurlFiniteElement<3>
@@ -592,7 +601,7 @@ namespace ngfem
     };
   */
 
-
+  /*
   /// 2nd order Nedelec element of class II, without gradient fields
   class FE_NedelecTet3NoGrad : public HCurlFiniteElement<3>
   {
@@ -624,7 +633,7 @@ namespace ngfem
 
     void Orthogonalize();
   };
-
+  */
 
   /* *********************** Hex elements ************************ */ 
 
@@ -704,6 +713,7 @@ namespace ngfem
  };
   */
 
+  /*
   /// \f$ \nabla Q (2,ZORDER) \f$
   template <int ZORDER>
   class FE_TNedelecPrism2 : public HCurlFiniteElement<3>
@@ -751,7 +761,7 @@ static Matrix<> trans3;
     void Orthogonalize();
 
   };
-
+  
 
 
   /// potential space for Nedelec IIb
@@ -776,8 +786,10 @@ static Matrix<> trans3;
   }; 
 
 
+  */
 
-
+  
+  /*
   /// \f$ \nabla Q (3,ZORDER) \f$
   template <int ZORDER>
   class FE_TNedelecPrism3 : public HCurlFiniteElement<3>
@@ -916,7 +928,7 @@ static Matrix<> trans_trig;
 
 
 
-
+  */
 
 
 
@@ -968,7 +980,7 @@ static Matrix<> trans_trig;
   
   HCURLFE_EXTERN template class T_HCurlHighOrderFiniteElement<ET_PYRAMID,FE_NedelecPyramid1>;
   
-
+  /*
   ///
   class FE_NedelecPyramid2 : public HCurlFiniteElement<3>
   {
@@ -1032,7 +1044,8 @@ static Matrix<> trans_trig;
     virtual void CalcDShape (const IntegrationPoint & ip, 
 			     BareSliceMatrix<> dshape) const override;
   }; 
-
+  */
+  
 
 #ifdef VERY_OLD_NEDELECFE
   ///
