@@ -747,11 +747,13 @@ namespace ngcomp
     Partition(meshdim, /*isMaterial*/true, BodyLabel, vol_regions,
       [&](int regnr, const string & name)
       {
-        mesh->SetMaterial(regnr+1, name);                       // 1-based
-        if (meshdim == 2)
+        if (meshdim == 3)
+          mesh->SetMaterial(regnr+1, name);                     // 1-based
+        else
           {
             int fdnr = mesh->AddFaceDescriptor(FaceDescriptor(regnr+1, regnr+1, 0, 0)).Nr1();
             mesh->GetFaceDescriptor(fdnr).SetBCProperty(regnr+1);
+            mesh->GetFaceDescriptor(fdnr).SetBCName(name);
           }
       },
       [&](const AnsysElement & ae, int regnr)
@@ -784,7 +786,7 @@ namespace ngcomp
       {
         // ===========  edge (codim 2) = 1D elements (line loads, edge BCs) ======
         Partition(1, /*isMaterial*/false, BodyLabel, bbnd_regions,
-          [&](int regnr, const string & name) { mesh->SetCD2Name(regnr+1, name); },  // 1-based
+          [&](int regnr, const string & name) { mesh->EnsureEdgeDescriptor(regnr+1).SetName(name); },  // 1-based
           [&](const AnsysElement & ae, int regnr)
           { Segment seg; SetPNums(seg, ae); seg.SetIndex(regnr+1); mesh->AddSegment(seg); });
 
@@ -889,16 +891,18 @@ namespace ngcomp
           if (nx*fx+ny*fy+nz*fz < 0) f.Invert();
         };
 
-        // boundary region per (sorted) label;  one FaceDescriptor per (region,domain)
         std::map<vector<string>, int> label2reg;
         std::map<std::pair<int,int>, int> regdom2fd;
+        vector<string> regnames;
+        vector<vector<int>> reg2fds;
         auto GetRegion = [&](const vector<string> & label) -> int
         {
           auto it = label2reg.find(label);
           if (it != label2reg.end()) return it->second;
           int regnr = label2reg.size();
           label2reg[label] = regnr;
-          mesh->SetBCName(regnr, JoinLabel(label, "default"));
+          regnames.push_back(JoinLabel(label, "default"));
+          reg2fds.emplace_back();
           if (label.empty()) bnd_regions["default"].push_back(regnr);
           for (auto & l : label) bnd_regions[l].push_back(regnr);
           return regnr;
@@ -912,6 +916,8 @@ namespace ngcomp
             {
               fdnr = mesh->AddFaceDescriptor(FaceDescriptor(regnr+1, dom, 0, 0)).Nr1();
               mesh->GetFaceDescriptor(fdnr).SetBCProperty(regnr+1);
+              mesh->GetFaceDescriptor(fdnr).SetBCName(regnames[regnr]);
+              reg2fds[regnr].push_back(fdnr-1);
               regdom2fd[k] = fdnr;
             }
           else fdnr = it->second;
@@ -993,6 +999,14 @@ namespace ngcomp
               int regnr = GetRegion(FacetLabel(key, el));
               AddBndFace(el, regnr, 0);
             }
+
+        for (auto & [name, regs] : bnd_regions)
+          {
+            vector<int> fds;
+            for (int r : regs)
+              fds.insert(fds.end(), reg2fds[r].begin(), reg2fds[r].end());
+            regs = std::move(fds);
+          }
       }
     else // meshdim == 2: boundary (codim 1) = segments
       {
@@ -1030,7 +1044,6 @@ namespace ngcomp
                 regnr = label2reg.size();
                 label2reg[label] = regnr;
                 string name = JoinLabel(label, "default");
-                mesh->SetBCName(regnr, name);                   // 0-based
                 EdgeDescriptor ed; ed.SetName(name);
                 mesh->AddEdgeDescriptor(ed);                    // -> 1-based index regnr+1
                 for (auto & l : label) bnd_regions[l].push_back(regnr);

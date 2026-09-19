@@ -1215,7 +1215,7 @@ namespace ngcomp
             netgen::ElementIndex el1, el2;
             topology.GetSurface2VolumeElement(sei, el1, el2);
             const auto& sel = nmesh[sei];
-            auto bc = nmesh.GetFaceDescriptor(sel.GetIndex()).BCProperty()-1;
+            auto bc = sel.GetIndex().Nr0();   // boundary region = face descriptor
             if(el1.IsValid())
               {
                 auto index1 = nmesh[el1].GetIndex()-1;
