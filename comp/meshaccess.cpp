@@ -1218,13 +1218,13 @@ namespace ngcomp
             auto bc = sel.GetIndex().Nr0();   // boundary region = face descriptor
             if(el1.IsValid())
               {
-                auto index1 = nmesh[el1].GetIndex()-1;
+                auto index1 = nmesh[el1].GetIndex().Nr0();
                 neighbours[BND][VOL].AddUnique(bc, index1);
                 neighbours[VOL][BND].AddUnique(index1, bc);
               }
             if(el2.IsValid())
               {
-                auto index2 = nmesh[el2].GetIndex()-1;
+                auto index2 = nmesh[el2].GetIndex().Nr0();
                 neighbours[BND][VOL].AddUnique(bc, index2);
                 neighbours[VOL][BND].AddUnique(index2, bc);
               }

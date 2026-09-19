@@ -983,7 +983,7 @@ namespace ngcomp
             int regnr = GetRegion(FacetLabel(key, fr.face));
             Element2d f = fr.face;
             OrientOutward(f, fr.ei);
-            AddBndFace(f, regnr, (*mesh)[fr.ei].GetIndex());
+            AddBndFace(f, regnr, (*mesh)[fr.ei].GetIndex().Nr1());
           }
         // standalone shells (no adjacent volume face -- e.g. shell-only models)
         for (auto & ae : m.elements)
