@@ -405,11 +405,6 @@ namespace ngla
     {
       devveccreator[type] = creator;
     }
-
-    
-    const MemoryTracer& GetMemoryTracer() const { return mt; }
-  private:
-    MemoryTracer mt = { "BaseVector" };
   };
   
 

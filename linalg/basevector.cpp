@@ -1358,7 +1358,7 @@ namespace ngla
   {
     if (ownmem)
       {
-        GetMemoryTracer().Free(sizeof(TSCAL) * this->es * this->size);
+        MemTraceFree(pdata, sizeof(TSCAL) * this->es * this->size);
         delete [] pdata;
       }
   }

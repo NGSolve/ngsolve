@@ -38,7 +38,7 @@ namespace ngla
       es = aes;
       pdata = new TSCAL[as*aes];
       ownmem = true;
-      GetMemoryTracer().Alloc(sizeof(TSCAL) * as * aes);
+      MemTraceAlloc(pdata, sizeof(TSCAL) * as * aes);
       // this->entrysize = es * sizeof(TSCAL) / sizeof(double);
       this->entrysize = es * sizeof(TSCAL) / sizeof(typename scal_traits<TSCAL>::TSCAL_REAL);
     }
@@ -47,13 +47,13 @@ namespace ngla
     {
       if (ownmem)
         {
-          GetMemoryTracer().Free(sizeof(TSCAL) * this->size * es);
+          MemTraceFree(pdata, sizeof(TSCAL) * this->size * es);
           delete [] pdata;
         }
       this->size = as;
       pdata = new TSCAL[as*es];
       ownmem = true;
-      GetMemoryTracer().Alloc(sizeof(TSCAL) * as * es);
+      MemTraceAlloc(pdata, sizeof(TSCAL) * as * es);
     }
 
     void SetParent (shared_ptr<BaseVector> aparent)
@@ -90,7 +90,6 @@ namespace ngla
     virtual unique_ptr<MultiVector> CreateMultiVector (size_t cnt) const override;
     
     virtual ostream & Print (ostream & ost) const override;
-    using BaseVector::GetMemoryTracer;
   };
 
 

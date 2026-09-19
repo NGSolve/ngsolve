@@ -9,7 +9,7 @@
 */
 
 #include <multigrid.hpp>
-#include <hcurlhdivfes.hpp>
+#include <hcurlfes.hpp>
 #include <sparsecholesky.hpp>
 #include <diagonalmatrix.hpp>
 namespace ngmg

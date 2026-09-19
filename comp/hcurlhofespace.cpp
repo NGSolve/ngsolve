@@ -2,7 +2,7 @@
    High Order Finite Element Space for H(Curl) 
 */
 #include "hcurlhofespace.hpp"
-#include "hcurlhdivfes.hpp"
+#include "hcurlfes.hpp"
 #include <../fem/hcurlhofe.hpp> 
 #include <../fem/hcurllofe.hpp>
 #include <../fem/hcurl_equations.hpp> 
@@ -190,21 +190,6 @@ namespace ngcomp
         ;
       }
 
-    this->GetMemoryTracer().Track(
-        order_edge, "order_edge",
-        fine_edge, "fine_edge",
-        fine_face, "fine_face",
-        cell_ngrad, "cell_ngrad",
-        face_ngrad, "face_ngrad",
-        order_face, "order_face",
-        order_inner, "order_inner",
-        order_avertex, "order_avertex",
-        usegrad_edge, "usegrad_edge",
-        usegrad_face, "usegrad_face",
-        usegrad_cell, "usegrad_cell",
-        dom_order_min, "dom_order_min",
-        dom_order_max, "dom_order_max"
-        );
   }
   
   HCurlHighOrderFESpace :: ~HCurlHighOrderFESpace () { ; }

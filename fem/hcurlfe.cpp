@@ -2205,7 +2205,7 @@ namespace ngfem
 
   /* **************************** Tet3 without gradients ******************* */
 
-
+#ifdef OLD_LO_NEDELEC
   // Array<HCurlFiniteElement<3>::IPData> FE_NedelecTet3NoGrad::ipdata;
   Mat<FE_NedelecTet3NoGrad::NFACEDOF> FE_NedelecTet3NoGrad::trans3;
 
@@ -5185,7 +5185,8 @@ namespace ngfem
   }
 #endif
   
-
+#endif
+  
 
   /*
   template class HCurlFiniteElement<1>;
