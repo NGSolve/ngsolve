@@ -26,7 +26,7 @@ namespace ngcomp
   inline int GetDomIn(const MeshAccess& ma, const Ngs_Element& el)
   {
     if(ma.GetDimension() ==3)
-      return ma.GetNetgenMesh()->GetFaceDescriptor(el.GetIndex()+1).DomainIn();
+      return ma.GetNetgenMesh()->GetFaceDescriptor(netgen::FaceRegionIndex::FromNr0(el.GetIndex())).DomainIn();
     else
     {
       auto& seg = (*ma.GetNetgenMesh())[netgen::SegmentIndex::FromNr0(el.Nr())];

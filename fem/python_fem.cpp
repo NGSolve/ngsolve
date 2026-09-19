@@ -483,9 +483,9 @@ direction : int
           {
             int dom_in;
             if (mesh->GetDimension() == 3)
-              dom_in = mesh->GetNetgenMesh()->GetFaceDescriptor(i+1).DomainIn();
+              dom_in = mesh->GetNetgenMesh()->GetFaceDescriptor(netgen::FaceRegionIndex::FromNr0(i)).DomainIn();
             else if (mesh->GetDimension() == 2)
-              dom_in = mesh->GetNetgenMesh()->GetEdgeDescriptor(i+1).DomainIn();
+              dom_in = mesh->GetNetgenMesh()->GetEdgeDescriptor(netgen::EdgeRegionIndex::FromNr0(i)).DomainIn();
             else
               throw Exception("Mesh dimension not supported");
             if (dom_in == 0 || !region.Mask().Test(dom_in - 1))

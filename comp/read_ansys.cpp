@@ -751,18 +751,18 @@ namespace ngcomp
           mesh->SetMaterial(regnr+1, name);                     // 1-based
         else
           {
-            int fdnr = mesh->AddFaceDescriptor(FaceDescriptor(regnr+1, regnr+1, 0, 0)).Nr1();
-            mesh->GetFaceDescriptor(fdnr).SetBCProperty(regnr+1);
-            mesh->GetFaceDescriptor(fdnr).SetBCName(name);
+            auto fdi = mesh->AddFaceDescriptor(FaceDescriptor(regnr+1, regnr+1, 0, 0));
+            mesh->GetFaceDescriptor(fdi).SetBCProperty(regnr+1);
+            mesh->GetFaceDescriptor(fdi).SetBCName(name);
           }
       },
       [&](const AnsysElement & ae, int regnr)
       {
         elemid2elnr[ae.id] = nvol_added++;                 // 0-based ngsolve VOL element nr
         if (meshdim == 3)
-          { Element el(ae.type);   SetPNums(el, ae); el.SetIndex(regnr+1); mesh->AddVolumeElement(el); }
+          { Element el(ae.type);   SetPNums(el, ae); el.SetIndex(VolumeRegionIndex::FromNr0(regnr)); mesh->AddVolumeElement(el); }
         else
-          { Element2d el(ae.type); SetPNums(el, ae); el.SetIndex(regnr+1); mesh->AddSurfaceElement(el); }
+          { Element2d el(ae.type); SetPNums(el, ae); el.SetIndex(FaceRegionIndex::FromNr0(regnr)); mesh->AddSurfaceElement(el); }
       });
 
     // standalone *ELSET selections (not bodies) -> element-number lists, so the
@@ -788,7 +788,7 @@ namespace ngcomp
         Partition(1, /*isMaterial*/false, BodyLabel, bbnd_regions,
           [&](int regnr, const string & name) { mesh->EnsureEdgeDescriptor(regnr+1).SetName(name); },  // 1-based
           [&](const AnsysElement & ae, int regnr)
-          { Segment seg; SetPNums(seg, ae); seg.SetIndex(regnr+1); mesh->AddSegment(seg); });
+          { Segment seg; SetPNums(seg, ae); seg.SetIndex(EdgeRegionIndex::FromNr0(regnr)); mesh->AddSegment(seg); });
 
         // ===========  boundary (codim 1) =====================================
         // The actual mesh boundary is the set of volume faces occurring exactly
@@ -915,13 +915,13 @@ namespace ngcomp
           if (it == regdom2fd.end())
             {
               fdnr = mesh->AddFaceDescriptor(FaceDescriptor(regnr+1, dom, 0, 0)).Nr1();
-              mesh->GetFaceDescriptor(fdnr).SetBCProperty(regnr+1);
-              mesh->GetFaceDescriptor(fdnr).SetBCName(regnames[regnr]);
+              mesh->GetFaceDescriptor(FaceRegionIndex::FromNr1(fdnr)).SetBCProperty(regnr+1);
+              mesh->GetFaceDescriptor(FaceRegionIndex::FromNr1(fdnr)).SetBCName(regnames[regnr]);
               reg2fds[regnr].push_back(fdnr-1);
               regdom2fd[k] = fdnr;
             }
           else fdnr = it->second;
-          f.SetIndex(fdnr);
+          f.SetIndex(FaceRegionIndex::FromNr1(fdnr));
           mesh->AddSurfaceElement(f);
           have_surface = true;
         };
@@ -1050,7 +1050,7 @@ namespace ngcomp
                 if (label.empty()) bnd_regions["default"].push_back(regnr);
               }
             else regnr = it->second;
-            seg.SetIndex(regnr+1);
+            seg.SetIndex(EdgeRegionIndex::FromNr0(regnr));
             mesh->AddSegment(seg);
             have_surface = true;
           }
