@@ -1305,51 +1305,7 @@ namespace ngcomp
                 neighbours[i][i].AddUnique(j, mat);
   }
 
-  void MeshAccess :: 
-  GetElEdges (int elnr, Array<int> & ednums, Array<int> & orient) const
-  {
-    /*
-    ednums.SetSize (12);
-    orient.SetSize (12);
-    int ned = 
-      Ng_GetElement_Edges (elnr+1, &ednums[0], &orient[0]);
-    ednums.SetSize (ned);
-    orient.SetSize (ned);
-    for (int i = 0; i < ned; i++)
-      ednums[i]--;
-    */
-    auto el = GetElement(ElementId(VOL, elnr));
-    auto vnums = el.Vertices();
-    auto locedges = ElementTopology::GetEdges(el.GetType());
-    ednums = el.Edges();
-    orient.SetSize(ednums.Size());
-    for (auto i : Range(ednums))
-      orient[i] = vnums[locedges[i][1]] > vnums[locedges[i][0]] ? 1 : -1;
-  }
 
-  void MeshAccess :: 
-  GetSElEdges (int selnr, Array<int> & ednums, Array<int> & orient) const
-  {
-    /*
-    ednums.SetSize (4);
-    orient.SetSize (4);
-    int ned = 
-      Ng_GetSurfaceElement_Edges (selnr+1, &ednums[0], &orient[0]);
-    ednums.SetSize (ned);
-    orient.SetSize (ned);
-
-    for (int i = 0; i < ned; i++)
-      ednums[i]--;
-    */
-    auto el = GetElement(ElementId(BND, selnr));
-    auto vnums = el.Vertices();
-    auto locedges = ElementTopology::GetEdges(el.GetType());
-    ednums = el.Edges();
-    orient.SetSize(ednums.Size());
-    for (auto i : Range(ednums))
-      orient[i] = vnums[locedges[i][1]] > vnums[locedges[i][0]] ? 1 : -1;
-
-  }
 
 
   void MeshAccess :: GetEdgeElements (int enr, Array<int> & elnums) const
@@ -1399,17 +1355,6 @@ namespace ngcomp
   }
   
 
-  void MeshAccess :: 
-  GetElFaces (int elnr, Array<int> & fnums, Array<int> & orient) const
-  {
-    fnums.SetSize (6);
-    orient.SetSize (6);
-    int nfa = 
-      // Ng_GetElement_Faces (elnr+1, &fnums[0], &orient[0]);
-      mesh.GetElement_Faces (elnr, &fnums[0], &orient[0]);
-    fnums.SetSize (nfa);
-    orient.SetSize (nfa);
-  }
 
   int MeshAccess :: 
   GetSElFace (int selnr) const
@@ -1418,12 +1363,6 @@ namespace ngcomp
     // return Ng_GetSurfaceElement_Face (selnr+1, 0)-1;
   }
   
-  void MeshAccess :: 
-  GetSElFace (int selnr, int & fnum, int & orient) const
-  {
-    // fnum = Ng_GetSurfaceElement_Face (selnr+1, &orient);
-    fnum = mesh.GetSurfaceElement_Face (selnr, &orient);
-  }
 
   void MeshAccess :: GetFacePNums (int fnr, Array<int> & pnums) const
   {

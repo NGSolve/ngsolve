@@ -213,9 +213,8 @@ namespace ngcomp
     
     if (boundary) 
       {
-	ArrayMem<int,4> edge_nums, edge_orient;
-	ma->GetSElEdges (elnr, edge_nums, edge_orient);
-	vec *= edge_orient[0];
+	auto vnums = ma->GetElement(ei).Vertices();
+	vec *= (vnums[1] > vnums[0]) ? 1 : -1;
 	return;
       }
 
