@@ -496,6 +496,7 @@ namespace ngcomp
         static Timer t("MGPreconditioner::Update - fine precond"); RegionTimer reg(t);
         if (additional_dirichlet_boundaries.Size())
           flags.SetFlag ("additional_dirichlet_boundaries", std::any(additional_dirichlet_boundaries));
+        tlp = nullptr; 
         auto fine_smoother = make_shared<BlockSmoother> (*bfa->GetMeshAccess(), *bfa, flags);
         fine_smoother -> SetAdditionalDirichletBoundaries(additional_dirichlet_boundaries);
         tlp = make_shared<TwoLevelMatrix> (&bfa->GetMatrix(),
