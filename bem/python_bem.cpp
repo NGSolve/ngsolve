@@ -182,7 +182,8 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     .def("AddCharge", &SingularMLExpansion<Complex>::AddCharge)
     .def("AddDipole", &SingularMLExpansion<Complex>::AddDipole)
     .def("AddChargeDensity", [](SingularMLExpansion<Complex> & mp, shared_ptr<CoefficientFunction> charge,
-                                ngcomp::Region reg) { AddChargeDensity(mp,charge,reg); })
+                                ngcomp::Region reg, int intorder) { AddChargeDensity(mp,charge,reg,intorder); },
+         py::arg("charge"), py::arg("region"), py::arg("intorder")=3)
     
     .def("Calc", &SingularMLExpansion<Complex>::CalcMP)
     .def("Norm", &SingularMLExpansion<Complex>::Norm)    
@@ -200,7 +201,8 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     .def(py::init<Vec<3>,double,double>())
     .def("AddCurrent", &SingularMLExpansion<Vec<3,Complex>>::AddCurrent, py::arg("sp"), py::arg("ep"), py::arg("j"), py::arg("num")=100)
     .def("AddCurrentDensity", [](SingularMLExpansion<Vec<3,Complex>> & mp, shared_ptr<CoefficientFunction> current,
-                                 ngcomp::Region reg) { AddCurrentDensity(mp,current,reg); })
+                                 ngcomp::Region reg, int intorder) { AddCurrentDensity(mp,current,reg,intorder); },
+         py::arg("current"), py::arg("region"), py::arg("intorder")=3)
     
     .def("Calc", &SingularMLExpansion<Vec<3,Complex>>::CalcMP)
     // .def("Norm", &SingularMLExpansion<Complex>::Norm)    

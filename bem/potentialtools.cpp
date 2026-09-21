@@ -5,7 +5,7 @@
 namespace ngsbem
 {
   
-  void AddChargeDensity (SingularMLExpansion<Complex> & mp, shared_ptr<CoefficientFunction> charge, ngcomp::Region reg)
+  void AddChargeDensity (SingularMLExpansion<Complex> & mp, shared_ptr<CoefficientFunction> charge, ngcomp::Region reg, int intorder)
   {
     LocalHeap lh(10*1000*1000);
     auto ma = reg.Mesh();
@@ -14,7 +14,7 @@ namespace ngsbem
       {
         HeapReset hr(lh);
         auto & trafo = ma->GetTrafo(ei, lh);
-        IntegrationRule ir(trafo.GetElementType(), 3);
+        IntegrationRule ir(trafo.GetElementType(), intorder);
         auto & mir = trafo(ir, lh);
         
         FlatMatrix<Complex> ci(ir.Size(), 1, lh);
@@ -26,7 +26,7 @@ namespace ngsbem
   }
 
 
-  void AddCurrentDensity (SingularMLExpansion<Vec<3,Complex>> & mp, shared_ptr<CoefficientFunction> current, ngcomp::Region reg)
+  void AddCurrentDensity (SingularMLExpansion<Vec<3,Complex>> & mp, shared_ptr<CoefficientFunction> current, ngcomp::Region reg, int intorder)
   {
     LocalHeap lh(10*1000*1000);
     auto ma = reg.Mesh();
@@ -35,7 +35,7 @@ namespace ngsbem
       {
         HeapReset hr(lh);
         auto & trafo = ma->GetTrafo(ei, lh);
-        IntegrationRule ir(trafo.GetElementType(), 3);
+        IntegrationRule ir(trafo.GetElementType(), intorder);
         auto & mir = trafo(ir, lh);
         
         FlatMatrix<Complex> curi(ir.Size(), 3, lh);
@@ -43,15 +43,11 @@ namespace ngsbem
         
         for (int j = 0; j < mir.Size(); j++)
           {
-            
+            Vec<3,Complex> cur = curi.Row(j);
             for (int k = 0; k < 3; k++)
               {
                 Vec<3> ek{0.0}; ek(k) = 1;
-                Vec<3> curi_real = Real(curi.Row(j));
-                Vec<3> curi_imag = Imag(curi.Row(j));
-
-                mp.AddDipole (mir[j].GetPoint(), ek, mir[j].GetWeight()*Cross(curi_real, ek));
-                mp.AddDipole (mir[j].GetPoint(), ek, Complex(0,1)*mir[j].GetWeight()*Cross(curi_imag, ek));
+                mp.AddDipole (mir[j].GetPoint(), ek, mir[j].GetWeight()*Cross(Vec<3,Complex>(ek), cur));
               }
           }
       }
