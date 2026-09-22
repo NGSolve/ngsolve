@@ -299,9 +299,98 @@ namespace ngsbem
   }
 
 
+  IntegrationPoint ProjectPointToReferenceTet(Vec<3> x, const ElementTransformation & trafo)
+  {
+    Vec<3> xi(1./4, 1./4, 1./4);
+    constexpr int max_iterations = 10;
+    constexpr double reference_step_tolerance = 1e-12;
+    for (int j = 0; j < max_iterations; j++) // Newton steps for the inverse map
+      {
+        IntegrationPoint ip(xi(0), xi(1), xi(2));
+        MappedIntegrationPoint<3,3> mip(ip, trafo);
+        if (fabs(Det(mip.GetJacobian())) < 1e-14)  // degenerate/inverted element
+          break;
+        Vec<3> dx = Inv(mip.GetJacobian()) * (x-mip.GetPoint());
+        xi += dx;
+        if (L2Norm(dx) <= reference_step_tolerance)
+          break;
+      }
+    if (!(isfinite(xi(0)) && isfinite(xi(1)) && isfinite(xi(2))))
+      xi = Vec<3>(1./4, 1./4, 1./4);
+
+    // Clamp into the reference tet via barycentric coordinates. For a point
+    // outside the element this is only an approximate closest point.
+    double lam[4] = { xi(0), xi(1), xi(2), 1-xi(0)-xi(1)-xi(2) };
+    bool outside = false;
+    for (int k = 0; k < 4; k++)
+      if (lam[k] < 0)
+        {
+          lam[k] = 0;
+          outside = true;
+        }
+    if (outside)
+      {
+        double sum = lam[0]+lam[1]+lam[2]+lam[3];
+        for (int k = 0; k < 4; k++)
+          lam[k] /= sum;
+      }
+    return IntegrationPoint(lam[0], lam[1], lam[2]);
+  }
+
+
   IntegrationRule GetIntegrationRule(Vec<3> x, const ElementTransformation & trafo, int intorder)
   {
     auto et = trafo.GetElementType();
+    if (et == ET_TET)
+      {
+        IntegrationPoint ipc(1./4, 1./4, 1./4);
+        MappedIntegrationPoint<3,3> mipc(ipc, trafo);
+        double elsize = L2Norm(mipc.GetJacobian());
+        double dist = L2Norm(x-mipc.GetPoint());
+
+        if (dist < elsize)
+          {
+            // Duffy-type rule: split the reference tet into 4 sub-tets meeting at
+            // the projection of x, and map a prism rule (trig x segm) onto each
+            // sub-tet, collapsing the segment end t=1 onto the apex (Jacobian (1-t)^2).
+            IntegrationPoint p = ProjectPointToReferenceTet(x, trafo);
+            Vec<3> vp(p(0), p(1), p(2));
+
+            int order = intorder + 2;
+            IntegrationRule irtrig(ET_TRIG, order), irsegm(ET_SEGM, order);
+            IntegrationRule ir;
+
+            auto verts = ElementTopology::GetVertices(ET_TET);
+            auto faces = ElementTopology::GetFaces(ET_TET);
+            for (int f = 0; f < faces.Size(); f++)
+              {
+                Vec<3> v0(verts[faces[f][0]][0], verts[faces[f][0]][1], verts[faces[f][0]][2]);
+                Vec<3> v1(verts[faces[f][1]][0], verts[faces[f][1]][1], verts[faces[f][1]][2]);
+                Vec<3> v2(verts[faces[f][2]][0], verts[faces[f][2]][1], verts[faces[f][2]][2]);
+                Mat<3,3> sides;
+                sides.Col(0) = v1-v0;
+                sides.Col(1) = v2-v0;
+                sides.Col(2) = vp-v0;
+                double factor = Det(sides);
+                if (!(fabs(factor) > 1e-12))
+                  continue;
+
+                // Weights of one sub-tet sum to factor/6 = its volume
+                // (trig weights sum to 1/2, int_0^1 (1-t)^2 dt = 1/3).
+                for (auto ips : irtrig)
+                  for (auto ipt : irsegm)
+                    {
+                      Vec<3> F = v0 + ips(0)*(v1-v0) + ips(1)*(v2-v0);
+                      double t = ipt(0);
+                      Vec<3> y = F + t*(vp-F);
+                      ir.AddIntegrationPoint (IntegrationPoint(y(0), y(1), y(2),
+                                                               ips.Weight()*ipt.Weight()*(1-t)*(1-t)*factor));
+                    }
+              }
+            return ir;
+          }
+        return IntegrationRule(et, intorder);
+      }
     if (et != ET_TRIG && et != ET_QUAD)
       return IntegrationRule(et, intorder);
 
@@ -352,6 +441,14 @@ namespace ngsbem
   bool IsPotentialNearfieldSourceElement(Vec<3> x, const ElementTransformation & trafo)
   {
     auto et = trafo.GetElementType();
+    if (et == ET_TET)
+      {
+        IntegrationPoint ip(1./4, 1./4, 1./4);
+        MappedIntegrationPoint<3,3> mip(ip, trafo);
+        double elsize = L2Norm(mip.GetJacobian());
+        double dist = L2Norm(x-mip.GetPoint());
+        return dist < elsize;
+      }
     if (et != ET_TRIG && et != ET_QUAD)
       return false;
 
@@ -423,6 +520,110 @@ namespace ngsbem
     const FiniteElement &fel = space->GetFE(ei, lh);
     const ElementTransformation &trafo = mesh->GetTrafo(ei, lh);
     auto et = trafo.GetElementType();
+
+    if (et == ET_TET)
+      {
+        // Volume analogue of the tangent correction below. Both identities
+        // reduce the integral over the flat tet to face integrals of G, which
+        // LaplaceSL_Polygon gives exactly:
+        //   int_T grad_y G dy = sum_f n_f int_f G dS            (n_f outward)
+        //   int_T G dy        = 1/2 sum_f d_f int_f G dS        (from
+        //     div_y [(y-x) G] = 3G + (y-x).grad_y G = 2G, and (y-x).n_f being
+        //     the constant face distance d_f on a flat face)
+        // DiffLaplaceSLKernel evaluates grad_x G = -grad_y G, hence the sign
+        // on the vector branch. LaplaceDL cannot reach here: its source needs
+        // a normal, so it is rejected for volume sources before this point.
+        if (formula != AnalyticTriangleFormula::laplace_sl &&
+            formula != AnalyticTriangleFormula::laplace_grad_sl)
+          return;
+
+        Array<DofId> dnums(fel.GetNDof(), lh);
+        space->GetDofNrs(ei, dnums);
+        FlatVector<T> elvec(fel.GetNDof(), lh);
+        gf->GetElementVector(dnums, elvec);
+
+        Vec<3> x = mip.GetPoint();
+        IntegrationPoint ip0 = ProjectPointToReferenceTet(x, trafo);
+        MappedIntegrationPoint<3,3> mip0(ip0, trafo);
+        Vec<3> xi0 { ip0(0), ip0(1), ip0(2) };
+        Vec<3> p0 = mip0.GetPoint();
+        Mat<3,3> jac = mip0.GetJacobian();
+        double measure0 = mip0.GetMeasure();
+
+        // affine image of the reference tet, tangent to the element at p0
+        auto verts = ElementTopology::GetVertices(ET_TET);
+        Vec<3> v[4];
+        for (int i = 0; i < 4; i++)
+          {
+            Vec<3> c(verts[i][0], verts[i][1], verts[i][2]);
+            v[i] = p0 + jac * (c-xi0);
+          }
+        Vec<3> centroid = 0.25*(v[0]+v[1]+v[2]+v[3]);
+
+        double analytic_sl = 0.0;
+        Vec<3> analytic_grad { 0.0, 0.0, 0.0 };
+        auto faces = ElementTopology::GetFaces(ET_TET);
+        for (int f = 0; f < 4; f++)
+          {
+            Vec<3> fv[3] = { v[faces[f][0]], v[faces[f][1]], v[faces[f][2]] };
+            Vec<3> n = Cross(fv[1]-fv[0], fv[2]-fv[0]);
+            double nlen = L2Norm(n);
+            if (nlen < 1e-30)
+              continue;
+            n /= nlen;
+            if (InnerProduct(fv[0]-centroid, n) < 0)   // make it outward
+              n *= -1;
+            FlatArray<Vec<3>> polygon(3, fv);
+            double face_sl = LaplaceSL_Polygon(polygon, x);
+            analytic_grad -= face_sl * n;
+            analytic_sl += 0.5 * InnerProduct(fv[0]-x, n) * face_sl;
+          }
+
+        double scalar_correction = 0.0;
+        Vec<3> grad_correction { 0.0, 0.0, 0.0 };
+        Vec<3> nx{0.0}, ny{0.0};
+
+        if (formula == AnalyticTriangleFormula::laplace_sl)
+          {
+            double flat_numeric = 0.0;
+            LaplaceSLKernel<3> singularity;
+            for (auto ip : ir)
+              {
+                Vec<3> xi { ip(0), ip(1), ip(2) };
+                Vec<3> y = p0 + jac * (xi-xi0);
+                if (L2Norm(x-y) > 0)
+                  flat_numeric += ip.Weight() * measure0 *
+                    singularity.Evaluate(x, y, nx, ny)(0);
+              }
+            scalar_correction = analytic_sl - flat_numeric;
+          }
+        else
+          {
+            Vec<3> flat_numeric { 0.0, 0.0, 0.0 };
+            DiffLaplaceSLKernel<3> singularity;
+            for (auto ip : ir)
+              {
+                Vec<3> xi { ip(0), ip(1), ip(2) };
+                Vec<3> y = p0 + jac * (xi-xi0);
+                if (L2Norm(x-y) > 0)
+                  flat_numeric += ip.Weight() * measure0 *
+                    singularity.Evaluate(x, y, nx, ny);
+              }
+            grad_correction = analytic_grad - flat_numeric;
+          }
+
+        FlatVector<T> vals(evaluator->Dim(), lh);
+        evaluator->Apply(fel, mip0, elvec, vals, lh);
+        for (auto term : kernel->Terms())
+          {
+            double correction =
+              formula == AnalyticTriangleFormula::laplace_grad_sl ?
+              grad_correction(term.kernel_comp) : scalar_correction;
+            result(term.test_comp) += term.fac * correction * vals(term.trial_comp);
+          }
+        return;
+      }
+
     if (et != ET_TRIG && et != ET_QUAD)
       return;
 
@@ -552,8 +753,14 @@ namespace ngsbem
             AddSourceElementContribution(mip, ei, standard_ir, row, T(-1.0), lh);
             AddSourceElementContribution(mip, ei, near_ir, row, T(1.0), lh);
 
+            // Defined for surface elements and, via the divergence theorem,
+            // for tets.
             if (formula != AnalyticTriangleFormula::none)
-              AddTangentCorrection(mip, ei, near_ir, row, lh);
+              {
+                auto set = trafo.GetElementType();
+                if (set == ET_TRIG || set == ET_QUAD || set == ET_TET)
+                  AddTangentCorrection(mip, ei, near_ir, row, lh);
+              }
           }
       }
   }
@@ -589,9 +796,15 @@ namespace ngsbem
           FlatVector<T> elvec(fel.GetNDof(), lh);
           gf->GetElementVector(dnums, elvec);
 
+          // Defined for surface elements and, via the divergence theorem,
+          // for tets.
           bool use_tangent_correction = false;
           if (formula != AnalyticTriangleFormula::none)
-            use_tangent_correction = IsPotentialNearfieldSourceElement(mip.GetPoint(), trafo);
+            {
+              auto set = trafo.GetElementType();
+              if (set == ET_TRIG || set == ET_QUAD || set == ET_TET)
+                use_tangent_correction = IsPotentialNearfieldSourceElement(mip.GetPoint(), trafo);
+            }
 
           IntegrationRule ir = GetIntegrationRule(mip.GetPoint(), trafo, intorder);
 

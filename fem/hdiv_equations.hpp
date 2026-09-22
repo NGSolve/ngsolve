@@ -152,14 +152,27 @@ public:
     y.Range(0,fel.GetNDof()) = Cast(fel).GetShape(mip.IP(),lh) * hv;
   }
 
-  using DiffOp<DiffOpIdHDiv<D,FEL>>::ApplySIMDIR;        
+  using DiffOp<DiffOpIdHDiv<D,FEL>>::ApplySIMDIR;
   static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
                            BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
   {
     Cast(fel).Evaluate (mir, x, y);
-  }    
+  }
 
-  using DiffOp<DiffOpIdHDiv<D,FEL>>::AddTransSIMDIR;          
+  static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                           BareSliceVector<Complex> x, BareSliceMatrix<SIMD<Complex>> y)
+  {
+    Matrix<SIMD<double>> yre(D, mir.Size()), yim(D, mir.Size());
+
+    Cast(fel).Evaluate (mir, Real(x), yre);
+    Cast(fel).Evaluate (mir, Imag(x), yim);
+
+    for (int j = 0; j < D; j++)
+      for (size_t i = 0; i < mir.Size(); i++)
+        y(j,i) = SIMD<Complex>(yre(j,i), yim(j,i));
+  }
+
+  using DiffOp<DiffOpIdHDiv<D,FEL>>::AddTransSIMDIR;
   static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
                               BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
   {
