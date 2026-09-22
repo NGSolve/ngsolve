@@ -1046,6 +1046,7 @@ namespace tinybla {
 
   enum ORDERING { ColMajor, RowMajor };
   constexpr ORDERING operator! (ORDERING o) { return (o==RowMajor) ? ColMajor : RowMajor; }
+  constexpr ORDERING Transposed (ORDERING o) { return (o==RowMajor) ? ColMajor : RowMajor; }
 
 
 
@@ -1156,7 +1157,7 @@ namespace tinybla {
 
 
      auto SubMatrix (unsigned r, unsigned c) const { return BareMatrix { data+Offset(r,c), ld }; }
-     auto Transpose() const { return BareMatrix<!ORD, Tp,Tld> { data, ld }; }
+     auto Transpose() const { return BareMatrix<Transposed(ORD), Tp,Tld> { data, ld }; }
      auto LD() const { return ld; }
      Tp Data() const { return data; }
      bool IsColMajor() const { return ORD==ColMajor; }
