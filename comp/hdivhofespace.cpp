@@ -755,7 +755,6 @@ namespace ngcomp
         first_facet_dof[nfa] = ndof;
 	 
 	// Array<int> fnums;
-        bool have_pyramids = false;
         for (size_t i = 0; i < nel; i++)
           {
             IVec<3> p = order_inner[i];
@@ -805,10 +804,19 @@ namespace ngcomp
                   inci -= p[0]*(p[1]*p[2] + p[1] + p[2] + 1)  + p[1]*p[2] + p[1] + p[2]; 
                 break; 
               case ET_PYRAMID: 
-                inci=0;
-                if(DefinedOn(ElementId(VOL,i)))
-                  have_pyramids=true;
-                break; 
+                {
+                  int pp = p[0];
+                  if (pp >= 1)
+                    inci = pp*pp + 2*( (pp-1)*pp*(pp+1)/3 + pp );
+                  int pd = RT ? pp : pp-1;
+                  if (pd >= 1 && !ho_div_free)
+                    inci += (pd+1)*(pd+2)*(2*pd+3)/6 - 1;
+                  if (highest_order_dc)
+                    for (auto f : ma->GetElFacets(i))
+                      if (!boundary_facet[f])
+                        inci += (ma->GetFacePNums(f).Size()==3) ? order_facet[f][0]+1 : order_facet[f][0]+order_facet[f][1]+1;
+                  break; 
+                }
               default:
                 inci = 0;
                 break;
@@ -818,9 +826,6 @@ namespace ngcomp
             ndof+= inci;
 	  }
         first_inner_dof[nel] = ndof;
-
-        if (have_pyramids)
-          cout << "WARNING: there are hdiv-pyramids (not implemented yet) !! " << endl;
 
         
         if (highest_order_dc)
@@ -1005,9 +1010,6 @@ namespace ngcomp
     Ngs_Element ngel = ma->GetElement<ET_trait<ET>::DIM,VOL> (elnr);
     if (!DefinedOn(ngel)) return * new (lh) HDivDummyFE<ET>();
 
-    if(ET == ET_PYRAMID)
-      throw Exception("HDivHighOrderFESpace: Pyramid elements not implemented yet!");
-    
     HDivHighOrderFE<ET> * hofe =  new (lh) HDivHighOrderFE<ET> ();
 
     hofe -> SetVertexNumbers (ngel.Vertices());
@@ -1243,7 +1245,7 @@ namespace ngcomp
         
       case ET_TET:     return T_GetFE<ET_TET> (elnr, true, lh);
       case ET_PRISM:   return T_GetFE<ET_PRISM> (elnr, true, lh);
-        // case ET_PYRAMID: return T_GetFE<ET_PYRAMID> (elnr, false, lh);
+      case ET_PYRAMID: return T_GetFE<ET_PYRAMID> (elnr, true, lh);
       case ET_HEX:     return T_GetFE<ET_HEX> (elnr, true, lh);
         
       default:

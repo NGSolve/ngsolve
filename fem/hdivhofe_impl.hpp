@@ -71,10 +71,7 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>
-    void T_CalcShape (TIP<3,Tx> ip, TFA & shape) const
-    {
-      throw Exception("HDivHO Pyramids not yet implemented");
-    }
+    void T_CalcShape (TIP<3,Tx> ip, TFA & shape) const;
 
     template <typename MIP, typename TFA>
     inline void CalcDualShape2 (const MIP & mip, TFA & shape) const
@@ -844,6 +841,189 @@ template <typename MIP, typename TFA>
     if (ii != ndof) cout << "hdiv-prism: dofs missing, ndof = " << ndof << ", ii = " << ii << endl;
   }
 
+
+
+
+  /*
+    Pyramid, rational shape functions (J. Schoeberl, 2026)
+
+    Space: Nigam-Phillips H(div) pyramid space R^(2)_{p+1}  (M2AN 46 (2012)), in the
+    collapsed-hex coordinates xt = x/(1-z), yt = y/(1-z), lam = 1-z:
+        V_p = curl( F1 grad(xt) ) + curl( F2 grad(yt) ) + H grad(xt) x grad(yt),
+        F1 = span{ xt^a yt^b lam^c : a<=c-2, b<=c-1, c<=p+2 },  F2 symmetric,
+        H  = span{ xt^a yt^b lam^c : max(a,b)<=c-3, c<=p+3 },
+    enlarged by 2p div-free interior functions curl( z x^(j+1) (1-x-z) grad(yt) ), curl( z y^(j+1) (1-y-z) grad(xt) ),
+    which are needed so that the triangular face functions can mirror the tet face functions
+    for every vertex sorting.
+    Properties: contains P_p^3, normal traces P_p on trig faces / Q_p on the quad face (matching tet, hex),
+    div maps onto the L2 pyramid space (order p-1, or p for RT).
+  */
+  template<typename Tx, typename TFA>  
+  void HDivHighOrderFE_Shape<ET_PYRAMID> :: T_CalcShape (TIP<3,Tx> ip, TFA & shape) const
+  {
+    Tx x = ip.x, y = ip.y, z = ip.z;
+    z.Value() = z.Value()*(1-1e-12);
+
+    Tx lam = 1-z;
+    Tx xt = x/lam;
+    Tx yt = y/lam;
+
+    Tx sigma2d[4]  = { (1-xt)+(1-yt), xt+(1-yt), xt+yt, (1-xt)+yt };
+    Tx lambda2d[4] = { (1-xt)*(1-yt), xt*(1-yt), xt*yt, (1-xt)*yt };
+
+    Tx lampow[20];   // lam^k
+    lampow[0] = Tx(1.0);
+    for (int k = 1; k < 20; k++) lampow[k] = lampow[k-1]*lam;
+
+    int p = order_inner[0];
+    int pd = RT ? p : p-1;     // order of divergence space
+    
+    size_t ii = 5;
+    if (only_ho_div) ii = 0;
+
+    ArrayMem<Tx,20> Lxi(order+3), Leta(order+3), Pxi(order+3), Peta(order+3);
+    IntegratedLegendrePolynomial::Eval (order+2, 2*xt-1, Lxi);
+    IntegratedLegendrePolynomial::Eval (order+2, 2*yt-1, Leta);
+    LegendrePolynomial::Eval (order+2, 2*xt-1, Pxi);
+    LegendrePolynomial::Eval (order+2, 2*yt-1, Peta);
+    
+    if (!only_ho_div)
+      {
+        const FACE * faces = ElementTopology::GetFaces (ET_PYRAMID).Data();
+
+        // trig faces
+        for (int i = 0; i < 4; i++)
+          {
+            int pf = order_facet[i][0];
+            int f0 = faces[i][0], f1 = faces[i][1];
+            
+            Tx L = lambda2d[f0] + lambda2d[f1];    // 1 on the face, 0 on the opposite trig face
+            Tx bary[5];
+            bary[f0] = (sigma2d[f0]-L)*lam;
+            bary[f1] = (sigma2d[f1]-L)*lam;
+            bary[4] = z;
+            
+            // sort vertices, first edge opposite minimal vertex
+            int fav[3] = { f0, f1, 4 };
+            double sgn = 1;
+            if(vnums[fav[0]] > vnums[fav[1]]) { swap(fav[0],fav[1]); sgn = -sgn; }
+            if(vnums[fav[1]] > vnums[fav[2]]) { swap(fav[1],fav[2]); sgn = -sgn; }
+            if(vnums[fav[0]] > vnums[fav[1]]) { swap(fav[0],fav[1]); sgn = -sgn; }
+
+            Tx ba = bary[fav[0]], bb = bary[fav[1]], bc = bary[fav[2]];
+
+            // RT_0:   sgn * ( L n_i - z/2 (xt, yt, -1) ),  n_i outward direction of the base edge 
+            // in hex coordinates: 
+            Tx ha(0.0), hb(0.0);
+            switch (i)
+              {
+              case 0: hb = -L*lam; break;
+              case 1: ha =  L*lam; break;
+              case 2: hb =  L*lam; break;
+              case 3: ha = -L*lam; break;
+              }
+            shape[i] = aDvDw_bDwDu_cDuDv (sgn*ha, sgn*hb, sgn*0.5*z*lam*lam, xt, yt, z);
+
+            if (pf < 1) continue;
+
+            // same as tet, with linear extension of the face barycentrics, times L
+            Tx xi = bb-ba;
+            Tx sum = bb+ba;
+            Tx bub = bb*ba;
+            Tx eta = bc;
+
+            // Typ 1
+            IntLegNoBubble::
+              EvalScaledMult (pf-1, xi, sum, bub, 
+                              SBLambda([&](int k, Tx polk) LAMBDA_INLINE
+                                       {
+                                         IntegratedJacobiPolynomialAlpha jac(2*k+3);
+                                         jac.EvalMult(pf-k-1, eta-sum, eta, 
+                                                      SBLambda ([&](int j, Tx val) LAMBDA_INLINE
+                                                                {
+                                                                  shape[ii++] = Du_Cross_Dv (val, L*polk);
+                                                                }));
+                                       }));
+            // Typ 2
+            IntegratedJacobiPolynomialAlpha jac(3);
+            jac.EvalMult(pf-1, eta-sum, eta, 
+                         SBLambda ([&](int j, Tx val) LAMBDA_INLINE
+                                   {
+                                     shape[ii++] = curl_uDvw_minus_Duvw (ba, bb, L*val);
+                                   }));
+          }
+
+        // quad face, same as hex, with lam_f replaced by powers of lam
+        {
+          IVec<2> pf = order_facet[4];
+          IVec<4> f = GetFaceSort (4, vnums);	  
+          Tx xi  = sigma2d[f[0]]-sigma2d[f[1]];
+          Tx eta = sigma2d[f[0]]-sigma2d[f[3]];
+
+          shape[4] = wDu_Cross_Dv (eta, xi, -0.25*lampow[3]);
+
+          ArrayMem<Tx, 20> L_xi(order+2), L_eta(order+2);
+          IntegratedLegendrePolynomial::Eval (pf[0]+1, xi, L_xi);
+          IntegratedLegendrePolynomial::Eval (pf[1]+1, eta, L_eta);
+
+          for (int k = 0; k < pf[0]; k++)
+            for (int l = 0; l < pf[1]; l++, ii++)
+              shape[ii] = curl_uDvw_minus_Duvw (L_xi[k+2], L_eta[l+2], -lampow[max2(k,l)+3]);
+          
+          for (int k = 0; k < pf[0]; k++)
+            shape[ii++] = Du_Cross_Dv (L_xi[k+2]*lampow[k+3], eta);
+          
+          for (int k = 0; k < pf[1]; k++)
+            shape[ii++] = Du_Cross_Dv (L_eta[k+2]*lampow[k+3], xi);
+        }
+
+        // inner, div-free
+        if (p >= 1)
+          {
+            // curl ( lam^c grad (Lxi Leta) )
+            for (int r = 0; r < p; r++)
+              for (int s = 0; s < p; s++)
+                shape[ii++] = Du_Cross_Dv (lampow[max2(r,s)+3], Lxi[r+2]*Leta[s+2]);
+
+            // curl ( z lam^c P_A(xt) L_{b+2}(yt) grad xt ),  and symmetric
+            for (int c = 2; c <= p+1; c++)
+              for (int b = 0; b <= c-2; b++)
+                for (int a = 0; a <= c-2; a++)
+                  if (b <= c-3 || a == 0)
+                    {
+                      shape[ii++] = Du_Cross_Dv (z*lampow[c]*Pxi[a]*Leta[b+2], xt);
+                      shape[ii++] = Du_Cross_Dv (z*lampow[c]*Peta[a]*Lxi[b+2], yt);
+                    }
+          }
+      }
+
+    // inner, non-div-free: divergence spans L2 pyramid space of order pd
+    if (!ho_div_free && pd >= 1)
+      {
+        // base trace P_a(xt) P_b(yt), b >= 1, compensated by curl( P_a L_{b+1} lam^(M+2) grad xt)
+        for (int a = 0; a <= pd; a++)
+          for (int b = 1; b <= pd; b++)
+            {
+              int M = max2(a,b);
+              shape[ii++] = aDvDw_bDwDu_cDuDv (Tx(0.0), (M+2)*Pxi[a]*Leta[b+1]*lampow[M+1],
+                                               2*z*lampow[M+2]*Pxi[a]*Peta[b], xt, yt, z);
+            }
+        // base trace P_a(xt), a >= 1
+        for (int a = 1; a <= pd; a++)
+          shape[ii++] = aDvDw_bDwDu_cDuDv ((a+2)*Lxi[a+1]*lampow[a+1], Tx(0.0),
+                                           2*z*lampow[a+2]*Pxi[a], xt, yt, z);
+        // zero base trace
+        for (int a = 0; a <= pd; a++)
+          for (int b = 0; b <= pd; b++)
+            {
+              int M = max2(a,b);
+              for (int m = 0; m < pd-M; m++)
+                shape[ii++] = wDu_Cross_Dv (xt, yt, Pxi[a]*Peta[b]*z*lampow[M+3+m]);
+            }
+      }
+    
+    if (ii != ndof) cout << "hdiv-pyramid: dofs missing, ndof = " << ndof << ", ii = " << ii << endl;
+  }
 
   template<typename Tx, typename TFA>  
   void HDivHighOrderFE_Shape<ET_HEX> :: T_CalcShape (TIP<3,Tx> ip, TFA & shape) const

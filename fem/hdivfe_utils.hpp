@@ -212,6 +212,19 @@ namespace ngfem
   */
 
 
+
+  // Piola-type shape:  a Dv x Dw + b Dw x Du + c Du x Dv
+  // (used for pyramids with (u,v,w) = (xt, yt, z), i.e. Piola-transform of (a,b,c) from the collapsed hex)
+  template <int DIM, typename SCAL>
+  class aDvDw_bDwDu_cDuDv
+  {
+  public:
+    const AutoDiff<DIM,SCAL> a, b, c, u, v, w;
+    aDvDw_bDwDu_cDuDv (const AutoDiff<DIM,SCAL> aa, const AutoDiff<DIM,SCAL> ab, const AutoDiff<DIM,SCAL> ac,
+                       const AutoDiff<DIM,SCAL> au, const AutoDiff<DIM,SCAL> av, const AutoDiff<DIM,SCAL> aw)
+      : a(aa), b(ab), c(ac), u(au), v(av), w(aw) { ; }
+  };
+
 #ifdef OLDTHDIV2SHAPE
   template <int DIM, typename SCAL = double> class THDiv2Shape
   {
@@ -510,6 +523,18 @@ namespace ngfem
     return data;
   }
 
+  template <typename SCAL>
+  INLINE auto HDiv2ShapeNew (const aDvDw_bDwDu_cDuDv<3,SCAL> & s)
+  {
+    AutoDiff<3,SCAL> p1 = Cross (s.v, s.w);
+    AutoDiff<3,SCAL> p2 = Cross (s.w, s.u);
+    AutoDiff<3,SCAL> p3 = Cross (s.u, s.v);
+    Vec<3,SCAL> data;
+    for (int i = 0; i < 3; i++)
+      data[i] = s.a.Value()*p1.DValue(i) + s.b.Value()*p2.DValue(i) + s.c.Value()*p3.DValue(i);
+    return data;
+  }
+
 
   //////////////////////////
 
@@ -639,6 +664,11 @@ namespace ngfem
     INLINE THDiv2DivShape (const curl_uDvw_minus_Duvw<3,SCAL> & uvw) 
     { 
       data = SCAL(0.0);
+    }
+
+    INLINE THDiv2DivShape (const aDvDw_bDwDu_cDuDv<3,SCAL> & s)
+    {
+      data = Dot (s.a, Cross (s.v, s.w)) + Dot (s.b, Cross (s.w, s.u)) + Dot (s.c, Cross (s.u, s.v));
     }
 
     INLINE operator SCAL () const { return data; }

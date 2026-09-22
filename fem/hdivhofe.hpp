@@ -492,6 +492,7 @@ namespace ngfem
   HDIVHOFE_EXTERN template class T_HDivFiniteElement<HDivHighOrderFE_Shape<ET_TET>, ET_TET>;
   HDIVHOFE_EXTERN template class T_HDivFiniteElement<HDivHighOrderFE_Shape<ET_PRISM>, ET_PRISM>;
   HDIVHOFE_EXTERN template class T_HDivFiniteElement<HDivHighOrderFE_Shape<ET_HEX>, ET_HEX>;
+  HDIVHOFE_EXTERN template class T_HDivFiniteElement<HDivHighOrderFE_Shape<ET_PYRAMID>, ET_PYRAMID>;
 }
 
 #endif

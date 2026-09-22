@@ -435,6 +435,18 @@ namespace ngfem
 
 
 
+  // inner dofs of HDiv pyramid: (div-free, non-div-free)
+  inline IVec<2> HDivPyramidInnerDofs (int p, bool RT)
+  {
+    int ndivfree = 0, nnondivfree = 0;
+    if (p >= 1)
+      ndivfree = p*p + 2*( (p-1)*p*(p+1)/3 + p );
+    int pd = RT ? p : p-1;
+    if (pd >= 1)
+      nnondivfree = (pd+1)*(pd+2)*(2*pd+3)/6 - 1;
+    return IVec<2> (ndivfree, nnondivfree);
+  }
+
   template <ELEMENT_TYPE ET>
   void HDivHighOrderFE<ET> :: 
   ComputeNDof()
@@ -514,7 +526,8 @@ namespace ngfem
                 ndof = p*(p+1)*(p-1)/6 + p*(p-1)/2 + p-1;
               break;
             case ET_PYRAMID:
-              throw Exception("HDiv-pyramids not implemented");
+              ndof = HDivPyramidInnerDofs(p, RT)[1];
+              break;
             case ET_PRISM:
               if (order_inner[0]>0 )
                 ndof = (p+1)*(p+2)*(pz+1)/2 - 1;
@@ -559,7 +572,12 @@ namespace ngfem
               break;
 
             case ET_PYRAMID:
-              throw Exception("HDiv-pyramids not implemented");
+              {
+                IVec<2> ni = HDivPyramidInnerDofs(p, RT);
+                ndof += ni[0];
+                if (!ho_div_free) ndof += ni[1];
+                break;
+              }
 
             case ET_PRISM:
               // SZ: ATTENTION PRISM up to now only using for order_inner[0] !!  
@@ -596,6 +614,7 @@ namespace ngfem
         if (pi > order) order = pi;
 
 	if (ET != ET_TET) order++;
+        if (ET == ET_PYRAMID) order++;
 	
 	if(RT) order ++;
       }
@@ -712,7 +731,12 @@ namespace ngfem
               break;
               
             case ET_PYRAMID:
-              throw Exception("HDiv-pyramids not implemented");
+              {
+                IVec<2> ni = HDivPyramidInnerDofs(p, RT);
+                nc += ni[0];
+                if (!ho_div_free) nc += ni[1];
+                break;
+              }
 
             case ET_PRISM:
               // SZ: ATTENTION PRISM up to now only using for order_inner[0] !!  
