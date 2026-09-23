@@ -672,6 +672,7 @@ namespace ngcomp
             }
         }
 
+      pre = nullptr;
       pre = make_shared<BDDCMatrix<SCAL,TV>>(bfa, freedofs, flags, inversetype, coarsetype, block, hypre);
       pre -> SetHypre (hypre);
     }

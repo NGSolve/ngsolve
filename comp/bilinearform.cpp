@@ -1254,6 +1254,10 @@ namespace ngcomp
   {
     if (eliminate_internal && keep_internal)
       {
+        harmonicexttrans = nullptr;
+        harmonicext = nullptr;
+        innersolve = nullptr;
+        innermatrix = nullptr;
         VorB vb = VOL;
         if (!VB_parts[VOL].Size()) vb = BND;
         
@@ -6495,6 +6499,11 @@ namespace ngcomp
     if (this->mats.Size() == this->ma->GetNLevels())
       return;
 
+    mymatrix = nullptr;
+    if (!this->multilevel || this->low_order_bilinear_form)
+      for (int i = 0; i < this->mats.Size(); i++)
+        this->mats[i].reset();
+
     MatrixGraph graph = this->GetGraph (this->ma->GetNLevels()-1, false);
 
     auto spmat = make_shared<SparseMatrix<TM,TV,TV>> (std::move(graph));
@@ -6510,10 +6519,6 @@ namespace ngcomp
 
     this->mats.SetSize(this->ma->GetNLevels());
     this->mats.Last() = mat;
-
-    if (!this->multilevel || this->low_order_bilinear_form)
-      for (int i = 0; i < this->mats.Size()-1; i++)
-        this->mats[i].reset();
 
     this->AllocateInternalMatrices();
   }
@@ -6655,6 +6660,11 @@ namespace ngcomp
     if (this->mats.Size() == this->ma->GetNLevels())
       return;
 
+    mymatrix = nullptr;
+    if (!this->multilevel || this->low_order_bilinear_form)
+      for (int i = 0; i < this->mats.Size(); i++)
+        this->mats[i].reset();
+
     MatrixGraph graph = this->GetGraph (this->ma->GetNLevels()-1, true);
 
     auto spmat = make_shared<SparseMatrixSymmetric<TM,TV>> (std::move(graph));
@@ -6671,10 +6681,6 @@ namespace ngcomp
     this->mats.Append (mat);
 
     // delete graph;
-
-    if (!this->multilevel || this->low_order_bilinear_form)
-      for (int i = 0; i < this->mats.Size()-1; i++)
-        this->mats[i].reset();
 
     this->AllocateInternalMatrices();    
   }
@@ -6798,6 +6804,12 @@ namespace ngcomp
     if (this->mats.Size() == this->ma->GetNLevels())
       return;
 
+    // free old matrices before building the new graph
+    mymatrix = nullptr;
+    if (!this->multilevel || this->low_order_bilinear_form)
+      for (int i = 0; i < this->mats.Size(); i++)
+        this->mats[i].reset();
+
     MatrixGraph graph = this->GetGraph (this->ma->GetNLevels()-1, false);
 
     auto spmat = make_shared<SparseBlockMatrix<TSCAL>>
@@ -6814,10 +6826,6 @@ namespace ngcomp
 
     this->mats.SetSize(this->ma->GetNLevels());
     this->mats.Last() = mat;
-
-    if (!this->multilevel || this->low_order_bilinear_form)
-      for (int i = 0; i < this->mats.Size()-1; i++)
-        this->mats[i].reset();
 
     this->AllocateInternalMatrices();
   }
@@ -6948,6 +6956,11 @@ namespace ngcomp
     if (this->mats.Size() == this->ma->GetNLevels())
       return;
 
+    mymatrix = nullptr;
+    if (!this->multilevel || this->low_order_bilinear_form)
+      for (int i = 0; i < this->mats.Size(); i++)
+        this->mats[i].reset();
+
     size_t ndof = this->fespace->GetNDof();
 
     mymatrix = make_shared<DiagonalMatrix<TM>> (ndof);
@@ -6957,10 +6970,6 @@ namespace ngcomp
       mat = make_shared<ParallelMatrix> (mat, this->GetTrialSpace()->GetParallelDofs(),
                                          this->GetTestSpace()->GetParallelDofs());
     this->mats.Append (mat);
-    
-    if (!this->multilevel || this->low_order_bilinear_form)
-      for (int i = 0; i < this->mats.Size()-1; i++)
-        this->mats[i].reset();
   }
 
   /*

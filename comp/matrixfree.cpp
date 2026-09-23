@@ -1631,6 +1631,9 @@ namespace ngcomp
 
   void BilinearForm :: AssembleBDB (LocalHeap & lh, bool linear)
   {
+    if (mats.Size() == ma->GetNLevels())
+      mats.Last() = nullptr;
+
     if (auto mf = matfree_opts)
       {
         if (mf->fused)

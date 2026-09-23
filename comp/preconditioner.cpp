@@ -673,6 +673,8 @@ namespace ngcomp
           bfa->GetFESpace()->GetFreeDofs (bfa->UsesEliminateInternal());
         */
         shared_ptr<BitArray> freedofs = this->GetFreeDofs (bfa->UsesEliminateInternal());
+        have_sparse_fact = nullptr;
+        inverse = nullptr;
         inverse = bfa->GetMatrix().InverseMatrix(freedofs);
       }
     catch (exception & e)
@@ -752,6 +754,7 @@ namespace ngcomp
   {
       cout << IM(3) << "Update Local Preconditioner" << flush;
       timestamp = bfa->GetTimeStamp();
+      jacobi = nullptr;
 
       if (flags.StringFlagDefined("blocktype") || flags.StringListFlagDefined("blocktype"))
         {
