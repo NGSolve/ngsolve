@@ -536,6 +536,28 @@ namespace ngsbem
   
   
 
+  inline shared_ptr<DifferentialOperator>
+  GetEvaluatorForVB (const ProxyFunction & proxy, VorB vb)
+  {
+    auto ev = proxy.Evaluator();
+    if (ev && ev->SupportsVB(vb)) return ev;
+    if (vb == BND)
+      if (auto tev = proxy.TraceEvaluator(); tev && tev->SupportsVB(vb)) return tev;
+    if (vb == BBND)
+      {
+        if (auto ttev = proxy.TTraceEvaluator(); ttev && ttev->SupportsVB(vb)) return ttev;
+        // no BBND path existed before, so fail loudly instead of returning an incompatible evaluator
+        throw Exception("BEM potential: trial function has no evaluator on curve elements (BBND); use a space with a curve trace such as HCurl or H1");
+      }
+    return ev;
+  }
+
+  inline shared_ptr<DifferentialOperator>
+  GetEvaluatorForVB (const shared_ptr<ProxyFunction> & proxy, VorB vb)
+  {
+    return GetEvaluatorForVB (*proxy, vb);
+  }
+
   inline Array < tuple <shared_ptr<ProxyFunction>, shared_ptr<CoefficientFunction>  >>
   CreateProxyLinearization (shared_ptr<CoefficientFunction> cf, bool trial, VorB vb)
   {
@@ -551,7 +573,7 @@ namespace ngsbem
       });
     
     for (auto proxy : proxies)
-      if (!proxy->Evaluator()->SupportsVB(vb))
+      if (!GetEvaluatorForVB(*proxy, vb)->SupportsVB(vb))
         throw Exception ("Proxy does not support requested integration domain");
 
     for (auto proxy : proxies)
@@ -603,7 +625,7 @@ namespace ngsbem
     // return proxylin[0];
     auto [proxy,factor] = proxylin[0];
 
-    auto diffopwith = make_shared<DifferentialOperatorWithFactor> (proxy->Evaluator(),
+    auto diffopwith = make_shared<DifferentialOperatorWithFactor> (GetEvaluatorForVB(proxy, vb),
                                                                    factor->Reshape(cf->Dimension(), proxy->Dimension()));
     
     return { make_shared<ProxyFunction> (proxy->GetFESpace(), proxy->IsTestFunction(), proxy->IsComplex(),
