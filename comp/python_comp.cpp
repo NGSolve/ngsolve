@@ -3636,6 +3636,7 @@ integrator : ngsolve.fem.LFI
       mat = amat->shared_from_this();
       
       py::gil_scoped_acquire agil;
+      premat = nullptr;
       // premat = py::cast<shared_ptr<BaseMatrix>> (creator(dummy_sp, freedofs, flags));
       premat = py::cast<shared_ptr<BaseMatrix>> (creator(mat, freedofs, flags));
     }
@@ -3648,6 +3649,7 @@ integrator : ngsolve.fem.LFI
       mat = bfa->GetMatrixPtr();
 
       py::gil_scoped_acquire agil;
+      premat = nullptr;
       premat = py::cast<shared_ptr<BaseMatrix>> (creator(mat, freedofs, flags));
     }
 

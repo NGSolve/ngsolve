@@ -496,6 +496,7 @@ namespace ngcomp
         static Timer t("MGPreconditioner::Update - fine precond"); RegionTimer reg(t);
         if (additional_dirichlet_boundaries.Size())
           flags.SetFlag ("additional_dirichlet_boundaries", std::any(additional_dirichlet_boundaries));
+        tlp = nullptr; 
         auto fine_smoother = make_shared<BlockSmoother> (*bfa->GetMeshAccess(), *bfa, flags);
         fine_smoother -> SetAdditionalDirichletBoundaries(additional_dirichlet_boundaries);
         tlp = make_shared<TwoLevelMatrix> (&bfa->GetMatrix(),
@@ -672,6 +673,8 @@ namespace ngcomp
           bfa->GetFESpace()->GetFreeDofs (bfa->UsesEliminateInternal());
         */
         shared_ptr<BitArray> freedofs = this->GetFreeDofs (bfa->UsesEliminateInternal());
+        have_sparse_fact = nullptr;
+        inverse = nullptr;
         inverse = bfa->GetMatrix().InverseMatrix(freedofs);
       }
     catch (exception & e)
@@ -751,6 +754,7 @@ namespace ngcomp
   {
       cout << IM(3) << "Update Local Preconditioner" << flush;
       timestamp = bfa->GetTimeStamp();
+      jacobi = nullptr;
 
       if (flags.StringFlagDefined("blocktype") || flags.StringListFlagDefined("blocktype"))
         {

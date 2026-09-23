@@ -99,6 +99,7 @@ namespace ngcomp
     virtual void InitLevel (shared_ptr<BitArray> _freedofs) override
     {
       freedofs = _freedofs;
+      mat = nullptr;
     }
 
     virtual void FinalizeLevel (const BaseMatrix * matrix) override;

@@ -41,7 +41,7 @@ namespace ngcomp
     static DocInfo GetDocu ();    
     
     void InitLevel(shared_ptr<BitArray> _freedofs) override
-    { freedofs = _freedofs; }
+    { freedofs = _freedofs; mat = nullptr; }
 
     void AddElementMatrix(FlatArray<int> dnums, FlatMatrix<double> elmat,
                           ElementId id, LocalHeap & lh) override
@@ -77,7 +77,7 @@ namespace ngcomp
                  const string& name = "A-Phi_HcurlAMG");
 
     void InitLevel(shared_ptr<BitArray> _freedofs) override
-    { freedofs = _freedofs; }
+    { freedofs = _freedofs; mat = nullptr; }
 
     void FinalizeLevel(const BaseMatrix* matrix) override;
     void Update() override {}

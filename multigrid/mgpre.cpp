@@ -160,6 +160,8 @@ namespace ngmg
 	      coarsegridpre->Update();
 	    else
 	      {
+                fact = nullptr;
+                coarsegridpre = nullptr;
 		if (!freedofs)
 		  coarsegridpre =
 		    dynamic_cast<const BaseSparseMatrix&> (biform->GetMatrix(0)) .InverseMatrix();
