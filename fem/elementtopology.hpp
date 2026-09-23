@@ -832,8 +832,11 @@ namespace ngfem
     }
     */
 
+    // Get*Sort deliberately not INLINE (always_inline): clang 21/22 miscompiles
+    // the returned IVec sort indices when inlined before SROA, see
+    // https://github.com/llvm/llvm-project/issues/222714
     template <typename TVN>
-    static INLINE IVec<2> GetEdgeSort (int i, const TVN & vnums);
+    static inline IVec<2> GetEdgeSort (int i, const TVN & vnums);
     /*
     {
       IVec<2> e = GetEdge (i);
@@ -902,7 +905,7 @@ namespace ngfem
     }
 
     template <typename TVN>
-    static INLINE IVec<2> GetEdgeSort (int i, const TVN & vnums)
+    static inline IVec<2> GetEdgeSort (int i, const TVN & vnums)
     {
       IVec<2> e = GetEdge (i);
       if (vnums[e[0]] > vnums[e[1]]) Swap (e[0], e[1]);
@@ -916,7 +919,7 @@ namespace ngfem
     }
 
     template <typename TVN>
-    static INLINE IVec<4> GetFaceSort (int /*  i */ , const TVN & vnums)
+    static inline IVec<4> GetFaceSort (int /*  i */ , const TVN & vnums)
     {
       return GetFace(0);
     }
@@ -974,7 +977,7 @@ namespace ngfem
     }
 
     template <typename TVN>
-    static INLINE IVec<2> GetEdgeSort (int i, const TVN & vnums)
+    static inline IVec<2> GetEdgeSort (int i, const TVN & vnums)
     {
       IVec<2> e = GetEdge (i);
       if (vnums[e[0]] > vnums[e[1]]) Swap (e[0], e[1]);
@@ -989,7 +992,7 @@ namespace ngfem
     }
 
     template <typename TVN>
-    static INLINE IVec<4> GetFaceSort (int /*  i */ , const TVN & vnums)
+    static inline IVec<4> GetFaceSort (int /*  i */ , const TVN & vnums)
     {
       IVec<4> f = GetFace (0);
       if(vnums[f[0]] > vnums[f[1]]) Swap(f[0],f[1]); 
@@ -1067,7 +1070,7 @@ namespace ngfem
     }
 
     template <typename TVN>
-    static INLINE IVec<2> GetEdgeSort (int i, const TVN & vnums)
+    static inline IVec<2> GetEdgeSort (int i, const TVN & vnums)
     {
       IVec<2> e = GetEdge (i);
       if (vnums[e[0]] > vnums[e[1]]) swap (e[0], e[1]);
@@ -1112,7 +1115,7 @@ namespace ngfem
     }
 
     template <typename TVN>
-    static INLINE IVec<4> GetFaceSort (int /*  i */ , const TVN & vnums)
+    static inline IVec<4> GetFaceSort (int /*  i */ , const TVN & vnums)
     {
       IVec<4> f = GetFace (0);
       
@@ -1212,7 +1215,7 @@ namespace ngfem
     }
 
     template <typename TVN>
-    static INLINE IVec<2> GetEdgeSort (int i, const TVN & vnums)
+    static inline IVec<2> GetEdgeSort (int i, const TVN & vnums)
     {
       IVec<2> e = GetEdge (i);
       if (vnums[e[0]] > vnums[e[1]]) swap (e[0], e[1]);
@@ -1232,7 +1235,7 @@ namespace ngfem
     }
 
     template <typename TVN>
-    static INLINE IVec<4> GetFaceSort (int i, const TVN & vnums)
+    static inline IVec<4> GetFaceSort (int i, const TVN & vnums)
     {
       IVec<4> f = GetFace (i);
       if(vnums[f[0]] > vnums[f[1]]) swap(f[0],f[1]); 
@@ -1319,7 +1322,7 @@ namespace ngfem
     }
 
     template <typename TVN>
-    static INLINE IVec<2> GetEdgeSort (int i, const TVN & vnums)
+    static inline IVec<2> GetEdgeSort (int i, const TVN & vnums)
     {
       IVec<2> e = GetEdge (i);
       if (vnums[e[0]] > vnums[e[1]]) swap (e[0], e[1]);
@@ -1345,7 +1348,7 @@ namespace ngfem
     }
 
     template <typename TVN>
-    static INLINE IVec<4> GetFaceSort (int i, const TVN & vnums)
+    static inline IVec<4> GetFaceSort (int i, const TVN & vnums)
     {
       IVec<4> f = GetFace (i);
       if (i < 2)
@@ -1429,7 +1432,7 @@ namespace ngfem
     }
 
     template <typename TVN>
-    static INLINE IVec<2> GetEdgeSort (int i, const TVN & vnums)
+    static inline IVec<2> GetEdgeSort (int i, const TVN & vnums)
     {
       IVec<2> e = GetEdge (i);
       if (vnums[e[0]] > vnums[e[1]]) swap (e[0], e[1]);
@@ -1456,7 +1459,7 @@ namespace ngfem
     }
 
     template <typename TVN>
-    static INLINE IVec<4> GetFaceSort (int i, const TVN & vnums)
+    static inline IVec<4> GetFaceSort (int i, const TVN & vnums)
     {
       IVec<4> f = GetFace (i);
       if (i < 4)
@@ -1546,7 +1549,7 @@ namespace ngfem
     }
 
     template <typename TVN>
-    static INLINE IVec<2> GetEdgeSort (int i, const TVN & vnums)
+    static inline IVec<2> GetEdgeSort (int i, const TVN & vnums)
     {
       IVec<2> e = GetEdge (i);
       if (vnums[e[0]] > vnums[e[1]]) swap (e[0], e[1]);
@@ -1575,7 +1578,7 @@ namespace ngfem
 
     // TODO
     template <typename TVN>
-    static INLINE IVec<4> GetFaceSort (int i, const TVN & vnums)
+    static inline IVec<4> GetFaceSort (int i, const TVN & vnums)
     {
       IVec<4> f = GetFace (i);
       if (f[3] < 0)
