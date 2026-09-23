@@ -85,6 +85,7 @@ namespace ngsbem
         if (definedon && !(*definedon).Mask().Test(mesh->GetElIndex(ei))) continue;
 
         const FiniteElement &fel = space->GetFE(ei, lh);
+        if (fel.GetNDof() == 0) continue;   // no dofs on this element (e.g. L2 on curves): nothing to integrate
         const ElementTransformation &trafo = mesh->GetTrafo(ei, lh);
 
         Array<DofId> dnums(fel.GetNDof(), lh);
@@ -391,6 +392,42 @@ namespace ngsbem
           }
         return IntegrationRule(et, intorder);
       }
+    if (et == ET_SEGM)
+      {
+        // curve source. Far away: plain Gauss rule. Otherwise: project x onto the segment and use a
+        // sinh-graded composite Gauss rule s = rho*sinh(u), which turns the 1/r and 1/r^2 peaks at
+        // distance rho into smooth functions of u (panels of unit length in u, ~5 points each).
+        MappedIntegrationPoint<1,3> mipmid(IntegrationPoint(0.5, 0, 0), trafo);
+        double J = L2Norm(mipmid.GetJacobian());
+        if (!(J > 0) || L2Norm(x - mipmid.GetPoint()) > 10*J)    // degenerate segment, or far away
+          return IntegrationRule(et, intorder);
+
+        // foot point: Gauss-Newton for (y(t)-x).y'(t) = 0, clamped to [0,1]; one step is exact for straight segments
+        double t0 = 0.5;
+        for (int it = 0; it < 5; it++)
+          {
+            MappedIntegrationPoint<1,3> mipt(IntegrationPoint(t0, 0, 0), trafo);
+            Vec<3> dy = mipt.GetJacobian().Col(0);
+            if (L2Norm2(dy) < 1e-30) break;
+            t0 -= InnerProduct(Vec<3>(mipt.GetPoint() - x), dy) / L2Norm2(dy);
+            t0 = std::min(1.0, std::max(0.0, t0));
+          }
+        MappedIntegrationPoint<1,3> mip0(IntegrationPoint(t0, 0, 0), trafo);
+        double rho = std::max(L2Norm(x - mip0.GetPoint()), 1e-10*J);   // distance to the curve, floored for x on the wire
+
+        double umin = -asinh(t0*J/rho), umax = asinh((1-t0)*J/rho);    // u-range mapping onto t in [0,1]
+        int npan = int(ceil(umax - umin));
+        double du = (umax - umin) / npan;
+        IntegrationRule irgauss(ET_SEGM, std::max(intorder, 9));
+        IntegrationRule ir;
+        for (int k = 0; k < npan; k++)
+          for (auto & ip : irgauss)
+            {
+              double u = umin + (k + ip(0)) * du;
+              ir.AddIntegrationPoint (IntegrationPoint(t0 + rho*sinh(u)/J, 0, 0, ip.Weight() * du * rho*cosh(u)/J));   // dt = ds/J
+            }
+        return ir;
+      }
     if (et != ET_TRIG && et != ET_QUAD)
       return IntegrationRule(et, intorder);
 
@@ -438,26 +475,23 @@ namespace ngsbem
   }
 
 
+  template <int DIMS>
+  bool IsNearElementCenter (Vec<3> x, const ElementTransformation & trafo, const IntegrationPoint & center)
+  {
+    MappedIntegrationPoint<DIMS,3> mip(center, trafo);
+    return L2Norm(x-mip.GetPoint()) < L2Norm(mip.GetJacobian());
+  }
+
   bool IsPotentialNearfieldSourceElement(Vec<3> x, const ElementTransformation & trafo)
   {
-    auto et = trafo.GetElementType();
-    if (et == ET_TET)
+    switch (trafo.GetElementType())
       {
-        IntegrationPoint ip(1./4, 1./4, 1./4);
-        MappedIntegrationPoint<3,3> mip(ip, trafo);
-        double elsize = L2Norm(mip.GetJacobian());
-        double dist = L2Norm(x-mip.GetPoint());
-        return dist < elsize;
+      case ET_SEGM: return IsNearElementCenter<1> (x, trafo, IntegrationPoint(1./2, 0, 0));
+      case ET_TRIG: return IsNearElementCenter<2> (x, trafo, IntegrationPoint(1./3, 1./3));
+      case ET_QUAD: return IsNearElementCenter<2> (x, trafo, IntegrationPoint(1./2, 1./2));
+      case ET_TET:  return IsNearElementCenter<3> (x, trafo, IntegrationPoint(1./4, 1./4, 1./4));
+      default:      return false;
       }
-    if (et != ET_TRIG && et != ET_QUAD)
-      return false;
-
-    IntegrationPoint ip = et == ET_TRIG ?
-      IntegrationPoint(1./3, 1./3) : IntegrationPoint(1./2, 1./2);
-    MappedIntegrationPoint<2,3> mip(ip, trafo);
-    double elsize = L2Norm(mip.GetJacobian());
-    double dist = L2Norm(x-mip.GetPoint());
-    return dist < elsize;
   }
 
 
@@ -474,6 +508,7 @@ namespace ngsbem
     auto mesh = space->GetMeshAccess();
 
     const FiniteElement &fel = space->GetFE(ei, lh);
+    if (fel.GetNDof() == 0) return;   // no dofs on this element: nothing to integrate
     const ElementTransformation &trafo = mesh->GetTrafo(ei, lh);
 
     Array<DofId> dnums(fel.GetNDof(), lh);
@@ -518,6 +553,7 @@ namespace ngsbem
     auto mesh = space->GetMeshAccess();
 
     const FiniteElement &fel = space->GetFE(ei, lh);
+    if (fel.GetNDof() == 0) return;   // no dofs on this element: nothing to correct
     const ElementTransformation &trafo = mesh->GetTrafo(ei, lh);
     auto et = trafo.GetElementType();
 
@@ -789,6 +825,7 @@ namespace ngsbem
           if (definedon &&  !(*definedon).Mask().Test(mesh->GetElIndex(ei))) continue;
 
           const FiniteElement &fel = space->GetFE(ei, lh);
+          if (fel.GetNDof() == 0) continue;   // no dofs on this element (e.g. L2 on curves): nothing to integrate
           const ElementTransformation &trafo = mesh->GetTrafo(ei, lh);
 
           Array<DofId> dnums(fel.GetNDof(), lh);

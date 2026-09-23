@@ -54,6 +54,14 @@ namespace
                                                                      std::get<Complex>(kappa));
   }
 
+  inline optional<Region> DefinedOnRegion (const shared_ptr<MeshAccess> & ma, const DifferentialSymbol & dx)
+  {
+    if (!dx.definedon) return nullopt;
+    if (auto * pat = std::get_if<string>(&*dx.definedon))
+      return Region(ma, dx.vb, *pat);
+    return Region(ma, dx.vb, std::get<BitArray>(*dx.definedon));   // Region(ma, vb, const BitArray&), comp/meshaccess.hpp:1013
+  }
+
   inline py::dict FMMInfoToDict (const FMMOperatorInfo & info)
   {
     double abs_kappa = std::visit([](auto k) { return std::abs(k); }, info.kappa);
@@ -592,24 +600,22 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     const bool fp32 = flags.GetDefineFlag("fp32");
     // cout << ioflags << endl;
     
-    optional<Region> definedon;
-    if (igl->dx.definedon)
-      definedon = Region(fes->GetMeshAccess(), igl->dx.vb, get<1> (*(igl->dx.definedon)));
+    optional<Region> definedon = DefinedOnRegion(fes->GetMeshAccess(), igl->dx);
 
     switch (proxy->Dimension())
       {
       case 1:
         if (fes->IsComplex())
           return MakePotentialWithPrecision<LaplaceSLKernel<3,1,Complex>,LaplaceSLKernel<3,1,Complex,Complex32>>
-            (proxy, igl->dx.vb, definedon, proxy->Evaluator(), ioparams, fesorder+igl->dx.bonus_intorder, fp32);
+            (proxy, igl->dx.vb, definedon, GetEvaluatorForVB(proxy, igl->dx.vb), ioparams, fesorder+igl->dx.bonus_intorder, fp32);
         return MakePotentialWithPrecision<LaplaceSLKernel<3>,LaplaceSLKernel<3,1,double,float>>
-          (proxy, igl->dx.vb, definedon, proxy->Evaluator(), ioparams, fesorder+igl->dx.bonus_intorder, fp32);
+          (proxy, igl->dx.vb, definedon, GetEvaluatorForVB(proxy, igl->dx.vb), ioparams, fesorder+igl->dx.bonus_intorder, fp32);
       case 3:
         if (fes->IsComplex())
           return MakePotentialWithPrecision<LaplaceSLKernel<3,3,Complex>,LaplaceSLKernel<3,3,Complex,Complex32>>
-            (proxy, igl->dx.vb, definedon, proxy->Evaluator(), ioparams, fesorder+igl->dx.bonus_intorder, fp32);
+            (proxy, igl->dx.vb, definedon, GetEvaluatorForVB(proxy, igl->dx.vb), ioparams, fesorder+igl->dx.bonus_intorder, fp32);
         return MakePotentialWithPrecision<LaplaceSLKernel<3,3>,LaplaceSLKernel<3,3,double,float>>
-          (proxy, igl->dx.vb, definedon, proxy->Evaluator(), ioparams, fesorder+igl->dx.bonus_intorder, fp32);
+          (proxy, igl->dx.vb, definedon, GetEvaluatorForVB(proxy, igl->dx.vb), ioparams, fesorder+igl->dx.bonus_intorder, fp32);
       default:
         ;
       }
@@ -638,9 +644,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     IntOp_Parameters ioparams(flags);
     const bool fp32 = flags.GetDefineFlag("fp32");
     
-    optional<Region> definedon;
-    if (igl->dx.definedon)
-      definedon = Region(fes->GetMeshAccess(), igl->dx.vb, get<1> (*(igl->dx.definedon)));
+    optional<Region> definedon = DefinedOnRegion(fes->GetMeshAccess(), igl->dx);
     if (proxy->Dimension() == 1)
       {
         if (fes->IsComplex())
@@ -685,16 +689,14 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     IntOp_Parameters ioparams(flags);
     const bool fp32 = flags.GetDefineFlag("fp32");
     
-    optional<Region> definedon;
-    if (igl->dx.definedon)
-      definedon = Region(fes->GetMeshAccess(), igl->dx.vb, get<1> (*(igl->dx.definedon)));
+    optional<Region> definedon = DefinedOnRegion(fes->GetMeshAccess(), igl->dx);
 
     if (proxy->Dimension() == 3)
       return MakePotentialFromVariantKappa<HelmholtzSLKernel<3,3,double>,HelmholtzSLKernel<3,3,Complex>,HelmholtzSLKernel<3,3,double,Complex32>,HelmholtzSLKernel<3,3,Complex,Complex32>>
-        (proxy, igl->dx.vb, definedon, proxy->Evaluator(), ioparams, fesorder+igl->dx.bonus_intorder, kappa, fp32);
+        (proxy, igl->dx.vb, definedon, GetEvaluatorForVB(proxy, igl->dx.vb), ioparams, fesorder+igl->dx.bonus_intorder, kappa, fp32);
     else if (proxy->Dimension() == 1)
       return MakePotentialFromVariantKappa<HelmholtzSLKernel<3,1,double>,HelmholtzSLKernel<3,1,Complex>,HelmholtzSLKernel<3,1,double,Complex32>,HelmholtzSLKernel<3,1,Complex,Complex32>>
-        (proxy, igl->dx.vb, definedon, proxy->Evaluator(), ioparams, fesorder+igl->dx.bonus_intorder, kappa, fp32);
+        (proxy, igl->dx.vb, definedon, GetEvaluatorForVB(proxy, igl->dx.vb), ioparams, fesorder+igl->dx.bonus_intorder, kappa, fp32);
     else
       throw Exception("only dim=1 and dim=3 HelmholtzSL are supported");
   }, py::arg("potential"), py::arg("kappa"), docu_string(bem_operator_kwargs_doc));
@@ -723,9 +725,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     auto flags = CreateFlagsFromKwArgs(kwargs);
     IntOp_Parameters ioparams(flags);
     const bool fp32 = flags.GetDefineFlag("fp32");
-    optional<Region> definedon;
-    if (igl->dx.definedon)
-      definedon = Region(fes->GetMeshAccess(), igl->dx.vb, get<1> (*(igl->dx.definedon)));
+    optional<Region> definedon = DefinedOnRegion(fes->GetMeshAccess(), igl->dx);
 
     if (proxy->Dimension() == 3)
       return MakePotentialFromVariantKappa<HelmholtzDLKernel<3,3,double>,HelmholtzDLKernel<3,3,Complex>,HelmholtzDLKernel<3,3,double,Complex32>,HelmholtzDLKernel<3,3,Complex,Complex32>>
@@ -761,9 +761,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     IntOp_Parameters ioparams(flags);
     const bool fp32 = flags.GetDefineFlag("fp32");
     
-    optional<Region> definedon;
-    if (igl->dx.definedon)
-      definedon = Region(fes->GetMeshAccess(), igl->dx.vb, get<1> (*(igl->dx.definedon)));
+    optional<Region> definedon = DefinedOnRegion(fes->GetMeshAccess(), igl->dx);
 
     if (proxy->Dimension() == 1)
       return MakePotentialFromVariantKappa<CombinedFieldKernel<3,1,double>,CombinedFieldKernel<3,1,Complex>,CombinedFieldKernel<3,1,double,Complex32>,CombinedFieldKernel<3,1,Complex,Complex32>>
@@ -779,20 +777,18 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     auto igl = potential->icfs[0];
     // if (igl->dx.vb != BND) throw Exception("need boundary integral");
 
-    auto proxy = GetProxyWithFactor(igl->cf, true);
+    auto proxy = GetProxyWithFactor(igl->cf, true, igl->dx.vb);
     auto fes = proxy->GetFESpace();
 
     int fesorder = GetFESOrder (proxy);    
     auto flags = CreateFlagsFromKwArgs(kwargs);
     IntOp_Parameters ioparams(flags);
     const bool fp32 = flags.GetDefineFlag("fp32");
-    optional<Region> definedon;
-    if (igl->dx.definedon)
-      definedon = Region(fes->GetMeshAccess(), igl->dx.vb, get<1> (*(igl->dx.definedon)));
+    optional<Region> definedon = DefinedOnRegion(fes->GetMeshAccess(), igl->dx);
 
     if (proxy->Dimension() == 3)
       return MakePotentialFromVariantKappa<MaxwellDLKernel<3,double>,MaxwellDLKernel<3,Complex>,MaxwellDLKernel<3,double,Complex32>,MaxwellDLKernel<3,Complex,Complex32>>
-        (proxy, igl->dx.vb, definedon, proxy->Evaluator(), ioparams, fesorder+igl->dx.bonus_intorder, kappa, fp32);
+        (proxy, igl->dx.vb, definedon, GetEvaluatorForVB(proxy, igl->dx.vb), ioparams, fesorder+igl->dx.bonus_intorder, kappa, fp32);
     else
       throw Exception("only dim=3 MaxwellDL are supported");
   }, py::arg("potential"), py::arg("kappa"), docu_string(bem_operator_kwargs_doc));
@@ -822,9 +818,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     */
     int fesorder = GetFESOrder (proxy);
     
-    optional<Region> definedon;
-    if (igl->dx.definedon)
-      definedon = Region(fes->GetMeshAccess(), igl->dx.vb, get<1> (*(igl->dx.definedon)));
+    optional<Region> definedon = DefinedOnRegion(fes->GetMeshAccess(), igl->dx);
 
     if (proxy->Dimension() == 3)
       return MakePotentialWithPrecision<LameSLKernel<3>,LameSLKernel<3,float>>

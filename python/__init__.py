@@ -87,7 +87,7 @@ from .comp import VOL, BND, BBND, BBBND, COUPLING_TYPE, ElementId, \
     HCurlAMG, APhiHCurlAMG
 from .solve import Draw, \
     SetVisualization
-from .utils import x, y, z, dx, ds, grad, Grad, curl, div, Deviator, PyId, PyTrace, \
+from .utils import x, y, z, dx, ds, dl, grad, Grad, curl, div, Deviator, PyId, PyTrace, \
     PyDet, PyCross, PyCof, PyInv, PySym, PySkew, OuterProduct, PrivateSpace, Normalize, printonce
 
 from . import solvers
