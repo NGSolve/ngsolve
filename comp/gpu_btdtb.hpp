@@ -179,6 +179,10 @@ namespace ngcomp
         if (nip_rem)   // a 0-row slice cannot be addressed
           dbmaty_rem(j,STAR,STAR).Cols(0,locdofsy) = Trans(pmat->By(STAR,j,STAR).Cols(nip0,nip));
       }
+    // the remainder By product reads its 8-row tiles up to 7 rows past the
+    // filled rows, times zero: reused memory may hold NaN there
+    std::fill (dbmaty_rem.Data()+dbmaty_rem.GetTotalSize(),
+               buffer_bmaty.HostData()+TableSize(dimyref, RoundUp<8>(locdofsy)), REAL(0));
     int bmaty_rem_rows = dimyref*nip_pad;
 
     buffer_domain = device->template NewBuffer<int> (ne, MemType::Shared);
