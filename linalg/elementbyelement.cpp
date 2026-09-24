@@ -981,8 +981,15 @@ namespace ngla
     static Timer tcol("ConstantEBE mult coloring");
     static Timer tpmult("ConstantEBE mult parallel mult");
 
-    auto fx = x.FV<SCAL>();
-    auto fy = y.FV<SCAL>();
+    std::visit([&](auto vx, auto vy) {
+    typedef decltype(vx) TX;
+    typedef decltype(vy) TY;
+    if constexpr (!requires (TY & ey, TSCAL64 es, SCAL em, TX ex) { ey += es * (em * ex); })
+      throw Exception("ConstantEBE::MultAdd - illegal combination of scalar types");
+    else
+    {
+    auto fx = x.FV<TX>();
+    auto fy = y.FV<TY>();
 
     if (!disjoint_cols)
       {
@@ -1004,8 +1011,8 @@ namespace ngla
             (col.Size(), [&] (IntRange r)
              {
                constexpr size_t BS = 128;
-               Matrix<SCAL> hx(BS, matrix.Width());
-               Matrix<SCAL> hy(BS, matrix.Height());
+               Matrix<TX> hx(BS, matrix.Width());
+               Matrix<TY> hy(BS, matrix.Height());
                
                for (size_t bi = r.First(); bi < r.Next(); bi+= BS)
                  {
@@ -1046,7 +1053,7 @@ namespace ngla
              if (output_matrix_trans)
                {
                  constexpr size_t BS = 128;
-                 Matrix<SCAL> hx(BS, matrix.Width());
+                 Matrix<TX> hx(BS, matrix.Width());
 
                  auto hy = Trans(fy.AsMatrix(matrix.Height(), row_dnums.Size()));
                  for (size_t bi = r.First(); bi < r.Next(); bi+= BS)
@@ -1062,8 +1069,8 @@ namespace ngla
              else
                {
                  constexpr size_t BS = 128;
-                 Matrix<SCAL> hx(BS, matrix.Width());
-                 Matrix<SCAL> hy(BS, matrix.Height());
+                 Matrix<TX> hx(BS, matrix.Width());
+                 Matrix<TY> hy(BS, matrix.Height());
                  
                  for (size_t bi = r.First(); bi < r.Next(); bi+= BS)
                    {
@@ -1083,6 +1090,8 @@ namespace ngla
                }
            }, TasksPerThread(2));
       }
+    }
+    }, x.GetScalarType(), y.GetScalarType());
   }
 
   template <typename SCAL>    
