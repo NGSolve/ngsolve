@@ -984,9 +984,8 @@ namespace ngla
     std::visit([&](auto vx, auto vy) {
     typedef decltype(vx) TX;
     typedef decltype(vy) TY;
-    if constexpr (!requires (TY & ey, TSCAL64 es, SCAL em, TX ex) { ey += es * (em * ex); })
-      throw Exception("ConstantEBE::MultAdd - illegal combination of scalar types");
-    else
+    if constexpr (requires (TY & ey, TSCAL64 es, SCAL em, TX ex) { ey += es * (em * ex); } &&
+                  (is_same_v<TY,Complex> || (is_same_v<TX,SCAL> && is_same_v<TY,SCAL>)))
     {
     auto fx = x.FV<TX>();
     auto fy = y.FV<TY>();
@@ -1091,6 +1090,8 @@ namespace ngla
            }, TasksPerThread(2));
       }
     }
+    else
+      throw Exception("ConstantEBE::MultAdd - illegal combination of scalar types");
     }, x.GetScalarType(), y.GetScalarType());
   }
 
