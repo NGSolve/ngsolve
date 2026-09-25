@@ -238,6 +238,8 @@ namespace ngsbem
     // Nail A. Gumerov and Ramani Duraiswami book, formula (2.2.12)
     // add directional derivative divided by kappa to res, both multipoles need same scaling
     void DirectionalDiffAdd (Vec<3> d, SphericalHarmonics<entry_type> & res, real_type scale = 1) const;
+    // the same with the factors of the degree n+1 -> n terms (scale) and of the n -> n+1 terms (invscale) given
+    void DirectionalDiffAdd (Vec<3> d, SphericalHarmonics<entry_type> & res, real_type scale, real_type invscale) const;
 
   };
 
