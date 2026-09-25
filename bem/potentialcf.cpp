@@ -36,6 +36,35 @@ namespace ngsbem
   }
 
 
+  // x is near a source element if L2Norm(x-c) < r
+  template <int DIMS>
+  tuple<Vec<3>,double> NearElementBall (const ElementTransformation & trafo, const IntegrationPoint & center)
+  {
+    MappedIntegrationPoint<DIMS,3> mip(center, trafo);
+    return { mip.GetPoint(), L2Norm(mip.GetJacobian()) };
+  }
+
+  optional<tuple<Vec<3>,double>> PotentialNearfieldBall (const ElementTransformation & trafo)
+  {
+    switch (trafo.GetElementType())
+      {
+      case ET_SEGM: return NearElementBall<1> (trafo, IntegrationPoint(1./2, 0, 0));
+      case ET_TRIG: return NearElementBall<2> (trafo, IntegrationPoint(1./3, 1./3));
+      case ET_QUAD: return NearElementBall<2> (trafo, IntegrationPoint(1./2, 1./2));
+      case ET_TET:  return NearElementBall<3> (trafo, IntegrationPoint(1./4, 1./4, 1./4));
+      default:      return nullopt;
+      }
+  }
+
+  // the source elements with a near ball, as boxes slightly larger than the balls: the ones containing x include all
+  // elements x is near
+  struct PotentialNearSources
+  {
+    Array<size_t> elnr;
+    unique_ptr<netgen::BoxTree<3,int>> tree;
+  };
+
+
   template <typename TSCAL>
   void PotentialCF<TSCAL> ::
   BuildLocalExpansion(const Region & reg)
@@ -48,6 +77,8 @@ namespace ngsbem
 
     Vec<3> smax(-1e99, -1e99, -1e99);
     Vec<3> smin(1e99, 1e99, 1e99);
+    auto near = make_shared<PotentialNearSources>();
+    Array<netgen::Box<3>> near_boxes;
 
     for (size_t i = 0; i < mesh->GetNE(source_vb); i++)
       {
@@ -66,7 +97,30 @@ namespace ngsbem
               smin(j) = min(smin(j), miry[k].GetPoint()(j));
               smax(j) = max(smax(j), miry[k].GetPoint()(j));
             }
+
+        if (auto ball = PotentialNearfieldBall (trafo))
+          {
+            auto [c, r] = *ball;
+            netgen::Box<3> box(netgen::Point<3>(c(0), c(1), c(2)));
+            box.Increase ((1+1e-8)*r);
+            near_boxes.Append (box);
+            near->elnr.Append (i);
+          }
       }
+
+    if (near_boxes.Size())
+      {
+        netgen::Box<3> all(netgen::Box<3>::EMPTY_BOX);
+        for (auto & box : near_boxes)
+          {
+            all.Add (box.PMin());
+            all.Add (box.PMax());
+          }
+        near->tree = make_unique<netgen::BoxTree<3,int>> (all);
+        for (size_t k = 0; k < near_boxes.Size(); k++)
+          near->tree->Insert (near_boxes[k], int(k));
+      }
+    near_sources = near;
 
     Vec<3> cs = 0.5*(smin+smax);
     double rs = MaxNorm(smax-smin);
@@ -480,23 +534,10 @@ namespace ngsbem
   }
 
 
-  template <int DIMS>
-  bool IsNearElementCenter (Vec<3> x, const ElementTransformation & trafo, const IntegrationPoint & center)
-  {
-    MappedIntegrationPoint<DIMS,3> mip(center, trafo);
-    return L2Norm(x-mip.GetPoint()) < L2Norm(mip.GetJacobian());
-  }
-
   bool IsPotentialNearfieldSourceElement(Vec<3> x, const ElementTransformation & trafo)
   {
-    switch (trafo.GetElementType())
-      {
-      case ET_SEGM: return IsNearElementCenter<1> (x, trafo, IntegrationPoint(1./2, 0, 0));
-      case ET_TRIG: return IsNearElementCenter<2> (x, trafo, IntegrationPoint(1./3, 1./3));
-      case ET_QUAD: return IsNearElementCenter<2> (x, trafo, IntegrationPoint(1./2, 1./2));
-      case ET_TET:  return IsNearElementCenter<3> (x, trafo, IntegrationPoint(1./4, 1./4, 1./4));
-      default:      return false;
-      }
+    auto ball = PotentialNearfieldBall (trafo);
+    return ball && L2Norm(x-get<0>(*ball)) < get<1>(*ball);
   }
 
 
@@ -769,20 +810,25 @@ namespace ngsbem
     auto mesh = space->GetMeshAccess();
     auto formula = kernel->GetAnalyticTriangleFormula();
 
-    // TODO: find a better way to identify nearfield source elements.
-    // The current path scans all source elements for every target point.
+    Array<int> candidates;
     for (int ix = 0; ix < bmir.Size(); ix++)
       {
         const auto & mip = bmir[ix];
         FlatVector<T> row = result.Row(ix).Range(0, Dimension());
         Vec<3> x = mip.GetPoint();
 
-        for (size_t i = 0; i < mesh->GetNE(source_vb); i++)
+        // the elements whose box contains x, in element order
+        candidates.SetSize0();
+        if (near_sources->tree)
+          {
+            netgen::Point<3> p(x(0), x(1), x(2));
+            near_sources->tree->GetFirstIntersecting (p, p, [&] (int k) { candidates.Append (k); return false; });
+          }
+        QuickSort (candidates);
+        for (int k : candidates)
           {
             HeapReset hr(lh);
-            ElementId ei(source_vb, i);
-            if (!space->DefinedOn(ei)) continue;
-            if (definedon && !(*definedon).Mask().Test(mesh->GetElIndex(ei))) continue;
+            ElementId ei(source_vb, near_sources->elnr[k]);
 
             const ElementTransformation &trafo = mesh->GetTrafo(ei, lh);
             if (!IsPotentialNearfieldSourceElement(x, trafo))

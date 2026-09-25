@@ -178,12 +178,18 @@ namespace ngsbem
   void SphericalHarmonics<entry_type> ::
   DirectionalDiffAdd (Vec<3> d, SphericalHarmonics<entry_type> & res, real_type scale) const
   {
+    DirectionalDiffAdd (d, res, scale, real_type(1.0/scale));
+  }
+
+  template <typename entry_type>
+  void SphericalHarmonics<entry_type> ::
+  DirectionalDiffAdd (Vec<3> d, SphericalHarmonics<entry_type> & res, real_type scale, real_type invscale) const
+  {
     // static Timer t("mptool Directional Diff Add"); RegionTimer rg(t);
     
     real_type fx = d(0);
     real_type fy = d(1);
     real_type fz = d(2);
-    real_type invscale = 1.0/scale;
       
     for (int n = 0; n < order; n++)
       for (int m = -n; m <= n; m++)
@@ -1166,8 +1172,19 @@ namespace ngsbem
       throw Exception("AddDipole assumes singular MP");
 
     SphericalExpansion<Singular, entry_type, T_Kappa> tmp(Order(), kappa, RTyp());
-    tmp.AddCharge(x, complex_type(kappa)*c);
-    tmp.SH().DirectionalDiffAdd (d, this->SH(), Scale());
+    if constexpr (std::is_same_v<real_type,float>)
+      {
+        // kappa^2 c underflows in float for Laplace (kappa = 1e-16): only the phase of the second kappa here,
+        // |kappa| in the derivative's factors
+        double k = abs(kappa), s = Scale();
+        tmp.AddCharge(x, complex_type(kappa/k)*c);
+        tmp.SH().DirectionalDiffAdd (d, this->SH(), real_type(k*s), real_type(k/s));
+      }
+    else
+      {
+        tmp.AddCharge(x, complex_type(kappa)*c);
+        tmp.SH().DirectionalDiffAdd (d, this->SH(), Scale());
+      }
   }
 
 
