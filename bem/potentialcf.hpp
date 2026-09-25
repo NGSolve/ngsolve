@@ -124,6 +124,8 @@ namespace ngsbem
   };
 
 
+  struct PotentialNearSources;
+
   template <typename TSCAL>
   class NGS_DLL_HEADER PotentialCF : public BasePotentialCF
   {
@@ -131,6 +133,7 @@ namespace ngsbem
     int intorder;
 
     shared_ptr<BaseRegularMLExpansion> local_expansion;
+    shared_ptr<PotentialNearSources> near_sources;
 
   public:
     PotentialCF (shared_ptr<GridFunction> _gf,
