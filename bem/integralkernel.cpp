@@ -52,6 +52,13 @@ namespace ngsbem
     string Name() const override { return KERNEL::Name(); }
     IVec<2> Shape() const override { return KERNEL::Shape(); }
     AnalyticTriangleFormula GetAnalyticTriangleFormula() const override { return KERNEL::analytic_triangle_formula; }
+    Complex GetKappa() const override
+    {
+      if constexpr (requires { kernel.GetKappa(); })
+        return kernel.GetKappa();
+      else
+        return 0;
+    }
     const BaseFMMInterface & Source() const override { return kernel.source; }
     const BaseFMMInterface & Target() const override { return kernel.target; }
 
