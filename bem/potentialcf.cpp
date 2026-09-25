@@ -339,7 +339,7 @@ namespace ngsbem
   }
 
 
-  IntegrationRule GetIntegrationRule(Vec<3> x, const ElementTransformation & trafo, int intorder)
+  IntegrationRule GetIntegrationRule(Vec<3> x, const ElementTransformation & trafo, int intorder, LocalHeap & lh)
   {
     auto et = trafo.GetElementType();
     if (et == ET_TET)
@@ -359,7 +359,8 @@ namespace ngsbem
 
             int order = intorder + 2;
             IntegrationRule irtrig(ET_TRIG, order), irsegm(ET_SEGM, order);
-            IntegrationRule ir;
+            IntegrationRule ir(4*irtrig.Size()*irsegm.Size(), lh);
+            size_t cnt = 0;
 
             auto verts = ElementTopology::GetVertices(ET_TET);
             auto faces = ElementTopology::GetFaces(ET_TET);
@@ -384,10 +385,11 @@ namespace ngsbem
                       Vec<3> F = v0 + ips(0)*(v1-v0) + ips(1)*(v2-v0);
                       double t = ipt(0);
                       Vec<3> y = F + t*(vp-F);
-                      ir.AddIntegrationPoint (IntegrationPoint(y(0), y(1), y(2),
-                                                               ips.Weight()*ipt.Weight()*(1-t)*(1-t)*factor));
+                      ir[cnt++] = IntegrationPoint(y(0), y(1), y(2),
+                                                   ips.Weight()*ipt.Weight()*(1-t)*(1-t)*factor);
                     }
               }
+            ir.SetSize(cnt);
             return ir;
           }
         return IntegrationRule(et, intorder);
@@ -419,12 +421,13 @@ namespace ngsbem
         int npan = int(ceil(umax - umin));
         double du = (umax - umin) / npan;
         IntegrationRule irgauss(ET_SEGM, std::max(intorder, 9));
-        IntegrationRule ir;
+        IntegrationRule ir(npan*irgauss.Size(), lh);
+        size_t cnt = 0;
         for (int k = 0; k < npan; k++)
           for (auto & ip : irgauss)
             {
               double u = umin + (k + ip(0)) * du;
-              ir.AddIntegrationPoint (IntegrationPoint(t0 + rho*sinh(u)/J, 0, 0, ip.Weight() * du * rho*cosh(u)/J));   // dt = ds/J
+              ir[cnt++] = IntegrationPoint(t0 + rho*sinh(u)/J, 0, 0, ip.Weight() * du * rho*cosh(u)/J);   // dt = ds/J
             }
         return ir;
       }
@@ -444,10 +447,11 @@ namespace ngsbem
 
         // Split the reference element into triangles meeting at the projection.
         IntegrationRule irsegm(ET_SEGM, intorder);
-        IntegrationRule ir;
+        int ncorners = et == ET_TRIG ? 3 : 4;
+        IntegrationRule ir(ncorners*irsegm.Size()*irsegm.Size(), lh);
+        size_t cnt = 0;
 
         Vec<2> corners[] = {Vec<2>(0,0), Vec<2>(1,0), Vec<2>(1,1), Vec<2>(0,1)};
-        int ncorners = et == ET_TRIG ? 3 : 4;
         if (et == ET_TRIG)
           corners[2] = Vec<2>(0,1);
         for (int j = 0; j < ncorners; j++)
@@ -465,10 +469,11 @@ namespace ngsbem
                 for (auto ip2 : irsegm)
                   {
                     Vec<2> ipxy = v0 + ip1(0)*(1-ip2(0))*(v1-v0) + ip2(0)*(v2-v0);
-                    ir.AddIntegrationPoint (IntegrationPoint(ipxy(0), ipxy(1), 0,
-                                                             ip1.Weight()*ip2.Weight()*(1-ip2(0))*factor));
+                    ir[cnt++] = IntegrationPoint(ipxy(0), ipxy(1), 0,
+                                                 ip1.Weight()*ip2.Weight()*(1-ip2(0))*factor);
                   }
           }
+        ir.SetSize(cnt);
         return ir;
       }
     return IntegrationRule(et, intorder);
@@ -516,7 +521,7 @@ namespace ngsbem
     FlatVector<T> elvec(fel.GetNDof(), lh);
     gf->GetElementVector(dnums, elvec);
 
-    SIMD_IntegrationRule simd_ir(ir);
+    SIMD_IntegrationRule simd_ir(ir, lh);
     Vector<SIMD<T>> simd_result(Dimension());
     simd_result = SIMD<T>(0.0);
 
@@ -783,7 +788,7 @@ namespace ngsbem
             if (!IsPotentialNearfieldSourceElement(x, trafo))
               continue;
 
-            IntegrationRule near_ir = GetIntegrationRule(x, trafo, intorder);
+            IntegrationRule near_ir = GetIntegrationRule(x, trafo, intorder, lh);
             // Replace the expansion's standard source quadrature by Duffy.
             IntegrationRule standard_ir(trafo.GetElementType(), intorder);
             AddSourceElementContribution(mip, ei, standard_ir, row, T(-1.0), lh);
@@ -807,7 +812,7 @@ namespace ngsbem
                                          FlatVector<T> result) const
   {
     static Timer t("ngbem evaluate potential (ip)"); RegionTimer reg(t);
-    LocalHeapMem<100000> lh("Potential::Eval");
+    LocalHeapMem<1000000> lh("Potential::Eval");
     auto space = this->gf->GetFESpace();
     auto mesh = space->GetMeshAccess();
     auto formula = kernel->GetAnalyticTriangleFormula();
@@ -843,9 +848,9 @@ namespace ngsbem
                 use_tangent_correction = IsPotentialNearfieldSourceElement(mip.GetPoint(), trafo);
             }
 
-          IntegrationRule ir = GetIntegrationRule(mip.GetPoint(), trafo, intorder);
+          IntegrationRule ir = GetIntegrationRule(mip.GetPoint(), trafo, intorder, lh);
 
-          SIMD_IntegrationRule simd_ir(ir);
+          SIMD_IntegrationRule simd_ir(ir, lh);
 
           static constexpr int bs = 64;
           for (int k = 0; k < simd_ir.Size(); k += bs)

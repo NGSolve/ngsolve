@@ -1829,7 +1829,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
                     {
                       periodic = true;
                       string rest = filter->substr(0, pos);
-                      while (rest.size() && (rest.back() == ',' || rest.back() == ' '))
+                      while (rest.size() && (rest.back() == ',' || rest.back() == ':' || rest.back() == ' '))
                         rest.pop_back();
                       filter = rest.empty() ? nullopt : optional<string>(rest);
                     }
