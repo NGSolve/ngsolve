@@ -652,6 +652,8 @@ namespace ngsbem
 
     static string Name() { return "Helmholtz Combined Field"; }
     static auto Shape() { return IVec<2>(COMPS,COMPS); }
+    static constexpr AnalyticTriangleFormula analytic_triangle_formula =
+      AnalyticTriangleFormula::helmholtz_cf;
 
     CombinedFieldKernel (T_Kappa _kappa) : kappa(_kappa), source(_kappa), target(_kappa) {
       for (size_t i = 0; i < COMPS; i++)

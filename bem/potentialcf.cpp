@@ -693,6 +693,7 @@ namespace ngsbem
 
     double scalar_correction = 0.0;
     Vec<3> grad_correction { 0.0, 0.0, 0.0 };
+    Complex cf_correction = 0.0;
     double measure0 = mip0.GetMeasure();
     // Subtract the tangent kernel using the same rule as the curved kernel.
     Vec<3> nx{0.0};
@@ -746,11 +747,36 @@ namespace ngsbem
           }
         grad_correction = analytic - flat_numeric;
       }
+    else if (formula == AnalyticTriangleFormula::helmholtz_cf)
+      {
+        double sl_correction = LaplaceSL_Polygon(polygon, x);
+        double dl_correction = LaplaceDL_Polygon(polygon, x, ny);
+        LaplaceSLKernel<3> sl_singularity;
+        LaplaceDLKernel<3> dl_singularity;
+        for (auto ip : ir)
+          {
+            Vec<2> xi { ip(0), ip(1) };
+            Vec<3> y = p0 + jac * (xi-xi0);
+            double r = L2Norm(x-y);
+            if (r > 0)
+              {
+                sl_correction -= ip.Weight() * measure0 * sl_singularity.Evaluate(x, y, nx, ny)(0);
+                dl_correction -= ip.Weight() * measure0 * dl_singularity.Evaluate(x, y, nx, ny)(0);
+              }
+          }
+        cf_correction = dl_correction - Complex(0,1) * kernel->GetKappa() * sl_correction;
+      }
 
     FlatVector<T> vals(evaluator->Dim(), lh);
     evaluator->Apply(fel, mip0, elvec, vals, lh);
     for (auto term : kernel->Terms())
       {
+        if (formula == AnalyticTriangleFormula::helmholtz_cf)
+          {
+            if constexpr (std::is_same_v<T,Complex>)
+              result(term.test_comp) += term.fac * cf_correction * vals(term.trial_comp);
+            continue;
+          }
         double correction =
           formula == AnalyticTriangleFormula::laplace_grad_sl ?
           grad_correction(term.kernel_comp) : scalar_correction;

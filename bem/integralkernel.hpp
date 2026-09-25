@@ -23,7 +23,8 @@ namespace ngsbem
     none,
     laplace_sl,
     laplace_dl,
-    laplace_grad_sl
+    laplace_grad_sl,
+    helmholtz_cf      // Laplace DL - i kappa Laplace SL
   };
 
   // Keep element assembly independent of the kernel and FMM coefficient types.
@@ -62,6 +63,7 @@ namespace ngsbem
     virtual shared_ptr<ngla::BaseMatrix> CreateFMMOperator(Array<Vec<3>> xpts, Array<Vec<3>> ypts,
                                                          Array<Vec<3>> xnv, Array<Vec<3>> ynv,
                                                          const FMM_Parameters & params) const = 0;
+    virtual Complex GetKappa() const { return 0; }
   };
 
   template <typename KERNEL>
