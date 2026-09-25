@@ -235,8 +235,13 @@ namespace ngbla
   template <bool ADD, bool POS>
   inline void MatMat_AtB (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c)
   {
-    if (a.Height() == 0 || b.Width() == 0) return;
-    size_t wa = std::min(a.Width(), std::size(dispatch_atb<ADD,POS>::ptrs)-1);            
+    if (b.Width() == 0) return;
+    if (a.Height() == 0)
+      {
+        if constexpr (!ADD) c.AddSize(a.Width(), b.Width()) = 0.0;
+        return;
+      }
+    size_t wa = std::min(a.Width(), std::size(dispatch_atb<ADD,POS>::ptrs)-1);
     (*dispatch_atb<ADD,POS>::ptrs[wa])  (a.Height(), a.Width(), b.Width(), a, b, c);
   }
   
@@ -1209,7 +1214,33 @@ namespace ngbla
     }
   };
 
-  
+  template <typename T>
+  concept RowMajorSliceMatrixLike =
+    std::is_constructible_v<SliceMatrix<typename std::remove_reference_t<T>::TELEM, RowMajor>, T>;
+
+  // C(Complex) = A(double) * B(Complex): view row-major B, C as double matrices of twice the width
+  template <typename OP, typename T, typename TA, typename TB>
+    requires SliceMatrixLike<TA> && RowMajorSliceMatrixLike<TB> && RowMajorSliceMatrixLike<T> &&
+    std::is_same_v<mat_elem_t<TA>, double> &&
+    std::is_same_v<mat_elem_t<TB>, Complex> && std::is_same_v<mat_elem_t<T>, Complex>
+  class assign_trait<OP, T, MultExpr<TA, TB>>
+  {
+  public:
+    static inline T & Assign (MatExpr<T> & self, const Expr<MultExpr<TA, TB>> & prod)
+    {
+      size_t n = CombinedSize(prod.View().A().Height(), self.Spec().Height());
+      size_t m = CombinedSize(prod.View().B().Width(), self.Spec().Width());
+      size_t k = CombinedSize(prod.View().A().Width(), prod.View().B().Height());
+      SliceMatrix<Complex> b = SliceMatrix<typename std::remove_reference_t<TB>::TELEM>(prod.View().B()).RemoveConst();
+      SliceMatrix<Complex> c = self.Spec();
+      NgGEMM<OP::IsAdd(),OP::IsPos()> (prod.View().A().Rows(0,n).Cols(0,k).RemoveConst(),
+                                       SliceMatrix<double>(k, 2*m, 2*b.Dist(), reinterpret_cast<double*>(b.Data())),
+                                       SliceMatrix<double>(n, 2*m, 2*c.Dist(), reinterpret_cast<double*>(c.Data())));
+      return self.Spec();
+    }
+  };
+
+
 
 
 
