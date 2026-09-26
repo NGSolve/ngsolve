@@ -51,6 +51,8 @@ namespace ngcomp
     VecFormat ColFormat () const override { return mat->RowFormat(); }
 
     virtual void Mult (const ngla::BaseVector & b, ngla::BaseVector & x) const override;
+    std::shared_ptr<ngla::BaseMatrix> CreateDeviceMatrix () const override;
+    std::shared_ptr<ngla::BaseMatrix> CreateDeviceH1AMG (bool record) const;
   };
 
 
@@ -115,6 +117,11 @@ namespace ngcomp
     virtual const BaseMatrix & GetMatrix() const override 
     {
       return *mat;
+    }
+
+    shared_ptr<BaseMatrix> CreateDeviceMatrix () const override
+    {
+      return mat ? mat->CreateDeviceMatrix() : BaseMatrix::CreateDeviceMatrix();
     }
 
   };

@@ -1,4 +1,5 @@
 #include "h1amg.hpp"
+#include <devicevector.hpp>
 // #include "preconditioner.hpp"
 using namespace ngcomp;
 
@@ -477,6 +478,97 @@ namespace ngcomp
 
 
   
+
+  class DeviceH1AMG : public BaseMatrix
+  {
+    shared_ptr<BaseMatrix> mat, prolongation, restriction, coarse_precond;
+    shared_ptr<BaseMSMPrecond> smoother;
+    int smoothing_steps;
+    bool record;
+    mutable shared_ptr<ngs_gpu::Program> program;
+    mutable shared_ptr<BaseVector> rec_b, rec_x;
+  public:
+    DeviceH1AMG (shared_ptr<BaseMatrix> amat, shared_ptr<BaseMSMPrecond> asmoother,
+                 shared_ptr<BaseMatrix> aprol, shared_ptr<BaseMatrix> arest,
+                 shared_ptr<BaseMatrix> acoarse, int asteps, bool arecord)
+      : mat(amat), prolongation(aprol), restriction(arest), coarse_precond(acoarse),
+        smoother(asmoother), smoothing_steps(asteps), record(arecord) { }
+
+    int VHeight() const override { return mat->VHeight(); }
+    int VWidth() const override { return mat->VWidth(); }
+    bool IsComplex() const override { return false; }
+    VecFormat RowFormat () const override { return mat->ColFormat(); }
+    VecFormat ColFormat () const override { return mat->RowFormat(); }
+
+    void Mult (const BaseVector & b, BaseVector & x) const override
+    {
+      if (!record)
+        {
+          Cycle (b, x);
+          return;
+        }
+      static Timer t("DeviceH1AMG::Mult (replay)"); RegionTimer reg(t);
+      auto queue = GetGpuDevice()->DefaultQueue();
+      if (!program)
+        {
+          rec_b = mat->CreateColVector();
+          rec_x = mat->CreateColVector();
+          queue->BeginRecording();
+          try { Cycle (*rec_b, *rec_x); }
+          catch (...) { queue->EndRecording(); throw; }
+          program = queue->EndRecording();
+        }
+      *rec_b = b;
+      queue->Replay (*program);
+      x = *rec_x;
+    }
+
+    void Cycle (const BaseVector & b, BaseVector & x) const
+    {
+      static Timer t("DeviceH1AMG::Mult"); RegionTimer reg(t);
+      x = 0;
+      smoother->Smooth (x, b, smoothing_steps);
+      auto residuum = mat->CreateColVector();
+      residuum = b - (*mat) * x;
+
+      auto coarse_residuum = coarse_precond->CreateColVector();
+      coarse_residuum = *restriction * residuum;
+
+      auto coarse_x = coarse_precond->CreateColVector();
+      coarse_precond->Mult (coarse_residuum, coarse_x);
+
+      x += *prolongation * coarse_x;
+      smoother->SmoothBack (x, b, smoothing_steps);
+    }
+  };
+
+  template <typename SCAL>
+  shared_ptr<BaseMatrix> H1AMG_Matrix<SCAL>::CreateDeviceMatrix () const
+  {
+    return CreateDeviceH1AMG (true);
+  }
+
+  template <typename SCAL>
+  shared_ptr<BaseMatrix> H1AMG_Matrix<SCAL>::CreateDeviceH1AMG (bool record) const
+  {
+    if constexpr (!is_same_v<SCAL,double>)
+      return BaseMatrix::CreateDeviceMatrix();
+    else
+      {
+        auto dmat = mat->CreateDeviceMatrix();
+        auto dsmoother = dynamic_pointer_cast<BaseMSMPrecond> (smoother->CreateDeviceGaussSeidel());
+        if (dmat.get() == static_cast<const BaseMatrix*>(mat.get()) || !dsmoother)
+          return BaseMatrix::CreateDeviceMatrix();
+        auto coarse = dynamic_pointer_cast<H1AMG_Matrix<SCAL>> (coarse_precond);
+        return make_shared<DeviceH1AMG> (dmat, dsmoother,
+                                         prolongation->CreateDeviceMatrix(),
+                                         restriction->CreateDeviceMatrix(),
+                                         coarse ? coarse->CreateDeviceH1AMG(false)
+                                                : coarse_precond->CreateDeviceMatrix(),
+                                         smoothing_steps, record);
+      }
+  }
+
 
   template <class SCAL>
   DocInfo H1AMG_Preconditioner<SCAL> :: GetDocu()
