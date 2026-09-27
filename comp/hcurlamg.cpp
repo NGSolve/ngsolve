@@ -379,7 +379,7 @@ namespace ngcomp
         static Timer tsmprol("smoothed prolongation"); RegionTimer rsmprol(tsmprol);
         nne = 0;
         for(auto i : Range(ne))
-          if(e2f[i].Size() > 0)
+          if(e2f[i].Size() > 0 && freedofs->Test(i))
             nne[i] = 1 + 2 * e2f[i].Size();
         auto smoothprol = make_shared<SparseMatrix<double, SCAL, SCAL>>(nne, ne);
         double alpha = 0.5;
@@ -390,7 +390,7 @@ namespace ngcomp
           Array<int> row_indices;
           for (auto i : r)
             {
-              if(e2f[i].Size() == 0) continue; // unused dofs
+              if(e2f[i].Size() == 0 || !freedofs->Test(i)) continue; // unused or dirichlet dofs
               row_indices.SetSize0();
               row_indices.Append(i);
               for(auto face : e2f[i])
@@ -423,20 +423,57 @@ namespace ngcomp
         cout << IM(5) << "Smoothed prol nze per row: " << double(prolongation->NZE())/prolongation->Height() << endl;
       }
 
+    // potential space: the vertices of each connected dirichlet component are
+    // identified to one dof (constant potential), the first one is grounded
+    Array<int> vmap(nv);
+    for(auto v : Range(nv)) vmap[v] = v;
+    int nvred = nv, ncomp = 0;
+    bool constant_potential = !need_vertex_prolongation;
+    if(constant_potential)
+      {
+        Array<int> uf(nv);
+        uf = -1;
+        auto find = [&uf](int v) { while(uf[v] != v) v = uf[v] = uf[uf[v]]; return v; };
+        auto is_dirichlet = [&](int e) { return e2f[e].Size() && e2v[e][0] != -1 && !freedofs->Test(e); };
+        for(auto e : Range(ne))
+          if(is_dirichlet(e))
+            for(auto v : e2v[e])
+              if(uf[v] == -1) uf[v] = v;
+        for(auto e : Range(ne))
+          if(is_dirichlet(e))
+            uf[find(e2v[e][0])] = find(e2v[e][1]);
+        int nint = 0;
+        for(auto v : Range(nv))
+          if(uf[v] == -1) vmap[v] = nint++;
+        Array<int> compnr(nv);
+        compnr = -1;
+        for(auto v : Range(nv))
+          if(uf[v] != -1)
+            {
+              auto & c = compnr[find(v)];
+              if(c == -1) c = ncomp++;
+              vmap[v] = nint + c;
+            }
+        nvred = nint + ncomp;
+      }
+
     // Node correction only on first level seems enough in most cases
     if(param.potential_smooth_on_each_level || level == 0)
       {
         nne = 2;
         for(auto e : Range(ne))
-          if(e2f[e].Size() == 0 || (e2v[e][0]==-1 && e2v[e][1]==-1))
+          if(e2f[e].Size() == 0 || (e2v[e][0]==-1 && e2v[e][1]==-1)
+             || vmap[e2v[e][0]] == vmap[e2v[e][1]])
             nne[e] = 0;
-        gradient = make_shared<SparseMatrix<double, SCAL, SCAL>>(nne, nv);
+        gradient = make_shared<SparseMatrix<double, SCAL, SCAL>>(nne, nvred);
         for(auto e : Range(ne))
           {
-            if(e2f[e].Size() == 0) continue;
-            if (e2v[e][0]==-1 && e2v[e][1]==-1) continue;
-            (*gradient)(e, e2v[e][0]) = 1;
-            (*gradient)(e, e2v[e][1]) = -1;
+            if(nne[e] == 0) continue;
+            int v0 = vmap[e2v[e][0]], v1 = vmap[e2v[e][1]];
+            double sign = 1.;
+            if(v0 > v1) { swap(v0, v1); sign = -1.; }
+            (*gradient)(e, v0) = sign;
+            (*gradient)(e, v1) = -sign;
           }
       }
 
@@ -448,20 +485,39 @@ namespace ngcomp
       {
         trans_gradient = dynamic_pointer_cast<SparseMatrixTM<double>>(gradient->CreateTranspose());
         auto h1mat = mat->Restrict(*gradient);
-        Array<double> v_weights(nv);
+        Array<double> v_weights(nvred);
         v_weights = 0.;
 
-        // bool use_h1amg = true;
-        // int count = 0;
-        auto h1_freedofs = GetH1FreeDofs(e2v, e2f, freedofs);
+        shared_ptr<BitArray> h1_freedofs;
+        Array<IVec<2>> h1e2v(ne);
+        Array<double> h1ew(ne);
+        h1e2v = e2v;
+        h1ew = edge_weights;
+        if(constant_potential)
+          {
+            h1_freedofs = make_shared<BitArray>(nvred);
+            h1_freedofs->Set();
+            if(ncomp > 0)
+              h1_freedofs->Clear(nvred - ncomp);
+            for(auto e : Range(ne))
+              if(nne[e])
+                h1e2v[e] = IVec<2>(vmap[e2v[e][0]], vmap[e2v[e][1]]).Sort();
+              else
+                {
+                  h1e2v[e] = IVec<2>(-1,-1);
+                  h1ew[e] = -1;
+                }
+          }
+        else
+          h1_freedofs = GetH1FreeDofs(e2v, e2f, freedofs);
         switch (param.potential_smoother)
           {
           case HCurlAMG_Parameters::potential_amg:
             {
               H1AMG_Parameters defaultparam;
               node_h1 = make_shared<H1AMG_Matrix<SCAL>>
-                (dynamic_pointer_cast<SparseMatrixTM<SCAL>>(h1mat), h1_freedofs, e2v,
-                 edge_weights, v_weights, defaultparam, 0);
+                (dynamic_pointer_cast<SparseMatrixTM<SCAL>>(h1mat), h1_freedofs, h1e2v,
+                 h1ew, v_weights, defaultparam, 0);
               break;
             }
           case HCurlAMG_Parameters::potential_direct:
@@ -893,22 +949,20 @@ namespace ngcomp
     // build prolongation
     Array<int> nne(ne);
     for(auto i : Range(ne))
-      nne[i] = (edge_map[i] != -1) ? 1 : 0;
+      nne[i] = (edge_map[i] != -1 && freedofs->Test(i)) ? 1 : 0;
     info.prolongation = make_shared<SparseMatrix<double, SCAL, SCAL>>(nne, nce);
     for(auto i : Range(ne))
-      if(edge_map[i] != -1)
+      if(edge_map[i] != -1 && freedofs->Test(i))
         (*info.prolongation)(i, edge_map[i]) = inverted_edge[i] ? -1. : 1;
 
     if(need_vertex_prolongation)
       {
         Array<int> nnv(nv);
-        nnv = 1;
         for(auto v : Range(nv))
-          if(unused_vertex[v])
-            nnv[v] = 0;
+          nnv[v] = (!unused_vertex[v] && freedofs->Test(ne + v)) ? 1 : 0;
         info.vert_prolongation = make_shared<SparseMatrix<double, SCAL, SCAL>>(nnv, ncv);
         for(auto i : Range(nv))
-          if(!unused_vertex[i])
+          if(nnv[i])
             (*info.vert_prolongation)(i, vert_map[i]) = 1.;
       }
 
@@ -932,21 +986,16 @@ namespace ngcomp
                                                 FlatArray<IVec<2>> e2v,
                                                 FlatArray<IVec<2>> ce2v) const
   {
-    auto cfd = make_shared<BitArray>(nce);
-    BitArray cfreeverts(ncv);
-    cfreeverts.Set();
-    for(auto e : Range(e2v.Size()))
-      if(!freedofs->Test(e))
-        for(auto v : e2v[e])
-          if (v != -1)
-            cfreeverts.Clear(vert_map[v]);
-    cfd->Set();
-    for(auto ce : Range(nce))
-      {
-        auto verts = ce2v[ce];
-        if(!cfreeverts[verts[0]] && !cfreeverts[verts[1]])
-          cfd->Clear(ce);
-      }
+    auto ne = edge_map.Size();
+    auto cfd = make_shared<BitArray>(need_vertex_prolongation ? nce + ncv : nce);
+    cfd->Clear();
+    for(auto e : Range(ne))
+      if(edge_map[e] != -1 && freedofs->Test(e))
+        cfd->SetBit(edge_map[e]);
+    if(need_vertex_prolongation)
+      for(auto v : Range(vert_map.Size()))
+        if(vert_map[v] != -1 && freedofs->Test(ne + v))
+          cfd->SetBit(nce + vert_map[v]);
     return cfd;
   }
 
@@ -1204,12 +1253,6 @@ namespace ngcomp
           fd->SetBit(i);
       return fd;
     }
-  shared_ptr<BitArray> CreateCoarseFreedofs(shared_ptr<BitArray> freedofs,
-                                            int nce, int ncv,
-                                            FlatArray<int> edge_map,
-                                            FlatArray<int> vert_map,
-                                            FlatArray<IVec<2>> e2v,
-                                            FlatArray<IVec<2>> ce2v) const override;
   };
   
 
@@ -1249,6 +1292,7 @@ namespace ngcomp
     Array<double> face_weights(num_faces);
     Array<IVec<3>> f2e(num_faces);
 
+    edge_weights = -1;
     edge_weights_ht.IterateParallel
       ([&edge_weights](size_t i, IVec<1> key, double weight)
       {
@@ -1362,34 +1406,6 @@ namespace ngcomp
       }
 
     return coarsepre;
-  }
-
-  template<typename SCAL> shared_ptr<BitArray>
-  APhiMatrix<SCAL> :: CreateCoarseFreedofs(shared_ptr<BitArray> freedofs,
-                                           int nce, int ncv,
-                                           FlatArray<int> edge_map,
-                                           FlatArray<int> vert_map,
-                                           FlatArray<IVec<2>> e2v,
-                                           FlatArray<IVec<2>> ce2v) const
-  {
-    auto cfd = make_shared<BitArray>(nce + ncv);
-    BitArray cfreeverts(ncv);
-    cfreeverts.Set();
-    for(auto e : Range(e2v.Size()))
-      if(!freedofs->Test(e))
-        for(auto v : e2v[e])
-          cfreeverts.Clear(vert_map[v]);
-    cfd->Set();
-    for(auto ce : Range(nce))
-      {
-        auto verts = ce2v[ce];
-        if(!cfreeverts[verts[0]] && !cfreeverts[verts[1]])
-          cfd->Clear(ce);
-      }
-    for(auto v : Range(vert_map.Size()))
-      if(vert_map[v] != -1 && !freedofs->Test(edge_map.Size() + v))
-        cfd->Clear(nce + vert_map[v]);
-    return cfd;
   }
 
   template<typename SCAL>
