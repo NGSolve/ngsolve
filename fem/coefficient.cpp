@@ -5930,7 +5930,34 @@ public:
   
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
-    throw Exception ("OtherCF::GenerateCode not available");
+    string mycode = R"CODE_(    typedef {scal_type} TStack{index};
+    STACK_ARRAY(TStack{index}, hmem{index}, mir.Size()*{dim});
+    {values_type} {values}({rows}, {cols}, reinterpret_cast<{scal_type}*>(&hmem{index}[0]));
+    {
+      const CoefficientFunction & cf = *reinterpret_cast<CoefficientFunction*>({c1});
+      if (!mir.GetOtherMIR()) throw Exception ("other mir not set, Other only works on skeleton or contact integrals");
+      {values} = {scal_type}(0.0);
+      cf.Evaluate(*mir.GetOtherMIR(), {values});
+    }
+    )CODE_";
+    auto values = Var("values", index);
+    string rows = ToString(Dimension());
+    string cols = "mir.IR().Size()";
+
+    std::map<string,string> variables;
+    variables["scal_type"] = code.res_type;
+    variables["values_type"] = "FlatMatrix<"+code.res_type+">";
+    variables["values"] = values.S();
+    variables["c1"] = code.AddPointer(c1.get());
+    variables["dim"] = ToString(Dimension());
+    variables["index"] = ToString(index);
+    variables["rows"] = code.is_simd ? rows : cols;
+    variables["cols"] = code.is_simd ? cols : rows;
+    code.header += Code::Map(mycode, variables);
+
+    code.Declare(index, Dimensions(), IsComplex());
+    for (int i = 0; i < Dimension(); i++)
+      code.body += Var(index,i,Dimensions()).Assign(values.S() + (code.is_simd ? "("+ToString(i)+",i)" : "(i,"+ToString(i)+")"), false);
   }
 
   shared_ptr<CoefficientFunction> Diff(const CoefficientFunction *var,
