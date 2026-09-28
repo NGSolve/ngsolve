@@ -25,6 +25,13 @@ namespace
     py::warnings::warn(message.c_str(), PyExc_FutureWarning, 1);
   }
 
+  void CheckSHIndex(int order, tuple<int,int> nm)
+  {
+    auto [n, m] = nm;
+    if (n < 0 || n > order || m < -n || m > n)
+      throw py::index_error("Sphericalharmonics index (n,m)=(" + ToString(n) + "," + ToString(m) + ") out of range for order " + ToString(order));
+  }
+
   template <class Kernel64, class Kernel32, typename... T_ARGS>
   shared_ptr<BasePotentialOperator>
   MakePotentialWithPrecision(shared_ptr<ProxyFunction> proxy, VorB source_vb, optional<Region> definedon, shared_ptr<DifferentialOperator> eval, IntOp_Parameters ioparams, int intorder, bool fp32, T_ARGS... args)
@@ -174,11 +181,12 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
   py::class_<SphericalHarmonics<Complex>> (m, "Sphericalharmonics")
     .def_property_readonly("order", [](SphericalHarmonics<Complex>& self) { return self.Order(); })
     .def("__setitem__", [](SphericalHarmonics<Complex>& self, tuple<int,int> nm, Complex val)
-    { self.Coef(get<0>(nm), get<1>(nm)) = val; })
+    { CheckSHIndex(self.Order(), nm); self.Coef(get<0>(nm), get<1>(nm)) = val; })
     .def("__getitem__", [](SphericalHarmonics<Complex>& self, tuple<int,int> nm)
-    { return self.Coef(get<0>(nm), get<1>(nm)); })
+    { CheckSHIndex(self.Order(), nm); return self.Coef(get<0>(nm), get<1>(nm)); })
     .def_property_readonly("coefs",
-                           [](SphericalHarmonics<Complex>& self) { return self.Coefs(); },
+                           py::cpp_function([](SphericalHarmonics<Complex>& self) { return self.Coefs(); },
+                                            py::keep_alive<0,1>()),
                            "coefficient vector")
     .def("RotateZ", [](SphericalHarmonics<Complex>& self, double alpha) { self.RotateZ(alpha); })
     .def("RotateY", [](SphericalHarmonics<Complex>& self, double alpha) { self.RotateY(alpha); })
