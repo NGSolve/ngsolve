@@ -59,6 +59,7 @@ namespace ngbla
 
   
   enum ORDERING { ColMajor, RowMajor };
+  constexpr ORDERING Transposed (ORDERING o) { return (o==RowMajor) ? ColMajor : RowMajor; }
 
 
   struct unused_dist

@@ -1045,7 +1045,6 @@ namespace tinybla {
   }
 
   enum ORDERING { ColMajor, RowMajor };
-  constexpr ORDERING operator! (ORDERING o) { return (o==RowMajor) ? ColMajor : RowMajor; }
   constexpr ORDERING Transposed (ORDERING o) { return (o==RowMajor) ? ColMajor : RowMajor; }
 
 

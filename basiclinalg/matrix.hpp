@@ -2015,10 +2015,6 @@ namespace ngbla
   constexpr bool IsTrivialTranspose () { return IsScalar<T>(); } 
   
   
-  constexpr ORDERING operator! (ORDERING ordering)
-  {
-    return ordering == ColMajor ?  RowMajor : ColMajor;
-  }
 
 
 
@@ -2026,14 +2022,14 @@ namespace ngbla
             typename enable_if<IsTrivialTranspose<T>(),int>::type = 0>
   INLINE auto Trans (FlatMatrix<T,ord> mat)
   {
-    return FlatMatrix<T,!ord> (mat.Width(), mat.Height(), mat.Data());
+    return FlatMatrix<T,Transposed(ord)> (mat.Width(), mat.Height(), mat.Data());
   }
 
   template <typename T, ORDERING ord,
             typename enable_if<IsTrivialTranspose<T>(),int>::type = 0>
   INLINE auto Trans (const Matrix<T,ord> & mat)
   {
-    return FlatMatrix<T,!ord> (mat.Width(), mat.Height(), mat.Data());
+    return FlatMatrix<T,Transposed(ord)> (mat.Width(), mat.Height(), mat.Data());
   }
 
 
@@ -2041,7 +2037,7 @@ namespace ngbla
             typename enable_if<IsTrivialTranspose<T>(),int>::type = 0>
   INLINE const auto Trans (MatrixView<T,ord,TH,TW,TD> mat)
   {
-    return MatrixView<T,!ord,TW,TH,TD> (mat.Width(), mat.Height(), mat.Dist(), mat.Data());
+    return MatrixView<T,Transposed(ord),TW,TH,TD> (mat.Width(), mat.Height(), mat.Dist(), mat.Data());
   }
   
   
