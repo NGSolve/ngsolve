@@ -108,9 +108,11 @@ namespace ngla
             CHOL_TASK_LOAD
 
             if (lane == 0)
-              while (ATOMIC_LOAD(&incomingdep[myjob]) != 0) { }
+              {
+                while (ATOMIC_LOAD(&incomingdep[myjob]) != 0) { }
+                DEVICE_FENCE();   // acquire by the observing lane, before the barrier
+              }
             SIMD_BARRIER();
-            DEVICE_FENCE();
 
             // L part in tiles of `lanes` columns: lane holds x of its column,
             // the pivot is broadcast, then one trailing update of the rest
@@ -191,9 +193,11 @@ namespace ngla
             CHOL_TASK_LOAD
 
             if (lane == 0)
-              while (ATOMIC_LOAD(&incomingdep[myjob]) != 0) { }
+              {
+                while (ATOMIC_LOAD(&incomingdep[myjob]) != 0) { }
+                DEVICE_FENCE();   // acquire by the observing lane, before the barrier
+              }
             SIMD_BARRIER();
-            DEVICE_FENCE();
 
             if ((type == 1 || type == 2) && ext_size != 0)    // B_BLOCK, LB_BLOCK
               for (int i = rfirst + lane; i < rnext; i += lanes)
@@ -291,9 +295,11 @@ namespace ngla
             CHOL_BLK_LOAD
 
             if (lane == 0 && row == 0)
-              while (ATOMIC_LOAD(&incomingdep[myblk]) != 0) { }
+              {
+                while (ATOMIC_LOAD(&incomingdep[myblk]) != 0) { }
+                DEVICE_FENCE();   // acquire by the observing thread, before the barrier
+              }
             DEVICE_BARRIER();
-            DEVICE_FENCE();
 
             if (row == 0)
               {
@@ -353,8 +359,11 @@ namespace ngla
 
             DEVICE_BARRIER();
             if (row == 0)
-              for (int k = depidx[myblk] + lane; k < depidx[myblk+1]; k += lanes)
-                ATOMIC_ADD(&incomingdep[depdata[k]], -1);
+              {
+                DEVICE_FENCE();   // release: the group's hy updates before the counters
+                for (int k = depidx[myblk] + lane; k < depidx[myblk+1]; k += lanes)
+                  ATOMIC_ADD(&incomingdep[depdata[k]], -1);
+              }
           }
       }
 
@@ -377,9 +386,11 @@ namespace ngla
             CHOL_BLK_LOAD
 
             if (lane == 0 && row == 0)
-              while (ATOMIC_LOAD(&incomingdep[myblk]) != 0) { }
+              {
+                while (ATOMIC_LOAD(&incomingdep[myblk]) != 0) { }
+                DEVICE_FENCE();   // acquire by the observing thread, before the barrier
+              }
             DEVICE_BARRIER();
-            DEVICE_FENCE();
 
             for (int mb = row; mb < nb; mb += rows)
               {
@@ -441,8 +452,11 @@ namespace ngla
 
             DEVICE_BARRIER();
             if (row == 0)
-              for (int k = depidx[myblk] + lane; k < depidx[myblk+1]; k += lanes)
-                ATOMIC_ADD(&incomingdep[depdata[k]], -1);
+              {
+                DEVICE_FENCE();   // release: the group's hy updates before the counters
+                for (int k = depidx[myblk] + lane; k < depidx[myblk+1]; k += lanes)
+                  ATOMIC_ADD(&incomingdep[depdata[k]], -1);
+              }
           }
       }
 
