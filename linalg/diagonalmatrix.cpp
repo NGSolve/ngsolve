@@ -233,11 +233,16 @@ namespace ngla
   void DiagonalMatrix<TM> :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
     static Timer t("DiagonalMatrix::MultAdd"); RegionTimer reg(t);    
+    std::visit([&](auto vx, auto vy) {
+    typedef decltype(vx) TX;
+    typedef decltype(vy) TY;
+    if constexpr (requires (TY & ey, double es, TSCAL ed, TX ex) { ey += es * (ed * ex); })
+    {
     // if (mat_traits<TM>::WIDTH == x.EntrySize())
-    if (ngbla::Width<TM>() == x.EntrySize())
+    if (ngbla::Width<TM>() == x.EntrySizeScal())
       {
-        typedef typename mat_traits<TM>::TV_ROW TV_ROW;
-        typedef typename mat_traits<TM>::TV_COL TV_COL;
+        typedef std::conditional_t<is_same_v<TM,TSCAL>, TX, Vec<ngbla::Width<TM>(),TX>> TV_ROW;
+        typedef std::conditional_t<is_same_v<TM,TSCAL>, TY, Vec<ngbla::Height<TM>(),TY>> TV_COL;
         
         auto sx = x.FV<TV_ROW>();
         auto sy = y.FV<TV_COL>();
@@ -252,11 +257,15 @@ namespace ngla
       }
     else
       {
-        auto sx = x.SV<TSCAL>();
-        auto sy = y.SV<TSCAL>();
+        auto sx = x.SV<TX>();
+        auto sy = y.SV<TY>();
         for (size_t i : Range(*diag))
           sy(i) += s * (*diag)(i)*sx(i);
       }
+    }
+    else
+      throw Exception("DiagonalMatrix::MultAdd - illegal combination of scalar types");
+    }, x.GetScalarType(), y.GetScalarType());
   }
 
   template <typename TM>  
