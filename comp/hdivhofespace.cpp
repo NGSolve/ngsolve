@@ -24,6 +24,7 @@
 #include <../fem/diffop_impl.hpp>
 #include <prolongation.hpp> 
 #include <fesconvert.hpp>
+#include "l2hofespace.hpp"
 
 namespace ngcomp
 {
@@ -143,86 +144,6 @@ namespace ngcomp
 
 
 
-  class HDivHOProlongation : public Prolongation
-  {
-    HDivHighOrderFESpace * fes;
-    shared_ptr<FESpace> fesL2;
-
-    mutable Array<shared_ptr<BaseMatrix>> convL2toH1;
-    mutable Array<shared_ptr<BaseMatrix>> convH1toL2;
-  public:
-    HDivHOProlongation (HDivHighOrderFESpace * afes)
-    {
-      fes = afes;
-      Flags flagsL2;
-      flagsL2.SetFlag ("order", fes->GetOrder());
-      flagsL2.SetFlag ("piola2", true);
-      flagsL2.SetFlag ("hoprolongation", true);
-      if (fes->IsComplex()) flagsL2.SetFlag ("complex", true);      
-      fesL2 = CreateFESpace("VectorL2", fes->GetMeshAccess(), flagsL2);
-    }
-
-    virtual void Update (const FESpace & cfes) override
-    {
-      FESpace & fes = const_cast<FESpace&>(cfes);
-      fesL2->Update();
-      fesL2->FinalizeUpdate();
-      
-      int levels = fes.GetMeshAccess()->GetNLevels();
-      if (convL2toH1.Size() < levels)
-        {
-          convL2toH1.SetSize(levels);
-          convH1toL2.SetSize(levels);
-          
-          LocalHeap lh(10*1000*1000);
-          convL2toH1[levels-1] = ConvertOperator(fesL2, dynamic_pointer_cast<FESpace>(fes.shared_from_this()), VOL, lh, 
-                                        nullptr, nullptr, NULL, nullptr, false, true, false, 0, 0, true);
-          convH1toL2[levels-1] = ConvertOperator(dynamic_pointer_cast<FESpace>(fes.shared_from_this()), fesL2, VOL, lh, 
-                                        nullptr, nullptr, NULL, nullptr, false, true, false, 0, 0, true);
-        }
-    }
-
-    virtual size_t GetNDofLevel (int level) override
-    {
-      return fes->GetNDofLevel(level);
-    }
-  
-    ///
-    virtual shared_ptr<SparseMatrix< double >> CreateProlongationMatrix( int finelevel ) const override
-    { return NULL; }
-
-    ///
-    virtual void ProlongateInline (int finelevel, BaseVector & v) const override
-    {
-      auto vl2 = convL2toH1[finelevel]->CreateRowVector();
-
-      auto shapec = convH1toL2[finelevel-1]->Shape();
-      auto shapef = convL2toH1[finelevel]->Shape();
-
-      vl2.Range(get<0>(shapec)) = *convH1toL2[finelevel-1] * v.Range(get<1>(shapec));      
-      fesL2->GetProlongation()->ProlongateInline(finelevel, vl2);
-      v.Range(get<0>(shapef)) = *convL2toH1[finelevel] * vl2.Range(get<1>(shapef));
-    }    
-
-    
-    ///
-    virtual void RestrictInline (int finelevel, BaseVector & v) const override
-    {
-      auto vl2 = convL2toH1[finelevel]->CreateRowVector();
-
-      auto shapec = convH1toL2[finelevel-1]->Shape();
-      auto shapef = convL2toH1[finelevel]->Shape();
-
-      vl2.Range(get<1>(shapef)) = Transpose(*convL2toH1[finelevel]) * v.Range(get<0>(shapef));      
-      fesL2->GetProlongation()->RestrictInline(finelevel, vl2);
-      v.Range(get<1>(shapec)) = Transpose(*convH1toL2[finelevel-1]) * vl2.Range(get<0>(shapec));
-    }    
-  };
-
-
-
-  
-  
   HDivHighOrderFESpace ::  
   HDivHighOrderFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool parseflags)
     : FESpace (ama, flags)
@@ -382,7 +303,7 @@ namespace ngcomp
 
 
    if (flags.GetDefineFlag("hoprolongation"))
-        prol = make_shared<HDivHOProlongation> (this);
+        prol = CreateVectorL2EmbeddedProlongation (this, "piola2");
   }
   
   HDivHighOrderFESpace:: ~HDivHighOrderFESpace () 

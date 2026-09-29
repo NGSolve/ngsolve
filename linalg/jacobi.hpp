@@ -41,6 +41,7 @@ namespace ngla
     virtual void GSSmooth (BaseVector & x, const BaseVector & b, int steps = 1) const = 0;
     virtual void GSSmooth (BaseVector & x, const BaseVector & b, BaseVector & y) const = 0;
     virtual void GSSmoothBack (BaseVector & x, const BaseVector & b, int steps = 1) const = 0;
+    virtual shared_ptr<BitArray> GetInner () const { return nullptr; }
   };
 
 
@@ -82,6 +83,7 @@ namespace ngla
 
     int VHeight() const override { return height; }
     int VWidth() const override { return height; }
+    shared_ptr<BitArray> GetInner () const override { return inner; }
 
     FlatArray<TM> GetInverse() const { return invdiag; }
 

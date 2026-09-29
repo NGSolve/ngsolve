@@ -541,8 +541,8 @@ namespace ngcomp
     // This is a workaround because nested Switch does not work with gcc 7
     int dima = space_a->GetDimension();
     if (geom_free) {
-      if (space_b->IsComplex())
-	{ op = nullptr; throw Exception("ConstEBE not availaible for scalar type Complex!"); }
+      if (trial_cf && trial_cf->IsComplex())
+	{ op = nullptr; throw Exception("ConstEBE not availaible for complex trial_cf!"); }
       else
 	{ op = ConvertOperatorGF<double> (space_a, space_b, diffop, trial_cf, vb, reg, lh, range_dofs, localop, parmat, use_simd,
 					  bonus_intorder_ab, bonus_intorder_bb); }

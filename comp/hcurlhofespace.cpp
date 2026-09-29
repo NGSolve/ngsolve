@@ -12,6 +12,7 @@
 // #include <../fem/hcurlhdiv_dshape.hpp> 
 #include <prolongation.hpp>
 #include <special_matrix.hpp>   // for embedding
+#include "l2hofespace.hpp"
 
 // extern template class ngla::VFlatVector<double>;
 
@@ -43,6 +44,7 @@ namespace ngcomp
     DefineDefineFlag("fast"); 
     DefineDefineFlag ("discontinuous");
     DefineDefineFlag ("type1");
+    DefineDefineFlag ("hoprolongation");
     
     if(parseflags) CheckFlags(flags);
 
@@ -131,10 +133,18 @@ namespace ngcomp
     if (flags.NumListFlagDefined ("dirichlet")) 
       loflags.SetFlag ("dirichlet", flags.GetNumListFlag ("dirichlet"));
     */
-    low_order_space = make_shared<NedelecFESpace> (ma, loflags);
-    prol = make_shared<ngmg::EdgeProlongation> 
-      (*static_cast<NedelecFESpace*> (low_order_space.get()));
-   
+    if (flags.GetDefineFlag("hoprolongation"))
+      {
+        no_low_order_space = true;
+        prol = CreateVectorL2EmbeddedProlongation (this, "covariant2");
+      }
+    else
+      {
+        low_order_space = make_shared<NedelecFESpace> (ma, loflags);
+        prol = make_shared<ngmg::EdgeProlongation>
+          (*static_cast<NedelecFESpace*> (low_order_space.get()));
+      }
+
     uniform_order_inner = int (flags.GetNumFlag ("orderinner", -1));
     uniform_order_face = int (flags.GetNumFlag ("orderface", -1));
     uniform_order_edge = int (flags.GetNumFlag ("orderedge", -1));
@@ -496,7 +506,8 @@ namespace ngcomp
 		
   void HCurlHighOrderFESpace :: DoArchive(Archive & archive)
   {
-    low_order_space -> DoArchive (archive);
+    if (low_order_space)
+      low_order_space -> DoArchive (archive);
     FESpace::DoArchive(archive);
     archive & level;
     archive & first_edge_dof & first_inner_dof & first_face_dof;
