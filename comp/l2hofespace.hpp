@@ -230,6 +230,7 @@ namespace ngcomp
     bool piola = false;
     bool piola2 = false;  // piola mapping with vertex oriended coordinates (new for prolongation)
     bool covariant = false;
+    bool covariant2 = false;  // covariant mapping with vertex oriented coordinates (new for prolongation)
   public:
     VectorL2FESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool checkflags = false);
 
@@ -336,6 +337,10 @@ namespace ngcomp
     }
 
   };
+
+
+  NGS_DLL_HEADER shared_ptr<Prolongation>
+  CreateVectorL2EmbeddedProlongation (FESpace * fes, const string & mapping);
 
 
 

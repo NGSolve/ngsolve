@@ -73,11 +73,12 @@ namespace ngmg
     jac.SetSize (biform.GetNLevels());
     for (int i = 0; i < biform.GetNLevels(); i++)
       {
-	if (biform.GetMatrixPtr(i) && (force_update || !jac[i]))
+	if (biform.GetMatrixPtr(i) && (force_update || updateall || !jac[i]))
           {
+            auto freedofs = jac[i] ? jac[i]->GetInner() : biform.GetFESpace()->GetFreeDofs();
             jac[i] = nullptr;
             jac[i] = dynamic_cast<const BaseSparseMatrix&> (*biform.GetMatrixPtr(i))
-              .CreateJacobiPrecond(biform.GetFESpace()->GetFreeDofs());
+              .CreateJacobiPrecond(freedofs);
           }
       }
   }

@@ -1026,9 +1026,6 @@ namespace ngcomp
         cout << "NZE = " << nze << ", MFLOP = " << double (nze * steps) / time * 1e-6 << endl;
         cout << "type = " << typeid(lastmat).name() << endl;
       }
-
-    if (galerkin)
-      GalerkinProjection();
   }
 
 
@@ -1185,9 +1182,6 @@ namespace ngcomp
 
     GetMatrix() = 0.0;
     DoAssemble(lh);
-
-    if (galerkin)
-      GalerkinProjection();
   }
 
   shared_ptr<BaseMatrix> BilinearForm :: GetMatrixPtr () const
@@ -2791,7 +2785,10 @@ namespace ngcomp
 
             if (delete_zero_elements)
               mats.Last() = mats.Last() -> DeleteZeroElements(delete_zero_elements.value_or(0));
-            
+
+            if (galerkin)
+              GalerkinProjection();
+
             for (auto pre : preconditioners)
               pre -> FinalizeLevel(&GetMatrix());
             

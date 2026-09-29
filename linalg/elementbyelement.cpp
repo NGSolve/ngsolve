@@ -1101,8 +1101,13 @@ namespace ngla
     static Timer tcol("ConstantEBE mult trans coloring");
     static Timer tpmult("ConstantEBE mult trans mult");    
 
-    auto fx = x.FV<SCAL>();
-    auto fy = y.FV<SCAL>();
+    std::visit([&](auto vx, auto vy) {
+    typedef decltype(vx) TX;
+    typedef decltype(vy) TY;
+    if constexpr (requires (TY & ey, TSCAL64 es, SCAL em, TX ex) { ey += es * (em * ex); })
+    {
+    auto fx = x.FV<TX>();
+    auto fy = y.FV<TY>();
     
     if (!disjoint_rows)
       { // use coloring
@@ -1113,8 +1118,8 @@ namespace ngla
             (col.Size(), [&] (IntRange r)
              {
                constexpr size_t BS = 128;
-               Matrix<SCAL> hx(BS, matrix.Height());
-               Matrix<SCAL> hy(BS, matrix.Width());
+               Matrix<TX> hx(BS, matrix.Height());
+               Matrix<TY> hy(BS, matrix.Width());
                
                for (size_t bi = r.First(); bi < r.Next(); bi+= BS)
                  {
@@ -1146,7 +1151,7 @@ namespace ngla
              if (output_matrix_trans)
                {
                  constexpr size_t BS = 128;
-                 Matrix<SCAL> hy(BS, matrix.Width());
+                 Matrix<TY> hy(BS, matrix.Width());
                  
                  for (size_t bi = r.First(); bi < r.Next(); bi+= BS)
                    {
@@ -1165,8 +1170,8 @@ namespace ngla
              else
                {
                  constexpr size_t BS = 128;
-                 Matrix<SCAL> hx(BS, matrix.Height());
-                 Matrix<SCAL> hy(BS, matrix.Width());
+                 Matrix<TX> hx(BS, matrix.Height());
+                 Matrix<TY> hy(BS, matrix.Width());
                  
                  for (size_t bi = r.First(); bi < r.Next(); bi+= BS)
                    {
@@ -1190,6 +1195,10 @@ namespace ngla
                }
            });
       }
+    }
+    else
+      throw Exception("ConstantEBE::MultTransAdd - illegal combination of scalar types");
+    }, x.GetScalarType(), y.GetScalarType());
   }
 
 
