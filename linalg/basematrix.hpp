@@ -499,18 +499,18 @@ namespace ngla
     const BaseMatrix & bmb;
     shared_ptr<BaseMatrix> spbma;
     shared_ptr<BaseMatrix> spbmb;
-    mutable AutoVector tempvec;
   public:
     ///
     ProductMatrix (const BaseMatrix & abma, const BaseMatrix & abmb)
-      : bma(abma), bmb(abmb)
-    { tempvec.AssignPointer (CreateTempVector()); }
+      : bma(abma), bmb(abmb) { }
     ProductMatrix (shared_ptr<BaseMatrix> aspbma, shared_ptr<BaseMatrix> aspbmb)
-      : bma(*aspbma), bmb(*aspbmb), spbma(aspbma), spbmb(aspbmb)
-    { tempvec.AssignPointer (CreateTempVector()); }
+      : bma(*aspbma), bmb(*aspbmb), spbma(aspbma), spbmb(aspbmb) { }
     // the space between the factors, both sides contribute
     AutoVector CreateTempVector () const
     { return CreateBaseVector (VecFormat::Merge (bmb.ColFormat(), bma.RowFormat()).WithDefaults()); }
+    AutoVector CreateTempVector (const BaseVector & x) const
+    { return CreateBaseVector (VecFormat::Merge (bmb.ColFormat(), bma.RowFormat()).WithDefaults()
+                               .Promote(x.GetScalarType())); }
     ///
     virtual BaseMatrix::OperatorInfo GetOperatorInfo () const override;
 
@@ -535,6 +535,7 @@ namespace ngla
     virtual void Mult (const BaseVector & x, BaseVector & y) const override
     {
       static Timer t("ProductMatrix::Mult"); RegionTimer reg(t);      
+      auto tempvec = CreateTempVector (x);
       bmb.Mult (x, tempvec);
       bma.Mult (tempvec, y);
     }
@@ -542,6 +543,7 @@ namespace ngla
     virtual void MultTrans (const BaseVector & x, BaseVector & y) const override
     {
       static Timer t("ProductMatrix::Mult"); RegionTimer reg(t);      
+      auto tempvec = CreateTempVector (x);
       bma.MultTrans (x, tempvec);
       bmb.MultTrans (tempvec, y);
     }
@@ -549,6 +551,7 @@ namespace ngla
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override
     {
       static Timer t("ProductMatrix::MultAdd"); RegionTimer reg(t);      
+      auto tempvec = CreateTempVector (x);
       bmb.Mult (x, tempvec);
       bma.MultAdd (s, tempvec, y);
     }
@@ -556,6 +559,7 @@ namespace ngla
     virtual void MultAdd (Complex s, const BaseVector & x, BaseVector & y) const override
     {
       static Timer t("ProductMatrix::MultAdd complex"); RegionTimer reg(t);            
+      auto tempvec = CreateTempVector (x);
       bmb.Mult (x, tempvec);
       bma.MultAdd (s, tempvec, y);
     }
@@ -563,6 +567,7 @@ namespace ngla
     virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override
     {
       static Timer t("ProductMatrix::MultTransAdd"); RegionTimer reg(t);            
+      auto tempvec = CreateTempVector (x);
       bma.MultTrans (x, tempvec);
       bmb.MultTransAdd (s, tempvec, y);
     }
@@ -570,6 +575,7 @@ namespace ngla
     virtual void MultTransAdd (Complex s, const BaseVector & x, BaseVector & y) const override
     {
       static Timer t("ProductMatrix::MultTransAdd complex"); RegionTimer reg(t);
+      auto tempvec = CreateTempVector (x);
       bma.MultTrans (x, tempvec);
       bmb.MultTransAdd (s, tempvec, y);
     }  
