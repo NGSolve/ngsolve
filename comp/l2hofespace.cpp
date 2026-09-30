@@ -2361,9 +2361,25 @@ global system.
       }
     }
 
-    additional_evaluators.Set ("dual",
-                               make_shared<TraceDifferentialHolder>
-                               (evaluator[BND]));
+    // dual shapes: 1/measure-scaled Id for the standard basis, plain Id for the dual-mapped one
+    shared_ptr<DifferentialOperator> dual;
+    if (dual_mapping)
+      {
+        if (ma->GetDimension() == 2)
+          dual = make_shared<T_DifferentialOperator<DiffOpIdBoundary<2>>>();
+        else
+          dual = make_shared<T_DifferentialOperator<DiffOpIdBoundary<3>>>();
+      }
+    else
+      {
+        if (ma->GetDimension() == 2)
+          dual = make_shared<T_DifferentialOperator<DiffOpIdDual<1,2>>>();
+        else
+          dual = make_shared<T_DifferentialOperator<DiffOpIdDual<2,3>>>();
+      }
+    if (dimension > 1)
+      dual = make_shared<BlockDifferentialOperator> (dual, dimension);
+    additional_evaluators.Set ("dual", make_shared<TraceDifferentialHolder> (dual));
   }
 
   L2SurfaceHighOrderFESpace :: ~L2SurfaceHighOrderFESpace ()
