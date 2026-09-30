@@ -282,6 +282,16 @@ namespace ngcomp
       CONSTANT_ARRAY(unsigned short, offof_y, $LOCDOFSY) = $OFFOFY;
       $NREF_TABLE
 
+#ifdef __CUDACC__
+      // element vector view (el, dof): fp32 over transposed storage [dof][el], fp64 over [el][dof]
+      template <typename T, uint NEL, uint NDOF, typename TP>
+      __device__ __forceinline__ auto MakeElvecView (TP raw)
+      {
+        if constexpr (sizeof(T) == 4) return MakeBareMatrix<RowMajor>(raw, ic<NEL>()).Transpose();
+        else return MakeBareMatrix<RowMajor>(raw, ic<NDOF>());
+      }
+#endif
+
       KERNEL(apply_btdtb,
              GLOBAL_IN(Real, x),
              $YARG,
@@ -320,11 +330,32 @@ namespace ngcomp
       constexpr uint locdofsx_roundup = RoundUp<8> (locdofsx);
       constexpr uint locdofsy_roundup = RoundUp<8> (locdofsy);
 
+      constexpr int MAXDIMREF = ($DIMXREF>$DIMYREF) ? $DIMXREF : $DIMYREF;
+#ifdef __CUDACC__
+      /*
+        shared layouts without padding (a pad would cost 8 KB for the convection form):
+        fp32 element vectors are stored transposed, [dof][el]: the first stage then reads
+        them row-wise, the conflict-free side of the quad-broadcast AddMM, with plain
+        addressing. fp64 keeps [el][dof]: its mma stage is insensitive to the layout.
+        The point values get an xor chunk swizzle (2*row + row/8): the fragment loads
+        of the second stage read 4 rows x 64 bytes, which a power-of-two row length
+        would put on the same banks. Measured Sept 2026 on 5090 / H100.
+      */
+      SHARED(Real, elvecx_raw, $BS_ELS*locdofsx_roundup);
+      SHARED(Real, elvecy_raw, $BS_ELS*locdofsy_roundup);
+      SHARED(Real, pointvalsref_raw, MAXDIMREF*$BS_IPTS*$BS_ELS);
+      auto mat_elvecx = MakeElvecView<Real, $BS_ELS, locdofsx_roundup>(elvecx_raw);
+      auto mat_elvecy = MakeElvecView<Real, $BS_ELS, locdofsy_roundup>(elvecy_raw);
+      auto mat_pointvalsref = MakeRotMatrix<$BS_ELS,2,1,true>(pointvalsref_raw);
+#else
+      // metal / host: plain layout, no bank conflicts measured
       SHARED_2D(Real, elvecx, $BS_ELS, locdofsx_roundup);
       SHARED_2D(Real, elvecy, $BS_ELS, locdofsy_roundup);
-
-      constexpr int MAXDIMREF = ($DIMXREF>$DIMYREF) ? $DIMXREF : $DIMYREF;
       SHARED_2D(Real, pointvalsref, MAXDIMREF*$BS_IPTS, $BS_ELS);
+      auto mat_elvecx = MakeBareMatrix<RowMajor>(elvecx);
+      auto mat_elvecy = MakeBareMatrix<RowMajor>(elvecy);
+      auto mat_pointvalsref = MakeBareMatrix<RowMajor>(pointvalsref);
+#endif
 
       // geometry coefficients of the batch [element][coordinate][node], and for
       // straight elements (constant gradients) F per element [element][coord][refdir]
@@ -336,9 +367,6 @@ namespace ngcomp
       auto mat_Fvals = MakeBareMatrix<RowMajor>(Fvals);
 #endif
 
-      auto mat_elvecx = MakeBareMatrix<RowMajor>(elvecx); 
-      auto mat_elvecy = MakeBareMatrix<RowMajor>(elvecy);
-      auto mat_pointvalsref = MakeBareMatrix<RowMajor>(pointvalsref);
 
       auto mat_bmatx = MakeBareMatrix<RowMajor>(bmatx, locdofsx_roundup);
       auto mat_bmaty = MakeBareMatrix<RowMajor>(bmaty, locdofsy_roundup);
@@ -353,7 +381,7 @@ namespace ngcomp
         {
           constexpr uint npad = locdofsx_roundup - locdofsx;
           for (uint i = tid; i < $BS_ELS*npad; i += bdim)
-            elvecx[i/npad][locdofsx + i%npad] = 0;
+            (*mat_elvecx.Addr(i/npad,locdofsx + i%npad)) = 0;
         }
 
       // load element vectors
@@ -362,13 +390,13 @@ namespace ngcomp
            uint dofnr = i % locdofsx;
            uint locelnr = i / locdofsx;
            uint elnr = baseelem + locelnr;
-           elvecx[locelnr][dofnr] = (elnr < ne)
+           (*mat_elvecx.Addr(locelnr,dofnr)) = (elnr < ne)
              ? x[basex[elnr*nrunsx+runof_x[dofnr]] + offof_x[dofnr]] : 0;
         }
 
       // zero elvecy
       for (uint i = tid; i < $BS_ELS*locdofsy_roundup; i += bdim)
-        elvecy[i/locdofsy_roundup][i%locdofsy_roundup] = 0;
+        (*mat_elvecy.Addr(i/locdofsy_roundup,i%locdofsy_roundup)) = 0;
 
 #if ($ONLY_LOADSTORE==0)
       // geometry coefficients, contiguous per element ([coordinate][node] padded to geo_roundup)
@@ -386,7 +414,7 @@ namespace ngcomp
           uint c = i/$BS_ELS;
           uint r = i%$BS_ELS;
           if (c < locdofsx_roundup)
-            elvecy[r][c] = elvecx[r][c];
+            (*mat_elvecy.Addr(r,c)) = (*mat_elvecx.Addr(r,c));
         }
       BARRIER();
 #else
@@ -394,11 +422,12 @@ namespace ngcomp
 
       for (uint baseip = 0; baseip+$BS_IPTS <= $NIP; baseip += $BS_IPTS)
         {
-          constexpr uint TS_IPTS = 8;
-          constexpr uint TS_ELS = 8;
+          // one warp tile per component and ip block (tile = block)
+          constexpr uint TS_IPTS = $BS_IPTS;
+          constexpr uint TS_ELS = $BS_ELS;
           constexpr uint BSTS_IPTS = $BS_IPTS/TS_IPTS;
           constexpr uint BSTS_ELS = $BS_ELS/TS_ELS;
-          static_assert($BS_IPTS % TS_IPTS==0);
+          static_assert($BS_IPTS % 8 == 0 && $BS_ELS % 8 == 0, "BS_ipts and BS_els must be multiples of 8");
 
           // multiply with Bx
           for (uint warp = warpIdx; warp < $DIMXREF*BSTS_IPTS*BSTS_ELS; warp += $WARPS)
@@ -472,7 +501,7 @@ namespace ngcomp
 #endif
 
                for (int comp = 0; comp < $DIMXREF; comp++)
-                  xrefvals(comp) = pointvalsref[locipnr+comp*bs_ipts][locelnr];
+                  xrefvals(comp) = (*mat_pointvalsref.Addr(locipnr+comp*bs_ipts,locelnr));
 
               const int domain_index = domain[(baseelem + locelnr < ne) ? baseelem + locelnr : 0];
 
@@ -488,7 +517,7 @@ namespace ngcomp
               $TRANSFORMY;          
 
                for (int comp = 0; comp < $DIMYREF; comp++)
-                  pointvalsref[locipnr+comp*bs_ipts][locelnr] = yrefvals(comp);
+                  (*mat_pointvalsref.Addr(locipnr+comp*bs_ipts,locelnr)) = yrefvals(comp);
 #endif
             }
 
@@ -501,16 +530,31 @@ namespace ngcomp
               int eltile = blocknr % BSTS_ELS;  // which els
               int ydoftile = blocknr / BSTS_ELS;  // which dofs
 
-              WarpMatrix<TS_ELS,8,Real> sum(mat_elvecy.SubMatrix(TS_ELS*eltile, 8*ydoftile), tid);
-
+              /*
+                transposed product elvecy^T += By^T * pointvals: the shared operand is
+                read along its stored rows (quad-shared side of AddMM), which avoids the
+                bank conflicts of the ColMajor pointvals^T (30% in fp32, neutral for mma)
+              */
+#ifdef __CUDACC__
+              auto cy = mat_elvecy.SubMatrix(TS_ELS*eltile, 8*ydoftile).Transpose();
+              WarpMatrix<8,TS_ELS,Real> sum(cy, tid);
+#else
+              // metal has no bank conflicts here and pays for the transposed simdgroup load/store
+              auto cy = mat_elvecy.SubMatrix(TS_ELS*eltile, 8*ydoftile);
+              WarpMatrix<TS_ELS,8,Real> sum(cy, tid);
+#endif
               for (int comp = 0; comp < $DIMYREF; comp++)
                 {
                    auto ma = mat_pointvalsref.SubMatrix(bs_ipts*comp, TS_ELS*eltile);
                    auto mb = mat_bmaty.SubMatrix(baseip+nip_padded*comp, 8*ydoftile);
+#ifdef __CUDACC__
+                   sum.AddMM<$BS_IPTS> (mb.Transpose(), ma, tid);
+#else
                    sum.AddMM<$BS_IPTS> (ma.Transpose(), mb, tid);
+#endif
                 }
 
-              sum.Store(mat_elvecy.SubMatrix(8*eltile, 8*ydoftile), tid);
+              sum.Store(cy, tid);
            }
 
           BARRIER();
@@ -592,7 +636,7 @@ namespace ngcomp
 #endif
 
                for (uint j = 0; j < $DIMXREF; j++)
-                  xrefvals(j) = pointvalsref[locipnr+j*numips][locelnr];
+                  xrefvals(j) = (*mat_pointvalsref.Addr(locipnr+j*numips,locelnr));
 
               const int domain_index = domain[(baseelem + locelnr < ne) ? baseelem + locelnr : 0];
 
@@ -608,12 +652,23 @@ namespace ngcomp
               $TRANSFORMY;          
 
                for (int j = 0; j < $DIMYREF; j++)
-                  pointvalsref[locipnr+j*numips][locelnr] = yrefvals(j);
-
-               for (int j = $DIMYREF*numips; j < $DIMYREF*$BS_IPTS; j++)
-                  pointvalsref[j][locelnr] = 0;
+                  (*mat_pointvalsref.Addr(locipnr+j*numips,locelnr)) = yrefvals(j);
 #endif
             }
+
+          BARRIER();
+          /*
+            the 8-row By tiles read up to 7 rows past the y values (times zero
+            rows of bmaty), those rows must be finite. Zero them only now: other
+            warps still read their x values there (x has more components than
+            y for a nonlinear form), zeroing inside the point loop was a race.
+          */
+          {
+            constexpr uint yrows = $DIMYREF*numips;
+            constexpr uint padrows = RoundUp<8>(yrows) - yrows;
+            for (uint i = tid; i < padrows*$BS_ELS; i += bdim)
+              (*mat_pointvalsref.Addr(yrows + i/$BS_ELS,i%$BS_ELS)) = 0;
+          }
 
 
           BARRIER();
@@ -624,16 +679,25 @@ namespace ngcomp
               uint eltile = blocknr % $EL_TILES;  // which els
               uint ydoftile = blocknr / $EL_TILES;  // which dofs
 
-              WarpMatrix<8,8,Real> sum(mat_elvecy.SubMatrix(8*eltile, 8*ydoftile), tid);
+#ifdef __CUDACC__
+              auto cy = mat_elvecy.SubMatrix(8*eltile, 8*ydoftile).Transpose();   // transposed product, see above
+#else
+              auto cy = mat_elvecy.SubMatrix(8*eltile, 8*ydoftile);
+#endif
+              WarpMatrix<8,8,Real> sum(cy, tid);
 
               for (uint ipcomp = 0; ipcomp < numips*$DIMYREF; ipcomp += 8)
                 {
                    auto ma = mat_pointvalsref.SubMatrix(ipcomp, 8*eltile);
                    auto mb = mat_bmaty.SubMatrix($BMATY_REM_ROWS+ipcomp, 8*ydoftile);
+#ifdef __CUDACC__
+                   sum.AddMM<8>(mb.Transpose(), ma, tid);
+#else
                    sum.AddMM<8>(ma.Transpose(), mb, tid);
+#endif
                 }
 
-              sum.Store(mat_elvecy.SubMatrix(8*eltile, 8*ydoftile), tid);
+              sum.Store(cy, tid);
            }
 
           BARRIER();
@@ -653,9 +717,9 @@ namespace ngcomp
              {
                uint dof = basey[elnr*nrunsy+runof_y[dofnr]] + offof_y[dofnr];
 #if ($ATOMIC==1)
-               ATOMIC_ADD(&y[dof], s*elvecy[locelnr][dofnr]);
+               ATOMIC_ADD(&y[dof], s*(*mat_elvecy.Addr(locelnr,dofnr)));
 #else
-               y[dof] += s*elvecy[locelnr][dofnr];
+               y[dof] += s*(*mat_elvecy.Addr(locelnr,dofnr));
 #endif
              }
         }

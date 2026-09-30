@@ -1155,6 +1155,7 @@ namespace tinybla {
 
 
 
+     static constant constexpr bool is_colmajor = (ORD==ColMajor);
      auto SubMatrix (unsigned r, unsigned c) const { return BareMatrix { data+Offset(r,c), ld }; }
      auto Transpose() const { return BareMatrix<Transposed(ORD), Tp,Tld> { data, ld }; }
      auto LD() const { return ld; }
@@ -1173,6 +1174,115 @@ namespace tinybla {
   }
 
 
+  /*
+    RotMatrix: row-major matrix in group memory with the 16-byte chunks of every
+    row rotated by rota*row + rotb*(row/8) chunks. With a row length that is a
+    multiple of 8 reals a plain layout puts rows 8 apart on the same banks; the
+    rotation spreads them without padding and keeps 16-byte alignment. Measured
+    rotations: (1,1) for operands read as column chunks by the quad-broadcast
+    AddMM, (2,1) for the mma fragment loads. Tiles taken through GetTile/SetTile
+    have contiguous rows inside one chunk: column offsets and widths must divide
+    the chunk (4 floats / 2 doubles).
+  */
+  template <typename Tp, unsigned LD, unsigned ROTA, unsigned ROTB, bool XORSWZ> class RotMatrixT;
+
+  // XORSWZ: xor the chunk index instead of rotating (one bit operation per access, chunk count must be a power of two)
+  template <typename Tp, unsigned LD, unsigned ROTA, unsigned ROTB, bool XORSWZ = false>
+  class RotMatrix
+  {
+    Tp data;
+    unsigned r0, c0;
+  public:
+    using ElementType = remove_addrspace_t<remove_cv_t<remove_reference_t<decltype(*data)>>>;
+    static constant constexpr unsigned CH = 16/sizeof(ElementType);
+    static constant constexpr unsigned NCH = LD/CH;
+    static constant constexpr bool is_colmajor = false;
+    static_assert(LD % CH == 0, "RotMatrix: row length must be a multiple of the 16-byte chunk");
+
+    RotMatrix (Tp _data, unsigned _r0 = 0, unsigned _c0 = 0) : data(_data), r0(_r0), c0(_c0) { }
+
+    unsigned Offset (unsigned r, unsigned c) const
+    {
+      r += r0; c += c0;
+      unsigned ch;
+      if constexpr (XORSWZ)
+        {
+          static_assert((NCH & (NCH-1)) == 0, "RotMatrix xor swizzle: chunks per row must be a power of two");
+          ch = (c/CH) ^ ((ROTA*r + ROTB*(r>>3)) & (NCH-1));
+        }
+      else
+        {
+          unsigned rot = (ROTA*r + ROTB*(r>>3)) % NCH;   // per row, hoisted when r is loop invariant
+          ch = c/CH + rot;                                // both < NCH: one conditional wrap instead of a modulo
+          if (ch >= NCH) ch -= NCH;
+        }
+      return r*LD + ch*CH + c%CH;
+    }
+    auto operator() (unsigned r, unsigned c) const { return data[Offset(r,c)]; }
+    auto Addr (unsigned r, unsigned c) const { return data + Offset(r,c); }
+    RotMatrix SubMatrix (unsigned r, unsigned c) const { return RotMatrix (data, r0+r, c0+c); }
+    RotMatrixT<Tp,LD,ROTA,ROTB,XORSWZ> Transpose() const;
+    bool IsColMajor() const { return false; }
+    Tp Data() const { return data; }
+
+    /*
+      tile rows of w elements start at column offsets that are multiples of w
+      inside one chunk, so the address is w*sizeof(T) aligned: tell the compiler,
+      it then issues one vector load per row instead of w scalar ones
+    */
+    template <unsigned w>
+    auto AlignedAddr (unsigned r, unsigned c) const
+    {
+      auto p = Addr(r, c);
+#ifdef TB_CUDA
+      return (decltype(p)) __builtin_assume_aligned (p, (w*sizeof(ElementType) > 16) ? 16 : w*sizeof(ElementType));
+#else
+      return p;
+#endif
+    }
+    template <unsigned h, unsigned w>
+    HTMat<h,w,ElementType> GetTile (unsigned r, unsigned c) const
+    {
+      HTVec<w,ElementType> v;
+      v.Load (AlignedAddr<w>(r+h-1, c));
+      if constexpr (h == 1) return HTMat<1,w,ElementType> (v);
+      else return HTMat<h,w,ElementType> (GetTile<h-1,w>(r, c), v);
+    }
+    template <int h, int w, typename T2>
+    void SetTile (unsigned r, unsigned c, HTMat<h,w,T2> tile)
+    {
+      if constexpr (h > 1) SetTile<h-1,w> (r, c, tile.Tail());
+      tile.Head().Store (AlignedAddr<w>(r+h-1, c));
+    }
+  };
+
+  // column-major view of a RotMatrix
+  template <typename Tp, unsigned LD, unsigned ROTA, unsigned ROTB, bool XORSWZ>
+  class RotMatrixT
+  {
+    RotMatrix<Tp,LD,ROTA,ROTB,XORSWZ> m;
+  public:
+    using ElementType = typename RotMatrix<Tp,LD,ROTA,ROTB,XORSWZ>::ElementType;
+    static constant constexpr bool is_colmajor = true;
+    RotMatrixT (RotMatrix<Tp,LD,ROTA,ROTB,XORSWZ> _m) : m(_m) { }
+    auto operator() (unsigned r, unsigned c) const { return m(c,r); }
+    auto Addr (unsigned r, unsigned c) const { return m.Addr(c,r); }
+    RotMatrixT SubMatrix (unsigned r, unsigned c) const { return RotMatrixT (m.SubMatrix(c,r)); }
+    RotMatrix<Tp,LD,ROTA,ROTB,XORSWZ> Transpose() const { return m; }
+    bool IsColMajor() const { return true; }
+    template <unsigned h, unsigned w>
+    auto GetTile (unsigned r, unsigned c) const { return Trans (m.template GetTile<w,h>(c, r)); }
+    template <int h, int w, typename T2>
+    void SetTile (unsigned r, unsigned c, HTMat<h,w,T2> tile) { m.template SetTile<w,h> (c, r, Trans(tile)); }
+  };
+
+  template <typename Tp, unsigned LD, unsigned ROTA, unsigned ROTB, bool XORSWZ>
+  RotMatrixT<Tp,LD,ROTA,ROTB,XORSWZ> RotMatrix<Tp,LD,ROTA,ROTB,XORSWZ>::Transpose() const { return RotMatrixT<Tp,LD,ROTA,ROTB,XORSWZ> (*this); }
+
+  template <unsigned LD, unsigned ROTA, unsigned ROTB, bool XORSWZ = false, typename Tp>
+  inline auto MakeRotMatrix (Tp data) { return RotMatrix<Tp,LD,ROTA,ROTB,XORSWZ> (data); }
+
+
 
 
 
@@ -1189,8 +1299,8 @@ namespace tinybla {
 
     WarpMatrix(T val) { myvals = val; }
 
-    template <ORDERING ORD, typename Tp, typename Tld>
-    WarpMatrix(BareMatrix<ORD,Tp,Tld> mat, uint tid) {
+    template <typename M>
+    WarpMatrix(M mat, uint tid) {
       myvals = mat.template GetTile<BH,BW>(MyRow(tid),MyCol(tid));
     }
 
@@ -1199,8 +1309,8 @@ namespace tinybla {
     WarpMatrix (HTMat<BH,BW,T> amyvals) : myvals(amyvals) { } 
     auto GetValues() const { return myvals; }
 
-    template <uint K, ORDERING ORD1, typename Tp1, typename Tld1, ORDERING ORD2, typename Tp2, typename Tld2>
-    void AddMM(BareMatrix<ORD1,Tp1,Tld1> m1, BareMatrix<ORD2,Tp2,Tld2> m2, uint tid)
+    template <uint K, typename M1, typename M2>
+    void AddMM(M1 m1, M2 m2, uint tid)
     {
       auto r = MyRow(tid);
       auto c = MyCol(tid);
@@ -1215,7 +1325,7 @@ namespace tinybla {
 */
 
       // best for btdtb
-      if constexpr (ORD2==RowMajor) {
+      if constexpr (!M2::is_colmajor) {
       // if constexpr (true) {
         constexpr int KTILE = 1;
         uint k = 0;
@@ -1532,8 +1642,8 @@ namespace tinybla {
     }
 
 
-    template <ORDERING ORD, typename Tp, typename Tld>
-    void Store(BareMatrix<ORD,Tp,Tld> mat, unsigned tid) {
+    template <typename M>
+    void Store(M mat, unsigned tid) {
       mat.template SetTile<BH,BW>(MyRow(tid),MyCol(tid), myvals);
     }
 
@@ -1708,50 +1818,205 @@ namespace tinybla {
 
 
 #ifdef TB_METAL
-  // simdgroup matrices exist only in metal. This is an explicit
-  // specialisation, so it must be guarded - it is parsed even if unused.
-  template <>
-  class WarpMatrix<8,8,float>
+  // simdgroup matrices exist only in metal: float tiles with rows and cols
+  // multiples of 8 are blocks of simdgroup_float8x8. A partial specialisation,
+  // so it must be guarded - it is parsed even if unused.
+  template <unsigned H, unsigned W>
+  class WarpMatrix<H,W,float>
   {
+    static_assert(H%8==0 && W%8==0, "metal WarpMatrix<float>: rows and cols must be multiples of 8");
     typedef float T;
-    metal::simdgroup_float8x8 m;
+    static constant constexpr unsigned BH = H/8;
+    static constant constexpr unsigned BW = W/8;
+    metal::simdgroup_float8x8 m[BH][BW];
   public:
     WarpMatrix() { }
-    WarpMatrix(T val) { m = metal::make_filled_simdgroup_matrix<float, 8, 8>(0.0f); }
+    WarpMatrix(T val) { *this = val; }
     WarpMatrix(threadgroup T * data, int ld, int tid) {
-      metal::simdgroup_load(m, data, ld, ulong2(0,0));
+      Load (BareMatrix<RowMajor, threadgroup T*, int> (data, ld));
     }
     template <typename M>
-    WarpMatrix(M mat, int tid) {
-      metal::simdgroup_load(m, mat.Data(), mat.LD(), ulong2(0,0), mat.IsColMajor());
+    WarpMatrix(M mat, int tid) { Load(mat); }
+
+    void operator= (T val) {
+      for (uint i = 0; i < BH; i++)
+        for (uint j = 0; j < BW; j++)
+          m[i][j] = metal::make_filled_simdgroup_matrix<float, 8, 8>(val);
     }
 
-    void operator= (T val) { m = metal::make_filled_simdgroup_matrix<float, 8, 8>(0.0f); }
+    template <typename M>
+    void Load(M mat) {
+      for (uint i = 0; i < BH; i++)
+        for (uint j = 0; j < BW; j++)
+          {
+            auto sub = mat.SubMatrix(8*i, 8*j);
+            metal::simdgroup_load(m[i][j], sub.Data(), sub.LD(), ulong2(0,0), sub.IsColMajor());
+          }
+    }
 
     template <int K, typename M1, typename M2>
     void AddMM(M1 m1, M2 m2, int tid)
     {
-      static_assert(K%8==0);
-      metal::simdgroup_float8x8 ma, mb;
-      for (uint i = 0; i < K; i+=8) {
-        metal::simdgroup_load(ma, m1.Data(), m1.LD(), ulong2(0, 0), m1.IsColMajor());
-        metal::simdgroup_load(mb, m2.Data(), m2.LD(), ulong2(0, 0), m2.IsColMajor());
-        metal::simdgroup_multiply_accumulate(m, ma, mb, m);
-        m1 = m1.ShiftCols(8);
-        m2 = m2.ShiftRows(8);
+      static_assert(K%8==0, "metal WarpMatrix::AddMM: K must be a multiple of 8");
+      metal::simdgroup_float8x8 ma[BH], mb[BW];
+      for (uint k = 0; k < K; k += 8) {
+        for (uint i = 0; i < BH; i++) {
+          auto sub = m1.SubMatrix(8*i, k);
+          metal::simdgroup_load(ma[i], sub.Data(), sub.LD(), ulong2(0,0), sub.IsColMajor());
+        }
+        for (uint j = 0; j < BW; j++) {
+          auto sub = m2.SubMatrix(k, 8*j);
+          metal::simdgroup_load(mb[j], sub.Data(), sub.LD(), ulong2(0,0), sub.IsColMajor());
+        }
+        for (uint i = 0; i < BH; i++)
+          for (uint j = 0; j < BW; j++)
+            metal::simdgroup_multiply_accumulate(m[i][j], ma[i], mb[j], m[i][j]);
       }
     }
 
     void Store(threadgroup T * data, int ld, int tid) {
-      metal::simdgroup_store(m, data, ld, ulong2(0,0));
+      Store (BareMatrix<RowMajor, threadgroup T*, int> (data, ld), tid);
     }
 
     template <typename M>
     void Store(M mat, int tid) {
-      metal::simdgroup_store(m, mat.Data(), mat.LD(), ulong2(0,0), mat.IsColMajor());
+      for (uint i = 0; i < BH; i++)
+        for (uint j = 0; j < BW; j++)
+          {
+            auto sub = mat.SubMatrix(8*i, 8*j);
+            metal::simdgroup_store(m[i][j], sub.Data(), sub.LD(), ulong2(0,0), sub.IsColMajor());
+          }
     }
   };
 #endif // TB_METAL
+
+#if defined(TB_CUDA) && defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 800
+  /*
+    fp64 tensor cores (sm_80+). Fragment layout per lane (gid = lane/4, tig = lane%4):
+    A(gid [+8], k+tig+4s), B(k+tig+4s, gid), C(gid [+8], 2*tig+{0,1}). The accumulator is
+    kept as 8x8 blocks c[i][j][2]; the m16 shapes cover two row blocks at once.
+    Shape by throughput on H100 (A fragments register-resident): m16n8k16 64 TF, m16n8k8
+    62 TF, m8n8k4 32 TF; with A loaded per k-step: L1 34-36 TF, shared 46-50 TF. sm_90 has
+    the m16 shapes, sm_80 only m8n8k4. Partial specialisation like the metal simdgroup one.
+  */
+  template <unsigned H, unsigned W>
+  class WarpMatrix<H,W,double>
+  {
+    static_assert(H%8==0 && W%8==0, "cuda WarpMatrix<double>: rows and cols must be multiples of 8");
+    typedef double T;
+    static constant constexpr unsigned BH = H/8;
+    static constant constexpr unsigned BW = W/8;
+    T c[BH][BW][2];
+
+    static __device__ __forceinline__ void MMA8x8x4 (T * c, T a, T b)
+    {
+      asm volatile("mma.sync.aligned.m8n8k4.row.col.f64.f64.f64.f64 {%0,%1}, {%2}, {%3}, {%0,%1};"
+                   : "+d"(c[0]), "+d"(c[1]) : "d"(a), "d"(b));
+    }
+    static __device__ __forceinline__ void MMA16x8x8 (T * c0, T * c1, const T * a, const T * b)
+    {
+      asm volatile("mma.sync.aligned.m16n8k8.row.col.f64.f64.f64.f64 {%0,%1,%2,%3}, {%4,%5,%6,%7}, {%8,%9}, {%0,%1,%2,%3};"
+                   : "+d"(c0[0]), "+d"(c0[1]), "+d"(c1[0]), "+d"(c1[1])
+                   : "d"(a[0]), "d"(a[1]), "d"(a[2]), "d"(a[3]), "d"(b[0]), "d"(b[1]));
+    }
+    static __device__ __forceinline__ void MMA16x8x16 (T * c0, T * c1, const T * a, const T * b)
+    {
+      asm volatile("mma.sync.aligned.m16n8k16.row.col.f64.f64.f64.f64 {%0,%1,%2,%3}, {%4,%5,%6,%7,%8,%9,%10,%11}, {%12,%13,%14,%15}, {%0,%1,%2,%3};"
+                   : "+d"(c0[0]), "+d"(c0[1]), "+d"(c1[0]), "+d"(c1[1])
+                   : "d"(a[0]), "d"(a[1]), "d"(a[2]), "d"(a[3]), "d"(a[4]), "d"(a[5]), "d"(a[6]), "d"(a[7]),
+                     "d"(b[0]), "d"(b[1]), "d"(b[2]), "d"(b[3]));
+    }
+  public:
+    WarpMatrix() { }
+    WarpMatrix(T val) { *this = val; }
+    template <typename M>
+    WarpMatrix(M mat, unsigned tid) { Load(mat, tid); }
+
+    void operator= (T val) {
+      for (unsigned i = 0; i < BH; i++)
+        for (unsigned j = 0; j < BW; j++)
+          c[i][j][0] = c[i][j][1] = val;
+    }
+
+    template <typename M>
+    void Load(M mat, unsigned tid) {
+      unsigned gid = (tid&31)>>2, tig = tid&3;
+      for (unsigned i = 0; i < BH; i++)
+        for (unsigned j = 0; j < BW; j++)
+          for (unsigned l = 0; l < 2; l++)
+            c[i][j][l] = mat(8*i+gid, 8*j+2*tig+l);
+    }
+
+    template <unsigned K, typename M1, typename M2>
+    void AddMM(M1 m1, M2 m2, unsigned tid)
+    {
+      static_assert(K%4==0, "cuda WarpMatrix<double>::AddMM: K must be a multiple of 4");
+      unsigned gid = (tid&31)>>2, tig = tid&3;
+      /*
+        TB_FP64_MMA_K selects the k-depth of the instruction (4: m8n8k4, 8: m16n8k8,
+        16: m16n8k16). The m16 shapes reach 62 TF only with register-resident or shared
+        A fragments; fed from L1 per k-step they are no faster than m8n8k4 in apply_btdtb
+        (measured Sept 2026), so 4 stays the default until the operands are staged.
+      */
+#ifndef TB_FP64_MMA_K
+#define TB_FP64_MMA_K 4
+#endif
+#if __CUDA_ARCH__ >= 900
+      constexpr unsigned KS = (H%16 != 0 || K%TB_FP64_MMA_K != 0) ? 4 : TB_FP64_MMA_K;
+#else
+      constexpr unsigned KS = 4;
+#endif
+      // fully unrolled: rolled loops push the accumulator array into local memory
+#pragma unroll
+      for (unsigned k = 0; k < K; k += KS)
+        {
+          if constexpr (KS == 4)
+            {
+              T a[BH], b[BW];
+              #pragma unroll
+              for (unsigned i = 0; i < BH; i++) a[i] = m1(8*i+gid, k+tig);
+              #pragma unroll
+              for (unsigned j = 0; j < BW; j++) b[j] = m2(k+tig, 8*j+gid);
+              #pragma unroll
+              for (unsigned i = 0; i < BH; i++)
+                for (unsigned j = 0; j < BW; j++)
+                  MMA8x8x4 (c[i][j], a[i], b[j]);
+            }
+          else
+            {
+              T a[BH/2][KS/2], b[BW][KS/4];
+              #pragma unroll
+              for (unsigned i = 0; i < BH/2; i++)
+                for (unsigned s = 0; s < KS/4; s++)
+                  {
+                    a[i][2*s]   = m1(16*i+gid,   k+tig+4*s);
+                    a[i][2*s+1] = m1(16*i+gid+8, k+tig+4*s);
+                  }
+              #pragma unroll
+              for (unsigned j = 0; j < BW; j++)
+                for (unsigned s = 0; s < KS/4; s++)
+                  b[j][s] = m2(k+tig+4*s, 8*j+gid);
+              #pragma unroll
+              for (unsigned i = 0; i < BH/2; i++)
+                for (unsigned j = 0; j < BW; j++)
+                  {
+                    if constexpr (KS == 16) MMA16x8x16 (c[2*i][j], c[2*i+1][j], a[i], b[j]);
+                    else                    MMA16x8x8  (c[2*i][j], c[2*i+1][j], a[i], b[j]);
+                  }
+            }
+        }
+    }
+
+    template <typename M>
+    void Store(M mat, unsigned tid) {
+      unsigned gid = (tid&31)>>2, tig = tid&3;
+      for (unsigned i = 0; i < BH; i++)
+        for (unsigned j = 0; j < BW; j++)
+          for (unsigned l = 0; l < 2; l++)
+            *mat.Addr(8*i+gid, 8*j+2*tig+l) = c[i][j][l];
+    }
+  };
+#endif // TB_CUDA fp64 tensor cores
 
 
 } // namespace tinybla
