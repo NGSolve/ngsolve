@@ -1228,12 +1228,15 @@ namespace ngbla
   public:
     static inline T & Assign (MatExpr<T> & self, const Expr<MultExpr<TA, TB>> & prod)
     {
-      size_t n = CombinedSize(prod.View().A().Height(), self.Spec().Height());
-      size_t m = CombinedSize(prod.View().B().Width(), self.Spec().Width());
-      size_t k = CombinedSize(prod.View().A().Width(), prod.View().B().Height());
-      SliceMatrix<Complex> b = SliceMatrix<typename std::remove_reference_t<TB>::TELEM>(prod.View().B()).RemoveConst();
+      // A(), B() return by value (e.g. Mat from Trans(Mat)): keep them alive while viewing their data
+      auto mata = prod.Spec().A();
+      auto matb = prod.Spec().B();
+      size_t n = CombinedSize(mata.Height(), self.Spec().Height());
+      size_t m = CombinedSize(matb.Width(), self.Spec().Width());
+      size_t k = CombinedSize(mata.Width(), matb.Height());
+      SliceMatrix<Complex> b = SliceMatrix<typename std::remove_reference_t<TB>::TELEM>(matb).RemoveConst();
       SliceMatrix<Complex> c = self.Spec();
-      NgGEMM<OP::IsAdd(),OP::IsPos()> (prod.View().A().Rows(0,n).Cols(0,k).RemoveConst(),
+      NgGEMM<OP::IsAdd(),OP::IsPos()> (mata.Rows(0,n).Cols(0,k).RemoveConst(),
                                        SliceMatrix<double>(k, 2*m, 2*b.Dist(), reinterpret_cast<double*>(b.Data())),
                                        SliceMatrix<double>(n, 2*m, 2*c.Dist(), reinterpret_cast<double*>(c.Data())));
       return self.Spec();
