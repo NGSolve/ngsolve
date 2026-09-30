@@ -499,7 +499,9 @@ namespace ngcomp
                SymSliceTens3<geo_ndof,dims,Real> ddphi { ddgeo + (baseip+locipnr)*geo_roundup, 1, int(nip_padded*geo_roundup) };
                auto dF = Cgeo * ddphi;
 #endif
-
+)"
+// MSVC limits a single literal to 16 KB, so the shader source is two adjacent raw strings
+R"(
                for (int comp = 0; comp < $DIMXREF; comp++)
                   xrefvals(comp) = (*mat_pointvalsref.Addr(locipnr+comp*bs_ipts,locelnr));
 
