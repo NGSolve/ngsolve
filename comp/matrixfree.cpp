@@ -1304,11 +1304,10 @@ namespace ngcomp
                 GeoShape (irgeo[q], shape);
                 geo_shapes.Row(q) = shape;
               }
-            Matrix<> geo_massinv(geo_ndof, geo_ndof);
-            geo_massinv = 0;
-            for (int q : Range(irgeo.Size()))
-              geo_massinv += irgeo[q].Weight() * geo_shapes.Row(q) * Trans(geo_shapes.Row(q));
-            CalcInverse (geo_massinv);
+            // Dubiner basis is orthogonal: the reference mass matrix is diagonal
+            Vector<> geo_massinv(geo_ndof);
+            if (dimS == 3) geofe_tet.GetDiagDualityMassInverse(geo_massinv);
+            else geofe_trig.GetDiagDualityMassInverse(geo_massinv);
             Tensor<3> geocoefs(elclass_inds.Size(), geo_ndof, dimR);
 
             Table<DofId> dofx(elclass_inds.Size(), felx.GetNDof());
@@ -1380,7 +1379,8 @@ namespace ngcomp
                         for (int q : Range(irgeo.Size()))
                           rhs += irgeo[q].Weight() * geo_shapes.Row(q) * Trans(mirgeo[q].GetPoint());
                         FlatMatrix<> coefs(geo_ndof, dimR, lh);
-                        coefs = geo_massinv * rhs;
+                        for (int n = 0; n < geo_ndof; n++)
+                          coefs.Row(n) = geo_massinv(n) * rhs.Row(n);
                         for (int n = 0; n < geo_ndof; n++)
                           for (size_t r = 0; r < dimR; r++)
                             geocoefs(i,n,r) = coefs(n,r);
