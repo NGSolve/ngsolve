@@ -1919,7 +1919,7 @@ z : double
 
   m.def("H1FE", [](ELEMENT_TYPE et, int order)
         {
-          SwitchET (et, [order] (auto et2) -> shared_ptr<BaseScalarFiniteElement>
+          return SwitchET (et, [order] (auto et2) -> shared_ptr<BaseScalarFiniteElement>
                     {
                       constexpr ELEMENT_TYPE ET = et2.ElementType();
                       return make_shared<H1HighOrderFE<ET>> (order);
@@ -1941,7 +1941,7 @@ order : int
 
   m.def("L2FE", [](ELEMENT_TYPE et, int order)
         {
-          SwitchET (et, [order] (auto et2) -> shared_ptr<BaseScalarFiniteElement>
+          return SwitchET (et, [order] (auto et2) -> shared_ptr<BaseScalarFiniteElement>
                     {
                       constexpr ELEMENT_TYPE ET = et2.ElementType();                      
                       return make_shared<L2HighOrderFE<ET>> (order);
