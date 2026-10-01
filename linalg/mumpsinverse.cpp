@@ -8,11 +8,11 @@
 #ifdef USE_MUMPS
 
 #include <la.hpp>
+#include <parallelvector.hpp>
 #include "mumpsinverse.hpp"
 
 namespace ngla
 {
-  using namespace ngcomp;
 
 #define JOB_INIT -1
 #define JOB_END -2
