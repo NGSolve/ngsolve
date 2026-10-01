@@ -25,6 +25,8 @@ option( USE_GUI     "build with GUI" ON )
 option( USE_MPI     "enable mpi parallelization" OFF )
 option( USE_OCC     "build with OpenCascade geometry kernel interface" ON)
 option( USE_PYTHON  "build with python interface" ON )
+set( POINTINDEX_BASE 1 CACHE STRING "index of first mesh point: 1 (default) or 0 (experimental)")
+set_property(CACHE POINTINDEX_BASE PROPERTY STRINGS 0 1)
 
 # only show output on failure in ci-builds
 if(DEFINED ENV{CI})
@@ -159,6 +161,7 @@ else(NETGEN_DIR)
     USE_PYTHON
     USE_MPI
     USE_OCC
+    POINTINDEX_BASE
     )
 
   if (USE_MPI AND SUPERBUILD_METIS)
