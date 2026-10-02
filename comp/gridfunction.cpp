@@ -939,32 +939,15 @@ namespace ngcomp
 	  }    
     }
 
-    Array<size_t> size_nodes(ntasks), size_data(ntasks);
-    comm.AllGather (nodenums.Size(), size_nodes);
-    comm.AllGather (data.Size(), size_data);
+    Table<Vec<N+1,int> > table_nodes;
+    Table<SCAL> table_data;
+    comm.GatherTable (FlatArray<Vec<N+1,int>>(nodenums), table_nodes);
+    comm.GatherTable (FlatArray<SCAL>(data), table_data);
 
-    if(id > 0)
-      { 
-	comm.Send(nodenums,0,22);
-	comm.Send(data,0,23);
-      }
-    else
+    if(id == 0)
       {
 	Array<Vec<N,int> > points(0);
 	Array<Vec<2,int> > positions(0);
-
-	NgMPI_Requests requests;
-
-	Table<Vec<N+1,int> > table_nodes(size_nodes);
-	table_nodes[0] = nodenums;
-	for (int p = 1; p < ntasks; p++)
-	  requests += comm.IRecv (table_nodes[p], p, 22);
-
-	Table<SCAL> table_data(size_data);
-	table_data[0] = data;
-	for (int p = 1; p < ntasks; p++)
-	  requests += comm.IRecv (table_data[p], p, 23);
-	requests.WaitAll();
 
 	FlatArray<SCAL> alldata = table_data.AsArray();
 
