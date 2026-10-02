@@ -842,7 +842,19 @@ namespace ngcomp
     contents << "<VTKFile type =\"Collection\" version=\"1.0\" byte_order=\"LittleEndian\">" << endl;
     contents << "<Collection>" << endl;
     auto comm = ma->GetCommunicator();
-    for (int l = comm.Size() == 1 ? 0 : 1; l < comm.Size(); l++)
+    // pieces are written by the ranks holding a part of the mesh
+    Array<int> parts;
+    if (comm.Size() == 1)
+      parts.Append (0);
+    else
+      {
+        if (ma->GetNNodes(NT_GLOBAL) > 0) parts.Append (comm.Rank());
+        Array<int> others;
+        ma->GetDistantProcs (NodeId(NT_GLOBAL, 0), others);
+        parts += others;
+        QuickSort (parts);
+      }
+    for (int l : parts)
     { 
       contents << "<DataSet timestep=\"" << times[0] << "\"";
       if (comm.Size() > 1)
@@ -892,7 +904,8 @@ namespace ngcomp
       filenamefinal << ".vtk";
 
 
-    if ((comm.Size() == 1) || (comm.Rank() > 0) )
+    bool writes_piece = (comm.Size() == 1) || (ma->GetNE() > 0);
+    if (writes_piece)
       cout << IM(4) << " Writing VTK-Output (" << lastoutputname << ")";
     if (output_cnt > 0)
     {
@@ -919,7 +932,7 @@ namespace ngcomp
         PvdFile(filename, output_cnt);
     } 
 
-    if ((comm.Size() == 1) || (comm.Rank() > 0) )
+    if (writes_piece)
       cout << IM(4) << ":" << flush;
     else
       return;

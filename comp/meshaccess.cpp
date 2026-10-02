@@ -924,7 +924,8 @@ namespace ngcomp
           }
         nnodes[NT_ELEMENT] = 0;
         nnodes[NT_FACET] = 0;
-        nnodes[NT_GLOBAL] = ( (GetCommunicator().Size() > 1) && (GetCommunicator().Rank() == 0) ? 0 : 1 );
+        nnodes[NT_GLOBAL] = (GetCommunicator().Size() == 1) ? 1 : 0;
+        global_node_procs.SetSize0();
         dim = -1;
         return;
       }
@@ -940,35 +941,36 @@ namespace ngcomp
     dim = mesh.GetDimension();
     nlevels = mesh.GetNLevels(); 
 
-    if (GetCommunicator().Size() > 1 && GetCommunicator().Rank() == 0)
+    for (int i = 0; i < 4; i++)  
       {
-        for (int i = 0; i < 4; i++)  
-          {
-            nnodes[i] = 0;
-            nelements[i] = 0;
-            nnodes_cd[i] = 0;
-            nelements_cd[i] = 0;
-          }
-        nnodes[NT_GLOBAL] = 0;
+        nnodes[i] = mesh.GetNNodes(i);
+        nelements[i] = mesh.GetNElements(i);
       }
-    else
+    for (int i = 0; i < 4; i++)  
       {
-	for (int i = 0; i < 4; i++)  
-	  {
-	    nnodes[i] = mesh.GetNNodes(i);
-	    nelements[i] = mesh.GetNElements(i);
-	  }
-	for (int i = 0; i < 4; i++)  
-	  {
-	    nnodes_cd[i] = 0;
-	    nelements_cd[i] = 0;
-	  }
-	for (int i = 0; i <= dim; i++)
-	  {
-	    nnodes_cd[i] = nnodes[dim-i];
-	    nelements_cd[i] = nelements[dim-i];
-	  }
-        nnodes[NT_GLOBAL] = 1;
+        nnodes_cd[i] = 0;
+        nelements_cd[i] = 0;
+      }
+    for (int i = 0; i <= dim; i++)
+      {
+        nnodes_cd[i] = nnodes[dim-i];
+        nelements_cd[i] = nelements[dim-i];
+      }
+
+    // the global node lives on the ranks holding a part of the mesh (rank 0 only if it has one)
+    auto comm = GetCommunicator();
+    bool participates = (comm.Size() == 1) || (nnodes[NT_VERTEX] > 0);
+    nnodes[NT_GLOBAL] = participates ? 1 : 0;
+    global_node_procs.SetSize0();
+    if (comm.Size() > 1)
+      {
+        // collective, like every change of the netgen mesh
+        Array<int> all(comm.Size());
+        comm.AllGather (int(participates), all);
+        if (participates)
+          for (int k = 0; k < comm.Size(); k++)
+            if (k != comm.Rank() && all[k])
+              global_node_procs.Append (k);
       }
     nnodes[NT_ELEMENT] = nnodes[StdNodeType (NT_ELEMENT, dim)];
     nnodes[NT_FACET] = nnodes[StdNodeType (NT_FACET, dim)];
@@ -1085,8 +1087,8 @@ namespace ngcomp
     periodic_node_pairs[NT_EDGE].SetSize(0);
     periodic_node_pairs[NT_FACE].SetSize(0);
 
-    if (GetCommunicator().Size() > 1 && GetCommunicator().Rank() == 0)
-      nid = 0; //hopefully this is enough...
+    if (GetCommunicator().Size() > 1 && nnodes[NT_VERTEX] == 0)
+      nid = 0;
 
     for (auto idnr : Range(nid))
       {
@@ -2630,18 +2632,8 @@ namespace ngcomp
   {
     if (GetCommunicator().Size() > 1) {
       if (node.GetType() == NT_GLOBAL) {
-	/** The global node is shared by everyone except rank 0 **/
-	if (GetCommunicator().Rank() == 0) {
-	  procs.SetSize0();
-	  return;
-	}
-	else {
-	  procs.SetSize(GetCommunicator().Size()-2);
-	  for (int k = 1; k < GetCommunicator().Rank(); k++)
-	    { procs[k-1] = k; }
-	  for (int k = GetCommunicator().Rank() + 1; k < GetCommunicator().Size(); k++)
-	    { procs[k-2] = k; }
-	}
+        // shared by all ranks holding a part of the mesh, see UpdateBuffers
+        procs = global_node_procs;
       }
       else { // node.GetType() == NT_GLOBAL
 	auto dps = mesh.GetDistantProcs(node.GetType(), node.GetNr());

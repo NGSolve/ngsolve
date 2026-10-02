@@ -29,8 +29,9 @@ printonce("(u,f) =", ip)
 
     
 import pickle
-netgen.meshing.SetParallelPickling(True)
-pickle.dump (gfu, open("solution.pickle"+str(comm.rank), "wb"))
+gfu_global = gfu.Gather()    # collective: the whole solution on rank 0
+if comm.rank == 0:
+    pickle.dump (gfu_global, open("solution.pickle", "wb"))
 
 
 
