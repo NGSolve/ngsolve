@@ -369,7 +369,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     
     .def(py::pickle([] (const BaseVector& bv)
                     {
-                      MemoryView mv((void*) &bv.FV<double>()[0], sizeof(double) * bv.FV<double>().Size());
+                      MemoryView mv((void*) bv.FV<double>().Data(), sizeof(double) * bv.FV<double>().Size());   // Data(): also for empty vectors
                       return py::make_tuple(bv.Size(),bv.IsComplex(),bv.EntrySize(),mv);
                     },
                     [] (py::tuple state) -> shared_ptr<BaseVector>

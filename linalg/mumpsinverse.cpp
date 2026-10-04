@@ -449,6 +449,11 @@ namespace ngla
     int ntasks = comm.Size();
     int id = comm.Rank();
 
+    // MUMPS is still driven with rank 0 as a host without rows
+    if (ntasks > 1 && id == 0 && pardofs->GetNDofLocal() > 0)
+      throw Exception("ParallelMumpsInverse: rank 0 holding dofs is not supported yet, "
+                      "distribute the mesh with root_participates=False");
+
     if (id == 0)
       {
 	if ( ( inner && inner->Size() < a.Height() ) ||

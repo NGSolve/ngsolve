@@ -109,7 +109,7 @@ namespace ngcomp
 
   void NumberFESpace::Update()
     {
-      SetNDof( ((ma->GetCommunicator().Size() > 1) && (ma->GetCommunicator().Rank() == 0)) ? 0 : 1 );
+      SetNDof (ma->GetNNodes(NT_GLOBAL));   // 0 on ranks without a part of the mesh
     }
 
   
@@ -138,9 +138,8 @@ namespace ngcomp
 
   void NumberFESpace :: GetGlobalDofNrs (int gnr, Array<int> & dnums) const
   {
-    /** If parallel, there is one global DOF shared by all ranks except rank 0.
-	If not parallel, there is also one DOF. **/
-    if ( IsParallel() && (GetParallelDofs()->GetCommunicator().Size() > 1) && (GetParallelDofs()->GetCommunicator().Rank() == 0) )
+    /** one global DOF, shared by all ranks holding a part of the mesh **/
+    if (IsParallel() && ma->GetNNodes(NT_GLOBAL) == 0)
       { dnums.SetSize0(); }
     else
       { dnums.SetSize(1); dnums[0] = 0; }

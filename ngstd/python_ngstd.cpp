@@ -421,7 +421,7 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
                           auto array = py::cast<py::array_t<char>>(state[1]);
                           auto size = array.size();
                           char* mem = new char[size];
-                          memcpy(mem, array.data(0), size);
+                          if (size) memcpy(mem, array.data(), size);   // data(0) throws for empty arrays
                           return MemoryView (mem, size);
                         }
                       else

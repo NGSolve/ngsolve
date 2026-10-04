@@ -118,14 +118,11 @@ namespace ngla
     */
 
     
-    if (id != 0)
-      {
-	// const MeshAccess & ma = nodaldofs -> GetMeshAccess();
-
+    // local matrix entries in global numbering (all ranks, the root keeps its own)
+    Array<int> rows, cols;
+    Array<TM> vals;
+    {
 	int ndof = paralleldofs->GetNDofLocal();
-
-	Array<int> rows, cols;
-	Array<TM> vals;
 
 	for (int row = 0; row < ndof; row++)
 	  if (!subset || subset->Test(row))
@@ -149,7 +146,10 @@ namespace ngla
 		    vals.Append (rvals[j]);
 		  }
 	    }
+    }
 
+    if (id != 0)
+      {
 	comm.Send (rows, 0, NG_MPI_TAG_SOLVE);
 	comm.Send (cols, 0, NG_MPI_TAG_SOLVE);
 	comm.Send (vals, 0, NG_MPI_TAG_SOLVE);
@@ -173,12 +173,11 @@ namespace ngla
 	bool symmetric = (dynamic_cast<const SparseMatrixSymmetric<TM>*>(&mat) != NULL);
 	cout << IM(4) << "symmetric? " << symmetric << endl;
 
-	Array<int> rows, cols;
-	Array<TM> vals;
-	HashTable<IVec<1>, int> ht_globdofs(100000);
-	// int num_globdofs = 0; 
-
 	cout << IM(4) << "collect data" << flush;
+
+	for (int i = 0; i < global_nums.Size(); i++)
+	  if (global_nums[i] != -1)
+	    loc2glob.Add (0, global_nums[i]);
 
 	for (int src = 1; src < ntasks; src++)
 	  {
@@ -315,12 +314,19 @@ namespace ngla
 	Table<TV> exdata(sizes);
 
 
-	for (int src = 1; src < ntasks; src++)
+	FlatVector<TV> fx = x.FV<TV> ();
+	FlatVector<TV> fy = y.FV<TV> ();
+
+	for (int src = 0; src < ntasks; src++)
 	  {
 	    FlatArray<int> selecti = loc2glob[src];
 
 	    Array<TV> lx(selecti.Size());
-	    comm.Recv (lx, src, NG_MPI_TAG_SOLVE);
+	    if (src == 0)
+	      for (int i = 0; i < select.Size(); i++)
+		lx[i] = fx(select[i]);
+	    else
+	      comm.Recv (lx, src, NG_MPI_TAG_SOLVE);
 
 	    if(is_x_cum) {
 	      for (int i = 0; i < selecti.Size(); i++)
@@ -333,6 +339,9 @@ namespace ngla
 	  }
 
 	hy = (*inv) * hx;
+
+	for (int i = 0; i < select.Size(); i++)
+	  fy(select[i]) += s * hy(loc2glob[0][i]);
 
         NgMPI_Requests requ;
 	for (int src = 1; src < ntasks; src++)
