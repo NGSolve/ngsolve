@@ -3,7 +3,6 @@
 
 #include <ngstd.hpp>
 #include <bla.hpp>
-using namespace ngbla;
 
 
 
