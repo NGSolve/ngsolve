@@ -329,6 +329,33 @@ def test_fp32_fmm_matches_fp64_far_field(operator_name, kappa, order, maxdirect)
         assert repeat_relerr < 1e-5
 
 
+def test_fp32_potential_screen_matches_fp64():
+    # fp32 S->R from the sphere to the smaller screen boxes needs the balanced ShiftZ scaling
+    kappa = 20
+    screen = WorkPlane(Axes((0, 0, 0), Z, X)).RectangleC(4, 4).Face()
+    sphere = Fuse(Sphere((0, 0, 0), 1.5).faces)
+    screen.faces.name = "screen"
+    sphere.faces.name = "sphere"
+    mesh = Compound([screen, sphere]).GenerateMesh(maxh=0.6).Curve(1)
+    fes = Compress(SurfaceL2(mesh, order=1, complex=True, definedon=mesh.Boundaries("sphere")))
+    u = fes.TrialFunction()
+    gf = GridFunction(fes)
+    gf.vec.SetRandom(3)
+    target = mesh.Boundaries("screen")
+
+    with TaskManager():
+        pot64, pot32 = [
+            (
+                kappa * HelmholtzSL(u * ds, kappa, **options)
+                + 1j * HelmholtzDL(u * ds, kappa, **options)
+            )(gf, target)
+            for options in ({}, {"fp32": True})
+        ]
+        err2 = Integrate(Norm(pot32 - pot64) ** 2, mesh, definedon=target)
+        ref2 = Integrate(Norm(pot64) ** 2, mesh, definedon=target)
+    assert np.sqrt(err2 / ref2) < 5e-6
+
+
 @pytest.mark.parametrize("operator_name", ["LaplaceSL", "HelmholtzSL"])
 def test_potential_operator_local_expansion_matches_direct_potential(operator_name):
     mesh = _sphere_mesh()

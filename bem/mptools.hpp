@@ -385,6 +385,8 @@ namespace ngsbem
     //   values(i) = Complex (j(i)) + Complex(y(i)) * Complex(0,1);
   }
 
+  int BalancedScaleExponent (int N, Complex x);
+
 
 
 
