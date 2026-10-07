@@ -65,7 +65,7 @@ inherit.cmake.define = "append"
 cmake.define.BUILD_STUB_FILES = "OFF"
 
 [tool.cibuildwheel]
-build = "cp310-* cp311-* cp312-* cp313-* cp314-*"
+build = "cp311-* cp312-* cp313-* cp314-* cp315-*"
 skip = "*-musllinux_* *_i686 *-win32"
 # Build without isolation so CMake's FindPython sees the real Python headers and
 # the tcl/tk headers in sys.prefix.

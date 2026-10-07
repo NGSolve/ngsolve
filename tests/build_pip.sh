@@ -16,7 +16,7 @@ export CCACHE_BASEDIR=$(pwd)
 export CCACHE_NOHASHDIR=1
 export CCACHE_DIR=${CCACHE_DIR:-$HOME/.ccache}
 
-for pyversion in 314 313 312 311 310
+for pyversion in 315 314 313 312 311
 do
     export PYDIR="/opt/python/cp${pyversion}-cp${pyversion}/bin"
     echo $PYDIR
