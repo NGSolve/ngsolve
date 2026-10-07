@@ -1,5 +1,6 @@
 export PY_DIR=/Library/Frameworks/Python.framework/Versions/3.15/bin
 export PATH=$PY_DIR:$PATH
+export PATH=`python3 -m site --user-base`/bin:$PATH
 TMP_DIR=`realpath /tmp`
 export ROOT_DIR=$TMP_DIR/$CI_PIPELINE_ID
 export CCACHE_BASEDIR=$ROOT_DIR
