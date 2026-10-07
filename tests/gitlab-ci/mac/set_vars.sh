@@ -1,4 +1,4 @@
-export PY_DIR=/Library/Frameworks/Python.framework/Versions/3.14/bin
+export PY_DIR=/Library/Frameworks/Python.framework/Versions/3.15/bin
 export PATH=$PY_DIR:$PATH
 TMP_DIR=`realpath /tmp`
 export ROOT_DIR=$TMP_DIR/$CI_PIPELINE_ID
