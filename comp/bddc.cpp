@@ -758,6 +758,7 @@ namespace ngcomp
 
   template class BDDCPreconditioner<double>;
   template class BDDCPreconditioner<double, Complex>;
+  template class BDDCPreconditioner<Complex>;
 
 
   template <>
