@@ -849,9 +849,7 @@ namespace ngcomp
     else
       {
         if (ma->GetNNodes(NT_GLOBAL) > 0) parts.Append (comm.Rank());
-        Array<int> others;
-        ma->GetDistantProcs (NodeId(NT_GLOBAL, 0), others);
-        parts += others;
+        parts += ma->GetDistantProcs (NodeId(NT_GLOBAL, 0));
         QuickSort (parts);
       }
     for (int l : parts)
