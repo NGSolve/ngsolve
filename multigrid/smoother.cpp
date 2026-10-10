@@ -817,14 +817,21 @@ namespace ngmg
           inv[level-1]->Update();
         else
           {
-	if (biform.UsesEliminateInternal())
+	// clusters (e.g. hcurl prisms) may contain dirichlet and local dofs
+	const FESpace & fes = *biform.GetFESpace();
+	BitArray freedofs(*fes.GetFreeDofs(biform.UsesEliminateInternal()));
+	for (auto dbc : additional_dirichlet_boundaries)
 	  {
-	    const FESpace & fes = *biform.GetFESpace();
-	    for (int j = 0; j < direct->Size(); j++)
-	      if (fes.GetDofCouplingType(j) == LOCAL_DOF)
-		(*direct)[j] = 0;
+	    Region reg(fes.GetMeshAccess(), dbc.vbn.vb, dbc.vbn.name);
+	    BitArray dofs = fes.GetDofs(reg, dbc.proxy->Evaluator().get());
+	    dofs.Invert();
+	    freedofs.And(dofs);
 	  }
-	inv[level-1] = dynamic_cast<const BaseSparseMatrix&> 
+	direct = make_shared<Array<int>> (*direct);
+	for (size_t j = 0; j < direct->Size(); j++)
+	  if (!freedofs.Test(j))
+	    (*direct)[j] = 0;
+	inv[level-1] = dynamic_cast<const BaseSparseMatrix&>
 	  (biform.GetMatrix()).InverseMatrix (direct);
         }
       }
