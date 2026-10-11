@@ -1477,7 +1477,7 @@ namespace ngfem
         int ii = 3;
         for (int i = 0; i < 3; i++)
           {
-            int p = order_edge[i];
+            int p = order_edge[i] * usegrad_edge[i];
             if (i == facetnr)
               {
                 IVec<2> e = GetEdgeSort (i, vnums);
@@ -1504,10 +1504,24 @@ namespace ngfem
       { // inner shapes
         int ii = 3;
         for (int i = 0; i < 3; i++)
-          ii += order_edge[i];
+          ii += order_edge[i] * usegrad_edge[i];
 
 
         auto trafo = 1/mip.GetMeasure()*mip.GetJacobian();
+
+        if (!usegrad_face[0])
+          {
+            // no gradients: rot of P_{p-1}, annihilates the gradient bubbles
+            int p = order_face[0][0];
+            if (p >= 2)
+              DubinerBasis::Eval(p-1, AutoDiff<2,T>(x, 0), AutoDiff<2,T>(y, 1),
+                                 SBLambda([&] (size_t nr, auto val)
+                                          {
+                                            if (nr == 0) return;
+                                            shape[ii++] = trafo * Vec<2,T> (val.DValue(1), -val.DValue(0));
+                                          }));
+            return;
+          }
         DubinerBasis::Eval(order-2, x, y,
                            SBLambda([&] (size_t nr, auto val)
                                     {
@@ -1666,6 +1680,19 @@ namespace ngfem
 		 Matrix<> Ftmp(2,2);
 		 Ftmp = Trans(F)*F;
 		 auto det = sqrt(Ftmp(0,0)*Ftmp(1,1)-Ftmp(1,0)*Ftmp(0,1));
+
+		 if (!usegrad_face[f])
+		   {
+		     // no gradients: surface rot of P_{p-1}, annihilates the face gradients
+		     if (p >= 2)
+		       DubinerBasis::Eval(p-1, AutoDiff<2,T>(xi, 0), AutoDiff<2,T>(eta, 1),
+					  SBLambda([&] (size_t nr, auto val)
+						   {
+						     if (nr == 0) return;
+						     shape[ii++] = 1/(det*mip.GetMeasure())*mip.GetJacobian()*(F*Vec<2,T> (val.DValue(1), -val.DValue(0)));
+						   }));
+		     continue;
+		   }
 		 
 		 DubinerBasis::Eval(order-2, xi, eta,
                                     SBLambda([&] (size_t nr, auto val)
@@ -1684,7 +1711,7 @@ namespace ngfem
 						   }));
 	       }
 	     else
-	       ii += (p+!type1)*(p-1);
+	       ii += usegrad_face[f] ? (p+!type1)*(p-1) : (p+2)*(p-1)/2;
 	     
 	  }
       }
@@ -1693,7 +1720,7 @@ namespace ngfem
         for (int i = 0; i < 4; i++)
 	  {
 	    int p = order_face[i][0];
-	    ii += (p+!type1)*(p-1);
+	    ii += usegrad_face[i] ? (p+!type1)*(p-1) : (p+2)*(p-1)/2;
 	  }
       }
     if (ip.VB() == VOL)
@@ -1703,6 +1730,29 @@ namespace ngfem
 	// auto zphys = mip.GetPoint()(2);
 
 	auto trafo = 1/mip.GetMeasure()*mip.GetJacobian();
+
+	if (!usegrad_cell)
+	  {
+	    // no gradients: div-free P_{p-3}^3, curls of (0,x*a,0), (0,0,x*a), (0,z*b(y,z),0)
+	    int p = order_cell[0];
+	    AutoDiff<3,T> adx(x, 0), ady(y, 1), adz(z, 2);
+	    if (p >= 3)
+	      {
+		DubinerBasis3D::Eval (p-3, adx, ady, adz,
+				      SBLambda([&](size_t j, auto val)
+					       {
+						 auto f = adx*val;
+						 shape[ii++] = trafo*Vec<3,T>(-f.DValue(2), 0, f.DValue(0));
+						 shape[ii++] = trafo*Vec<3,T>(f.DValue(1), -f.DValue(0), 0);
+					       }));
+		DubinerBasis::Eval (p-3, ady, adz,
+				    SBLambda([&](size_t j, auto val)
+					     {
+					       shape[ii++] = trafo*Vec<3,T>(-(adz*val).DValue(2), 0, 0);
+					     }));
+	      }
+	    return;
+	  }
 
 	DubinerBasis3D::Eval (order-3, lam[0], lam[1], lam[2],
 			      SBLambda([&](size_t j, T val) LAMBDA_INLINE
