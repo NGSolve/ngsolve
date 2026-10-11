@@ -1428,96 +1428,93 @@ allow_fail : bool
          {
            auto pts = points.unchecked<1>(); // pts has array access without bounds checks
            size_t npoints = pts.shape(0);
-           py::array np_array;
-           if (!self->IsComplex())
+           size_t dim = self->Dimension();
+           constexpr size_t maxp = 16;
+
+           // collects consecutive points of one element into ir
+           auto collect = [&] (size_t & i, IntRange r, IntegrationRule & ir)
              {
-               Array<double> vals(npoints * self->Dimension());
-               constexpr size_t maxp = 16;
+               auto& mp = pts(i);
+               if(mp.nr == -1)
+                 throw Exception("Meshpoint " + to_string(i) + " not in mesh!");
+               auto ei = ElementId(mp.vb, mp.nr);
+               auto first = i;
+               ir.SetSize(0);
+               ir.Append (IntegrationPoint(mp.x, mp.y, mp.z));
+               ir.Last().SetFacetNr(mp.facetnr, mp.eb);
+               i++;
+               while (i < r.end() && ElementId(pts(i).vb, pts(i).nr) == ei && i < first+maxp && pts(i).facetnr == mp.facetnr && pts(i).eb == mp.eb)
+                 {
+                   ir.Append(IntegrationPoint(pts(i).x, pts(i).y, pts(i).z));
+                   ir.Last().SetFacetNr(pts(i).facetnr, pts(i).eb);
+                   i++;
+                 }
+               return ei;
+             };
+
+           auto evaluate = [&] (auto & vals)
+             {
+               typedef std::remove_reference_t<decltype(vals[0])> TSCAL;
                ParallelForRange(Range(npoints), [&](IntRange r)
                            {
                              LocalHeapMem<50000> lh("CF evaluate");
-                             Matrix<SIMD<double>> simdvals(self->Dimension(), maxp / SIMD<double>::Size());
+                             Matrix<SIMD<TSCAL>> simdvals(dim, maxp / SIMD<double>::Size());
                              IntegrationRule ir;
 
                              try
                                {
-                                 for (auto i = r.begin(); i < r.end(); )
+                                 for (size_t i = r.begin(); i < r.end(); )
                                    {
                                      HeapReset hr(lh);
-                                     auto& mp = pts(i);
-                                     if(mp.nr == -1)
-                                       throw Exception("Meshpoint " + to_string(i) + " not in mesh!");
-                                     auto ei = ElementId(mp.vb, mp.nr);
-                                     auto& trafo = mp.mesh->GetTrafo(ei, lh);
-                                     ir.SetSize(0);
-                                     
                                      auto first = i;
-                                     ir.Append (IntegrationPoint(mp.x, mp.y, mp.z));
-                                     ir.Last().SetFacetNr(mp.facetnr, mp.eb);
-                                     i++;
-                                     while (i < r.end() && ElementId(pts(i).vb, pts(i).nr) == ei && i < first+maxp && pts(i).facetnr == mp.facetnr && pts(i).eb == mp.eb)
-                                       {
-                                         ir.Append(IntegrationPoint(pts(i).x, pts(i).y, pts(i).z));
-                                         ir.Last().SetFacetNr(pts(i).facetnr, pts(i).eb);
-                                         i++;
-                                       }
+                                     auto mesh = pts(i).mesh;
+                                     auto& trafo = mesh->GetTrafo(collect(i, r, ir), lh);
                                      SIMD_IntegrationRule simd_ir(ir, lh);
-                                     auto& mir = trafo(simd_ir, lh);                                 
+                                     auto& mir = trafo(simd_ir, lh);
                                      self->Evaluate(mir, simdvals.Cols(0, simd_ir.Size()));
-                                     
-                                     FlatMatrix<double> fm(ir.Size(), self->Dimension(), &vals[first*self->Dimension()]);
-                                     SliceMatrix<> simdfm(self->Dimension(), ir.Size(), simdvals.Width()*SIMD<double>::Size(),
-                                                          (double*)&simdvals(0,0));
-                                     fm = Trans(simdfm);
+
+                                     FlatMatrix<TSCAL> fm(ir.Size(), dim, &vals[first*dim]);
+                                     constexpr size_t S = SIMD<double>::Size();
+                                     for (size_t k = 0; k < dim; k++)
+                                       for (size_t j = 0; j < ir.Size(); j++)
+                                         {
+                                           auto v = simdvals(k, j/S);
+                                           if constexpr (is_same_v<TSCAL,Complex>)
+                                             fm(j,k) = Complex(v.real()[j%S], v.imag()[j%S]);
+                                           else
+                                             fm(j,k) = v[j%S];
+                                         }
                                    }
                                }
                              catch (const ExceptionNOSIMD& e)
                                {
-                                 for (auto i = r.begin(); i < r.end(); )
+                                 for (size_t i = r.begin(); i < r.end(); )
                                    {
                                      HeapReset hr(lh);
-                                     auto& mp = pts(i);
-                                     if(mp.nr == -1)
-                                       throw Exception("Meshpoint " + to_string(i) + " not in mesh!");
-                                     auto ei = ElementId(mp.vb, mp.nr);
-                                     auto& trafo = mp.mesh->GetTrafo(ei, lh);
-                                     ir.SetSize(0);
-                                     
                                      auto first = i;
-                                     ir.Append (IntegrationPoint(mp.x, mp.y, mp.z));
-                                     ir.Last().SetFacetNr(mp.facetnr, mp.eb);
-                                     i++;
-                                     while (i < r.end() && ElementId(pts(i).vb, pts(i).nr) == ei && i < first+maxp && pts(i).facetnr == mp.facetnr && pts(i).eb == mp.eb)
-                                       {
-                                         ir.Append(IntegrationPoint(pts(i).x, pts(i).y, pts(i).z));
-                                         ir.Last().SetFacetNr(pts(i).facetnr, pts(i).eb);
-                                         i++;
-                                       }
+                                     auto mesh = pts(i).mesh;
+                                     auto& trafo = mesh->GetTrafo(collect(i, r, ir), lh);
                                      auto& mir = trafo(ir, lh);
-                                     FlatMatrix<double> fm(ir.Size(), self->Dimension(), &vals[first*self->Dimension()]);
+                                     FlatMatrix<TSCAL> fm(ir.Size(), dim, &vals[first*dim]);
                                      self->Evaluate(mir, fm);
                                    }
                                }
                            });
-               np_array = MoveToNumpyArray(vals);
+               return MoveToNumpyArray(vals);
+             };
+
+           py::array np_array;
+           if (!self->IsComplex())
+             {
+               Array<double> vals(npoints * dim);
+               np_array = evaluate(vals);
              }
            else
              {
-               Array<Complex> vals(npoints * self->Dimension());
-               ParallelFor(Range(npoints), [&](size_t i)
-                           {
-                             LocalHeapMem<1000> lh("CF evaluate");
-                             auto& mp = pts(i);
-                             auto& trafo = mp.mesh->GetTrafo(ElementId(mp.vb, mp.nr), lh);
-                             auto ip = IntegrationPoint(mp.x,mp.y,mp.z);
-                             ip.SetFacetNr(mp.facetnr, mp.eb);
-                             auto& mip = trafo(ip,lh);
-                             FlatVector<Complex> fv(self->Dimension(), &vals[i*self->Dimension()]);
-                             self->Evaluate(mip, fv);
-                           });
-               np_array = MoveToNumpyArray(vals);
+               Array<Complex> vals(npoints * dim);
+               np_array = evaluate(vals);
              }
-           return np_array.attr("reshape")(npoints, self->Dimension());
+           return np_array.attr("reshape")(npoints, dim);
          });
     }
 
