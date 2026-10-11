@@ -165,6 +165,14 @@ namespace ngfem
          FlatVector<Complex> flux,
          LocalHeap & lh) const
   {
+    if constexpr (DIFFOP::SUPPORT_PML)
+      if (bmip.IsComplex())
+        {
+          const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE,Complex> & mip =
+            static_cast<const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE,Complex>&> (bmip);
+          DIFFOP::Apply (bfel, mip, x, flux, lh);
+          return;
+        }
     const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & mip =
       static_cast<const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bmip);
     DIFFOP::Apply (bfel, mip, x, flux, lh);
