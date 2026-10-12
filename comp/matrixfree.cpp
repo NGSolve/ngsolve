@@ -1352,19 +1352,31 @@ namespace ngcomp
                       DDgeo(n,c,i) = ddshape(n,c);
                 }
 
-            // projection: mass matrix and the quadrature for the right-hand sides
+            // projection: the quadrature for the right-hand sides
             IntegrationRule irgeo(eltype, 2*geo_order);
-            Matrix<> geo_shapes(irgeo.Size(), geo_ndof);
+            // the non-constant modes are fitted to the mesh Jacobians: the points
+            // carry the roundoff eps |x| of their absolute position, the
+            // Jacobians do not; shape 0 is the constant 1 (no gradient)
+            Tensor<3> geo_dshapes(geo_ndof, dimS, irgeo.Size());
             for (int q : Range(irgeo.Size()))
               {
-                Vector<> shape(geo_ndof);
-                GeoShape (irgeo[q], shape);
-                geo_shapes.Row(q) = shape;
+                Matrix<> dshape(geo_ndof, dimS);
+                GeoDShape (irgeo[q], dshape);
+                for (int n = 0; n < geo_ndof; n++)
+                  for (size_t c = 0; c < dimS; c++)
+                    geo_dshapes(n,c,q) = dshape(n,c);
               }
-            // Dubiner basis is orthogonal: the reference mass matrix is diagonal
-            Vector<> geo_massinv(geo_ndof);
-            if (dimS == 3) geofe_tet.GetDiagDualityMassInverse(geo_massinv);
-            else geofe_trig.GetDiagDualityMassInverse(geo_massinv);
+            Matrix<> geo_gradmass(geo_ndof-1, geo_ndof-1);
+            geo_gradmass = 0.0;
+            for (int q : Range(irgeo.Size()))
+              for (int n = 1; n < geo_ndof; n++)
+                for (int m = 1; m < geo_ndof; m++)
+                  for (size_t c = 0; c < dimS; c++)
+                    geo_gradmass(n-1,m-1) += irgeo[q].Weight() * geo_dshapes(n,c,q) * geo_dshapes(m,c,q);
+            CalcInverse (geo_gradmass);
+            double geo_volume = 0;
+            for (int q : Range(irgeo.Size()))
+              geo_volume += irgeo[q].Weight();
             Tensor<3> geocoefs(elclass_inds.Size(), geo_ndof, dimR);
 
             Table<DofId> dofx(elclass_inds.Size(), felx.GetNDof());
@@ -1431,13 +1443,23 @@ namespace ngcomp
 
                       {
                         auto & mirgeo = trafo(irgeo, lh);
-                        FlatMatrix<> rhs(geo_ndof, dimR, lh);
+                        FlatMatrix<> rhs(geo_ndof-1, dimR, lh);
                         rhs = 0;
                         for (int q : Range(irgeo.Size()))
-                          rhs += irgeo[q].Weight() * geo_shapes.Row(q) * Trans(mirgeo[q].GetPoint());
+                          {
+                            FlatMatrix<> jac = mirgeo[q].GetJacobian();
+                            for (int n = 1; n < geo_ndof; n++)
+                              for (size_t r = 0; r < dimR; r++)
+                                for (size_t c = 0; c < dimS; c++)
+                                  rhs(n-1,r) += irgeo[q].Weight() * geo_dshapes(n,c,q) * jac(r,c);
+                          }
                         FlatMatrix<> coefs(geo_ndof, dimR, lh);
-                        for (int n = 0; n < geo_ndof; n++)
-                          coefs.Row(n) = geo_massinv(n) * rhs.Row(n);
+                        coefs.Rows(1, geo_ndof) = geo_gradmass * rhs;
+                        // constant mode: the mean of x minus the mean of the other
+                        // modes, which vanishes (orthogonal to the constant)
+                        coefs.Row(0) = 0.0;
+                        for (int q : Range(irgeo.Size()))
+                          coefs.Row(0) += irgeo[q].Weight() / geo_volume * mirgeo[q].GetPoint();
                         for (int n = 0; n < geo_ndof; n++)
                           for (size_t r = 0; r < dimR; r++)
                             geocoefs(i,n,r) = coefs(n,r);
@@ -1457,10 +1479,10 @@ namespace ngcomp
                                   nrmmax = max(nrmmax, fabs(jac(r,c)));
                                 }
                           }
-                        // if (errmax > 1e-8*nrmmax)
-                        //   throw Exception("matrix-free geometry: projected mapping deviates from the mesh Jacobian by "
-                        //                   + ToString(errmax/nrmmax) + " (relative), element " + ToString(elclass_inds[i])
-                        //                   + ", geometry order " + ToString(geo_order));
+                        if (errmax > 1e-8*nrmmax)
+                          throw Exception("matrix-free geometry: projected mapping deviates from the mesh Jacobian by "
+                                          + ToString(errmax/nrmmax) + " (relative), element " + ToString(elclass_inds[i])
+                                          + ", geometry order " + ToString(geo_order));
                       }
                       
                       FlatMatrix<> transx(dimx, dimxref, lh);
