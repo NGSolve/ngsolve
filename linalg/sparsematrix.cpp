@@ -2158,13 +2158,7 @@ shared_ptr<BaseMatrix> InverseSparseMatrixTM (shared_ptr<const SparseMatrix<TM,T
 	  if(invtype == "umfpack") return make_shared<UmfpackInverse<TM,TV_ROW,TV_COL>>(A, subset, clusters);
   #endif
   #ifdef USE_MUMPS
-      if(invtype == "mumps")
-        {
-          if constexpr (is_same<TM, float>())
-            throw Exception("MUMPS inverse does not support float matrices");
-          else
-            return make_shared<MumpsInverse<TM,TV_ROW,TV_COL>> (*A, subset, clusters);
-        }
+      if(invtype == "mumps") return make_shared<MumpsInverse<TM,TV_ROW,TV_COL>> (*A, subset, clusters);
   #endif
   if(is_pardiso_available && (invtype == "pardiso" || invtype == "pardisospd"))
       return make_shared<PardisoInverse<TM,TV_ROW,TV_COL>> (A, subset, clusters);

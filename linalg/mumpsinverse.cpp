@@ -976,6 +976,7 @@ namespace ngla
 
 
 
+  template class MumpsInverse<float>;
   template class MumpsInverse<double>;
   template class MumpsInverse<Complex>;
   template class MumpsInverse<double,Complex,Complex>;
