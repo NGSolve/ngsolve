@@ -3763,6 +3763,167 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
   };
 
 
+  template <int D>
+  Mat<D,D> Piola2RefBasis (const BaseScalarFiniteElement & feli)
+  {
+    Mat<D,D> B;
+    if constexpr (D == 2)
+      {
+        IVec<3> verts = dynamic_cast<const VertexOrientedFE<ET_TRIG> &>(feli).GetVertexOrientedFace(0);
+        Mat<3,2> gradv = {{0, 1}, {-1, 0}, {1, -1}};
+        for (int j = 0; j < 2; j++)
+          B.Col(j) = gradv.Row(verts[j]);
+      }
+    else
+      {
+        IVec<4> verts = { 0, 1, 2, 3 };
+        auto vnums = dynamic_cast<const VertexOrientedFE<ET_TET> &>(feli).GetVertexNumbers();
+        if (vnums[verts[0]] > vnums[verts[1]]) Swap (verts[0], verts[1]);
+        if (vnums[verts[2]] > vnums[verts[3]]) Swap (verts[2], verts[3]);
+        if (vnums[verts[0]] > vnums[verts[2]]) Swap (verts[0], verts[2]);
+        if (vnums[verts[1]] > vnums[verts[3]]) Swap (verts[1], verts[3]);
+        if (vnums[verts[1]] > vnums[verts[2]]) Swap (verts[1], verts[2]);
+        Vec<3> gradv[4] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}, {-1, -1, -1}};
+        for (int j = 0; j < 3; j++)
+          B.Col(j) = Cross(gradv[verts[j]]-gradv[verts[3]], gradv[verts[(j+1)%3]]-gradv[verts[3]]);
+      }
+    return B;
+  }
+
+  template <typename BASE>
+  class DiffOpPiola2 : public DiffOp<DiffOpPiola2<BASE>>
+  {
+  public:
+    static constexpr int DIM = BASE::DIM;
+    static constexpr int DIM_SPACE = BASE::DIM_SPACE;
+    static constexpr int DIM_ELEMENT = BASE::DIM_ELEMENT;
+    static constexpr int DIM_DMAT = BASE::DIM_DMAT;
+    static constexpr int DIFFORDER = BASE::DIFFORDER;
+    using FiniteElementType = VectorFiniteElement;
+    static constexpr int D = DIM_ELEMENT;
+
+    static string Name() { return BASE::Name(); }
+    static auto GetDimensions() { return BASE::GetDimensions(); }
+    static int DimRef() { return BASE::DimRef(); }
+
+  private:
+    static auto & Scalar (const FiniteElement & fel)
+    { return static_cast<const BaseScalarFiniteElement&> (static_cast<const VectorFiniteElement&>(fel)[0]); }
+
+    // columns (dofs) of a matrix for the piola coefficients -> piola2 coefficients
+    template <typename MAT>
+    static void ColumnsToPiola2 (const FiniteElement & fel, MAT & mat, size_t nrows)
+    {
+      auto & feli = Scalar(fel);
+      size_t nd = feli.GetNDof();
+      Mat<D,D> B = Piola2RefBasis<D> (feli);
+      for (size_t r = 0; r < nrows; r++)
+        for (size_t i = 0; i < nd; i++)
+          {
+            Vec<D> v;
+            for (int k = 0; k < D; k++) v(k) = mat(r, i+k*nd);
+            Vec<D> w = Trans(B) * v;
+            for (int j = 0; j < D; j++) mat(r, i+j*nd) = w(j);
+          }
+    }
+
+  public:
+    template <typename FEL, typename MIP, typename MAT>
+    static void GenerateMatrix (const FEL & fel, const MIP & mip, MAT && mat, LocalHeap & lh)
+    {
+      BASE::GenerateMatrix (fel, mip, mat, lh);
+      ColumnsToPiola2 (fel, mat, DIM_DMAT);
+    }
+
+    template <typename FEL, typename IP, typename MAT>
+    static void GenerateMatrixRef (const FEL & fel, const IP & ip, MAT && mat, LocalHeap & lh)
+    {
+      BASE::GenerateMatrixRef (fel, ip, mat, lh);
+      ColumnsToPiola2 (fel, mat, DimRef());
+    }
+
+    template <typename MIP, typename MAT>
+    static void CalcTransformationMatrix (const MIP & mip, MAT & mat, LocalHeap & lh)
+    { BASE::CalcTransformationMatrix (mip, mat, lh); }
+
+    template <typename MIP, typename MAT>
+    static void CalcTransformationMatrixCurved (const MIP & mip, FlatTensor<3> dF, MAT & mat, LocalHeap & lh)
+      requires requires { BASE::CalcTransformationMatrixCurved (mip, dF, mat, lh); }
+    { BASE::CalcTransformationMatrixCurved (mip, dF, mat, lh); }
+
+    static string GenerateTransformationCode (string invar, string outvar, bool trans)
+    { return BASE::GenerateTransformationCode (invar, outvar, trans); }
+
+    static string GenerateTransformationCode (string invar, string outvar, bool trans, bool curved)
+      requires requires (string a, string b, bool t, bool c) { BASE::GenerateTransformationCode (a, b, t, c); }
+    { return BASE::GenerateTransformationCode (invar, outvar, trans, curved); }
+
+    static void GenerateMatrixSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                                      BareSliceMatrix<SIMD<double>> mat)
+    {
+      BASE::GenerateMatrixSIMDIR (fel, mir, mat);
+      auto & feli = Scalar(fel);
+      size_t nd = feli.GetNDof();
+      Mat<D,D> B = Piola2RefBasis<D> (feli);
+      for (size_t ip = 0; ip < mir.Size(); ip++)
+        for (size_t i = 0; i < nd; i++)
+          for (int c = 0; c < DIM_DMAT; c++)
+            {
+              Vec<D,SIMD<double>> v;
+              for (int k = 0; k < D; k++) v(k) = mat((i+k*nd)*DIM_DMAT+c, ip);
+              for (int j = 0; j < D; j++)
+                {
+                  SIMD<double> sum = 0.0;
+                  for (int k = 0; k < D; k++) sum += B(k,j) * v(k);
+                  mat((i+j*nd)*DIM_DMAT+c, ip) = sum;
+                }
+            }
+    }
+
+    using DiffOp<DiffOpPiola2<BASE>>::ApplySIMDIR;
+    static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    {
+      auto & feli = Scalar(fel);
+      size_t nd = feli.GetNDof();
+      Mat<D,D> B = Piola2RefBasis<D> (feli);
+      STACK_ARRAY(double, mem, D*nd);
+      FlatVector<> xp(D*nd, &mem[0]);
+      for (size_t i = 0; i < nd; i++)
+        for (int k = 0; k < D; k++)
+          {
+            double sum = 0;
+            for (int j = 0; j < D; j++) sum += B(k,j) * x(i+j*nd);
+            xp(i+k*nd) = sum;
+          }
+      // as BareSliceVector: the generic DiffOp template matches a FlatVector exactly and throws NOSIMD
+      BareSliceVector<double> xs(xp);
+      BASE::ApplySIMDIR (fel, mir, xs, y);
+    }
+
+    using DiffOp<DiffOpPiola2<BASE>>::AddTransSIMDIR;
+    static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
+    {
+      auto & feli = Scalar(fel);
+      size_t nd = feli.GetNDof();
+      Mat<D,D> B = Piola2RefBasis<D> (feli);
+      STACK_ARRAY(double, mem, D*nd);
+      FlatVector<> xp(D*nd, &mem[0]);
+      xp = 0.0;
+      BareSliceVector<double> xs(xp);
+      BASE::AddTransSIMDIR (fel, mir, y, xs);
+      for (size_t i = 0; i < nd; i++)
+        for (int j = 0; j < D; j++)
+          {
+            double sum = 0;
+            for (int k = 0; k < D; k++) sum += B(k,j) * xp(i+k*nd);
+            x(i+j*nd) += sum;
+          }
+    }
+  };
+
+
 
 
 
@@ -4827,10 +4988,16 @@ One can evaluate the vector-valued function, and one can take the gradient.
           switch (ma->GetDimension())
             {
             case 2:
-              evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdVectorL2Piola2<2>>>();
+              evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpPiola2<DiffOpIdVectorL2Piola<2>>>>();
+              flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpPiola2<DiffOpDivVectorL2Piola<2>>>> ();
+              additional_evaluators.Set ("grad", make_shared<T_DifferentialOperator<DiffOpPiola2<DiffOpGradVectorL2Piola<2>>>> ());
+              additional_evaluators.Set ("Grad", make_shared<T_DifferentialOperator<DiffOpPiola2<DiffOpGradVectorL2Piola<2>>>> ());
               break;
             case 3:
-              evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdVectorL2Piola2<3>>>();
+              evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpPiola2<DiffOpIdVectorL2Piola<3>>>>();
+              flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpPiola2<DiffOpDivVectorL2Piola<3>>>> ();
+              additional_evaluators.Set ("grad", make_shared<T_DifferentialOperator<DiffOpPiola2<DiffOpGradVectorL2Piola<3>>>> ());
+              additional_evaluators.Set ("Grad", make_shared<T_DifferentialOperator<DiffOpPiola2<DiffOpGradVectorL2Piola<3>>>> ());
               break;
             }
         }
@@ -4883,6 +5050,8 @@ One can evaluate the vector-valued function, and one can take the gradient.
 
       if (flags.GetDefineFlag("hoprolongation"))
         {
+          if (piola || covariant)
+            throw Exception ("VectorL2: hoprolongation needs piola2 / covariant2 instead of piola / covariant");
           if (ma->GetDimension()==2)
             prol = make_shared<VectorL2HoProlongationTrig> (ma, order, piola2, covariant2);
           else if (ma->GetDimension()==3)
