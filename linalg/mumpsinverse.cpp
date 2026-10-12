@@ -8,11 +8,11 @@
 #ifdef USE_MUMPS
 
 #include <la.hpp>
+#include <parallelvector.hpp>
 #include "mumpsinverse.hpp"
 
 namespace ngla
 {
-  using namespace ngcomp;
 
 #define JOB_INIT -1
 #define JOB_END -2
@@ -976,6 +976,7 @@ namespace ngla
 
 
 
+  template class MumpsInverse<float>;
   template class MumpsInverse<double>;
   template class MumpsInverse<Complex>;
   template class MumpsInverse<double,Complex,Complex>;

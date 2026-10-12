@@ -25,6 +25,7 @@ namespace ngla
 
 #ifdef USE_MUMPS
 #define OMPI_SKIP_MPICXX
+#include "smumps_c.h"
 #include "dmumps_c.h"
 #include "zmumps_c.h"
 
@@ -37,6 +38,16 @@ namespace ngla
     typedef double MUMPS_TSCAL;
     static void MumpsFunction (DMUMPS_STRUC_C * id)
     { dmumps_c (id); }
+  };
+
+  template <>
+  class mumps_trait<float>
+  {
+  public:
+    typedef SMUMPS_STRUC_C MUMPS_STRUC_C;
+    typedef float MUMPS_TSCAL;
+    static void MumpsFunction (SMUMPS_STRUC_C * id)
+    { smumps_c (id); }
   };
 
   template <>
