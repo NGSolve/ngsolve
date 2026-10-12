@@ -1084,6 +1084,7 @@ namespace ngcomp
     MatFreeOptions opts;
     Array<IntRange> ranges_x, ranges_xref, ranges_y, ranges_yref;
     Array<Code> physics;    // code for d_form / d_test
+    Array<shared_ptr<CoefficientFunction>> physics_cfs;  // d_form / d_test, host evaluation
     static constexpr int SW = 4*SIMD<double>::Size();    
     shared_ptr<SharedLibrary> library;
 
