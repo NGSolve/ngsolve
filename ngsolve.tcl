@@ -2,10 +2,10 @@ puts "loading ngsolve library"
 
 # netgen_library_dir is set from python in pip packages
 if { [ info exists netgen_library_dir ] } {
-    load $netgen_library_dir/libngsolve[info sharedlibextension] ngsolve
-} elseif { [catch { load libngsolve[info sharedlibextension] ngsolve } result ] } {
+    load $netgen_library_dir/libngsolve[info sharedlibextension] Ngsolve
+} elseif { [catch { load libngsolve[info sharedlibextension] Ngsolve } result ] } {
   set current_script_dir [file dirname [dict get [info frame 0] file]]
-  if { [catch { load $current_script_dir/@BIN_TO_LIB_RELPATH@/libngsolve[info sharedlibextension] ngsolve } result2 ] } {
+  if { [catch { load $current_script_dir/@BIN_TO_LIB_RELPATH@/libngsolve[info sharedlibextension] Ngsolve } result2 ] } {
     puts "cannot load ngsolve" 
     puts "error1: $result"
     puts "error2: $result2"
@@ -32,7 +32,7 @@ if { [catch { NGS_GetData } ] == 0 } {
 		NGS_PrintTiming
 		puts "Thank you for using $progname/NGSolve"; 
                 
-                if { [catch { unload libngsolve[info sharedlibextension] ngsolve } result ] } {
+                if { [catch { unload libngsolve[info sharedlibextension] Ngsolve } result ] } {
                     puts "cannot unload ngsolve" 
                     puts "error: $result"
                 } 

@@ -9,7 +9,7 @@ mkdir -p $SRC_DIR
 cp -a . $SRC_DIR/
 cd $BUILD_DIR
 
-pip3 install --upgrade pybind11-stubgen netgen-occt netgen-occt-devel
+pip3 install --upgrade pytest cmake pybind11-stubgen netgen-occt netgen-occt-devel
 
 cmake $SRC_DIR -G Ninja \
       -DCMAKE_INSTALL_PREFIX=$CMAKE_INSTALL_PREFIX \

@@ -9,8 +9,24 @@
 #include <solve.hpp>
 #include "hypre_ams_precond.hpp"
 
+#ifndef MPI_COMM_WORLD
+#define MPI_COMM_WORLD 0
+#endif
+
 namespace ngcomp
 {
+
+  static inline MPI_Comm ToHypreComm (NgMPI_Comm ngcomm)
+  {
+#if defined(HYPRE_WITH_MPI) && defined(NG_MPI_WRAPPER)
+    NG_MPI_Comm ng_comm = ngcomm;
+    return (MPI_Comm)(ng_comm.value);
+#elif defined(HYPRE_WITH_MPI)
+    return (NG_MPI_Comm)ngcomm;
+#else
+    return MPI_COMM_WORLD;
+#endif
+  }
 
   /**
      Create hypre-ij-mat from ngsolve sparse-matrix.
@@ -28,7 +44,7 @@ namespace ngcomp
 				bool matrix_cumulated = false)
   {
     NgMPI_Comm comm = row_pardofs->GetCommunicator();
-    HYPRE_IJMatrixCreate(comm, row_ilower, row_iupper, col_ilower, col_iupper, ijmat);
+    HYPRE_IJMatrixCreate(ToHypreComm(comm), row_ilower, row_iupper, col_ilower, col_iupper, ijmat);
     HYPRE_IJMatrixSetPrintLevel(*ijmat, 1);
     HYPRE_IJMatrixSetObjectType(*ijmat, HYPRE_PARCSR);
     HYPRE_IJMatrixInitialize(*ijmat);
@@ -91,7 +107,7 @@ namespace ngcomp
    **/
   void Create_IJVec_from_BVec(NgMPI_Comm & comm, HYPRE_IJVector & v, HYPRE_ParVector & pv, double* vals,
 			      Array<int> & global_nums, int ilower, int iupper, bool full_vals) {    
-    HYPRE_IJVectorCreate(comm, ilower, iupper,&v);
+    HYPRE_IJVectorCreate(ToHypreComm(comm), ilower, iupper,&v);
     HYPRE_IJVectorSetPrintLevel(v, 1);
     HYPRE_IJVectorSetObjectType(v, HYPRE_PARCSR);
     HYPRE_IJVectorInitialize(v);

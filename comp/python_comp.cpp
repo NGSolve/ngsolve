@@ -12,6 +12,7 @@
 #include "hcurlamg.hpp"
 #include <pybind11/functional.h>
 #include "l2hofespace.hpp"
+#include <meshing.hpp>   // netgen::Mesh::GatherToRoot
 #include "hcurlhofespace.hpp"
 #include "hdivhofespace.hpp"
 #include "hdivdivfespace.hpp"
@@ -2258,6 +2259,32 @@ parallel : bool
   input parallel
 
 )raw_string"))
+    .def("Gather", [](shared_ptr<GF> self, int root) -> py::object
+         {
+           auto ma = self->GetMeshAccess();
+           auto comm = ma->GetCommunicator();
+           if (comm.Size() == 1) return py::cast(self);
+           if (root != 0) throw Exception("GridFunction.Gather: only root=0 is supported");
+           ostringstream str;
+           shared_ptr<netgen::Mesh> gathered;
+           {
+             py::gil_scoped_release release;
+             self->Save(str);        // collective: rank 0 gets the data of all master dofs
+             gathered = ma->GetNetgenMesh()->GatherToRoot(root);
+           }
+           if (comm.Rank() != root) return py::none();
+           auto ma2 = make_shared<MeshAccess>(gathered);
+           auto & fes = *self->GetFESpace();
+           auto fes2 = CreateFESpace(fes.type, ma2, fes.GetFlags());
+           fes2->Update();
+           fes2->FinalizeUpdate();
+           auto gf2 = CreateGridFunction(fes2, self->GetName(), self->GetFlags());
+           gf2->Update();
+           istringstream in(str.str());
+           gf2->Load(in);
+           return py::cast(gf2);
+         }, py::arg("root")=0,
+         "Collective over the mesh communicator: returns the GridFunction on the whole (gathered) mesh on rank root, None on the other ranks")
     .def("Set", 
          [](shared_ptr<GF> self, spCF cf,
             VorB vb, py::object definedon, bool dualdiffop, bool use_simd, int mdcomp, optional<shared_ptr<BitArray>> definedonelements, int bonus_intorder)

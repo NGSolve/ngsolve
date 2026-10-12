@@ -458,6 +458,22 @@ namespace ngsbem
   }
 
 
+  // Float S->R ShiftZ: the scale exponent j for which the seed column |h_n(x)| sqrt(2n+1) 2^(j n) is equally large
+  // at n = 0 and n = N, so it neither grows nor decays exponentially over n and stays in the float range.
+  // log2|h_N/h_0| is the sum of log2|h_{n+1}/h_n|; the ratios follow the Hankel recursion and cannot over/underflow.
+  int BalancedScaleExponent (int N, Complex x)
+  {
+    if (N <= 0) return 0;
+    Complex r = 1.0/x - Complex(0,1);
+    double l = std::log2(std::abs(r));
+    for (int n = 1; n < N; n++)
+      {
+        r = double(2*n+1)/x - 1.0/r;
+        l += std::log2(std::abs(r));
+      }
+    double j = -(l + 0.5*std::log2(2*N+1)) / N;
+    return std::isfinite(j) ? int(std::lround(j)) : 0;
+  }
 
 
   template <typename RADIAL, typename entry_type, typename T_Kappa> template <typename TARGET>
@@ -519,12 +535,49 @@ namespace ngsbem
     FlatVector<real_type> amn(os+ot+1, lh);
     FlatVector<real_type> tscale_inv_amn(os+ot+1, lh);
     FlatVector<double> powscale(os+ot+1, lh);
+
+    // Float S->R: at the scales s, 1/t the high target degrees of the trafo fall below FLT_MIN. Run the recursion at
+    // s' = 1/t' = lambda = max(2^j, s, 1/t) instead, 2^j balancing the ends of the seed column, and convert exactly:
+    //   out(n) = fout(n) sum_l trafo'(n,l) fin(l) in(l),  fin(l) = (1/hankel_prefactor) (s/lambda)^l,  fout(n) = ((1/t)/lambda)^n
+    // fin <= 1/hankel_prefactor and fout <= 1, computed in double. fout can be far below FLT_MIN, so it is applied as
+    // fout_lo(n) * (fout_hi(n) * .) with fout_lo(n) = 1 or FLT_MIN: two normal floats down to fout = 2^-252.
+    constexpr bool balanced = is_sr && std::is_same_v<real_type,float>;
+    FlatVector<real_type> fin, fout_hi, fout_lo;
+    if constexpr (balanced)
+      {
+        double s = scale, tinv = inv_tscale;
+        double lambda = std::max ({ std::ldexp(1.0, BalancedScaleExponent (os+ot, kappa*abs(z))), s, tinv });
+        fin.AssignMemory (os+1, lh);
+        fout_hi.AssignMemory (ot+1, lh);
+        fout_lo.AssignMemory (ot+1, lh);
+        constexpr float flt_min = std::numeric_limits<float>::min();
+        double fi = inv_hankel_prefactor, fo = 1;
+        for (int l = 0; l <= os; l++, fi *= s/lambda)
+          fin(l) = real_type(fi);
+        for (int n = 0; n <= ot; n++, fo *= tinv/lambda)
+          {
+            fout_lo(n) = fo < flt_min ? flt_min : 1;
+            fout_hi(n) = real_type(fo / fout_lo(n));
+          }
+        scale = real_type(lambda); inv_scale = real_type(1/lambda);
+        tscale = real_type(1/lambda); inv_tscale = real_type(lambda);
+      }
     
     // initial values
     if constexpr (is_ss)
       SphericalBessel (os+ot, kappa*abs(z), tscale, trafo.Col(0));
     if constexpr (is_sr)
-      SphericalHankel1 (os+ot, kappa*abs(z), inv_tscale, trafo.Col(0), hankel_prefactor);
+      {
+        if constexpr (balanced)
+          {
+            FlatVector<Complex> seed(os+ot+1, lh);
+            // prefactor 1/inv_hankel_prefactor makes seed * fin(0) exact: no systematic bias on every S->R output
+            SphericalHankel1 (os+ot, kappa*abs(z), double(inv_tscale), seed, 1/double(inv_hankel_prefactor));
+            for (int l = 0; l <= os+ot; l++) trafo(l,0) = complex_type(seed(l));
+          }
+        else
+          SphericalHankel1 (os+ot, kappa*abs(z), inv_tscale, trafo.Col(0), hankel_prefactor);
+      }
     if constexpr (is_rr)
     {
       std::swap(scale, inv_tscale);
@@ -581,7 +634,10 @@ namespace ngsbem
         if constexpr (is_dynamic)
           {
             for (int n = m; n <= os; n++)
-              hv1.Row(n) = inv_hankel_prefactor*sh.Coef(n,sm);
+              if constexpr (balanced)
+                hv1.Row(n) = fin(n)*sh.Coef(n,sm);
+              else
+                hv1.Row(n) = inv_hankel_prefactor*sh.Coef(n,sm);
 
             if constexpr (std::is_same_v<trafo_type,real_type>)
               {
@@ -601,12 +657,18 @@ namespace ngsbem
               }
 
             for (int n = m; n <= ot; n++)
-              target.SH().Coef(n,sm) = hv2.Row(n);
+              if constexpr (balanced)
+                target.SH().Coef(n,sm) = fout_lo(n) * (fout_hi(n) * hv2.Row(n));
+              else
+                target.SH().Coef(n,sm) = hv2.Row(n);
           }
         else
           {
             for (int n = m; n <= os; n++)
-              hv1(n) = inv_hankel_prefactor*sh.Coef(n,sm);
+              if constexpr (balanced)
+                hv1(n) = fin(n)*sh.Coef(n,sm);
+              else
+                hv1(n) = inv_hankel_prefactor*sh.Coef(n,sm);
 
             if constexpr (is_rr)
               hv2.Range(m,ot+1) = Trans(trafo.Rows(m,os+1).Cols(m,ot+1)) * hv1.Range(m,os+1);
@@ -614,7 +676,10 @@ namespace ngsbem
               hv2.Range(m,ot+1) = trafo.Rows(m,ot+1).Cols(m,os+1) * hv1.Range(m,os+1);
 
             for (int n = m; n <= ot; n++)
-              target.SH().Coef(n,sm) = hv2(n);
+              if constexpr (balanced)
+                target.SH().Coef(n,sm) = fout_lo(n) * (fout_hi(n) * hv2(n));
+              else
+                target.SH().Coef(n,sm) = hv2(n);
           }
       };
 

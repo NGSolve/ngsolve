@@ -22,11 +22,11 @@ $env:CCACHE_BASEDIR = (Get-Location).Path
 if (-not $env:CCACHE_DIR) { $env:CCACHE_DIR = "C:\ccache" }
 
 $pythons = @(
+    "C:\Python315",
     "C:\Python314",
     "C:\Python313",
     "C:\Python312",
-    "C:\Python311",
-    "C:\Python310"
+    "C:\Python311"
 )
 
 # Netgen version this NGSolve build links against (matching wheel from PyPI)

@@ -185,6 +185,8 @@ namespace ngcomp
     // these are NC, NF, NE, NV  in 3D,
     // and NF, NE, NV, undef, in 2D
     size_t nnodes_cd[4];
+    /// other ranks sharing the global node, i.e. holding a part of the mesh
+    Array<int> global_node_procs;
 
 
     /// number of elements of dimension i
@@ -971,6 +973,7 @@ namespace ngcomp
     
     FlatArray<int> GetDistantProcs (NodeId node) const
     {
+      if (node.GetType() == NT_GLOBAL) return global_node_procs;
       return mesh.GetDistantProcs(StdNodeType(node.GetType(), GetDimension()), node.GetNr());
     }
 

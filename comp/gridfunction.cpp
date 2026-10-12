@@ -661,13 +661,12 @@ namespace ngcomp
     
     const FESpace & fes = *GetFESpace();
     shared_ptr<ParallelDofs> par = fes.GetParallelDofs ();
-    
-    if(id > 0)
-      {
+
+    // every rank collects the keys of its master nodes, the root distributes the data
+    Array<Vec<N+1, int> > nodekeys;
+    Array<int> master_nodes;
+    {
 	int nnodes = ma->GetNNodes (NTYPE);
-	
-	Array<Vec<N+1, int> > nodekeys;
-	Array<int> master_nodes;
 	Array<DofId> dnums, pnums;
 	
 	for(int i = 0; i < nnodes; i++)
@@ -698,15 +697,13 @@ namespace ngcomp
 	    
 	    nodekeys.Append (key);	
 	  }
-	
-	comm.Send (nodekeys, 0, 12);
-	
-	Array<SCAL> loc_data;
-	comm.Recv (loc_data, 0, 13);
-	
+    }
+
+    auto apply_local = [&] (FlatArray<SCAL> loc_data)
+    {
+	Array<DofId> dnums;
 	for (int i = 0, cnt = 0; i < master_nodes.Size(); i++)
 	  {
-	    // fes.GetNodeDofNrs (NTYPE, master_nodes[i], dnums);
             fes.GetDofNrs (NodeId(NTYPE, master_nodes[i]), dnums); 
 	    Vector<SCAL> elvec(dnums.Size()*fes.GetDimension());
 	    
@@ -715,20 +712,32 @@ namespace ngcomp
 	    
 	    SetElementVector (mdcomp, dnums, elvec);
 	  }
+    };
+
+    if(id > 0)
+      {
+	comm.Send (nodekeys, 0, 12);
+	
+	Array<SCAL> loc_data;
+	comm.Recv (loc_data, 0, 13);
+	apply_local (loc_data);
       }
     else
       {
-	Array<Vec<N, int> > nodekeys;
+	Array<Vec<N, int> > allkeys;
 	Array<int> nrdofs_per_node;
 	
-	Array<Array<int>* > nodenums_of_procs (ntasks-1);
+	Array<Array<int>* > nodenums_of_procs (ntasks);
 	
 	int actual=0;
-	for( int proc = 1; proc < ntasks; proc++)
+	for( int proc = 0; proc < ntasks; proc++)
 	  {
 	    Array<Vec<N+1, int> > nodenums_proc;
-	    comm.Recv(nodenums_proc,proc,12);
-	    nodenums_of_procs[proc-1] = new Array<int> (nodenums_proc.Size());
+	    if (proc == 0)
+	      nodenums_proc = nodekeys;
+	    else
+	      comm.Recv(nodenums_proc,proc,12);
+	    nodenums_of_procs[proc] = new Array<int> (nodenums_proc.Size());
 	    
 	    for (int j=0; j < nodenums_proc.Size(); j++)
 	      {
@@ -736,20 +745,20 @@ namespace ngcomp
 		for (int k = 0; k < N; k++)
 		  key[k] = nodenums_proc[j][k];
 		
-		nodekeys.Append (key);
+		allkeys.Append (key);
 		
 		nrdofs_per_node.Append (nodenums_proc[j][N]);
 		
-		(*nodenums_of_procs[proc-1])[j]=actual++;
+		(*nodenums_of_procs[proc])[j]=actual++;
 	      }
 	  }
 	
-	int nnodes = nodekeys.Size();
+	int nnodes = allkeys.Size();
 
 	Array<int> index(nnodes);
 	for( int i = 0; i < index.Size(); i++) index[i] = i;
 
-	QuickSortI (nodekeys, index, MyLess<N>);
+	QuickSortI (allkeys, index, MyLess<N>);
 
 	Array<int> inverse_index(nnodes);
 	for (int i = 0; i < index.Size(); i++ ) 	
@@ -771,18 +780,22 @@ namespace ngcomp
 	  if (ist.good())
 	    LoadBin<SCAL> (ist, node_data[i]);
 	
-	for (int proc = 1; proc < ntasks; proc++)
+	for (int proc = 0; proc < ntasks; proc++)
 	  {
 	    Array<SCAL> loc_data (0);
-	    Array<int> & nodenums_proc = *nodenums_of_procs[proc-1];
+	    Array<int> & nodenums_proc = *nodenums_of_procs[proc];
 
 	    for (int i = 0; i < nodenums_proc.Size(); i++)
 	      {
 		int node = inverse_index[nodenums_proc[i]];
 		loc_data.Append (node_data.Range (fes.GetDimension()*first_node_dof[node], fes.GetDimension()*first_node_dof[node+1]));
 	      }
-	    comm.Send(loc_data,proc,13); 		
+	    if (proc == 0)
+	      apply_local (loc_data);
+	    else
+	      comm.Send(loc_data,proc,13); 		
 	  }
+	for (auto * p : nodenums_of_procs) delete p;
       }
 #endif	
   }
@@ -886,14 +899,12 @@ namespace ngcomp
 
     const FESpace & fes = *GetFESpace();
     shared_ptr<ParallelDofs> par = fes.GetParallelDofs ();
-    
-    if(id > 0)
-      { 
+
+    // every rank collects its master dofs, the root merges them (including its own)
+    Array<Vec<N+1,int> > nodenums;
+    Array<SCAL> data;
+    {
 	int nnodes = ma->GetNNodes (NTYPE);
-	
-	Array<Vec<N+1,int> > nodenums;
-	Array<SCAL> data;
-    
 	Array<DofId> dnums;
         Array<int> pnums;
     
@@ -926,37 +937,22 @@ namespace ngcomp
 	    for (int j = 0; j < elvec.Size(); j++)
 	      data.Append(elvec(j));
 	  }    
+    }
 
-	comm.Gather (nodenums.Size());
-	comm.Gather (data.Size());
-        
-	comm.Send(nodenums,0,22);
-	comm.Send(data,0,23);
-      }
-    else
+    Table<Vec<N+1,int> > table_nodes;
+    Table<SCAL> table_data;
+    comm.GatherTable (FlatArray<Vec<N+1,int>>(nodenums), table_nodes);
+    comm.GatherTable (FlatArray<SCAL>(data), table_data);
+
+    if(id == 0)
       {
 	Array<Vec<N,int> > points(0);
 	Array<Vec<2,int> > positions(0);
 
-	Array<size_t> size_nodes(ntasks), size_data(ntasks);
-	comm.GatherRoot (size_nodes);
-	comm.GatherRoot (size_data);
-
-	NgMPI_Requests requests;
-
-	Table<Vec<N+1,int> > table_nodes(size_nodes);
-	for (int p = 1; p < ntasks; p++)
-	  requests += comm.IRecv (table_nodes[p], p, 22);
-
-	Table<SCAL> table_data(size_data);
-	for (int p = 1; p < ntasks; p++)
-	  requests += comm.IRecv (table_data[p], p, 23);
-	requests.WaitAll();
-
-	FlatArray<SCAL> data = table_data.AsArray();
+	FlatArray<SCAL> alldata = table_data.AsArray();
 
 	int size = 0;
-	for (int proc = 1; proc < ntasks; proc++)
+	for (int proc = 0; proc < ntasks; proc++)
 	  {
 	    FlatArray<Vec<N+1,int> > locpoints = table_nodes[proc];
 	    Vec<N,int>  temp;
@@ -990,7 +986,7 @@ namespace ngcomp
 	    int start = fes.GetDimension() * positions[index[i]][0];
 	    int end = fes.GetDimension() * positions[index[i]][1];
 	    for (int j = 0; j < end; j++)
-              SaveBin<SCAL>(ost, data[start++]);
+              SaveBin<SCAL>(ost, alldata[start++]);
 	  }
 	tw.Stop();	
       }
