@@ -344,6 +344,15 @@ namespace ngcomp
   }
 
 
+  // reference trafo carrying element number and domain, for coefficient evaluation
+  template <int DIMS, int DIMR>
+  class MatFreeTrafo : public FE_ElementTransformation<DIMS,DIMR>
+  {
+  public:
+    using FE_ElementTransformation<DIMS,DIMR>::FE_ElementTransformation;
+    void Set (int nr, int index) { this->elnr = nr; this->elindex = index; }
+  };
+
   MatrixFreeBTDTB ::
   MatrixFreeBTDTB (shared_ptr<CoefficientFunction> acf,
                    const Array<ProxyFunction*>& atrial_proxies,
@@ -397,6 +406,7 @@ namespace ngcomp
         auto compiledcf = Compile (diffcf, false);
         Code code = compiledcf->GenerateProgram(0, false);
         physics += code;
+        physics_cfs += compiledcf;
       }
 
     
@@ -857,6 +867,41 @@ namespace ngcomp
     */
 
 
+    // nonlinear forms: the coefficients of the test functions, d form / d test,
+    // evaluated at the trial values of the point
+    auto Physics = [&]<int DS, int DR> (MappedIntegrationPoint<DS,DR> & mip, MatFreeTrafo<DS,DR> & trafo,
+                                        size_t el, size_t ip, FlatVector<> xvals, FlatVector<> yvals, LocalHeap & lh)
+    {
+      trafo.Set (elnums[el], domains.Size() ? domains[el] : 0);
+      if (facetnr.Size())
+        {
+          Vec<DR> nv = mip.GetJacobianCofactor() * Vec<DS>(normals_ref.Row(facetnr[ip]));
+          double len = L2Norm(nv);
+          mip.SetMeasure (len);
+          mip.SetNV ((mip.GetJacobiDet() > 0 ? 1 : -1) / len * nv);
+        }
+      Vec<DR> x = 0.0;
+      for (size_t n = 0; n < get<1>(geocoefs.Shape()); n++)
+        for (int r = 0; r < DR; r++)
+          x(r) += geocoefs(el, n, r) * Sgeo(n, ip);
+      mip.Point() = x;
+      ProxyUserData ud(trial_proxies.Size(), 0, lh);
+      trafo.userdata = &ud;
+      for (auto k : Range(trial_proxies))
+        {
+          ud.AssignMemory (trial_proxies[k], 1, ranges_x[k].Size(), lh);
+          ud.GetMemory (trial_proxies[k]).Row(0) = xvals.Range(ranges_x[k]);
+        }
+      for (auto k : Range(test_proxies))
+        {
+          FlatMatrix<> val(1, ranges_y[k].Size(), lh);
+          mip.IntegrationRuleFromPoint ([&] (const BaseMappedIntegrationRule & mir1)
+                                        { physics_cfs[k]->Evaluate (mir1, val); });
+          yvals.Range(ranges_y[k]) = mip.GetMeasure() * val.Row(0);
+        }
+      trafo.userdata = nullptr;
+    };
+
     // VER3: vectorized over elements
 
     size_t svec = elnums.Size()/SW;
@@ -899,7 +944,7 @@ namespace ngcomp
 
           constexpr int dims = dimsm1.value+1;
           constexpr int dimr = dimrm1.value+1;
-          static FE_ElementTransformation<dims,dimr> dummytrafo(dims==2?ET_TRIG:ET_TET);
+          MatFreeTrafo<dims,dimr> eltrafo(dims==2?ET_TRIG:ET_TET);
           
           for (auto i : r)
             {
@@ -925,7 +970,7 @@ namespace ngcomp
                             {
                               size_t ii = i*SW+k;
                                                            
-                              MappedIntegrationPoint<dims,dimr> mip(dummyip, dummytrafo, Vec<dimr>(0), Mat<dimr,dims>(Jacobi(ii, STAR, STAR, (nipJ > 1) ? j : 0)));
+                              MappedIntegrationPoint<dims,dimr> mip(dummyip, eltrafo, Vec<dimr>(0), Mat<dimr,dims>(Jacobi(ii, STAR, STAR, (nipJ > 1) ? j : 0)));
                               pointvalsx = 0;
                               for (size_t i : Range(diffopsx))
                                 {
@@ -935,7 +980,14 @@ namespace ngcomp
                                   pointvalsx_mat.Col(k).Range(ranges_x[i]) = tmatx * pointvalsrefx_mat.Col(k).Range(ranges_xref[i]);
                                 }
 
-                              if (nipD==1)
+                              if (opts.nonlinear)
+                                {
+                                  Vector<> xv(dimx), yv(dimy);
+                                  xv = pointvalsx_mat.Col(k);
+                                  Physics (mip, eltrafo, ii, j, xv, yv, lh);
+                                  pointvalsy_mat.Col(k) = weights(j) * yv;
+                                }
+                              else if (nipD==1)
                                 pointvalsy_mat.Col(k) = weights(j) * D(ii, STAR, STAR, 0) * pointvalsx_mat.Col(k);
                               else
                                 pointvalsy_mat.Col(k) = weights(j) * D(ii, STAR, STAR, j) * pointvalsx_mat.Col(k);
@@ -959,7 +1011,7 @@ namespace ngcomp
                       
                       // elvecy += By(STAR,STAR,j) * pointvalsrefy;
                       for (size_t k = 0; k < elvecy.Size(); k++)
-                        elvecy(k) += InnerProduct(Bx(k,STAR,j), pointvalsrefy);
+                        elvecy(k) += InnerProduct(By(k,STAR,j), pointvalsrefy);
                     }
                 }
               else
@@ -1004,12 +1056,12 @@ namespace ngcomp
           static constexpr int dims = dimsm1.value+1;
           static constexpr int dimr = dimrm1.value+1;
           
-          static FE_ElementTransformation<dims,dimr> dummytrafo(dims==2?ET_TRIG:ET_TET);          
+          MatFreeTrafo<dims,dimr> eltrafo(dims==2?ET_TRIG:ET_TET);
           for (auto i : r)
             {
               ElementId ei(VOL, elnums[i]);
 
-              FlatArray<DofId> dofxi = dofy[i];          
+              FlatArray<DofId> dofxi = dofx[i];
               elvecx = fx(dofxi);
               elvecy = 0.0;
 
@@ -1020,7 +1072,7 @@ namespace ngcomp
                     {
                       HeapReset hr(lh);
                       
-                      MappedIntegrationPoint<dims,dimr> mip(dummyip, dummytrafo, Vec<dimr>(0), Mat<dimr,dims>(Jacobi(i, STAR, STAR, (nipJ > 1) ? j : 0)));
+                      MappedIntegrationPoint<dims,dimr> mip(dummyip, eltrafo, Vec<dimr>(0), Mat<dimr,dims>(Jacobi(i, STAR, STAR, (nipJ > 1) ? j : 0)));
                       
                       pointvalsrefx = Trans(Bx(STAR,STAR,j)) * elvecx;
                       // for (size_t k = 0; k < pointvalsrefx.Size(); k++)
@@ -1037,7 +1089,12 @@ namespace ngcomp
                               pointvalsx.Range(ranges_x[i]) = tmatx * pointvalsrefx.Range(ranges_xref[i]);
                             }
                           
-                          if (nipD==1)
+                          if (opts.nonlinear)
+                            {
+                              Physics (mip, eltrafo, i, j, pointvalsx, pointvalsy, lh);
+                              pointvalsy *= weights(j);
+                            }
+                          else if (nipD==1)
                             pointvalsy = weights(j) * D(i, STAR, STAR, 0) * pointvalsx;
                           else
                             pointvalsy = weights(j) * D(i, STAR, STAR, j) * pointvalsx;
