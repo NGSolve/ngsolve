@@ -348,7 +348,7 @@ namespace ngcomp
             
         bool found = false;
         for (size_t i = ne; i-- > oldne; )
-          if (!isparent[i] && !isdone[i])
+          if (!isdone[i])
             {
               int newest_vertex = ma->GetElement(ElementId(vb,i)).newest_vertex;
               verts[3] = trig_creation_verts[i][newest_vertex];
@@ -4201,7 +4201,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
             
         bool found = false;
         for (size_t i = ne; i-- > oldne; )
-          if (!isparent[i] && !isdone[i])
+          if (!isdone[i])
             {
               int newest_vertex = ma->GetElement(ElementId(VOL,i)).newest_vertex;
               verts[3] = trig_creation_verts[i][newest_vertex];
@@ -4523,7 +4523,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
             
         bool found = false;
         for (size_t i = ne; i-- > oldne; )
-          if (!isparent[i] && !isdone[i])
+          if (!isdone[i])
             {
               int newest_vertex = ma->GetElement(ElementId(VOL,i)).newest_vertex;
               verts[4] = tet_creation_verts[i][newest_vertex];
