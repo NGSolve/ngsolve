@@ -333,45 +333,29 @@ namespace ngcomp
         for (int j = 0; j < 3; j++)
           trig_creation_verts[i][j] = ma->GetElement({vb,i}).Vertices()[j];
 
-      BitArray isparent(ne);
-      BitArray isdone(ne);
-      isdone.Clear();
-
       Array<size_t> verts(4);
-      while (true)
-      {
-        isparent.Clear();
-        for (size_t i = oldne; i < ne; i++)
-          if (!isdone[i])
-            if (auto parent = ma->GetParentElement (ElementId(vb,i)).Nr(); parent != -1)
-              isparent.SetBit(parent);
-            
-        bool found = false;
-        for (size_t i = ne; i-- > oldne; )
-          if (!isparent[i] && !isdone[i])
+      // undo the bisections in reverse creation order: children are numbered after
+      // their parent, later children of an element after earlier ones
+      for (size_t i = ne; i-- > oldne; )
+        {
+          int newest_vertex = ma->GetElement(ElementId(vb,i)).newest_vertex;
+          verts[3] = trig_creation_verts[i][newest_vertex];
+          IVec<2> pnodes = ma->GetParentNodes(verts[3]);
+          if (trig_creation_verts[i].Contains(pnodes[1]))
+            pnodes = { pnodes[1], pnodes[0] };
+
+          verts[0] = pnodes[0];
+          verts[1] = trig_creation_verts[i][0]+trig_creation_verts[i][1]+trig_creation_verts[i][2]-verts[0]-verts[3];
+          verts[2] = pnodes[1];
+          trig_creation_class[i] = GetClassNr(verts);
+
+          int parent = ma->GetParentElement (ElementId(vb,i)).Nr();
+          if (parent != -1)
             {
-              int newest_vertex = ma->GetElement(ElementId(vb,i)).newest_vertex;
-              verts[3] = trig_creation_verts[i][newest_vertex];
-              IVec<2> pnodes = ma->GetParentNodes(verts[3]);
-              if (trig_creation_verts[i].Contains(pnodes[1]))
-                pnodes = { pnodes[1], pnodes[0] }; 
-
-              verts[0] = pnodes[0];
-              verts[1] = trig_creation_verts[i][0]+trig_creation_verts[i][1]+trig_creation_verts[i][2]-verts[0]-verts[3];
-              verts[2] = pnodes[1];
-              trig_creation_class[i] = GetClassNr(verts);
-
-              int parent = ma->GetParentElement (ElementId(vb,i)).Nr();
-              if (parent != -1) 
-                {
-                  trig_creation_verts[parent] = trig_creation_verts[i];
-                  trig_creation_verts[parent][newest_vertex] = verts[2];
-                }
-              isdone.SetBit(i);
-              found = true;
+              trig_creation_verts[parent] = trig_creation_verts[i];
+              trig_creation_verts[parent][newest_vertex] = verts[2];
             }
-        if (!found) break;
-      }
+        }
 
     }
     
@@ -635,75 +619,57 @@ namespace ngcomp
         for (int j = 0; j < 4; j++)
           tet_creation_verts[i][j] = ma->GetElement({VOL,i}).Vertices()[j];
 
-      BitArray isparent(ne);
-      BitArray isdone(ne);
-      isdone.Clear();
       Array<size_t> verts(5);
-      while (true)
-      {
-        isparent.Clear();
-        for (size_t i = oldne; i < ne; i++)
-          if (!isdone[i])
-            {     
-              int parent = ma->GetParentElement (ElementId(VOL,i)).Nr();
-              if(parent!=-1)
-                isparent.SetBit(parent);
-            }
-        bool found = false;
-        for (size_t i = ne; i-- > oldne; )
-          if ( /* !isparent[i] && */ !isdone[i])
-            {
-              int newest_vertex = ma->GetElement(ElementId(VOL,i)).newest_vertex;
-              verts[4] = tet_creation_verts[i][newest_vertex];
-              IVec<2> pnodes = ma->GetParentNodes(verts[4]);
-              if (tet_creation_verts[i].Contains(pnodes[1]))
-                pnodes = { pnodes[1], pnodes[0] }; 
-              if (!tet_creation_verts[i].Contains(pnodes[0]))
+      // undo the bisections in reverse creation order: children are numbered after
+      // their parent, later children of an element after earlier ones
+      for (size_t i = ne; i-- > oldne; )
+        {
+          int newest_vertex = ma->GetElement(ElementId(VOL,i)).newest_vertex;
+          verts[4] = tet_creation_verts[i][newest_vertex];
+          IVec<2> pnodes = ma->GetParentNodes(verts[4]);
+          if (tet_creation_verts[i].Contains(pnodes[1]))
+            pnodes = { pnodes[1], pnodes[0] };
+          if (!tet_creation_verts[i].Contains(pnodes[0]))
+          {
+            cout << "no vertex parent in element parents" << endl;
+            cout << "element = " << i << endl;
+            cout << "newest_vertex, loc=" << newest_vertex
+                 << ", glob=" << tet_creation_verts[i][newest_vertex] << endl;
+            cout << "tet_creation_verts[i] = " << tet_creation_verts[i] << endl;
+            cout << "parent nodes = " << ma->GetParentNodes(verts[4]) << endl;
+          }
+          verts[0] = pnodes[0];
+          verts[3] = pnodes[1];
+          const size_t v23tab[4][4] =
               {
-                cout << "no vertex parent in element parents" << endl;
-                cout << "element = " << i << endl;
-                cout << "newest_vertex, loc=" << newest_vertex
-                     << ", glob=" << tet_creation_verts[i][newest_vertex] << endl;
-                cout << "tet_creation_verts[i] = " << tet_creation_verts[i] << endl;
-                cout << "parent nodes = " << ma->GetParentNodes(verts[4]) << endl;
-              }
-              verts[0] = pnodes[0];
-              verts[3] = pnodes[1];
-              const size_t v23tab[4][4] =
-                  {
-                      {99, 2, 3, 1},
-                      {3, 99, 3, 2},
-                      {1, 0, 99, 0},
-                      {2, 0, 1, 99}};
-              int vi0=-1, vi4=-1;
-              for (int j = 0; j < 4; j++)
-                if (tet_creation_verts[i][j] == verts[4])
-                  vi4 = j;
-              for (int j = 0; j < 4; j++)
-                if (tet_creation_verts[i][j] == verts[0])
-                  vi0 = j;
+                  {99, 2, 3, 1},
+                  {3, 99, 3, 2},
+                  {1, 0, 99, 0},
+                  {2, 0, 1, 99}};
+          int vi0=-1, vi4=-1;
+          for (int j = 0; j < 4; j++)
+            if (tet_creation_verts[i][j] == verts[4])
+              vi4 = j;
+          for (int j = 0; j < 4; j++)
+            if (tet_creation_verts[i][j] == verts[0])
+              vi0 = j;
 
-              if (vi0 == -1)
-                throw Exception("vi0 not found");
-              if (vi4 == -1)
-                throw Exception("vi4 not found");
+          if (vi0 == -1)
+            throw Exception("vi0 not found");
+          if (vi4 == -1)
+            throw Exception("vi4 not found");
 
-              verts[1] = tet_creation_verts[i][v23tab[vi0][vi4]];
-              verts[2] = tet_creation_verts[i][v23tab[vi4][vi0]];
-              tet_creation_class[i] = GetClassNr(verts);
+          verts[1] = tet_creation_verts[i][v23tab[vi0][vi4]];
+          verts[2] = tet_creation_verts[i][v23tab[vi4][vi0]];
+          tet_creation_class[i] = GetClassNr(verts);
 
-              int parent = ma->GetParentElement(ElementId(VOL, i)).Nr();
-              if (parent != -1)
-              {
-                tet_creation_verts[parent] = tet_creation_verts[i];
-                tet_creation_verts[parent][newest_vertex] = verts[3];
-                }
-              isdone.SetBit(i);
-              found = true;
+          int parent = ma->GetParentElement(ElementId(VOL, i)).Nr();
+          if (parent != -1)
+          {
+            tet_creation_verts[parent] = tet_creation_verts[i];
+            tet_creation_verts[parent][newest_vertex] = verts[3];
             }
-        
-        if (!found) break;
-      }
+        }
     }
     
     ///
@@ -4186,45 +4152,29 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
         for (int j = 0; j < 3; j++)
           trig_creation_verts[i][j] = ma->GetElement({VOL,i}).Vertices()[j];
 
-      BitArray isparent(ne);
-      BitArray isdone(ne);
-      isdone.Clear();
-
       Array<size_t> verts(4);
-      while (true)
-      {
-        isparent.Clear();
-        for (size_t i = oldne; i < ne; i++)
-          if (!isdone[i])
-            if (auto parent = ma->GetParentElement (ElementId(VOL,i)).Nr(); parent != -1)
-              isparent.SetBit(parent);
-            
-        bool found = false;
-        for (size_t i = ne; i-- > oldne; )
-          if (!isparent[i] && !isdone[i])
+      // undo the bisections in reverse creation order: children are numbered after
+      // their parent, later children of an element after earlier ones
+      for (size_t i = ne; i-- > oldne; )
+        {
+          int newest_vertex = ma->GetElement(ElementId(VOL,i)).newest_vertex;
+          verts[3] = trig_creation_verts[i][newest_vertex];
+          IVec<2> pnodes = ma->GetParentNodes(verts[3]);
+          if (trig_creation_verts[i].Contains(pnodes[1]))
+            pnodes = { pnodes[1], pnodes[0] };
+
+          verts[0] = pnodes[0];
+          verts[1] = trig_creation_verts[i][0]+trig_creation_verts[i][1]+trig_creation_verts[i][2]-verts[0]-verts[3];
+          verts[2] = pnodes[1];
+          trig_creation_class[i] = GetClassNr(verts);
+
+          int parent = ma->GetParentElement (ElementId(VOL,i)).Nr();
+          if (parent != -1)
             {
-              int newest_vertex = ma->GetElement(ElementId(VOL,i)).newest_vertex;
-              verts[3] = trig_creation_verts[i][newest_vertex];
-              IVec<2> pnodes = ma->GetParentNodes(verts[3]);
-              if (trig_creation_verts[i].Contains(pnodes[1]))
-                pnodes = { pnodes[1], pnodes[0] }; 
-
-              verts[0] = pnodes[0];
-              verts[1] = trig_creation_verts[i][0]+trig_creation_verts[i][1]+trig_creation_verts[i][2]-verts[0]-verts[3];
-              verts[2] = pnodes[1];
-              trig_creation_class[i] = GetClassNr(verts);
-
-              int parent = ma->GetParentElement (ElementId(VOL,i)).Nr();
-              if (parent != -1) 
-                {
-                  trig_creation_verts[parent] = trig_creation_verts[i];
-                  trig_creation_verts[parent][newest_vertex] = verts[2];
-                }
-              isdone.SetBit(i);
-              found = true;
+              trig_creation_verts[parent] = trig_creation_verts[i];
+              trig_creation_verts[parent][newest_vertex] = verts[2];
             }
-        if (!found) break;
-      }
+        }
     }
     
     ///
@@ -4508,72 +4458,56 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
       if (ma->GetNLevels() == 1)
         return;
 
-      BitArray isparent(ne);
-      BitArray isdone(ne);
-      isdone.Clear();
-
       Array<size_t> verts(5);
-      while (true)
-      {
-        isparent.Clear();
-        for (size_t i = oldne; i < ne; i++)
-          if (!isdone[i])
-            if (auto parent = ma->GetParentElement (ElementId(VOL,i)).Nr(); parent != -1)
-              isparent.SetBit(parent);
-            
-        bool found = false;
-        for (size_t i = ne; i-- > oldne; )
-          if (!isparent[i] && !isdone[i])
+      // undo the bisections in reverse creation order: children are numbered after
+      // their parent, later children of an element after earlier ones
+      for (size_t i = ne; i-- > oldne; )
+        {
+          int newest_vertex = ma->GetElement(ElementId(VOL,i)).newest_vertex;
+          verts[4] = tet_creation_verts[i][newest_vertex];
+          IVec<2> pnodes = ma->GetParentNodes(verts[4]);
+          if (tet_creation_verts[i].Contains(pnodes[1]))
+            pnodes = { pnodes[1], pnodes[0] };
+
+        /*
+          verts[0] = pnodes[0];
+          verts[1] = tet_creation_verts[i][0]+tet_creation_verts[i][1]+tet_creation_verts[i][2]-verts[0]-verts[3];
+          verts[2] = pnodes[1];
+        */
+          verts[0] = pnodes[0];
+          verts[3] = pnodes[1];
+          const size_t v23tab[4][4] =
+              {
+                  {99, 2, 3, 1},
+                  {3, 99, 3, 2},
+                  {1, 0, 99, 0},
+                  {2, 0, 1, 99}};
+          int vi0=-1, vi4=-1;
+          for (int j = 0; j < 4; j++)
+            if (tet_creation_verts[i][j] == verts[4])
+              vi4 = j;
+          for (int j = 0; j < 4; j++)
+            if (tet_creation_verts[i][j] == verts[0])
+              vi0 = j;
+
+          if (vi0 == -1)
+            throw Exception("vi0 not found");
+          if (vi4 == -1)
+            throw Exception("vi4 not found");
+
+          verts[1] = tet_creation_verts[i][v23tab[vi0][vi4]];
+          verts[2] = tet_creation_verts[i][v23tab[vi4][vi0]];
+
+
+          tet_creation_class[i] = GetClassNr(verts);
+
+          int parent = ma->GetParentElement (ElementId(VOL,i)).Nr();
+          if (parent != -1)
             {
-              int newest_vertex = ma->GetElement(ElementId(VOL,i)).newest_vertex;
-              verts[4] = tet_creation_verts[i][newest_vertex];
-              IVec<2> pnodes = ma->GetParentNodes(verts[4]);
-              if (tet_creation_verts[i].Contains(pnodes[1]))
-                pnodes = { pnodes[1], pnodes[0] }; 
-
-            /*
-              verts[0] = pnodes[0];
-              verts[1] = tet_creation_verts[i][0]+tet_creation_verts[i][1]+tet_creation_verts[i][2]-verts[0]-verts[3];
-              verts[2] = pnodes[1];
-            */
-              verts[0] = pnodes[0];
-              verts[3] = pnodes[1];
-              const size_t v23tab[4][4] =
-                  {
-                      {99, 2, 3, 1},
-                      {3, 99, 3, 2},
-                      {1, 0, 99, 0},
-                      {2, 0, 1, 99}};
-              int vi0=-1, vi4=-1;
-              for (int j = 0; j < 4; j++)
-                if (tet_creation_verts[i][j] == verts[4])
-                  vi4 = j;
-              for (int j = 0; j < 4; j++)
-                if (tet_creation_verts[i][j] == verts[0])
-                  vi0 = j;
-
-              if (vi0 == -1)
-                throw Exception("vi0 not found");
-              if (vi4 == -1)
-                throw Exception("vi4 not found");
-
-              verts[1] = tet_creation_verts[i][v23tab[vi0][vi4]];
-              verts[2] = tet_creation_verts[i][v23tab[vi4][vi0]];
-
-
-              tet_creation_class[i] = GetClassNr(verts);
-
-              int parent = ma->GetParentElement (ElementId(VOL,i)).Nr();
-              if (parent != -1) 
-                {
-                  tet_creation_verts[parent] = tet_creation_verts[i];
-                  tet_creation_verts[parent][newest_vertex] = verts[3];
-                }
-              isdone.SetBit(i);
-              found = true;
+              tet_creation_verts[parent] = tet_creation_verts[i];
+              tet_creation_verts[parent][newest_vertex] = verts[3];
             }
-        if (!found) break;
-      }
+        }
     }
     
     ///
