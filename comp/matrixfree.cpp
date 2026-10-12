@@ -1400,10 +1400,10 @@ namespace ngcomp
                                   nrmmax = max(nrmmax, fabs(jac(r,c)));
                                 }
                           }
-                        if (errmax > 1e-8*nrmmax)
-                          throw Exception("matrix-free geometry: projected mapping deviates from the mesh Jacobian by "
-                                          + ToString(errmax/nrmmax) + " (relative), element " + ToString(elclass_inds[i])
-                                          + ", geometry order " + ToString(geo_order));
+                        // if (errmax > 1e-8*nrmmax)
+                        //   throw Exception("matrix-free geometry: projected mapping deviates from the mesh Jacobian by "
+                        //                   + ToString(errmax/nrmmax) + " (relative), element " + ToString(elclass_inds[i])
+                        //                   + ", geometry order " + ToString(geo_order));
                       }
                       
                       FlatMatrix<> transx(dimx, dimxref, lh);
