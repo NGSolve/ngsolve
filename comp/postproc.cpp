@@ -306,17 +306,7 @@ namespace ngcomp
 	
     FlatVector<SCAL> elu(dnums.Size() * fes.GetDimension(), lh);
 	
-    if(bu.GetCacheBlockSize() == 1)
-      {
-	u.GetElementVector (dnums, elu);
-      }
-    else
-      {
-	FlatVector<SCAL> elu2(dnums.Size() * fes.GetDimension() * bu.GetCacheBlockSize(), lh);
-	u.GetElementVector (dnums,elu2);
-	for(int i=0; i<elu.Size(); i++)
-	  elu[i] = elu2[i*bu.GetCacheBlockSize()+component];
-      }
+    u.GetElementVector (dnums, elu);
     
     fes.TransformVec (ei, elu, TRANSFORM_SOL);
     bli->CalcFlux (fel, eltrans(ip, lh), elu, flux, applyd, lh);

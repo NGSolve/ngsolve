@@ -20,7 +20,6 @@ namespace ngcomp
     allocated = false;
     initialassembling = true;
     checksum = flags.GetDefineFlag ("checksum");
-    cacheblocksize = 1;
   }
 
   LinearForm & LinearForm :: AddIntegrator (shared_ptr<LinearFormIntegrator> lfi)
@@ -241,7 +240,7 @@ namespace ngcomp
 			   }
 			 
 			 fespace->TransformVec (el, elvec, TRANSFORM_RHS);
-			 AddElementVector (el.GetDofs(), elvec, lfip->CacheComp()-1);
+			 AddElementVector (el.GetDofs(), elvec);
 		       }
 		   });
 	      }
@@ -410,7 +409,7 @@ namespace ngcomp
 		        
                             {
                               lock_guard<mutex> guard(addelvec3_mutex);
-                              AddElementVector (dnums, elvec, parts[j]->CacheComp()-1);
+                              AddElementVector (dnums, elvec);
                             }
                           }
                       }
@@ -495,7 +494,7 @@ namespace ngcomp
 		    
 		      {
                         lock_guard<mutex> guard(addelvec3_mutex);
-			AddElementVector (dnums, elvec, parts[j]->CacheComp()-1);
+			AddElementVector (dnums, elvec);
 		      }
 		    }
 		}
@@ -617,7 +616,7 @@ namespace ngcomp
 		    elvec *= (oldlength+length); // Des is richtig
 		    
 		    
-		    AddElementVector (dnums, elvec, parts[j]->CacheComp()-1);
+		    AddElementVector (dnums, elvec);
 		    
 		    
 		    
@@ -672,58 +671,21 @@ namespace ngcomp
 
 
   void LinearForm :: AddElementVector (FlatArray<int> dnums,
-				       FlatVector<double> elvec,
-				       int cachecomp)
+				       FlatVector<double> elvec)
   {
     throw Exception ("LinearForm::AddElementVector: real elvec for complex li-form");
   }
-  void LinearForm :: SetElementVector (FlatArray<int> dnums,
-				       FlatVector<double> elvec)
-  {
-    throw Exception ("LinearForm::SetElementVector: real elvec for complex li-form");
-  }
-  void LinearForm :: GetElementVector (FlatArray<int> dnums,
-                                       FlatVector<double> elvec) const
-  {
-    throw Exception ("LinearForm::GetElementVector: real elvec for complex li-form");
-  }
   
   void LinearForm :: AddElementVector (FlatArray<int> dnums,
-				       FlatVector<float> elvec,
-				       int cachecomp)
+				       FlatVector<float> elvec)
   {
     throw Exception ("LinearForm::AddElementVector<float> called for baseclass");
   }
-  void LinearForm :: SetElementVector (FlatArray<int> dnums,
-				       FlatVector<float> elvec)
-  {
-    throw Exception ("LinearForm::SetElementVector<float> called for baseclass");
-  }
-
-  void LinearForm :: GetElementVector (FlatArray<int> dnums,
-                                       FlatVector<float> elvec) const
-  {
-    throw Exception ("LinearForm::GetElementVector<float>: real elvec for complex li-form");
-  }
-
   
   void LinearForm :: AddElementVector (FlatArray<int> dnums,
-				       FlatVector<Complex> elvec,
-				       int cachecomp)
-  {
-    throw Exception ("LinearForm::AddElementVector: complex elvec for real li-form");
-  }
-
-  void LinearForm :: SetElementVector (FlatArray<int> dnums,
 				       FlatVector<Complex> elvec)
   {
-    throw Exception ("LinearForm::SetElementVector: complex elvec for real li-form");
-  }
-
-  void LinearForm :: GetElementVector (FlatArray<int> dnums,
-				       FlatVector<Complex> elvec) const
-  {
-    throw Exception ("LinearForm::GetElementVector: complex elvec for real li-form");
+    throw Exception ("LinearForm::AddElementVector: complex elvec for real li-form");
   }
 
 
@@ -741,11 +703,11 @@ namespace ngcomp
     */
     if ( fes->IsParallel() )
       vec = make_shared<S_ParallelBaseVectorPtr<TSCAL>> (fes->GetNDof(),
-                                                         fes->GetDimension()*this->cacheblocksize,
+                                                         fes->GetDimension(),
                                                          fes->GetParallelDofs(), DISTRIBUTED);
     else
       vec = make_shared<S_BaseVectorPtr<TSCAL>> (fes->GetNDof(),
-                                                 fes->GetDimension()*this->cacheblocksize);
+                                                 fes->GetDimension());
       
     (*vec) = TSCAL(0);
     vec->SetParallelStatus (DISTRIBUTED);
@@ -762,18 +724,9 @@ namespace ngcomp
 
   template <typename SCAL>
   void S_LinearForm<SCAL> ::
-  SetElementVector (FlatArray<int> dnums,
-		    FlatVector<SCAL> elvec) 
+  AddElementVector (FlatArray<int> dnums, FlatVector<SCAL> elvec)
   {
-    vec -> SetIndirect (dnums, elvec);
-  }
-
-  template <typename SCAL>
-  void S_LinearForm<SCAL> ::
-  GetElementVector (FlatArray<int> dnums,
-		    FlatVector<SCAL> elvec) const
-  {
-    vec -> GetIndirect (dnums, elvec);
+    vec -> AddIndirect (dnums, elvec, fespace->HasAtomicDofs());
   }
 
   
@@ -885,52 +838,6 @@ namespace ngcomp
 
 
 
-  template <typename TV>
-  void T_LinearForm<TV> ::
-  AddElementVector (FlatArray<int> dnums, FlatVector<TSCAL> elvec,
-		    int cachecomp) 
-  {
-    FlatVector<TV> fv = vec->template FV<TV>();
-    if(cachecomp < 0)
-      {
-        Scalar2ElemVector<TV, TSCAL> ev(elvec);
-	for (int k = 0; k < dnums.Size(); k++)
-	  if (IsRegularDof(dnums[k]))
-	    fv(dnums[k]) += ev(k);
-      }
-    else
-      {
-	for (int k = 0; k < dnums.Size(); k++)
-	  if (IsRegularDof(dnums[k]))
-	    fv(dnums[k])(cachecomp) += elvec(k);
-      }
-  }
-  
-  template <> void T_LinearForm<double>::
-  AddElementVector (FlatArray<int> dnums,
-		    FlatVector<double> elvec,
-		    int cachecomp) 
-  {
-    vec -> AddIndirect (dnums, elvec, fespace->HasAtomicDofs());
-  }
-
-  template <> void T_LinearForm<float>::
-  AddElementVector (FlatArray<int> dnums,
-		    FlatVector<float> elvec,
-		    int cachecomp) 
-  {
-    vec -> AddIndirect (dnums, elvec, fespace->HasAtomicDofs());
-  }
-  
-  template <> void T_LinearForm<Complex>::
-  AddElementVector (FlatArray<int> dnums,
-		    FlatVector<Complex> elvec,
-		    int cachecomp) 
-  {
-    vec -> AddIndirect (dnums, elvec, fespace->HasAtomicDofs());
-  }
-
-
   ComponentLinearForm :: ComponentLinearForm (shared_ptr<LinearForm> abase_lf, int acomp, int ancomp)
     : LinearForm( (*dynamic_pointer_cast<CompoundFESpace> (abase_lf->GetFESpace()))[acomp], "comp-lf", Flags()), 
       base_lf(abase_lf), comp(acomp) // , ncomp(ancomp)
@@ -954,17 +861,16 @@ namespace ngcomp
     shared_ptr<LinearForm> lf;
 
     if (flags.GetDefineFlag("fp32"))
-      lf = make_shared<T_LinearForm<float>>(space, name, flags);
+      lf = make_shared<S_LinearForm<float>>(space, name, flags);
+    else if (space->IsComplex())
+      lf = make_shared<S_LinearForm<Complex>>(space, name, flags);
     else
-      lf = CreateSharedVecObject  <T_LinearForm, LinearForm> 
-        (space->GetDimension() * int(flags.GetNumFlag("cacheblocksize",1)), 
-         space->IsComplex(), space, name, flags);
+      lf = make_shared<S_LinearForm<double>>(space, name, flags);
     
     // shared_ptr<LinearForm> lf(lfp);
     
     lf->SetIndependent (flags.GetDefineFlag ("independent"));
     if (flags.GetDefineFlag ( "noinitialassembling" )) lf->SetNoInitialAssembling();
-    lf->SetCacheBlockSize(int(flags.GetNumFlag("cacheblocksize",1)));
 
     // cout << "type = " << typeid(*lf).name() << ", addr = " << lfp << endl;
 
@@ -976,14 +882,6 @@ namespace ngcomp
   template class S_LinearForm<double>;
   template class S_LinearForm<float>;
   template class S_LinearForm<Complex>;
-
-  template class T_LinearForm<double>;
-  template class T_LinearForm<float>;
-  template class T_LinearForm<Complex>;
-
-  // template class T_LinearForm< Vec<3> >;
-
-
 
   
   SparseVector<double> PointEvaluationFunctional :: Assemble() const

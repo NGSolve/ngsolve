@@ -124,88 +124,6 @@ namespace ngcomp
 
   
   
-  template <template <class T> class Object, class Base, int ACTDIM, typename ... ARG>
-  class TCreateVecObjectS {
-  public:
-    static Base * Create (int dim, bool iscomplex, ARG & ... arg)
-    {
-      if (dim == ACTDIM) 
-        {
-          if (iscomplex)
-            return new Object<Vec<ACTDIM,Complex> > (arg...);
-          else
-            return new Object<Vec<ACTDIM,double> > (arg...);
-        }
-      else return TCreateVecObjectS<Object, Base, ACTDIM-1, ARG...>::Create(dim, iscomplex, arg...);
-    }
-  };
-  
-  template <template <class T> class Object, class Base, typename ... ARG>
-  class TCreateVecObjectS<Object, Base, 1, ARG...> {
-  public:
-    static Base * Create (int dim, bool iscomplex, ARG & ... arg)
-    { 
-      if (dim == 1) 
-        {
-          if (iscomplex)
-            return new Object<Complex> (arg...);
-          else
-            return new Object<double> (arg...);
-        }
-      throw Exception ("illegal CreateVecObject, dim = "
-                       + ToString(dim) + '\n');
-    }
-  };
-  
-  template <template <class T> class Object, class Base, typename ... ARG>
-  Base * CreateVecObject (int dim, bool iscomplex, ARG && ... arg)
-  {
-    return TCreateVecObjectS<Object, Base, 12, ARG...>::Create (dim, iscomplex, arg ...);
-  }
-  
-
-
-
-
-  
-  template <template <class T> class Object, class Base, int ACTDIM, typename ... ARG>
-  class TCreateSharedVecObjectS {
-  public:
-    static shared_ptr<Base> Create (int dim, bool iscomplex, ARG & ... arg)
-    {
-      if (dim == ACTDIM) 
-        {
-          if (iscomplex)
-            return make_shared<Object<Vec<ACTDIM,Complex>>> (arg...);
-          else
-            return make_shared<Object<Vec<ACTDIM,double>>> (arg...);
-        }
-      else return TCreateSharedVecObjectS<Object, Base, ACTDIM-1, ARG...>::Create(dim, iscomplex, arg...);
-    }
-  };
-  
-  template <template <class T> class Object, class Base, typename ... ARG>
-  class TCreateSharedVecObjectS<Object, Base, 1, ARG...> {
-  public:
-    static shared_ptr<Base> Create (int dim, bool iscomplex, ARG & ... arg)
-    { 
-      if (dim == 1) 
-        {
-          if (iscomplex)
-            return make_shared<Object<Complex>> (arg...);
-          else
-            return make_shared<Object<double>> (arg...);
-        }
-      throw Exception ("illegal CreateVecObject, dim = "
-                       + ToString(dim) + '\n');
-    }
-  };
-  
-  template <template <class T> class Object, class Base, typename ... ARG>
-  shared_ptr<Base> CreateSharedVecObject (int dim, bool iscomplex, ARG && ... arg)
-  {
-    return TCreateSharedVecObjectS<Object, Base, 12, ARG...>::Create (dim, iscomplex, arg ...);
-  }
   
 
 
@@ -887,99 +805,6 @@ namespace ngcomp
 
 
 
-#if MAX_CACHEBLOCKS < 2
-
-#define CreateSymMatObject4S(dest, Object, dim1, blocksize, SCAL, arg, arg2, arg3) \
-  switch (dim1) {                                                       \
-  case 1:                                                               \
-    switch (blocksize) {                                                \
-    case 1:                                                             \
-      dest = new Object<SCAL>(arg, arg2, arg3); break;                  \
-    }                                                                   \
-    break;                                                              \
-  }
-
-
-#else
-
-#if MAX_CACHEBLOCKS < 3
-
-#define CreateSymMatObject4S(dest, Object, dim1, blocksize, SCAL, arg, arg2, arg3) \
-  switch (dim1) {                                                       \
-  case 1:                                                               \
-    switch (blocksize) {                                                \
-    case 1:                                                             \
-      dest = new Object<SCAL>(arg, arg2, arg3); break;                  \
-    case 2:                                                             \
-      dest = new Object<SCAL, Vec<2,SCAL> >(arg, arg2, arg3); break;    \
-    }                                                                   \
-    break;                                                              \
-  }
-
-
-#else
-#if MAX_CACHEBLOCKS < 5
-
-#define CreateSymMatObject4S(dest, Object, dim1, blocksize, SCAL, arg, arg2, arg3) \
-  switch (dim1) {                                                       \
-  case 1:                                                               \
-    switch (blocksize) {                                                \
-    case 1:                                                             \
-      dest = new Object<SCAL>(arg, arg2, arg3); break;                  \
-    case 2:                                                             \
-      dest = new Object<SCAL, Vec<2,SCAL> >(arg, arg2, arg3); break;    \
-    case 3:                                                             \
-      dest = new Object<SCAL, Vec<3,SCAL> >(arg, arg2, arg3); break;    \
-    case 4:                                                             \
-      dest = new Object<SCAL, Vec<4,SCAL> >(arg, arg2, arg3); break;    \
-    }                                                                   \
-    break;                                                              \
-  }
-
-
-#else
-
-#define CreateSymMatObject4S(dest, Object, dim1, blocksize, SCAL, arg, arg2, arg3) \
-  switch (dim1) {                                                       \
-  case 1:                                                               \
-    switch (blocksize) {                                                \
-    case 1:                                                             \
-      dest = new Object<SCAL>(arg, arg2, arg3); break;                  \
-    case 2:                                                             \
-      dest = new Object<SCAL, Vec<2,SCAL> >(arg, arg2, arg3); break;    \
-    case 3:                                                             \
-      dest = new Object<SCAL, Vec<3,SCAL> >(arg, arg2, arg3); break;    \
-    case 4:                                                             \
-      dest = new Object<SCAL, Vec<4,SCAL> >(arg, arg2, arg3); break;    \
-    case 5:                                                             \
-      dest = new Object<SCAL, Vec<5,SCAL> >(arg, arg2, arg3); break;    \
-    case 6:                                                             \
-      dest = new Object<SCAL, Vec<6,SCAL> >(arg, arg2, arg3); break;    \
-    case 7:                                                             \
-      dest = new Object<SCAL, Vec<7,SCAL> >(arg, arg2, arg3); break;    \
-    case 8:                                                             \
-      dest = new Object<SCAL, Vec<8,SCAL> >(arg, arg2, arg3); break;    \
-    case 9:                                                             \
-      dest = new Object<SCAL, Vec<9,SCAL> >(arg, arg2, arg3); break;    \
-    case 10:                                                            \
-      dest = new Object<SCAL, Vec<10,SCAL> >(arg, arg2, arg3); break;   \
-    case 11:                                                            \
-      dest = new Object<SCAL, Vec<11,SCAL> >(arg, arg2, arg3); break;   \
-    case 12:                                                            \
-      dest = new Object<SCAL, Vec<12,SCAL> >(arg, arg2, arg3); break;   \
-    case 13:                                                            \
-      dest = new Object<SCAL, Vec<13,SCAL> >(arg, arg2, arg3); break;   \
-    case 14:                                                            \
-      dest = new Object<SCAL, Vec<14,SCAL> >(arg, arg2, arg3); break;   \
-    case 15:                                                            \
-      dest = new Object<SCAL, Vec<15,SCAL> >(arg, arg2, arg3); break;   \
-    }                                                                   \
-    break;                                                              \
-  }
-
-#endif
-#endif
-#endif
 
 
 
@@ -993,11 +818,6 @@ namespace ngcomp
 
 
 
-#define CreateSymMatObject4(dest, Object, dim, blocksize, iscomplex, arg, arg2, arg3) \
-  if (iscomplex)							\
-    CreateSymMatObject4S (dest, Object, dim, blocksize, Complex, arg, arg2, arg3) \
-    else                                                                \
-      CreateSymMatObject4S (dest, Object, dim, blocksize, double, arg, arg2, arg3);
 
 
 

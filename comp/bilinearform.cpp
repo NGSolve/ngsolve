@@ -7284,31 +7284,6 @@ namespace ngcomp
 
 
 
-  template <int CBSIZE>
-  shared_ptr<BilinearForm> CreateBilinearForm1 (int cb_size,
-                                                shared_ptr<FESpace> space, const string & name, const Flags & flags)
-  {
-    if (CBSIZE == cb_size)
-      return make_shared<T_BilinearFormSymmetric<double, Vec<CBSIZE,Complex>>> (space, name, flags);
-    else
-      return shared_ptr<BilinearForm> (CreateBilinearForm1<CBSIZE-1> (cb_size, space, name, flags));
-  }
-
-  template <> 
-  shared_ptr<BilinearForm> CreateBilinearForm1<1> (int cb_size,
-                                         shared_ptr<FESpace> space, const string & name, const Flags & flags)
-  {
-    return make_shared<T_BilinearFormSymmetric<double, Complex>> (space, name, flags);
-  }
-
-  template <> 
-  shared_ptr<BilinearForm> CreateBilinearForm1<0> (int cb_size,
-                                                   shared_ptr<FESpace> space, const string & name, const Flags & flags)
-  {
-    throw Exception ("Illegal cacheblocksize" + ToString (cb_size));
-  }
-  
-
   shared_ptr<BilinearForm> CreateBilinearForm (shared_ptr<FESpace> space,
                                                const string & name,
                                                const Flags & flags)
@@ -7341,80 +7316,11 @@ namespace ngcomp
       {
 
         if (space->IsComplex() && flags.GetDefineFlag ("real"))
-          {
-            if(flags.NumFlagDefined("cacheblocksize"))
-              {
-                int cacheblocksize = int(flags.GetNumFlag("cacheblocksize", 1)); 
-                /*
-#if MAX_CACHEBLOCKS >= 2 
-#ifdef GOLD
-                if (cacheblocksize == 2)
-                  return new T_BilinearFormSymmetric<double,MD<2>> (*space, name, flags);
-#endif
-#endif
-                */
-                return CreateBilinearForm1<MAX_CACHEBLOCKS> (cacheblocksize, space, name, flags);
-                /*
-                  switch(int(flags.GetNumFlag("cacheblocksize",1)))
-                  {
-                  #if MAX_CACHEBLOCKS >= 2
-                  case 2:
-                  return new T_BilinearFormSymmetric<double,Vec<2,Complex> > (*space, name, flags);
-                  #endif
-                  #if MAX_CACHEBLOCKS >= 3
-                  case 3:
-                  return new T_BilinearFormSymmetric<double,Vec<3,Complex> > (*space, name, flags);
-                  case 4:
-                  return new T_BilinearFormSymmetric<double,Vec<4,Complex> > (*space, name, flags);
-                  #endif
-                  #if MAX_CACHEBLOCKS >= 5
-                  case 5:
-                  return new T_BilinearFormSymmetric<double,Vec<5,Complex> > (*space, name, flags);
-                  case 6:
-                  return new T_BilinearFormSymmetric<double,Vec<6,Complex> > (*space, name, flags);
-                  case 7:
-                  return new T_BilinearFormSymmetric<double,Vec<7,Complex> > (*space, name, flags);
-                  case 8:
-                  return new T_BilinearFormSymmetric<double,Vec<8,Complex> > (*space, name, flags);
-                  case 9:
-                  return new T_BilinearFormSymmetric<double,Vec<9,Complex> > (*space, name, flags);
-                  case 10:
-                  return new T_BilinearFormSymmetric<double,Vec<10,Complex> > (*space, name, flags);
-                  case 11:
-                  return new T_BilinearFormSymmetric<double,Vec<11,Complex> > (*space, name, flags);
-                  case 12:
-                  return new T_BilinearFormSymmetric<double,Vec<12,Complex> > (*space, name, flags);
-                  case 13:
-                  return new T_BilinearFormSymmetric<double,Vec<13,Complex> > (*space, name, flags);
-                  case 14:
-                  return new T_BilinearFormSymmetric<double,Vec<14,Complex> > (*space, name, flags);
-                  case 15:
-                  return new T_BilinearFormSymmetric<double,Vec<15,Complex> > (*space, name, flags);
-                  #endif
-                  }
-                */
-              }
-            else
-              return make_shared<T_BilinearFormSymmetric<double,Complex>> (space, name, flags);
-          }
+          return make_shared<T_BilinearFormSymmetric<double,Complex>> (space, name, flags);
 
-        if(flags.NumFlagDefined("cacheblocksize"))
-          {
-            CreateSymMatObject4 (bf, T_BilinearFormSymmetric, 
-                                 space->GetDimension(),
-                                 int(flags.GetNumFlag("cacheblocksize",1)),
-                                 space->IsComplex(),   
-                                 space, name, flags);
-          }
-        else
-          {
-            //bf = CreateSymMatObject<T_BilinearFormSymmetric, BilinearForm> //, const FESpace, const string, const Flags>
-            //  (space->GetDimension(), space->IsComplex(), *space, name, flags);
-
-            CreateSymMatObject3(bf, T_BilinearFormSymmetric,
-                                space->GetDimension(), space->IsComplex(),
-                                space, name, flags);
-          }
+        CreateSymMatObject3(bf, T_BilinearFormSymmetric,
+                            space->GetDimension(), space->IsComplex(),
+                            space, name, flags);
       }
     else if (flags.GetDefineFlag ("diagonal"))
       {
@@ -7435,97 +7341,39 @@ namespace ngcomp
     else
       {
         if (space->IsComplex() && flags.GetDefineFlag ("real"))
+          return make_shared<T_BilinearForm<double,Complex>> (space, name, flags);
+
+        if (space->GetDimension() > MAX_SYS_DIM)
           {
-            
-            if(flags.NumFlagDefined("cacheblocksize"))
-              {
-                switch(int(flags.GetNumFlag("cacheblocksize",1)))
-                  {
-#if MAX_CACHEBLOCKS >= 2
-                  case 2:
-                    return new T_BilinearForm<double,Vec<2,Complex> > (*space, name, flags);
-#endif
-#if MAX_CACHEBLOCKS >= 3
-                  case 3:
-                    return new T_BilinearForm<double,Vec<3,Complex> > (*space, name, flags);
-                  case 4:
-                    return new T_BilinearForm<double,Vec<4,Complex> > (*space, name, flags);
-#endif
-#if MAX_CACHEBLOCKS >= 5
-                  case 5:
-                    return new T_BilinearForm<double,Vec<5,Complex> > (*space, name, flags);
-                  case 6:
-                    return new T_BilinearForm<double,Vec<6,Complex> > (*space, name, flags);
-                  case 7:
-                    return new T_BilinearForm<double,Vec<7,Complex> > (*space, name, flags);
-                  case 8:
-                    return new T_BilinearForm<double,Vec<8,Complex> > (*space, name, flags);
-                  case 9:
-                    return new T_BilinearForm<double,Vec<9,Complex> > (*space, name, flags);
-                  case 10:
-                    return new T_BilinearForm<double,Vec<10,Complex> > (*space, name, flags);
-                  case 11:
-                    return new T_BilinearForm<double,Vec<11,Complex> > (*space, name, flags);
-                  case 12:
-                    return new T_BilinearForm<double,Vec<12,Complex> > (*space, name, flags);
-                  case 13:
-                    return new T_BilinearForm<double,Vec<13,Complex> > (*space, name, flags);
-                  case 14:
-                    return new T_BilinearForm<double,Vec<14,Complex> > (*space, name, flags);
-                  case 15:
-                    return new T_BilinearForm<double,Vec<15,Complex> > (*space, name, flags);
-#endif
-                  }
-              }
-            else
-              return make_shared<T_BilinearForm<double,Complex>> (space, name, flags);
-          }
-        
-        if(flags.NumFlagDefined("cacheblocksize"))
-          {
-            CreateSymMatObject4 (bf, T_BilinearForm, 
-                                 space->GetDimension(),
-                                 int(flags.GetNumFlag("cacheblocksize",1)),
-                                 space->IsComplex(),   
-                                 space, name, flags);
+            return make_shared<T_BilinearFormDynBlocks<double>> (space, name, flags);
           }
         else
           {
-            //bf = CreateSymMatObject<T_BilinearForm, BilinearForm> 
-            //  (space->GetDimension(), space->IsComplex(), *space, name, flags);
-
-            if (space->GetDimension() > MAX_SYS_DIM)
+            if (space->IsComplex())
               {
-                return make_shared<T_BilinearFormDynBlocks<double>> (space, name, flags);
+                CreateSymMatObject3S (bf, T_BilinearForm,
+                                      space->GetDimension(), Complex,
+                                      space, name, flags);
               }
             else
               {
-                if (space->IsComplex())
+                if (flags.GetDefineFlag("fp32"))
                   {
-                    CreateSymMatObject3S (bf, T_BilinearForm,
-                                          space->GetDimension(), Complex,
-                                          space, name, flags);
+                    bf = new T_BilinearForm<float>(space, name, flags);
                   }
                 else
                   {
-                    if (flags.GetDefineFlag("fp32"))
-                      {
-                        bf = new T_BilinearForm<float>(space, name, flags);
-                      }
-                    else
-                      {
-                        CreateSymMatObject3S (bf, T_BilinearForm,
-                                              space->GetDimension(), double,
-                                              space, name, flags);
-                      }
+                    CreateSymMatObject3S (bf, T_BilinearForm,
+                                          space->GetDimension(), double,
+                                          space, name, flags);
                   }
-                
-                /*
-                CreateSymMatObject3 (bf, T_BilinearForm,
-                                     space->GetDimension(), space->IsComplex(),
-                                     space, name, flags);
-                */
               }
+            
+            /*
+            CreateSymMatObject3 (bf, T_BilinearForm,
+                                 space->GetDimension(), space->IsComplex(),
+                                 space, name, flags);
+            */
           }
       }
 

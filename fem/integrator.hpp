@@ -54,7 +54,6 @@ namespace ngfem
     Array < FlatVector < double > * > curve_ip_tangents;
     Array <int> continuous_curveparts;
   
-    int cachecomp;
     int bonus_intorder = 0;
 
     /// define only on some sub-domains
@@ -243,12 +242,6 @@ namespace ngfem
 
 
   
-    virtual void SetCacheComp(const int comp)
-    { cachecomp = comp; }
-
-    virtual int CacheComp(void) const
-    { return cachecomp; }
-
     virtual void SetFileName(const string & filename);
 
     virtual void SetFlags (const Flags & flags) { ; }
@@ -1833,10 +1826,6 @@ namespace ngfem
     { lfi->AppendCurvePoint(point, tangent); }
     void SetCurveClearance() override
     { lfi->SetCurveClearance(); }
-    void SetCacheComp(const int comp) override
-    { cachecomp = comp; }
-    int CacheComp() const override
-    { return lfi->CacheComp(); }
 
   };
 

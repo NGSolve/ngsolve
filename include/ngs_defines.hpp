@@ -21,9 +21,6 @@
 #define MAX_SYS_DIM 3
 #endif
 
-#ifndef MAX_CACHEBLOCKS
-#define MAX_CACHEBLOCKS 0
-#endif
 
 
 

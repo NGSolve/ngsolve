@@ -38,7 +38,6 @@ namespace ngcomp
     bool assembled;
     bool initialassembling;
 
-    int cacheblocksize;
     /// output of norm of matrix entries
     bool checksum;
 
@@ -120,41 +119,11 @@ namespace ngcomp
     virtual Array<MemoryUsage> GetMemoryUsage () const;
       
     virtual void AddElementVector (FlatArray<int> dnums,
-                                   FlatVector<double> elvec,
-				   int cachecomp = -1);
-
-    [[deprecated]]    
-    virtual void SetElementVector (FlatArray<int> dnums,
-				   FlatVector<double> elvec);
-    [[deprecated]]
-    virtual void GetElementVector (FlatArray<int> dnums,
-				   FlatVector<double> elvec) const;
+                                   FlatVector<double> elvec);
     virtual void AddElementVector (FlatArray<int> dnums,
-                                   FlatVector<float> elvec,
-				   int cachecomp = -1);
-    [[deprecated]]    
-    virtual void SetElementVector (FlatArray<int> dnums,
-				   FlatVector<float> elvec);
-    
-    [[deprecated]]    
-    virtual void GetElementVector (FlatArray<int> dnums,
-				   FlatVector<float> elvec) const;
+                                   FlatVector<float> elvec);
     virtual void AddElementVector (FlatArray<int> dnums,
-				   FlatVector<Complex> elvec,
-				   int cachecomp = -1);
-    [[deprecated]]    
-    virtual void SetElementVector (FlatArray<int> dnums,
                                    FlatVector<Complex> elvec);
-    [[deprecated]]    
-    virtual void GetElementVector (FlatArray<int> dnums,
-				   FlatVector<Complex> elvec) const;
-
-
-
-    virtual void SetCacheBlockSize (const int size)
-    {
-      cacheblocksize = size;
-    }
   };
 
 
@@ -175,62 +144,13 @@ namespace ngcomp
     virtual void CleanUpLevel() override;    
     ///
     virtual void AddElementVector (FlatArray<int> dnums,
-                                   FlatVector<SCAL> elvec,
-                                   int cachecomp = -1) override = 0;
-
-    [[deprecated]]        
-    virtual void SetElementVector (FlatArray<int> dnums,
                                    FlatVector<SCAL> elvec) override;
-
-    [[deprecated]]        
-    virtual void GetElementVector (FlatArray<int> dnums,
-				   FlatVector<SCAL> elvec) const override;
 
     ///
     virtual void Assemble (LocalHeap & lh) override;
     void AssembleIndependent (LocalHeap & lh);
   };
 
-
-
-
-
-
-  /// Template argument specifies vector type
-  template <class TV>
-  class NGS_DLL_HEADER T_LinearForm : public S_LinearForm<typename mat_traits<TV>::TSCAL>
-  {
-    ///
-    // shared_ptr<VVector<TV>> vec;
-    typedef S_LinearForm<typename mat_traits<TV>::TSCAL> BASE;
-    using BASE::vec;
-  public:
-
-    typedef typename mat_traits<TV>::TSCAL TSCAL;
-    // enum { HEIGHT = mat_traits<TV>::HEIGHT };
-
-    ///
-    using S_LinearForm<TSCAL>::S_LinearForm;
-
-    ///
-    virtual ~T_LinearForm () { };
-
-    ///
-    // virtual void AllocateVector () override;
-    ///
-    // virtual void CleanUpLevel() override;
-
-    ///
-    virtual void AddElementVector (FlatArray<int> dnums,
-				   FlatVector<TSCAL> elvec,
-                                   int cachecomp = -1) override;
-    /*
-    virtual void SetElementVector (FlatArray<int> dnums,
-                                   FlatVector<TSCAL> elvec) override;
-    virtual void GetElementVector (FlatArray<int> dnums,
-				   FlatVector<TSCAL> elvec) const override;
-    */
-  };
 
 
 

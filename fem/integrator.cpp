@@ -19,7 +19,6 @@ namespace ngfem
   {
     SetHigherIntegrationOrder(20);
     SetIntegrationOrder (-1);
-    SetCacheComp (0);
     // fast = false;
     const_coef = false;
     // checkfast = false;

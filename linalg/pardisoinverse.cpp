@@ -802,68 +802,8 @@ namespace ngla
 
 
 
-#if MAX_CACHEBLOCKS >= 2
-  template class PardisoInverse<double, Vec<2,double>, Vec<2,double> >;
-#endif
-#if MAX_CACHEBLOCKS >= 3
-  template class PardisoInverse<double, Vec<3,double>, Vec<3,double> >;
-  template class PardisoInverse<double, Vec<4,double>, Vec<4,double> >;
-#endif
-#if MAX_CACHEBLOCKS >= 5
-  template class PardisoInverse<double, Vec<5,double>, Vec<5,double> >;
-  template class PardisoInverse<double, Vec<6,double>, Vec<6,double> >;
-  template class PardisoInverse<double, Vec<7,double>, Vec<7,double> >;
-  template class PardisoInverse<double, Vec<8,double>, Vec<8,double> >;
-  template class PardisoInverse<double, Vec<9,double>, Vec<9,double> >;
-  template class PardisoInverse<double, Vec<10,double>, Vec<10,double> >;
-  template class PardisoInverse<double, Vec<11,double>, Vec<11,double> >;
-  template class PardisoInverse<double, Vec<12,double>, Vec<12,double> >;
-  template class PardisoInverse<double, Vec<13,double>, Vec<13,double> >;
-  template class PardisoInverse<double, Vec<14,double>, Vec<14,double> >;
-  template class PardisoInverse<double, Vec<15,double>, Vec<15,double> >;
-#endif
 
-#if MAX_CACHEBLOCKS >= 2
-  template class PardisoInverse<double, Vec<2,Complex>, Vec<2,Complex> >;
-#endif
-#if MAX_CACHEBLOCKS >= 3
-  template class PardisoInverse<double, Vec<3,Complex>, Vec<3,Complex> >;
-  template class PardisoInverse<double, Vec<4,Complex>, Vec<4,Complex> >;
-#endif
-#if MAX_CACHEBLOCKS >= 5
-  template class PardisoInverse<double, Vec<5,Complex>, Vec<5,Complex> >;
-  template class PardisoInverse<double, Vec<6,Complex>, Vec<6,Complex> >;
-  template class PardisoInverse<double, Vec<7,Complex>, Vec<7,Complex> >;
-  template class PardisoInverse<double, Vec<8,Complex>, Vec<8,Complex> >;
-  template class PardisoInverse<double, Vec<9,Complex>, Vec<9,Complex> >;
-  template class PardisoInverse<double, Vec<10,Complex>, Vec<10,Complex> >;
-  template class PardisoInverse<double, Vec<11,Complex>, Vec<11,Complex> >;
-  template class PardisoInverse<double, Vec<12,Complex>, Vec<12,Complex> >;
-  template class PardisoInverse<double, Vec<13,Complex>, Vec<13,Complex> >;
-  template class PardisoInverse<double, Vec<14,Complex>, Vec<14,Complex> >;
-  template class PardisoInverse<double, Vec<15,Complex>, Vec<15,Complex> >;
-#endif
 
-#if MAX_CACHEBLOCKS >= 2
-  template class PardisoInverse<Complex, Vec<2,Complex>, Vec<2,Complex> >;
-#endif
-#if MAX_CACHEBLOCKS >= 3
-  template class PardisoInverse<Complex, Vec<3,Complex>, Vec<3,Complex> >;
-  template class PardisoInverse<Complex, Vec<4,Complex>, Vec<4,Complex> >;
-#endif
-#if MAX_CACHEBLOCKS >= 5
-  template class PardisoInverse<Complex, Vec<5,Complex>, Vec<5,Complex> >;
-  template class PardisoInverse<Complex, Vec<6,Complex>, Vec<6,Complex> >;
-  template class PardisoInverse<Complex, Vec<7,Complex>, Vec<7,Complex> >;
-  template class PardisoInverse<Complex, Vec<8,Complex>, Vec<8,Complex> >;
-  template class PardisoInverse<Complex, Vec<9,Complex>, Vec<9,Complex> >;
-  template class PardisoInverse<Complex, Vec<10,Complex>, Vec<10,Complex> >;
-  template class PardisoInverse<Complex, Vec<11,Complex>, Vec<11,Complex> >;
-  template class PardisoInverse<Complex, Vec<12,Complex>, Vec<12,Complex> >;
-  template class PardisoInverse<Complex, Vec<13,Complex>, Vec<13,Complex> >;
-  template class PardisoInverse<Complex, Vec<14,Complex>, Vec<14,Complex> >;
-  template class PardisoInverse<Complex, Vec<15,Complex>, Vec<15,Complex> >;
-#endif
 
 
 

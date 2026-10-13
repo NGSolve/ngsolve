@@ -117,8 +117,6 @@ namespace ngcomp
     /// highest multigrid-level for which Update was called (memory allocation)
     int level_updated = -1;
 
-    /// used for many right-hand-sides
-    int cacheblocksize = 1;
     /// Component gridfunctions living somewhere - need to call update on them
     Array<weak_ptr<GridFunction>> compgfs;
     /// the actual data, array for multi-dim 
@@ -190,10 +188,6 @@ namespace ngcomp
 
     // void Visualize(const string & name);
 
-    ///
-    virtual void SetCacheBlockSize (const int size) {cacheblocksize = size;}
-    ///
-    virtual int GetCacheBlockSize (void) const { return cacheblocksize;}
     ///
     virtual bool IsUpdated () const; 
 
