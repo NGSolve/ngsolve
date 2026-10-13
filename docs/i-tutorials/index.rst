@@ -296,6 +296,14 @@ BEM for the Laplace and Helmhotlz equations
    unit-11.2-bem-Laplace/Laplace_NtD_direct.ipynb
 
    unit-11.3-bem-Helmholtz/BrakhageWerner.ipynb   
+
+
+Volume integral equations
+
+.. toctree::
+   :maxdepth: 1
+
+   unit-11.4-vie-Helmholtz/LippmannSchwinger.ipynb
    
 Appendix
 ========
