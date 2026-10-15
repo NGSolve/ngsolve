@@ -7288,7 +7288,7 @@ namespace ngcomp
                                                const string & name,
                                                const Flags & flags)
   {
-    BilinearForm * bf = NULL;
+    shared_ptr<BilinearForm> bf;
 
     if (flags.GetDefineFlag ("ebe")){
       if ( space->IsComplex() )
@@ -7318,25 +7318,16 @@ namespace ngcomp
         if (space->IsComplex() && flags.GetDefineFlag ("real"))
           return make_shared<T_BilinearFormSymmetric<double,Complex>> (space, name, flags);
 
-        CreateSymMatObject3(bf, T_BilinearFormSymmetric,
-                            space->GetDimension(), space->IsComplex(),
-                            space, name, flags);
+        bf = CreateSysMatObject<BilinearForm, T_BilinearFormSymmetric>
+          (space->GetDimension(), space->IsComplex(), space, name, flags);
       }
     else if (flags.GetDefineFlag ("diagonal"))
       {
-	/*
-        bf = CreateSymMatObject<T_BilinearFormDiagonal, BilinearForm> //, const FESpace, const string, const Flags>
-          (space->GetDimension(), space->IsComplex(), *space, name, flags);
-	*/
-
         if (flags.GetDefineFlag("fp32"))
-          {
-            bf = new T_BilinearFormDiagonal<float>(space, name, flags);
-          }
+          bf = make_shared<T_BilinearFormDiagonal<float>>(space, name, flags);
         else
-          CreateSymMatObject3 (bf, T_BilinearFormDiagonal, 
-                               space->GetDimension(), space->IsComplex(),   
-                               space, name, flags);
+          bf = CreateSysMatObject<BilinearForm, T_BilinearFormDiagonal>
+            (space->GetDimension(), space->IsComplex(), space, name, flags);
       }
     else
       {
@@ -7349,31 +7340,11 @@ namespace ngcomp
           }
         else
           {
-            if (space->IsComplex())
-              {
-                CreateSymMatObject3S (bf, T_BilinearForm,
-                                      space->GetDimension(), Complex,
-                                      space, name, flags);
-              }
+            if (!space->IsComplex() && flags.GetDefineFlag("fp32"))
+              bf = make_shared<T_BilinearForm<float>>(space, name, flags);
             else
-              {
-                if (flags.GetDefineFlag("fp32"))
-                  {
-                    bf = new T_BilinearForm<float>(space, name, flags);
-                  }
-                else
-                  {
-                    CreateSymMatObject3S (bf, T_BilinearForm,
-                                          space->GetDimension(), double,
-                                          space, name, flags);
-                  }
-              }
-            
-            /*
-            CreateSymMatObject3 (bf, T_BilinearForm,
-                                 space->GetDimension(), space->IsComplex(),
-                                 space, name, flags);
-            */
+              bf = CreateSysMatObject<BilinearForm, T_BilinearForm>
+                (space->GetDimension(), space->IsComplex(), space, name, flags);
           }
       }
 
@@ -7382,7 +7353,7 @@ namespace ngcomp
                        ToString (space->GetDimension()) +
                        "\neither define MAX_SYS_DIM with higher value and recompile,"
                        "\nor set flag 'nonassemble'");
-    return shared_ptr<BilinearForm> (bf);
+    return bf;
   }
 
 
