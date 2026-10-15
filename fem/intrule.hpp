@@ -1017,6 +1017,31 @@ namespace ngfem
 	  faces = &hfaces[0];
 	}
 
+      if (eltype == ET_PYRAMID)
+	{
+	  for (int i = 0; i < 4; i++)
+	    {
+	      hfaces[i][0] = faces[i][0];
+	      hfaces[i][1] = faces[i][1];
+	      hfaces[i][2] = faces[i][2];
+	      if (vnums[hfaces[i][0]] > vnums[hfaces[i][1]]) swap (hfaces[i][0], hfaces[i][1]);
+	      if (vnums[hfaces[i][1]] > vnums[hfaces[i][2]]) swap (hfaces[i][1], hfaces[i][2]);
+	      if (vnums[hfaces[i][0]] > vnums[hfaces[i][1]]) swap (hfaces[i][0], hfaces[i][1]);
+	    }
+	  int jmin = 0;
+	  for (int j = 1; j < 4; j++)
+	    if (vnums[faces[4][j]] < vnums[faces[4][jmin]]) jmin = j;
+	  int j1 = (jmin+1)%4;
+	  int j2 = (jmin+2)%4;
+	  int j3 = (jmin+3)%4;
+	  if (vnums[faces[4][j3]] < vnums[faces[4][j1]]) swap (j1, j3);
+	  hfaces[4][0] = faces[4][jmin];
+	  hfaces[4][1] = faces[4][j1];
+	  hfaces[4][2] = faces[4][j2];
+	  hfaces[4][3] = faces[4][j3];
+	  faces = &hfaces[0];
+	}
+
       if (eltype == ET_HEX)
         {
           for (int i = 0; i < 6; i++)
