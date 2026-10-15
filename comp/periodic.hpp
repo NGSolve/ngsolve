@@ -29,6 +29,7 @@ namespace ngcomp
     
     virtual ~PeriodicFESpace () { ; }
     void Update() override;
+    void SetOrder (NodeId ni, int order) override;
     void DoArchive (Archive & archive) override;
     auto GetCArgs () { return std::make_tuple(Shallow(space), GetFlags(), used_idnrs); }
     
