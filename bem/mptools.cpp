@@ -539,28 +539,46 @@ namespace ngsbem
     // Float S->R: at the scales s, 1/t the high target degrees of the trafo fall below FLT_MIN. Run the recursion at
     // s' = 1/t' = lambda = max(2^j, s, 1/t) instead, 2^j balancing the ends of the seed column, and convert exactly:
     //   out(n) = fout(n) sum_l trafo'(n,l) fin(l) in(l),  fin(l) = (1/hankel_prefactor) (s/lambda)^l,  fout(n) = ((1/t)/lambda)^n
+    // Float S->S, R->R: at s, t the trafo carries (s/t)^n, 2^-n between levels, below FLT_MIN from degree 126 on, and
+    // the layer recursion carries that down to low degrees. Run them at the seed's scale instead: S->S at s' = t,
+    // fin(l) = (s/t)^l; R->R at t' = s, fout(n) = (s/t)^n.
     // fin <= 1/hankel_prefactor and fout <= 1, computed in double. fout can be far below FLT_MIN, so it is applied as
     // fout_lo(n) * (fout_hi(n) * .) with fout_lo(n) = 1 or FLT_MIN: two normal floats down to fout = 2^-252.
-    constexpr bool balanced = is_sr && std::is_same_v<real_type,float>;
+    constexpr bool balanced = std::is_same_v<real_type,float>;
     FlatVector<real_type> fin, fout_hi, fout_lo;
     if constexpr (balanced)
       {
-        double s = scale, tinv = inv_tscale;
-        double lambda = std::max ({ std::ldexp(1.0, BalancedScaleExponent (os+ot, kappa*abs(z))), s, tinv });
+        double rin = 1, rout = 1;
+        if constexpr (is_sr)
+          {
+            double s = scale, tinv = inv_tscale;
+            double lambda = std::max ({ std::ldexp(1.0, BalancedScaleExponent (os+ot, kappa*abs(z))), s, tinv });
+            rin = s/lambda; rout = tinv/lambda;
+            scale = real_type(lambda); inv_scale = real_type(1/lambda);
+            tscale = real_type(1/lambda); inv_tscale = real_type(lambda);
+          }
+        if constexpr (is_ss)
+          {
+            rin = double(scale)/double(tscale);
+            scale = tscale; inv_scale = inv_tscale;
+          }
+        if constexpr (is_rr)
+          {
+            rout = double(scale)/double(tscale);
+            tscale = scale; inv_tscale = inv_scale;
+          }
         fin.AssignMemory (os+1, lh);
         fout_hi.AssignMemory (ot+1, lh);
         fout_lo.AssignMemory (ot+1, lh);
         constexpr float flt_min = std::numeric_limits<float>::min();
         double fi = inv_hankel_prefactor, fo = 1;
-        for (int l = 0; l <= os; l++, fi *= s/lambda)
+        for (int l = 0; l <= os; l++, fi *= rin)
           fin(l) = real_type(fi);
-        for (int n = 0; n <= ot; n++, fo *= tinv/lambda)
+        for (int n = 0; n <= ot; n++, fo *= rout)
           {
             fout_lo(n) = fo < flt_min ? flt_min : 1;
             fout_hi(n) = real_type(fo / fout_lo(n));
           }
-        scale = real_type(lambda); inv_scale = real_type(1/lambda);
-        tscale = real_type(1/lambda); inv_tscale = real_type(lambda);
       }
     
     // initial values
