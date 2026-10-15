@@ -7119,22 +7119,15 @@ namespace ngcomp
                         bool inner_element, int elnr,
                         LocalHeap & lh) 
   {
-    throw Exception ("generic AddDiagElementMatrix not implemented");
-    /*
-      TMATRIX & mat = dynamic_cast<TMATRIX&> (*this->mats.Last());
-    
-      for (int i = 0; i < dnums1.Size(); i++)
-      if (dnums1[i] != -1)
-      {
-      TM mij = diag(dnums1[i]);
-      int hi = Height (mij);
-      int wi = Width (mij);
-          
-      for (int k = 0; k < hi; k++)
-      for (int l = 0; l < wi; l++)
-      mij(k,l) += elmat(i*hi+k, i*wi+l);
-      }
-    */
+    // diag is the element matrix diagonal, component k of dof i at i*h+k
+    for (int i = 0; i < dnums1.Size(); i++)
+      if (IsRegularDof(dnums1[i]))
+        {
+          TM & mii = (*mymatrix)(dnums1[i]);
+          int h = Height (mii);
+          for (int k = 0; k < h; k++)
+            mii(k,k) += diag(i*h+k);
+        }
   }
 
 
@@ -7342,6 +7335,8 @@ namespace ngcomp
 
         if (space->GetDimension() > MAX_SYS_DIM)
           {
+            if (space->IsComplex())
+              return make_shared<T_BilinearFormDynBlocks<Complex>> (space, name, flags);
             return make_shared<T_BilinearFormDynBlocks<double>> (space, name, flags);
           }
         else
