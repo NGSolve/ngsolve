@@ -8,6 +8,9 @@
 
 namespace ngsbem
 {
+  // the FMM_Device of the "device" keyword (see bem_operator_kwargs_doc in python_bem.cpp); None without FMM
+  NGS_DLL_HEADER FMM_Device ResolveFMMDevice (const std::string & device, bool fp32, bool use_fmm);
+
   class IntOp_Parameters
   {
     bool use_fmm = true;
@@ -18,6 +21,7 @@ namespace ngsbem
     double fmm_eval_separation = 3.0;
     double fmm_split_kr = 5.0;
     int fmm_maxlevel = 20;
+    FMM_Device fmm_device = FMM_Device::None;
   public:
     IntOp_Parameters () = default;
     IntOp_Parameters (const ngcore::Flags & flags);
@@ -41,6 +45,7 @@ namespace ngsbem
       fmm_params.eval_separation = fmm_eval_separation;
       fmm_params.split_kr = fmm_split_kr;
       fmm_params.maxlevel = fmm_maxlevel;
+      fmm_params.device = fmm_device;
       return fmm_params;
     }
   };

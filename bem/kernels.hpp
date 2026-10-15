@@ -41,6 +41,7 @@ namespace ngsbem
 
     FMMInterface (T_Kappa _kappa = 1e-16) : kappa(_kappa) {}
 
+    int ExpansionComponents () const override { return VecLength<T_MP>; }
     shared_ptr<BaseSingularMLExpansion> CreateMultipoleExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const override;
     shared_ptr<BaseRegularMLExpansion> CreateLocalExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const override;
 
@@ -56,6 +57,16 @@ namespace ngsbem
     {
       assert((dynamic_cast<RegularMLExpansion<mp_type,T_Kappa>*>(&mp)));
       return static_cast<RegularMLExpansion<mp_type,T_Kappa>&>(mp);
+    }
+
+    // the device's values as they are: val(i) += dev(i), its real part for a real val
+    void AddDeviceTargetValue (FlatVector<Complex> dev, Vec<3> p, Vec<3> nv, BareSliceVector<T_VALUE> val) const override
+    {
+      for (size_t i = 0; i < dev.Size(); i++)
+        if constexpr (!IsComplex<T_VALUE>())
+          val(i) += dev(i).real();
+        else
+          val(i) += dev(i);
     }
   };
 
@@ -76,6 +87,16 @@ namespace ngsbem
       auto & mp = this->Cast(amp);
       mp.AddCharge (pnt, val);
     }
+
+    int DeviceSourceKind () const override { return 1; }
+
+    void DeviceSourceValues (BareSliceVector<value_type> val, Vec<3> p, FlatVector<Complex> charge,
+                             FlatVector<Complex> dipole, FlatVector<Complex> dipvec) const override
+    {
+      charge = mp_type(val);
+    }
+
+    int DeviceTargetMode () const override { return 1; }
 
     void EvaluateMP (BaseRegularMLExpansion & amp, Vec<3> pnt, Vec<3> nv, BareSliceVector<value_type> val) const override
     {
@@ -105,6 +126,14 @@ namespace ngsbem
       mp.AddDipole (pnt, -nv, val);
     }
 
+    int DeviceSourceKind () const override { return 2; }
+
+    void DeviceSourceValues (BareSliceVector<value_type> val, Vec<3> p, FlatVector<Complex> charge,
+                             FlatVector<Complex> dipole, FlatVector<Complex> dipvec) const override
+    {
+      dipole = mp_type(val);
+    }
+
     void EvaluateMP (BaseRegularMLExpansion & amp, Vec<3> pnt, Vec<3> nv, BareSliceVector<value_type> val) const override
     {
       auto & mp = this->Cast(amp);
@@ -112,6 +141,21 @@ namespace ngsbem
         val = Real(mp.EvaluateDirectionalDerivative (pnt, nv));
       else
         val = mp.EvaluateDirectionalDerivative (pnt, nv);
+    }
+
+    int DeviceTargetMode () const override { return 2; }
+
+    // the derivative along nv from the gradient
+    void AddDeviceTargetValue (FlatVector<Complex> dev, Vec<3> p, Vec<3> nv, BareSliceVector<value_type> val) const override
+    {
+      for (int i = 0; i < COMPS; i++)
+        {
+          Complex d = nv(0)*dev(3*i) + nv(1)*dev(3*i+1) + nv(2)*dev(3*i+2);
+          if constexpr (!IsComplex<value_type>())
+            val(i) += d.real();
+          else
+            val(i) += d;
+        }
     }
   };
 
@@ -142,6 +186,8 @@ namespace ngsbem
             val.Slice(i,3) = deri;
         }
     }
+
+    int DeviceTargetMode () const override { return 2; }
   };
 
   // Direct evaluation: val = mp.Evaluate(pnt)
@@ -162,6 +208,8 @@ namespace ngsbem
       else
         val = mp.Evaluate (pnt);
     }
+
+    int DeviceTargetMode () const override { return 1; }
   };
 
   // Combined charge + dipole source (CombinedField)
@@ -182,6 +230,17 @@ namespace ngsbem
       Vec<COMPS,coefficient_type> fmm_val = val;
       coefficient_type imag(0,1);
       mp.AddChargeDipole (pnt, -coefficient_type(this->kappa) * imag*fmm_val, -nv, fmm_val);
+    }
+
+    int DeviceSourceKind () const override { return 3; }
+
+    void DeviceSourceValues (BareSliceVector<Complex> val, Vec<3> p, FlatVector<Complex> charge,
+                             FlatVector<Complex> dipole, FlatVector<Complex> dipvec) const override
+    {
+      Vec<COMPS,coefficient_type> fmm_val = val;
+      coefficient_type imag(0,1);
+      Vec<COMPS,coefficient_type> c = -coefficient_type(this->kappa) * imag*fmm_val;
+      for (int i = 0; i < COMPS; i++) { charge(i) = c(i); dipole(i) = fmm_val(i); }
     }
   };
 
@@ -212,11 +271,29 @@ namespace ngsbem
         }
     }
 
+    int DeviceSourceKind () const override { return 4; }
+
+    int DeviceSourceEntries () const override { return 6; }
+
+    // component k: the dipole vector v x e_k of the six dipoles AddSource adds
+    void DeviceSourceValues (BareSliceVector<Complex> val, Vec<3> p, FlatVector<Complex> charge,
+                             FlatVector<Complex> dipole, FlatVector<Complex> dipvec) const override
+    {
+      Vec<3,coefficient_type> v = val.Range(0, 3);
+      coefficient_type z(0.0);
+      Vec<3,coefficient_type> d[3] = { { z, v(2), -v(1) }, { -v(2), z, v(0) }, { v(1), -v(0), z } };
+      for (int k = 0; k < 3; k++)
+        for (int j = 0; j < 3; j++)
+          dipvec(3*k+j) = d[k](j);
+    }
+
     void EvaluateMP (BaseRegularMLExpansion & amp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const override
     {
       auto & mp = this->Cast(amp);
       val = mp.Evaluate (pnt);
     }
+
+    int DeviceTargetMode () const override { return 1; }
   };
 
   // Lame source: charges + Jacobi matrix dipoles
@@ -248,6 +325,27 @@ namespace ngsbem
           mp.AddDipole(pnt, -ek, dipole_charge);
         }
     }
+
+    int DeviceSourceKind () const override { return 5; }
+
+    int DeviceSourceEntries () const override { return 4; }
+
+    // the charges on comps 0..2, and the dipole vectors of the three dipoles on comps 3..5: -(p_i val + (p.val) e_i)
+    void DeviceSourceValues (BareSliceVector<double> val, Vec<3> p, FlatVector<Complex> charge,
+                             FlatVector<Complex> dipole, FlatVector<Complex> dipvec) const override
+    {
+      Mat<3,3> jacobi = OuterProduct(p, val) + InnerProduct(p, val) * Id<3>();
+      for (int i = 0; i < 3; i++)
+        {
+          charge(i) = coefficient_type(val(i));
+          charge(3+i) = coefficient_type(0.0);
+          for (int k = 0; k < 3; k++)
+            {
+              dipvec(3*i+k) = coefficient_type(0.0);
+              dipvec(3*(3+i)+k) = -coefficient_type(jacobi(i,k));
+            }
+        }
+    }
   };
 
   // Lame target: multi-step eval with coefficients
@@ -262,14 +360,18 @@ namespace ngsbem
     bool NeedsNormal() const override { return needs_normal; }
     LameTarget (double _nu, double _alpha) : Base(1e-16), nu(_nu), alpha(_alpha) {}
 
+    // val += the displacement at pnt from the expansion's values mpval and gradients jacobi(i,k) = d_k mpval(i)
+    void AddDisplacement (Vec<6> mpval, const Mat<3,3> & jacobi, Vec<3> pnt, BareSliceVector<double> val) const
+    {
+      val += (3-4*nu)*alpha * mpval.Range(0,3);
+      val -= alpha/2 * mpval.Range(3,6);
+      val -= alpha/2 * ( Trans(jacobi) * pnt + Trace(jacobi) * pnt);
+    }
+
     void EvaluateMP (BaseRegularMLExpansion & amp, Vec<3> pnt, Vec<3> nv, BareSliceVector<double> val) const override
     {
       auto & mp = this->Cast(amp);
       Vec<6> mpval = Real(mp.Evaluate (pnt));
-      val.Range(0,3) = 0;
-      val += (3-4*nu)*alpha * mpval.Range(0,3);
-
-      val -= alpha/2 * mpval.Range(3,6);
 
       Mat<3,3> jacobi = 0.0;
       for (int k = 0; k < 3; k++)
@@ -278,7 +380,23 @@ namespace ngsbem
           jacobi.Col(k) = Real(mp.EvaluateDirectionalDerivative(pnt, ek).Range(0,3));
         }
 
-      val -= alpha/2 * ( Trans(jacobi) * pnt + Trace(jacobi) * pnt);
+      val.Range(0,3) = 0;
+      AddDisplacement (mpval, jacobi, pnt, val);
+    }
+
+    int DeviceTargetMode () const override { return 3; }
+
+    // EvaluateMP of the device's values and gradients dev[4c], dev[4c+1+k]
+    void AddDeviceTargetValue (FlatVector<Complex> dev, Vec<3> p, Vec<3> nv, BareSliceVector<double> val) const override
+    {
+      Vec<6> mpval;
+      Mat<3,3> jacobi;
+      for (int c = 0; c < 6; c++)
+        mpval(c) = dev(4*c).real();
+      for (int i = 0; i < 3; i++)
+        for (int k = 0; k < 3; k++)
+          jacobi(i,k) = dev(4*i+1+k).real();
+      AddDisplacement (mpval, jacobi, p, val);
     }
   };
 

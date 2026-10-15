@@ -28,6 +28,10 @@ namespace ngsbem
   constexpr int FMM_SW = 4;
   constexpr int FMM_DYNAMIC_BATCH_LANES = 48;
 
+  // the FMM passes on a device (FMM_Parameters::device), bem/mptools_device.hpp
+  template <typename ML> struct FMMDeviceGlue;
+  class FMMDeviceTree;
+
   
 
   // ************************ SIMD - creation (should end up in simd.hpp) ************* 
@@ -738,6 +742,7 @@ namespace ngsbem
       const FMM_Parameters & fmm_params;
       std::mutex node_mutex;
       atomic<bool> have_childs{false};
+      bool device_p2m = false;   // its P2M runs on the device, which has its sources (FMMDeviceP2M)
       
       Node (Vec<3> acenter, double ar, int alevel, T_Kappa akappa, const FMM_Parameters & afmm_params)
       // : center(acenter), r(ar), level(alevel), mp(MPOrder(ar*akappa), akappa, ar), fmm_params(afmm_params)
@@ -1322,34 +1327,37 @@ namespace ngsbem
           }
       }
       
-      entry_type EvaluateMP(Vec<3> p) const
+      // device_order >= 0: the device evaluates the expansions up to this order and the sources of the device_p2m
+      // leaves (FMMDeviceL2P), only the rest here
+      entry_type EvaluateMP(Vec<3> p, int device_order = -1) const
       {
         if (charges.Size() || dipoles.Size() || chargedipoles.Size())
-          return Evaluate(p);
+          return device_order >= 0 && device_p2m ? entry_type{0.0} : Evaluate(p);
         
         if (L2Norm(p-center) > fmm_params.eval_separation*r)
-          return mp.Eval(p-center);
+          return mp.Order() > device_order ? mp.Eval(p-center) : entry_type{0.0};
         
         if (!childs[0]) //  || level==1)
           return Evaluate(p);
           
         entry_type sum{0.0};
         for (auto & child : childs)
-          sum += child->EvaluateMP(p);
+          sum += child->EvaluateMP(p, device_order);
         return sum;
       }
 
-      entry_type EvaluateMPDeriv(Vec<3> p, Vec<3> d) const
+      // device_order as EvaluateMP
+      entry_type EvaluateMPDeriv(Vec<3> p, Vec<3> d, int device_order = -1) const
       {
         if (charges.Size() || dipoles.Size() || chargedipoles.Size() || !childs[0])
-          return EvaluateDeriv(p, d);
+          return device_order >= 0 && device_p2m ? entry_type{0.0} : EvaluateDeriv(p, d);
 
         if (L2Norm(p-center) > fmm_params.eval_separation*r)
-          return mp.EvalDirectionalDerivative(p-center, d);
+          return mp.Order() > device_order ? mp.EvalDirectionalDerivative(p-center, d) : entry_type{0.0};
 
         entry_type sum{0.0};
         for (auto & child : childs)
-          sum += child->EvaluateMPDeriv(p, d);
+          sum += child->EvaluateMPDeriv(p, d, device_order);
         return sum;
       }
 
@@ -1400,6 +1408,8 @@ namespace ngsbem
     FMM_Parameters fmm_params;
     Node root;    
     bool havemp = false;
+    shared_ptr<FMMDeviceTree> device_tree;   // device pools after a device CalcMP, the M2L sources
+    template <typename> friend struct FMMDeviceGlue;
     
   public:
     SingularMLExpansion (Vec<3> center, double r, T_Kappa kappa, FMM_Parameters _params = FMM_Parameters())
@@ -1534,6 +1544,8 @@ namespace ngsbem
             ParallelFor(nodes_to_process.Size(), [&](int i)
             {
               auto node = nodes_to_process[i];
+              node->device_p2m = FMMDeviceGlue<SingularMLExpansion>::P2MOnDevice(*this, *node);
+              if (node->device_p2m) return;
               for (auto [x,c]: node->charges)
                 node->mp.AddCharge(x-node->center, c);
               for (auto [x,d,c]: node->dipoles)
@@ -1583,6 +1595,10 @@ namespace ngsbem
             group_thetas.Append(current_theta);
           }
 
+          // with a device, the M2M runs there (bem/mptools_device.hpp): these groups, deepest level first
+          if (fmm_params.device != FMM_Device::None)
+            FMMDeviceGlue<SingularMLExpansion>::Translate(*this, batch_group, group_lengths, group_thetas);
+          else
           {
             RegionTimer rS2S(tS2S);
             // ParallelFor(batch_group.Size(), [&](int i) {
@@ -1851,6 +1867,7 @@ namespace ngsbem
       Array<Vec<3>> targets;
       Array<tuple<Vec<3>,double>> vol_targets;      
       int total_targets;
+      int device_order = -1;   // a leaf the device evaluates: its L2P and the M2P up to this order (FMMDeviceL2P)
       std::mutex node_mutex;
       atomic<bool> have_childs{false};
 
@@ -2006,7 +2023,8 @@ namespace ngsbem
         mp = SphericalExpansion<Regular,elem_type,T_Kappa>(-1, mp.Kappa(), 1.);
       }
       
-      elem_type Evaluate (Vec<3> p) const
+      // device_order: set to that of p's leaf (see its member) before the singular nodes use it
+      elem_type Evaluate (Vec<3> p, int & device_order) const
       {
         elem_type sum{0.0};
 
@@ -2015,8 +2033,8 @@ namespace ngsbem
         if (p(1) > center(1)) childnum += 2;
         if (p(2) > center(2)) childnum += 4;
         if (childs[childnum])
-          sum = childs[childnum]->Evaluate(p);
-        else
+          sum = childs[childnum]->Evaluate(p, device_order);
+        else if ((device_order = this->device_order) < 0)
           {
             // static Timer t("mptool regmp, evaluate reg"); RegionTimer r(t);          
             sum = mp.Eval(p-center);
@@ -2025,12 +2043,13 @@ namespace ngsbem
         {
           // static Timer t("mptool regmp, evaluate, singnode"); RegionTimer r(t);
           for (auto sn : singnodes)
-            sum += sn->EvaluateMP(p);
+            sum += sn->EvaluateMP(p, device_order);
         }
         return sum;
       }
 
-      elem_type EvaluateDirectionalDerivative (Vec<3> p, Vec<3> d) const
+      // device_order as Evaluate
+      elem_type EvaluateDirectionalDerivative (Vec<3> p, Vec<3> d, int & device_order) const
       {
         elem_type sum{0.0};
         // cout << "EvaluateDirectionalDerivative RegularMLMP, r = " << r << ", level = " << level << ", center = " << center << endl;
@@ -2041,13 +2060,13 @@ namespace ngsbem
         if (p(1) > center(1)) childnum += 2;
         if (p(2) > center(2)) childnum += 4;
         if (childs[childnum])
-          sum = childs[childnum]->EvaluateDirectionalDerivative(p, d);
-        else
+          sum = childs[childnum]->EvaluateDirectionalDerivative(p, d, device_order);
+        else if ((device_order = this->device_order) < 0)
           sum = mp.EvalDirectionalDerivative(p-center, d);
 
         // static Timer t("mptool direct evaluate deriv"); RegionTimer r(t);
         for (auto sn : singnodes)
-          sum += sn->EvaluateMPDeriv(p, d);
+          sum += sn->EvaluateMPDeriv(p, d, device_order);
 
         return sum;
       }
@@ -2281,6 +2300,7 @@ namespace ngsbem
     FMM_Parameters fmm_params;
     Node root;
     shared_ptr<SingularMLExpansion<elem_type,T_Kappa>> singmp;
+    template <typename> friend struct FMMDeviceGlue;
     
   public:
   RegularMLExpansion (shared_ptr<SingularMLExpansion<elem_type,T_Kappa>> asingmp, Vec<3> center, double r,
@@ -2350,6 +2370,11 @@ namespace ngsbem
             RegionTimer rrec(trec);
             root.AddSingularNode(singmp->root, !onlytargets, recording);
           }
+
+          // a cached device plan (FMM_Operator): replayed without sorting and grouping the S->R records
+          if (fmm_params.device != FMM_Device::None && onlytargets
+              && FMMDeviceGlue<RegularMLExpansion>::TryReplay(*this))
+            return;
           
           // cout << "recorded: " << recording.Size() << endl;
           {
@@ -2395,6 +2420,14 @@ namespace ngsbem
             group_thetas.Append(current_theta);
           }
           
+          if (fmm_params.device != FMM_Device::None)
+            {
+              // M2L and L2L on the device (bem/mptools_device.hpp), instead of the S->R batches
+              // below and LocalizeExpansionBatched
+              FMMDeviceGlue<RegularMLExpansion>::Translate(*this, batch_group, group_lengths, group_thetas, !onlytargets);
+              return;
+            }
+
           ParallelFor(batch_group.Size(), [&](int i) {
             ProcessBatchSR(batch_group[i], group_lengths[i], group_thetas[i]);
           }, TasksPerThread(10));
@@ -2533,13 +2566,15 @@ namespace ngsbem
       
       if (MaxNorm(p-root.center) > root.r)
         return singmp->Evaluate(p);
-      return root.Evaluate(p);
+      int device_order = -1;
+      return root.Evaluate(p, device_order);
     }
 
     elem_type EvaluateDirectionalDerivative (Vec<3> p, Vec<3> d) const
     {
         if (L2Norm(p-root.center) > root.r) return elem_type{0.0};
-        return root.EvaluateDirectionalDerivative(p, d);
+        int device_order = -1;
+        return root.EvaluateDirectionalDerivative(p, d, device_order);
     }
 
   };
@@ -2559,4 +2594,7 @@ namespace ngsbem
 
   
 }
+
+#include "mptools_device.hpp"
+
 #endif

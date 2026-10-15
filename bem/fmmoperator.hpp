@@ -4,12 +4,18 @@
 #include <ngstd.hpp>
 #include <bla.hpp>
 #include <variant>
+#include <mutex>
 #include "../linalg/basematrix.hpp"
 #include "../linalg/vvector.hpp"
 
 namespace ngsbem
 {
   using namespace ngla;
+
+  NGS_DLL_HEADER shared_ptr<FMMDeviceCache> MakeFMMDeviceCache ();
+  // the matvec of params.device_sources into params.device_targets by the programs of params.device_cache alone, if it
+  // holds a recorded plan that covers everything (see FMMDeviceCache); false: the host trees are needed
+  NGS_DLL_HEADER bool FMMDeviceMatvec (const FMM_Parameters & params);
 
   struct FMMOperatorInfo
   {
@@ -92,6 +98,9 @@ namespace ngsbem
     string kernel_name;
     shared_ptr<const BaseFMMInterface> source, target;
     Timer<> tapply, teval, ttrans;
+    // with a device: the plans of Mult [0] and MultTrans [1], kept across matvecs; each mutex is held for a whole call
+    shared_ptr<FMMDeviceCache> device_cache[2];
+    mutable std::mutex device_mutex[2];
     typedef Base_FMM_Operator<TSCAL> BASE;
     using BASE::xpts, BASE::ypts, BASE::xnv, BASE::ynv, BASE::cx, BASE::cy, BASE::rx, BASE::ry;
     using BASE::fmm_params, BASE::kernelshape;
