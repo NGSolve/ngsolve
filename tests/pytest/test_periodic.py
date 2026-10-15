@@ -1,5 +1,6 @@
 
 from netgen.csg import *
+from netgen.geom2d import SplineGeometry
 from ngsolve import *
 from numpy import pi
 
@@ -57,6 +58,35 @@ def test_periodicH1():
         u.vec.data = ainv * f.vec
         error = sqrt(Integrate(Conj(u-u_exact)*(u-u_exact),mesh).real)
         assert error < 1e-2
+
+
+def test_periodic_set_order():
+    geometry = SplineGeometry()
+    points = [geometry.AppendPoint(*point)
+              for point in ((0, 0), (1, 0), (1, 1), (0, 1))]
+    geometry.Append(["line", points[0], points[1]], bc="outer")
+    master = geometry.Append(["line", points[1], points[2]], bc="periodic")
+    geometry.Append(["line", points[2], points[3]], bc="outer")
+    geometry.Append(["line", points[0], points[3]], leftdomain=0,
+                    rightdomain=1, copy=master, bc="periodic")
+
+    mesh = Mesh(geometry.GenerateMesh(maxh=0.2))
+    base_space = TangentialFacetFESpace(
+        mesh, order=0, order_policy=ORDER_POLICY.VARIABLE)
+    fes = Periodic(base_space)
+
+    periodic_edges = mesh.GetPeriodicNodePairs(EDGE)
+    assert periodic_edges
+    (master_edge, minion_edge), _ = periodic_edges[0]
+
+    fes.SetOrder(NodeId(EDGE, master_edge), 1)
+    assert base_space.GetOrder(NodeId(EDGE, master_edge)) == 1
+    assert base_space.GetOrder(NodeId(EDGE, minion_edge)) == 1
+
+    fes.SetOrder(NodeId(EDGE, minion_edge), 2)
+    assert base_space.GetOrder(NodeId(EDGE, master_edge)) == 2
+    assert base_space.GetOrder(NodeId(EDGE, minion_edge)) == 2
+
 
 def test_quasiperiodic():
     k=1.

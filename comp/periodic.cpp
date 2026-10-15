@@ -128,6 +128,37 @@ namespace ngcomp {
           ctofdof[i] = UNUSED_DOF;
 	}
     }
+
+  void PeriodicFESpace :: SetOrder (NodeId ni, int order)
+    {
+      const auto node_type = ni.GetType();
+      Array<int> equivalent_nodes;
+      equivalent_nodes.Append(ni.GetNr());
+
+      for (int node_index = 0; node_index < equivalent_nodes.Size(); node_index++)
+        {
+          const int node_nr = equivalent_nodes[node_index];
+          space->SetOrder(NodeId(node_type, node_nr), order);
+
+          for (auto idnr : Range(ma->GetNPeriodicIdentifications()))
+            {
+              if (used_idnrs->Size() && !used_idnrs->Contains(idnr))
+                continue;
+
+              for (const auto & node_pair : ma->GetPeriodicNodes(node_type, idnr))
+                {
+                  int partner = -1;
+                  if (node_pair[0] == node_nr)
+                    partner = node_pair[1];
+                  else if (node_pair[1] == node_nr)
+                    partner = node_pair[0];
+
+                  if (partner != -1 && !equivalent_nodes.Contains(partner))
+                    equivalent_nodes.Append(partner);
+                }
+            }
+        }
+    }
     
   void PeriodicFESpace :: DoArchive(Archive & archive)
     {
