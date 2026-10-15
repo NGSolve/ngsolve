@@ -269,8 +269,8 @@ namespace ngla
 	  smalla = new SparseMatrixSymmetric<SCAL,SCAL>(*dynamic_cast< const SparseMatrixSymmetricTM<SCAL> *>(a));
 	else
         */
-        if (dynamic_cast< const SparseMatrixTM<SCAL> *>(a.get()))
-	  smalla = new SparseMatrix<SCAL,SCAL>(*dynamic_cast< const SparseMatrixTM<SCAL> *>(a.get()));
+        if (dynamic_cast< const SparseMatrix<SCAL> *>(a.get()))
+	  smalla = new SparseMatrix<SCAL>(*dynamic_cast< const SparseMatrix<SCAL> *>(a.get()));
 	else
 	  throw Exception("Assumption about bilinearform wrong.");
 

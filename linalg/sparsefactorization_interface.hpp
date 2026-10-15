@@ -99,9 +99,9 @@ struct MapInnerDofs {
   }
 
   template <typename T>
-  shared_ptr<SparseMatrixTM<T>>
-  ProjectMatrix(shared_ptr<const SparseMatrixTM<T>> m,
-                shared_ptr<SparseMatrixTM<T>> cached = nullptr) {
+  shared_ptr<SparseMatrix<T>>
+  ProjectMatrix(shared_ptr<const SparseMatrix<T>> m,
+                shared_ptr<SparseMatrix<T>> cached = nullptr) {
     auto vals_ori = m->GetValues();
 
     if (cached && have_value_map && cached->GetValues().Size() == value_map.Size()) {
@@ -130,11 +130,11 @@ struct MapInnerDofs {
           vals.Append(vals_ori[m->GetPosition(i, j)]);
         }
 
-    auto res = SparseMatrixTM<T>::CreateFromCOO(rowi, coli, vals,
+    auto res = SparseMatrix<T>::CreateFromCOO(rowi, coli, vals,
                                                 project.Size(), project.Size());
     res->SetSPD(m->IsSPD());
 
-    shared_ptr<SparseMatrixTM<T>> result;
+    shared_ptr<SparseMatrix<T>> result;
     if(dynamic_cast<const SparseMatrixSymmetric<T>*>(m.get()))
         result = make_shared<SparseMatrixSymmetric<T>>(*res);
     else
@@ -150,9 +150,9 @@ struct MapInnerDofs {
   }
 
   template <int N, typename T>
-  shared_ptr<SparseMatrixTM<T>>
+  shared_ptr<SparseMatrix<T>>
   ProjectMatrixBlocked(shared_ptr<const SparseMatrix<Mat<N, N, T>>> m,
-                       shared_ptr<SparseMatrixTM<T>> cached = nullptr) {
+                       shared_ptr<SparseMatrix<T>> cached = nullptr) {
     auto block_vals = m->GetValues();
     FlatArray<T> vals_ori(block_vals.Size()*N*N, (T*)(void*)block_vals.Data());
 
@@ -196,7 +196,7 @@ struct MapInnerDofs {
           append_block(j, i, pos, true);
       }
 
-    auto result = SparseMatrixTM<T>::CreateFromCOO(rowi, coli, vals,
+    auto result = SparseMatrix<T>::CreateFromCOO(rowi, coli, vals,
                                                    size*N, size*N);
     result->SetSPD(m->IsSPD());
 

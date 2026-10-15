@@ -311,9 +311,9 @@ namespace ngla
 
 
   ///
-  template <class TM, class TV_ROW, class TV_COL>
-  BlockJacobiPrecond<TM, TV_ROW, TV_COL> ::
-  BlockJacobiPrecond (shared_ptr<const SparseMatrix<TM,TV_ROW,TV_COL>> amat, 
+  template <class TM>
+  BlockJacobiPrecond<TM> ::
+  BlockJacobiPrecond (shared_ptr<const SparseMatrix<TM>> amat, 
 		      shared_ptr<Table<int>> ablocktable, bool cumulate_block_diags)
     : BaseBlockJacobiPrecond(ablocktable), mat(amat), 
       invdiag(ablocktable->Size())
@@ -579,8 +579,8 @@ namespace ngla
   }
 
   ///
-  template <class TM, class TV_ROW, class TV_COL>
-  BlockJacobiPrecond<TM, TV_ROW, TV_COL> ::
+  template <class TM>
+  BlockJacobiPrecond<TM> ::
   ~BlockJacobiPrecond () 
   {
     ;
@@ -588,9 +588,9 @@ namespace ngla
 
 
   
-  template <class TM, class TV_ROW, class TV_COL>
-  void BlockJacobiPrecond<TM, TV_ROW, TV_COL> ::
-  MultAdd (TSCAL64 s, const BaseVector & x, BaseVector & y) const 
+  template <class TM>
+  void BlockJacobiPrecond<TM> ::
+  MultAdd (Scalar s, const BaseVector & x, BaseVector & y) const 
   {
     static Timer timer("BlockJacobi::MultAdd");
     RegionTimer reg (timer);
@@ -598,42 +598,48 @@ namespace ngla
     x.Cumulate();
     y.Cumulate();
 
-    FlatVector<TVX> fx = x.FV<TVX> ();
-    FlatVector<TVX> fy = y.FV<TVX> ();
+    DispatchVectorType<TSCAL,TV_ROW>
+      ({ &x, &y }, mat->Height(), "BlockJacobiPrecond::MultAdd",
+       [&] <typename TVX> ()
+       {
+       auto ss = ScalarAs<typename mat_traits<TVX>::TSCAL> (s, "BlockJacobiPrecond::MultAdd");
+       FlatVector<TVX> fx = x.FV<TVX> ();
+       FlatVector<TVX> fy = y.FV<TVX> ();
 
 
-    for (int c : Range(block_coloring))        
-      {
-        ParallelForRange
-          (color_balance[c],  [&] (IntRange r) 
-           {
-             Vector<TVX> hxmax(maxbs);
-             Vector<TVX> hymax(maxbs);
+       for (int c : Range(block_coloring))        
+         {
+           ParallelForRange
+             (color_balance[c],  [&] (IntRange r) 
+              {
+                Vector<TVX> hxmax(maxbs);
+                Vector<TVX> hymax(maxbs);
              
-             for (int i : block_coloring[c].Range(r))
-               {
-                 int bs = (*blocktable)[i].Size();
-                 if (!bs) continue;
+                for (int i : block_coloring[c].Range(r))
+                  {
+                    int bs = (*blocktable)[i].Size();
+                    if (!bs) continue;
                  
-                 FlatVector<TVX> hx = hxmax.Range(0,bs); 
-                 FlatVector<TVX> hy = hymax.Range(0,bs); 
+                    FlatVector<TVX> hx = hxmax.Range(0,bs); 
+                    FlatVector<TVX> hy = hymax.Range(0,bs); 
                  
-                 for (int j = 0; j < bs; j++)
-                   hx(j) = fx((*blocktable)[i][j]);
+                    for (int j = 0; j < bs; j++)
+                      hx(j) = fx((*blocktable)[i][j]);
                  
-                 hy = invdiag[i] * hx;
+                    hy = invdiag[i] * hx;
                  
-                 for (int j = 0; j < bs; j++)
-                   fy((*blocktable)[i][j]) += s * hy(j);
-               }
-           });
-      }
+                    for (int j = 0; j < bs; j++)
+                      fy((*blocktable)[i][j]) += ss * hy(j);
+                  }
+              });
+         }
+       });
   }
 
 
-  template <class TM, class TV_ROW, class TV_COL>
-  void BlockJacobiPrecond<TM, TV_ROW, TV_COL> ::
-  MultTransAdd (TSCAL64 s, const BaseVector & x, BaseVector & y) const 
+  template <class TM>
+  void BlockJacobiPrecond<TM> ::
+  MultTransAdd (Scalar s, const BaseVector & x, BaseVector & y) const 
   {
     static Timer timer("BlockJacobi::MultTransAdd");
     RegionTimer reg (timer);
@@ -641,44 +647,50 @@ namespace ngla
     x.Cumulate();
     y.Cumulate();
 
-    FlatVector<TVX> fx = x.FV<TVX> ();
-    FlatVector<TVX> fy = y.FV<TVX> ();
+    DispatchVectorType<TSCAL,TV_ROW>
+      ({ &x, &y }, mat->Height(), "BlockJacobiPrecond::MultTransAdd",
+       [&] <typename TVX> ()
+       {
+       auto ss = ScalarAs<typename mat_traits<TVX>::TSCAL> (s, "BlockJacobiPrecond::MultTransAdd");
+       FlatVector<TVX> fx = x.FV<TVX> ();
+       FlatVector<TVX> fy = y.FV<TVX> ();
 
-    for (size_t c = 0; c < block_coloring.Size(); c++)
-      {
-        ParallelForRange
-          (color_balance[c], [&] (IntRange r) 
-           {
-             Vector<TVX> hxmax(maxbs);
-             Vector<TVX> hymax(maxbs);
+       for (size_t c = 0; c < block_coloring.Size(); c++)
+         {
+           ParallelForRange
+             (color_balance[c], [&] (IntRange r) 
+              {
+                Vector<TVX> hxmax(maxbs);
+                Vector<TVX> hymax(maxbs);
              
-             FlatArray<int> blocks = block_coloring[c];
-             for (auto ii : r) 
-               {
-                 size_t i = blocks[ii];
-                 auto block = (*blocktable)[i];
-                 size_t bs = block.Size();
-                 if (!bs) continue;
+                FlatArray<int> blocks = block_coloring[c];
+                for (auto ii : r) 
+                  {
+                    size_t i = blocks[ii];
+                    auto block = (*blocktable)[i];
+                    size_t bs = block.Size();
+                    if (!bs) continue;
                  
-                 FlatVector<TVX> hx = hxmax.Range(0,bs); 
-                 FlatVector<TVX> hy = hymax.Range(0,bs); 
+                    FlatVector<TVX> hx = hxmax.Range(0,bs); 
+                    FlatVector<TVX> hy = hymax.Range(0,bs); 
                  
-                 for (size_t j = 0; j < bs; j++)
-                   hx(j) = fx(block[j]);
+                    for (size_t j = 0; j < bs; j++)
+                      hx(j) = fx(block[j]);
                  
-                 hy = Trans(invdiag[i]) * hx;
+                    hy = Trans(invdiag[i]) * hx;
                  
-                 for (size_t j = 0; j < bs; j++)
-                   fy(block[j]) += s * hy(j);
-               }
-           });
-      }
+                    for (size_t j = 0; j < bs; j++)
+                      fy(block[j]) += ss * hy(j);
+                  }
+              });
+         }
+       });
   }
 
 
 
-  template <class TM, class TV_ROW, class TV_COL>
-  void BlockJacobiPrecond<TM, TV_ROW, TV_COL> ::
+  template <class TM>
+  void BlockJacobiPrecond<TM> ::
   GSSmooth (BaseVector & x, const BaseVector & b,
 	    int steps) const 
   {
@@ -686,122 +698,127 @@ namespace ngla
     RegionTimer reg(timer);
     timer.AddFlops (nze);
     
-    FlatVector<TVX> fb = b.FV<TVX> (); 
-    FlatVector<TVX> fx = x.FV<TVX> ();
+    DispatchVectorType<TSCAL,TV_ROW>
+      ({ &x, &b }, mat->Height(), "BlockJacobiPrecond::GSSmooth",
+       [&] <typename TVX> ()
+       {
+       FlatVector<TVX> fb = b.FV<TVX> ();
+       FlatVector<TVX> fx = x.FV<TVX> ();
 
-#ifdef OLD
-    for (int k = 0; k < steps; k++)
-      for (int c : Range(block_coloring))              
-        {
-          /*
-          ParallelForRange
-            (color_balance[c], [&] (IntRange r)
-             {
-               VectorMem<100,TVX> hxmax(maxbs);
-               VectorMem<100,TVX> hymax(maxbs);
-               
-               for (size_t i : block_coloring[c].Range(r))
-                 {
-                   FlatArray<int> block = (*blocktable)[i];
-                   size_t bs = block.Size();
-                   if (!bs) continue;
-                   
-                   FlatVector<TVX> hx = hxmax.Range(0,bs);
-                   FlatVector<TVX> hy = hymax.Range(0,bs);
-                   
-                   for (size_t j = 0; j < bs; j++)
-                     {
-                       auto jj = block[j];
-                       hx(j) = fb(jj) - mat.RowTimesVector (jj, fx);
-                     }
-                   
-                   hy = (invdiag[i]) * hx;
-                   fx(block) += hy;
-                 }
-               
-             });
-          */
-
-          auto col = block_coloring[c];
-          SharedLoop2 sl(col.Range());
-          
-          TaskManager :: CreateJob
-              ( [&] (const TaskInfo & ti) 
+   #ifdef OLD
+       for (int k = 0; k < steps; k++)
+         for (int c : Range(block_coloring))              
+           {
+             /*
+             ParallelForRange
+               (color_balance[c], [&] (IntRange r)
                 {
                   VectorMem<100,TVX> hxmax(maxbs);
                   VectorMem<100,TVX> hymax(maxbs);
-
-                  for (auto mynr : sl)
+               
+                  for (size_t i : block_coloring[c].Range(r))
                     {
-                      size_t i = col[mynr];
                       FlatArray<int> block = (*blocktable)[i];
                       size_t bs = block.Size();
                       if (!bs) continue;
-                      
+                   
                       FlatVector<TVX> hx = hxmax.Range(0,bs);
                       FlatVector<TVX> hy = hymax.Range(0,bs);
-                      
+                   
                       for (size_t j = 0; j < bs; j++)
                         {
                           auto jj = block[j];
-                          hx(j) = fb(jj) - mat->RowTimesVector (jj, fx);
+                          hx(j) = fb(jj) - mat.RowTimesVector (jj, fx);
                         }
-                      
+                   
                       hy = (invdiag[i]) * hx;
                       fx(block) += hy;
                     }
+               
                 });
+             */
+
+             auto col = block_coloring[c];
+             SharedLoop2 sl(col.Range());
+          
+             TaskManager :: CreateJob
+                 ( [&] (const TaskInfo & ti) 
+                   {
+                     VectorMem<100,TVX> hxmax(maxbs);
+                     VectorMem<100,TVX> hymax(maxbs);
+
+                     for (auto mynr : sl)
+                       {
+                         size_t i = col[mynr];
+                         FlatArray<int> block = (*blocktable)[i];
+                         size_t bs = block.Size();
+                         if (!bs) continue;
+                      
+                         FlatVector<TVX> hx = hxmax.Range(0,bs);
+                         FlatVector<TVX> hy = hymax.Range(0,bs);
+                      
+                         for (size_t j = 0; j < bs; j++)
+                           {
+                             auto jj = block[j];
+                             hx(j) = fb(jj) - mat->RowTimesVector (jj, fx);
+                           }
+                      
+                         hy = (invdiag[i]) * hx;
+                         fx(block) += hy;
+                       }
+                   });
             
-        }
-#endif
+           }
+   #endif
 
-    Array<SharedLoop2> loops(block_coloring.Size());
+       Array<SharedLoop2> loops(block_coloring.Size());
     
-    for (int k = 0; k < steps; k++)
-      {
-        for (int c : Range(block_coloring))
-          loops[c].Reset (block_coloring[c].Range());
+       for (int k = 0; k < steps; k++)
+         {
+           for (int c : Range(block_coloring))
+             loops[c].Reset (block_coloring[c].Range());
 
-        TaskManager :: CreateJob
-          ( [&] (const TaskInfo & ti) 
-            {
-              VectorMem<100,TVX> hxmax(maxbs);
-              VectorMem<100,TVX> hymax(maxbs);
+           TaskManager :: CreateJob
+             ( [&] (const TaskInfo & ti) 
+               {
+                 VectorMem<100,TVX> hxmax(maxbs);
+                 VectorMem<100,TVX> hymax(maxbs);
               
-              for (int c : Range(block_coloring))              
-                {
-                  auto col = block_coloring[c];
-                  // SharedLoop2 sl(col.Range());
+                 for (int c : Range(block_coloring))              
+                   {
+                     auto col = block_coloring[c];
+                     // SharedLoop2 sl(col.Range());
 
-                  for (auto mynr : loops[c])
-                    {
-                      size_t i = col[mynr];
-                      FlatArray<int> block = (*blocktable)[i];
-                      size_t bs = block.Size();
-                      if (!bs) continue;
+                     for (auto mynr : loops[c])
+                       {
+                         size_t i = col[mynr];
+                         FlatArray<int> block = (*blocktable)[i];
+                         size_t bs = block.Size();
+                         if (!bs) continue;
                       
-                      FlatVector<TVX> hx = hxmax.Range(0,bs);
-                      FlatVector<TVX> hy = hymax.Range(0,bs);
+                         FlatVector<TVX> hx = hxmax.Range(0,bs);
+                         FlatVector<TVX> hy = hymax.Range(0,bs);
                       
-                      for (size_t j = 0; j < bs; j++)
-                        {
-                          auto jj = block[j];
-                          hx(j) = fb(jj) - mat->RowTimesVector (jj, fx);
-                        }
+                         for (size_t j = 0; j < bs; j++)
+                           {
+                             auto jj = block[j];
+                             hx(j) = fb(jj) - mat->RowTimesVector (jj, fx);
+                           }
                       
-                      hy = (invdiag[i]) * hx;
-                      fx(block) += hy;
-                    }
-                }
-            });
-      }
+                         hy = (invdiag[i]) * hx;
+                         fx(block) += hy;
+                       }
+                   }
+               });
+         }
+       });
   }
   
 
   
 
-  template <class TM, class TV_ROW, class TV_COL>
-  void BlockJacobiPrecond<TM, TV_ROW, TV_COL> ::
+  template <class TM>
+  void BlockJacobiPrecond<TM> ::
   GSSmoothBack (BaseVector & x, const BaseVector & b,
 		int steps) const 
   {
@@ -809,39 +826,44 @@ namespace ngla
     RegionTimer reg(timer);
     timer.AddFlops (nze);
 
-    const FlatVector<TVX> fb = b.FV<TVX> (); 
-    FlatVector<TVX> fx = x.FV<TVX> ();
+    DispatchVectorType<TSCAL,TV_ROW>
+      ({ &x, &b }, mat->Height(), "BlockJacobiPrecond::GSSmoothBack",
+       [&] <typename TVX> ()
+       {
+       const FlatVector<TVX> fb = b.FV<TVX> ();
+       FlatVector<TVX> fx = x.FV<TVX> ();
 
-    for (int k = 0; k < steps; k++)
-      for (int c = block_coloring.Size()-1; c >=0; c--) 
-        {
-          ParallelForRange
-            (color_balance[c], [&] (IntRange r)
-             {
-               VectorMem<100,TVX> hxmax(maxbs);
-               VectorMem<100,TVX> hymax(maxbs);
+       for (int k = 0; k < steps; k++)
+         for (int c = block_coloring.Size()-1; c >=0; c--) 
+           {
+             ParallelForRange
+               (color_balance[c], [&] (IntRange r)
+                {
+                  VectorMem<100,TVX> hxmax(maxbs);
+                  VectorMem<100,TVX> hymax(maxbs);
                
-               for (size_t i : block_coloring[c].Range(r))
-                 {
-                   FlatArray<int> block = (*blocktable)[i];
-                   size_t bs = block.Size();
-                   if (!bs) continue;
+                  for (size_t i : block_coloring[c].Range(r))
+                    {
+                      FlatArray<int> block = (*blocktable)[i];
+                      size_t bs = block.Size();
+                      if (!bs) continue;
                    
-                   FlatVector<TVX> hx = hxmax.Range(0,bs); 
-                   FlatVector<TVX> hy = hymax.Range(0,bs); 
+                      FlatVector<TVX> hx = hxmax.Range(0,bs); 
+                      FlatVector<TVX> hy = hymax.Range(0,bs); 
                    
-                   for (size_t j = 0; j < bs; j++)
-                     {
-                       auto jj = block[j];
-                       hx(j) = fb(jj) - mat->RowTimesVector (jj, fx);
-                     }
+                      for (size_t j = 0; j < bs; j++)
+                        {
+                          auto jj = block[j];
+                          hx(j) = fb(jj) - mat->RowTimesVector (jj, fx);
+                        }
                    
-                   hy = (invdiag[i]) * hx;
-                   fx(block) += hy;
-                 }
-             });
-        }
-   }
+                      hy = (invdiag[i]) * hx;
+                      fx(block) += hy;
+                    }
+                });
+           }
+       });
+  }
 
 
 
@@ -851,9 +873,9 @@ namespace ngla
 
 
   ///
-  template <class TM, class TV>
-  BlockJacobiPrecondSymmetric<TM,TV> ::
-  BlockJacobiPrecondSymmetric (shared_ptr<const SparseMatrixSymmetric<TM,TV>> amat, 
+  template <class TM>
+  BlockJacobiPrecondSymmetric<TM> ::
+  BlockJacobiPrecondSymmetric (shared_ptr<const SparseMatrixSymmetric<TM>> amat, 
 			       shared_ptr<Table<int>> ablocktable)
     : BaseBlockJacobiPrecond(ablocktable), mat(amat)
   {
@@ -1034,15 +1056,15 @@ namespace ngla
 
 
 
-  template <class TM, class TV>
-  BlockJacobiPrecondSymmetric<TM,TV> ::
+  template <class TM>
+  BlockJacobiPrecondSymmetric<TM> ::
   ~BlockJacobiPrecondSymmetric ()
   {
     ;
   }
 
-  template <class TM, class TV>
-  void BlockJacobiPrecondSymmetric<TM,TV> :: 
+  template <class TM>
+  void BlockJacobiPrecondSymmetric<TM> :: 
   ComputeBlockFactor (FlatArray<int> block, int bw, FlatBandCholeskyFactors<TM> & inv) const
   {
     int bs = block.Size();
@@ -1073,9 +1095,9 @@ namespace ngla
 
 
 
-  template <class TM, class TV>
-  void BlockJacobiPrecondSymmetric<TM,TV> :: 
-  MultAdd (TSCAL64 s, const BaseVector & x, BaseVector & y) const 
+  template <class TM>
+  void BlockJacobiPrecondSymmetric<TM> :: 
+  MultAdd (Scalar s, const BaseVector & x, BaseVector & y) const 
   {
     static Timer timer("BlockJacobiSymmetric::MultAdd");
     RegionTimer reg (timer);
@@ -1083,107 +1105,122 @@ namespace ngla
     x.Cumulate();
     y.Cumulate();
 
-    FlatVector<TVX> fx = x.FV<TVX> ();
-    FlatVector<TVX> fy       = y.FV<TVX> ();
+    DispatchVectorType<TSCAL,TV>
+      ({ &x, &y }, mat->Height(), "BlockJacobiPrecondSymmetric::MultAdd",
+       [&] <typename TVX> ()
+       {
+       auto ss = ScalarAs<typename mat_traits<TVX>::TSCAL> (s, "BlockJacobiPrecondSymmetric::MultAdd");
+       FlatVector<TVX> fx = x.FV<TVX> ();
+       FlatVector<TVX> fy       = y.FV<TVX> ();
 
-    Vector<TVX> hxmax(maxbs);
-    Vector<TVX> hymax(maxbs);
+       Vector<TVX> hxmax(maxbs);
+       Vector<TVX> hymax(maxbs);
 
-    for (size_t i = 0; i < blocktable->Size(); i++)
-      {
-	int bs = (*blocktable)[i].Size();
-	if (!bs) continue;
+       for (size_t i = 0; i < blocktable->Size(); i++)
+         {
+   	int bs = (*blocktable)[i].Size();
+   	if (!bs) continue;
 
-	FlatVector<TVX> hx = hxmax.Range (0, bs); 
-	FlatVector<TVX> hy = hymax.Range (0, bs); 
+   	FlatVector<TVX> hx = hxmax.Range (0, bs); 
+   	FlatVector<TVX> hy = hymax.Range (0, bs); 
 
-	for (int j = 0; j < bs; j++)
-	  hx(j) = fx((*blocktable)[i][j]);
+   	for (int j = 0; j < bs; j++)
+   	  hx(j) = fx((*blocktable)[i][j]);
 	
-	InvDiag(i).Mult (hx, hy);
+   	InvDiag(i).Mult (hx, hy);
 
-	for (int j = 0; j < bs; j++)
-	  fy((*blocktable)[i][j]) += s * hy(j);
-      }
+   	for (int j = 0; j < bs; j++)
+   	  fy((*blocktable)[i][j]) += ss * hy(j);
+         }
+       });
   }
 
 
-  template <class TM, class TV>
-  void BlockJacobiPrecondSymmetric<TM,TV> :: 
-  MultTransAdd (TSCAL64 s, const BaseVector & x, BaseVector & y) const 
+  template <class TM>
+  void BlockJacobiPrecondSymmetric<TM> :: 
+  MultTransAdd (Scalar s, const BaseVector & x, BaseVector & y) const 
   {
     MultAdd (s, x, y);
   }
   
 
 
-  template <class TM, class TV>
-  void BlockJacobiPrecondSymmetric<TM,TV> :: 
+  template <class TM>
+  void BlockJacobiPrecondSymmetric<TM> :: 
   GSSmooth (BaseVector & x, const BaseVector & b, int steps) const 
   {
     static Timer timer ("BlockJacobiPrecondSymmetric::GSSmooth (parallel)");
     RegionTimer reg(timer);
 
-    FlatVector<TVX> fb = b.FV<TVX> ();
-    FlatVector<TVX> fx = x.FV<TVX> ();
+    DispatchVectorType<TSCAL,TV>
+      ({ &x, &b }, mat->Height(), "BlockJacobiPrecondSymmetric::GSSmooth",
+       [&] <typename TVX> ()
+       {
+       FlatVector<TVX> fb = b.FV<TVX> ();
+       FlatVector<TVX> fx = x.FV<TVX> ();
 
-    Vector<TVX> fy(fx.Size());
+       Vector<TVX> fy(fx.Size());
 
-    // y = b - (D L^T) x
-    fy = fb;
-    for (int j = 0; j < mat->Height(); j++)
-      mat->AddRowTransToVector (j, -fx(j), fy);
+       // y = b - (D L^T) x
+       fy = fb;
+       for (int j = 0; j < mat->Height(); j++)
+         mat->AddRowTransToVector (j, -fx(j), fy);
 
     
-    if (GetTaskManager())
+       if (GetTaskManager())
       
-      for (int k = 1; k <= steps; k++)
-        for (size_t c = 0; c < block_coloring.Size(); c++)
-          ParallelFor (color_balance[c], [&] (int bi)
-                       {
-                         SmoothBlock (block_coloring[c][bi], fx, fy);
-                       });
+         for (int k = 1; k <= steps; k++)
+           for (size_t c = 0; c < block_coloring.Size(); c++)
+             ParallelFor (color_balance[c], [&] (int bi)
+                          {
+                            SmoothBlock (block_coloring[c][bi], fx, fy);
+                          });
     
-    else
+       else
       
-      for (int k = 1; k <= steps; k++)
-        for (size_t i = 0; i < blocktable->Size(); i++)
-          SmoothBlock (i, fx, fy);
+         for (int k = 1; k <= steps; k++)
+           for (size_t i = 0; i < blocktable->Size(); i++)
+             SmoothBlock (i, fx, fy);
+       });
   }
 
   
-  template <class TM, class TV>
-  void BlockJacobiPrecondSymmetric<TM,TV> :: 
+  template <class TM>
+  void BlockJacobiPrecondSymmetric<TM> :: 
   GSSmoothPartial (BaseVector & x, const BaseVector & b,
 	    BaseVector & y) const 
   {
     static Timer timer ("BlockJacobiPrecondSymmetric::GSSmooth - partial res");
     RegionTimer reg(timer);
 
-    FlatVector<TVX> fx = x.FV<TVX> ();
-    FlatVector<TVX> fy = y.FV<TVX> ();
+    DispatchVectorType<TSCAL,TV>
+      ({ &x, &y }, mat->Height(), "BlockJacobiPrecondSymmetric::GSSmoothPartial",
+       [&] <typename TVX> ()
+       {
+       FlatVector<TVX> fx = x.FV<TVX> ();
+       FlatVector<TVX> fy = y.FV<TVX> ();
 
 
-    if (GetTaskManager())
+       if (GetTaskManager())
       
-      for (size_t c = 0; c < block_coloring.Size(); c++)
-        ParallelFor (color_balance[c], [&] (int bi)
-                     {
-                       SmoothBlock (block_coloring[c][bi], fx, fy);
-                     });
+         for (size_t c = 0; c < block_coloring.Size(); c++)
+           ParallelFor (color_balance[c], [&] (int bi)
+                        {
+                          SmoothBlock (block_coloring[c][bi], fx, fy);
+                        });
     
-    else
+       else
 
-      for (size_t i = 0; i < blocktable->Size(); i++)
-        SmoothBlock (i, fx, fy);
-
+         for (size_t i = 0; i < blocktable->Size(); i++)
+           SmoothBlock (i, fx, fy);
+       });
   }
   
 
 
   ///
-  template <class TM, class TV>
-  void BlockJacobiPrecondSymmetric<TM,TV> :: 
+  template <class TM>
+  void BlockJacobiPrecondSymmetric<TM> :: 
   GSSmoothResiduum (BaseVector & x, const BaseVector & b,
 		    BaseVector & res, int steps) const 
   {
@@ -1204,15 +1241,15 @@ namespace ngla
   }
   
   ///
-  template <class TM, class TV>
-  void BlockJacobiPrecondSymmetric<TM,TV> :: 
+  template <class TM>
+  void BlockJacobiPrecondSymmetric<TM> :: 
   GSSmoothBack (BaseVector & x, const BaseVector & b,
 		int steps) const 
   {
     static Timer timer ("BlockJacobiPrecondSymmetric::SmoothBack");
     RegionTimer reg(timer);
 
-    VVector<TVX> y(x.Size());
+    auto y = x.CreateVector();
 
     // y = b - (D L^T) x
     y = 1.0*b;
@@ -1223,36 +1260,40 @@ namespace ngla
   }
 
 
-  template <class TM, class TV>
-  void BlockJacobiPrecondSymmetric<TM,TV> :: 
+  template <class TM>
+  void BlockJacobiPrecondSymmetric<TM> :: 
   GSSmoothBackPartial (BaseVector & x, const BaseVector & b,
 		       BaseVector & y) const 
   {
     static Timer timer ("BlockJacobiPrecondSymmetric::GSSmoothBack - partial res");
     RegionTimer reg(timer);
 
-    FlatVector<TVX> fx = x.FV<TVX> ();
-    FlatVector<TVX> fy = y.FV<TVX> ();
+    DispatchVectorType<TSCAL,TV>
+      ({ &x, &y }, mat->Height(), "BlockJacobiPrecondSymmetric::GSSmoothBackPartial",
+       [&] <typename TVX> ()
+       {
+       FlatVector<TVX> fx = x.FV<TVX> ();
+       FlatVector<TVX> fy = y.FV<TVX> ();
 
 
-    if (GetTaskManager())
+       if (GetTaskManager())
       
-      for (int c = block_coloring.Size()-1; c >= 0; c--)
-        ParallelFor (color_balance[c], [&] (int bi)
-                     {
-                       SmoothBlock (block_coloring[c][bi], fx, /* fb, */ fy);
-                     });
-    else
+         for (int c = block_coloring.Size()-1; c >= 0; c--)
+           ParallelFor (color_balance[c], [&] (int bi)
+                        {
+                          SmoothBlock (block_coloring[c][bi], fx, /* fb, */ fy);
+                        });
+       else
 
-      for (int i = blocktable->Size()-1; i >= 0; i--)
-        SmoothBlock (i, fx, fy);
-
+         for (int i = blocktable->Size()-1; i >= 0; i--)
+           SmoothBlock (i, fx, fy);
+       });
   }
 
 
 
-  template <class TM, class TV>
-  void BlockJacobiPrecondSymmetric<TM,TV> :: 
+  template <class TM> template <typename TVX>
+  void BlockJacobiPrecondSymmetric<TM> :: 
   SmoothBlock (int i, 
 	       FlatVector<TVX> & x,
 	       FlatVector<TVX> & y) const
@@ -1291,8 +1332,8 @@ namespace ngla
   }
 
 
-  template <class TM, class TV_ROW, class TV_COL>
-  shared_ptr<BaseSparseMatrix> BlockJacobiPrecond<TM,TV_ROW,TV_COL> :: 
+  template <class TM>
+  shared_ptr<BaseSparseMatrix> BlockJacobiPrecond<TM> :: 
   CreateSparseMatrix() const
   {
     Array<int> ia, ja;
@@ -1308,7 +1349,7 @@ namespace ngla
               vals += invdiag[i](j,k);
             }
       }
-    return SparseMatrixTM<TM>::CreateFromCOO (ia, ja, vals, Height(), Width());
+    return SparseMatrix<TM>::CreateFromCOO (ia, ja, vals, Height(), Width());
   }
 
 
@@ -1317,13 +1358,12 @@ namespace ngla
 
 
   // compiled separately, for testing only
-  template <class TM, class TV_ROW, class TV_COL>
-  shared_ptr<BaseMatrix> BlockJacobiPrecond<TM, TV_ROW, TV_COL> ::
+  template <class TM>
+  shared_ptr<BaseMatrix> BlockJacobiPrecond<TM> ::
   CreateDeviceMatrix () const
   {
-    if constexpr ((is_same_v<TM,double> || is_same_v<TM,float>) &&
-                  is_same_v<TV_ROW,TM> && is_same_v<TV_COL,TM>)
-      if (ngs_gpu::HasDevice())
+    if constexpr (is_same_v<TM,double> || is_same_v<TM,float>)
+      if (ngs_gpu::HasDevice() && !std::holds_alternative<Complex>(mat->GetVectorScalar()))
         {
           if constexpr (is_same_v<TM,double>)
             if (GetGpuDevice()->HasFloat64())
@@ -1333,27 +1373,26 @@ namespace ngla
     return BaseMatrix::CreateDeviceMatrix();
   }
 
-  template <class TM, class TV_ROW, class TV_COL>
-  shared_ptr<BaseMatrix> BlockJacobiPrecond<TM, TV_ROW, TV_COL> ::
+  template <class TM>
+  shared_ptr<BaseMatrix> BlockJacobiPrecond<TM> ::
   CreateDeviceGaussSeidel () const
   {
-    if constexpr ((is_same_v<TM,double> || is_same_v<TM,float>) &&
-                  is_same_v<TV_ROW,TM> && is_same_v<TV_COL,TM>)
-      return CreateDeviceBlockGaussSeidel (*this);
+    if constexpr (is_same_v<TM,double> || is_same_v<TM,float>)
+      if (!std::holds_alternative<Complex>(mat->GetVectorScalar()))
+        return CreateDeviceBlockGaussSeidel (*this);
     return nullptr;
   }
 
   template class BlockJacobiPrecond<double>;
   template class BlockJacobiPrecond<float>;
   template class BlockJacobiPrecond<Complex>;
-  template class BlockJacobiPrecond<double, Complex, Complex>;
 
-  template <class TM, class TV>
-  shared_ptr<BaseMatrix> BlockJacobiPrecondSymmetric<TM,TV> ::
+  template <class TM>
+  shared_ptr<BaseMatrix> BlockJacobiPrecondSymmetric<TM> ::
   CreateDeviceMatrix () const
   {
-    if constexpr ((is_same_v<TM,double> || is_same_v<TM,float>) && is_same_v<TV,TM>)
-      if (ngs_gpu::HasDevice())
+    if constexpr (is_same_v<TM,double> || is_same_v<TM,float>)
+      if (ngs_gpu::HasDevice() && !std::holds_alternative<Complex>(mat->GetVectorScalar()))
         {
           if constexpr (is_same_v<TM,double>)
             if (GetGpuDevice()->HasFloat64())
@@ -1366,7 +1405,6 @@ namespace ngla
   template class BlockJacobiPrecondSymmetric<double>;
   template class BlockJacobiPrecondSymmetric<float>;
   template class BlockJacobiPrecondSymmetric<Complex>;
-  template class BlockJacobiPrecondSymmetric<double, Complex>;
 
 #if MAX_SYS_DIM >= 1
   template class BlockJacobiPrecond<Mat<1,1,double> >;

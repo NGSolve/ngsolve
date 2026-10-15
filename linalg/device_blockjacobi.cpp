@@ -53,8 +53,8 @@ namespace ngla
 
 
   template <typename T>
-  template <typename TM, typename TV>
-  DeviceBlockJacobi<T> :: DeviceBlockJacobi (const BlockJacobiPrecondSymmetric<TM,TV> & pre)
+  template <typename TM>
+  DeviceBlockJacobi<T> :: DeviceBlockJacobi (const BlockJacobiPrecondSymmetric<TM> & pre)
   {
     height = pre.Height();
     width = pre.Width();
@@ -140,7 +140,7 @@ namespace ngla
   template DeviceBlockJacobi<double>::DeviceBlockJacobi (const BlockJacobiPrecond<float> &);
   template DeviceBlockJacobi<float>::DeviceBlockJacobi (const BlockJacobiPrecond<double> &);
   template DeviceBlockJacobi<float>::DeviceBlockJacobi (const BlockJacobiPrecond<float> &);
-  template DeviceBlockJacobi<double>::DeviceBlockJacobi (const BlockJacobiPrecondSymmetric<double,double> &);
-  template DeviceBlockJacobi<float>::DeviceBlockJacobi (const BlockJacobiPrecondSymmetric<double,double> &);
-  template DeviceBlockJacobi<float>::DeviceBlockJacobi (const BlockJacobiPrecondSymmetric<float,float> &);
+  template DeviceBlockJacobi<double>::DeviceBlockJacobi (const BlockJacobiPrecondSymmetric<double> &);
+  template DeviceBlockJacobi<float>::DeviceBlockJacobi (const BlockJacobiPrecondSymmetric<double> &);
+  template DeviceBlockJacobi<float>::DeviceBlockJacobi (const BlockJacobiPrecondSymmetric<float> &);
 }

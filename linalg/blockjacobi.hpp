@@ -123,27 +123,26 @@ namespace ngla
      A block-Jacobi preconditioner.
      The blocks are specified by a table container
   */
-  template <class TM, class TV_ROW, class TV_COL>
+  template <class TM>
   class  NGS_DLL_HEADER BlockJacobiPrecond : public BaseBlockJacobiPrecond,
                                              public S_BaseMatrix<typename mat_traits<TM>::TSCAL>
   {
   protected:
     /// a reference to the matrix
-    // const SparseMatrix<TM,TV_ROW,TV_COL> & mat;
-    shared_ptr<const SparseMatrix<TM,TV_ROW,TV_COL>> mat;
+    shared_ptr<const SparseMatrix<TM>> mat;
     /// inverses of the small blocks
     Array<FlatMatrix<TM>> invdiag;
     /// the data for the inverses
     Array<TM> bigmem;
 
   public:
-    // typedef typename mat_traits<TM>::TV_ROW TVX;
-    typedef TV_ROW TVX;
+    // entry shape of the vectors, the scalar is chosen at run time
+    typedef typename mat_traits<TM>::TV_ROW TV_ROW;
     typedef typename mat_traits<TM>::TSCAL TSCAL;
     typedef typename scal_traits<TSCAL>::TSCAL64 TSCAL64;    
 
     ///
-    BlockJacobiPrecond (shared_ptr<const SparseMatrix<TM,TV_ROW,TV_COL>> amat, 
+    BlockJacobiPrecond (shared_ptr<const SparseMatrix<TM>> amat, 
 			shared_ptr<Table<int>> ablocktable, bool cumulate_block_diags = false);
     ///
     virtual ~BlockJacobiPrecond ();
@@ -160,10 +159,12 @@ namespace ngla
     { return { string("BlockJacobi-")+typeid(TM).name(), this->Height(), this->Width() }; }
     
     ///
-    void MultAdd (TSCAL64 s, const BaseVector & x, BaseVector & y) const override;
+    using BaseMatrix::MultAdd;
+    using BaseMatrix::MultTransAdd;
+    void MultAdd (Scalar s, const BaseVector & x, BaseVector & y) const override;
 
     ///
-    void MultTransAdd (TSCAL64 s, const BaseVector & x, BaseVector & y) const override;
+    void MultTransAdd (Scalar s, const BaseVector & x, BaseVector & y) const override;
 
 
     ///
@@ -203,7 +204,7 @@ namespace ngla
     // a DeviceBlockJacobi for scalar TM if a gpu backend is registered
     virtual shared_ptr<BaseMatrix> CreateDeviceMatrix() const override;
     shared_ptr<BaseMatrix> CreateDeviceGaussSeidel() const override;
-    shared_ptr<const SparseMatrix<TM,TV_ROW,TV_COL>> GetMatrix() const { return mat; }
+    shared_ptr<const SparseMatrix<TM>> GetMatrix() const { return mat; }
     const Array<FlatMatrix<TM>> & GetInverses() const { return invdiag; }
     const Array<TM> & MatrixData() const { return bigmem; } 
   };
@@ -221,13 +222,13 @@ namespace ngla
 
 
   ///
-  template <class TM, class TV>
+  template <class TM>
   class BlockJacobiPrecondSymmetric : 
     public BaseBlockJacobiPrecond,
     public S_BaseMatrix<typename mat_traits<TM>::TSCAL>
   {
   protected:
-    shared_ptr<const SparseMatrixSymmetric<TM,TV>> mat;
+    shared_ptr<const SparseMatrixSymmetric<TM>> mat;
 
     // 
     enum { NBLOCKS = 20 };
@@ -241,17 +242,17 @@ namespace ngla
     bool lowmem;
   public:
   
-    typedef TV TVX;
+    typedef typename mat_traits<TM>::TV_ROW TV;
     typedef typename mat_traits<TM>::TSCAL TSCAL;
     typedef typename scal_traits<TSCAL>::TSCAL64 TSCAL64;
     
     ///
-    NGS_DLL_HEADER BlockJacobiPrecondSymmetric (shared_ptr<const SparseMatrixSymmetric<TM,TV>> amat, 
+    NGS_DLL_HEADER BlockJacobiPrecondSymmetric (shared_ptr<const SparseMatrixSymmetric<TM>> amat, 
                                                 shared_ptr<Table<int>> ablocktable);
     
     /*
-    BlockJacobiPrecondSymmetric (const SparseMatrixSymmetric<TM,TV> & amat, 
-				 const FlatVector<TVX> & constraint,
+    BlockJacobiPrecondSymmetric (const SparseMatrixSymmetric<TM> & amat, 
+				 const FlatVector<TV> & constraint,
 				 Table<int> & ablocktable);
     */
     ///
@@ -268,10 +269,12 @@ namespace ngla
     shared_ptr<BaseMatrix> CreateDeviceMatrix () const override;
   
     ///
-    void MultAdd (TSCAL64 s, const BaseVector & x, BaseVector & y) const override;
+    using BaseMatrix::MultAdd;
+    using BaseMatrix::MultTransAdd;
+    void MultAdd (Scalar s, const BaseVector & x, BaseVector & y) const override;
 
     ///
-    void MultTransAdd (TSCAL64 s, const BaseVector & x, BaseVector & y) const override;
+    void MultTransAdd (Scalar s, const BaseVector & x, BaseVector & y) const override;
 
     ///
     VecFormat RowFormat () const override { return mat->ColFormat(); }
@@ -310,6 +313,7 @@ namespace ngla
 
 
 
+    template <typename TVX>
     void SmoothBlock (int i, 
 		      FlatVector<TVX> & x,
 		      // const FlatVector<TVX> & b,

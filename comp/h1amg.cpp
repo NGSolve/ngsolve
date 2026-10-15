@@ -122,7 +122,7 @@ namespace ngcomp
 
 
   template <typename SCAL>
-  H1AMG_Matrix<SCAL>::H1AMG_Matrix(shared_ptr<SparseMatrixTM<SCAL>> amat,
+  H1AMG_Matrix<SCAL>::H1AMG_Matrix(shared_ptr<SparseMatrix<SCAL>> amat,
                                    shared_ptr<BitArray> freedofs,
                                    FlatArray<IVec<2>> e2v,
                                    FlatArray<double> edge_weights,
@@ -395,7 +395,8 @@ namespace ngcomp
 
       for (int i = 0; i < num_vertices; i++)
         nne[i] = (v2cv[i] != -1) ? 1 : 0;
-      prolongation = make_shared<SparseMatrix<double,SCAL,SCAL>> (nne, num_coarse_vertices);
+      prolongation = make_shared<SparseMatrix<double>> (nne, num_coarse_vertices);
+      if constexpr (ngbla::IsComplex<SCAL>()) prolongation->SetVectorScalar (Complex(0));
       for (int i = 0; i < num_vertices; i++)
         if (v2cv[i] != -1)
           (*prolongation)(i, v2cv[i]) = 1;
@@ -406,7 +407,8 @@ namespace ngcomp
           for (auto i : Range(num_vertices))
             nne[i] = 1+v2e[i].Size();
 
-          auto smoothprol = make_shared<SparseMatrix<double,SCAL,SCAL>> (nne, num_vertices);
+          auto smoothprol = make_shared<SparseMatrix<double>> (nne, num_vertices);
+          if constexpr (ngbla::IsComplex<SCAL>()) smoothprol->SetVectorScalar (Complex(0));
           ParallelFor
             (num_vertices, [&] (auto i)
              {
@@ -450,11 +452,11 @@ namespace ngcomp
 	  coarse_precond = coarsemat->InverseMatrix(coarse_freedofs);
 	}
       else
-        coarse_precond = make_shared<H1AMG_Matrix> (dynamic_pointer_cast<SparseMatrixTM<SCAL>> (coarsemat), coarse_freedofs,
+        coarse_precond = make_shared<H1AMG_Matrix> (dynamic_pointer_cast<SparseMatrix<SCAL>> (coarsemat), coarse_freedofs,
                                                     coarse_e2v, coarse_edge_weights, coarse_vertex_weights, param, level+1);
 
       // restriction = TransposeMatrix (*prolongation);
-      restriction = dynamic_pointer_cast<SparseMatrixTM<double>>(prolongation->CreateTranspose());
+      restriction = dynamic_pointer_cast<SparseMatrix<double>>(prolongation->CreateTranspose());
     }
 
   template <typename SCAL>
@@ -592,9 +594,9 @@ namespace ngcomp
   template <class SCAL>  
   void H1AMG_Preconditioner<SCAL> :: FinalizeLevel (const BaseMatrix * matrix) 
     {
-      auto smat = dynamic_pointer_cast<SparseMatrixTM<SCAL>> (const_cast<BaseMatrix*>(matrix)->shared_from_this());
+      auto smat = dynamic_pointer_cast<SparseMatrix<SCAL>> (const_cast<BaseMatrix*>(matrix)->shared_from_this());
       if (!smat)
-        throw Exception(string("H1AMG: expected a matrix of type ") + typeid(SparseMatrixTM<SCAL>).name()
+        throw Exception(string("H1AMG: expected a matrix of type ") + typeid(SparseMatrix<SCAL>).name()
                         + ", but got a matrix of type "+typeid(*matrix).name());
       size_t num_vertices = matrix->Height();
       size_t num_edges = edge_weights_ht.Used();

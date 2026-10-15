@@ -11,7 +11,7 @@ namespace ngcomp
 
   // some sparse matrix utilities -> should go to linalg
   
-  shared_ptr<SparseMatrixTM<double>> ToSparseMatrix( const Embedding & e )
+  shared_ptr<SparseMatrix<double>> ToSparseMatrix( const Embedding & e )
   {
     auto r = e.GetRange();
     auto h = e.Height();
@@ -21,11 +21,9 @@ namespace ngcomp
     cnt = 0;
     cnt.Range(r) = 1;
 
-    shared_ptr<SparseMatrixTM<double>> sp_mat;
+    auto sp_mat = make_shared<SparseMatrix<double>>( cnt, w );
     if(e.IsComplex())
-        sp_mat = make_shared<SparseMatrix<double, Complex, Complex>>( cnt, w );
-    else
-        sp_mat = make_shared<SparseMatrix<double, double, double>>( cnt, w );
+      sp_mat->SetVectorScalar (Complex(0));
 
     auto & mat = *sp_mat;
 
@@ -35,7 +33,7 @@ namespace ngcomp
     return sp_mat;
   }
 
-  shared_ptr<SparseMatrixTM<double>> ToSparseMatrix( const EmbeddingTranspose & e )
+  shared_ptr<SparseMatrix<double>> ToSparseMatrix( const EmbeddingTranspose & e )
   {
     auto r = e.GetRange();
     auto h = e.Height();
@@ -44,11 +42,9 @@ namespace ngcomp
     Array<int> cnt(h);
     cnt = 1;
 
-    shared_ptr<SparseMatrixTM<double>> sp_mat;
+    auto sp_mat = make_shared<SparseMatrix<double>>( cnt, w );
     if(e.IsComplex())
-        sp_mat = make_shared<SparseMatrix<double, Complex, Complex>>( cnt, w );
-    else
-        sp_mat = make_shared<SparseMatrix<double, double, double>>( cnt, w );
+      sp_mat->SetVectorScalar (Complex(0));
 
     auto & mat = *sp_mat;
 
@@ -59,11 +55,11 @@ namespace ngcomp
   }
 
 
-  template<typename TM, typename TROW, typename TCOL>
-  shared_ptr<SparseMatrix<TM, TROW, TCOL>> MatAdd( const SparseMatrixTM<TM> & a_, const SparseMatrixTM<TM> & b_ )
+  template<typename TM>
+  shared_ptr<SparseMatrix<TM>> MatAdd( const SparseMatrix<TM> & a_, const SparseMatrix<TM> & b_ )
     {
-      auto & a = *dynamic_cast<const SparseMatrix<TM,TROW,TCOL>*>(&a_);
-      auto & b = *dynamic_cast<const SparseMatrix<TM,TROW,TCOL>*>(&b_);
+      auto & a = *dynamic_cast<const SparseMatrix<TM>*>(&a_);
+      auto & b = *dynamic_cast<const SparseMatrix<TM>*>(&b_);
 
       auto w = a.Width();
       auto h = a.Height();
@@ -92,7 +88,8 @@ namespace ngcomp
           throw Exception("merge not implemented yet");
         }
 
-      auto sp_mat = make_shared<SparseMatrix<TM, TROW, TCOL>>(cnt, w);
+      auto sp_mat = make_shared<SparseMatrix<TM>>(cnt, w);
+      sp_mat->CopyVectorScalar (holds_alternative<Complex>(b.GetVectorScalar()) ? b : a);
       auto & mat = *sp_mat;
 
       auto vala = a.GetValues();
@@ -164,12 +161,12 @@ namespace ngcomp
     size_t size;
     int nv = 0;
     
-    shared_ptr<SparseMatrixTM<SCAL>> mat;
+    shared_ptr<SparseMatrix<SCAL>> mat;
     shared_ptr<BaseMSMPrecond> smoother;
     
-    shared_ptr<SparseMatrixTM<double>> prolongation, restriction;
-    shared_ptr<SparseMatrixTM<double>> vert_prolongation, vert_restriction;
-    shared_ptr<SparseMatrixTM<double>> gradient, trans_gradient;
+    shared_ptr<SparseMatrix<double>> prolongation, restriction;
+    shared_ptr<SparseMatrix<double>> vert_prolongation, vert_restriction;
+    shared_ptr<SparseMatrix<double>> gradient, trans_gradient;
     shared_ptr<BaseMatrix> node_h1;
     shared_ptr<BaseMatrix> coarse_precond;
     
@@ -177,7 +174,7 @@ namespace ngcomp
     HCurlAMG_Matrix (HCurlAMG_Parameters aparam)
       : param(aparam) {}
 
-    HCurlAMG_Matrix(shared_ptr<SparseMatrixTM<SCAL>> _mat,
+    HCurlAMG_Matrix(shared_ptr<SparseMatrix<SCAL>> _mat,
                     shared_ptr<BitArray> freedofs,
                     FlatArray<IVec<3>> f2e,
                     FlatArray<IVec<2>> e2v,
@@ -194,7 +191,7 @@ namespace ngcomp
       Setup(_mat, freedofs, f2e, e2v, edge_weights, face_weights, level);
     }
 
-    void Setup(shared_ptr<SparseMatrixTM<SCAL>> _mat,
+    void Setup(shared_ptr<SparseMatrix<SCAL>> _mat,
               shared_ptr<BitArray> freedofs,
               FlatArray<IVec<3>> f2e,
               FlatArray<IVec<2>> e2v,
@@ -225,8 +222,8 @@ namespace ngcomp
       Array<double> edge_weights;
       Array<double> face_weights;
       shared_ptr<BitArray> freedofs;
-      shared_ptr<SparseMatrixTM<double>> prolongation;
-      shared_ptr<SparseMatrixTM<double>> vert_prolongation;
+      shared_ptr<SparseMatrix<double>> prolongation;
+      shared_ptr<SparseMatrix<double>> vert_prolongation;
     };
     
     virtual shared_ptr<BaseMatrix> BuildCoarsePrecond(const CoarseInfo& cinfo, int level);
@@ -269,7 +266,7 @@ namespace ngcomp
   
   template<typename SCAL>
   void HCurlAMG_Matrix<SCAL> ::
-  Setup (shared_ptr<SparseMatrixTM<SCAL>> _mat,
+  Setup (shared_ptr<SparseMatrix<SCAL>> _mat,
         shared_ptr<BitArray> freedofs,
         FlatArray<IVec<3>> f2e,
         FlatArray<IVec<2>> e2v,
@@ -381,7 +378,8 @@ namespace ngcomp
         for(auto i : Range(ne))
           if(e2f[i].Size() > 0 && freedofs->Test(i))
             nne[i] = 1 + 2 * e2f[i].Size();
-        auto smoothprol = make_shared<SparseMatrix<double, SCAL, SCAL>>(nne, ne);
+        auto smoothprol = make_shared<SparseMatrix<double>> (nne, ne);
+        if constexpr (ngbla::IsComplex<SCAL>()) smoothprol->SetVectorScalar (Complex(0));
         double alpha = 0.5;
         
         // for(auto i : Range(ne))
@@ -465,7 +463,8 @@ namespace ngcomp
           if(e2f[e].Size() == 0 || (e2v[e][0]==-1 && e2v[e][1]==-1)
              || vmap[e2v[e][0]] == vmap[e2v[e][1]])
             nne[e] = 0;
-        gradient = make_shared<SparseMatrix<double, SCAL, SCAL>>(nne, nvred);
+        gradient = make_shared<SparseMatrix<double>> (nne, nvred);
+        if constexpr (ngbla::IsComplex<SCAL>()) gradient->SetVectorScalar (Complex(0));
         for(auto e : Range(ne))
           {
             if(nne[e] == 0) continue;
@@ -478,12 +477,12 @@ namespace ngcomp
       }
 
     coarse_precond = BuildCoarsePrecond(cinfo, level);
-    restriction = dynamic_pointer_cast<SparseMatrixTM<double>>
+    restriction = dynamic_pointer_cast<SparseMatrix<double>>
       (prolongation->CreateTranspose());
 
     if(param.potential_smooth_on_each_level || level == 0)
       {
-        trans_gradient = dynamic_pointer_cast<SparseMatrixTM<double>>(gradient->CreateTranspose());
+        trans_gradient = dynamic_pointer_cast<SparseMatrix<double>>(gradient->CreateTranspose());
         auto h1mat = mat->Restrict(*gradient);
         Array<double> v_weights(nvred);
         v_weights = 0.;
@@ -516,7 +515,7 @@ namespace ngcomp
             {
               H1AMG_Parameters defaultparam;
               node_h1 = make_shared<H1AMG_Matrix<SCAL>>
-                (dynamic_pointer_cast<SparseMatrixTM<SCAL>>(h1mat), h1_freedofs, h1e2v,
+                (dynamic_pointer_cast<SparseMatrix<SCAL>>(h1mat), h1_freedofs, h1e2v,
                  h1ew, v_weights, defaultparam, 0);
               break;
             }
@@ -560,7 +559,7 @@ namespace ngcomp
     else
       {
         return make_shared<HCurlAMG_Matrix<SCAL>>
-          (dynamic_pointer_cast<SparseMatrixTM<SCAL>>(coarsemat),
+          (dynamic_pointer_cast<SparseMatrix<SCAL>>(coarsemat),
            cinfo.freedofs, cinfo.f2e, cinfo.e2v, cinfo.edge_weights,
            cinfo.face_weights, level+1, param);
       }
@@ -950,7 +949,8 @@ namespace ngcomp
     Array<int> nne(ne);
     for(auto i : Range(ne))
       nne[i] = (edge_map[i] != -1 && freedofs->Test(i)) ? 1 : 0;
-    info.prolongation = make_shared<SparseMatrix<double, SCAL, SCAL>>(nne, nce);
+    info.prolongation = make_shared<SparseMatrix<double>> (nne, nce);
+    if constexpr (ngbla::IsComplex<SCAL>()) info.prolongation->SetVectorScalar (Complex(0));
     for(auto i : Range(ne))
       if(edge_map[i] != -1 && freedofs->Test(i))
         (*info.prolongation)(i, edge_map[i]) = inverted_edge[i] ? -1. : 1;
@@ -960,7 +960,8 @@ namespace ngcomp
         Array<int> nnv(nv);
         for(auto v : Range(nv))
           nnv[v] = (!unused_vertex[v] && freedofs->Test(ne + v)) ? 1 : 0;
-        info.vert_prolongation = make_shared<SparseMatrix<double, SCAL, SCAL>>(nnv, ncv);
+        info.vert_prolongation = make_shared<SparseMatrix<double>> (nnv, ncv);
+        if constexpr (ngbla::IsComplex<SCAL>()) info.vert_prolongation->SetVectorScalar (Complex(0));
         for(auto i : Range(nv))
           if(nnv[i])
             (*info.vert_prolongation)(i, vert_map[i]) = 1.;
@@ -1193,14 +1194,14 @@ namespace ngcomp
 
     if(matrix->IsComplex())
       {
-        auto amat = dynamic_pointer_cast<SparseMatrixTM<Complex>>
+        auto amat = dynamic_pointer_cast<SparseMatrix<Complex>>
           (const_cast<BaseMatrix*>(matrix)->shared_from_this());
         mat = make_shared<HCurlAMG_Matrix<Complex>>(amat, freedofs, f2e, e2v,
                                                     edge_weights, face_weights, 0, param);
       }
     else
       {
-        auto amat = dynamic_pointer_cast<SparseMatrixTM<double>>
+        auto amat = dynamic_pointer_cast<SparseMatrix<double>>
           (const_cast<BaseMatrix*>(matrix)->shared_from_this());
         mat = make_shared<HCurlAMG_Matrix<double>>(amat, freedofs, f2e, e2v,
                                                    edge_weights, face_weights, 0, param);
@@ -1223,7 +1224,7 @@ namespace ngcomp
     size_t hcurlsize;
     size_t h1size;
   public:
-    APhiMatrix(shared_ptr<SparseMatrixTM<SCAL>> _mat,
+    APhiMatrix(shared_ptr<SparseMatrix<SCAL>> _mat,
                shared_ptr<BitArray> freedofs,
                FlatArray<IVec<3>> f2e,
                FlatArray<IVec<2>> e2v,
@@ -1323,18 +1324,18 @@ namespace ngcomp
     
     if(matrix->IsComplex())
       {
-        // auto amat = dynamic_pointer_cast<SparseMatrixTM<Complex>>
+        // auto amat = dynamic_pointer_cast<SparseMatrix<Complex>>
         //   (const_cast<BaseMatrix*>(matrix)->shared_from_this());
-        auto amat = dynamic_pointer_cast<SparseMatrixTM<Complex>>
+        auto amat = dynamic_pointer_cast<SparseMatrix<Complex>>
           (bfa->GetMatrixPtr());
         mat = make_shared<APhiMatrix<Complex>>(amat, freedofs, f2e, e2v,
                                                edge_weights, face_weights, 0, param);
       }
     else
       {
-        // auto amat = dynamic_pointer_cast<SparseMatrixTM<double>>
+        // auto amat = dynamic_pointer_cast<SparseMatrix<double>>
         //   (const_cast<BaseMatrix*>(matrix)->shared_from_this());
-        auto amat = dynamic_pointer_cast<SparseMatrixTM<double>>
+        auto amat = dynamic_pointer_cast<SparseMatrix<double>>
           (bfa->GetMatrixPtr());
         mat = make_shared<APhiMatrix<double>>(amat, freedofs, f2e, e2v,
                                               edge_weights, face_weights, 0, param);
@@ -1342,7 +1343,7 @@ namespace ngcomp
   }
 
   template<typename SCAL>
-  APhiMatrix<SCAL> :: APhiMatrix(shared_ptr<SparseMatrixTM<SCAL>> _mat,
+  APhiMatrix<SCAL> :: APhiMatrix(shared_ptr<SparseMatrix<SCAL>> _mat,
                                  shared_ptr<BitArray> freedofs,
                                  FlatArray<IVec<3>> f2e,
                                  FlatArray<IVec<2>> e2v,
@@ -1379,7 +1380,7 @@ namespace ngcomp
     auto second_prol = MatMult(*this->vert_prolongation, *r2);
     second_prol = MatMult(*e2, *second_prol);
 
-    this->prolongation = MatAdd<double, SCAL, SCAL>(*first_prol, *second_prol);
+    this->prolongation = MatAdd<double>(*first_prol, *second_prol);
     
     this->gradient = e2;
 
@@ -1400,7 +1401,7 @@ namespace ngcomp
     else
       {
         coarsepre = make_shared<APhiMatrix<SCAL>>
-          (dynamic_pointer_cast<SparseMatrixTM<SCAL>>(coarsemat),
+          (dynamic_pointer_cast<SparseMatrix<SCAL>>(coarsemat),
            cinfo.freedofs, cinfo.f2e, cinfo.e2v, cinfo.edge_weights,
            cinfo.face_weights, level+1, this->param);
       }

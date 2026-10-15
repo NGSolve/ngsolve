@@ -61,12 +61,12 @@ namespace ngla
 
   
   /// A Jaboci preconditioner for general sparse matrices
-  template <class TM, class TV_ROW, class TV_COL>
+  template <class TM>
   class JacobiPrecond : public BaseJacobiPrecond,
 			public S_BaseMatrix<typename mat_traits<TM>::TSCAL>
   {
   protected:
-    shared_ptr<SparseMatrix<TM,TV_ROW,TV_COL>> mat;
+    shared_ptr<SparseMatrix<TM>> mat;
     ///
     shared_ptr<BitArray> inner;
     ///
@@ -74,11 +74,12 @@ namespace ngla
     ///
     Array<TM> invdiag;
   public:
-    // typedef typename mat_traits<TM>::TV_ROW TVX;
     typedef typename mat_traits<TM>::TSCAL TSCAL;
+    // entry shape of the vectors, the scalar is chosen at run time
+    typedef typename mat_traits<TM>::TV_ROW TV_ROW;
 
     ///
-    JacobiPrecond (shared_ptr<SparseMatrix<TM,TV_ROW,TV_COL>> amat, 
+    JacobiPrecond (shared_ptr<SparseMatrix<TM>> amat, 
 		   shared_ptr<BitArray> ainner = nullptr, bool use_par = true);
 
     int VHeight() const override { return height; }
@@ -91,11 +92,10 @@ namespace ngla
     shared_ptr<BaseMatrix> CreateDeviceMatrix() const override;
     
     ///
-    void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
-    void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override
-    { MultAdd (s, x, y); }
-    void MultAdd (Complex s, const BaseVector & x, BaseVector & y) const override;
-    void MultTransAdd (Complex s, const BaseVector & x, BaseVector & y) const override
+    using BaseMatrix::MultAdd;
+    using BaseMatrix::MultTransAdd;
+    void MultAdd (Scalar s, const BaseVector & x, BaseVector & y) const override;
+    void MultTransAdd (Scalar s, const BaseVector & x, BaseVector & y) const override
     { MultAdd (s, x, y); }
     ///
     VecFormat RowFormat () const override { return mat->ColFormat(); }
@@ -128,14 +128,14 @@ namespace ngla
 
 
   /// A Jaboci preconditioner for symmetric sparse matrices
-  template <class TM, class TV>
-  class NGS_DLL_HEADER JacobiPrecondSymmetric : public JacobiPrecond<TM,TV,TV>
+  template <class TM>
+  class NGS_DLL_HEADER JacobiPrecondSymmetric : public JacobiPrecond<TM>
   {
   public:
-    typedef TV TVX;
+    typedef typename mat_traits<TM>::TV_ROW TV;
 
     ///
-    JacobiPrecondSymmetric (shared_ptr<SparseMatrixSymmetric<TM,TV>> amat, 
+    JacobiPrecondSymmetric (shared_ptr<SparseMatrixSymmetric<TM>> amat, 
 			    shared_ptr<BitArray> ainner = nullptr, bool use_par = true);
 
     ///

@@ -51,9 +51,7 @@ namespace ngla
   ////////////////////////////////////////////////////////////////////////////////
 
 
-template<class TM, 
-   class TV_ROW = typename mat_traits<TM>::TV_ROW, 
-   class TV_COL = typename mat_traits<TM>::TV_COL>
+template<class TM>
   class SuperLUInverse : public BaseMatrix
   {
 #ifdef USE_SUPERLU
@@ -78,7 +76,7 @@ template<class TM,
     typedef typename mat_traits<TM>::TSCAL TSCAL;
 
     ///
-    SuperLUInverse (const SparseMatrix<TM,TV_ROW,TV_COL> & a, 
+    SuperLUInverse (const SparseMatrix<TM> & a, 
 		    const BitArray * ainner = NULL,
 		    const Array<int> * acluster = NULL,
 		    int symmetric = 0);

@@ -672,7 +672,7 @@ namespace ngcomp
   public:
     typedef typename mat_traits<TM>::TSCAL TSCAL;
     typedef TV TV_COL;
-    typedef SparseMatrix<TM,TV,TV> TMATRIX;
+    typedef SparseMatrix<TM> TMATRIX;
     shared_ptr<TMATRIX> mymatrix;
   protected:
 
@@ -709,7 +709,7 @@ namespace ngcomp
   public:
     typedef typename mat_traits<TM>::TSCAL TSCAL;
     typedef TV TV_COL;
-    typedef SparseMatrixSymmetric<TM,TV> TMATRIX;
+    typedef SparseMatrixSymmetric<TM> TMATRIX;
     shared_ptr<TMATRIX> mymatrix;    
   protected:
     

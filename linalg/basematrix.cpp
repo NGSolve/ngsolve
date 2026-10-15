@@ -167,8 +167,48 @@ namespace ngla
     MultTransAdd (1, x, y);
   }
 
+  // the object whose Scalar default is forwarding to the double/Complex versions
+  static thread_local const BaseMatrix * forwarding_scalar = nullptr;
+
+  struct ForwardingScalar
+  {
+    const BaseMatrix * prev;
+    ForwardingScalar (const BaseMatrix * m) : prev(forwarding_scalar) { forwarding_scalar = m; }
+    ~ForwardingScalar () { forwarding_scalar = prev; }
+  };
+
+  void BaseMatrix :: MultAdd (Scalar s, const BaseVector & x, BaseVector & y) const
+  {
+    ForwardingScalar guard(this);
+    std::visit ([&] (auto val)
+    {
+      if constexpr (is_same_v<decltype(val),Complex>)
+        MultAdd (val, x, y);
+      else
+        MultAdd (double(val), x, y);
+    }, s);
+  }
+
+  void BaseMatrix :: MultTransAdd (Scalar s, const BaseVector & x, BaseVector & y) const
+  {
+    ForwardingScalar guard(this);
+    std::visit ([&] (auto val)
+    {
+      if constexpr (is_same_v<decltype(val),Complex>)
+        MultTransAdd (val, x, y);
+      else
+        MultTransAdd (double(val), x, y);
+    }, s);
+  }
+
   void BaseMatrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
+    if (forwarding_scalar != this)
+      {
+        MultAdd (Scalar(s), x, y);
+        return;
+      }
+    forwarding_scalar = nullptr;   // used up, calls from here on forward again
     if (is_complex)
       {
         MultAdd (Complex(s), x, y);
@@ -183,6 +223,12 @@ namespace ngla
 
   void BaseMatrix :: MultAdd (Complex s, const BaseVector & x, BaseVector & y) const 
   {
+    if (forwarding_scalar != this)
+      {
+        MultAdd (Scalar(s), x, y);
+        return;
+      }
+    forwarding_scalar = nullptr;   // used up, calls from here on forward again
     /*
     stringstream err;
     err << "BaseMatrix::MultAdd (Complex) called, type = " 
@@ -197,6 +243,12 @@ namespace ngla
   
   void BaseMatrix :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
   {
+    if (forwarding_scalar != this)
+      {
+        MultTransAdd (Scalar(s), x, y);
+        return;
+      }
+    forwarding_scalar = nullptr;   // used up, calls from here on forward again
     if (is_complex)
       {
         MultTransAdd (Complex(s), x, y);
@@ -226,6 +278,12 @@ namespace ngla
 
   void BaseMatrix :: MultTransAdd (Complex s, const BaseVector & x, BaseVector & y) const
   {
+    if (forwarding_scalar != this)
+      {
+        MultTransAdd (Scalar(s), x, y);
+        return;
+      }
+    forwarding_scalar = nullptr;   // used up, calls from here on forward again
     if(IsSymmetric().IsTrue())
       { MultAdd(s, x, y); return; }
 
@@ -521,13 +579,13 @@ namespace ngla
     auto spa = spbma->CreateSparseMatrix();
     auto spb = spbmb->CreateSparseMatrix();
     
-    auto spad = dynamic_pointer_cast<SparseMatrixTM<double>> (spa);
-    auto spbd = dynamic_pointer_cast<SparseMatrixTM<double>> (spb);
+    auto spad = dynamic_pointer_cast<SparseMatrix<double>> (spa);
+    auto spbd = dynamic_pointer_cast<SparseMatrix<double>> (spb);
     if (spad && spbd)
       return MatAdd (a, *spad, b, *spbd);
 
-    auto spac = dynamic_pointer_cast<SparseMatrixTM<Complex>> (spa);
-    auto spbc = dynamic_pointer_cast<SparseMatrixTM<Complex>> (spb);
+    auto spac = dynamic_pointer_cast<SparseMatrix<Complex>> (spa);
+    auto spbc = dynamic_pointer_cast<SparseMatrix<Complex>> (spb);
     if (spac && spbc)
       return MatAdd (Complex(a), *spac, Complex(b), *spbc);
       // return MatAdd (a, *spad, b, *spbd);
@@ -558,7 +616,7 @@ namespace ngla
   template <typename TSCAL>
   shared_ptr<BaseSparseMatrix> VScaleMatrix<TSCAL> :: CreateSparseMatrix() const 
   {
-    // auto sp = dynamic_pointer_cast<SparseMatrixTM<double>> (spbm->CreateSparseMatrix());
+    // auto sp = dynamic_pointer_cast<SparseMatrix<double>> (spbm->CreateSparseMatrix());
     auto sp = spbm->CreateSparseMatrix();
     if (sp == spbm)
       sp = dynamic_pointer_cast<BaseSparseMatrix>(spbm ->CreateMatrix());
@@ -576,12 +634,12 @@ namespace ngla
     auto sa = spbma->CreateSparseMatrix();
     auto sb = spbmb->CreateSparseMatrix();
 
-    if (auto spa = dynamic_pointer_cast<SparseMatrixTM<double>> (sa))
-      if (auto spb = dynamic_pointer_cast<SparseMatrixTM<double>> (sb))
+    if (auto spa = dynamic_pointer_cast<SparseMatrix<double>> (sa))
+      if (auto spb = dynamic_pointer_cast<SparseMatrix<double>> (sb))
         return MatMult (*spa, *spb);
 
-    if (auto spa = dynamic_pointer_cast<SparseMatrixTM<float>> (sa))
-      if (auto spb = dynamic_pointer_cast<SparseMatrixTM<float>> (sb))
+    if (auto spa = dynamic_pointer_cast<SparseMatrix<float>> (sa))
+      if (auto spb = dynamic_pointer_cast<SparseMatrix<float>> (sb))
         return MatMult (*spa, *spb);
     
     auto sap = sa.get(); // avoids warning

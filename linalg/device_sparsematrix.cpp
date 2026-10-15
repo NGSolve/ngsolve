@@ -205,7 +205,7 @@ namespace ngla
 
   template <typename T>
   template <typename TM>
-  DeviceSparseMatrix<T> :: DeviceSparseMatrix (const SparseMatrixTM<TM> & mat, bool asymmetric)
+  DeviceSparseMatrix<T> :: DeviceSparseMatrix (const SparseMatrix<TM> & mat, bool asymmetric)
   {
     symmetric = asymmetric;
     height = mat.Height();
@@ -446,8 +446,8 @@ namespace ngla
 
   template class DeviceSparseMatrix<double>;
   template class DeviceSparseMatrix<float>;
-  template DeviceSparseMatrix<double>::DeviceSparseMatrix (const SparseMatrixTM<double> &, bool);
-  template DeviceSparseMatrix<double>::DeviceSparseMatrix (const SparseMatrixTM<float> &, bool);
-  template DeviceSparseMatrix<float>::DeviceSparseMatrix (const SparseMatrixTM<double> &, bool);
-  template DeviceSparseMatrix<float>::DeviceSparseMatrix (const SparseMatrixTM<float> &, bool);
+  template DeviceSparseMatrix<double>::DeviceSparseMatrix (const SparseMatrix<double> &, bool);
+  template DeviceSparseMatrix<double>::DeviceSparseMatrix (const SparseMatrix<float> &, bool);
+  template DeviceSparseMatrix<float>::DeviceSparseMatrix (const SparseMatrix<double> &, bool);
+  template DeviceSparseMatrix<float>::DeviceSparseMatrix (const SparseMatrix<float> &, bool);
 }

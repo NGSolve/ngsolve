@@ -37,8 +37,8 @@ namespace ngla
   public:
     template <typename TM>
     DeviceBlockJacobi (const BlockJacobiPrecond<TM> & pre);
-    template <typename TM, typename TV>
-    DeviceBlockJacobi (const BlockJacobiPrecondSymmetric<TM,TV> & pre);
+    template <typename TM>
+    DeviceBlockJacobi (const BlockJacobiPrecondSymmetric<TM> & pre);
     virtual ~DeviceBlockJacobi () { }
 
     virtual int VHeight() const override { return height; }

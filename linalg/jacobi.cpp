@@ -37,9 +37,9 @@ namespace ngla
 
 
   
-  template <class TM, class TV_ROW, class TV_COL>
-  JacobiPrecond<TM,TV_ROW,TV_COL> ::
-  JacobiPrecond (shared_ptr<SparseMatrix<TM,TV_ROW,TV_COL>> amat, 
+  template <class TM>
+  JacobiPrecond<TM> ::
+  JacobiPrecond (shared_ptr<SparseMatrix<TM>> amat, 
 		 shared_ptr<BitArray> ainner, bool use_par)
   // : mat(amat), inner(ainner)
     : mat(amat), inner(ainner?make_shared<BitArray>(*ainner):nullptr),
@@ -68,10 +68,9 @@ namespace ngla
 		 });
   }
 
-  ///
-  template <class TM, class TV_ROW, class TV_COL>
-  void JacobiPrecond<TM,TV_ROW,TV_COL> ::
-  MultAdd (double s, const BaseVector & x, BaseVector & y) const 
+  template <class TM>
+  void JacobiPrecond<TM> ::
+  MultAdd (Scalar s, const BaseVector & x, BaseVector & y) const 
   {
     static Timer t("JacobiPrecond::MultAdd");
     RegionTimer reg(t);
@@ -79,129 +78,88 @@ namespace ngla
     x.Cumulate();
     y.Cumulate();
 
-    const FlatVector<TV_ROW> fx = x.FV<TV_ROW> ();
-    FlatVector<TV_ROW> fy = y.FV<TV_ROW> ();
+    DispatchVectorTypes<TSCAL,TV_ROW,TV_ROW>
+      (s, x, height, y, height, "JacobiPrecond::MultAdd",
+       [&] <typename TVX, typename TVY> (auto sy)
+       {
+         const FlatVector<TVX> fx = x.FV<TVX> ();
+         FlatVector<TVY> fy = y.FV<TVY> ();
 
-    if (!inner)
-      /*
-      for (int i = 0; i < height; i++)
-	fy(i) += s * (invdiag[i] * fx(i));
-      */
-      ParallelForRange (height,
-                        [fx, fy, s, this] (IntRange r)
-                        {
-                          for (auto i : r)
-                            fy(i) += s * (this->invdiag[i] * fx(i));
-                        });
-      else
-        /*
-      for (int i = 0; i < height; i++)
-	if (inner->Test(i))
-	  fy(i) += s * (invdiag[i] * fx(i));
-        */
-        ParallelForRange (height,
-                          [fx, fy, s, this] (IntRange r)
-                          {
-                            for (auto i : r)
-                              if (this->inner->Test(i))
-                                fy(i) += s * (this->invdiag[i] * fx(i));
-                          });
-          
-  }
-
-
-  template <class TM, class TV_ROW, class TV_COL>
-  void JacobiPrecond<TM,TV_ROW,TV_COL> ::
-  MultAdd (Complex s, const BaseVector & x, BaseVector & y) const 
-  {
-    if constexpr (ngbla::IsComplex<TV_ROW>())
-      {
-        static Timer t("JacobiPrecond::MultAdd");
-        RegionTimer reg(t);
-        
-        x.Cumulate();
-        y.Cumulate();
-        
-        const FlatVector<TV_ROW> fx = x.FV<TV_ROW> ();
-        FlatVector<TV_ROW> fy = y.FV<TV_ROW> ();
-
-        if (!inner)
-          /*
-            for (int i = 0; i < height; i++)
-            fy(i) += s * (invdiag[i] * fx(i));
-          */
-          ParallelForRange (height,
-                            [fx, fy, s, this] (IntRange r)
-                            {
-                              for (auto i : r)
-                                fy(i) += s * (this->invdiag[i] * fx(i));
-                            });
-        else
-          /*
-            for (int i = 0; i < height; i++)
-            if (inner->Test(i))
-            fy(i) += s * (invdiag[i] * fx(i));
-          */
-          ParallelForRange (height,
-                            [fx, fy, s, this] (IntRange r)
-                            {
-                              for (auto i : r)
-                                if (this->inner->Test(i))
-                                  fy(i) += s * (this->invdiag[i] * fx(i));
-                            });
-        
-      }
-    else
-      throw Exception("MultAdd complex called for real JacobiPrecond");
+         if (!inner)
+           ParallelForRange (height,
+                             [fx, fy, sy, this] (IntRange r)
+                             {
+                               for (auto i : r)
+                                 fy(i) += sy * (this->invdiag[i] * fx(i));
+                             });
+         else
+           ParallelForRange (height,
+                             [fx, fy, sy, this] (IntRange r)
+                             {
+                               for (auto i : r)
+                                 if (this->inner->Test(i))
+                                   fy(i) += sy * (this->invdiag[i] * fx(i));
+                             });
+       });
   }
 
   
   ///
-  template <class TM, class TV_ROW, class TV_COL>
-  void JacobiPrecond<TM,TV_ROW,TV_COL> ::
+  template <class TM>
+  void JacobiPrecond<TM> ::
   GSSmooth (BaseVector & x, const BaseVector & b, int steps) const 
   {
     static Timer timer("JacobiPrecond::GSSmooth");
     RegionTimer reg (timer);
     timer.AddFlops (mat->NZE());
 
-    FlatVector<TV_ROW> fx = x.FV<TV_ROW> ();
-    const FlatVector<TV_ROW> fb = b.FV<TV_ROW> ();
+    DispatchVectorType<TSCAL,TV_ROW>
+      ({ &x, &b }, height, "JacobiPrecond::GSSmooth",
+       [&] <typename TV> ()
+       {
+         FlatVector<TV> fx = x.FV<TV> ();
+         const FlatVector<TV> fb = b.FV<TV> ();
 
-    for (int k = 0; k < steps; k++)
-      for (int i = 0; i < height; i++)
-        if (!this->inner || this->inner->Test(i))
-          {
-            TV_ROW ax = mat->RowTimesVector (i, fx);
-            fx(i) += invdiag[i] * (fb(i) - ax);
-          }
+         for (int k = 0; k < steps; k++)
+           for (int i = 0; i < height; i++)
+             if (!this->inner || this->inner->Test(i))
+               {
+                 TV ax = mat->RowTimesVector (i, fx);
+                 fx(i) += invdiag[i] * (fb(i) - ax);
+               }
+       });
   }
 
 
   ///
-  template <class TM, class TV_ROW, class TV_COL>
-  void JacobiPrecond<TM,TV_ROW,TV_COL> ::
+  template <class TM>
+  void JacobiPrecond<TM> ::
   GSSmoothBack (BaseVector & x, const BaseVector & b, int steps) const 
   {
     static Timer timer("JacobiPrecond::GSSmoothBack");
     RegionTimer reg (timer);
     timer.AddFlops (mat->NZE());
 
-    FlatVector<TV_ROW> fx = x.FV<TV_ROW> ();
-    const FlatVector<TV_ROW> fb = b.FV<TV_ROW> ();
+    DispatchVectorType<TSCAL,TV_ROW>
+      ({ &x, &b }, height, "JacobiPrecond::GSSmoothBack",
+       [&] <typename TV> ()
+       {
+         FlatVector<TV> fx = x.FV<TV> ();
+         const FlatVector<TV> fb = b.FV<TV> ();
 
-    for (int k = 0; k < steps; k++)    
-      for (int i = height-1; i >= 0; i--)
-        if (!this->inner || this->inner->Test(i))
-          {
-            TV_ROW ax = mat->RowTimesVector (i, fx);
-            fx(i) += invdiag[i] * (fb(i) - ax);
-          }
+         for (int k = 0; k < steps; k++)    
+           for (int i = height-1; i >= 0; i--)
+             if (!this->inner || this->inner->Test(i))
+               {
+                 TV ax = mat->RowTimesVector (i, fx);
+                 fx(i) += invdiag[i] * (fb(i) - ax);
+               }
+       });
   }
 
   ///
-  template <class TM, class TV_ROW, class TV_COL>
-  void JacobiPrecond<TM,TV_ROW,TV_COL> ::
+  template <class TM>
+  void JacobiPrecond<TM> ::
   GSSmoothNumbering (BaseVector & x, const BaseVector & b,
 		     const Array<int> & numbering, 
 		     int forward) const
@@ -212,81 +170,89 @@ namespace ngla
 
 
 
-  template <class TM, class TV>
-  JacobiPrecondSymmetric<TM,TV> ::
-  JacobiPrecondSymmetric (shared_ptr<SparseMatrixSymmetric<TM,TV>> amat, 
+  template <class TM>
+  JacobiPrecondSymmetric<TM> ::
+  JacobiPrecondSymmetric (shared_ptr<SparseMatrixSymmetric<TM>> amat, 
 			  shared_ptr<BitArray> ainner, bool use_par)
-    : JacobiPrecond<TM,TV,TV> (amat, ainner, use_par)
+    : JacobiPrecond<TM> (amat, ainner, use_par)
   { 
     ;
   }
 
   ///
-  template <class TM, class TV>
-  void JacobiPrecondSymmetric<TM,TV> ::
+  template <class TM>
+  void JacobiPrecondSymmetric<TM> ::
   GSSmooth (BaseVector & x, const BaseVector & b, int steps) const 
   {
     static Timer timer("JacobiPrecondSymmetric::GSSmooth");
     RegionTimer reg (timer);
 
-    FlatVector<TVX> fx = x.FV<TVX> ();
-    const FlatVector<TVX> fb = b.FV<TVX> ();
+    const SparseMatrixSymmetric<TM> & smat =
+      dynamic_cast<const SparseMatrixSymmetric<TM>&> (*(this->mat));
 
-    const SparseMatrixSymmetric<TM,TV> & smat =
-      dynamic_cast<const SparseMatrixSymmetric<TM,TV>&> (*(this->mat));
+    DispatchVectorType<typename JacobiPrecond<TM>::TSCAL,TV>
+      ({ &x, &b }, this->height, "JacobiPrecondSymmetric::GSSmooth",
+       [&] <typename TVX> ()
+       {
+         FlatVector<TVX> fx = x.FV<TVX> ();
+         const FlatVector<TVX> fb = b.FV<TVX> ();
 
-    for (int k = 0; k < steps; k++)
-      {
-        // x := b - L^t x
-        for (int i = 0; i < this->height; i++)
-          if (!this->inner || this->inner->Test(i))
-            {
-              smat.AddRowTransToVectorNoDiag (i, -fx(i), fx);
-              fx(i) = fb(i);
-            }
-          else
-            fx(i) = TVX(0);
+         for (int k = 0; k < steps; k++)
+           {
+             // x := b - L^t x
+             for (int i = 0; i < this->height; i++)
+               if (!this->inner || this->inner->Test(i))
+                 {
+                   smat.AddRowTransToVectorNoDiag (i, -fx(i), fx);
+                   fx(i) = fb(i);
+                 }
+               else
+                 fx(i) = TVX(0);
         
-        // x := (L+D)^{-1} x
-        for (int i = 0; i < this->height; i++)
-          if (!this->inner || this->inner->Test(i))
-            {
-              TVX hv = fx(i) - smat.RowTimesVectorNoDiag (i, fx);
-              fx(i) = this->invdiag[i] * hv;
-            }
-      }
+             // x := (L+D)^{-1} x
+             for (int i = 0; i < this->height; i++)
+               if (!this->inner || this->inner->Test(i))
+                 {
+                   TVX hv = fx(i) - smat.RowTimesVectorNoDiag (i, fx);
+                   fx(i) = this->invdiag[i] * hv;
+                 }
+           }
+       });
   }
 
 
 
-  template <class TM, class TV>
-  void JacobiPrecondSymmetric<TM,TV> ::
+  template <class TM>
+  void JacobiPrecondSymmetric<TM> ::
   GSSmooth (BaseVector & x, const BaseVector & b, BaseVector & y /* , BaseVector & help */) const 
   {
     static Timer timer("JacobiPrecondSymmetric::GSSmooth-help");
     RegionTimer reg (timer);
     
-    FlatVector<TVX> fx = x.FV<TVX> ();
-    FlatVector<TVX> fy = y.FV<TVX> ();
+    const SparseMatrixSymmetric<TM> & smat =
+      dynamic_cast<const SparseMatrixSymmetric<TM>&> (*(this->mat));
 
-    const SparseMatrixSymmetric<TM,TV> & smat =
-      dynamic_cast<const SparseMatrixSymmetric<TM,TV>&> (*(this->mat));
+    DispatchVectorType<typename JacobiPrecond<TM>::TSCAL,TV>
+      ({ &x, &y }, this->height, "JacobiPrecondSymmetric::GSSmooth",
+       [&] <typename TVX> ()
+       {
+         FlatVector<TVX> fx = x.FV<TVX> ();
+         FlatVector<TVX> fy = y.FV<TVX> ();
 
-    // input, y = b - (D+L^t) x
-    // (L+D) x_new := b - L^t x  = y + D x
-    // D (x_new-x) = b - L x_new
-    // y -= (D+L^t) w
-    for (int i = 0; i < this->height; i++)
-      if (!this->inner || this->inner->Test(i))
-	{
-	  TVX d = fy(i) - smat.RowTimesVectorNoDiag (i, fx);
-	  TVX w = this->invdiag[i] * d;
+         // input, y = b - (D+L^t) x
+         // (L+D) x_new := b - L^t x  = y + D x
+         // D (x_new-x) = b - L x_new
+         // y -= (D+L^t) w
+         for (int i = 0; i < this->height; i++)
+           if (!this->inner || this->inner->Test(i))
+             {
+               TVX d = fy(i) - smat.RowTimesVectorNoDiag (i, fx);
+               TVX w = this->invdiag[i] * d;
 	  
-	  fx(i) += w;
-	  smat.AddRowTransToVector (i, -w, fy);
-	}
-    // else
-    // fx(i) = TVX(0);
+               fx(i) += w;
+               smat.AddRowTransToVector (i, -w, fy);
+             }
+       });
   }
 
 
@@ -295,73 +261,80 @@ namespace ngla
 
 
   ///
-  template <class TM, class TV>
-  void JacobiPrecondSymmetric<TM,TV> ::
+  template <class TM>
+  void JacobiPrecondSymmetric<TM> ::
   GSSmoothBack (BaseVector & x, const BaseVector & b, int steps) const 
   {
     static Timer timer("JacobiPrecondSymmetric::GSSmoothBack");
     RegionTimer reg (timer);
 
-    FlatVector<TVX> fx = x.FV<TVX> ();
-    // dynamic_cast<T_BaseVector<TVX> &> (x).FV();
-    const FlatVector<TVX> fb = b.FV<TVX> ();
-    // dynamic_cast<const T_BaseVector<TVX> &> (b).FV();
+    const SparseMatrixSymmetric<TM> & smat =
+      dynamic_cast<const SparseMatrixSymmetric<TM>&> (*(this->mat));
 
-    const SparseMatrixSymmetric<TM,TV> & smat =
-      dynamic_cast<const SparseMatrixSymmetric<TM,TV>&> (*(this->mat));
+    DispatchVectorType<typename JacobiPrecond<TM>::TSCAL,TV>
+      ({ &x, &b }, this->height, "JacobiPrecondSymmetric::GSSmoothBack",
+       [&] <typename TVX> ()
+       {
+         FlatVector<TVX> fx = x.FV<TVX> ();
+         const FlatVector<TVX> fb = b.FV<TVX> ();
 
-    for (int k = 0; k < steps; k++)
-      {
-        for (int i = this->height-1; i >= 0; i--)
-          if (!this->inner || this->inner->Test(i))
-            {
-              fx(i) = fb(i) - smat.RowTimesVectorNoDiag (i, fx);
-            }
-          else
-            fx(i) = TVX(0);
+         for (int k = 0; k < steps; k++)
+           {
+             for (int i = this->height-1; i >= 0; i--)
+               if (!this->inner || this->inner->Test(i))
+                 {
+                   fx(i) = fb(i) - smat.RowTimesVectorNoDiag (i, fx);
+                 }
+               else
+                 fx(i) = TVX(0);
         
         
-        for (int i = this->height-1; i >= 0; i--)
-          if (!this->inner || this->inner->Test(i))
-            {
-              TVX val = this->invdiag[i] * fx(i);
-              fx(i) = val;
-              smat.AddRowTransToVectorNoDiag (i, -val, fx);
-            }	 
-          else
-            fx(i) = TVX(0);
-      }
+             for (int i = this->height-1; i >= 0; i--)
+               if (!this->inner || this->inner->Test(i))
+                 {
+                   TVX val = this->invdiag[i] * fx(i);
+                   fx(i) = val;
+                   smat.AddRowTransToVectorNoDiag (i, -val, fx);
+                 }	 
+               else
+                 fx(i) = TVX(0);
+           }
+       });
   }
 
-  template <class TM, class TV>
-  void JacobiPrecondSymmetric<TM,TV> ::
+  template <class TM>
+  void JacobiPrecondSymmetric<TM> ::
   GSSmoothBack (BaseVector & x, const BaseVector & b, BaseVector &y) const 
   {
     static Timer timer("JacobiPrecondSymmetric::GSSmoothBack-help");
     RegionTimer reg (timer);
   
-    const SparseMatrixSymmetric<TM,TV>& smat =
-      dynamic_cast<const SparseMatrixSymmetric<TM,TV>&>(*(this->mat));
+    const SparseMatrixSymmetric<TM>& smat =
+      dynamic_cast<const SparseMatrixSymmetric<TM>&>(*(this->mat));
   
-    FlatVector<TVX> fx = x.FV<TVX>();
-    FlatVector<TVX> fy = y.FV<TVX>();
-    // FlatVector<TVX> fb = b.FV<TVX>();
+    DispatchVectorType<typename JacobiPrecond<TM>::TSCAL,TV>
+      ({ &x, &y }, this->height, "JacobiPrecondSymmetric::GSSmoothBack",
+       [&] <typename TVX> ()
+       {
+         FlatVector<TVX> fx = x.FV<TVX>();
+         FlatVector<TVX> fy = y.FV<TVX>();
 
-    for (int i = smat.Height()-1; i >=0; i--)
-      if (!this->inner || this->inner->Test(i))
-	{
-	  TVX d = fy(i) - smat.RowTimesVectorNoDiag (i, fx);
-	  TVX w = this->invdiag[i] * d;
+         for (int i = smat.Height()-1; i >=0; i--)
+           if (!this->inner || this->inner->Test(i))
+             {
+               TVX d = fy(i) - smat.RowTimesVectorNoDiag (i, fx);
+               TVX w = this->invdiag[i] * d;
 	  
-	  fx(i) += w;
-	  smat.AddRowTransToVector (i, -w, fy);
-	}
+               fx(i) += w;
+               smat.AddRowTransToVector (i, -w, fy);
+             }
+       });
   }
 
 
   ///
-  template <class TM, class TV>
-  void JacobiPrecondSymmetric<TM,TV> ::
+  template <class TM>
+  void JacobiPrecondSymmetric<TM> ::
   GSSmoothNumbering (BaseVector & x, const BaseVector & b,
 		     const Array<int> & numbering, 
 		     int forward) const
@@ -371,13 +344,12 @@ namespace ngla
 
 
 
-  template <class TM, class TV_ROW, class TV_COL>
-  shared_ptr<BaseMatrix> JacobiPrecond<TM,TV_ROW,TV_COL> ::
+  template <class TM>
+  shared_ptr<BaseMatrix> JacobiPrecond<TM> ::
   CreateDeviceMatrix () const
   {
-    if constexpr ((is_same_v<TM,double> || is_same_v<TM,float>) &&
-                  is_same_v<TV_ROW,TM> && is_same_v<TV_COL,TM>)
-      if (ngs_gpu::HasDevice())
+    if constexpr (is_same_v<TM,double> || is_same_v<TM,float>)
+      if (ngs_gpu::HasDevice() && !std::holds_alternative<Complex>(mat->GetVectorScalar()))
         {
           FlatVector<TM> fdiag (invdiag.Size(), invdiag.Data());
           if constexpr (is_same_v<TM,double>)
@@ -391,7 +363,6 @@ namespace ngla
   template class JacobiPrecond<double>;
   template class JacobiPrecond<float>;  
   template class JacobiPrecond<Complex>;
-  template class JacobiPrecond<double, Complex, Complex>;
 #if MAX_SYS_DIM >= 1
   template class JacobiPrecond<Mat<1,1,double> >;
   template class JacobiPrecond<Mat<1,1,Complex> >;
@@ -430,7 +401,6 @@ namespace ngla
   template class JacobiPrecondSymmetric<double>;
   template class JacobiPrecondSymmetric<float>;
   template class JacobiPrecondSymmetric<Complex>;
-  template class JacobiPrecondSymmetric<double,Complex>;
 #if MAX_SYS_DIM >= 1
   template class JacobiPrecondSymmetric<Mat<1,1,double> >;
   template class JacobiPrecondSymmetric<Mat<1,1,Complex> >;

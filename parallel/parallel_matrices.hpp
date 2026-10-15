@@ -175,7 +175,7 @@ namespace ngla
     string invtype;
     //shared_ptr<ParallelDofs> pardofs;
   public:
-    MasterInverse (const SparseMatrixTM<TM> & mat, shared_ptr<BitArray> asubset, 
+    MasterInverse (const SparseMatrix<TM> & mat, shared_ptr<BitArray> asubset, 
 		   shared_ptr<ParallelDofs> apardofs);
     virtual ~MasterInverse () override;
     virtual bool IsComplex() const override { return inv->IsComplex(); } 

@@ -149,7 +149,7 @@ namespace ngla
     int maxrow;
 
     // the original matrix
-    // const SparseMatrixTM<TM> & mat;
+    // const SparseMatrix<TM> & mat;
 
     int max_bs = 1024;  
     int max_micro_bs = 256; // not yet used
@@ -158,7 +158,7 @@ namespace ngla
     typedef typename mat_traits<TM>::TSCAL TSCAL_MAT;
 
     ///
-    SparseCholeskyTM (shared_ptr<const SparseMatrixTM<TM>> a,
+    SparseCholeskyTM (shared_ptr<const SparseMatrix<TM>> a,
                       shared_ptr<BitArray> ainner = nullptr,
                       shared_ptr<const Array<int>> acluster = nullptr,
                       bool allow_refactor = 0);
@@ -196,7 +196,7 @@ namespace ngla
       FactorNew (*castmatrix);
     }
     ///
-    void FactorNew (const SparseMatrixTM<TM> & a);
+    void FactorNew (const SparseMatrix<TM> & a);
 
     /**
        A = L+D+L^T
@@ -259,9 +259,7 @@ namespace ngla
 
 
 
-  template<class TM, 
-	   class TV_ROW = typename mat_traits<TM>::TV_ROW, 
-	   class TV_COL = typename mat_traits<TM>::TV_COL>
+  template<class TM>
   class NGS_DLL_HEADER SparseCholesky : public SparseCholeskyTM<TM>
   {
     typedef SparseCholeskyTM<TM> BASE;
@@ -285,17 +283,19 @@ namespace ngla
     using BASE::BlockDofs;
     using BASE::BlockExtDofs;
     using BASE::hermitian;
+    // scalar of the vectors, a real factorization may solve for complex vectors
+    Scalar vecscal = typename mat_traits<TM>::TSCAL(0);
   public:
-    typedef TV_COL TV;
-    typedef TV_ROW TVX;
-    typedef typename mat_traits<TV_ROW>::TSCAL TSCAL_VEC;
-    typedef typename scal_traits<TSCAL_VEC>::TSCAL64 TSCAL64;
+    typedef typename mat_traits<TM>::TSCAL TSCAL;
+    // entry shapes of the vectors, the vector scalar is chosen at run time
+    typedef typename mat_traits<TM>::TV_ROW TV_ROW;
+    typedef typename mat_traits<TM>::TV_COL TV_COL;
     
-    SparseCholesky (shared_ptr<const SparseMatrixTM<TM>> a,
+    SparseCholesky (shared_ptr<const SparseMatrix<TM>> a,
 		    shared_ptr<BitArray> ainner = nullptr,
 		    shared_ptr<const Array<int>> acluster = nullptr,
 		    bool allow_refactor = 0)
-      : SparseCholeskyTM<TM> (a, ainner, acluster, allow_refactor) { ; }
+      : SparseCholeskyTM<TM> (a, ainner, acluster, allow_refactor), vecscal(a->GetVectorScalar()) { ; }
     SparseCholesky() {}
 
     // a DeviceSparseCholesky for scalar TM if a gpu backend is registered
@@ -306,20 +306,25 @@ namespace ngla
     
     void Mult (const BaseVector & x, BaseVector & y) const override;
 
-    void MultAdd (TSCAL64 s, const BaseVector & x, BaseVector & y) const override;
-    void MultTransAdd (TSCAL64 s, const BaseVector & x, BaseVector & y) const override
+    using BaseMatrix::MultAdd;
+    using BaseMatrix::MultTransAdd;
+    void MultAdd (Scalar s, const BaseVector & x, BaseVector & y) const override;
+    void MultTransAdd (Scalar s, const BaseVector & x, BaseVector & y) const override
     {
       MultAdd (s, x, y);
     }
 
-    VecFormat RowFormat () const override { return VVectorFormat<TV> (height); }
-    VecFormat ColFormat () const override { return VVectorFormat<TV> (height); }
+    VecFormat RowFormat () const override { return VVectorFormat<TV_COL> (height).WithScalar(vecscal); }
+    VecFormat ColFormat () const override { return VVectorFormat<TV_COL> (height).WithScalar(vecscal); }
 
     void Smooth (BaseVector & u, const BaseVector & f, BaseVector & y) const override;
 
+    template <typename TV>
     void SolveBlock (int i, FlatVector<TV> hy) const;
+    template <typename TV>
     void SolveBlockT (int i, FlatVector<TV> hy) const;
   private:
+    template <typename TVX>
     void SolveReordered(FlatVector<TVX> hy) const;
   };
 

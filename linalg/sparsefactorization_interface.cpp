@@ -13,8 +13,8 @@ bool IsMatrixSymmetric(shared_ptr<const BaseSparseMatrix> mat, double tol)
         return false;
 
     auto p_mat = dynamic_pointer_cast<const MatrixGraph>(mat);
-    auto p_real = dynamic_pointer_cast<const SparseMatrixTM<double>>(mat);
-    auto p_complex = dynamic_pointer_cast<const SparseMatrixTM<Complex>>(mat);
+    auto p_real = dynamic_pointer_cast<const SparseMatrix<double>>(mat);
+    auto p_complex = dynamic_pointer_cast<const SparseMatrix<Complex>>(mat);
 
     if(!p_real && !p_complex)
         return false;
@@ -56,11 +56,11 @@ shared_ptr<BaseSparseMatrix> ExtractTri(shared_ptr<const BaseSparseMatrix> mat, 
     static Timer timer("ExtractTri");
     RegionTimer rt(timer);
     auto p_mat = dynamic_pointer_cast<const MatrixGraph>(mat);
-    auto p_real = dynamic_pointer_cast<const SparseMatrixTM<double>>(mat);
-    auto p_complex = dynamic_pointer_cast<const SparseMatrixTM<Complex>>(mat);
+    auto p_real = dynamic_pointer_cast<const SparseMatrix<double>>(mat);
+    auto p_complex = dynamic_pointer_cast<const SparseMatrix<Complex>>(mat);
 
     if(!p_real && !p_complex)
-        throw Exception("ExtractTri: matrix not derived from SparseMatrixTM");
+        throw Exception("ExtractTri: matrix not derived from SparseMatrix");
 
     Array<int> rowi, coli;
     Array<double> vals_real;
@@ -87,9 +87,9 @@ shared_ptr<BaseSparseMatrix> ExtractTri(shared_ptr<const BaseSparseMatrix> mat, 
     }
 
     if(p_complex)
-        return SparseMatrixTM<Complex>::CreateFromCOO(rowi, coli, vals_complex, mat->Height(), mat->Width());
+        return SparseMatrix<Complex>::CreateFromCOO(rowi, coli, vals_complex, mat->Height(), mat->Width());
     else
-        return SparseMatrixTM<double>::CreateFromCOO(rowi, coli, vals_real, mat->Height(), mat->Width());
+        return SparseMatrix<double>::CreateFromCOO(rowi, coli, vals_real, mat->Height(), mat->Width());
 }
 
 SparseFactorizationInterface::SparseFactorizationInterface(
@@ -126,9 +126,9 @@ void SparseFactorizationInterface::Update() {
     Switch<MAX_SYS_DIM>(entry_h - 1, [&](auto HM) {
       constexpr int N = HM + 1;
       if constexpr (N > 1) {
-        auto cached = dynamic_pointer_cast<SparseMatrixTM<double>>(
+        auto cached = dynamic_pointer_cast<SparseMatrix<double>>(
             const_pointer_cast<BaseSparseMatrix>(inner_mat));
-        auto cached_c = dynamic_pointer_cast<SparseMatrixTM<Complex>>(
+        auto cached_c = dynamic_pointer_cast<SparseMatrix<Complex>>(
             const_pointer_cast<BaseSparseMatrix>(inner_mat));
         if (auto A = dynamic_pointer_cast<const SparseMatrix<Mat<N, N, double>>>(m))
           scalar_mat = map_inner_dofs.ProjectMatrixBlocked<N, double>(A, cached);
@@ -148,13 +148,13 @@ void SparseFactorizationInterface::Update() {
     p_mat = dynamic_pointer_cast<const MatrixGraph>(scalar_mat);
   }
   else if (is_complex) {
-    shared_ptr<const SparseMatrixTM<Complex>> p_sparse_mat =
-        dynamic_pointer_cast<const SparseMatrixTM<Complex>>(m);
+    shared_ptr<const SparseMatrix<Complex>> p_sparse_mat =
+        dynamic_pointer_cast<const SparseMatrix<Complex>>(m);
 
     if (p_sparse_mat == nullptr) {
       throw Exception(
           "SparseFactorizationInterface: Input matrix not derived from "
-          "SparseMatrixTM<Complex>");
+          "SparseMatrix<Complex>");
     }
 
     if (dynamic_cast<const SparseMatrixSymmetric<Complex> *>(m.get())) {
@@ -163,7 +163,7 @@ void SparseFactorizationInterface::Update() {
     }
 
     if (map_inner_dofs) {
-      auto cached = dynamic_pointer_cast<SparseMatrixTM<Complex>>(
+      auto cached = dynamic_pointer_cast<SparseMatrix<Complex>>(
           const_pointer_cast<BaseSparseMatrix>(inner_mat));
       p_sparse_mat = map_inner_dofs.ProjectMatrix(p_sparse_mat, cached);
     }
@@ -171,8 +171,8 @@ void SparseFactorizationInterface::Update() {
     inner_mat = p_sparse_mat;
     p_mat = dynamic_pointer_cast<const MatrixGraph>(p_sparse_mat);
   } else {
-    shared_ptr<const SparseMatrixTM<double>> p_sparse_mat =
-        dynamic_pointer_cast<const SparseMatrixTM<double>>(m);
+    shared_ptr<const SparseMatrix<double>> p_sparse_mat =
+        dynamic_pointer_cast<const SparseMatrix<double>>(m);
 
     if (p_sparse_mat == nullptr) {
       throw Exception(
@@ -186,7 +186,7 @@ void SparseFactorizationInterface::Update() {
     }
 
     if (map_inner_dofs) {
-      auto cached = dynamic_pointer_cast<SparseMatrixTM<double>>(
+      auto cached = dynamic_pointer_cast<SparseMatrix<double>>(
           const_pointer_cast<BaseSparseMatrix>(inner_mat));
       p_sparse_mat = map_inner_dofs.ProjectMatrix(p_sparse_mat, cached);
     }
