@@ -1780,7 +1780,8 @@ namespace ngfem
                             for (size_t k = 0; k < dim_proxy1; k++)
                               if (nonzeros(l1+j, k1+k))
                                 {
-                                  auto proxyvalues_jk = symbolic_integrator_uses_diff ?
+                                  // ddcf is test-major, the component-wise fill trial-major
+                                  auto proxyvalues_jk = ddcf_dtest_dtrial(l1nr, k1nr) ?
                                           proxyvalues.Row(j*dim_proxy1+k) : proxyvalues.Row(k*dim_proxy2+j);
                                   auto bbmat1_k = bbmat1.RowSlice(k, dim_proxy1).Rows(r1);
                                   auto bdbmat1_j = bdbmat1.RowSlice(j, dim_proxy2).Rows(r1);
@@ -1910,9 +1911,13 @@ namespace ngfem
                   {
 //                    cout << "use ddcf_dtest_dtrial (NO SIMD)" << endl;
                     // TODO: optimize for element-wise constant case?
-                    FlatMatrix<SCAL> mproxyvalues(mir.Size(), proxy1->Dimension() * proxy2->Dimension(),
-                                                  proxyvalues.Data());
+                    // ddcf is test-major, proxyvalues is (ip, trial, test)
+                    size_t dim1 = proxy1->Dimension(), dim2 = proxy2->Dimension();
+                    FlatMatrix<SCAL> mproxyvalues(mir.Size(), dim1*dim2, lh);
                     ddcf_dtest_dtrial(l1nr, k1nr)->Evaluate(mir, mproxyvalues);
+                    for (size_t k = 0; k < dim1; k++)
+                      for (size_t l = 0; l < dim2; l++)
+                        proxyvalues(STAR,k,l) = mproxyvalues.Col(l*dim1+k);
                     if (is_diagonal)
                         for (auto k: Range(proxy1->Dimension()))
                             diagproxyvalues.Slice(k, proxy1->Dimension()) = proxyvalues(STAR, k, k);
