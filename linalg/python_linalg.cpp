@@ -1805,14 +1805,15 @@ inverse : string
   ExportSparseMatrix<double>(m);
   ExportSparseMatrix<float>(m);
   ExportSparseMatrix<Complex>(m);
-#if MAX_SYS_DIM >= 2  
-  ExportSparseMatrix<Mat<2,2,double>>(m);
-  ExportSparseMatrix<Mat<2,2,Complex>>(m);
-#endif
-#if MAX_SYS_DIM >= 3
-  ExportSparseMatrix<Mat<3,3,double>>(m);
-  ExportSparseMatrix<Mat<3,3,Complex>>(m);
-#endif
+  Iterate<MAX_SYS_DIM> ([&] (auto NM)
+  {
+    constexpr int N = NM+1;
+    if constexpr (N >= 2 && N <= 3)
+      {
+        ExportSparseMatrix<Mat<N,N,double>>(m);
+        ExportSparseMatrix<Mat<N,N,Complex>>(m);
+      }
+  });
 
 
   py::class_<SparseMatrixDynamic<double>, shared_ptr<SparseMatrixDynamic<double>>, BaseMatrix>
@@ -1821,22 +1822,15 @@ inverse : string
                   {
                     if (auto ptr = dynamic_cast<const SparseMatrix<double>*> (&mat); ptr)
                       return make_shared<SparseMatrixDynamic<double>> (*ptr);
-                    if (auto ptr = dynamic_cast<const SparseMatrix<Mat<2,2>>*> (&mat); ptr)
-                      return make_shared<SparseMatrixDynamic<double>> (*ptr);
-                    if (auto ptr = dynamic_cast<const SparseMatrix<Mat<3,3>>*> (&mat); ptr)
-                      return make_shared<SparseMatrixDynamic<double>> (*ptr);
-#if MAX_SYS_DIM >= 4
-                    if (auto ptr = dynamic_cast<const SparseMatrix<Mat<4,4>>*> (&mat); ptr)
-                      return make_shared<SparseMatrixDynamic<double>> (*ptr);
-#endif
-#if MAX_SYS_DIM >= 5                    
-                    if (auto ptr = dynamic_cast<const SparseMatrix<Mat<5,5>>*> (&mat); ptr)
-                      return make_shared<SparseMatrixDynamic<double>> (*ptr);
-#endif
-#if MAX_SYS_DIM >= 6                    
-                    if (auto ptr = dynamic_cast<const SparseMatrix<Mat<6,6>>*> (&mat); ptr)
-                      return make_shared<SparseMatrixDynamic<double>> (*ptr);
-#endif                    
+                    shared_ptr<SparseMatrixDynamic<double>> res;
+                    Iterate<MAX_SYS_DIM> ([&] (auto NM)
+                    {
+                      constexpr int N = NM+1;
+                      if constexpr (N >= 2)
+                        if (auto ptr = dynamic_cast<const SparseMatrix<Mat<N,N>>*> (&mat); ptr)
+                          res = make_shared<SparseMatrixDynamic<double>> (*ptr);
+                    });
+                    if (res) return res;
                     return nullptr;
                   })
          )

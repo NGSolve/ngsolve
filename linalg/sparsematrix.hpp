@@ -878,30 +878,7 @@ shared_ptr<BaseMatrix> CreateSparseMatrixInverse(shared_ptr<const BaseSparseMatr
   SPARSEMATRIX_EXTERN template class SparseMatrixSymmetric<Mat<N, N, Complex>>;
 
 
-#if MAX_SYS_DIM >= 1
-  INST_SPMS(1);
-#endif
-#if MAX_SYS_DIM >= 2
-  INST_SPMS(2);
-#endif
-#if MAX_SYS_DIM >= 3
-  INST_SPMS(3);
-#endif
-#if MAX_SYS_DIM >= 4
-  INST_SPMS(4);
-#endif
-#if MAX_SYS_DIM >= 5
-  INST_SPMS(5);
-#endif
-#if MAX_SYS_DIM >= 6
-  INST_SPMS(6);
-#endif
-#if MAX_SYS_DIM >= 7
-  INST_SPMS(7);
-#endif
-#if MAX_SYS_DIM >= 8
-  INST_SPMS(8);
-#endif
+  NGS_FOR_SYS_DIMS(INST_SPMS)
 
 #undef INST_SPMS
 #undef SPARSEMATRIX_EXTERN

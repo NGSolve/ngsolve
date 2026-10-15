@@ -365,38 +365,11 @@ namespace ngla
   template class MasterInverse<double>;
   template class MasterInverse<Complex>;
 
-#if MAX_SYS_DIM >= 1
-  template class MasterInverse<Mat<1,1,double> >;
-  template class MasterInverse<Mat<1,1,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 2
-  template class MasterInverse<Mat<2,2,double> >;
-  template class MasterInverse<Mat<2,2,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 3
-  template class MasterInverse<Mat<3,3,double> >;
-  template class MasterInverse<Mat<3,3,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 4
-  template class MasterInverse<Mat<4,4,double> >;
-  template class MasterInverse<Mat<4,4,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 5
-  template class MasterInverse<Mat<5,5,double> >;
-  template class MasterInverse<Mat<5,5,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 6
-  template class MasterInverse<Mat<6,6,double> >;
-  template class MasterInverse<Mat<6,6,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 7
-  template class MasterInverse<Mat<7,7,double> >;
-  template class MasterInverse<Mat<7,7,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 8
-  template class MasterInverse<Mat<8,8,double> >;
-  template class MasterInverse<Mat<8,8,Complex> >;
-#endif
+#define INST(N) \
+  template class MasterInverse<Mat<N,N,double> >; \
+  template class MasterInverse<Mat<N,N,Complex> >;
+  NGS_FOR_SYS_DIMS(INST)
+#undef INST
 
 auto _dummy_init = [] () {
   BaseMatrix::RegisterInverseCreator( "masterinverse", [](

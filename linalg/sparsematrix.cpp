@@ -2286,61 +2286,14 @@ shared_ptr<BaseMatrix> CreateSparseMatrixInverse(shared_ptr<const BaseSparseMatr
   template class SparseMatrixSymmetric<Mat<1, 1, Complex>>;
 
   
-#if MAX_SYS_DIM >= 2
-  INST_SPMS(2);
-#endif
-#if MAX_SYS_DIM >= 3
-  INST_SPMS(3);
-#endif
-#if MAX_SYS_DIM >= 4
-  INST_SPMS(4);
-#endif
-#if MAX_SYS_DIM >= 5
-  INST_SPMS(5);
-#endif
-#if MAX_SYS_DIM >= 6
-  INST_SPMS(6);
-#endif
-#if MAX_SYS_DIM >= 7
-  INST_SPMS(7);
-#endif
-#if MAX_SYS_DIM >= 8
-  INST_SPMS(8);
-#endif
+  NGS_FOR_SYS_DIMS_FROM_2(INST_SPMS)
 
   /**
-#if MAX_SYS_DIM >= 1
-  template class SparseMatrix<Mat<1,1,double> >;
-  template class SparseMatrix<Mat<1,1,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 2
-  template class SparseMatrix<Mat<2,2,double> >;
-  template class SparseMatrix<Mat<2,2,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 3
-  template class SparseMatrix<Mat<3,3,double> >;
-  template class SparseMatrix<Mat<3,3,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 4
-  template class SparseMatrix<Mat<4,4,double> >;
-  template class SparseMatrix<Mat<4,4,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 5
-  template class SparseMatrix<Mat<5,5,double> >;
-  template class SparseMatrix<Mat<5,5,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 6
-  template class SparseMatrix<Mat<6,6,double> >;
-  template class SparseMatrix<Mat<6,6,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 7
-  template class SparseMatrix<Mat<7,7,double> >;
-  template class SparseMatrix<Mat<7,7,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 8
-  template class SparseMatrix<Mat<8,8,double> >;
-  template class SparseMatrix<Mat<8,8,Complex> >;
-#endif
+#define INST(N) \
+  template class SparseMatrix<Mat<N,N,double> >; \
+  template class SparseMatrix<Mat<N,N,Complex> >;
+  NGS_FOR_SYS_DIMS(INST)
+#undef INST
   **/
 
   /*
@@ -2348,38 +2301,11 @@ shared_ptr<BaseMatrix> CreateSparseMatrixInverse(shared_ptr<const BaseSparseMatr
   template class SparseMatrixSymmetricTM<Complex>;
 
 
-#if MAX_SYS_DIM >= 1
-  template class SparseMatrixSymmetricTM<Mat<1,1,double> >;
-  template class SparseMatrixSymmetricTM<Mat<1,1,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 2
-  template class SparseMatrixSymmetricTM<Mat<2,2,double> >;
-  template class SparseMatrixSymmetricTM<Mat<2,2,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 3
-  template class SparseMatrixSymmetricTM<Mat<3,3,double> >;
-  template class SparseMatrixSymmetricTM<Mat<3,3,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 4
-  template class SparseMatrixSymmetricTM<Mat<4,4,double> >;
-  template class SparseMatrixSymmetricTM<Mat<4,4,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 5
-  template class SparseMatrixSymmetricTM<Mat<5,5,double> >;
-  template class SparseMatrixSymmetricTM<Mat<5,5,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 6
-  template class SparseMatrixSymmetricTM<Mat<6,6,double> >;
-  template class SparseMatrixSymmetricTM<Mat<6,6,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 7
-  template class SparseMatrixSymmetricTM<Mat<7,7,double> >;
-  template class SparseMatrixSymmetricTM<Mat<7,7,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 8
-  template class SparseMatrixSymmetricTM<Mat<8,8,double> >;
-  template class SparseMatrixSymmetricTM<Mat<8,8,Complex> >;
-#endif
+#define INST(N) \
+  template class SparseMatrixSymmetricTM<Mat<N,N,double> >; \
+  template class SparseMatrixSymmetricTM<Mat<N,N,Complex> >;
+  NGS_FOR_SYS_DIMS(INST)
+#undef INST
   */
 
 
@@ -2390,77 +2316,22 @@ shared_ptr<BaseMatrix> CreateSparseMatrixInverse(shared_ptr<const BaseSparseMatr
 
 
   /**
-#if MAX_SYS_DIM >= 1
-  template class SparseMatrix<Mat<1,1,double> >;
-  template class SparseMatrix<Mat<1,1,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 2
-  template class SparseMatrix<Mat<2,2,double> >;
-  template class SparseMatrix<Mat<2,2,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 3
-  template class SparseMatrix<Mat<3,3,double> >;
-  template class SparseMatrix<Mat<3,3,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 4
-  template class SparseMatrix<Mat<4,4,double> >;
-  template class SparseMatrix<Mat<4,4,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 5
-  template class SparseMatrix<Mat<5,5,double> >;
-  template class SparseMatrix<Mat<5,5,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 6
-  template class SparseMatrix<Mat<6,6,double> >;
-  template class SparseMatrix<Mat<6,6,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 7
-  template class SparseMatrix<Mat<7,7,double> >;
-  template class SparseMatrix<Mat<7,7,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 8
-  template class SparseMatrix<Mat<8,8,double> >;
-  template class SparseMatrix<Mat<8,8,Complex> >;
-#endif
+#define INST(N) \
+  template class SparseMatrix<Mat<N,N,double> >; \
+  template class SparseMatrix<Mat<N,N,Complex> >;
+  NGS_FOR_SYS_DIMS(INST)
+#undef INST
 
 
   template class SparseMatrixSymmetric<double>;
   template class SparseMatrixSymmetric<Complex>;
 
 
-#if MAX_SYS_DIM >= 1
-  template class SparseMatrixSymmetric<Mat<1,1,double> >;
-  template class SparseMatrixSymmetric<Mat<1,1,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 2
-  template class SparseMatrixSymmetric<Mat<2,2,double> >;
-  template class SparseMatrixSymmetric<Mat<2,2,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 3
-  template class SparseMatrixSymmetric<Mat<3,3,double> >;
-  template class SparseMatrixSymmetric<Mat<3,3,Complex> >;
-#endif
-
-#if MAX_SYS_DIM >= 4
-  template class SparseMatrixSymmetric<Mat<4,4,double> >;
-  template class SparseMatrixSymmetric<Mat<4,4,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 5
-  template class SparseMatrixSymmetric<Mat<5,5,double> >;
-  template class SparseMatrixSymmetric<Mat<5,5,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 6
-  template class SparseMatrixSymmetric<Mat<6,6,double> >;
-  template class SparseMatrixSymmetric<Mat<6,6,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 7
-  template class SparseMatrixSymmetric<Mat<7,7,double> >;
-  template class SparseMatrixSymmetric<Mat<7,7,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 8
-  template class SparseMatrixSymmetric<Mat<8,8,double> >;
-  template class SparseMatrixSymmetric<Mat<8,8,Complex> >;
-#endif
+#define INST(N) \
+  template class SparseMatrixSymmetric<Mat<N,N,double> >; \
+  template class SparseMatrixSymmetric<Mat<N,N,Complex> >;
+  NGS_FOR_SYS_DIMS(INST)
+#undef INST
   **/
 
   

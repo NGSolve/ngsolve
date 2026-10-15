@@ -983,38 +983,11 @@ namespace ngla
   template class MumpsInverse<float>;
   template class MumpsInverse<double>;
   template class MumpsInverse<Complex>;
-#if MAX_SYS_DIM >= 1
-  template class MumpsInverse<Mat<1,1,double> >;
-  template class MumpsInverse<Mat<1,1,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 2
-  template class MumpsInverse<Mat<2,2,double> >;
-  template class MumpsInverse<Mat<2,2,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 3
-  template class MumpsInverse<Mat<3,3,double> >;
-  template class MumpsInverse<Mat<3,3,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 4
-  template class MumpsInverse<Mat<4,4,double> >;
-  template class MumpsInverse<Mat<4,4,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 5
-  template class MumpsInverse<Mat<5,5,double> >;
-  template class MumpsInverse<Mat<5,5,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 6
-  template class MumpsInverse<Mat<6,6,double> >;
-  template class MumpsInverse<Mat<6,6,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 7
-  template class MumpsInverse<Mat<7,7,double> >;
-  template class MumpsInverse<Mat<7,7,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 8
-  template class MumpsInverse<Mat<8,8,double> >;
-  template class MumpsInverse<Mat<8,8,Complex> >;
-#endif
+#define INST(N) \
+  template class MumpsInverse<Mat<N,N,double> >; \
+  template class MumpsInverse<Mat<N,N,Complex> >;
+  NGS_FOR_SYS_DIMS(INST)
+#undef INST
 
 
 
@@ -1027,38 +1000,11 @@ namespace ngla
   template class ParallelMumpsInverse<double>;
   template class ParallelMumpsInverse<Complex>;
   template class ParallelMumpsInverse<double,Complex>;
-#if MAX_SYS_DIM >= 1
-  template class ParallelMumpsInverse<Mat<1,1,double> >;
-  template class ParallelMumpsInverse<Mat<1,1,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 2
-  template class ParallelMumpsInverse<Mat<2,2,double> >;
-  template class ParallelMumpsInverse<Mat<2,2,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 3
-  template class ParallelMumpsInverse<Mat<3,3,double> >;
-  template class ParallelMumpsInverse<Mat<3,3,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 4
-  template class ParallelMumpsInverse<Mat<4,4,double> >;
-  template class ParallelMumpsInverse<Mat<4,4,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 5
-  template class ParallelMumpsInverse<Mat<5,5,double> >;
-  template class ParallelMumpsInverse<Mat<5,5,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 6
-  template class ParallelMumpsInverse<Mat<6,6,double> >;
-  template class ParallelMumpsInverse<Mat<6,6,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 7
-  template class ParallelMumpsInverse<Mat<7,7,double> >;
-  template class ParallelMumpsInverse<Mat<7,7,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 8
-  template class ParallelMumpsInverse<Mat<8,8,double> >;
-  template class ParallelMumpsInverse<Mat<8,8,Complex> >;
-#endif
+#define INST(N) \
+  template class ParallelMumpsInverse<Mat<N,N,double> >; \
+  template class ParallelMumpsInverse<Mat<N,N,Complex> >;
+  NGS_FOR_SYS_DIMS(INST)
+#undef INST
 
 
 }

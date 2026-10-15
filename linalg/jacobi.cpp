@@ -363,76 +363,22 @@ namespace ngla
   template class JacobiPrecond<double>;
   template class JacobiPrecond<float>;  
   template class JacobiPrecond<Complex>;
-#if MAX_SYS_DIM >= 1
-  template class JacobiPrecond<Mat<1,1,double> >;
-  template class JacobiPrecond<Mat<1,1,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 2
-  template class JacobiPrecond<Mat<2,2,double> >;
-  template class JacobiPrecond<Mat<2,2,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 3
-  template class JacobiPrecond<Mat<3,3,double> >;
-  template class JacobiPrecond<Mat<3,3,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 4
-  template class JacobiPrecond<Mat<4,4,double> >;
-  template class JacobiPrecond<Mat<4,4,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 5
-  template class JacobiPrecond<Mat<5,5,double> >;
-  template class JacobiPrecond<Mat<5,5,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 6
-  template class JacobiPrecond<Mat<6,6,double> >;
-  template class JacobiPrecond<Mat<6,6,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 7
-  template class JacobiPrecond<Mat<7,7,double> >;
-  template class JacobiPrecond<Mat<7,7,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 8
-  template class JacobiPrecond<Mat<8,8,double> >;
-  template class JacobiPrecond<Mat<8,8,Complex> >;
-#endif
+#define INST(N) \
+  template class JacobiPrecond<Mat<N,N,double> >; \
+  template class JacobiPrecond<Mat<N,N,Complex> >;
+  NGS_FOR_SYS_DIMS(INST)
+#undef INST
 
 
  
   template class JacobiPrecondSymmetric<double>;
   template class JacobiPrecondSymmetric<float>;
   template class JacobiPrecondSymmetric<Complex>;
-#if MAX_SYS_DIM >= 1
-  template class JacobiPrecondSymmetric<Mat<1,1,double> >;
-  template class JacobiPrecondSymmetric<Mat<1,1,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 2
-  template class JacobiPrecondSymmetric<Mat<2,2,double> >;
-  template class JacobiPrecondSymmetric<Mat<2,2,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 3
-  template class JacobiPrecondSymmetric<Mat<3,3,double> >;
-  template class JacobiPrecondSymmetric<Mat<3,3,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 4
-  template class JacobiPrecondSymmetric<Mat<4,4,double> >;
-  template class JacobiPrecondSymmetric<Mat<4,4,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 5
-  template class JacobiPrecondSymmetric<Mat<5,5,double> >;
-  template class JacobiPrecondSymmetric<Mat<5,5,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 6
-  template class JacobiPrecondSymmetric<Mat<6,6,double> >;
-  template class JacobiPrecondSymmetric<Mat<6,6,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 7
-  template class JacobiPrecondSymmetric<Mat<7,7,double> >;
-  template class JacobiPrecondSymmetric<Mat<7,7,Complex> >;
-#endif
-#if MAX_SYS_DIM >= 8
-  template class JacobiPrecondSymmetric<Mat<8,8,double> >;
-  template class JacobiPrecondSymmetric<Mat<8,8,Complex> >;
-#endif
+#define INST(N) \
+  template class JacobiPrecondSymmetric<Mat<N,N,double> >; \
+  template class JacobiPrecondSymmetric<Mat<N,N,Complex> >;
+  NGS_FOR_SYS_DIMS(INST)
+#undef INST
 
 
 
