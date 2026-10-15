@@ -780,7 +780,7 @@ namespace ngfem
           cflist[0] = TransposeCF(dir->Operator("hesseboundary"))*n;
           auto Hn = MakeVectorialCoefficientFunction(std::move(cflist))->Reshape(dim, dim);
           
-          return -Hn - TransposeCF(dX)*WG + WG*(2*SymmetricCF(Pn*dX)-dX);
+          return -Hn - TransposeCF(dX)*WG - WG*dX + Pn*dX*WG + WG*TransposeCF(dX)*Pn;
         }
       return CoefficientFunctionNoDerivative::Diff(var, dir);
     }
