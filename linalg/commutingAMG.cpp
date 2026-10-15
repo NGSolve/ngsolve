@@ -1043,7 +1043,7 @@ namespace ngla
 	nne[i] = 1;
 
     prol = new SparseMatrix<double> (nne);
-    // prol = dynamic_cast< SparseMatrixTM<double>* >(sysmat.CreateMatrix(nne));
+    // prol = dynamic_cast< SparseMatrix<double>* >(sysmat.CreateMatrix(nne));
     for (int i = 0; i < ne; i++)
       if (ecoarse[i] != -1)
 	{
@@ -1059,7 +1059,7 @@ namespace ngla
 	nne[i] = 2;
 
     grad = new SparseMatrix<double> (nne);
-    // grad = dynamic_cast< SparseMatrixTM<double>* >(sysmat.CreateMatrix(nne));
+    // grad = dynamic_cast< SparseMatrix<double>* >(sysmat.CreateMatrix(nne));
     for (int i = 0; i < ne; i++)
       if (e2v[i][0] != -1)
       {
@@ -1105,7 +1105,7 @@ namespace ngla
 
     h1mat = mat.Restrict (*grad);
     //    dynamic_cast<SparseMatrixSymmetric<Mat<1,1> >&> (*h1mat) (0,0) += 1;
-    dynamic_cast<SparseMatrixTM<double>&> (*h1mat)(0,0) += 1;
+    dynamic_cast<SparseMatrix<double>&> (*h1mat)(0,0) += 1;
 
     if (recAMG)
       {

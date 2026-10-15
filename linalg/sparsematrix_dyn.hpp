@@ -25,7 +25,7 @@ namespace ngla
     
   public:
     template <typename TM>
-      SparseMatrixDynamic (const SparseMatrixTM<TM> & mat)
+      SparseMatrixDynamic (const SparseMatrix<TM> & mat)
       : BaseSparseMatrix (mat) // , false)
     {
       width = mat.Width();
@@ -70,7 +70,7 @@ namespace ngla
     TSCAL nul;
     
   public:
-    SparseMatrixVariableBlocks (const SparseMatrixTM<TSCAL> & mat);
+    SparseMatrixVariableBlocks (const SparseMatrix<TSCAL> & mat);
 
     int VHeight() const override { return height; }
     int VWidth() const override { return width; }

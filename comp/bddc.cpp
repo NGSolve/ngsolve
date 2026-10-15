@@ -21,7 +21,7 @@ namespace ngcomp
     shared_ptr<BaseMatrix> pwbmat;
     shared_ptr<BaseSparseMatrix> sparse_pwbmat;
 
-    shared_ptr<SparseMatrix<SCAL,TV,TV>> sparse_innersolve, 
+    shared_ptr<SparseMatrix<SCAL>> sparse_innersolve, 
       sparse_harmonicext, sparse_harmonicexttrans;
 
 
@@ -196,7 +196,7 @@ namespace ngcomp
       if (!bfa->SymmetricStorage()) 
 	{
 	  harmonicexttrans = sparse_harmonicexttrans =
-	    make_shared<SparseMatrix<SCAL,TV,TV>>(ndof, ndof, el2wbdofs, el2ifdofs, false);
+	    make_shared<SparseMatrix<SCAL>>(ndof, ndof, el2wbdofs, el2ifdofs, false);
 	  harmonicexttrans -> AsVector() = 0.0;
 	}
       else
@@ -204,21 +204,27 @@ namespace ngcomp
 
 
       innersolve = sparse_innersolve = bfa->SymmetricStorage() 
-	? make_shared<SparseMatrixSymmetric<SCAL,TV>>(ndof, el2ifdofs)
-	: make_shared<SparseMatrix<SCAL,TV,TV>>(ndof, ndof, el2ifdofs, el2ifdofs, false); // bfa.IsSymmetric());
+	? make_shared<SparseMatrixSymmetric<SCAL>>(ndof, el2ifdofs)
+	: make_shared<SparseMatrix<SCAL>>(ndof, ndof, el2ifdofs, el2ifdofs, false); // bfa.IsSymmetric());
       innersolve->AsVector() = 0.0;
 
       harmonicext = sparse_harmonicext =
-	make_shared<SparseMatrix<SCAL,TV,TV>>(ndof, ndof, el2ifdofs, el2wbdofs, false);
+	make_shared<SparseMatrix<SCAL>>(ndof, ndof, el2ifdofs, el2wbdofs, false);
       harmonicext->AsVector() = 0.0;
       if (bfa->SymmetricStorage() && !hypre)
-        pwbmat = make_shared<SparseMatrixSymmetric<SCAL,TV>>(ndof, el2wbdofs);
+        pwbmat = make_shared<SparseMatrixSymmetric<SCAL>>(ndof, el2wbdofs);
       else
-        pwbmat = make_shared<SparseMatrix<SCAL,TV,TV>>(ndof, ndof, el2wbdofs, el2wbdofs, false); // bfa.IsSymmetric() && !hypre);
+        pwbmat = make_shared<SparseMatrix<SCAL>>(ndof, ndof, el2wbdofs, el2wbdofs, false); // bfa.IsSymmetric() && !hypre);
       pwbmat -> AsVector() = 0.0;
       pwbmat -> SetInverseType (inversetype);
       sparse_pwbmat = dynamic_pointer_cast<BaseSparseMatrix>(pwbmat);
       sparse_pwbmat-> SetSPD ( bfa->IsSPD() );
+
+      // real matrices for a complex space work on complex vectors
+      if constexpr (ngbla::IsComplex<TV>() && !ngbla::IsComplex<SCAL>())
+        for (BaseSparseMatrix * m : { (BaseSparseMatrix*)sparse_harmonicexttrans.get(), (BaseSparseMatrix*)sparse_innersolve.get(),
+                                      (BaseSparseMatrix*)sparse_harmonicext.get(), sparse_pwbmat.get() })
+          if (m) m->SetVectorScalar (Complex(0));
       
       weight.SetSize (fes->GetNDof());
       weight = 0;
@@ -337,7 +343,7 @@ namespace ngcomp
       
       sparse_innersolve -> AddElementMatrix(intdofs,intdofs,d);
 
-      dynamic_pointer_cast<SparseMatrix<SCAL,TV,TV>>(pwbmat)
+      dynamic_pointer_cast<SparseMatrix<SCAL>>(pwbmat)
         ->AddElementMatrix(wbdofs,wbdofs,a);
       if (coarse)
         dynamic_pointer_cast<Preconditioner>(inv)->AddElementMatrix(wbdofs,a,id,lh);

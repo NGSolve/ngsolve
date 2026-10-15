@@ -21,15 +21,18 @@ using ngbla::integer;
 
 template<typename T> double GetReal( const T& x ) { return x.real(); }
 template<> double GetReal( const double& x ) { return x; }
+template<> double GetReal( const float& x ) { return x; }
 
 template<typename T> double GetImag( const T& x ) { return x.imag(); }
 template<> double GetImag( const double& x ) { throw("cannot access imaginary part of double"); }
+template<> double GetImag( const float& x ) { throw("cannot access imaginary part of float"); }
 
 template<typename T> void SetReal( T& x, double val ) { x.real(val); }
 template<> void SetReal( double& x, double val ) { x=val; }
 
 template<typename T> void SetImag( T& x, double val ) { x.imag(val); }
 template<> void SetImag( double& x, double val ) { }
+template<> void SetImag( float& x, double val ) { }
 
 namespace ngla
 {
@@ -62,7 +65,7 @@ namespace ngla
 
   template<class SCAL>
   S_UmfpackInverse<SCAL> ::
-  S_UmfpackInverse (// shared_ptr<const SparseMatrixTM<TM>> a,
+  S_UmfpackInverse (// shared_ptr<const SparseMatrix<TM>> a,
                     shared_ptr<const S_BaseSparseMatrix<TSCAL>> a,
 		    shared_ptr<BitArray> ainner,
 		    shared_ptr<const Array<int>> acluster,
@@ -175,7 +178,7 @@ namespace ngla
 
   template<class SCAL> template <typename TSUBSET>
   void S_UmfpackInverse<SCAL> ::
-  // GetUmfpackMatrix (const SparseMatrixTM<TM> & a, TSUBSET subset)
+  // GetUmfpackMatrix (const SparseMatrix<TM> & a, TSUBSET subset)
   GetUmfpackMatrix (const S_BaseSparseMatrix<TSCAL> & a, TSUBSET subset)
   {
     Array<int> icompress (a.Height());
@@ -327,10 +330,13 @@ namespace ngla
 
 
 
-  template<class SCAL, class SCAL_VEC>
-  void S_UmfpackInverse_SVec<SCAL,SCAL_VEC> ::
-  Mult (const BaseVector & x, BaseVector & y) const
+  template<class SCAL> template <typename SCAL_VEC>
+  void S_UmfpackInverse_SVec<SCAL> ::
+  T_Mult (const BaseVector & x, BaseVector & y, bool trans) const
   {
+    constexpr bool is_vector_complex = ngbla::IsComplex<SCAL_VEC>();
+    // the matrix is stored transposed
+    int sys = trans ? UMFPACK_A : UMFPACK_Aat;
     static Timer timer(string("Umfpack Solve, mat = ") + typeid(SCAL).name() + ", vec = " + typeid(SCAL_VEC).name());
     RegionTimer reg (timer);
 
@@ -384,7 +390,7 @@ namespace ngla
         for (int i : Range(compress.Size()) )
            hx(i) = mx(compress[i]);
 
-        int status = umfpack_zl_solve ( UMFPACK_Aat, rowstart.Data(), indices.Data(), data, nullptr, data_y, nullptr, data_x, nullptr, this->Numeric, nullptr, nullptr );
+        int status = umfpack_zl_solve ( sys, rowstart.Data(), indices.Data(), data, nullptr, data_y, nullptr, data_x, nullptr, this->Numeric, nullptr, nullptr );
         umfpack_zl_report_status( nullptr, status );
         if( status!= UMFPACK_OK ) throw Exception("UmfpackInverse: Solve failed.");
 
@@ -395,9 +401,9 @@ namespace ngla
       }
     else
       {
-        // real matrix
-        FlatVector<double> mx(height, (double*)fx.Data());
-        FlatVector<double> my(height, (double*)fy.Data());
+        // real matrix, real or complex vectors
+        FlatVector<SCAL_VEC> mx(height, (SCAL_VEC*)fx.Data());
+        FlatVector<SCAL_VEC> my(height, (SCAL_VEC*)fy.Data());
         Vector<double> hx(compressed_height);
         Vector<double> hy(compressed_height);
 
@@ -405,7 +411,7 @@ namespace ngla
           for (int j = 0; j < entrysize; j++)
             hx(i*entrysize+j) = GetReal(mx(compress[i]*entrysize+j));
 
-        int status = umfpack_dl_solve ( UMFPACK_Aat, rowstart.Data(), indices.Data(), data, hy.Data(), hx.Data(), this->Numeric, nullptr, nullptr );
+        int status = umfpack_dl_solve ( sys, rowstart.Data(), indices.Data(), data, hy.Data(), hx.Data(), this->Numeric, nullptr, nullptr );
         umfpack_dl_report_status( nullptr, status );
         if( status!= UMFPACK_OK ) throw Exception("UmfpackInverse: Solve failed.");
 
@@ -421,13 +427,13 @@ namespace ngla
               for (int j = 0; j < entrysize; j++)
                 hx(i*entrysize+j) = GetImag(mx(compress[i]*entrysize+j));
 
-            int status = umfpack_dl_solve ( UMFPACK_Aat, rowstart.Data(), indices.Data(), data, hy.Data(), hx.Data(), this->Numeric, nullptr, nullptr );
+            int status = umfpack_dl_solve ( sys, rowstart.Data(), indices.Data(), data, hy.Data(), hx.Data(), this->Numeric, nullptr, nullptr );
             umfpack_dl_report_status( nullptr, status );
             if( status!= UMFPACK_OK ) throw Exception("UmfpackInverse: Solve failed.");
 
             for (int i : Range(compress.Size()) )
               for (int j = 0; j < entrysize; j++)
-                SetImag(my(i*entrysize+j), hy(compress[i]*entrysize+j));
+                SetImag(my(compress[i]*entrysize+j), hy(i*entrysize+j));
           }
       }
   }
@@ -435,116 +441,39 @@ namespace ngla
 
 
 
-  // template<class TM, class TV_ROW, class TV_COL>
-  // void UmfpackInverse<TM,TV_ROW,TV_COL> ::
-  template<class SCAL, class SCAL_VEC>
-  void S_UmfpackInverse_SVec<SCAL,SCAL_VEC> ::
+  template<class SCAL>
+  void S_UmfpackInverse_SVec<SCAL> ::
+  Mult (const BaseVector & x, BaseVector & y) const
+  {
+    CheckSameScalar ({ &x, &y }, "UmfpackInverse::Mult");
+    std::visit ([&] (auto sv)
+    {
+      typedef decltype(sv) SCAL_VEC;
+      if constexpr (is_same_v<SCAL_VEC,SCAL> || (is_same_v<SCAL,double> && is_same_v<SCAL_VEC,Complex>))
+        T_Mult<SCAL_VEC> (x, y, false);
+      else
+        ThrowIllegalScalars ("UmfpackInverse::Mult", SCAL(0), x, y);
+    }, x.GetScalarType());
+  }
+
+  template<class SCAL>
+  void S_UmfpackInverse_SVec<SCAL> ::
   MultTrans (const BaseVector & x, BaseVector & y) const
   {
-    static Timer timer(string("Umfpack Solve, mat = ") + typeid(SCAL).name() + ", vec = " + typeid(SCAL_VEC).name());
-    RegionTimer reg (timer);
-
-    /*
-    FlatVector<TVX> fx = x.FV<TVX> ();
-    FlatVector<TVX> fy = y.FV<TVX> ();
-
-    int nrhs = fx.Size() / (height/entrysize);
-
-    if(nrhs>1) throw Exception("UmfpackInverse: Multiple right-hand sides not supported.");
-
-    // bool is_vector_complex = mat_traits<TVX>::IS_COMPLEX;
-    // bool is_vector_complex = ngbla::IsComplex<TVX>();
-    if(is_complex && !is_vector_complex) throw Exception("UmfpackInverse: Cannot solve with complex matrix and real vector.");
-
-    if (fx.Size() != fy.Size())
-      {
-	cout << "UmfpackInverse::Mult .. sizes don't match" << endl;
-	cout << "type<TVX> = " << typeid(TVX).name() << endl;
-	cout << "type<TM> = " << typeid(TM).name() << endl;
-	cout << "fx.size = " << fx.Size() << endl;
-	cout << "fy.size = " << fy.Size() << endl;
-	cout << "size(x) = " << x.Size() << endl;
-	cout << "size(y) = " << y.Size() << endl;
-	cout << "height = " << height/entrysize << endl;
-      }
-    */
-
-    double *data = reinterpret_cast<double *>(this->values.Data());
-
-    auto fx = x.FV<SCAL_VEC>();
-    auto fy = y.FV<SCAL_VEC>();
-
-    if (is_complex)
-      {
-        // complex matrix and vectors
-        FlatVector<TSCAL> mx(height, (TSCAL*)fx.Data());
-        FlatVector<TSCAL> my(height, (TSCAL*)fy.Data());
-
-        Vector<TSCAL> hx(compressed_height);
-        Vector<TSCAL> hy(compressed_height);
-
-        double *data_x = reinterpret_cast<double *>(&hx[0]);
-        double *data_y = reinterpret_cast<double *>(&hy[0]);
-
-        for (int i : Range(compress.Size()) )
-           hx(i) = mx(compress[i]);
-
-        int status = umfpack_zl_solve ( UMFPACK_A, &rowstart[0], &indices[0], data, nullptr, data_y, nullptr, data_x, nullptr, this->Numeric, nullptr, nullptr );
-        umfpack_zl_report_status( nullptr, status );
-        if( status!= UMFPACK_OK ) throw Exception("UmfpackInverse: Solve failed.");
-
-        my = 0;
-        for (int i : Range(compress.Size()) )
-           my(compress[i]) = hy(i);
-
-      }
-    else
-      {
-        // real matrix
-        FlatVector<double> mx(height, (double*)fx.Data());
-        FlatVector<double> my(height, (double*)fy.Data());
-        Vector<double> hx(compressed_height);
-        Vector<double> hy(compressed_height);
-
-        for (int i : Range(compress.Size()) )
-          for (int j = 0; j < entrysize; j++)
-            hx(i*entrysize+j) = GetReal(mx(compress[i]*entrysize+j));
-
-        int status = umfpack_dl_solve ( UMFPACK_A, &rowstart[0], &indices[0], data, &hy(0), &hx(0), this->Numeric, nullptr, nullptr );
-        umfpack_dl_report_status( nullptr, status );
-        if( status!= UMFPACK_OK ) throw Exception("UmfpackInverse: Solve failed.");
-
-        my = 0;
-        for (int i : Range(compress.Size()) )
-          for (int j = 0; j < entrysize; j++)
-            my(compress[i]*entrysize+j) = hy(i*entrysize+j);
-
-        if(is_vector_complex)
-          {
-            // complex vectors
-            for (int i : Range(compress.Size()) )
-              for (int j = 0; j < entrysize; j++)
-                hx(i*entrysize+j) = GetImag(mx(compress[i]*entrysize+j));
-
-            int status = umfpack_dl_solve ( UMFPACK_A, &rowstart[0], &indices[0], data, &hy(0), &hx(0), this->Numeric, nullptr, nullptr );
-            umfpack_dl_report_status( nullptr, status );
-            if( status!= UMFPACK_OK ) throw Exception("UmfpackInverse: Solve failed.");
-
-            for (int i : Range(compress.Size()) )
-              for (int j = 0; j < entrysize; j++)
-                SetImag(my(i*entrysize+j), hy(compress[i]*entrysize+j));
-          }
-      }
+    CheckSameScalar ({ &x, &y }, "UmfpackInverse::MultTrans");
+    std::visit ([&] (auto sv)
+    {
+      typedef decltype(sv) SCAL_VEC;
+      if constexpr (is_same_v<SCAL_VEC,SCAL> || (is_same_v<SCAL,double> && is_same_v<SCAL_VEC,Complex>))
+        T_Mult<SCAL_VEC> (x, y, true);
+      else
+        ThrowIllegalScalars ("UmfpackInverse::MultTrans", SCAL(0), x, y);
+    }, x.GetScalarType());
   }
 
 
 
 
-
-
-
-
-  
   template<class SCAL>
   ostream & S_UmfpackInverse<SCAL> :: Print (ostream & ost) const
   {
@@ -646,17 +575,15 @@ namespace ngla
   template class S_UmfpackInverse<Complex>;
 
 
-  template class S_UmfpackInverse_SVec<double,double>;
-  template class S_UmfpackInverse_SVec<float,float>;
-  template class S_UmfpackInverse_SVec<double,Complex>;
-  template class S_UmfpackInverse_SVec<Complex,Complex>;
+  template class S_UmfpackInverse_SVec<double>;
+  template class S_UmfpackInverse_SVec<float>;
+  template class S_UmfpackInverse_SVec<Complex>;
 
 
 #ifdef NONE
   
   template class UmfpackInverse<double>;
   template class UmfpackInverse<Complex>;
-  template class UmfpackInverse<double,Complex,Complex>;
 #if MAX_SYS_DIM >= 1
   // template class UmfpackInverseTM<Mat<1,1,double> >;
   // template class UmfpackInverseTM<Mat<1,1,Complex> >;

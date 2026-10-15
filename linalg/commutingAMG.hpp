@@ -16,7 +16,7 @@ namespace ngla
     const BaseSparseMatrix * pmat;
     CommutingAMG * recAMG;
 
-    SparseMatrixTM<double> * prol;
+    SparseMatrix<double> * prol;
   
     shared_ptr<BaseSparseMatrix> coarsemat;
     shared_ptr<BaseJacobiPrecond> jacobi;
@@ -69,7 +69,7 @@ namespace ngla
 
   class AMG_HCurl : public CommutingAMG
   {
-    SparseMatrixTM<double> * grad;
+    SparseMatrix<double> * grad;
 
     shared_ptr<BaseSparseMatrix> h1mat;
     AMG_H1 * h1AMG;

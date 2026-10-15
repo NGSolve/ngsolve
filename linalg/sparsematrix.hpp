@@ -14,42 +14,34 @@
 namespace ngla
 {
 
+  // the vector types are not template arguments, their scalar type is dispatched at run time
   template<class TM>
-  class SparseMatrixTM ;
-
-  template<class TM, 
-	   class TV_ROW = typename mat_traits<TM>::TV_ROW, 
-	   class TV_COL = typename mat_traits<TM>::TV_COL>
   class SparseMatrix;
 
+  // the former storage base class is SparseMatrix itself
+  template<class TM>
+  using SparseMatrixTM = SparseMatrix<TM>;
 
-  template<class TM, 
-	   class TV = typename mat_traits<TM>::TV_ROW>
+  template<class TM>
   class SparseMatrixSymmetric;
 
 
 
   class BaseJacobiPrecond;
 
-  template<class TM, 
-	   class TV_ROW = typename mat_traits<TM>::TV_ROW, 
-	   class TV_COL = typename mat_traits<TM>::TV_COL>
+  template<class TM>
   class JacobiPrecond;
 
-  template<class TM, 
-	   class TV = typename mat_traits<TM>::TV_ROW>
+  template<class TM>
   class JacobiPrecondSymmetric;
 
 
   class BaseBlockJacobiPrecond;
 
-  template<class TM, 
-	   class TV_ROW = typename mat_traits<TM>::TV_ROW, 
-	   class TV_COL = typename mat_traits<TM>::TV_COL>
+  template<class TM>
   class BlockJacobiPrecond;
 
-  template<class TM, 
-	   class TV = typename mat_traits<TM>::TV_ROW>
+  template<class TM>
   class BlockJacobiPrecondSymmetric;
 
 
@@ -165,6 +157,8 @@ namespace ngla
     /// sparse direct solver
     Flags inverseflags;
     bool spd = false;
+    /// scalar of the vectors the matrix creates, unset: the matrix scalar
+    optional<Scalar> vecscal;
     
   public:
     using MatrixGraph::MatrixGraph;
@@ -193,11 +187,11 @@ namespace ngla
     { ; }
     
     BaseSparseMatrix (const BaseSparseMatrix & amat)
-      : MatrixGraph (amat)
+      : MatrixGraph (amat), vecscal(amat.vecscal)
     { ; }   
 
     BaseSparseMatrix (BaseSparseMatrix && amat)
-      : MatrixGraph (std::move(amat))
+      : MatrixGraph (std::move(amat)), vecscal(amat.vecscal)
     { ; }
 
     virtual ~BaseSparseMatrix ();
@@ -250,7 +244,7 @@ namespace ngla
       throw Exception ("BaseSparseMatrix::CreateInverse called");
     }
 
-    virtual shared_ptr<BaseSparseMatrix> Restrict (const SparseMatrixTM<double> & prol,
+    virtual shared_ptr<BaseSparseMatrix> Restrict (const SparseMatrix<double> & prol,
                                                    shared_ptr<BaseSparseMatrix> cmat = nullptr ) const
     {
       throw Exception ("BaseSparseMatrix::Restrict");
@@ -265,6 +259,10 @@ namespace ngla
     { inverseflags = flags; }
     virtual const Flags & GetInverseFlags () const { return inverseflags; } 
     
+    // a real matrix acting on complex vectors creates complex vectors
+    void SetVectorScalar (Scalar ascal) { vecscal = ascal; }
+    void CopyVectorScalar (const BaseSparseMatrix & other) { vecscal = other.vecscal; }
+
     void SetSPD (bool aspd = true) { spd = aspd; }
     bool IsSPD () const { return spd; }
     virtual size_t NZE () const override { return nze; }
@@ -276,6 +274,88 @@ namespace ngla
     }
   };
 
+
+
+  /*
+    Vector types of the sparse matrix family: the entry shape is given by the
+    matrix entry, the scalar type is taken from the vectors at run time.
+  */
+
+  // scalar types allowed for y += s * A x, with matrix scalar TSCAL
+  template <typename TSCAL, typename TS, typename TX, typename TY>
+  constexpr bool ValidVectorScalars ()
+  {
+    constexpr bool valid = requires (TY & ey, TS es, TSCAL em, TX ex) { ey += es * (em * ex); };
+    if constexpr (is_same_v<TSCAL,float> || is_same_v<TX,float> || is_same_v<TY,float>)
+      return valid && is_same_v<TSCAL,float> && is_same_v<TX,float> && is_same_v<TY,float>;
+    else
+      return valid;
+  }
+
+  // the entry size of the matrix, or a flat vector of the same total size
+  NGS_DLL_HEADER void CheckEntrySize (const BaseVector & v, int es, size_t n, const char * name);
+  NGS_DLL_HEADER void ThrowIllegalScalars (const char * name, Scalar mat, const BaseVector & x, const BaseVector & y);
+  NGS_DLL_HEADER void CheckSameScalar (std::initializer_list<const BaseVector*> vecs, const char * name);
+
+  // the factor in the scalar type T of the result, a complex factor needs complex vectors
+  template <typename T>
+  T ScalarAs (Scalar s, const char * name)
+  {
+    return std::visit ([&] (auto v) -> T
+    {
+      if constexpr (is_same_v<decltype(v),Complex> && !is_same_v<T,Complex>)
+        throw Exception (string(name) + ": complex factor for real vectors");
+      else
+        return T(v);
+    }, s);
+  }
+
+  /*
+    calls f.template operator()<TVX,TVY>(sy) with the run-time vector types of x and y,
+    and the factor s in the scalar type of y
+  */
+  template <typename TSCAL, typename TVX0, typename TVY0, typename FUNC>
+  void DispatchVectorTypes (Scalar s, const BaseVector & x, size_t nx, const BaseVector & y, size_t ny,
+                            const char * name, FUNC && f)
+  {
+    std::visit ([&] (auto sx, auto sy)
+    {
+      typedef decltype(sx) TX;
+      typedef decltype(sy) TY;
+      if constexpr (ValidVectorScalars<TSCAL,TY,TX,TY>())
+        {
+          typedef WithScalar<TVX0,TX> TVX;
+          typedef WithScalar<TVY0,TY> TVY;
+          CheckEntrySize (x, sizeof(TVX)/sizeof(TX), nx, name);
+          CheckEntrySize (y, sizeof(TVY)/sizeof(TY), ny, name);
+          f.template operator()<TVX,TVY> (ScalarAs<TY> (s, name));
+        }
+      else
+        ThrowIllegalScalars (name, TSCAL(0), x, y);
+    }, x.GetScalarType(), y.GetScalarType());
+  }
+
+  // calls f.template operator()<TV>() for several vectors of the same run-time type
+  template <typename TSCAL, typename TV0, typename FUNC>
+  void DispatchVectorType (std::initializer_list<const BaseVector*> vecs, size_t n,
+                           const char * name, FUNC && f)
+  {
+    CheckSameScalar (vecs, name);
+    const BaseVector & v0 = **vecs.begin();
+    std::visit ([&] (auto sv)
+    {
+      typedef decltype(sv) TS;
+      if constexpr (ValidVectorScalars<TSCAL,double,TS,TS>())
+        {
+          typedef WithScalar<TV0,TS> TV;
+          for (auto v : vecs)
+            CheckEntrySize (*v, sizeof(TV)/sizeof(TS), n, name);
+          f.template operator()<TV> ();
+        }
+      else
+        ThrowIllegalScalars (name, TSCAL(0), v0, v0);
+    }, v0.GetScalarType());
+  }
   
   template <typename TSCAL>
   class NGS_DLL_HEADER S_BaseSparseMatrix : public BaseSparseMatrix
@@ -327,118 +407,96 @@ namespace ngla
   
   /// A general, sparse matrix
   template<class TM>
-  class NGS_DLL_HEADER SparseMatrixTM : public S_BaseSparseMatrix<typename mat_traits<TM>::TSCAL>
+  class NGS_DLL_HEADER SparseMatrix : public S_BaseSparseMatrix<typename mat_traits<TM>::TSCAL>
   {
   protected:
-    // Array<TM, size_t> data;
-    NumaDistributedArray<TM> data;
-    TM nul;
-    bool hermitian = false;
-    
     typedef S_BaseSparseMatrix<typename mat_traits<TM>::TSCAL> BASE;
-    using BASE::firsti;
-    using BASE::colnr;
     using BASE::owner;
     using BASE::size;
     using BASE::width;
     using BASE::nze;
-    using BASE::balance;
     using BASE::asvec;
   public:
+    using BASE::firsti;
+    using BASE::colnr;
+    using BASE::balance;
     using BASE::CreatePosition;
     using BASE::GetPositionTest;
     using BASE::FindSameNZE;
-    // using BASE::SetEntrySize;
     using BASE::AsVector;
     using typename BASE::ColIdx;
+
+    typedef TM TENTRY;
+    typedef typename mat_traits<TM>::TSCAL TSCAL;
+    // entry shapes of the vectors, the vector scalar is chosen at run time
+    typedef typename mat_traits<TM>::TV_ROW TV_ROW;
+    typedef typename mat_traits<TM>::TV_COL TV_COL;
+
+    // Array<TM, size_t> data;
+    NumaDistributedArray<TM> data;
+  protected:
+    TM nul;
+    bool hermitian = false;
     
+  public:
     void SetEntrySize()
     {
-      // BASE::SetEntrySize (ngbla::Height<TM>(), ngbla::Width<TM>(), sizeof(TM)/sizeof(TSCAL));
       BASE::entry_height = ngbla::Height<TM>();
       BASE::entry_width = ngbla::Width<TM>();
       BASE::entry_size = sizeof(TM)/sizeof(TSCAL);
       BASE::is_complex = ngbla::IsComplex<TM>();
+      asvec.AssignMemory (nze*sizeof(TM)/sizeof(TSCAL), (void*)data.Addr(0));
     }
-    
-  public:
-    typedef TM TENTRY;
-    typedef typename mat_traits<TM>::TSCAL TSCAL;
 
-    SparseMatrixTM (int as, int max_elsperrow)
-      : BASE (as, max_elsperrow),
-	data(nze), nul(TSCAL(0))
+    ///
+    SparseMatrix (int as, int max_elsperrow)
+      : BASE (as, max_elsperrow), data(nze), nul(TSCAL(0))
+    { SetEntrySize (); }
+
+    SparseMatrix (const Array<int> & elsperrow)
+      : SparseMatrix (elsperrow, elsperrow.Size()) { ; }
+
+    SparseMatrix (const Array<int> & elsperrow, int awidth)
+      : BASE (elsperrow, awidth), data(nze), nul(TSCAL(0))
+    { SetEntrySize (); }
+
+    SparseMatrix (int height, int width, FlatTable<int> rowelements, 
+		  FlatTable<int> colelements, bool symmetric)
+      : BASE (height, width, rowelements, colelements, symmetric), data(nze), nul(TSCAL(0))
+    { SetEntrySize (); }
+
+    SparseMatrix (const MatrixGraph & agraph)
+      : BASE (agraph), data(nze), nul(TSCAL(0))
     {
-      // SetEntrySize (mat_traits<TM>::HEIGHT, mat_traits<TM>::WIDTH, sizeof(TM)/sizeof(TSCAL));
-      // SetEntrySize (Height<TM>(), Width<TM>(), sizeof(TM)/sizeof(TSCAL));
       SetEntrySize ();
-      asvec.AssignMemory (nze*sizeof(TM)/sizeof(TSCAL), (void*)data.Addr(0));
-    }
-
-    SparseMatrixTM (const Array<int> & elsperrow, int awidth)
-      : BASE (elsperrow, awidth), 
-	data(nze), nul(TSCAL(0))
-    {
-      // SetEntrySize (mat_traits<TM>::HEIGHT, mat_traits<TM>::WIDTH, sizeof(TM)/sizeof(TSCAL));
-      SetEntrySize ();      
-      asvec.AssignMemory (nze*sizeof(TM)/sizeof(TSCAL), (void*)data.Addr(0));
-
-    }
-
-    SparseMatrixTM (int size, int width, FlatTable<int> rowelements, 
-		    FlatTable<int> colelements, bool symmetric)
-      : BASE (size, width, rowelements, colelements, symmetric), 
-	data(nze), nul(TSCAL(0))
-    { 
-      // SetEntrySize (mat_traits<TM>::HEIGHT, mat_traits<TM>::WIDTH, sizeof(TM)/sizeof(TSCAL));
-      SetEntrySize ();            
-      asvec.AssignMemory (nze*sizeof(TM)/sizeof(TSCAL), (void*)data.Addr(0));
-
-    }
-
-    SparseMatrixTM (const MatrixGraph & agraph)
-      : BASE (agraph), 
-	data(nze), nul(TSCAL(0))
-    { 
-      // SetEntrySize (mat_traits<TM>::HEIGHT, mat_traits<TM>::WIDTH, sizeof(TM)/sizeof(TSCAL));
-      SetEntrySize ();      
-      asvec.AssignMemory (nze*sizeof(TM)/sizeof(TSCAL), (void*)data.Addr(0));
       FindSameNZE();
     }
 
-    SparseMatrixTM (MatrixGraph && agraph)
-      : BASE (std::move(agraph)), 
-	data(nze), nul(TSCAL(0))
-    { 
-      // SetEntrySize (mat_traits<TM>::HEIGHT, mat_traits<TM>::WIDTH, sizeof(TM)/sizeof(TSCAL));
-      SetEntrySize ();      
-      asvec.AssignMemory (nze*sizeof(TM)/sizeof(TSCAL), (void*)data.Addr(0));
+    SparseMatrix (MatrixGraph && agraph)
+      : BASE (std::move(agraph)), data(nze), nul(TSCAL(0))
+    {
+      SetEntrySize ();
       FindSameNZE();
     }
-    
-    SparseMatrixTM (const SparseMatrixTM & amat)
-      : BASE (amat), 
-      data(nze), nul(TSCAL(0))
+
+    SparseMatrix (const SparseMatrix & amat)
+      : BASE (amat), data(nze), nul(TSCAL(0))
     {
-      // SetEntrySize (mat_traits<TM>::HEIGHT, mat_traits<TM>::WIDTH, sizeof(TM)/sizeof(TSCAL));
-      SetEntrySize ();            
-      asvec.AssignMemory (nze*sizeof(TM)/sizeof(TSCAL), (void*)data.Addr(0));      
+      SetEntrySize ();
       AsVector() = amat.AsVector();
     }
 
-    SparseMatrixTM (SparseMatrixTM && amat)
+    SparseMatrix (SparseMatrix && amat)
       : BASE (std::move(amat)), nul(TSCAL(0))
     {
-      // SetEntrySize (mat_traits<TM>::HEIGHT, mat_traits<TM>::WIDTH, sizeof(TM)/sizeof(TSCAL));
-      SetEntrySize ();
       data.Swap(amat.data);
-      asvec.AssignMemory (nze*sizeof(TM)/sizeof(TSCAL), (void*)data.Addr(0));            
+      SetEntrySize ();
     }
 
-    static shared_ptr<SparseMatrixTM> CreateFromCOO (FlatArray<int> i, FlatArray<int> j,
-                                                     FlatArray<TM> val, size_t h, size_t w);
+    static shared_ptr<SparseMatrix> CreateFromCOO (FlatArray<int> i, FlatArray<int> j,
+                                                   FlatArray<TM> val, size_t h, size_t w);
       
-    virtual ~SparseMatrixTM ();
+    virtual ~SparseMatrix ();
 
     size_t Height() const { return size; }
     size_t Width() const { return width; }
@@ -446,7 +504,9 @@ namespace ngla
     virtual int VWidth() const override { return width; }
     virtual tuple<size_t, size_t> Shape() const override { return { size, width }; }
     
-    
+    // the scalar of the vectors the matrix creates
+    Scalar GetVectorScalar () const { return this->vecscal ? *this->vecscal : Scalar(TSCAL(0)); }
+
     bool IsHermitian() const { return hermitian; }
     void SetHermitian(bool herm) { hermitian = herm; }
     
@@ -484,10 +544,8 @@ namespace ngla
     virtual void AddElementMatrixSymmetric(FlatArray<int> dnums,
                                            BareSliceMatrix<TSCAL> elmat,
                                            bool use_atomic = false);
-    
 
     virtual void SetZero() override;
-
 
     ///
     virtual ostream & Print (ostream & ost) const override;
@@ -495,62 +553,9 @@ namespace ngla
     ///
     virtual Array<MemoryUsage> GetMemoryUsage () const override;    
 
-    virtual AutoVector CreateVector () const override;
-    VecFormat RowFormat () const override;
-    VecFormat ColFormat () const override;
-
-    // virtual tuple<int,int> EntrySizes() const override { return { mat_traits<TM>::HEIGHT, mat_traits<TM>::WIDTH }; }
     virtual tuple<int,int> EntrySizes() const override { return { ngbla::Height<TM>(), ngbla::Width<TM>() }; }
-    
-    shared_ptr<BaseSparseMatrix>
-      CreateTransposeTM (const function<shared_ptr<SparseMatrixTM<decltype(ngbla::Trans(TM()))>>(const Array<int>&, int)> & creator, bool sorted) const;
-  };
-  
-
-
-
-  template<class TM, class TV_ROW, class TV_COL>
-  class NGS_DLL_HEADER SparseMatrix :  public SparseMatrixTM<TM>
-  {
-  public:
-    using SparseMatrixTM<TM>::firsti;
-    using SparseMatrixTM<TM>::colnr;
-    using SparseMatrixTM<TM>::data;
-    using SparseMatrixTM<TM>::balance;
-    using typename SparseMatrixTM<TM>::ColIdx;
-
-    typedef typename mat_traits<TM>::TSCAL TSCAL;
-    typedef TV_ROW TVX;
-    typedef TV_COL TVY;
-
-    ///
-    SparseMatrix (int as, int max_elsperrow)
-      : SparseMatrixTM<TM> (as, max_elsperrow) { ; }
-
-    SparseMatrix (const Array<int> & aelsperrow)
-      : SparseMatrixTM<TM> (aelsperrow, aelsperrow.Size()) { ; }
-
-    SparseMatrix (const Array<int> & aelsperrow, int awidth)
-      : SparseMatrixTM<TM> (aelsperrow, awidth) { ; }
-
-    SparseMatrix (int height, int width, FlatTable<int> rowelements, 
-		  FlatTable<int> colelements, bool symmetric)
-      : SparseMatrixTM<TM> (height, width, rowelements, colelements, symmetric) { ; }
-
-    SparseMatrix (const MatrixGraph & agraph);
-    SparseMatrix (MatrixGraph && agraph);
-
-    SparseMatrix (const SparseMatrix & amat)
-      : SparseMatrixTM<TM> (amat) { ; }
-
-    SparseMatrix (const SparseMatrixTM<TM> & amat)
-      : SparseMatrixTM<TM> (amat) { ; }
-
-    SparseMatrix (SparseMatrixTM<TM> && amat)
-      : SparseMatrixTM<TM> (std::move(amat)) { ; }
 
     virtual shared_ptr<BaseMatrix> CreateMatrix () const override;
-    // virtual BaseMatrix * CreateMatrix (const Array<int> & elsperrow) const;
     // a DeviceSparseMatrix for scalar TM if a gpu backend is registered
     virtual shared_ptr<BaseMatrix> CreateDeviceMatrix () const override;
     ///
@@ -574,33 +579,31 @@ namespace ngla
     virtual shared_ptr<BaseMatrix> InverseMatrix (shared_ptr<BitArray> subset = nullptr) const override;
     virtual shared_ptr<BaseMatrix> InverseMatrix (shared_ptr<const Array<int>> clusters) const override;
 
-    virtual shared_ptr<BaseSparseMatrix> Restrict (const SparseMatrixTM<double> & prol,
+    virtual shared_ptr<BaseSparseMatrix> Restrict (const SparseMatrix<double> & prol,
 					 shared_ptr<BaseSparseMatrix> cmat = nullptr) const override;
     
     virtual shared_ptr<BaseSparseMatrix> Reorder (const Array<size_t> & reorder) const override;
     
-    virtual shared_ptr<BaseSparseMatrix> CreateTranspose(bool sorted) const override
-    {
-      return this->CreateTransposeTM
-        ( [](const Array<int> & elsperrow, int width) -> shared_ptr<SparseMatrixTM<decltype(Trans(TM()))>>
-          { return make_shared<SparseMatrix<decltype(Trans(TM())), TV_COL, TV_ROW>> (elsperrow, width); }, sorted );
-    }
+    virtual shared_ptr<BaseSparseMatrix> CreateTranspose(bool sorted = true) const override;
 
     virtual shared_ptr<BaseMatrix> DeleteZeroElements(double tol) const override;
     
-    ///
-    inline TVY RowTimesVector (int row, const FlatVector<TVX> vec) const
+    /// row times vector, the scalar of the result is the product of matrix and vector scalars
+    template <typename TVX>
+    INLINE auto RowTimesVector (int row, const FlatVector<TVX> vec) const
     {
-      typedef typename mat_traits<TVY>::TSCAL TTSCAL;
-      TVY sum = TTSCAL(0);
+      typedef decltype(TSCAL()*typename mat_traits<TVX>::TSCAL()) TPROD;
+      WithScalar<TV_COL,TPROD> sum = TPROD(0);
       for (size_t j = firsti[row]; j < firsti[row+1]; j++)
 	sum += data[j] * vec(colnr[j]);
       return sum;
     }
 
     ///
-    void AddRowTransToVector (int row, TVY el, FlatVector<TVX> vec) const
+    template <typename TEL, typename TVX>
+    void AddRowTransToVector (int row, const TEL & el, FlatVector<TVX> vec) const
     {
+      WithScalar<TV_COL,typename mat_traits<TVX>::TSCAL> hel = el;
       size_t first = firsti[row];
       size_t last = firsti[row+1];
 
@@ -608,11 +611,13 @@ namespace ngla
       const TM * datap = data.Addr(0);
 
       for (size_t j = first; j < last; j++)
-        vec[colpi[j]] += Trans(datap[j]) * el; 
+        vec[colpi[j]] += Trans(datap[j]) * hel; 
     }
 
-    void AddRowTransToVectorAtomic (int row, TVY el, FlatVector<TVX> vec) const
+    template <typename TEL, typename TVX>
+    void AddRowTransToVectorAtomic (int row, const TEL & el, FlatVector<TVX> vec) const
     {
+      WithScalar<TV_COL,typename mat_traits<TVX>::TSCAL> hel = el;
       size_t first = firsti[row];
       size_t last = firsti[row+1];
 
@@ -621,13 +626,15 @@ namespace ngla
 
       for (size_t j = first; j < last; j++)
         // vec[colpi[j]] += Trans(datap[j]) * el;
-        AtomicAdd (vec[colpi[j]], Trans(datap[j]) * el);
+        AtomicAdd (vec[colpi[j]], Trans(datap[j]) * hel);
     }
 
     
     ///
-    void AddRowConjTransToVector (int row, TVY el, FlatVector<TVX> vec) const
+    template <typename TEL, typename TVX>
+    void AddRowConjTransToVector (int row, const TEL & el, FlatVector<TVX> vec) const
     {
+      WithScalar<TV_COL,typename mat_traits<TVX>::TSCAL> hel = el;
       size_t first = firsti[row];
       size_t last = firsti[row+1];
 
@@ -635,14 +642,14 @@ namespace ngla
       const TM * datap = data.Addr(0);
 
       for (size_t j = first; j < last; j++)
-        vec[colpi[j]] += Conj(Trans(datap[j])) * el; 
+        vec[colpi[j]] += Conj(Trans(datap[j])) * hel; 
     }
 
 
-    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
-    virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
-    virtual void MultAdd (Complex s, const BaseVector & x, BaseVector & y) const override;
-    virtual void MultTransAdd (Complex s, const BaseVector & x, BaseVector & y) const override;
+    using BaseMatrix::MultAdd;
+    using BaseMatrix::MultTransAdd;
+    virtual void MultAdd (Scalar s, const BaseVector & x, BaseVector & y) const override;
+    virtual void MultTransAdd (Scalar s, const BaseVector & x, BaseVector & y) const override;
     virtual void MultConjTransAdd (Complex s, const BaseVector & x, BaseVector & y) const override;
 
     virtual void MultAdd (FlatVector<double> alpha, const MultiVector & x, MultiVector & y) const override;
@@ -653,50 +660,52 @@ namespace ngla
 			   const Array<int> * acluster = NULL) const override;
     
     virtual void DoArchive (Archive & ar) override;
+
+  protected:
+    void T_MultTransAdd (Scalar s, const BaseVector & x, BaseVector & y, bool conjugate) const;
   };
 
   
 
   /// A symmetric sparse matrix
-  template<class TM, class TV>
-  class NGS_DLL_HEADER SparseMatrixSymmetric : public SparseMatrix<TM,TV,TV>
+  template<class TM>
+  class NGS_DLL_HEADER SparseMatrixSymmetric : public SparseMatrix<TM>
   {
 
   public:
-    using SparseMatrixTM<TM>::firsti;
-    using SparseMatrixTM<TM>::colnr;
-    using SparseMatrixTM<TM>::data;
+    using SparseMatrix<TM>::firsti;
+    using SparseMatrix<TM>::colnr;
+    using SparseMatrix<TM>::data;
     using BaseSparseMatrix::ColIdx;    
 
     typedef typename mat_traits<TM>::TSCAL TSCAL;
+    typedef typename mat_traits<TM>::TV_ROW TV;
     typedef TV TV_COL;
     typedef TV TV_ROW;
-    typedef TV TVY;
-    typedef TV TVX;
 
     SparseMatrixSymmetric (int as, int max_elsperrow)
-      : SparseMatrix<TM,TV,TV> (as, max_elsperrow)
+      : SparseMatrix<TM> (as, max_elsperrow)
     { ; }
   
     SparseMatrixSymmetric (const Array<int> & elsperrow)
-      : SparseMatrix<TM,TV,TV> (elsperrow, elsperrow.Size())
+      : SparseMatrix<TM> (elsperrow, elsperrow.Size())
     { ; }
 
     SparseMatrixSymmetric (int size, FlatTable<int> rowelements)
-      : SparseMatrix<TM,TV,TV> (size, size, rowelements, rowelements, true)
+      : SparseMatrix<TM> (size, size, rowelements, rowelements, true)
     { ; }
 
     SparseMatrixSymmetric (const MatrixGraph & agraph);
     SparseMatrixSymmetric (MatrixGraph && agraph);    
 
     SparseMatrixSymmetric (const SparseMatrixSymmetric & amat)
-      : SparseMatrix<TM,TV,TV> (amat)
+      : SparseMatrix<TM> (amat)
     { 
       this->AsVector() = amat.AsVector(); 
     }
 
-    SparseMatrixSymmetric (const SparseMatrixTM<TM> & amat)
-      : SparseMatrix<TM,TV,TV> (amat)
+    SparseMatrixSymmetric (const SparseMatrix<TM> & amat)
+      : SparseMatrix<TM> (amat)
       { 
         this->AsVector() = amat.AsVector(); 
       }
@@ -716,13 +725,6 @@ namespace ngla
       return make_shared<SparseMatrixSymmetric> (*this);
     }
 
-    /*
-    virtual BaseMatrix * CreateMatrix (const Array<int> & elsperrow) const
-    {
-      return new SparseMatrix<TM,TV,TV>(elsperrow);
-    }
-    */
-
     virtual void AddElementMatrix(FlatArray<int> dnums1, 
 				  FlatArray<int> dnums2, 
 				  BareSliceMatrix<TSCAL> elmat,
@@ -738,15 +740,22 @@ namespace ngla
                                 bool parallel  = 1,
                                 shared_ptr<BitArray> freedofs = NULL) const override;
 
-    virtual shared_ptr<BaseSparseMatrix> Restrict (const SparseMatrixTM<double> & prol,
+    virtual shared_ptr<BaseSparseMatrix> Restrict (const SparseMatrix<double> & prol,
 					 shared_ptr<BaseSparseMatrix> cmat = nullptr) const override;
 
     ///
-    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
+    using SparseMatrix<TM>::MultAdd;
+    using SparseMatrix<TM>::MultTransAdd;
+    virtual void MultAdd (Scalar s, const BaseVector & x, BaseVector & y) const override;
 
-    virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override
+    virtual void MultTransAdd (Scalar s, const BaseVector & x, BaseVector & y) const override
     {
       MultAdd (s, x, y);
+    }
+    // via MultTransAdd with conjugated vectors, the stored triangle alone is not enough
+    virtual void MultConjTransAdd (Complex s, const BaseVector & x, BaseVector & y) const override
+    {
+      BaseMatrix::MultConjTransAdd (s, x, y);
     }
 
 
@@ -769,27 +778,30 @@ namespace ngla
 
 
 
-    using SparseMatrix<TM,TV,TV>::RowTimesVector;
-    using SparseMatrix<TM,TV,TV>::AddRowTransToVector;
+    using SparseMatrix<TM>::RowTimesVector;
+    using SparseMatrix<TM>::AddRowTransToVector;
 
 
-    TV_COL RowTimesVectorNoDiag (int row, const FlatVector<TVX> vec) const
+    template <typename TVX>
+    auto RowTimesVectorNoDiag (int row, const FlatVector<TVX> vec) const
     {
+      typedef decltype(TSCAL()*typename mat_traits<TVX>::TSCAL()) TPROD;
+      WithScalar<TV,TPROD> sum = TPROD(0);
+
       size_t last = firsti[row+1];
       size_t first = firsti[row];
-      if (last == first) return TVY(0);
+      if (last == first) return sum;
       if (colnr[last-1] == row) last--;
-
-      typedef typename mat_traits<TVY>::TSCAL TTSCAL;
-      TVY sum = TTSCAL(0);
 
       for (size_t j = first; j < last; j++)
 	sum += data[j] * vec(colnr[j]);
       return sum;
     }
 
-    void AddRowTransToVectorNoDiag (int row, TVY el, FlatVector<TVX> vec) const
+    template <typename TEL, typename TVX>
+    void AddRowTransToVectorNoDiag (int row, const TEL & el, FlatVector<TVX> vec) const
     {
+      WithScalar<TV,typename mat_traits<TVX>::TSCAL> hel = el;
       size_t first = firsti[row];
       size_t last = firsti[row+1];
 
@@ -797,7 +809,7 @@ namespace ngla
       if (this->colnr[last-1] == row) last--;
 
       for (size_t j = first; j < last; j++)
-        vec[colnr[j]] += Trans(data[j]) * el;
+        vec[colnr[j]] += Trans(data[j]) * hel;
     }
   
     BaseSparseMatrix & AddMerge (double s, const SparseMatrixSymmetric  & m2);
@@ -806,24 +818,34 @@ namespace ngla
     virtual shared_ptr<BaseMatrix> InverseMatrix (shared_ptr<const Array<int>> clusters) const override;
   };
 
+  // specialized in sparsematrix.cpp, declared before anything instantiates them
+  template <> shared_ptr<BaseSparseMatrix>
+  SparseMatrix<double> :: Restrict (const SparseMatrix<double> & prol, shared_ptr<BaseSparseMatrix> cmat) const;
+  template <> shared_ptr<BaseSparseMatrix>
+  SparseMatrix<Complex> :: Restrict (const SparseMatrix<double> & prol, shared_ptr<BaseSparseMatrix> cmat) const;
+  template <> shared_ptr<BaseSparseMatrix>
+  SparseMatrixSymmetric<double> :: Restrict (const SparseMatrix<double> & prol, shared_ptr<BaseSparseMatrix> cmat) const;
+  template <> void
+  SparseMatrix<double> :: MultAdd (FlatVector<double> alpha, const MultiVector & x, MultiVector & y) const;
+
   [[deprecated("Use sparsematrix->CreateTranspose() instead!")]]            
-  NGS_DLL_HEADER shared_ptr<SparseMatrixTM<double>> TransposeMatrix (const SparseMatrixTM<double> & mat);
+  NGS_DLL_HEADER shared_ptr<SparseMatrix<double>> TransposeMatrix (const SparseMatrix<double> & mat);
 
-  NGS_DLL_HEADER shared_ptr<SparseMatrixTM<double>>
-  MatAdd (double sa, const SparseMatrixTM<double> & mata,
-          double sb, const SparseMatrixTM<double> & matb);
+  NGS_DLL_HEADER shared_ptr<SparseMatrix<double>>
+  MatAdd (double sa, const SparseMatrix<double> & mata,
+          double sb, const SparseMatrix<double> & matb);
 
-  NGS_DLL_HEADER shared_ptr<SparseMatrixTM<Complex>>
-  MatAdd (Complex sa, const SparseMatrixTM<Complex> & mata,
-          Complex sb, const SparseMatrixTM<Complex> & matb);
+  NGS_DLL_HEADER shared_ptr<SparseMatrix<Complex>>
+  MatAdd (Complex sa, const SparseMatrix<Complex> & mata,
+          Complex sb, const SparseMatrix<Complex> & matb);
 
   
-  NGS_DLL_HEADER shared_ptr<SparseMatrixTM<double>>
-  MatMult (const SparseMatrixTM<double> & mata, const SparseMatrixTM<double> & matb, bool sort_output = true);
-  NGS_DLL_HEADER shared_ptr<SparseMatrixTM<float>>
-  MatMult (const SparseMatrixTM<float> & mata, const SparseMatrixTM<float> & matb, bool sort_output = true);
-  NGS_DLL_HEADER shared_ptr<SparseMatrixTM<Complex>>
-  MatMult (const SparseMatrixTM<Complex> & mata, const SparseMatrixTM<Complex> & matb, bool sort_output = true);
+  NGS_DLL_HEADER shared_ptr<SparseMatrix<double>>
+  MatMult (const SparseMatrix<double> & mata, const SparseMatrix<double> & matb, bool sort_output = true);
+  NGS_DLL_HEADER shared_ptr<SparseMatrix<float>>
+  MatMult (const SparseMatrix<float> & mata, const SparseMatrix<float> & matb, bool sort_output = true);
+  NGS_DLL_HEADER shared_ptr<SparseMatrix<Complex>>
+  MatMult (const SparseMatrix<Complex> & mata, const SparseMatrix<Complex> & matb, bool sort_output = true);
 
 #ifdef GOLD
 #include <sparsematrix_spec.hpp>
@@ -841,11 +863,9 @@ shared_ptr<BaseMatrix> CreateSparseMatrixInverse(shared_ptr<const BaseSparseMatr
 
   SPARSEMATRIX_EXTERN template class SparseMatrix<double>;
   SPARSEMATRIX_EXTERN template class SparseMatrix<Complex>;
-  SPARSEMATRIX_EXTERN template class SparseMatrix<double, Complex, Complex>;
   
   SPARSEMATRIX_EXTERN template class SparseMatrixSymmetric<double>;
   SPARSEMATRIX_EXTERN template class SparseMatrixSymmetric<Complex>;
-  SPARSEMATRIX_EXTERN template class SparseMatrixSymmetric<double, Complex>;
 
 #define INST_SPMS(N) \
   SPARSEMATRIX_EXTERN template class SparseMatrix<Mat<N, N, double>>; \

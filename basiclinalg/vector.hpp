@@ -1135,6 +1135,11 @@ namespace ngbla
     // enum { IS_COMPLEX = mat_traits<TSCAL>::IS_COMPLEX };
   };
 
+  // the entry shape of TV (a scalar or a Vec), with scalar type TS
+  template <typename TV, typename TS>
+  using WithScalar = std::conditional_t<IsScalar<TV>(), TS,
+                                        Vec<int(sizeof(TV)/sizeof(typename mat_traits<TV>::TSCAL)), TS>>;
+
 
   
   template <typename T> struct ConstVecSize { static constexpr int VSIZE = -1; }; 

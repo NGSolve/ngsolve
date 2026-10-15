@@ -1305,9 +1305,9 @@ inverse : string
              return make_shared<DeviceSparseMatrix<float>> (*p);
            if (dynamic_pointer_cast<SparseMatrix<float>> (self))
              return self->CreateDeviceMatrix();
-           if (auto p = dynamic_pointer_cast<BlockJacobiPrecondSymmetric<double,double>> (self))
+           if (auto p = dynamic_pointer_cast<BlockJacobiPrecondSymmetric<double>> (self))
              return make_shared<DeviceBlockJacobi<float>> (*p);
-           if (auto p = dynamic_pointer_cast<BlockJacobiPrecond<double,double,double>> (self))
+           if (auto p = dynamic_pointer_cast<BlockJacobiPrecond<double>> (self))
              return make_shared<DeviceBlockJacobi<float>> (*p);
            if (dynamic_pointer_cast<PermutationMatrix> (self))
              return self->CreateDeviceMatrix();
@@ -1819,22 +1819,22 @@ inverse : string
     (m, "SparseMatrixDynamic")
     .def(py::init([] (const BaseMatrix & mat) -> shared_ptr<SparseMatrixDynamic<double>>
                   {
-                    if (auto ptr = dynamic_cast<const SparseMatrixTM<double>*> (&mat); ptr)
+                    if (auto ptr = dynamic_cast<const SparseMatrix<double>*> (&mat); ptr)
                       return make_shared<SparseMatrixDynamic<double>> (*ptr);
-                    if (auto ptr = dynamic_cast<const SparseMatrixTM<Mat<2,2>>*> (&mat); ptr)
+                    if (auto ptr = dynamic_cast<const SparseMatrix<Mat<2,2>>*> (&mat); ptr)
                       return make_shared<SparseMatrixDynamic<double>> (*ptr);
-                    if (auto ptr = dynamic_cast<const SparseMatrixTM<Mat<3,3>>*> (&mat); ptr)
+                    if (auto ptr = dynamic_cast<const SparseMatrix<Mat<3,3>>*> (&mat); ptr)
                       return make_shared<SparseMatrixDynamic<double>> (*ptr);
 #if MAX_SYS_DIM >= 4
-                    if (auto ptr = dynamic_cast<const SparseMatrixTM<Mat<4,4>>*> (&mat); ptr)
+                    if (auto ptr = dynamic_cast<const SparseMatrix<Mat<4,4>>*> (&mat); ptr)
                       return make_shared<SparseMatrixDynamic<double>> (*ptr);
 #endif
 #if MAX_SYS_DIM >= 5                    
-                    if (auto ptr = dynamic_cast<const SparseMatrixTM<Mat<5,5>>*> (&mat); ptr)
+                    if (auto ptr = dynamic_cast<const SparseMatrix<Mat<5,5>>*> (&mat); ptr)
                       return make_shared<SparseMatrixDynamic<double>> (*ptr);
 #endif
 #if MAX_SYS_DIM >= 6                    
-                    if (auto ptr = dynamic_cast<const SparseMatrixTM<Mat<6,6>>*> (&mat); ptr)
+                    if (auto ptr = dynamic_cast<const SparseMatrix<Mat<6,6>>*> (&mat); ptr)
                       return make_shared<SparseMatrixDynamic<double>> (*ptr);
 #endif                    
                     return nullptr;
@@ -1847,7 +1847,7 @@ inverse : string
     (m, "SparseMatrixVariableBlocks")
     .def(py::init([] (const BaseMatrix & mat)
                   {
-                    if (auto ptr = dynamic_cast<const SparseMatrixTM<double>*> (&mat); ptr)
+                    if (auto ptr = dynamic_cast<const SparseMatrix<double>*> (&mat); ptr)
                       return make_shared<SparseMatrixVariableBlocks<double>> (*ptr);
                     throw Exception("cannot create SparseMatrixVariableBlocks");
                   }))

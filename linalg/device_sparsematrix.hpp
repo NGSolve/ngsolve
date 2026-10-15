@@ -59,7 +59,7 @@ namespace ngla
   public:
     // values are converted to T
     template <typename TM>
-    DeviceSparseMatrix (const SparseMatrixTM<TM> & mat, bool symmetric = false);
+    DeviceSparseMatrix (const SparseMatrix<TM> & mat, bool symmetric = false);
     virtual ~DeviceSparseMatrix () { }
 
     virtual int VHeight() const override { return height; }

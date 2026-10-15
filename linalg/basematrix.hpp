@@ -135,14 +135,18 @@ namespace ngla
     virtual void Mult (const BaseVector & x, BaseVector & y) const;
     ///
     virtual void MultTrans (const BaseVector & x, BaseVector & y) const;
-    /// y += s matrix * x
+    /*
+      y += s matrix * x
+      New operators override the Scalar version, existing ones the double/Complex
+      versions. The defaults forward between them, so either works for all callers.
+    */
+    virtual void MultAdd (Scalar s, const BaseVector & x, BaseVector & y) const;
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
-    /// y += s matrix * x
     virtual void MultAdd (Complex s, const BaseVector & x, BaseVector & y) const;
   
     /// y += s Trans(matrix) * x
+    virtual void MultTransAdd (Scalar s, const BaseVector & x, BaseVector & y) const;
     virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const;
-    /// y += s Trans(matrix) * x
     virtual void MultTransAdd (Complex s, const BaseVector & x, BaseVector & y) const;
    /// y += s Trans(matrix) * x
     virtual void MultConjTransAdd (Complex s, const BaseVector & x, BaseVector & y) const;

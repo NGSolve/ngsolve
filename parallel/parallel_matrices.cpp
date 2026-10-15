@@ -21,7 +21,7 @@ namespace ngla
   
   
   template <typename TM>
-  MasterInverse<TM> :: MasterInverse (const SparseMatrixTM<TM> & mat, 
+  MasterInverse<TM> :: MasterInverse (const SparseMatrix<TM> & mat, 
 				      shared_ptr<BitArray> subset, 
 				      shared_ptr<ParallelDofs> hpardofs)
     
@@ -657,7 +657,7 @@ auto _dummy_init = [] () {
   template <typename TM>
   shared_ptr<BaseMatrix> ParallelMatrix::InverseMatrixTM (shared_ptr<BitArray> subset) const
   {
-    const SparseMatrixTM<TM> * dmat = dynamic_cast<const SparseMatrixTM<TM>*> (mat.get());
+    const SparseMatrix<TM> * dmat = dynamic_cast<const SparseMatrix<TM>*> (mat.get());
     if (!dmat) return nullptr;
 
 #ifdef USE_MUMPS

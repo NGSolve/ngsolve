@@ -88,7 +88,7 @@ namespace ngla
 
   template <typename TSCAL>
   SparseMatrixVariableBlocks<TSCAL> ::
-  SparseMatrixVariableBlocks (const SparseMatrixTM<TSCAL> & mat)
+  SparseMatrixVariableBlocks (const SparseMatrix<TSCAL> & mat)
     : height(mat.Height()), width(mat.Width())
   {
     size_t row = 0;

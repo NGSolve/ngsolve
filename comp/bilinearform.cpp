@@ -6503,7 +6503,10 @@ namespace ngcomp
 
     MatrixGraph graph = this->GetGraph (this->ma->GetNLevels()-1, false);
 
-    auto spmat = make_shared<SparseMatrix<TM,TV,TV>> (std::move(graph));
+    auto spmat = make_shared<SparseMatrix<TM>> (std::move(graph));
+    // a real matrix for a complex space works on complex vectors
+    if constexpr (ngbla::IsComplex<TV>() && !ngbla::IsComplex<TM>())
+      spmat->SetVectorScalar (Complex(0));
     spmat->SetHermitian(this->hermitean);
     mymatrix = spmat; // .get();
     
@@ -6664,7 +6667,10 @@ namespace ngcomp
 
     MatrixGraph graph = this->GetGraph (this->ma->GetNLevels()-1, true);
 
-    auto spmat = make_shared<SparseMatrixSymmetric<TM,TV>> (std::move(graph));
+    auto spmat = make_shared<SparseMatrixSymmetric<TM>> (std::move(graph));
+    // a real matrix for a complex space works on complex vectors
+    if constexpr (ngbla::IsComplex<TV>() && !ngbla::IsComplex<TM>())
+      spmat->SetVectorScalar (Complex(0));
     spmat->SetHermitian(this->hermitean);
     mymatrix = spmat; // .get();
     

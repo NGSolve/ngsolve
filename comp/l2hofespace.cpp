@@ -6431,8 +6431,8 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
       if (!prolmats[finelevel])
         {
           auto l2prol = fesL2->GetProlongation()->CreateProlongationMatrix(finelevel);
-          auto toX = dynamic_pointer_cast<SparseMatrixTM<double>> (convL2toX[finelevel]->CreateSparseMatrix());
-          auto toL2 = dynamic_pointer_cast<SparseMatrixTM<double>> (convXtoL2[finelevel-1]->CreateSparseMatrix());
+          auto toX = dynamic_pointer_cast<SparseMatrix<double>> (convL2toX[finelevel]->CreateSparseMatrix());
+          auto toL2 = dynamic_pointer_cast<SparseMatrix<double>> (convXtoL2[finelevel-1]->CreateSparseMatrix());
           if (!l2prol || !toX || !toL2)
             return nullptr;
           prolmats[finelevel] = dynamic_pointer_cast<SparseMatrix<double>> (MatMult (*toX, *MatMult (*l2prol, *toL2)));

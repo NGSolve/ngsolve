@@ -62,7 +62,7 @@ namespace ngla
     ///
 
     template <typename TSUBSET>
-    // void GetUmfpackMatrix (const SparseMatrixTM<TM> & a, TSUBSET subset);
+    // void GetUmfpackMatrix (const SparseMatrix<TM> & a, TSUBSET subset);
     void GetUmfpackMatrix (const S_BaseSparseMatrix<TSCAL> & a, TSUBSET subset);
 
     ///
@@ -83,7 +83,8 @@ namespace ngla
 
 
   
-  template<class SCAL, class SCAL_VEC>
+  // the vector scalar is chosen at run time, a real matrix may solve for complex vectors
+  template<class SCAL>
   class S_UmfpackInverse_SVec : public S_UmfpackInverse<SCAL>
   {
     typedef S_UmfpackInverse<SCAL> BASE;
@@ -97,48 +98,37 @@ namespace ngla
     using BASE::indices;
     using BASE::compressed;
     using BASE::compress;
+    Scalar vecscal = SCAL(0);
     
     using S_UmfpackInverse<SCAL>::S_UmfpackInverse;
-    static constexpr bool is_vector_complex = ngbla::IsComplex<SCAL_VEC>();
     
     VecFormat RowFormat () const override
-    { return VecFormat (height/entrysize, is_vector_complex ? Scalar(Complex(0)) : Scalar(double(0)), entrysize); }
+    { return VecFormat (height/entrysize, vecscal, entrysize); }
     VecFormat ColFormat () const override { return RowFormat(); }
 
     void Mult (const BaseVector & x, BaseVector & y) const override;
     void MultTrans (const BaseVector & x, BaseVector & y) const override;
+  private:
+    template <typename SCAL_VEC>
+    void T_Mult (const BaseVector & x, BaseVector & y, bool trans) const;
   };
   
 
-  template<class TM,
-	   class TV_ROW = typename mat_traits<TM>::TV_ROW,
-	   class TV_COL = typename mat_traits<TM>::TV_COL>
-  class UmfpackInverse : public S_UmfpackInverse_SVec<typename mat_traits<TM>::TSCAL, typename mat_traits<TV_COL>::TSCAL>
+  template<class TM>
+  class UmfpackInverse : public S_UmfpackInverse_SVec<typename mat_traits<TM>::TSCAL>
   {
   public:
-    typedef S_UmfpackInverse_SVec<typename mat_traits<TM>::TSCAL, typename mat_traits<TV_COL>::TSCAL> BASE;
+    typedef S_UmfpackInverse_SVec<typename mat_traits<TM>::TSCAL> BASE;
     
     using typename BASE::TSCAL;
-    typedef TV_COL TV;
-    typedef TV_ROW TVX;
     
-  private:
-    using BASE::height;
-    using BASE::is_complex;
-    using BASE::is_vector_complex;    
-    using BASE::compressed_height;
-    using BASE::entrysize;
-    using BASE::rowstart;
-    using BASE::indices;
-    using BASE::compressed;
-    using BASE::compress;
-
   public:
-    UmfpackInverse (shared_ptr<const SparseMatrix<TM,TV_ROW,TV_COL>> a,
+    UmfpackInverse (shared_ptr<const SparseMatrix<TM>> a,
 		    shared_ptr<BitArray> ainner = nullptr,
 		    shared_ptr<const Array<int>> acluster = nullptr,
 		    int symmetric = 0)
-      : BASE (a, ainner, acluster, symmetric) { ; }
+      : BASE (a, ainner, acluster, symmetric)
+    { this->vecscal = a->GetVectorScalar(); }
 
     // virtual ~UmfpackInverse () { ; }
   };

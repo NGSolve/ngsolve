@@ -14,12 +14,12 @@ namespace ngla
 {
 
   template <class TM>
-  SparseMatrixTM<TM> :: ~SparseMatrixTM ()
+  SparseMatrix<TM> :: ~SparseMatrix ()
   { ; }
 
 
   template <class TM>
-  void SparseMatrixTM<TM> ::
+  void SparseMatrix<TM> ::
   PrefetchRow (size_t rownr) const
   {
 #ifdef NETGEN_ARCH_AMD64
@@ -46,7 +46,7 @@ namespace ngla
 
 
   template <class TM>
-  shared_ptr<SparseMatrixTM<TM>> SparseMatrixTM<TM> ::
+  shared_ptr<SparseMatrix<TM>> SparseMatrix<TM> ::
   CreateFromCOO (FlatArray<int> indi, FlatArray<int> indj,
                  FlatArray<TM> val, size_t h, size_t w)
   {
@@ -146,7 +146,7 @@ namespace ngla
 
   
   template <class TM>
-  void SparseMatrixTM<TM> ::
+  void SparseMatrix<TM> ::
   AddElementMatrix(FlatArray<int> dnums1, FlatArray<int> dnums2, 
                    BareSliceMatrix<TSCAL> elmat1, bool use_atomic)
   {
@@ -177,7 +177,7 @@ namespace ngla
 		    {
 		      k++;
 		      if (k >= rowind.Size())
-			throw Exception ("SparseMatrixTM::AddElementMatrix: illegal dnums");
+			throw Exception ("SparseMatrix::AddElementMatrix: illegal dnums");
 		    }
                   if (use_atomic)
                     AtomicAdd (rowvals(k), elmat(i,j));
@@ -190,7 +190,7 @@ namespace ngla
   
 
   template <class TM>
-  void SparseMatrixTM<TM> :: SetZero ()
+  void SparseMatrix<TM> :: SetZero ()
   {
     static Timer t("SparseMatrix::SetZero (taskhandler)");
     t.AddFlops (this->NZE());
@@ -211,20 +211,11 @@ namespace ngla
   
 
 
-  template <class TM, class TV_ROW, class TV_COL>
-  SparseMatrix<TM,TV_ROW,TV_COL> :: SparseMatrix (const MatrixGraph & agraph)
-    : SparseMatrixTM<TM> (agraph) 
-  { ; }
-  
-  template <class TM, class TV_ROW, class TV_COL>
-  SparseMatrix<TM,TV_ROW,TV_COL> :: SparseMatrix (MatrixGraph && agraph)
-    : SparseMatrixTM<TM> (std::move(agraph))
-  { ; }
  
 
 
-  template <class TM, class TV_ROW, class TV_COL>  
-  shared_ptr<BaseJacobiPrecond> SparseMatrix<TM,TV_ROW,TV_COL> :: 
+  template <class TM>  
+  shared_ptr<BaseJacobiPrecond> SparseMatrix<TM> :: 
   CreateJacobiPrecond (shared_ptr<BitArray> inner) const
   {
     // if constexpr(mat_traits<TM>::HEIGHT != mat_traits<TM>::WIDTH) return nullptr;
@@ -233,12 +224,12 @@ namespace ngla
       throw Exception(string("MAX_SYS_DIM = ")+to_string(MAX_SYS_DIM)+string(", need ")+to_string(mat_traits<TM>::HEIGHT));
       return nullptr;
     }
-    else return make_shared<JacobiPrecond<TM,TV_ROW,TV_COL>> ( dynamic_pointer_cast<SparseMatrix>
+    else return make_shared<JacobiPrecond<TM>> ( dynamic_pointer_cast<SparseMatrix>
                                                                (const_cast<SparseMatrix*>(this)->shared_from_this()), inner);
   }
   
-  template <class TM, class TV_ROW, class TV_COL>    
-  shared_ptr<BaseBlockJacobiPrecond> SparseMatrix<TM,TV_ROW,TV_COL> :: 
+  template <class TM>    
+  shared_ptr<BaseBlockJacobiPrecond> SparseMatrix<TM> :: 
   CreateBlockJacobiPrecond (shared_ptr<Table<int>> blocks,
                             const BaseVector * constraint,
                             bool parallel,
@@ -251,9 +242,9 @@ namespace ngla
       return nullptr;
     }
     else
-      // return make_shared<BlockJacobiPrecond<TM,TV_ROW,TV_COL>> (*this, blocks, parallel);
+      // return make_shared<BlockJacobiPrecond<TM>> (*this, blocks, parallel);
       
-      return make_shared<BlockJacobiPrecond<TM,TV_ROW,TV_COL>>
+      return make_shared<BlockJacobiPrecond<TM>>
         ( dynamic_pointer_cast<const SparseMatrix>
           (this->shared_from_this()),
           blocks, parallel);
@@ -261,61 +252,31 @@ namespace ngla
   
 
   
-  template <class TM, class TV_ROW, class TV_COL>
-  void SparseMatrix<TM,TV_ROW,TV_COL> ::
-  MultAdd (double s, const BaseVector & x, BaseVector & y) const
+  template <class TM>
+  void SparseMatrix<TM> ::
+  MultAdd (Scalar s, const BaseVector & x, BaseVector & y) const
   {
     static Timer t("SparseMatrix::MultAdd"); RegionTimer reg(t);
-    t.AddFlops (this->NZE()*sizeof(TV_ROW)*sizeof(TV_COL)/sqr(sizeof(double)));
+    t.AddFlops (this->NZE()*sizeof(TV_ROW)*sizeof(TV_COL)/sqr(sizeof(TSCAL)));
 
-    ParallelForRange
-      (balance, [&] (IntRange myrange)
+    DispatchVectorTypes<TSCAL,TV_ROW,TV_COL>
+      (s, x, this->Width(), y, this->Height(), "SparseMatrix::MultAdd",
+       [&] <typename TVX, typename TVY> (auto sy)
        {
-         FlatVector<TVX> fx = x.FV<TVX>(); 
-         FlatVector<TVY> fy = y.FV<TVY>(); 
+         ParallelForRange
+           (balance, [&] (IntRange myrange)
+            {
+              FlatVector<TVX> fx = x.FV<TVX>(); 
+              FlatVector<TVY> fy = y.FV<TVY>(); 
 
-         for (auto i : myrange)
-           fy(i) += s * RowTimesVector (i, fx);
+              for (auto i : myrange)
+                fy(i) += sy * RowTimesVector (i, fx);
+            });
        });
-    
-#ifdef OLD
-    if (task_manager)
-      {
-	FlatVector<TVX> fx = x.FV<TVX>(); 
-	FlatVector<TVY> fy = y.FV<TVY>(); 
-
-        // int ntasks = task_manager->GetNumThreads();
-
-        task_manager -> CreateJob 
-          ([&] (TaskInfo & ti) 
-           {
-             int tasks_per_part = ti.ntasks / balance.Size();
-             int mypart = ti.task_nr / tasks_per_part;
-             int num_in_part = ti.task_nr % tasks_per_part;
-             
-             auto myrange = balance[mypart].Split (num_in_part, tasks_per_part);
-
-             for (auto row : myrange) 
-               fy(row) += s * RowTimesVector (row, fx);
-
-           });
-	return;
-      }
-    
-
-    FlatVector<TVX> fx = x.FV<TVX>(); 
-    FlatVector<TVY> fy = y.FV<TVY>(); 
-
-    int h = this->Height();
-    for (int i = 0; i < h; i++)
-      fy(i) += s * RowTimesVector (i, fx);
-#endif
-
-    
   }
 
-  template <class TM, class TV_ROW, class TV_COL>
-  void SparseMatrix<TM,TV_ROW,TV_COL> ::
+  template <class TM>
+  void SparseMatrix<TM> ::
   MultAdd1 (double s, const BaseVector & x, BaseVector & y,
             const BitArray * ainner,
             const Array<int> * acluster) const
@@ -326,112 +287,66 @@ namespace ngla
         return;
       }
 
-    FlatVector<TVX> fx = x.FV<TVX>(); 
-    FlatVector<TVY> fy = y.FV<TVY>(); 
+    DispatchVectorTypes<TSCAL,TV_ROW,TV_COL>
+      (s, x, this->Width(), y, this->Height(), "SparseMatrix::MultAdd1",
+       [&] <typename TVX, typename TVY> (auto sy)
+       {
+         FlatVector<TVX> fx = x.FV<TVX>(); 
+         FlatVector<TVY> fy = y.FV<TVY>(); 
 
-    SharedLoop2 sl(ainner->Size());
-    ParallelJob
-      ( [&] (const TaskInfo & ti)
-        {
-          for (size_t row : sl)
-            if ( (*ainner).Test(row))
-              fy(row) += s * RowTimesVector (row, fx);
-        });
+         SharedLoop2 sl(ainner->Size());
+         ParallelJob
+           ( [&] (const TaskInfo & ti)
+             {
+               for (size_t row : sl)
+                 if ( (*ainner).Test(row))
+                   fy(row) += sy * RowTimesVector (row, fx);
+             });
+       });
   }
   
-  
 
-  template <class TM, class TV_ROW, class TV_COL>
-  void SparseMatrix<TM,TV_ROW,TV_COL> ::
-  MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
+  template <class TM>
+  void SparseMatrix<TM> ::
+  T_MultTransAdd (Scalar s, const BaseVector & x, BaseVector & y, bool conjugate) const
+  {
+    DispatchVectorTypes<TSCAL,TV_COL,TV_ROW>
+      (s, x, this->Height(), y, this->Width(), "SparseMatrix::MultTransAdd",
+       [&] <typename TVX, typename TVY> (auto sy)
+       {
+         FlatVector<TVX> fx = x.FV<TVX>();
+         FlatVector<TVY> fy = y.FV<TVY>();
+
+         if (conjugate)
+           for (int i = 0; i < this->Height(); i++)
+             AddRowConjTransToVector (i, sy*fx(i), fy);
+         else
+           for (int i = 0; i < this->Height(); i++)
+             AddRowTransToVector (i, sy*fx(i), fy);
+       });
+  }
+
+  template <class TM>
+  void SparseMatrix<TM> ::
+  MultTransAdd (Scalar s, const BaseVector & x, BaseVector & y) const
   {
     static Timer timer ("SparseMatrix::MultTransAdd");
     RegionTimer reg (timer);
-
-    FlatVector<TVY> fx = x.FV<TVY>();
-    FlatVector<TVX> fy = y.FV<TVX>();
-    
-    for (int i = 0; i < this->Height(); i++)
-      AddRowTransToVector (i, s*fx(i), fy);
-
     timer.AddFlops (this->NZE());
-
-
-    /*
-    static Timer t("SparseMatrix::MultTransAdd"); RegionTimer reg(t);
-    t.AddFlops (this->NZE()*sizeof(TV_ROW)*sizeof(TV_COL)/sqr(sizeof(double)));
-
-    ParallelForRange
-      (balance, [&] (IntRange myrange)
-       {
-         FlatVector<TVY> fx = x.FV<TVY>(); 
-         FlatVector<TVX> fy = y.FV<TVX>(); 
-
-         for (auto i : myrange)
-           AddRowTransToVectorAtomic (i, s*fx(i), fy);
-       });
-    */
-    
+    T_MultTransAdd (s, x, y, false);
   }
 
-
-  template <class TM, class TV_ROW, class TV_COL>
-  void SparseMatrix<TM,TV_ROW,TV_COL> ::
-  MultAdd (Complex s, const BaseVector & x, BaseVector & y) const
-  {
-    static Timer timer("SparseMatrix::MultAdd Complex");
-    RegionTimer reg (timer);
-
-    FlatVector<TVX> fx = x.FV<TVX> (); //  (x.Size(), x.Memory());
-    FlatVector<TVY> fy = y.FV<TVY> (); // (y.Size(), y.Memory());
-
-    if constexpr (std::is_constructible<TSCAL,Complex>())
-      {
-        int h = this->Height();
-        for (int i = 0; i < h; i++)
-          fy(i) += TSCAL(s) * RowTimesVector (i, fx);
-      }
-    else
-      throw Exception("MultAdd(complex) called for real matrix");
-  }
-  
-
-  template <class TM, class TV_ROW, class TV_COL>
-  void SparseMatrix<TM,TV_ROW,TV_COL> ::
-  MultTransAdd (Complex s, const BaseVector & x, BaseVector & y) const
-  {
-    static Timer timer("SparseMatrix::MultTransAdd Complex");
-    RegionTimer reg (timer);
-
-    FlatVector<TVY> fx = x.FV<TVY>(); //  (x.Size(), x.Memory());
-    FlatVector<TVX> fy = y.FV<TVX>(); // (y.Size(), y.Memory());
-
-    if constexpr (std::is_constructible<TSCAL,Complex>())    
-      for (int i = 0; i < this->Height(); i++)
-        AddRowTransToVector (i, TSCAL(s)*fx(i), fy);
-     else
-      throw Exception("MultTransAdd(complex) called for real matrix");
-  }
-
-  template <class TM, class TV_ROW, class TV_COL>
-  void SparseMatrix<TM,TV_ROW,TV_COL> ::
+  template <class TM>
+  void SparseMatrix<TM> ::
   MultConjTransAdd (Complex s, const BaseVector & x, BaseVector & y) const
   {
-    static Timer timer("SparseMatrix::MultTransAdd Complex");
+    static Timer timer("SparseMatrix::MultConjTransAdd");
     RegionTimer reg (timer);
-
-    FlatVector<TVY> fx = x.FV<TVY>(); //  (x.Size(), x.Memory());
-    FlatVector<TVX> fy = y.FV<TVX>(); // (y.Size(), y.Memory());
-
-    if constexpr (std::is_constructible<TSCAL,Complex>())        
-      for (int i = 0; i < this->Height(); i++)
-        AddRowConjTransToVector (i, TSCAL(s)*fx(i), fy);
-    else
-      throw Exception("MultConjTransAdd(complex) called for real matrix");      
+    T_MultTransAdd (s, x, y, true);
   }
 
-  template <class TM, class TV_ROW, class TV_COL>
-  void SparseMatrix<TM,TV_ROW,TV_COL> ::
+  template <class TM>
+  void SparseMatrix<TM> ::
   MultAdd (FlatVector<double> alpha, const MultiVector & x, MultiVector & y) const
   {
     BaseMatrix::MultAdd (alpha, x, y);
@@ -439,8 +354,8 @@ namespace ngla
   
 
   
-  template <class TM, class TV_ROW, class TV_COL>
-  void SparseMatrix<TM,TV_ROW,TV_COL> :: DoArchive (Archive & ar)
+  template <class TM>
+  void SparseMatrix<TM> :: DoArchive (Archive & ar)
   {
     ar & this->size;
     ar & this->width;
@@ -455,8 +370,8 @@ namespace ngla
 
 
 
-  template <class TM, class TV_ROW, class TV_COL>
-  shared_ptr<BaseMatrix> SparseMatrix<TM,TV_ROW,TV_COL> ::
+  template <class TM>
+  shared_ptr<BaseMatrix> SparseMatrix<TM> ::
   InverseMatrix (shared_ptr<BitArray> subset) const
   {
     return CreateSparseMatrixInverse(dynamic_pointer_cast<const BaseSparseMatrix>(this->shared_from_this()), subset, nullptr);
@@ -465,28 +380,28 @@ namespace ngla
   // template <class TM>
   // BaseMatrix * SparseMatrix<TM> :: 
 
-  template <class TM, class TV_ROW, class TV_COL>
-  shared_ptr<BaseMatrix> SparseMatrix<TM,TV_ROW,TV_COL> ::
+  template <class TM>
+  shared_ptr<BaseMatrix> SparseMatrix<TM> ::
   InverseMatrix (shared_ptr<const Array<int>> clusters) const
   {
     return CreateSparseMatrixInverse(dynamic_pointer_cast<const BaseSparseMatrix>(this->shared_from_this()), nullptr, clusters);
   }
 
-  template <class TM, class TV>
-  shared_ptr<BaseMatrix> SparseMatrixSymmetric<TM,TV> :: InverseMatrix (shared_ptr<BitArray> subset) const
+  template <class TM>
+  shared_ptr<BaseMatrix> SparseMatrixSymmetric<TM> :: InverseMatrix (shared_ptr<BitArray> subset) const
   {
     return CreateSparseMatrixInverse(dynamic_pointer_cast<const BaseSparseMatrix>(this->shared_from_this()), subset, nullptr);
   }
 
-  template <class TM, class TV>
-  shared_ptr<BaseMatrix> SparseMatrixSymmetric<TM,TV> ::
+  template <class TM>
+  shared_ptr<BaseMatrix> SparseMatrixSymmetric<TM> ::
   InverseMatrix (shared_ptr<const Array<int>> clusters) const
   {
     return CreateSparseMatrixInverse(dynamic_pointer_cast<const BaseSparseMatrix>(this->shared_from_this()), nullptr, clusters);
   }
 
-  template <class TM, class TV_ROW, class TV_COL>
-  shared_ptr<BaseMatrix> SparseMatrix<TM,TV_ROW,TV_COL> ::
+  template <class TM>
+  shared_ptr<BaseMatrix> SparseMatrix<TM> ::
   DeleteZeroElements(double tol) const
   {
     static Timer t("SparseMatrix::DeleteZeroElements"); RegionTimer reg(t);
@@ -508,6 +423,7 @@ namespace ngla
       }, 5*TaskManager::GetNumThreads());
 
     auto matrix = make_shared<SparseMatrix<TM>> (cnt, w);
+    matrix->CopyVectorScalar (*this);
     cnt = 0;
 
     ParallelForRange( h, [&](IntRange r)
@@ -556,7 +472,7 @@ namespace ngla
   }
 
   template <class TM>
-  ostream & SparseMatrixTM<TM> ::
+  ostream & SparseMatrix<TM> ::
   Print (ostream & ost) const
   {
     for (int i = 0; i < size; i++)
@@ -572,7 +488,7 @@ namespace ngla
 
   
   template <class TM>
-  Array<MemoryUsage> SparseMatrixTM<TM> ::
+  Array<MemoryUsage> SparseMatrix<TM> ::
   GetMemoryUsage () const
   {
     Array<MemoryUsage> mu;
@@ -582,30 +498,21 @@ namespace ngla
   }
 
 
-  template <class TM> AutoVector SparseMatrixTM<TM> :: CreateVector () const
-  { throw Exception("SparseMatrixTM::CreateVector"); }
-
-  // the vector type is fixed in SparseMatrix, here only the shape
-  template <class TM> VecFormat SparseMatrixTM<TM> :: RowFormat () const
-  { return VecFormat (this->width); }
-  template <class TM> VecFormat SparseMatrixTM<TM> :: ColFormat () const
-  { return VecFormat (this->size); }
 
 
-  template <class TM, class TV_ROW, class TV_COL>
-  shared_ptr<BaseMatrix> SparseMatrix<TM,TV_ROW,TV_COL> ::
+  template <class TM>
+  shared_ptr<BaseMatrix> SparseMatrix<TM> ::
   CreateMatrix () const
   {
     return make_shared<SparseMatrix> (*this);
   }
 
-  template <class TM, class TV_ROW, class TV_COL>
-  shared_ptr<BaseMatrix> SparseMatrix<TM,TV_ROW,TV_COL> ::
+  template <class TM>
+  shared_ptr<BaseMatrix> SparseMatrix<TM> ::
   CreateDeviceMatrix () const
   {
-    if constexpr ((is_same_v<TM,double> || is_same_v<TM,float>) &&
-                  is_same_v<TV_ROW,TM> && is_same_v<TV_COL,TM>)
-      if (ngs_gpu::HasDevice())
+    if constexpr (is_same_v<TM,double> || is_same_v<TM,float>)
+      if (ngs_gpu::HasDevice() && !std::holds_alternative<Complex>(this->GetVectorScalar()))
         {
           // double only where the device computes in fp64
           if constexpr (is_same_v<TM,double>)
@@ -616,12 +523,12 @@ namespace ngla
     return BaseMatrix::CreateDeviceMatrix();
   }
 
-  template <class TM, class TV>
-  shared_ptr<BaseMatrix> SparseMatrixSymmetric<TM,TV> ::
+  template <class TM>
+  shared_ptr<BaseMatrix> SparseMatrixSymmetric<TM> ::
   CreateDeviceMatrix () const
   {
-    if constexpr ((is_same_v<TM,double> || is_same_v<TM,float>) && is_same_v<TV,TM>)
-      if (ngs_gpu::HasDevice())
+    if constexpr (is_same_v<TM,double> || is_same_v<TM,float>)
+      if (ngs_gpu::HasDevice() && !std::holds_alternative<Complex>(this->GetVectorScalar()))
         {
           if constexpr (is_same_v<TM,double>)
             if (GetGpuDevice()->HasFloat64())
@@ -631,29 +538,29 @@ namespace ngla
     return BaseMatrix::CreateDeviceMatrix();
   }
 
-  template <class TM, class TV_ROW, class TV_COL>
-  AutoVector SparseMatrix<TM,TV_ROW,TV_COL> ::
+  template <class TM>
+  AutoVector SparseMatrix<TM> ::
   CreateVector () const
   {
     if (this->size==this->width)
-      return make_unique<VVector<TVY>> (this->size);
+      return CreateBaseVector (ColFormat());
     throw Exception ("SparseMatrix::CreateVector for rectangular does not make sense, use either CreateColVector or CreateRowVector");
   }
 
 
 
-  template <class TM, class TV_ROW, class TV_COL>
-  VecFormat SparseMatrix<TM,TV_ROW,TV_COL> :: RowFormat () const
-  { return VVectorFormat<TVX> (this->width); }
+  template <class TM>
+  VecFormat SparseMatrix<TM> :: RowFormat () const
+  { return VVectorFormat<TV_ROW> (this->width).WithScalar(this->GetVectorScalar()); }
 
-  template <class TM, class TV_ROW, class TV_COL>
-  VecFormat SparseMatrix<TM,TV_ROW,TV_COL> :: ColFormat () const
-  { return VVectorFormat<TVY> (this->size); }
+  template <class TM>
+  VecFormat SparseMatrix<TM> :: ColFormat () const
+  { return VVectorFormat<TV_COL> (this->size).WithScalar(this->GetVectorScalar()); }
 
 
-  template<class TM, class TV_ROW, class TV_COL>
+  template <class TM>
   shared_ptr<BaseSparseMatrix>
-  SparseMatrix<TM,TV_ROW,TV_COL> :: Restrict (const SparseMatrixTM<double> & prol,
+  SparseMatrix<TM> :: Restrict (const SparseMatrix<double> & prol,
                                   shared_ptr<BaseSparseMatrix> acmat ) const
   {
     static Timer t ("sparsematrix - restrict");
@@ -663,7 +570,7 @@ namespace ngla
     
     int n = this->Height();
 
-    auto cmat = dynamic_pointer_cast<SparseMatrixTM<TM>> (acmat);
+    auto cmat = dynamic_pointer_cast<SparseMatrix<TM>> (acmat);
  
     // if no coarse matrix, build up matrix-graph!
     if ( !cmat )
@@ -727,7 +634,8 @@ namespace ngla
 		}
 	    }
 
-	cmat = make_shared<SparseMatrix<TM,TV_ROW,TV_COL>> (cnt);
+	cmat = make_shared<SparseMatrix<TM>> (cnt);
+        cmat->CopyVectorScalar (*this);
 
 	marks = -1;
 	for (int i = 0; i < nc; i++)
@@ -787,8 +695,8 @@ namespace ngla
 
 
   
-  template <class TM, class TV_ROW, class TV_COL>
-  shared_ptr<BaseSparseMatrix> SparseMatrix<TM, TV_ROW, TV_COL> ::
+  template <class TM>
+  shared_ptr<BaseSparseMatrix> SparseMatrix<TM> ::
   Reorder (const Array<size_t> & reorder) const
   {
     Array<size_t> inv_reorder(reorder.Size());
@@ -799,6 +707,7 @@ namespace ngla
     for (size_t i : Range(cnt))
       cnt[i] = this->GetRowIndices(reorder[i]).Size();
     auto newmat = make_shared<SparseMatrix>(cnt);
+    newmat->CopyVectorScalar (*this);
     for (size_t i : Range(cnt))
       for (auto col : this->GetRowIndices(reorder[i]))
         newmat->CreatePosition(i, inv_reorder[col]);
@@ -812,9 +721,8 @@ namespace ngla
 
   
   template <class TM>
-  shared_ptr<BaseSparseMatrix> SparseMatrixTM<TM> ::
-  CreateTransposeTM (const function<shared_ptr<SparseMatrixTM<decltype(ngbla::Trans(TM()))>>(const Array<int>&,int)> & creator,
-                     bool sorted) const
+  shared_ptr<BaseSparseMatrix> SparseMatrix<TM> ::
+  CreateTranspose (bool sorted) const
   {
     Array<int> cnt(this->Width());
     cnt = 0;
@@ -824,7 +732,8 @@ namespace ngla
         AsAtomic (cnt[c]) ++;
     });
     
-    auto trans = creator(cnt, this->Height());
+    auto trans = make_shared<SparseMatrix<decltype(ngbla::Trans(TM()))>> (cnt, this->Height());
+    trans->CopyVectorScalar (*this);
 
     cnt = 0;
     ParallelFor (this->Height(), [&] (int i)
@@ -853,7 +762,7 @@ namespace ngla
   
 
   template <class TM>
-  void SparseMatrixTM<TM> ::
+  void SparseMatrix<TM> ::
   AddElementMatrixSymmetric(FlatArray<int> dnums, BareSliceMatrix<TSCAL> elmat1, bool use_atomic)
   {
     static Timer timer_addelmat("SparseMatrixSymmetric::AddElementMatrix", NoTracing);
@@ -941,48 +850,48 @@ namespace ngla
   }
   
   
-  template <class TM, class TV>
-  SparseMatrixSymmetric<TM,TV> :: 
+  template <class TM>
+  SparseMatrixSymmetric<TM> :: 
   SparseMatrixSymmetric (const MatrixGraph & agraph)
-    // : SparseMatrixTM<TM> (agraph, stealgraph), 
+    // : SparseMatrix<TM> (agraph, stealgraph), 
     // SparseMatrixSymmetricTM<TM> (agraph, stealgraph),
-    : SparseMatrix<TM,TV,TV> (agraph)
+    : SparseMatrix<TM> (agraph)
   { ; }
 
-  template <class TM, class TV>
-  SparseMatrixSymmetric<TM,TV> :: 
+  template <class TM>
+  SparseMatrixSymmetric<TM> :: 
   SparseMatrixSymmetric (MatrixGraph && agraph)
-    // : SparseMatrixTM<TM> (agraph, stealgraph), 
+    // : SparseMatrix<TM> (agraph, stealgraph), 
     // SparseMatrixSymmetricTM<TM> (agraph, stealgraph),
-    : SparseMatrix<TM,TV,TV> (std::move(agraph))
+    : SparseMatrix<TM> (std::move(agraph))
   { ; }
 
   
-  template <class TM, class TV>
-  SparseMatrixSymmetric<TM,TV> :: ~SparseMatrixSymmetric ()
+  template <class TM>
+  SparseMatrixSymmetric<TM> :: ~SparseMatrixSymmetric ()
   {
     ; 
   }
   
 
-  template <class TM, class TV>
+  template <class TM>
   shared_ptr<BaseJacobiPrecond>
-  SparseMatrixSymmetric<TM,TV> :: CreateJacobiPrecond (shared_ptr<BitArray> inner) const 
+  SparseMatrixSymmetric<TM> :: CreateJacobiPrecond (shared_ptr<BitArray> inner) const 
   { 
-    return make_shared<JacobiPrecondSymmetric<TM,TV>> ( dynamic_pointer_cast<SparseMatrixSymmetric>
+    return make_shared<JacobiPrecondSymmetric<TM>> ( dynamic_pointer_cast<SparseMatrixSymmetric>
                                                         (const_cast<SparseMatrixSymmetric*>(this)->shared_from_this()), inner);
   }
   
 
-  template <class TM, class TV>  
+  template <class TM>  
   shared_ptr<BaseBlockJacobiPrecond>
-  SparseMatrixSymmetric<TM,TV> :: CreateBlockJacobiPrecond (shared_ptr<Table<int>> blocks,
+  SparseMatrixSymmetric<TM> :: CreateBlockJacobiPrecond (shared_ptr<Table<int>> blocks,
                                                             const BaseVector * constraint,
                                                             bool parallel,
                                                             shared_ptr<BitArray> freedofs) const
   { 
-    // return make_shared<BlockJacobiPrecondSymmetric<TM,TV>> (*this, blocks);
-    return make_shared<BlockJacobiPrecondSymmetric<TM,TV>>
+    // return make_shared<BlockJacobiPrecondSymmetric<TM>> (*this, blocks);
+    return make_shared<BlockJacobiPrecondSymmetric<TM>>
       ( dynamic_pointer_cast<const SparseMatrixSymmetric>
         (this->shared_from_this()),
         blocks);
@@ -992,65 +901,74 @@ namespace ngla
 
 
   
-  template <class TM, class TV>
-  void SparseMatrixSymmetric<TM,TV> :: 
-  MultAdd (double s, const BaseVector & x, BaseVector & y) const
+  template <class TM>
+  void SparseMatrixSymmetric<TM> :: 
+  MultAdd (Scalar s, const BaseVector & x, BaseVector & y) const
   {
     static Timer timer("SparseMatrixSymmetric::MultAdd");
     RegionTimer reg (timer);
     timer.AddFlops (2*this->nze);
 
-    const FlatVector<TV_ROW> fx = x.FV<TV_ROW>();
-    FlatVector<TV_COL> fy = y.FV<TV_COL>();
+    DispatchVectorTypes<TSCAL,TV,TV>
+      (s, x, this->Width(), y, this->Height(), "SparseMatrixSymmetric::MultAdd",
+       [&] <typename TVX, typename TVY> (auto sy)
+       {
+         const FlatVector<TVX> fx = x.FV<TVX>();
+         FlatVector<TVY> fy = y.FV<TVY>();
 
-    for (int i = 0; i < this->Height(); i++)
-      {
-	fy(i) += s * RowTimesVector (i, fx);
-	AddRowTransToVectorNoDiag (i, s * fx(i), fy);
-      }
+         for (int i = 0; i < this->Height(); i++)
+           {
+             fy(i) += sy * RowTimesVector (i, fx);
+             AddRowTransToVectorNoDiag (i, sy * fx(i), fy);
+           }
+       });
   }
 
-  template <class TM, class TV>
-  void SparseMatrixSymmetric<TM,TV> :: 
+  template <class TM>
+  void SparseMatrixSymmetric<TM> :: 
   MultAdd1 (double s, const BaseVector & x, BaseVector & y,
 	    const BitArray * inner,
 	    const Array<int> * cluster) const
   {
-    const FlatVector<TV_ROW> fx = x.FV<TV_ROW> ();
-    FlatVector<TV_COL> fy = y.FV<TV_COL> ();
+    DispatchVectorTypes<TSCAL,TV,TV>
+      (s, x, this->Width(), y, this->Height(), "SparseMatrixSymmetric::MultAdd1",
+       [&] <typename TVX, typename TVY> (auto sy)
+       {
+         const FlatVector<TVX> fx = x.FV<TVX> ();
+         FlatVector<TVY> fy = y.FV<TVY> ();
     
-    if (inner)
-      {
-	static Timer timer("SparseMatrixSymmetric::MultAdd1 - inner");
-	RegionTimer reg (timer);
+         if (inner)
+           {
+             static Timer timer("SparseMatrixSymmetric::MultAdd1 - inner");
+             RegionTimer reg (timer);
 
-	for (int i = 0; i < this->Height(); i++)
-	  if (inner->Test(i))
-	    fy(i) += s * RowTimesVectorNoDiag (i, fx);
-      }
-    else if (cluster)
-      {
-	static Timer timer("SparseMatrixSymmetric::MultAdd1 - cluster");
-	RegionTimer reg (timer);
+             for (int i = 0; i < this->Height(); i++)
+               if (inner->Test(i))
+                 fy(i) += sy * RowTimesVectorNoDiag (i, fx);
+           }
+         else if (cluster)
+           {
+             static Timer timer("SparseMatrixSymmetric::MultAdd1 - cluster");
+             RegionTimer reg (timer);
 
-	for (int i = 0; i < this->Height(); i++)
-	  if ( (*cluster)[i])
-	    fy(i) += s * RowTimesVectorNoDiag (i, fx);
-      }
-    else
-      {
-	static Timer timer("SparseMatrixSymmetric::MultAdd1");
-	RegionTimer reg (timer);
-	
+             for (int i = 0; i < this->Height(); i++)
+               if ( (*cluster)[i])
+                 fy(i) += sy * RowTimesVectorNoDiag (i, fx);
+           }
+         else
+           {
+             static Timer timer("SparseMatrixSymmetric::MultAdd1");
+             RegionTimer reg (timer);
 
-	for (int i = 0; i < this->Height(); i++)
-	  fy(i) += s * RowTimesVectorNoDiag (i, fx);
-      }
+             for (int i = 0; i < this->Height(); i++)
+               fy(i) += sy * RowTimesVectorNoDiag (i, fx);
+           }
+       });
   }
   
 
-  template <class TM, class TV>
-  void SparseMatrixSymmetric<TM,TV> :: 
+  template <class TM>
+  void SparseMatrixSymmetric<TM> :: 
   MultAdd2 (double s, const BaseVector & x, BaseVector & y,
 	    const BitArray * inner,
 	    const Array<int> * cluster) const
@@ -1059,30 +977,35 @@ namespace ngla
     RegionTimer reg (timer);
     timer.AddFlops (this->NZE());
    
-    const FlatVector<TV_ROW> fx = x.FV<TV_ROW> ();
-    FlatVector<TV_COL> fy = y.FV<TV_COL> ();
+    DispatchVectorTypes<TSCAL,TV,TV>
+      (s, x, this->Width(), y, this->Height(), "SparseMatrixSymmetric::MultAdd2",
+       [&] <typename TVX, typename TVY> (auto sy)
+       {
+         const FlatVector<TVX> fx = x.FV<TVX> ();
+         FlatVector<TVY> fy = y.FV<TVY> ();
 
-    if (inner)
-      {
-	for (int i = 0; i < this->Height(); i++)
-	  if (inner->Test(i))
-	    AddRowTransToVector (i, s * fx(i), fy);
-      }
-    else if (cluster)
-      {
-	for (int i = 0; i < this->Height(); i++)
-	  if ( (*cluster)[i])
-	    AddRowTransToVector (i, s * fx(i), fy);
-      }
-    else
-      for (int i = 0; i < this->Height(); i++)
-	AddRowTransToVector (i, s * fx(i), fy);
+         if (inner)
+           {
+             for (int i = 0; i < this->Height(); i++)
+               if (inner->Test(i))
+                 AddRowTransToVector (i, sy * fx(i), fy);
+           }
+         else if (cluster)
+           {
+             for (int i = 0; i < this->Height(); i++)
+               if ( (*cluster)[i])
+                 AddRowTransToVector (i, sy * fx(i), fy);
+           }
+         else
+           for (int i = 0; i < this->Height(); i++)
+             AddRowTransToVector (i, sy * fx(i), fy);
+       });
   }
 
 
 
-  template <class TM, class TV>
-  BaseSparseMatrix & SparseMatrixSymmetric<TM,TV> :: 
+  template <class TM>
+  BaseSparseMatrix & SparseMatrixSymmetric<TM> :: 
   AddMerge (double s, const SparseMatrixSymmetric  & m2)
   {
     for (int i = 0; i < m2.Height(); i++)

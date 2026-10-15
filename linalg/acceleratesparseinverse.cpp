@@ -109,7 +109,7 @@ namespace ngla
 
   void AccelerateSparseInverse::BuildCSC()
   {
-    auto matrix = dynamic_pointer_cast<const SparseMatrixTM<double>>(inner_mat);
+    auto matrix = dynamic_pointer_cast<const SparseMatrix<double>>(inner_mat);
     if (!matrix)
       throw Exception("Accelerate Sparse supports real double matrices only");
 
@@ -181,7 +181,7 @@ namespace ngla
 
   void AccelerateSparseInverse::CheckPattern() const
   {
-    auto matrix = dynamic_pointer_cast<const SparseMatrixTM<double>>(inner_mat);
+    auto matrix = dynamic_pointer_cast<const SparseMatrix<double>>(inner_mat);
     if (!matrix)
       throw Exception("Accelerate Sparse supports real double matrices only");
 
@@ -202,7 +202,7 @@ namespace ngla
   void AccelerateSparseInverse::RefreshValues()
   {
     CheckPattern();
-    auto matrix = dynamic_pointer_cast<const SparseMatrixTM<double>>(inner_mat);
+    auto matrix = dynamic_pointer_cast<const SparseMatrix<double>>(inner_mat);
     auto values = matrix->GetValues();
     for (auto i : Range(value_map))
       csc_values[i] = values[value_map[i]];

@@ -63,9 +63,9 @@ namespace superlufunc
   using namespace superlufunc;
 
 
-  template <class TM, class TV_ROW, class TV_COL>
-  SuperLUInverse<TM,TV_ROW,TV_COL> :: 
-  SuperLUInverse (const SparseMatrix<TM,TV_ROW,TV_COL> & a, 
+  template <class TM>
+  SuperLUInverse<TM> :: 
+  SuperLUInverse (const SparseMatrix<TM> & a, 
 		  const BitArray * ainner,
 		  const Array<int> * acluster,
 		  int asymmetric)
@@ -362,8 +362,8 @@ namespace superlufunc
   
   
 
-  template <class TM, class TV_ROW, class TV_COL>
-  SuperLUInverse<TM,TV_ROW,TV_COL> :: 
+  template <class TM>
+  SuperLUInverse<TM> :: 
 
   SuperLUInverse (const Array<int> & aorder, 
 		  const Array<CliqueEl*> & cliques,
@@ -376,8 +376,8 @@ namespace superlufunc
 
   
 
-  template <class TM, class TV_ROW, class TV_COL>
-  void SuperLUInverse<TM, TV_ROW,TV_COL> :: 
+  template <class TM>
+  void SuperLUInverse<TM> :: 
   Allocate (const Array<int> & aorder, 
 	    const Array<CliqueEl*> & cliques,
 	    const Array<MDOVertex> & vertices)
@@ -387,8 +387,8 @@ namespace superlufunc
   
 
 
-  template <class TM, class TV_ROW, class TV_COL>
-  void SuperLUInverse<TM,TV_ROW,TV_COL> :: 
+  template <class TM>
+  void SuperLUInverse<TM> :: 
   FactorNew (const SparseMatrix<TM> & a)
   {
     throw Exception ("SuperLUInverse::FactorNew not implemented");
@@ -399,8 +399,8 @@ namespace superlufunc
 
 
 
-  template <class TM, class TV_ROW, class TV_COL>
-  void SuperLUInverse<TM,TV_ROW, TV_COL> :: Factor (const int * blocknr)
+  template <class TM>
+  void SuperLUInverse<TM> :: Factor (const int * blocknr)
   {
     cout << "SuperLUInverse::Factor not implemented!" << endl;
   }
@@ -409,10 +409,14 @@ namespace superlufunc
 
 
 
-  template <class TM, class TV_ROW, class TV_COL>
-  void SuperLUInverse<TM,TV_ROW,TV_COL> :: 
+  template <class TM>
+  void SuperLUInverse<TM> :: 
   Mult (const BaseVector & x, BaseVector & y) const
   {
+    CheckSameScalar ({ &x, &y }, "SuperLUInverse::Mult");
+    if (x.GetScalarType().index() != Scalar(TSCAL(0)).index())
+      ThrowIllegalScalars ("SuperLUInverse::Mult", TSCAL(0), x, y);
+
 
     FlatVector<TVX> fx = x.FV<TVX> ();
     // dynamic_cast<T_BaseVector<TVX> &> (const_cast<BaseVector &> (x)).FV();
@@ -467,23 +471,23 @@ namespace superlufunc
 
 
 /*
-  template <class TM, class TV_ROW, class TV_COL>
-  void SuperLUInverse<TM,TV_ROW,TV_COL> :: Set (int i, int j, const TM & val)
+  template <class TM>
+  void SuperLUInverse<TM> :: Set (int i, int j, const TM & val)
   {
     cout << "SuperLUInverse::Set not implemented!" << endl;
   }
 
 
 
-  template <class TM, class TV_ROW, class TV_COL>
-  const TM & SuperLUInverse<TM,TV_ROW,TV_COL> :: Get (int i, int j) const
+  template <class TM>
+  const TM & SuperLUInverse<TM> :: Get (int i, int j) const
   {
     cout << "SuperLUInverse::Get not implemented!" << endl;
   }
 */
 
-  template <class TM, class TV_ROW, class TV_COL>
-  ostream & SuperLUInverse<TM,TV_ROW,TV_COL> :: Print (ostream & ost) const
+  template <class TM>
+  ostream & SuperLUInverse<TM> :: Print (ostream & ost) const
   {
     cout << "SuperLUInverse::Print not implemented!" << endl;
     return ost; 
@@ -491,8 +495,8 @@ namespace superlufunc
 
 
 
-  template <class TM, class TV_ROW, class TV_COL>
-  SuperLUInverse<TM,TV_ROW,TV_COL> :: ~SuperLUInverse()
+  template <class TM>
+  SuperLUInverse<TM> :: ~SuperLUInverse()
   {
 //     Destroy_CompCol_Matrix(&A);
 //     Destroy_SuperMatrix_Store(&B);
@@ -515,7 +519,6 @@ namespace superlufunc
 
   template class SuperLUInverse<double>;
   template class SuperLUInverse<Complex>;
-  template class SuperLUInverse<double,Complex,Complex>;
 #if MAX_SYS_DIM >= 1
   template class SuperLUInverse<Mat<1,1,double> >;
   template class SuperLUInverse<Mat<1,1,Complex> >;
@@ -554,99 +557,15 @@ namespace superlufunc
 
 
 
-  template class SuperLUInverse<double, Vec<2,double>, Vec<2,double> >;
-  template class SuperLUInverse<double, Vec<3,double>, Vec<3,double> >;
-  template class SuperLUInverse<double, Vec<4,double>, Vec<4,double> >;
-  template class SuperLUInverse<double, Vec<5,double>, Vec<5,double> >;
-  template class SuperLUInverse<double, Vec<6,double>, Vec<6,double> >;
-  template class SuperLUInverse<double, Vec<7,double>, Vec<7,double> >;
-  template class SuperLUInverse<double, Vec<8,double>, Vec<8,double> >;
-  template class SuperLUInverse<double, Vec<9,double>, Vec<9,double> >;
-  template class SuperLUInverse<double, Vec<10,double>, Vec<10,double> >;
-  template class SuperLUInverse<double, Vec<11,double>, Vec<11,double> >;
-  template class SuperLUInverse<double, Vec<12,double>, Vec<12,double> >;
-  template class SuperLUInverse<double, Vec<13,double>, Vec<13,double> >;
-  template class SuperLUInverse<double, Vec<14,double>, Vec<14,double> >;
-  template class SuperLUInverse<double, Vec<15,double>, Vec<15,double> >;
   
-  template class SuperLUInverse<double, Vec<2,Complex>, Vec<2,Complex> >;
-  template class SuperLUInverse<double, Vec<3,Complex>, Vec<3,Complex> >;
-  template class SuperLUInverse<double, Vec<4,Complex>, Vec<4,Complex> >;
-  template class SuperLUInverse<double, Vec<5,Complex>, Vec<5,Complex> >;
-  template class SuperLUInverse<double, Vec<6,Complex>, Vec<6,Complex> >;
-  template class SuperLUInverse<double, Vec<7,Complex>, Vec<7,Complex> >;
-  template class SuperLUInverse<double, Vec<8,Complex>, Vec<8,Complex> >;
-  template class SuperLUInverse<double, Vec<9,Complex>, Vec<9,Complex> >;
-  template class SuperLUInverse<double, Vec<10,Complex>, Vec<10,Complex> >;
-  template class SuperLUInverse<double, Vec<11,Complex>, Vec<11,Complex> >;
-  template class SuperLUInverse<double, Vec<12,Complex>, Vec<12,Complex> >;
-  template class SuperLUInverse<double, Vec<13,Complex>, Vec<13,Complex> >;
-  template class SuperLUInverse<double, Vec<14,Complex>, Vec<14,Complex> >;
-  template class SuperLUInverse<double, Vec<15,Complex>, Vec<15,Complex> >;
 
-  template class SuperLUInverse<Complex, Vec<2,Complex>, Vec<2,Complex> >;
-  template class SuperLUInverse<Complex, Vec<3,Complex>, Vec<3,Complex> >;
-  template class SuperLUInverse<Complex, Vec<4,Complex>, Vec<4,Complex> >;
-  template class SuperLUInverse<Complex, Vec<5,Complex>, Vec<5,Complex> >;
-  template class SuperLUInverse<Complex, Vec<6,Complex>, Vec<6,Complex> >;
-  template class SuperLUInverse<Complex, Vec<7,Complex>, Vec<7,Complex> >;
-  template class SuperLUInverse<Complex, Vec<8,Complex>, Vec<8,Complex> >;
-  template class SuperLUInverse<Complex, Vec<9,Complex>, Vec<9,Complex> >;
-  template class SuperLUInverse<Complex, Vec<10,Complex>, Vec<10,Complex> >;
-  template class SuperLUInverse<Complex, Vec<11,Complex>, Vec<11,Complex> >;
-  template class SuperLUInverse<Complex, Vec<12,Complex>, Vec<12,Complex> >;
-  template class SuperLUInverse<Complex, Vec<13,Complex>, Vec<13,Complex> >;
-  template class SuperLUInverse<Complex, Vec<14,Complex>, Vec<14,Complex> >;
-  template class SuperLUInverse<Complex, Vec<15,Complex>, Vec<15,Complex> >;
   
   /*
 
 
 
-  template class SuperLUInverse<double, Vec<2,double>, Vec<2,double> >;
-  template class SuperLUInverse<double, Vec<3,double>, Vec<3,double> >;
-  template class SuperLUInverse<double, Vec<4,double>, Vec<4,double> >;
-  template class SuperLUInverse<double, Vec<5,double>, Vec<5,double> >;
-  template class SuperLUInverse<double, Vec<6,double>, Vec<6,double> >;
-  template class SuperLUInverse<double, Vec<7,double>, Vec<7,double> >;
-  template class SuperLUInverse<double, Vec<8,double>, Vec<8,double> >;
-  template class SuperLUInverse<double, Vec<9,double>, Vec<9,double> >;
-  template class SuperLUInverse<double, Vec<10,double>, Vec<10,double> >;
-  template class SuperLUInverse<double, Vec<11,double>, Vec<11,double> >;
-  template class SuperLUInverse<double, Vec<12,double>, Vec<12,double> >;
-  template class SuperLUInverse<double, Vec<13,double>, Vec<13,double> >;
-  template class SuperLUInverse<double, Vec<14,double>, Vec<14,double> >;
-  template class SuperLUInverse<double, Vec<15,double>, Vec<15,double> >;
 
-  template class SuperLUInverse<double, Vec<2,Complex>, Vec<2,Complex> >;
-  template class SuperLUInverse<double, Vec<3,Complex>, Vec<3,Complex> >;
-  template class SuperLUInverse<double, Vec<4,Complex>, Vec<4,Complex> >;
-  template class SuperLUInverse<double, Vec<5,Complex>, Vec<5,Complex> >;
-  template class SuperLUInverse<double, Vec<6,Complex>, Vec<6,Complex> >;
-  template class SuperLUInverse<double, Vec<7,Complex>, Vec<7,Complex> >;
-  template class SuperLUInverse<double, Vec<8,Complex>, Vec<8,Complex> >;
-  template class SuperLUInverse<double, Vec<9,Complex>, Vec<9,Complex> >;
-  template class SuperLUInverse<double, Vec<10,Complex>, Vec<10,Complex> >;
-  template class SuperLUInverse<double, Vec<11,Complex>, Vec<11,Complex> >;
-  template class SuperLUInverse<double, Vec<12,Complex>, Vec<12,Complex> >;
-  template class SuperLUInverse<double, Vec<13,Complex>, Vec<13,Complex> >;
-  template class SuperLUInverse<double, Vec<14,Complex>, Vec<14,Complex> >;
-  template class SuperLUInverse<double, Vec<15,Complex>, Vec<15,Complex> >;
 
-  template class SuperLUInverse<Complex, Vec<2,Complex>, Vec<2,Complex> >;
-  template class SuperLUInverse<Complex, Vec<3,Complex>, Vec<3,Complex> >;
-  template class SuperLUInverse<Complex, Vec<4,Complex>, Vec<4,Complex> >;
-  template class SuperLUInverse<Complex, Vec<5,Complex>, Vec<5,Complex> >;
-  template class SuperLUInverse<Complex, Vec<6,Complex>, Vec<6,Complex> >;
-  template class SuperLUInverse<Complex, Vec<7,Complex>, Vec<7,Complex> >;
-  template class SuperLUInverse<Complex, Vec<8,Complex>, Vec<8,Complex> >;
-  template class SuperLUInverse<Complex, Vec<9,Complex>, Vec<9,Complex> >;
-  template class SuperLUInverse<Complex, Vec<10,Complex>, Vec<10,Complex> >;
-  template class SuperLUInverse<Complex, Vec<11,Complex>, Vec<11,Complex> >;
-  template class SuperLUInverse<Complex, Vec<12,Complex>, Vec<12,Complex> >;
-  template class SuperLUInverse<Complex, Vec<13,Complex>, Vec<13,Complex> >;
-  template class SuperLUInverse<Complex, Vec<14,Complex>, Vec<14,Complex> >;
-  template class SuperLUInverse<Complex, Vec<15,Complex>, Vec<15,Complex> >;
   */
 
 
