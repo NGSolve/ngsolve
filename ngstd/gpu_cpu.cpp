@@ -178,6 +178,16 @@ namespace ngs_gpu
       size_t SimdWidth() const override { return 1; }
       size_t ComputeUnits() const override
       { return std::max (1u, std::thread::hardware_concurrency()); }
+      size_t MemoryBytes() const override
+      {
+#ifdef _WIN32
+        MEMORYSTATUSEX st;
+        st.dwLength = sizeof(st);
+        return GlobalMemoryStatusEx (&st) ? st.ullTotalPhys : 0;
+#else
+        return size_t(sysconf (_SC_PHYS_PAGES)) * size_t(sysconf (_SC_PAGE_SIZE));
+#endif
+      }
 
       shared_ptr<Buffer> DoNewBuffer (size_t bytes, MemType mt) override
       { return std::make_shared<CpuBuffer> (bytes, mt); }

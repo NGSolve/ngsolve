@@ -625,6 +625,12 @@ namespace ngs_cuda
     { return Attr (CU_DEVICE_ATTRIBUTE_WARP_SIZE); }
     size_t ComputeUnits() const override
     { return Attr (CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT); }
+    size_t MemoryBytes() const override
+    {
+      size_t bytes = 0;
+      Check (cuDeviceTotalMem (&bytes, dev), "cuDeviceTotalMem");
+      return bytes;
+    }
 
     shared_ptr<Buffer> DoNewBuffer (size_t bytes, MemType mt) override
     { return std::make_shared<CudaBuffer> (bytes, mt, defqueue, pooled); }

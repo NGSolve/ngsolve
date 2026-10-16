@@ -412,6 +412,9 @@ namespace ngs_gpu
     // parallel processors (cuda SMs, apple gpu cores, cpu threads);
     // metal has no query for it, the default suits apple silicon
     virtual size_t ComputeUnits() const { return 16; }
+    // memory usable by kernels (cuda: device memory, metal: recommended
+    // working set, cpu: physical memory)
+    virtual size_t MemoryBytes() const = 0;
 
     // raw bytes
     shared_ptr<Buffer> NewBuffer (size_t bytes, MemType mt = MemType::Device)

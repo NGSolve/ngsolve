@@ -479,6 +479,7 @@ namespace ngsmetal
       } ();
       return cores;
     }
+    size_t MemoryBytes() const override { return dev->recommendedMaxWorkingSetSize(); }
 
     shared_ptr<Buffer> DoNewBuffer (size_t bytes, MemType mt) override
     { return std::make_shared<MetalBuffer> (pool, defqueue, bytes, mt); }

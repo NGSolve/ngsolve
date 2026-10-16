@@ -168,7 +168,27 @@ Keyword arguments:
     Use float/Complex32 for far-field multipole/local coefficients,
     Bessel/Hankel functions, and translations. The operator boundary and
     near-field correction remain double/Complex128.
+  device : str, default "auto"
+    "auto": the GPU only after `import ngsolve.gpu` and if usable (fp64
+    needs a GPU with float64), else native. "none": always native. "gpu":
+    the GPU, else an error. "cpu": device kernels on the host (compiled with
+    NGS_GPU_CXX or c++). Device kernels run in float with fp32=True, else in
+    double. The GPU layer is not thread-safe: other threads must not use it
+    while a device operator is applied.
 )raw_string";
+
+  // the default device "auto" uses a GPU only after import ngsolve.gpu;
+  // a non-string device is kept for IntOp_Parameters, which rejects it
+  Flags BEMFlags (const py::kwargs & kwargs)
+  {
+    Flags flags = CreateFlagsFromKwArgs(kwargs);
+    bool given = kwargs.contains("device") ||
+      (kwargs.contains("flags") && py::cast<py::dict>(kwargs["flags"]).contains("device"));
+    bool gpu = py::module_::import("sys").attr("modules").contains("ngsolve.gpu");
+    if (!given || flags.GetStringFlag("device") == "auto")
+      flags.SetFlag("device", gpu ? "auto" : "none");
+    return flags;
+  }
 }
 
 
@@ -603,7 +623,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     auto fes = proxy->GetFESpace();
     int fesorder = GetFESOrder (proxy);
 
-    auto flags = CreateFlagsFromKwArgs(kwargs); 
+    auto flags = BEMFlags(kwargs);
     IntOp_Parameters ioparams(flags);
     const bool fp32 = flags.GetDefineFlag("fp32");
     // cout << ioflags << endl;
@@ -648,7 +668,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
       }
     */
     int fesorder = GetFESOrder (proxy);
-    auto flags = CreateFlagsFromKwArgs(kwargs);
+    auto flags = BEMFlags(kwargs);
     IntOp_Parameters ioparams(flags);
     const bool fp32 = flags.GetDefineFlag("fp32");
     
@@ -693,7 +713,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
       }
     */
     int fesorder = GetFESOrder (proxy);
-    auto flags = CreateFlagsFromKwArgs(kwargs);
+    auto flags = BEMFlags(kwargs);
     IntOp_Parameters ioparams(flags);
     const bool fp32 = flags.GetDefineFlag("fp32");
     
@@ -730,7 +750,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
       }
     */
     int fesorder = GetFESOrder (proxy);    
-    auto flags = CreateFlagsFromKwArgs(kwargs);
+    auto flags = BEMFlags(kwargs);
     IntOp_Parameters ioparams(flags);
     const bool fp32 = flags.GetDefineFlag("fp32");
     optional<Region> definedon = DefinedOnRegion(fes->GetMeshAccess(), igl->dx);
@@ -765,7 +785,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     */
     int fesorder = GetFESOrder (proxy);
 
-    auto flags = CreateFlagsFromKwArgs(kwargs); 
+    auto flags = BEMFlags(kwargs);
     IntOp_Parameters ioparams(flags);
     const bool fp32 = flags.GetDefineFlag("fp32");
     
@@ -789,7 +809,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     auto fes = proxy->GetFESpace();
 
     int fesorder = GetFESOrder (proxy);    
-    auto flags = CreateFlagsFromKwArgs(kwargs);
+    auto flags = BEMFlags(kwargs);
     IntOp_Parameters ioparams(flags);
     const bool fp32 = flags.GetDefineFlag("fp32");
     optional<Region> definedon = DefinedOnRegion(fes->GetMeshAccess(), igl->dx);
@@ -811,7 +831,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     auto proxy = GetProxyWithFactor(igl->cf, true);
     
     auto fes = proxy->GetFESpace();
-    auto flags = CreateFlagsFromKwArgs(kwargs);
+    auto flags = BEMFlags(kwargs);
     IntOp_Parameters ioparams(flags);
     const bool fp32 = flags.GetDefineFlag("fp32");
 

@@ -27,6 +27,17 @@ namespace ngsbem
     fmm_eval_separation = flags.GetNumFlag("fmm_eval_separation", fmm_eval_separation);
     fmm_split_kr = flags.GetNumFlag("fmm_split_kr", fmm_split_kr);
     fmm_maxlevel = int(flags.GetNumFlag("fmm_maxlevel", fmm_maxlevel));
+
+    // reject a non-string "device" (e.g. True, 1) in every flag category: GetStringFlag would silently return "none"
+    if (!flags.StringFlagDefined("device") &&
+        (flags.NumFlagDefined("device") || !flags.GetDefineFlagX("device").IsMaybe() ||
+         flags.FlagsFlagDefined("device") || flags.StringListFlagDefined("device") ||
+         flags.NumListFlagDefined("device") || flags.AnyFlagDefined("device")))
+      throw Exception("fmm device must be a string: 'auto', 'gpu', 'cpu', 'none'");
+    fmm_device = ResolveFMMDevice(flags.GetStringFlag("device", "none"), flags.GetDefineFlag("fp32"), use_fmm);
+    // the device translations need expansion orders >= 1 (order = minorder + order_factor kappa r)
+    if (fmm_minorder < 1 || fmm_order_factor < 0)
+      fmm_device = FMM_Device::None;
   }
 
 

@@ -1,6 +1,7 @@
 
 import pytest
 import numpy as np
+import shutil
 
 from netgen.occ import *
 from ngsolve import *
@@ -418,3 +419,35 @@ def test_laplace_dtn_cg_solve_converges_to_docu_fundamental_solution():
 
     assert errors[2] < errors[1] < errors[0]
     assert 0 < max(iterations) < 80
+
+
+@pytest.mark.parametrize("device", ["cpu", "gpu"])
+@pytest.mark.parametrize("operator_name", ["HelmholtzCF", "HelmholtzDL", "MaxwellDL"])
+def test_fp32_device_fmm_matches_fp64(operator_name, device):
+    if device == "cpu" and shutil.which("c++") is None:
+        pytest.skip("no C++ compiler for the CPU device")
+    if device == "gpu" and pytest.importorskip("ngsolve.gpu").backend == "host":
+        pytest.skip("no GPU device")
+    mesh = _sphere_mesh(maxh=0.4)
+
+    def fast_path_time():
+        return {t["name"]: t["time"] for t in Timers()}.get("fmm device matvec", 0)
+
+    with TaskManager():
+        mat64, mat32 = [
+            _fmm_direct_operators(operator_name, mesh, 8 + 1j, fmm_options=options)[0].mat
+            for options in ({"device": "none"}, {"fp32": True, "device": device})
+        ]
+        products = [(mat64, mat32, mat64.CreateRowVector())]
+        if operator_name == "HelmholtzDL":
+            # the transposed product evaluates normal derivatives (device gradients)
+            products.append((mat64.T, mat32.T, mat64.CreateColVector()))
+        for m64, m32, v in products:
+            # matvec 1 records the device programs, matvec 2 replays them on new input without host trees
+            for fast, seed in ((False, 1), (True, 2)):
+                v.SetRandom(seed)
+                y64 = (m64 * v).Evaluate()
+                t = fast_path_time()
+                y32 = (m32 * v).Evaluate()
+                assert (fast_path_time() > t) == fast
+                assert Norm(y32 - y64) / Norm(y64) < 2e-6
