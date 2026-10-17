@@ -199,6 +199,10 @@ namespace ngfem
     NGS_DLL_HEADER virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> values,
                                               BareSliceVector<double> coefs) const
     { throw ExceptionNOSIMD("HCurlFE - simd adddualtrans not overloaded"); }
+
+    NGS_DLL_HEADER virtual void Interpolate (const ElementTransformation & trafo,
+                                             const class CoefficientFunction & func, SliceMatrix<> coefs,
+                                             LocalHeap & lh) const override;
     
   protected:
     ///

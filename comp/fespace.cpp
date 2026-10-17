@@ -2256,34 +2256,61 @@ lot of new non-zero entries in the matrix!\n" << endl;
       tempvec = 0.0;
 
    
+    // complex: interpolate real and imaginary part separately
+    shared_ptr<CoefficientFunction> cfre, cfim;
+    if (vec1.IsComplex() && cf.IsComplex())
+      {
+        auto spcf = const_cast<CoefficientFunction&>(cf).shared_from_this();
+        cfre = Real(spcf);
+        cfim = Imag(spcf);
+      }
+
     auto vb = reg ? reg->VB() : VOL;
-    IterateElements 
-      (*this, vb, clh, 
-       [&] (FESpace::Element el, LocalHeap & lh)
-       {
-         if (reg)
-           if (!reg->Mask().Test(el.GetIndex())) return;
-         
-         if (!DefinedOn(el)) return;
+    auto iterate = [&] (auto tscal)
+    {
+      using SCAL = decltype(tscal);
+      IterateElements
+        (*this, vb, clh,
+         [&] (FESpace::Element el, LocalHeap & lh)
+         {
+           if (reg)
+             if (!reg->Mask().Test(el.GetIndex())) return;
 
-         const FiniteElement & fel = GetFE (el, lh);
-         int ndof = fel.GetNDof();
-         int fesdim = GetDimension();
+           if (!DefinedOn(el)) return;
 
-         const ElementTransformation & eltrans = ma->GetTrafo (el, lh); 
-         FlatVector<> elvec(ndof*fesdim, lh), elvec1(ndof*fesdim, lh);
-         
-         fel.Interpolate (eltrans, cf, elvec.AsMatrix(ndof, fesdim), lh);
-         
-         TransformVec (el, elvec, TRANSFORM_SOL_INVERSE);
+           const FiniteElement & fel = GetFE (el, lh);
+           int ndof = fel.GetNDof();
+           int fesdim = GetDimension();
 
-         tempvec.GetIndirect (el.GetDofs(), elvec1);
-         elvec1 += elvec;
-         tempvec.SetIndirect (el.GetDofs(), elvec1);
-         
-         for (auto d : el.GetDofs())
-           if (IsRegularDof(d)) cnti[d]++;
-       });
+           const ElementTransformation & eltrans = ma->GetTrafo (el, lh);
+           FlatVector<SCAL> elvec(ndof*fesdim, lh), elvec1(ndof*fesdim, lh);
+
+           if constexpr (is_same_v<SCAL,double>)
+             fel.Interpolate (eltrans, cf, elvec.AsMatrix(ndof, fesdim), lh);
+           else
+             {
+               FlatVector<> re(ndof*fesdim, lh), im(ndof*fesdim, lh);
+               fel.Interpolate (eltrans, cfre ? *cfre : cf, re.AsMatrix(ndof, fesdim), lh);
+               im = 0.0;
+               if (cfim)
+                 fel.Interpolate (eltrans, *cfim, im.AsMatrix(ndof, fesdim), lh);
+               elvec = re + Complex(0,1) * im;
+             }
+
+           TransformVec (el, elvec, TRANSFORM_SOL_INVERSE);
+
+           tempvec.GetIndirect (el.GetDofs(), elvec1);
+           elvec1 += elvec;
+           tempvec.SetIndirect (el.GetDofs(), elvec1);
+
+           for (auto d : el.GetDofs())
+             if (IsRegularDof(d)) cnti[d]++;
+         });
+    };
+    if (vec1.IsComplex())
+      iterate (Complex());
+    else
+      iterate (double());
 
 #ifdef PARALLEL
     if (GetParallelDofs())
@@ -2297,16 +2324,28 @@ lot of new non-zero entries in the matrix!\n" << endl;
     ParallelForRange
       (cnti.Size(), [&] (IntRange r)
        {
-         VectorMem<10> fluxi(dim);
-         ArrayMem<int,1> dnums(1);
-         for (auto i : r)
-           if (cnti[i])
-             {
-               dnums[0] = i;
-               tempvec.GetIndirect (dnums, fluxi);               
-               fluxi /= double (cnti[i]);
-               tempvec.SetIndirect (dnums, fluxi);                              
-             }
+         auto average = [&] (auto & fluxi)
+         {
+           ArrayMem<int,1> dnums(1);
+           for (auto i : r)
+             if (cnti[i])
+               {
+                 dnums[0] = i;
+                 tempvec.GetIndirect (dnums, fluxi);
+                 fluxi /= double (cnti[i]);
+                 tempvec.SetIndirect (dnums, fluxi);
+               }
+         };
+         if (vec1.IsComplex())
+           {
+             VectorMem<10,Complex> fluxi(dim);
+             average (fluxi);
+           }
+         else
+           {
+             VectorMem<10> fluxi(dim);
+             average (fluxi);
+           }
        });
 
     vec1 = tempvec;

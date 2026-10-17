@@ -637,7 +637,62 @@ namespace ngfem
     firstsimd = false;
   }
 
-  
+
+  template <int D>
+  void HCurlFiniteElement<D> ::
+  Interpolate (const ElementTransformation & trafo,
+               const CoefficientFunction & func, SliceMatrix<> coefs,
+               LocalHeap & lh) const
+  {
+    HeapReset hr(lh);
+    size_t nd = GetNDof();
+    int dimspace = trafo.SpaceDim();
+    if (coefs.Width() != 1)
+      throw Exception("HCurlFE::Interpolate: only scalar-valued spaces");
+
+    FlatMatrix<> mat(nd, nd, lh);
+    FlatVector<> rhs(nd, lh);
+    mat = 0.0;
+    rhs = 0.0;
+
+    // edge, face, cell moments; weight*measure gives functionals of the covariant pull-back
+    for (int el_vb = D-1; el_vb >= 0; el_vb--)
+      {
+        Facet2ElementTrafo f2el (ElementType(), VorB(el_vb));
+        for (int locfnr : Range(f2el.GetNFacets()))
+          {
+            HeapReset hr(lh);
+            SIMD_IntegrationRule irfacet(f2el.FacetType(locfnr), 2*Order());
+            auto & irvol = f2el(locfnr, irfacet, lh);
+            auto & mir = trafo(irvol, lh);
+            size_t np = mir.Size();
+
+            FlatMatrix<SIMD<double>> fvals(dimspace, np, lh);
+            func.Evaluate (mir, fvals);
+
+            FlatMatrix<SIMD<double>> shapes(nd*dimspace, np, lh);
+            FlatMatrix<SIMD<double>> duals(nd*dimspace, np, lh);
+            duals = SIMD<double>(0.0);
+            CalcMappedShape (mir, shapes);
+            CalcDualShape (mir, duals);
+            for (size_t j : Range(np))
+              duals.Col(j) *= mir[j].IP().Weight() * mir[j].GetMeasure();
+
+            auto shapesRS = shapes.Reshape(nd, dimspace*np);
+            auto dualsRS = duals.Reshape(nd, dimspace*np);
+            AddABt (dualsRS, shapesRS, mat);
+            for (size_t i : Range(nd))
+              rhs(i) += HSum(InnerProduct(fvals.AsVector(), dualsRS.Row(i)));
+          }
+      }
+
+    if (L2Norm(mat) == 0)
+      throw Exception(string("HCurlFE::Interpolate: no dual shapes for ") + typeid(*this).name());
+    CalcInverse (mat);
+    coefs.Col(0) = mat * rhs;
+  }
+
+
   template class HCurlFiniteElement<1>;
   template class HCurlFiniteElement<2>;
   template class HCurlFiniteElement<3>;
