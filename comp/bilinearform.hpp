@@ -110,6 +110,10 @@ namespace ngcomp
     double unuseddiag;
     /// check if all dofs declared used are used in assemble
     bool check_unused = true;
+    /// dofs touched by assembling, the others get unuseddiag
+    BitArray useddof;
+    // thread-safe, atomic only for the first hit
+    void MarkUsed (DofId d) { if (!useddof.Test(d)) useddof.SetBitAtomic(d); }
     /// low order bilinear-form, 0 if not used
     shared_ptr<BilinearForm> low_order_bilinear_form;
 
@@ -625,7 +629,7 @@ namespace ngcomp
 
     ///
     virtual void DoAssemble (LocalHeap & lh) override;
-    virtual void Assemble_facetwise_skeleton_parts_VOL (Array<bool>& useddof, size_t & gcnt, LocalHeap & lh, const BaseVector * lin = nullptr);
+    virtual void Assemble_facetwise_skeleton_parts_VOL (size_t & gcnt, LocalHeap & lh, const BaseVector * lin = nullptr);
     ///
     // virtual void DoAssembleIndependent (BitArray & useddof, LocalHeap & lh);
     ///
@@ -640,10 +644,9 @@ namespace ngcomp
 				   LocalHeap & lh) = 0;
 
     // elmat: the complete element matrix of el in its local basis, call once per element.
-    // transform, static condensation, add to matrix and preconditioners.
-    // returns the dofs, condensed ones masked
-    FlatArray<DofId> AddElementMatrix (const FESpace::Element & el, FlatMatrix<SCAL> elmat,
-                                       bool condense_rhs, LocalHeap & lh);
+    // transform, static condensation, add to matrix and preconditioners, mark used dofs
+    void AddElementMatrix (const FESpace::Element & el, FlatMatrix<SCAL> elmat,
+                           bool condense_rhs, LocalHeap & lh);
 
 
     virtual void AddDiagElementMatrix (FlatArray<int> dnums1,

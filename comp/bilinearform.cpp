@@ -1353,7 +1353,7 @@ namespace ngcomp
 
 
   template <class SCAL>
-  void S_BilinearForm<SCAL> :: Assemble_facetwise_skeleton_parts_VOL (Array<bool>& useddof, size_t & gcnt, LocalHeap & clh, const BaseVector * lin)
+  void S_BilinearForm<SCAL> :: Assemble_facetwise_skeleton_parts_VOL (size_t & gcnt, LocalHeap & clh, const BaseVector * lin)
   {
     size_t ne = ma->GetNE(VOL);
     size_t nf = ma->GetNFacets();
@@ -1470,7 +1470,7 @@ namespace ngcomp
                               
               if (check_unused)
                 for (auto d : dnums)
-                  if (IsRegularDof(d)) useddof[d] = true;
+                  if (IsRegularDof(d)) MarkUsed (d);
                               
               int elmat_size = (dnums1.Size()+dnums2.Size())*fespace->GetDimension();
               FlatMatrix<SCAL> elmat(elmat_size, lh);
@@ -1793,9 +1793,9 @@ namespace ngcomp
 
 
   template <class SCAL>
-  FlatArray<DofId> S_BilinearForm<SCAL> :: AddElementMatrix (const FESpace::Element & el,
-                                                             FlatMatrix<SCAL> elmat,
-                                                             bool condense_rhs, LocalHeap & lh)
+  void S_BilinearForm<SCAL> :: AddElementMatrix (const FESpace::Element & el,
+                                                 FlatMatrix<SCAL> elmat,
+                                                 bool condense_rhs, LocalHeap & lh)
   {
     static mutex printelmat_mutex;
 
@@ -1824,7 +1824,13 @@ namespace ngcomp
     for (auto pre : preconditioners)
       pre -> AddElementMatrix (dnums, elmat, el, lh);
 
-    return dnums;
+    if (check_unused && useddof.Size())
+      {
+        if (printelmat)
+          *testout << "set these as useddof: " << dnums << endl;
+        for (auto d : dnums)
+          if (IsRegularDof(d)) MarkUsed (d);
+      }
   }
 
 
@@ -1884,9 +1890,8 @@ namespace ngcomp
             PushStatus ("Assemble Matrix");
  
             size_t ndof = fespace->GetNDof();
-            Array<bool> useddof(ndof);
-            if (check_unused)
-              useddof = false;
+            useddof.SetSize(ndof);
+            useddof.Clear();
 
             size_t nf = ma->GetNFacets();
 
@@ -2007,7 +2012,7 @@ namespace ngcomp
                         if (check_unused)
                           for (int j = 0; j < dnums.Size(); j++)
                             if (IsRegularDof(dnums[j]))
-                              useddof[dnums[j]] = true;
+                              MarkUsed (dnums[j]);
                       });
                     // cout << IM(3) << "\rassemble element " << ne << "/" << ne << endl;
                   }
@@ -2160,15 +2165,7 @@ namespace ngcomp
                          
                          if (!elem_has_integrator) return;
                          
-                         auto useddnums = AddElementMatrix (el, sum_elmat, true, lh);
-
-                         if (check_unused)
-                           {
-                             if (printelmat)
-                               *testout << "set these as useddof: " << useddnums << endl;
-                             for (auto d : useddnums)
-                               if (IsRegularDof(d)) useddof[d] = true;
-                           }
+                         AddElementMatrix (el, sum_elmat, true, lh);
                          // timer3_VB[vb].Stop();
                        });
                     progress.Done();
@@ -2212,7 +2209,7 @@ namespace ngcomp
                         }
             */
             if (facetwise_skeleton_parts[VOL].Size())
-              Assemble_facetwise_skeleton_parts_VOL(useddof,gcnt,clh);
+              Assemble_facetwise_skeleton_parts_VOL(gcnt,clh);
             
             // if (has_element_wise)
             if (elementwise_skeleton_parts.Size())
@@ -2293,7 +2290,7 @@ namespace ngcomp
                                      
                                      if (check_unused)
                                        for (auto d : dnums)
-                                         if (IsRegularDof(d)) useddof[d] = true;
+                                         if (IsRegularDof(d)) MarkUsed (d);
                                      
                                      int elmat_size = dnums.Size()*fespace->GetDimension();
                                      FlatMatrix<SCAL> elmat(elmat_size, lh);
@@ -2380,7 +2377,7 @@ namespace ngcomp
 
                                  if (check_unused)
                                    for (auto d : dnums)
-                                     if (IsRegularDof(d)) useddof[d] = true;
+                                     if (IsRegularDof(d)) MarkUsed (d);
                                  
                                  int elmat_size = (dnums1.Size()+dnums2.Size())*fespace->GetDimension();
                                  FlatMatrix<SCAL> elmat(elmat_size, lh);
@@ -2580,7 +2577,7 @@ namespace ngcomp
                               if (check_unused)
                                 for (int k = 0; k < dnums.Size(); k++)
                                   if (IsRegularDof(dnums[k]))
-                                    useddof[dnums[k]] = true;
+                                    MarkUsed (dnums[k]);
                                   
                               int elmat_size = dnums.Size()*fespace->GetDimension();
                               FlatMatrix<SCAL> elmat(elmat_size, lh);
@@ -2684,7 +2681,7 @@ namespace ngcomp
                     if (check_unused)
                       for (int j = 0; j < dnums.Size(); j++)
                         if (IsRegularDof(dnums[j]))
-                          useddof[dnums[j]] = true;
+                          MarkUsed (dnums[j]);
                     
                     AddElementMatrix (dnums, dnums, elmat, ElementId(BND,i), true, lh);
                   }
@@ -2749,9 +2746,7 @@ namespace ngcomp
 
             if (check_unused)
               {
-                size_t cntused = 0;
-                for (bool u : useddof)
-                  if (u) cntused++;
+                size_t cntused = useddof.NumSet();
                 
                 if (cntused < useddof.Size())
                   cout << IM(4) << "used " << cntused
@@ -3609,8 +3604,8 @@ namespace ngcomp
             return;
           }
         int ndof = fespace->GetNDof();
-        Array<bool> useddof(ndof);
-        useddof = false;
+        useddof.SetSize(ndof);
+        useddof.Clear();
       
         BaseMatrix & mat = GetMatrix();
         mat = 0.0;
@@ -3672,7 +3667,7 @@ namespace ngcomp
                      throw Exception ( string("Inconsistent number of degrees of freedom fel::GetNDof() = ") + ToString(fel.GetNDof()) + string(" != dnums.Size() = ") + ToString(dnums.Size()) + string("!") );
                    }
                  for (auto d : dnums) 
-                   if (IsRegularDof(d)) useddof[d] = true;
+                   if (IsRegularDof(d)) MarkUsed (d);
                  
                  FlatMatrix<SCAL> sum_elmat(dnums.Size()*fespace->GetDimension(), lh);
                  FlatMatrix<SCAL> elmat(dnums.Size()*fespace->GetDimension(), lh);
@@ -3782,7 +3777,7 @@ namespace ngcomp
 
 				 for (int k = 0; k < dnums.Size(); k++)
 				   if (IsRegularDof(dnums[k]))
-				     useddof[dnums[k]] = true;
+				     MarkUsed (dnums[k]);
                           
 				 // int elmat_size = dnums.Size()*fespace->GetDimension();
 				 
@@ -3839,7 +3834,7 @@ namespace ngcomp
 
         if (facetwise_skeleton_parts[VOL].Size()){
           size_t dummy;
-          Assemble_facetwise_skeleton_parts_VOL(useddof, dummy, clh, &lin);
+          Assemble_facetwise_skeleton_parts_VOL(dummy, clh, &lin);
         }
         // if (facetwise_skeleton_parts[VOL].Size())
         //   throw Exception ("CalcLinearization for facet-wise skeleton-VOL not implemented");
@@ -3871,7 +3866,7 @@ namespace ngcomp
                 // lock_guard<mutex> guard(specel_mutex);
                 for (int j = 0; j < dnums.Size(); j++)
                   if (IsRegularDof(dnums[j]))
-                    useddof[dnums[j]] = true;
+                    MarkUsed (dnums[j]);
                 AddElementMatrix (dnums, dnums, elmat, ElementId(BND,i), true, lh);
                 for(auto pre : preconditioners)
                   pre->AddElementMatrix(dnums, elmat, ElementId(BND, i), lh);
@@ -3920,10 +3915,7 @@ namespace ngcomp
           if (mat.Height() < 100)
           mat.Print (cout);
         */
-        int cntused = 0;
-        for (int i = 0; i < useddof.Size(); i++)
-          if (useddof[i])
-            cntused++;
+        int cntused = useddof.NumSet();
         cout << IM(5) << "used " << cntused
              << ", unused = " << useddof.Size()-cntused
              << ", total = " << useddof.Size() << endl;
