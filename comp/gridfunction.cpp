@@ -1410,16 +1410,13 @@ namespace ngcomp
         return;
       }
     
-    const FiniteElement & fel = fes->GetFE (ei, lh2);
+    auto el = fes->GetElement (ei, lh2);
+    const FiniteElement & fel = el.GetFE();
     int dim = fes->GetDimension();
     
-    ArrayMem<int, 50> dnums;
-    fes->GetDofNrs (ei, dnums);
+    VectorMem<50> elu(fel.GetNDof()*dim);
     
-    VectorMem<50> elu(dnums.Size()*dim);
-
-    gf->GetElementVector (comp, dnums, elu);
-    fes->TransformVec (ei, elu, TRANSFORM_SOL);
+    gf->GetElementVector (comp, el, elu);
     if (diffop[ei.VB()])
       diffop[ei.VB()] -> Apply(fel, ip, elu, result, lh2);
     else
@@ -1466,16 +1463,13 @@ namespace ngcomp
         return;
       }
     
-    const FiniteElement & fel = fes->GetFE (ei, lh2);
+    auto el = fes->GetElement (ei, lh2);
+    const FiniteElement & fel = el.GetFE();
     int dim = fes->GetDimension();
     
-    ArrayMem<int, 50> dnums;
-    fes->GetDofNrs (ei, dnums);
-    
-    VectorMem<50, Complex> elu(dnums.Size()*dim);
+    VectorMem<50, Complex> elu(fel.GetNDof()*dim);
 
-    gf->GetElementVector (comp, dnums, elu);
-    fes->TransformVec (ei, elu, TRANSFORM_SOL);
+    gf->GetElementVector (comp, el, elu);
 
     if (diffop[vb])
       diffop[vb]->Apply (fel, ip, elu, result, lh2);
@@ -1529,16 +1523,13 @@ namespace ngcomp
       }
 
 
-    const FiniteElement & fel = fes->GetFE (ei, lh2);
+    auto el = fes->GetElement (ei, lh2);
+    const FiniteElement & fel = el.GetFE();
     int dim = fes->GetDimension();
 
-    ArrayMem<int, 50> dnums;
-    fes->GetDofNrs (ei, dnums);
-    
-    VectorMem<50> elu(dnums.Size()*dim);
+    VectorMem<50> elu(fel.GetNDof()*dim);
 
-    gf->GetElementVector (comp, dnums, elu);
-    fes->TransformVec (ElementId(vb, elnr), elu, TRANSFORM_SOL);
+    gf->GetElementVector (comp, el, elu);
 
     if (diffop[vb])
       diffop[vb]->Apply (fel, ir, elu, values, lh2);
@@ -1603,16 +1594,13 @@ namespace ngcomp
         return;
       }
     
-    const FiniteElement & fel = fes->GetFE (ei, lh2);
+    auto el = fes->GetElement (ei, lh2);
+    const FiniteElement & fel = el.GetFE();
     int dim = fes->GetDimension();
 
-    ArrayMem<int, 50> dnums;
-    fes->GetDofNrs (ei, dnums);
+    VectorMem<50,Complex> elu(fel.GetNDof()*dim);
     
-    VectorMem<50,Complex> elu(dnums.Size()*dim);
-
-    gf->GetElementVector (comp, dnums, elu);
-    fes->TransformVec (ei, elu, TRANSFORM_SOL);
+    gf->GetElementVector (comp, el, elu);
 
     /*
     if (diffop && vb==VOL)
@@ -1692,16 +1680,13 @@ namespace ngcomp
         return;
       }
     
-    const FiniteElement & fel = fes->GetFE (ei, lh2);
+    auto el = fes->GetElement (ei, lh2);
+    const FiniteElement & fel = el.GetFE();
     int dim = fes->GetDimension();
 
-    ArrayMem<int, 50> dnums;
-    fes->GetDofNrs (ei, dnums);
-    
-    VectorMem<50> elu(dnums.Size()*dim);
+    VectorMem<50> elu(fel.GetNDof()*dim);
 
-    gf->GetElementVector (comp, dnums, elu);
-    fes->TransformVec (ei, elu, TRANSFORM_SOL);
+    gf->GetElementVector (comp, el, elu);
     /*
     if (diffop && vb==VOL)
       diffop->Apply (fel, ir, elu, values); // , lh2);
@@ -1792,16 +1777,13 @@ namespace ngcomp
         return;
       }
     
-    const FiniteElement & fel = fes.GetFE (ei, lh2);
+    auto el = fes.GetElement (ei, lh2);
+    const FiniteElement & fel = el.GetFE();
     int dim = fes.GetDimension();
 
-    ArrayMem<int, 50> dnums;
-    fes.GetDofNrs (ei, dnums);
+    VectorMem<50, Complex> elu(fel.GetNDof()*dim);
     
-    VectorMem<50, Complex> elu(dnums.Size()*dim);
-
-    gf->GetElementVector (comp, dnums, elu);
-    fes.TransformVec (ei, elu, TRANSFORM_SOL);
+    gf->GetElementVector (comp, el, elu);
     /*
     if (diffop && vb==VOL)
       diffop->Apply (fel, ir, elu, values); // , lh2);
@@ -1967,15 +1949,11 @@ namespace ngcomp
 	HeapReset hr(lh);
 	
 	ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
-	const FiniteElement & fel = fes.GetFE (ei, lh);
+	auto el = fes.GetElement (ei, lh);
+	const FiniteElement & fel = el.GetFE();
 
-	ArrayMem<int,200> dnums (fel.GetNDof());
-	fes.GetDofNrs (ei, dnums);
-
-	VectorMem<200,SCAL> elu(dnums.Size() * dim);
-	gf->GetElementVector (multidimcomponent, dnums, elu);
-
-	fes.TransformVec (ei, elu, TRANSFORM_SOL);
+	VectorMem<200,SCAL> elu(fel.GetNDof() * dim);
+	gf->GetElementVector (multidimcomponent, el, elu);
 
 	IntegrationPoint ip(lam1, lam2, lam3, 0);
 	MappedIntegrationPoint<3,3> mip (ip, eltrans);
@@ -2036,15 +2014,12 @@ namespace ngcomp
 	
 	if ( !fes.DefinedOn(ei) ) return 0;
 	
-	const FiniteElement * fel = &fes.GetFE (ei, lh);
-
-	Array<int> dnums(fel->GetNDof(), lh);
-	fes.GetDofNrs (ei, dnums);
+	auto el = fes.GetElement (ei, lh);
+	const FiniteElement * fel = &el.GetFE();
 
 	FlatVector<SCAL> elu (fel->GetNDof() * dim, lh);
 
-	gf->GetElementVector (multidimcomponent, dnums, elu);
-	fes.TransformVec (ei, elu, TRANSFORM_SOL);
+	gf->GetElementVector (multidimcomponent, el, elu);
 	
 	
 	HeapReset hr(lh);
@@ -2132,17 +2107,13 @@ namespace ngcomp
         LocalHeapMem<100000> lh("visgf::GetMultiValue");
 
 	const ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
-        const FiniteElement & fel = fes.GetFE (ei, lh);
+        auto el = fes.GetElement (ei, lh);
+        const FiniteElement & fel = el.GetFE();
 
 
-	ArrayMem<int,200> dnums(fel.GetNDof());
 	VectorMem<200,SCAL> elu (fel.GetNDof() * dim);
 
-	fes.GetDofNrs (ei, dnums);
-
-        gf->GetElementVector (multidimcomponent, dnums, elu);
-        
-        fes.TransformVec (ei, elu, TRANSFORM_SOL);
+        gf->GetElementVector (multidimcomponent, el, elu);
         
 	if (!fes.DefinedOn(VOL, eltrans.GetElementIndex()))return 0;
 
@@ -2236,16 +2207,12 @@ namespace ngcomp
 	int dim = fes.GetDimension();
 
 	LocalHeapMem<100000> lh("VisGF::GetSurfValue");
-	const FiniteElement & fel = fes.GetFE (ei, lh);
+	auto el = fes.GetElement (ei, lh);
+	const FiniteElement & fel = el.GetFE();
 
-	ArrayMem<int, 100> dnums;
-	fes.GetDofNrs (ei, dnums);
+	FlatVector<SCAL> elu (fel.GetNDof() * dim, lh);
 
-	FlatVector<SCAL> elu (dnums.Size() * dim, lh);
-
-	gf->GetElementVector (multidimcomponent, dnums, elu);
-
-	fes.TransformVec (ei, elu, TRANSFORM_SOL);
+	gf->GetElementVector (multidimcomponent, el, elu);
 
 	ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
 	if (!fes.DefinedOn(vb, eltrans.GetElementIndex())) return false;
@@ -2304,16 +2271,12 @@ namespace ngcomp
 
 	// lh.CleanUp();
         LocalHeapMem<100000> lh("VisGF::GetSurfValue");
-	const FiniteElement * fel = &fes.GetFE (ei, lh);
+	auto el = fes.GetElement (ei, lh);
+	const FiniteElement * fel = &el.GetFE();
 	
-	Array<int> dnums(fel->GetNDof(), lh);
 	FlatVector<SCAL> elu (fel->GetNDof()*dim, lh);
 
-	fes.GetDofNrs (ei, dnums);
-	
-	gf->GetElementVector (multidimcomponent, dnums, elu);
-	
-	fes.TransformVec (ei, elu, TRANSFORM_SOL);
+	gf->GetElementVector (multidimcomponent, el, elu);
 	
 	HeapReset hr(lh);
 	ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
@@ -2435,15 +2398,12 @@ namespace ngcomp
 
 	ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
 
-        ArrayMem<int, 100> dnums;
-	fes.GetDofNrs (ei, dnums);
-	const FiniteElement & fel = fes.GetFE (ei, lh);
+	auto el = fes.GetElement (ei, lh);
+	const FiniteElement & fel = el.GetFE();
 
-        FlatVector<SCAL> elu(dnums.Size() * dim, lh);
-
-        gf->GetElementVector (multidimcomponent, dnums, elu);
+        FlatVector<SCAL> elu(fel.GetNDof() * dim, lh);
         
-        fes.TransformVec (ei, elu, TRANSFORM_SOL);
+        gf->GetElementVector (multidimcomponent, el, elu);
 
         if (!fes.DefinedOn(vb, eltrans.GetElementIndex())) return false;
         

@@ -317,25 +317,34 @@ ANY                  1 1 1 1 | 15
     class Element : public Ngs_Element
     {
       const FESpace & fes;
-      Array<DofId> & temp_dnums;
       LocalHeap & lh;
+      mutable FlatArray<DofId> dnums;     // in lh, set by first GetDofs()
       mutable bool dofs_set = false;
     public:     
+      INLINE Element (const FESpace & afes, ElementId id, LocalHeap & alh)
+        : Ngs_Element ((*afes.GetMeshAccess())[id] ), fes(afes), lh(alh)
+      { ; }
+
+      [[deprecated("use Element(fes, id, lh)")]]
       INLINE Element (const FESpace & afes, ElementId id, Array<DofId> & atemp_dnums,
                       LocalHeap & alh)
-        : Ngs_Element ((*afes.GetMeshAccess())[id] ), fes(afes), 
-          temp_dnums(atemp_dnums), lh(alh) 
-      { ; }
+        : Element (afes, id, alh) { ; }
 
       INLINE Element (const Element & el) = default;
       INLINE Element (Element && el) = default;
       auto & GetFESpace() const { return fes; } 
+      // allocated in lh by the first call: don't make it inside an inner HeapReset
       INLINE FlatArray<DofId> GetDofs() const
       {
         if (!dofs_set)
-          fes.GetDofNrs (*this, temp_dnums);
-        dofs_set = true;
-        return temp_dnums;
+          {
+            ArrayMem<DofId,100> hdnums;
+            fes.GetDofNrs (*this, hdnums);
+            dnums.Assign (hdnums.Size(), lh);
+            dnums = hdnums;
+            dofs_set = true;
+          }
+        return dnums;
       }
 
       INLINE const ElementTransformation & GetTrafo() const
@@ -359,15 +368,14 @@ ANY                  1 1 1 1 | 15
       const FESpace & fes;
       ElementId ei;
       const FlatArray<bool> defined_on;
-      Array<DofId> & temp_dnums;      
       LocalHeap & lh;
       void * heappointer;
     public:
       INLINE ElementIterator (const FESpace & afes, ElementId aei, 
                               const FlatArray<bool> adefined_on,
-                              Array<DofId> & atemp_dnums, LocalHeap & alh)
+                              LocalHeap & alh)
         : fes(afes), ei(aei), defined_on(adefined_on), 
-          temp_dnums(atemp_dnums), lh(alh), heappointer(lh.GetPointer()) { ; }
+          lh(alh), heappointer(lh.GetPointer()) { ; }
       INLINE ElementIterator & operator++ ()
       {
         lh.CleanUp(heappointer);
@@ -378,7 +386,7 @@ ANY                  1 1 1 1 | 15
                ) ++ei;
         return *this;
       }
-      INLINE Element operator*() const { return Element (fes, ei, temp_dnums, lh); }          
+      INLINE Element operator*() const { return Element (fes, ei, lh); }
       INLINE bool operator!=(const ElementIterator & id2) const { return ei != id2.ei; }
       INLINE bool operator==(const ElementIterator & id2) const { return ei == id2.ei; }
     };
@@ -388,7 +396,6 @@ ANY                  1 1 1 1 | 15
       const FESpace & fes;
       Array<bool> definedon;
       const VorB vb;
-      mutable Array<DofId> temp_dnums;
       mutable LocalHeap mylh;
       LocalHeap & lh;
     public:
@@ -408,7 +415,7 @@ ANY                  1 1 1 1 | 15
 
       INLINE ElementRange (ElementRange && r2) 
         : IntRange(r2), fes(r2.fes), definedon(std::move(r2.definedon)), vb(r2.vb), 
-          temp_dnums(std::move(r2.temp_dnums)), mylh(std::move(r2.mylh)), 
+          mylh(std::move(r2.mylh)),
           lh( (&r2.mylh == &r2.lh) ? mylh : r2.lh)
       { ; }
 
@@ -422,12 +429,12 @@ ANY                  1 1 1 1 | 15
         while ((ei.Nr() < IntRange::end()) && 
                (definedon.Size() && !definedon[fes.GetMeshAccess()->GetElIndex(ei)]))
           ++ei;
-        return ElementIterator(fes, ei, definedon, temp_dnums, lh); 
+        return ElementIterator(fes, ei, definedon, lh);
       }
 
       INLINE ElementIterator end () const 
       {
-        return ElementIterator(fes, ElementId(vb,Next()), definedon, temp_dnums, lh); 
+        return ElementIterator(fes, ElementId(vb,Next()), definedon, lh);
       }
     };
 
@@ -440,6 +447,11 @@ ANY                  1 1 1 1 | 15
     ElementRange Elements (VorB vb, LocalHeap & lh) const
     {
       return ElementRange (*this, vb, IntRange (0, ma->GetNE(vb)), lh);
+    }
+
+    Element GetElement (ElementId ei, LocalHeap & lh) const
+    {
+      return Element (*this, ei, lh);
     }
 
     /// returns finite element. 

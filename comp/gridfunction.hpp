@@ -306,6 +306,19 @@ namespace ngcomp
 				   FlatVector<Complex> elvec) 
     { vec[comp] -> SetIndirect (dnums, elvec); }
 
+    // elvec in local element basis
+    template <typename SCAL>
+    void GetElementVector (int comp, const FESpace::Element & el,
+                           FlatVector<SCAL> elvec) const
+    {
+      GetElementVector (comp, el.GetDofs(), elvec);
+      el.GetFESpace().TransformVec (el, elvec, TRANSFORM_SOL);
+    }
+
+    template <typename SCAL>
+    void GetElementVector (const FESpace::Element & el, FlatVector<SCAL> elvec) const
+    { GetElementVector (0, el, elvec); }
+
     virtual Scalar GetScalarType() const = 0;
 
     // multidim component, if -1 then all components are loaded/saved

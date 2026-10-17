@@ -2155,14 +2155,13 @@ lot of new non-zero entries in the matrix!\n" << endl;
               ( [&] (const TaskInfo & ti) 
                 {
                   LocalHeap lh = clh.Split(ti.thread_nr, ti.nthreads);
-                  ArrayMem<int,100> temp_dnums;
 
                   for (int mynr : sl)
                     {
                       HeapReset hr(lh);
                       FESpace::Element el(fes, 
                                           ElementId (vb, els_of_col[mynr]), 
-                                          temp_dnums, lh);
+                                          lh);
                       
                       func (std::move(el), lh);
                     }
@@ -2180,7 +2179,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
       ParallelForRange( IntRange(els_of_col.Size()), [&] ( IntRange r )
       {
         LocalHeap lh = clh.Split();
-        Array<int> temp_dnums;
 
         // lh.ClearValues();
         
@@ -2189,7 +2187,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
             try
               {
                 HeapReset hr(lh);
-                FESpace::Element el(fes, ElementId (vb, els_of_col[i]), temp_dnums, lh);
+                FESpace::Element el(fes, ElementId (vb, els_of_col[i]), lh);
                 
                 func (std::move(el), lh);
               }
