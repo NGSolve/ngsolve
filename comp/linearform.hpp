@@ -129,7 +129,15 @@ namespace ngcomp
     template <typename SCAL>
     void AddElementVector (const FESpace::Element & el, FlatVector<SCAL> elvec)
     {
-      el.GetFESpace().TransformVec (el, elvec, TRANSFORM_RHS);
+      auto & fes = el.GetFESpace();
+      if (auto T = fes.GetDofTransformation (el, el.GetLH()))
+        {
+          FlatVector<SCAL> gvec(T->Width(), el.GetLH());
+          gvec = Trans(*T) * elvec;
+          AddElementVector (el.GetDofs(), gvec);
+          return;
+        }
+      fes.TransformVec (el, elvec, TRANSFORM_RHS);
       AddElementVector (el.GetDofs(), elvec);
     }
   };

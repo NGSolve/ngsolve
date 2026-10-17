@@ -377,8 +377,178 @@ void HDivHighOrderSurfaceFESpace :: Average (BaseVector & vec) const
     // if(uniform_order_inner>-1) 
     //   order_inner = IVec<3> (uniform_order_inner,uniform_order_inner,uniform_order_inner);
 
+    // special edges: more than two elements, or two traversing it in the same direction
+    special_edge.SetSize(nfa);
+    special_edge.Clear();
+    special_element.SetSize(nel);
+    special_element.Clear();
+    rect_element.SetSize(nel);
+    rect_element.Clear();
+    needs_dof_transformation = false;
+    {
+      TableCreator<int> creator(nfa);
+      Array<int> elnums, defels;
+      for ( ; !creator.Done(); creator++)
+        if (!discont)
+          for (size_t e = 0; e < nfa; e++)
+            {
+              if (!fine_facet[e]) continue;
+              ma->GetEdgeSurfaceElements (e, elnums);
+              defels.SetSize0();
+              for (auto se : elnums)
+                if (DefinedOn (ElementId(BND, se)))
+                  defels.Append (se);
+              int k = defels.Size();
+              if (k > 2 || (k == 2 && Traversal(defels[0], e) == Traversal(defels[1], e)))
+                for (auto se : defels)
+                  creator.Add (e, se);
+            }
+      special_els = creator.MoveTable();
+    }
+    for (size_t e = 0; e < nfa; e++)
+      {
+        auto els = special_els[e];
+        if (!els.Size()) continue;
+        special_edge.SetBit(e);
+        for (auto se : els)
+          special_element.SetBit(se);
+        if (els.Size() > 2)
+          {
+            rect_element.SetBit(els[0]);
+            needs_dof_transformation = true;
+          }
+      }
+    if (highest_order_dc && special_edge.NumSet())
+      throw Exception ("HDivSurface: highest_order_dc not supported with non-manifold or inconsistently oriented edges");
+
     UpdateDofTables(); 
     UpdateCouplingDofArray();
+  }
+
+
+  int HDivHighOrderSurfaceFESpace :: Traversal (int selnr, int edge) const
+  {
+    // direction of the edge in the element's vertex cycle, relative to the global orientation
+    Ngs_Element ngel = ma->GetElement (ElementId(BND, selnr));
+    auto topedges = ElementTopology::GetEdges (ngel.GetType());
+    auto edges = ngel.Edges();
+    auto verts = ngel.Vertices();
+    for (int i = 0; i < edges.Size(); i++)
+      if (edges[i] == edge)
+        return (verts[topedges[i][0]] < verts[topedges[i][1]]) ? 1 : -1;
+    throw Exception ("HDivSurface::Traversal: edge not in element");
+  }
+
+  int HDivHighOrderSurfaceFESpace :: EdgeLinks (ElementId ei, FlatArray<EdgeLink> links) const
+  {
+    // link i: coefficient 1 on element 0, -s(i+1)s(0) on element i+1  ->  fluxes cancel
+    auto edges = ma->GetElEdges(ei);
+    int cnt = 0;
+    for (int i = 0; i < edges.Size(); i++)
+      {
+        int e = edges[i];
+        if (!special_edge.Test(e)) continue;
+        auto els = special_els[e];
+        int k = els.Size();
+        int m = els.Pos(ei.Nr());
+        if (m == 0)
+          links[cnt++] = EdgeLink { i, e, 0, 1.0, k-2 };
+        else
+          links[cnt++] = EdgeLink { i, e, m-1, double(-Traversal(els[m], e)*Traversal(els[0], e)), 0 };
+      }
+    return cnt;
+  }
+
+  DofId HDivHighOrderSurfaceFESpace :: LinkDof (int edge, int link, int mode) const
+  {
+    // mode 0 = lowest order
+    if (link == 0)
+      return (mode == 0) ? edge : first_facet_dof[edge] + mode-1;
+    return first_link_dof[edge] + (link-1)*(1+NHO(edge)) + mode;
+  }
+
+  template <typename FUNC>
+  void HDivHighOrderSurfaceFESpace :: SignTransform (ElementId ei, FUNC f) const
+  {
+    // square transformation: sign of the primary link, f(local dof, sign)
+    if (ei.VB() != BND || discont || !special_element.Size() || !special_element.Test(ei.Nr())) return;
+    if (rect_element.Test(ei.Nr()))
+      throw Exception ("HDivSurface: this operation is not supported on elements at non-manifold edges");
+    ArrayMem<EdgeLink,4> links(4);
+    int nl = EdgeLinks (ei, links);
+    auto edges = ma->GetElEdges(ei);
+    ArrayMem<int,4> hooff(edges.Size());
+    for (int i = 0, off = edges.Size(); i < edges.Size(); off += NHO(edges[i]), i++)
+      hooff[i] = off;
+    for (auto & l : links.Range(0, nl))
+      {
+        if (l.pcoef == 1.0) continue;
+        f (l.locedge, l.pcoef);
+        for (int q = 0; q < NHO(l.edge); q++)
+          f (hooff[l.locedge]+q, l.pcoef);
+      }
+  }
+
+  void HDivHighOrderSurfaceFESpace :: VTransformVR (ElementId ei, SliceVector<double> vec, TRANSFORM_TYPE type) const
+  {
+    SignTransform (ei, [&] (int r, double s) { vec(r) *= s; });
+  }
+
+  void HDivHighOrderSurfaceFESpace :: VTransformVC (ElementId ei, SliceVector<Complex> vec, TRANSFORM_TYPE type) const
+  {
+    SignTransform (ei, [&] (int r, double s) { vec(r) *= s; });
+  }
+
+  void HDivHighOrderSurfaceFESpace :: VTransformMR (ElementId ei, SliceMatrix<double> mat, TRANSFORM_TYPE type) const
+  {
+    SignTransform (ei, [&] (int r, double s)
+                   {
+                     if (type & TRANSFORM_MAT_LEFT) mat.Row(r) *= s;
+                     if (type & TRANSFORM_MAT_RIGHT) mat.Col(r) *= s;
+                   });
+  }
+
+  void HDivHighOrderSurfaceFESpace :: VTransformMC (ElementId ei, SliceMatrix<Complex> mat, TRANSFORM_TYPE type) const
+  {
+    SignTransform (ei, [&] (int r, double s)
+                   {
+                     if (type & TRANSFORM_MAT_LEFT) mat.Row(r) *= s;
+                     if (type & TRANSFORM_MAT_RIGHT) mat.Col(r) *= s;
+                   });
+  }
+
+  optional<FlatMatrix<double>> HDivHighOrderSurfaceFESpace :: VGetDofTransformation (ElementId ei, LocalHeap & lh) const
+  {
+    if (ei.VB() != BND || discont || !rect_element.Size() || !rect_element.Test(ei.Nr())) return nullopt;
+
+    Array<DofId> dnums;
+    GetDofNrs (ei, dnums);
+    ArrayMem<EdgeLink,4> links(4);
+    int nl = EdgeLinks (ei, links);
+    auto edges = ma->GetElEdges(ei);
+    ArrayMem<int,4> hooff(edges.Size());
+    for (int i = 0, off = edges.Size(); i < edges.Size(); off += NHO(edges[i]), i++)
+      hooff[i] = off;
+
+    size_t nglob = dnums.Size();
+    size_t nloc = nglob;
+    for (auto & l : links.Range(0, nl))
+      nloc -= l.nsec * (1+NHO(l.edge));
+
+    FlatMatrix<double> T(nloc, nglob, lh);
+    T = 0.0;
+    for (size_t r = 0; r < nloc; r++)
+      T(r,r) = 1;
+    auto row = [&] (const EdgeLink & l, int q) { return (q == 0) ? l.locedge : hooff[l.locedge]+q-1; };
+    for (auto & l : links.Range(0, nl))
+      for (int q = 0; q <= NHO(l.edge); q++)
+        T(row(l,q), row(l,q)) = l.pcoef;
+    // further links are appended in GetDofNrs in this order
+    for (size_t c = nloc; auto & l : links.Range(0, nl))
+      for (int j = 1; j <= l.nsec; j++)
+        for (int q = 0; q <= NHO(l.edge); q++)
+          T(row(l,q), c++) = 1;
+    return T;
   }
 
   void HDivHighOrderSurfaceFESpace :: UpdateDofTables()
@@ -446,6 +616,17 @@ void HDivHighOrderSurfaceFESpace :: Average (BaseVector & vec) const
             if (inci > 0) ndof+=inci;
           }
         first_inner_dof[nel] = ndof;
+
+        // links 1, 2, ... of special edges with more than two elements
+        first_link_dof.SetSize(nfa);
+        first_link_dof = -1;
+        if (special_edge.Size() == nfa)
+          for (size_t e = 0; e < nfa; e++)
+            if (special_edge.Test(e) && special_els[e].Size() > 2)
+              {
+                first_link_dof[e] = ndof;
+                ndof += (special_els[e].Size()-2) * (1+NHO(e));
+              }
 
 
         if (highest_order_dc)
@@ -525,6 +706,9 @@ void HDivHighOrderSurfaceFESpace :: Average (BaseVector & vec) const
     
     for (auto el : Range (ma->GetNE(BND)))
       ctofdof[GetElementDofs(el)] = LOCAL_DOF;
+
+    // dofs of links 1, 2, ... stay WIREBASKET: then an element has at most one link per edge
+    // in the interface block, which keeps element-wise elimination (BDDC) invertible
 
     // cout << ctofdof << endl;
   }
@@ -670,6 +854,26 @@ void HDivHighOrderSurfaceFESpace :: Average (BaseVector & vec) const
 	    	    
 	    //inner
 	    dnums += GetElementDofs (ei.Nr());
+
+            if (special_element.Size() && special_element.Test(ei.Nr()))
+              {
+                // the element's links replace the edge dofs, further links of a center element are appended
+                ArrayMem<EdgeLink,4> links(4);
+                int nl = EdgeLinks (ei, links);
+                ArrayMem<int,4> hooff(fanums.Size());
+                for (int i = 0, off = fanums.Size(); i < fanums.Size(); off += NHO(fanums[i]), i++)
+                  hooff[i] = off;
+                for (auto & l : links.Range(0, nl))
+                  {
+                    dnums[l.locedge] = LinkDof (l.edge, l.plink, 0);
+                    for (int q = 1; q <= NHO(l.edge); q++)
+                      dnums[hooff[l.locedge]+q-1] = LinkDof (l.edge, l.plink, q);
+                  }
+                for (auto & l : links.Range(0, nl))
+                  for (int j = 1; j <= l.nsec; j++)
+                    for (int q = 0; q <= NHO(l.edge); q++)
+                      dnums.Append (LinkDof (l.edge, l.plink+j, q));
+              }
 	  }
       }
     else if (ei.VB()==BBND)
@@ -694,6 +898,10 @@ void HDivHighOrderSurfaceFESpace :: Average (BaseVector & vec) const
     dnums += fanr;
     //high order facet dofs
     dnums += GetFacetDofs (fanr);
+    if (first_link_dof.Size() && first_link_dof[fanr] >= 0)
+      for (int j = 1; j+1 < special_els[fanr].Size(); j++)
+        for (int q = 0; q <= NHO(fanr); q++)
+          dnums += LinkDof (fanr, j, q);
   }
 
   void HDivHighOrderSurfaceFESpace :: GetInnerDofNrs (int elnr, Array<int> & dnums) const

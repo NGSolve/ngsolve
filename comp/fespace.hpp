@@ -225,6 +225,8 @@ ANY                  1 1 1 1 | 15
     // only a few spaces (lowest order Nedelec) need the transformation
     // of element vectors
     bool needs_transform_vec = true;
+    // some elements have a rectangular dof transformation, see GetDofTransformation
+    bool needs_dof_transformation = false;
 
     
     // move ndof and ndof_level to FESpace base class
@@ -631,6 +633,18 @@ ANY                  1 1 1 1 | 15
 
 
     bool NeedsTransformVec() const { return needs_transform_vec; }
+
+    bool NeedsDofTransformation() const { return needs_dof_transformation; }
+    /// for elements where a local shape function combines several global dofs:
+    /// local coefficients = T * element dofs, T is GetFE(ei).GetNDof() x dnums.Size().
+    /// nullopt if the element has no such map, then TransformVec/TransformMat apply
+    optional<FlatMatrix<double>> GetDofTransformation (ElementId ei, LocalHeap & lh) const
+    {
+      if (!needs_dof_transformation) return nullopt;
+      return VGetDofTransformation (ei, lh);
+    }
+    virtual optional<FlatMatrix<double>> VGetDofTransformation (ElementId ei, LocalHeap & lh) const
+    { return nullopt; }
 
     void TransformMat (ElementId ei, 
                        SliceMatrix<double> mat, TRANSFORM_TYPE type) const
@@ -1187,6 +1201,8 @@ ANY                  1 1 1 1 | 15
                        SliceVector<double> vec, TRANSFORM_TYPE tt) const override;
     void VTransformVC (ElementId ei, 
                        SliceVector<Complex> vec, TRANSFORM_TYPE tt) const override;
+
+    optional<FlatMatrix<double>> VGetDofTransformation (ElementId ei, LocalHeap & lh) const override;
 
     /// number of component spaces
     inline int GetNSpaces () const { return spaces.Size(); }

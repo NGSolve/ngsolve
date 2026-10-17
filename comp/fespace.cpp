@@ -3509,6 +3509,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     SetNDof (cummulative_nd.Last());
 
+    needs_dof_transformation = false;
+    for (auto & space : spaces)
+      if (space->NeedsDofTransformation())
+        needs_dof_transformation = true;
+
     /*
     free_dofs = make_shared<BitArray> (GetNDof());
     free_dofs->Clear();
@@ -4009,6 +4014,56 @@ lot of new non-zero entries in the matrix!\n" << endl;
 				      SliceVector<Complex> vec, TRANSFORM_TYPE tt) const 
   {
     T_TransformVec (ei, vec, tt);
+  }
+
+  optional<FlatMatrix<double>> CompoundFESpace :: VGetDofTransformation (ElementId ei, LocalHeap & lh) const
+  {
+    size_t ns = spaces.Size();
+    ArrayMem<optional<FlatMatrix<double>>,8> Ti(ns);
+    bool any = false;
+    for (size_t i = 0; i < ns; i++)
+      {
+        Ti[i] = spaces[i]->GetDofTransformation (ei, lh);
+        if (Ti[i]) any = true;
+      }
+    if (!any) return nullopt;
+
+    // block diagonal, components without rectangular map give their square transformation
+    ArrayMem<size_t,8> nloc(ns), nglob(ns);
+    size_t sumloc = 0, sumglob = 0;
+    Array<DofId> dnums;
+    for (size_t i = 0; i < ns; i++)
+      {
+        nloc[i] = spaces[i]->GetFE(ei, lh).GetNDof();
+        if (Ti[i])
+          nglob[i] = Ti[i]->Width();
+        else
+          {
+            spaces[i]->GetDofNrs (ei, dnums);
+            nglob[i] = dnums.Size();
+          }
+        sumloc += nloc[i];
+        sumglob += nglob[i];
+      }
+
+    FlatMatrix<double> T(sumloc, sumglob, lh);
+    T = 0.0;
+    for (size_t i = 0, r = 0, c = 0; i < ns; r += nloc[i], c += nglob[i], i++)
+      {
+        auto block = T.Rows(r, r+nloc[i]).Cols(c, c+nglob[i]);
+        if (Ti[i])
+          block = *Ti[i];
+        else
+          {
+            if (nloc[i] != nglob[i])
+              throw Exception ("CompoundFESpace::VGetDofTransformation: components with dimension > 1 not supported");
+            FlatMatrix<double> Ii(nloc[i], nloc[i], lh);
+            Ii = Identity(nloc[i]);
+            spaces[i]->TransformMat (ei, Ii, TRANSFORM_MAT_LEFT);
+            block = Trans(Ii);
+          }
+      }
+    return T;
   }
 
 

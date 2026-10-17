@@ -311,8 +311,16 @@ namespace ngcomp
     void GetElementVector (int comp, const FESpace::Element & el,
                            FlatVector<SCAL> elvec) const
     {
+      auto & fes = el.GetFESpace();
+      if (auto T = fes.GetDofTransformation (el, el.GetLH()))
+        {
+          FlatVector<SCAL> gvec(T->Width(), el.GetLH());
+          GetElementVector (comp, el.GetDofs(), gvec);
+          elvec = *T * gvec;
+          return;
+        }
       GetElementVector (comp, el.GetDofs(), elvec);
-      el.GetFESpace().TransformVec (el, elvec, TRANSFORM_SOL);
+      fes.TransformVec (el, elvec, TRANSFORM_SOL);
     }
 
     template <typename SCAL>

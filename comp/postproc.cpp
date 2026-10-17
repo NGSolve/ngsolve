@@ -369,6 +369,47 @@ namespace ngcomp
 
 
 
+  // add element values for averaging. With a rectangular dof transformation only local dofs
+  // given by a single element dof (one non-zero in their row of T) contribute
+  template <typename SCAL>
+  static void AddElementValues (GridFunction & u, int mdcomp, const FESpace::Element & ei,
+                                FlatVector<SCAL> elfluxi, FlatVector<SCAL> elflux,
+                                FlatArray<int> cnti, LocalHeap & lh)
+  {
+    auto & fes = ei.GetFESpace();
+    if (auto optT = fes.GetDofTransformation (ei, lh))
+      {
+        auto & T = *optT;
+        auto dnums = ei.GetDofs();
+        Array<DofId> pdnums(T.Height(), lh);
+        FlatVector<SCAL> val(T.Height(), lh), old(T.Height(), lh);
+        pdnums.SetSize0();
+        for (size_t r = 0; r < T.Height(); r++)
+          {
+            int nz = 0, c = 0;
+            for (size_t j = 0; j < T.Width(); j++)
+              if (T(r,j) != 0.0) { nz++; c = j; }
+            if (nz != 1) continue;
+            val(pdnums.Size()) = elfluxi(r) / T(r,c);
+            pdnums.Append (dnums[c]);
+          }
+        auto vals = val.Range(0, pdnums.Size());
+        u.GetElementVector (mdcomp, pdnums, old.Range(0, pdnums.Size()));
+        vals += old.Range(0, pdnums.Size());
+        u.SetElementVector (mdcomp, pdnums, vals);
+        for (auto d : pdnums)
+          if (IsRegularDof(d)) cnti[d]++;
+        return;
+      }
+
+    fes.TransformVec (ei, elfluxi, TRANSFORM_SOL_INVERSE);
+    u.GetElementVector (mdcomp, ei.GetDofs(), elflux);
+    elfluxi += elflux;
+    u.SetElementVector (mdcomp, ei.GetDofs(), elfluxi);
+    for (auto d : ei.GetDofs())
+      if (IsRegularDof(d)) cnti[d]++;
+  }
+
   template <class SCAL>
   void SetValues (shared_ptr<CoefficientFunction> coef,
 		  GridFunction & u,
@@ -540,13 +581,7 @@ namespace ngcomp
                        }
                      
 		     /** Write into large vector **/
-		     fes->TransformVec (ei, elfluxi, TRANSFORM_SOL_INVERSE);
-                     u.GetElementVector (mdcomp, ei.GetDofs(), elflux);
-                     elfluxi += elflux;
-                     u.SetElementVector (mdcomp, ei.GetDofs(), elfluxi);
-                     
-                     for (auto d : ei.GetDofs())
-                       if (IsRegularDof(d)) cnti[d]++;
+		     AddElementValues (u, mdcomp, ei, elfluxi, elflux, cnti, lh);
                      
                      return;
                    }
@@ -627,13 +662,7 @@ namespace ngcomp
                }
              
 	     /** Write into large vector **/
-             fes->TransformVec (ei, elfluxi, TRANSFORM_SOL_INVERSE);
-             u.GetElementVector (mdcomp, ei.GetDofs(), elflux);
-             elfluxi += elflux;
-             u.SetElementVector (mdcomp, ei.GetDofs(), elfluxi);
-             
-             for (auto d : ei.GetDofs())
-               if (d != -1) cnti[d]++;
+             AddElementValues (u, mdcomp, ei, elfluxi, elflux, cnti, lh);
              
            }); // IterateElements
         progress.Done();
@@ -773,13 +802,7 @@ namespace ngcomp
                            }
                        }
 
-                     fes->TransformVec (ei, elfluxi, TRANSFORM_SOL_INVERSE);
-                     u.GetElementVector (mdcomp, ei.GetDofs(), elflux);
-                     elfluxi += elflux;
-                     u.SetElementVector (mdcomp, ei.GetDofs(), elfluxi);
-                     
-                     for (auto d : ei.GetDofs())
-                       if (IsRegularDof(d)) cnti[d]++;
+                     AddElementValues (u, mdcomp, ei, elfluxi, elflux, cnti, lh);
                      
                      return;
                    }
@@ -842,14 +865,7 @@ namespace ngcomp
                    }
                }
              
-             fes->TransformVec (ei, elfluxi, TRANSFORM_SOL_INVERSE);
-             
-             u.GetElementVector (mdcomp, ei.GetDofs(), elflux);
-             elfluxi += elflux;
-             u.SetElementVector (mdcomp, ei.GetDofs(), elfluxi);
-             
-             for (auto d : ei.GetDofs())
-               if (d != -1) cnti[d]++;
+             AddElementValues (u, mdcomp, ei, elfluxi, elflux, cnti, lh);
              
            });
         progress.Done();

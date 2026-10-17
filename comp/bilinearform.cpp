@@ -1799,7 +1799,18 @@ namespace ngcomp
   {
     static mutex printelmat_mutex;
 
-    el.GetFESpace().TransformMat (el, elmat, TRANSFORM_MAT_LEFT_RIGHT);
+    auto & fes = el.GetFESpace();
+    if (auto T = fes.GetDofTransformation (el, lh))
+      {
+        // to the element dofs: T^T elmat T
+        FlatMatrix<SCAL> gmat(T->Width(), T->Width(), lh);
+        FlatMatrix<SCAL> hmat(elmat.Height(), T->Width(), lh);
+        hmat = elmat * *T;
+        gmat = Trans(*T) * hmat;
+        elmat.AssignMemory (gmat.Height(), gmat.Width(), gmat.Data());
+      }
+    else
+      fes.TransformMat (el, elmat, TRANSFORM_MAT_LEFT_RIGHT);
 
     if (elmat_ev)
       {
@@ -2044,7 +2055,7 @@ namespace ngcomp
                          const ElementTransformation & eltrans = ma->GetTrafo (el, lh);
                          FlatArray<int> dnums = el.GetDofs();
                          
-                         if (fel.GetNDof() != dnums.Size())
+                         if (fel.GetNDof() != dnums.Size() && !fespace->NeedsDofTransformation())
                            {
                              *testout << "Info from finite element: " << endl;
                              fel.Print (*testout);
@@ -2054,7 +2065,7 @@ namespace ngcomp
                              throw Exception ( string("Inconsistent number of degrees of freedom, vb="+ToString(vb)+" fel::GetNDof() = ") + ToString(fel.GetNDof()) + string(" != dnums.Size() = ") + ToString(dnums.Size()) + string("!") );
                            }
                          
-                         int elmat_size = dnums.Size()*fespace->GetDimension();
+                         int elmat_size = fel.GetNDof()*fespace->GetDimension();
                          FlatMatrix<SCAL> sum_elmat(elmat_size, lh);
 			 bool elem_has_integrator = false;
 
@@ -3659,7 +3670,9 @@ namespace ngcomp
                  Array<int> dnums(fel.GetNDof(), lh);
                  fespace->GetDofNrs (el, dnums);
                  
-                 if(fel.GetNDof() != dnums.Size())
+                 auto doftrafo = fespace->GetDofTransformation (el, lh);
+
+                 if(fel.GetNDof() != dnums.Size() && !doftrafo)
                    {
                      (*testout) << "fel::GetNDof() = " << fel.GetNDof() << endl;
                      (*testout) << "dnums.Size() = " << dnums.Size() << endl;
@@ -3669,13 +3682,22 @@ namespace ngcomp
                  for (auto d : dnums) 
                    if (IsRegularDof(d)) MarkUsed (d);
                  
-                 FlatMatrix<SCAL> sum_elmat(dnums.Size()*fespace->GetDimension(), lh);
-                 FlatMatrix<SCAL> elmat(dnums.Size()*fespace->GetDimension(), lh);
+                 FlatMatrix<SCAL> sum_elmat(fel.GetNDof()*fespace->GetDimension(), lh);
+                 FlatMatrix<SCAL> elmat(fel.GetNDof()*fespace->GetDimension(), lh);
                  sum_elmat = 0;
                  
-                 FlatVector<SCAL> elveclin (dnums.Size()*fespace->GetDimension(), lh);
-                 lin.GetIndirect (dnums, elveclin);
-                 fespace->TransformVec (el, elveclin, TRANSFORM_SOL);
+                 FlatVector<SCAL> elveclin (fel.GetNDof()*fespace->GetDimension(), lh);
+                 if (doftrafo)
+                   {
+                     FlatVector<SCAL> glin (dnums.Size(), lh);
+                     lin.GetIndirect (dnums, glin);
+                     elveclin = *doftrafo * glin;
+                   }
+                 else
+                   {
+                     lin.GetIndirect (dnums, elveclin);
+                     fespace->TransformVec (el, elveclin, TRANSFORM_SOL);
+                   }
 
                  for (auto & bfi : VB_parts[vb])
                    {
@@ -4481,12 +4503,23 @@ namespace ngcomp
                    auto & fel = el.GetFE();
                    auto & trafo = el.GetTrafo();
                    auto dnums = el.GetDofs();
-                                      
-                   FlatVector<SCAL> elvecx (dnums.Size() * fespace->GetDimension(), lh);
-                   FlatVector<SCAL> elvecy (dnums.Size() * fespace->GetDimension(), lh);
 
-                   x.GetIndirect (dnums, elvecx);
-                   this->fespace->TransformVec (el, elvecx, TRANSFORM_SOL);
+                   FlatVector<SCAL> elvecx (fel.GetNDof() * fespace->GetDimension(), lh);
+                   FlatVector<SCAL> elvecy (fel.GetNDof() * fespace->GetDimension(), lh);
+
+                   auto doftrafo = fespace->GetDofTransformation (el, lh);
+                   FlatVector<SCAL> gvec (dnums.Size() * fespace->GetDimension(), lh);
+
+                   if (doftrafo)
+                     {
+                       x.GetIndirect (dnums, gvec);
+                       elvecx = *doftrafo * gvec;
+                     }
+                   else
+                     {
+                       x.GetIndirect (dnums, elvecx);
+                       this->fespace->TransformVec (el, elvecx, TRANSFORM_SOL);
+                     }
 
                    for (auto & bfi : VB_parts[vb])
                      {
@@ -4500,6 +4533,14 @@ namespace ngcomp
                          bfi->ApplyElementMatrix (fel, mapped_trafo, elvecx, elvecy, 0, lh);
                        }
                        
+                       if (doftrafo)
+                         {
+                           gvec = Trans(*doftrafo) * elvecy;
+                           gvec *= val;
+                           y.AddIndirect (dnums, gvec, fespace->HasAtomicDofs());
+                           continue;
+                         }
+
                        this->fespace->TransformVec (el, elvecy, TRANSFORM_RHS);
                        
                        elvecy *= val;
@@ -6036,10 +6077,19 @@ namespace ngcomp
                  ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
                  
                  FlatArray<int> dnums = ei.GetDofs();
-                 FlatVector<SCAL> elvecx (dnums.Size()*GetFESpace()->GetDimension(), lh);
+                 FlatVector<SCAL> elvecx (fel.GetNDof()*GetFESpace()->GetDimension(), lh);
                  
-                 x.GetIndirect (dnums, elvecx);
-                 fespace->TransformVec (ei, elvecx, TRANSFORM_SOL);
+                 if (auto doftrafo = fespace->GetDofTransformation (ei, lh))
+                   {
+                     FlatVector<SCAL> gvec (dnums.Size(), lh);
+                     x.GetIndirect (dnums, gvec);
+                     elvecx = *doftrafo * gvec;
+                   }
+                 else
+                   {
+                     x.GetIndirect (dnums, elvecx);
+                     fespace->TransformVec (ei, elvecx, TRANSFORM_SOL);
+                   }
                  
                  double energy_T = 0;
                  
