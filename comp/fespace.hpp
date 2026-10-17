@@ -337,13 +337,8 @@ ANY                  1 1 1 1 | 15
       INLINE FlatArray<DofId> GetDofs() const
       {
         if (!dofs_set)
-          {
-            ArrayMem<DofId,100> hdnums;
-            fes.GetDofNrs (*this, hdnums);
-            dnums.Assign (hdnums.Size(), lh);
-            dnums = hdnums;
-            dofs_set = true;
-          }
+          dnums.Assign (fes.GetDofNrs (*this, lh));
+        dofs_set = true;
         return dnums;
       }
 
@@ -449,7 +444,7 @@ ANY                  1 1 1 1 | 15
       return ElementRange (*this, vb, IntRange (0, ma->GetNE(vb)), lh);
     }
 
-    Element GetElement (ElementId ei, LocalHeap & lh) const
+    INLINE Element GetElement (ElementId ei, LocalHeap & lh) const
     {
       return Element (*this, ei, lh);
     }
@@ -461,6 +456,25 @@ ANY                  1 1 1 1 | 15
     /// get dof-nrs of domain or boundary element elnr
     virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const = 0;
     
+    /// dofs in lh: GetDofNrs fills a block of half the free lh (and may allocate
+    /// behind it), then the block is shrunk to the dofs
+    INLINE FlatArray<DofId> GetDofNrs (ElementId ei, LocalHeap & lh) const
+    {
+      void * start = lh.GetPointer();
+      size_t cap = lh.Available()/2/sizeof(DofId);
+      DofId * block = lh.Alloc<DofId> (cap);
+      void * end = lh.GetPointer();
+      Array<DofId> hdnums(cap, block);   // non-owning
+      hdnums.SetSize0();
+      GetDofNrs (ei, hdnums);
+      if (lh.GetPointer() == end)        // nothing allocated behind the block
+        lh.CleanUp (start);
+      FlatArray<DofId> dnums(hdnums.Size(), lh);
+      if (dnums.Data() != hdnums.Data()) // not in place
+        dnums = hdnums;
+      return dnums;
+    }
+
     virtual void GetDofNrs (NodeId ni, Array<DofId> & dnums) const;
     BitArray GetDofs (const Region & reg, const DifferentialOperator * diffop = nullptr) const;
     virtual IntRange GetRange (const DifferentialOperator & diffop) const;
