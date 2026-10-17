@@ -527,6 +527,11 @@ namespace ngcomp
     // local operators:
     ElementByElementMatrix<SCAL> *harmonicext_ptr, *harmonicexttrans_ptr, *innersolve_ptr, *innermatrix_ptr;
 
+    // static condensation of the complete element matrix (in place), masks the inner dofs in dnums,
+    // stores harmonic extension and inner solve, optionally condenses the linearform
+    void CondenseElementMatrix (ElementId ei, FlatArray<DofId> dnums, FlatMatrix<SCAL> elmat,
+                                bool condense_rhs, LocalHeap & lh);
+
     
     //data for mpi-facets; only has data if there are relevant integrators in the BLF!
     mutable bool have_mpi_facet_data = false;

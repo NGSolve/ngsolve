@@ -1574,6 +1574,223 @@ namespace ngcomp
   }
 
   
+  template <class SCAL>
+  void S_BilinearForm<SCAL> :: CondenseElementMatrix (ElementId ei, FlatArray<DofId> dnums,
+                                                      FlatMatrix<SCAL> elmat,
+                                                      bool condense_rhs, LocalHeap & lh)
+  {
+    VorB vb = ei.VB();
+    if (! (vb == VOL || (!VB_parts[VOL].Size() && vb==BND)) ) return;
+
+    bool has_hidden = false;
+    if (eliminate_hidden || eliminate_internal)
+      for (auto d : dnums)
+        if (fespace->GetDofCouplingType(d) & HIDDEN_DOF)
+          has_hidden = true;
+
+    bool elim_only_hidden = (!eliminate_internal) && eliminate_hidden && has_hidden;
+    if (! (elim_only_hidden || eliminate_internal)) return;
+
+    static Timer statcondtimer("static condensation", NoTracing);
+    static Timer statcondtimer2("static condensation 2", NoTracing);
+    static Timer statcondtimer_mult("static condensation mult", NoTracing);
+    static mutex printelmat_mutex;
+    RegionTimer regstat (statcondtimer);
+
+    Array<int> idofs1(dnums.Size(), lh), odofs1(dnums.Size(), lh);
+    idofs1.SetSize0(); odofs1.SetSize0();
+
+    auto ctype = elim_only_hidden ? HIDDEN_DOF : CONDENSABLE_DOF;
+    for (auto i : Range(dnums))
+      {
+        auto ct = fespace->GetDofCouplingType(dnums[i]);
+        if (ct & ctype)
+          idofs1.AppendHaveMem(i);
+        else
+          if (ct != UNUSED_DOF)
+            odofs1.AppendHaveMem(i);
+      }
+
+    if (printelmat)
+      {
+        lock_guard<mutex> guard(printelmat_mutex);
+        *testout << "eliminate internal";
+        if (elim_only_hidden)
+          *testout << " (only hidden)" << endl;
+        *testout << "idofs1 = " << idofs1 << endl;
+      }
+
+    if (!idofs1.Size()) return;
+
+    HeapReset hr (lh);
+
+    int size = elmat.Height();
+    int dim = fespace->GetDimension();
+
+    int sizei = dim * idofs1.Size();
+    int sizeo = dim * odofs1.Size();
+
+    FlatArray<int> idofs (sizei, lh);
+    FlatArray<int> odofs (sizeo, lh);
+
+    for (int j = 0, k = 0; j < idofs1.Size(); j++)
+      for (int jj = 0; jj < dim; jj++)
+        idofs[k++] = dim*idofs1[j]+jj;
+
+    for (int j = 0, k = 0; j < odofs1.Size(); j++)
+      for (int jj = 0; jj < dim; jj++)
+        odofs[k++] = dim*odofs1[j]+jj;
+
+    if (printelmat)
+      {
+        lock_guard<mutex> guard(printelmat_mutex);
+        (*testout) << "idofs = " << endl << idofs << endl;
+        (*testout) << "odofs = " << endl << odofs << endl;
+      }
+
+    FlatMatrix<SCAL>
+      a = elmat.Rows(odofs).Cols(odofs) | lh,
+      b = elmat.Rows(odofs).Cols(idofs) | lh,
+      c = Trans(elmat.Rows(idofs).Cols(odofs)) | lh,
+      d = elmat.Rows(idofs).Cols(idofs) | lh;
+
+    // A := A - B D^{-1} C^T
+    if (elim_only_hidden || !keep_internal)
+      {
+        AInvBt (d, b);    // b <--- b d^-1
+        SubABt (b, c, a);
+      }
+    else
+      {
+        Array<DofId> idnums1(idofs1.Size(), lh), ednums1(odofs1.Size(), lh);
+        for (int i : Range(idofs1))
+          {
+            DofId d = dnums[idofs1[i]];
+            if (fespace->GetDofCouplingType(d) == HIDDEN_DOF)
+              d = NO_DOF_NR_CONDENSE;
+            idnums1[i] = d;
+          }
+        for (int i : Range(odofs1))
+          ednums1[i] = dnums[odofs1[i]];
+
+        RegionTimer regstat2 (statcondtimer2);
+
+        Array<int> idnums(dim*idnums1.Size(), lh);
+        Array<int> ednums(dim*ednums1.Size(), lh);
+        idnums.SetSize0();
+        ednums.SetSize0();
+
+        for (DofId idnum1 : idnums1)
+          if (IsRegularDof(idnum1))
+            idnums += dim*IntRange(idnum1, idnum1+1);
+          else
+            for (size_t k = 0; k < dim; k++)
+              idnums.AppendHaveMem(idnum1);
+
+        for (DofId ednum1 : ednums1)
+          ednums += dim * IntRange(ednum1, ednum1+1);
+
+        if (store_inner)
+          {
+            if (has_hidden)
+              {
+                HeapReset hr(lh);
+                Array<int> ldofs(idnums.Size(), lh); //LOCAL DOFs
+                Array<int> hdofs(idnums.Size(), lh); //HIDDEN DOFs
+                ldofs.SetSize0();
+                hdofs.SetSize0();
+
+                for (int i : Range(idnums))
+                  if (idnums[i] == NO_DOF_NR_CONDENSE)
+                    hdofs.AppendHaveMem(i);
+                  else
+                    ldofs.AppendHaveMem(i);
+
+                FlatMatrix<SCAL>
+                  da = d.Rows(ldofs).Cols(ldofs) | lh,
+                  db = d.Rows(ldofs).Cols(hdofs) | lh,
+                  dc = Trans(d.Rows(hdofs).Cols(ldofs)) | lh,
+                  dd = d.Rows(hdofs).Cols(hdofs) | lh;
+
+                Array<int> cidnums(idnums.Size(), lh); //compressed idofs (no hidden)
+                cidnums.SetSize0();
+                for (DofId dof : idnums)
+                  if (IsRegularDof(dof))
+                    cidnums.AppendHaveMem(dof);
+
+                AInvBt (dd, db);    // b <--- b d^-1
+                SubABt (db, dc, da);
+
+                innermatrix_ptr->AddElementMatrix(ei.Nr(),cidnums,cidnums,da);
+              }
+            else
+              innermatrix_ptr->AddElementMatrix(ei.Nr(),idnums,idnums,d);
+          }
+
+        CalcInverse (d);
+        FlatMatrix<SCAL> he (sizei, sizeo, lh);
+        {
+          RegionTimer reg (statcondtimer_mult);
+          reg.AddFlops (d.Height()*d.Width()*c.Width());
+          he = -d * Trans(c);
+        }
+
+        harmonicext_ptr->AddElementMatrix(ei.Nr(),idnums,ednums,he);
+        if (!symmetric)
+          {
+            FlatMatrix<SCAL> het (sizeo, sizei, lh);
+            het = -b * d;
+            harmonicexttrans_ptr->AddElementMatrix(ei.Nr(),ednums,idnums,het);
+          }
+
+        innersolve_ptr->AddElementMatrix(ei.Nr(),idnums,idnums,d);
+        {
+          RegionTimer reg (statcondtimer_mult);
+          reg.AddFlops (b.Height()*b.Width()*he.Width());
+          a += b * he;
+        }
+
+        if (spd)
+          { // more stable ?
+            FlatMatrix<SCAL> schur(odofs.Size(), lh);
+            CalcSchur (elmat, schur, odofs, idofs);
+            a = schur;
+          }
+      }
+
+    if (printelmat)
+      {
+        lock_guard<mutex> guard(printelmat_mutex);
+        testout->precision(8);
+        (*testout) << "Schur elmat = " << endl << a << endl;
+      }
+
+    if (elmat_ev)
+      {
+        testout->precision(8);
+        (*testout) << "EV of Schur complement:" << endl;
+        LapackEigenSystem(a, lh);
+      }
+
+    elmat.Rows(odofs).Cols(odofs) = a;
+    if (condense_rhs && linearform && (!keep_internal))
+      {
+        FlatVector<SCAL> elvec (size, lh);
+        linearform -> GetVector().GetIndirect (dnums, elvec);
+        FlatVector<SCAL> hfi(sizei, lh);
+        FlatVector<SCAL> hfo(sizeo, lh);
+
+        hfi = elvec(idofs);
+        hfo = b * hfi;
+        elvec(odofs) -= hfo;
+
+        linearform->GetVector().SetIndirect (dnums, elvec);
+      }
+
+    for (int k = 0; k < idofs1.Size(); k++)
+      dnums[idofs1[k]] = NO_DOF_NR;
+  }
+
 
   template <class SCAL>
   void S_BilinearForm<SCAL> :: DoAssemble (LocalHeap & clh)
@@ -1915,294 +2132,8 @@ namespace ngcomp
                              LapackEigenSystem(sum_elmat, lh);
                            }
 
-                         /*
-                         Array<int> lhdofs(dnums.Size(), lh);
-                         fespace->GetElementDofsOfType(el, lhdofs, HIDDEN_DOF);
-                         bool has_hidden = lhdofs.Size() > 0;
-                         */
+                         CondenseElementMatrix (el, dnums, sum_elmat, true, lh);
 
-                         bool has_hidden = false;
-                         if (eliminate_hidden || eliminate_internal)
-                           {
-                             for (auto d : dnums)
-                               if (fespace->GetDofCouplingType(d) & HIDDEN_DOF)
-                                 has_hidden = true;
-                           }
-
-                         bool elim_only_hidden =
-                           (!eliminate_internal) && eliminate_hidden && /* (lhdofs.Size() > 0)*/ has_hidden;
-                         if ((vb == VOL || (!VB_parts[VOL].Size() && vb==BND) ) && (elim_only_hidden || eliminate_internal))
-                           {
-                             // static Timer t("static condensation", NoTracing);
-                             // RegionTracer reg(TaskManager::GetThreadId(), t);    
-
-                             // if (!fespace->CouplingTypeArrayAvailable())
-                             // throw Exception ("need coupling types for static condensation");
-                             static Timer statcondtimer("static condensation", NoTracing);
-                             RegionTimer regstat (statcondtimer);
-                             static Timer statcondtimer2("static condensation 2", NoTracing);
-
-                             static Timer statcondtimer_mult("static condensation mult", NoTracing);
-                             static Timer statcondtimer_inv("static condensation inv", NoTracing);
-                             
-                             // Array<int> idofs1(dnums.Size(), lh);
-                             // fespace->GetElementDofsOfType (el, idofs1, elim_only_hidden ? HIDDEN_DOF : CONDENSABLE_DOF);
-                             
-                             Array<int> idofs1(dnums.Size(), lh), odofs1(dnums.Size(), lh);
-                             idofs1.SetSize0(); odofs1.SetSize0();
-                             
-                             auto ctype = elim_only_hidden ? HIDDEN_DOF : CONDENSABLE_DOF;
-                             for (auto i : Range(dnums))
-                               {
-                                 auto ct = fespace->GetDofCouplingType(dnums[i]);
-                                 if (ct & ctype)
-                                   idofs1.AppendHaveMem(i);
-                                 else
-                                   if (ct != UNUSED_DOF)
-                                     odofs1.AppendHaveMem(i);
-                               }
-                             
-                             if (printelmat) 
-                               {
-                                 lock_guard<mutex> guard(printelmat_mutex);
-                                 *testout << "eliminate internal";
-                                 if (elim_only_hidden)
-                                  *testout << " (only hidden)" << endl;
-                                 *testout << "idofs1 = " << idofs1 << endl;
-                               }
-                             
-                             if (idofs1.Size())
-                               {
-                                 HeapReset hr (lh);
-				 
-                                 int size = sum_elmat.Height();
-                                 // int dim = size / dnums.Size();
-                                 int dim = fespace->GetDimension();
-				 
-                                 int sizei = dim * idofs1.Size();
-                                 int sizeo = dim * odofs1.Size();
-				 
-                                 FlatArray<int> idofs (sizei, lh);
-                                 FlatArray<int> odofs (sizeo, lh);
-
-                                 for (int j = 0, k = 0; j < idofs1.Size(); j++)
-                                   for (int jj = 0; jj < dim; jj++)
-                                     idofs[k++] = dim*idofs1[j]+jj;
-                                 
-                                 for (int j = 0, k = 0; j < odofs1.Size(); j++)
-                                   for (int jj = 0; jj < dim; jj++)
-                                     odofs[k++] = dim*odofs1[j]+jj;
-
-                                 if (printelmat)
-                                   {
-                                     lock_guard<mutex> guard(printelmat_mutex);
-                                     (*testout) << "idofs = " << endl << idofs << endl;
-                                     (*testout) << "odofs = " << endl << odofs << endl;
-                                   }
-                                 
-                                 FlatMatrix<SCAL> 
-                                   a = sum_elmat.Rows(odofs).Cols(odofs) | lh,
-                                   b = sum_elmat.Rows(odofs).Cols(idofs) | lh,
-                                   c = Trans(sum_elmat.Rows(idofs).Cols(odofs)) | lh,
-                                   d = sum_elmat.Rows(idofs).Cols(idofs) | lh;
-                                 
-				 
-                                 /*
-                                   statcondtimer.AddFlops (double(sizei)*sizei*sizei/3);  // LU fact
-                                   statcondtimer.AddFlops (double(sizei)*sizei*sizeo);  
-                                   statcondtimer.AddFlops (double(sizei)*sizeo*sizeo);  
-                                 */
-				 
-                                 // A := A - B D^{-1} C^T
-                                 // new Versions, July 07
-                                 if (elim_only_hidden || !keep_internal) 
-                                   {
-                                     AInvBt (d, b);    // b <--- b d^-1
-                                     // LapackMultAddABt (b, c, -1, a);
-                                     SubABt (b, c, a);
-                                   }
-                                 else
-                                   {
-                                     /*
-                                     Array<int> idnums1(dnums.Size(), lh), 
-                                       ednums1(dnums.Size(), lh),
-                                       hdnums1(dnums.Size(), lh);
-                                     fespace->GetElementDofsOfType(el,idnums1,CONDENSABLE_DOF);
-                                     fespace->GetElementDofsOfType(el,ednums1,EXTERNAL_DOF);
-                                     fespace->GetElementDofsOfType(el,hdnums1,HIDDEN_DOF);
-
-                                     if (! (ednums1 == odofs1) )
-                                       cout << "they are different:" << endl
-                                            << "ednums1 = " << endl << ednums1 << endl
-                                            << "odofs1 = " << endl << odofs1 << endl;
-                                     if (! (idnums1 == idofs1) )
-                                       cout << "they are different:" << endl
-                                            << "idnums1 = " << endl << ednums1 << endl
-                                            << "idofs1 = " << endl << idofs1 << endl;
-                                     
-                                     for (auto d : Range(idnums1.Size()))
-                                       idnums1[d] = dnums[idnums1[d]];
-                                     for (auto d : Range(ednums1.Size()))
-                                       ednums1[d] = dnums[ednums1[d]];
-                                     for (auto ldof : hdnums1)
-                                       idnums1[ldof] = NO_DOF_NR;
-                                     */
-
-                                     Array<DofId> idnums1(idofs1.Size(), lh), ednums1(odofs1.Size(), lh);
-                                     for (int i : Range(idofs1))
-                                       {
-                                         DofId d = dnums[idofs1[i]];
-                                         if (fespace->GetDofCouplingType(d) == HIDDEN_DOF)
-                                           d = NO_DOF_NR_CONDENSE;
-                                         idnums1[i] = d;
-                                       }
-                                     for (int i : Range(odofs1))
-                                       ednums1[i] = dnums[odofs1[i]];
-                                     
-                                     
-                                     RegionTimer regstat2 (statcondtimer2);
-
-                                     Array<int> idnums(dim*idnums1.Size(), lh);
-                                     Array<int> ednums(dim*ednums1.Size(), lh);
-                                     idnums.SetSize0(); 
-                                     ednums.SetSize0();
-
-                                     for (DofId idnum1 : idnums1)
-                                       if (IsRegularDof(idnum1))
-                                         idnums += dim*IntRange(idnum1, idnum1+1);
-                                       else
-                                         for (size_t k = 0; k < dim; k++)
-                                           idnums.AppendHaveMem(idnum1);
-
-                                     for (DofId ednum1 : ednums1)
-                                       ednums += dim * IntRange(ednum1, ednum1+1);
-                                     
-                                     if (store_inner)
-                                     {
-                                       if (has_hidden)
-                                       {
-                                         HeapReset hr(lh);
-                                         Array<int> ldofs(idnums.Size(), lh); //LOCAL DOFs
-                                         Array<int> hdofs(idnums.Size(), lh); //HIDDEN DOFs
-                                         ldofs.SetSize0(); 
-                                         hdofs.SetSize0();
-
-                                         for (int i : Range(idnums))
-                                           if (idnums[i] == NO_DOF_NR_CONDENSE)
-                                             hdofs.AppendHaveMem(i);
-                                           else
-                                             ldofs.AppendHaveMem(i);
-
-                                         FlatMatrix<SCAL> 
-                                           da = d.Rows(ldofs).Cols(ldofs) | lh,
-                                           db = d.Rows(ldofs).Cols(hdofs) | lh,
-                                           dc = Trans(d.Rows(hdofs).Cols(ldofs)) | lh,
-                                           dd = d.Rows(hdofs).Cols(hdofs) | lh;
-
-                                         Array<int> cidnums(idnums.Size(), lh); //compressed idofs (no hidden)
-                                         cidnums.SetSize0();
-                                         for (DofId dof : idnums)
-                                           if (IsRegularDof(dof))
-                                             cidnums.AppendHaveMem(dof);
-
-                                         AInvBt (dd, db);    // b <--- b d^-1
-                                         // LapackMultAddABt (db, dc, -1, da);   
-                                         SubABt (db, dc, da);
-                                         
-                                         innermatrix_ptr->AddElementMatrix(el.Nr(),cidnums,cidnums,da);
-                                       }
-                                       else
-                                         innermatrix_ptr->AddElementMatrix(el.Nr(),idnums,idnums,d);
-                                     }
-                                     
-                                     /*
-                                       Matrix<SCAL> hd = d;
-                                       Vector<SCAL> diag(d.Height());
-                                       for (int i = 0; i < d.Height(); i++)
-                                       diag(i) = sqrt(fabs(hd(i,i)));
-                                       for (int i = 0; i < d.Height(); i++)
-                                       {
-                                       hd.Row(i) *= 1.0/diag(i);
-                                       hd.Col(i) *= 1.0/diag(i);
-                                       }
-                                       Vector<SCAL> lam(d.Height());
-                                       Matrix<SCAL> evecs(d.Height());
-                                       CalcEigenSystem (hd, lam, evecs);
-                                       cout << "lam = " << lam << endl;
-                                     */
-
-                                     {
-                                       // RegionTimer reg (statcondtimer_inv);
-                                       // RegionTracer rtr(TaskManager::GetThreadId(), statcondtimer_inv);    
-                              
-                                       // LapackInverse (d);
-                                       CalcInverse (d);
-                                     }
-                                     FlatMatrix<SCAL> he (sizei, sizeo, lh);
-
-                                     {
-                                       RegionTimer reg (statcondtimer_mult);
-                                       reg.AddFlops (d.Height()*d.Width()*c.Width());
-                                       
-                                       he = -d * Trans(c);
-                                     }
-                                     
-                                     harmonicext_ptr->AddElementMatrix(el.Nr(),idnums,ednums,he);
-                                     if (!symmetric)
-                                       {
-                                         FlatMatrix<SCAL> het (sizeo, sizei, lh);
-                                         het = -b * d;
-                                         harmonicexttrans_ptr->AddElementMatrix(el.Nr(),ednums,idnums,het);
-                                       }
-                                     
-                                     innersolve_ptr->AddElementMatrix(el.Nr(),idnums,idnums,d);
-                                     {
-                                       RegionTimer reg (statcondtimer_mult);
-                                       reg.AddFlops (b.Height()*b.Width()*he.Width());
-                                       a += b * he;
-                                     }
-                                     
-                                     if (spd)
-                                       { // more stable ? 
-                                         FlatMatrix<SCAL> schur(odofs.Size(), lh);
-                                         CalcSchur (sum_elmat, schur, odofs, idofs);
-                                         a = schur;
-                                       }
-                                   }                             
-                                 
-                                 if (printelmat) 
-                                   {
-                                     testout->precision(8);
-                                     (*testout) << "Schur elmat = " << endl << a << endl;
-                                   }
-                                 
-                                 if (elmat_ev)
-                                   {
-                                     testout->precision(8);
-                                     
-                                     (*testout) << "EV of Schur complement:" << endl;
-                                     LapackEigenSystem(a, lh);
-                                   }
-                                 
-                                 sum_elmat.Rows(odofs).Cols(odofs) = a;
-                                 if (linearform && (!keep_internal))
-                                   {
-                                     FlatVector<SCAL> elvec (size, lh);
-                                     linearform -> GetVector().GetIndirect (dnums, elvec);
-                                     FlatVector<SCAL> hfi(sizei, lh);
-                                     FlatVector<SCAL> hfo(sizeo, lh);
-                                     
-                                     hfi = elvec(idofs);
-                                     hfo = b * hfi;
-                                     elvec(odofs) -= hfo;
-                                     
-                                     linearform->GetVector().SetIndirect (dnums, elvec);
-                                   }
-                                 
-                                 for (int k = 0; k < idofs1.Size(); k++)
-                                   dnums[idofs1[k]] = NO_DOF_NR;
-                               }
-                           }
                          if (printelmat)
                            {
                              lock_guard<mutex> guard(printelmat_mutex);
@@ -3888,199 +3819,7 @@ namespace ngcomp
                    *testout << "summat = " << sum_elmat << endl;
                  
 
-                 // Array<int> lhdofs(dnums.Size(), lh);
-                 // fespace->GetElementDofsOfType (el, lhdofs, HIDDEN_DOF);
-
-                 bool has_hidden = false;
-                 if (eliminate_hidden)
-                   {
-                     for (auto d : dnums)
-                       if (fespace->GetDofCouplingType(d) & HIDDEN_DOF)
-                         has_hidden = true;
-                   }
-                 
-                 bool elim_only_hidden = (!eliminate_internal) && eliminate_hidden && /* (lhdofs.Size() > 0) */ has_hidden;
-
-                 if ((vb == VOL || (!VB_parts[VOL].Size() && vb==BND) ) && (elim_only_hidden || eliminate_internal))
-                   {
-                     static Timer statcondtimer("static condensation", NoTracing);
-                     RegionTimer regstat (statcondtimer);
-                     
-                     // ArrayMem<int,100> idofs, idofs1, odofs;
-                     int i = el.Nr();
-
-                     // fespace->GetElementDofsOfType (el, idofs1, elim_only_hidden ? HIDDEN_DOF : CONDENSABLE_DOF);
-                     Array<int> idofs1(dnums.Size(), lh), odofs1(dnums.Size(), lh);
-                     idofs1.SetSize0(); odofs1.SetSize0();
-                     
-                     auto ctype = elim_only_hidden ? HIDDEN_DOF : CONDENSABLE_DOF;
-                     for (auto i : Range(dnums))
-                       {
-                         auto ct = fespace->GetDofCouplingType(dnums[i]);
-                         if (ct & ctype)
-                           idofs1.AppendHaveMem(i);
-                         else
-                           if (ct != UNUSED_DOF)
-                             odofs1.AppendHaveMem(i);
-                       }
-                     
-                     
-                          
-                     if (printelmat) 
-                       {
-                         *testout << "eliminate internal" << endl;
-                         *testout << "idofs1 = " << idofs1 << endl;
-                       }
-                     
-                    
-                     if (idofs1.Size())
-                       {
-                         HeapReset hr (lh);
-                         
-                         // int size = sum_elmat.Height();
-                         int dim = fespace->GetDimension();                         
-                         // int dim = size / dnums.Size();
-
-                         /*
-                         idofs.SetSize (0);
-                         for (int j = 0; j < idofs1.Size(); j++)
-                           for (int jj = 0; jj < dim; jj++)
-                             idofs.Append (dim*idofs1[j]+jj);
-                         */
-                         int sizei = dim * idofs1.Size();
-                         int sizeo = dim * odofs1.Size();
-                         
-                         FlatArray<int> idofs (sizei, lh);
-                         FlatArray<int> odofs (sizeo, lh);
-                         
-                         for (int j = 0, k = 0; j < idofs1.Size(); j++)
-                           for (int jj = 0; jj < dim; jj++)
-                             idofs[k++] = dim*idofs1[j]+jj;
-                         
-                         for (int j = 0, k = 0; j < odofs1.Size(); j++)
-                           for (int jj = 0; jj < dim; jj++)
-                             odofs[k++] = dim*odofs1[j]+jj;
-                         
-                         /*
-                         odofs.SetSize (0);
-                         for (int j = 0; j < size; j++)
-                           if (!idofs.Contains(j))
-                             odofs.Append(j);
-                         */
-                         
-                         if (printelmat)
-                           {
-                             (*testout) << "idofs = " << endl << idofs << endl;
-                             (*testout) << "odofs = " << endl << odofs << endl;
-                           }
-
-                         FlatMatrix<SCAL> a(sizeo, sizeo, lh);
-                         FlatMatrix<SCAL> b(sizeo, sizei, lh);
-                         FlatMatrix<SCAL> c(sizeo, sizei, lh);
-                         FlatMatrix<SCAL> d(sizei, sizei, lh);
-                         
-                         a = sum_elmat.Rows(odofs).Cols(odofs);
-                         b = sum_elmat.Rows(odofs).Cols(idofs);
-                         c = Trans(sum_elmat.Rows(idofs).Cols(odofs));
-                         d = sum_elmat.Rows(idofs).Cols(idofs);
-                         
-                              
-                         // A := A - B D^{-1} C^T
-                         // new Versions, July 07
-                         if (elim_only_hidden || !keep_internal)
-                           {
-                             AInvBt (d, b);
-                             // LapackMultAddABt (b, c, -1, a);
-                             SubABt (b, c, a);
-                           }
-                         else
-                           {
-                             /*
-                             ArrayMem<int,50> idnums1, idnums;
-                             ArrayMem<int,50> hdnums1;
-                             ArrayMem<int,50> ednums1, ednums;
-                             
-                             fespace->GetElementDofsOfType(el,idnums1,CONDENSABLE_DOF);
-                             fespace->GetElementDofsOfType(el,ednums1,EXTERNAL_DOF);
-                             fespace->GetElementDofsOfType(el,hdnums1,HIDDEN_DOF);
-                             for (auto d : Range(idnums1.Size()))
-                               idnums1[d] = dnums[idnums1[d]];
-                             for (auto d : Range(ednums1.Size()))
-                               ednums1[d] = dnums[ednums1[d]];
-                             for (auto ldof : hdnums1)
-                               idnums1[ldof] = -1;
-                             
-                             for (int j = 0; j < idnums1.Size(); j++)
-                               idnums += dim*IntRange(idnums1[j], idnums1[j]+1);
-                             for (int j = 0; j < ednums1.Size(); j++)
-                               ednums += dim * IntRange(ednums1[j], ednums1[j]+1);
-                             */
-
-                             Array<DofId> idnums1(idofs1.Size(), lh), ednums1(odofs1.Size(), lh);
-                             for (int i : Range(idofs1))
-                               {
-                                 DofId d = dnums[idofs1[i]];
-                                 if (fespace->GetDofCouplingType(d) == HIDDEN_DOF)
-                                   d = NO_DOF_NR; // or _CONDENSE; ???
-                                 idnums1[i] = d;
-                               }
-                             
-                             for (int i : Range(odofs1))
-                               ednums1[i] = dnums[odofs1[i]];
-
-                             Array<int> idnums(dim*idnums1.Size(), lh);
-                             Array<int> ednums(dim*ednums1.Size(), lh);
-                             idnums.SetSize0(); 
-                             ednums.SetSize0();
-                             
-                             for (DofId idnum1 : idnums1)
-                               if (IsRegularDof(idnum1))
-                                 idnums += dim*IntRange(idnum1, idnum1+1);
-                               else
-                                 for (size_t k = 0; k < dim; k++)
-                                   idnums.AppendHaveMem(idnum1);
-                             
-                             for (DofId ednum1 : ednums1)
-                               ednums += dim * IntRange(ednum1, ednum1+1);
-                             
-                             
-                             if (store_inner)
-                               static_cast<ElementByElementMatrix<SCAL>*>(innermatrix.get())
-                                      ->AddElementMatrix(i,idnums,idnums,d);
-                             
-                             // LapackInverse (d);
-                             CalcInverse (d);
-                             FlatMatrix<SCAL> he (sizei, sizeo, lh);
-                             // he=0.0;
-                             // LapackMultAddABt (d, c, -1, he);
-                             he = -d * Trans(c);
-                             harmonicext_ptr->AddElementMatrix(i,idnums,ednums,he);
-                                  
-                             if (!symmetric)
-                               {
-                                 FlatMatrix<SCAL> het (sizeo, sizei, lh);
-                                 // het = 0.0;
-                                 // LapackMultAddAB (b, d, -1, het);
-                                 het = -b * d;
-                                 harmonicexttrans_ptr->AddElementMatrix(i,ednums,idnums,het);
-                               }
-                             innersolve_ptr->AddElementMatrix(i,idnums,idnums,d);
-                             
-                             // LapackMultAddAB (b, he, 1.0, a);
-                             a += b*he;
-                           }                                 
-                         
-                         
-                         if (printelmat)
-                           *testout << "schur matrix = " << a << endl;
-                         
-                         sum_elmat.Rows(odofs).Cols(odofs) = a;
-                         
-                         for (int k = 0; k < idofs1.Size(); k++)
-                           dnums[idofs1[k]] = -1;
-                       }
-                   }
-                 
+                 CondenseElementMatrix (el, dnums, sum_elmat, false, lh);
 
                  AddElementMatrix (dnums, dnums, sum_elmat, el, false, lh);
 
