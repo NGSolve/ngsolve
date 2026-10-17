@@ -162,13 +162,26 @@ namespace ngbla
 
 
 
-#ifdef LAPACK
   template <>
   void CalcInverse (FlatMatrix<Complex> inv, INVERSE_LIB il)
   {
-    LapackInverse (inv);
-  }
+    // crossover vs lapack: ~450 Accelerate (M4), ~60 MKL (AVX512)
+    if (il == INVERSE_LIB::INV_CHOOSE)
+      il = inv.Height() >= 150 ? INVERSE_LIB::INV_LAPACK : INVERSE_LIB::INV_NGBLA_LU;
+
+    if (il == INVERSE_LIB::INV_NGBLA_LU)
+      {
+        ArrayMem<int,100> p(inv.Height());
+        CalcLU (inv, p);
+        InverseFromLU (inv, p);
+      }
+#ifdef LAPACK
+    else if (il == INVERSE_LIB::INV_LAPACK)
+      LapackInverse (inv);
 #endif
+    else
+      T_CalcInverse (inv);
+  }
 
   /*
   extern NGS_DLL_HEADER
@@ -234,9 +247,6 @@ namespace ngbla
 
 
   
-#ifndef LAPACK
-  template void CalcInverse (FlatMatrix<Complex> inv, INVERSE_LIB il);
-#endif
 
 
 

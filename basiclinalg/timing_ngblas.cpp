@@ -1104,6 +1104,35 @@ Available options timings are:
 
     
 
+    // ngbla LU vs lapack inverse, complex (202/212) and double (203/213)
+    auto timeinv = [&] (auto scal, bool lapack, string name)
+      {
+        typedef decltype(scal) T;
+        Matrix<T> a(n,n), ha(n,n);
+        for (int i = 0; i < n; i++)
+          for (int j = 0; j < n; j++)
+            if constexpr (is_same_v<T,double>)
+              a(i,j) = sin(1.7*i*n+3.1*j);
+            else
+              a(i,j) = T(sin(1.7*i*n+3.1*j), cos(2.3*i-0.9*j*n));
+        double tot = n*n*n;
+        size_t its = 1e10 / tot + 1;
+        if (its > maxits) its = maxits;
+        Timer t(name);
+        t.Start();
+        for (size_t j = 0; j < its; j++)
+          {
+            ha = a;
+            CalcInverse(ha, lapack ? INVERSE_LIB::INV_LAPACK : INVERSE_LIB::INV_NGBLA_LU);
+          }
+        t.Stop();
+        timings.push_back(make_tuple(name, 1e-9 * tot *its / t.GetTime()));
+      };
+    if (what == 202) timeinv (Complex(0), false, "Inv(A) complex LU");
+    if (what == 212) timeinv (Complex(0), true, "Inv(A) complex lapack");
+    if (what == 203) timeinv (0.0, false, "Inv(A) LU");
+    if (what == 213) timeinv (0.0, true, "Inv(A) lapack");
+
     if (what == 0 || what == 205)
       {
         // CalcInverse

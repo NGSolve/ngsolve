@@ -23,30 +23,18 @@ namespace ngcomp
   { ; }
 
 
+  // b <-- b A^{-1} 
   template <typename T>
   inline void AInvBt (ngbla::FlatMatrix<T> a, ngbla::FlatMatrix<T> b)
   {
-    // static Timer t("LapackAinvBt");
-    // RegionTimer reg(t);
-    LapackAInvBt (a, b, 'N');
-  }
-
-  // b <-- b A^{-1} 
-  inline void AInvBt (ngbla::FlatMatrix<double> a, ngbla::FlatMatrix<double> b)
-  {
-    /*
-    Matrix ha = a;
-    Matrix hb = b;
-    LapackAInvBt(ha, hb, 'N');
-    */
-    // static Timer t("AinvBt - new LU");
-    // RegionTimer reg(t);    
-
-    ArrayMem<int, 100> p(a.Height());
-    CalcLU (a, p);
-    SolveTransFromLU (a, p, Trans(b));
-    
-    // cout << "diff = " << L2Norm(hb-b) << endl;
+    if constexpr (is_same_v<T,double> || is_same_v<T,Complex>)
+      {
+        ArrayMem<int, 100> p(a.Height());
+        CalcLU (a, p);
+        SolveTransFromLU (a, p, Trans(b));
+      }
+    else
+      LapackAInvBt (a, b, 'N');
   }
   
   template <typename SCAL>

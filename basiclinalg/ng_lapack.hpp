@@ -1019,29 +1019,24 @@ namespace ngbla
     if (m == 0) return;
 
     integer n = a.Width();
-    integer lda = a.Dist();
-    integer * ipiv = new integer[n];
-    integer lwork = 100*n;
-    Complex * work = new Complex[lwork];
-    integer info;
-  
-    // std::cout << "a = " << std::endl << a << std::endl;
-    zgetrf_ (&n, &m, &a(0,0), &lda, ipiv, &info);
-    // std::cout << "factors = " << std::endl << a << std::endl;
+    integer lda = max(size_t(1), a.Dist());
 
+    ArrayMem<integer,100> ipiv(n);
+    integer info;
+
+    zgetrf_ (&n, &m, &a(0,0), &lda, &ipiv[0], &info);
     if (info != 0)
-      {
-	std::cout << "ZGETRF::info = " << info << std::endl;
-	// *testout << "ZGETRF::info = " << info << std::endl;
-	// *testout << "a = " << endl << a << endl;
-      }
-    zgetri_ (&n,  &a(0,0), &lda, ipiv, work, &lwork, &info);
+      std::cout << "ZGETRF::info = " << info << std::endl;
+
+    Complex hwork;
+    integer lwork = -1;
+    zgetri_ (&n, &a(0,0), &lda, &ipiv[0], &hwork, &lwork, &info);
+    lwork = integer(hwork.real());
+
+    ArrayMem<Complex,1024> work(lwork);
+    zgetri_ (&n, &a(0,0), &lda, &ipiv[0], &work[0], &lwork, &info);
     if (info != 0)
       std::cout << "ZGETRI::info = " << info << std::endl;
-  
-    delete [] work;
-    delete [] ipiv;
-
   }
 
 
