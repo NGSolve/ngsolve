@@ -124,6 +124,14 @@ namespace ngcomp
                                    FlatVector<float> elvec);
     virtual void AddElementVector (FlatArray<int> dnums,
                                    FlatVector<Complex> elvec);
+
+    // elvec in local element basis, transformed in place
+    template <typename SCAL>
+    void AddElementVector (const FESpace::Element & el, FlatVector<SCAL> elvec)
+    {
+      el.GetFESpace().TransformVec (el, elvec, TRANSFORM_RHS);
+      AddElementVector (el.GetDofs(), elvec);
+    }
   };
 
 
@@ -143,6 +151,7 @@ namespace ngcomp
     virtual void AllocateVector () override;
     virtual void CleanUpLevel() override;    
     ///
+    using LinearForm::AddElementVector;
     virtual void AddElementVector (FlatArray<int> dnums,
                                    FlatVector<SCAL> elvec) override;
 

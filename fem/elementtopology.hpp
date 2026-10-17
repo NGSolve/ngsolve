@@ -105,6 +105,7 @@ namespace ngfem
   enum VorB : uint8_t { VOL, BND, BBND, BBBND };
   inline VorB operator++(VorB & vb, int)  { VorB vbo = vb; vb = VorB(vb+1); return vbo; }
   inline VorB & operator++(VorB & vb)  { vb = VorB(vb+1); return vb; }   
+  constexpr std::array<VorB,4> ALL_VB { VOL, BND, BBND, BBBND };
   inline ostream & operator<< (ostream & ost, VorB vb)
   {
     if (vb == VOL) ost << "VOL";

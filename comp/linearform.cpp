@@ -239,8 +239,7 @@ namespace ngcomp
 				      << "elvec = " << endl << elvec << endl;
 			   }
 			 
-			 fespace->TransformVec (el, elvec, TRANSFORM_RHS);
-			 AddElementVector (el.GetDofs(), elvec);
+			 AddElementVector (el, elvec);
 		       }
 		   });
 	      }

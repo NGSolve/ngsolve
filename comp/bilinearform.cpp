@@ -559,6 +559,9 @@ namespace ngcomp
     size_t neV = ma->GetNE(VOL);
     size_t neB = ma->GetNE(BND);
     size_t neBB = ma->GetNE(BBND);
+    size_t neBBB = ma->GetNE(BBBND);
+    // first graph row per VorB
+    size_t first_el[] = { 0, neV, neV+neB, neV+neB+neBB, neV+neB+neBB+neBBB };
     // const Array<SpecialElement*> & specialelements = fespace->GetSpecialElements();
     // size_t nspe = specialelements.Size();
 
@@ -568,7 +571,7 @@ namespace ngcomp
     Array<int> nbelems; //neighbour elements
 
 
-    int maxind = neV + neB + neBB + specialelements.Size();
+    int maxind = first_el[4] + specialelements.Size();
     
     for (auto seg : se_groups)
       {
@@ -616,9 +619,9 @@ namespace ngcomp
                }
            });
         */
-	for(VorB vb : {VOL, BND, BBND})
+	for (VorB vb : ALL_VB)
 	  {
-            size_t shift = (vb==VOL) ? 0 : ((vb==BND) ? neV : neV+neB);
+            size_t shift = first_el[vb];
             bool condensation_allowed = (vb == VOL) || ((neV==0) && (vb == BND));
 	    ParallelForRange
               (ma->GetNE(vb), [&](IntRange r)
@@ -677,13 +680,13 @@ namespace ngcomp
                  for (int d : dnums)
                    {
                      if (d!=last && IsRegularDof(d))
-                       creator.Add (neV+neB+neBB+i, d);
+                       creator.Add (first_el[4]+i, d);
                      last = d;
                    }
                }
            });
 
-        size_t base = neV+neB+neBB+specialelements.Size();
+        size_t base = first_el[4]+specialelements.Size();
         for (auto seg : se_groups)
           {
             seg -> GetDofNrs ( [&] (int i, FlatArray<DofId> dnums) {
@@ -762,11 +765,11 @@ namespace ngcomp
         for ( ; !creator2.Done(); creator2++)
           {
             int offset=0;
-	    for(VorB vb  : {VOL, BND, BBND})
+	    for (VorB vb : ALL_VB)
 	      {
 		int nre = ma->GetNE(vb);
                 offset += nre;
-                int shift = (vb==VOL) ? 0 : ((vb==BND) ? neV : neV + neB);
+                int shift = first_el[vb];
                 ParallelForRange
                   (nre, [&] (IntRange r)
                    {
@@ -1582,7 +1585,8 @@ namespace ngcomp
     static Timer mattimer_finalize("Matrix assembling finalize matrix");
     static Timer<> mattimer_VB[] = { Timer("Matrix assembling vol"),
                                    Timer("Matrix assembling bound"),
-                                   Timer("Matrix assembling co dim 2") };
+                                   Timer("Matrix assembling co dim 2"),
+                                   Timer("Matrix assembling co dim 3") };
     
     static mutex addelemfacbnd_mutex;
     static mutex addelemfacin_mutex;
@@ -1597,7 +1601,7 @@ namespace ngcomp
     
     mattimer_checkintegrators.Start();
     // check if integrators fit to space
-    for(VorB vb : {VOL,BND,BBND})
+    for (VorB vb : ALL_VB)
       {
 	for(auto bfi : VB_parts[vb])
 	  {
@@ -1646,7 +1650,7 @@ namespace ngcomp
               }
             
             size_t loopsteps = 0;
-	    for (VorB vb : {VOL,BND,BBND})
+	    for (VorB vb : ALL_VB)
 	      if (VB_parts[vb].Size())
 		loopsteps += ma->GetNE(vb);
             
@@ -1666,7 +1670,7 @@ namespace ngcomp
 
 	    mattimer1a.Stop();
 
-	    for (VorB vb : { VOL, BND, BBND })
+	    for (VorB vb : ALL_VB)
 	      {
 		if (!VB_parts[vb].Size()) continue;
                 
@@ -2844,7 +2848,7 @@ namespace ngcomp
 
             // bool hasbound = false;
 
-	    for (VorB vb : { VOL, BND, BBND, BBBND })
+	    for (VorB vb : ALL_VB)
               if (VB_parts[vb].Size())
                 IterateElements 
                   (*fespace, vb, clh,          // coloring for 1 space is enough
@@ -3623,7 +3627,7 @@ namespace ngcomp
             cout << IM(3) << "assemble linearization mixed bilinearform" << endl;
             auto& mat = GetMatrix();
             mat = 0.0;
-            for(auto vb : {VOL,BND,BBND,BBBND})
+            for (auto vb : ALL_VB)
               if(VB_parts[vb].Size())
                 IterateElements
                   (*fespace, vb, clh,          // coloring for 1 space is enough
@@ -3670,7 +3674,7 @@ namespace ngcomp
         for (auto pre : preconditioners)
           pre -> InitLevel(fespace->GetFreeDofs(eliminate_internal));
 	
-        for (VorB vb : { VOL, BND, BBND, BBBND })
+        for (VorB vb : ALL_VB)
           if (VB_parts[vb].Size() || ((vb == VOL) && facetwise_skeleton_parts[BND].Size())) 
           {
             RegionTimer reg(timers[int(vb)]);
@@ -4597,7 +4601,7 @@ namespace ngcomp
 
     if (!MixedSpaces())
       {
-        for (auto vb : { VOL, BND, BBND, BBBND } )
+        for (auto vb : ALL_VB)
           if (VB_parts[vb].Size())
             {
               IterateElements 
@@ -4727,7 +4731,7 @@ namespace ngcomp
     
     if (!MixedSpaces())
       {
-        for (auto vb : { VOL, BND, BBND, BBBND } )
+        for (auto vb : ALL_VB)
           if (VB_parts[vb].Size())
             {
               RegionTimer reg (timervb[vb]);
@@ -5272,7 +5276,7 @@ namespace ngcomp
       {
         static Timer timer ("Apply Matrix - mixed"); RegionTimer reg(timer);
 
-        for (auto vb : { VOL, BND, BBND, BBBND } )
+        for (auto vb : ALL_VB)
           if (VB_parts[vb].Size())
             {        
               IterateElements 
@@ -6285,7 +6289,7 @@ namespace ngcomp
       {
         //LocalHeap lh (2000000, "biform-energy", true);
 
-        for (auto vb : { VOL, BND, BBND, BBBND })
+        for (auto vb : ALL_VB)
           if (VB_parts[vb].Size())
             IterateElements 
               (*fespace, vb, lh, 
