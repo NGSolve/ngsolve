@@ -156,6 +156,8 @@ PrivateSpace = Hidden
 # return Compress(fes)
 # return Hidden(fes)
 
+ngsglobals.symbolic_integrator_uses_diff=True
+
 def Normalize (v):
     return 1/Norm(v) * v
 
