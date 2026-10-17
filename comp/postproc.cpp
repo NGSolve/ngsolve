@@ -121,24 +121,21 @@ namespace ngcomp
          
          if (!domains[ei.GetIndex()]) return;;
 
-         const FiniteElement & fel = fes->GetFE (ei, lh);
-         const FiniteElement & felflux = fesflux->GetFE (ei, lh);
+         auto el = fes->GetElement (ei, lh);
+         auto fluxel = fesflux->GetElement (ei, lh);
+         const FiniteElement & fel = el.GetFE();
+         const FiniteElement & felflux = fluxel.GetFE();
 	 
          ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
 
-         Array<int> dnums(fel.GetNDof(), lh);
-         fes->GetDofNrs (ei, dnums);
+         FlatArray<int> dnumsflux = fluxel.GetDofs();
 
-         Array<int> dnumsflux(felflux.GetNDof(), lh);
-         fesflux->GetDofNrs(ei, dnumsflux);
-
-         FlatVector<SCAL> elu(dnums.Size() * dim, lh);
+         FlatVector<SCAL> elu(fel.GetNDof() * dim, lh);
          FlatVector<SCAL> elflux(dnumsflux.Size() * dimflux, lh);
          FlatVector<SCAL> elfluxi(dnumsflux.Size() * dimflux, lh);
          FlatVector<SCAL> fluxi(dimfluxvec, lh);
 	 
-         u.GetElementVector (dnums, elu);
-         fes->TransformVec (ei, elu, TRANSFORM_SOL);
+         u.GetElementVector (el, elu);
          
          IntegrationRule ir(fel.ElementType(), 
                             max2(fel.Order(),felflux.Order())+felflux.Order());
@@ -299,16 +296,13 @@ namespace ngcomp
     ElementId ei (boundary ? BND : VOL, elnr);
 
     const FESpace & fes = *u.GetFESpace();
-    const FiniteElement & fel = fes.GetFE (ei, lh);
+    auto el = fes.GetElement (ei, lh);
+    const FiniteElement & fel = el.GetFE();
     const ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
-    Array<int> dnums(fel.GetNDof(), lh);
-    fes.GetDofNrs (ei, dnums);
 	
-    FlatVector<SCAL> elu(dnums.Size() * fes.GetDimension(), lh);
-	
-    u.GetElementVector (dnums, elu);
+    FlatVector<SCAL> elu(fel.GetNDof() * fes.GetDimension(), lh);
     
-    fes.TransformVec (ei, elu, TRANSFORM_SOL);
+    u.GetElementVector (el, elu);
     bli->CalcFlux (fel, eltrans(ip, lh), elu, flux, applyd, lh);
     return 1;
   }
@@ -965,9 +959,6 @@ namespace ngcomp
     // shared_ptr<BilinearFormIntegrator> fluxbli = fesflux.GetIntegrator(vb);
     shared_ptr<DifferentialOperator> flux_diffop = fesflux.GetEvaluator(vb);
 
-    Array<int> dnums;
-    Array<int> dnumsflux;
-
     // double sum = 0;
     for (int i = 0; i < ne; i++)
       {
@@ -981,23 +972,21 @@ namespace ngcomp
 	
 	if (!domains[eldom]) continue;
 
-	const FiniteElement & fel = fes.GetFE(ei, lh);
-	const FiniteElement & felflux = fesflux.GetFE(ei, lh);
+	auto el = fes.GetElement (ei, lh);
+	auto fluxel = fesflux.GetElement (ei, lh);
+	const FiniteElement & fel = el.GetFE();
+	const FiniteElement & felflux = fluxel.GetFE();
 
 	ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
-	fes.GetDofNrs(ei,dnums);
-	fesflux.GetDofNrs(ei,dnumsflux);
 
-	FlatVector<SCAL> elu(dnums.Size() * dim, lh);
-	FlatVector<SCAL> elflux(dnumsflux.Size() * dimflux, lh);
+	FlatVector<SCAL> elu(fel.GetNDof() * dim, lh);
+	FlatVector<SCAL> elflux(felflux.GetNDof() * dimflux, lh);
 	FlatVector<SCAL> fluxi(dimfluxvec, lh);
 	FlatVector<SCAL> fluxi2(dimfluxvec, lh);
 
 
-	u.GetElementVector (dnums, elu);
-	fes.TransformVec (ei, elu, TRANSFORM_SOL);
-	flux.GetElementVector (dnumsflux, elflux);
-	fesflux.TransformVec (ei, elflux, TRANSFORM_SOL);
+	u.GetElementVector (el, elu);
+	flux.GetElementVector (fluxel, elflux);
 
 	IntegrationRule ir(felflux.ElementType(), 2*felflux.Order());
 
@@ -1112,9 +1101,6 @@ namespace ngcomp
     bool applyd1 = 0;
     bool applyd2 = 0;
 
-    Array<int> dnums1;
-    Array<int> dnums2;
-
     // double sum = 0;
     for (int i = 0; i < ne; i++)
       {
@@ -1128,23 +1114,20 @@ namespace ngcomp
 	if ((domain != -1) && (domain != eldom))
 	  continue;
 
-	const FiniteElement & fel1 = fes1.GetFE (ei, lh);
-	const FiniteElement & fel2 = fes2.GetFE (ei, lh);
+	auto el1 = fes1.GetElement (ei, lh);
+	auto el2 = fes2.GetElement (ei, lh);
+	const FiniteElement & fel1 = el1.GetFE();
+	const FiniteElement & fel2 = el2.GetFE();
 	ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
 
-	fes1.GetDofNrs (ei, dnums1);
-	fes2.GetDofNrs (ei, dnums2);
-
-	FlatVector<SCAL> elu1(dnums1.Size() * dim1, lh);
-	FlatVector<SCAL> elu2(dnums2.Size() * dim2, lh);
+	FlatVector<SCAL> elu1(fel1.GetNDof() * dim1, lh);
+	FlatVector<SCAL> elu2(fel2.GetNDof() * dim2, lh);
 	FlatVector<SCAL> fluxi1(dimflux1, lh);
 	FlatVector<SCAL> fluxi2(dimflux2, lh);
 
 
-	u1.GetElementVector (dnums1, elu1);
-	fes1.TransformVec (ei, elu1, TRANSFORM_SOL);
-	u2.GetElementVector (dnums2, elu2);
-	fes2.TransformVec (ei, elu2, TRANSFORM_SOL);
+	u1.GetElementVector (el1, elu1);
+	u2.GetElementVector (el2, elu2);
 
 	double elerr = 0;
 
@@ -1214,8 +1197,6 @@ namespace ngcomp
 
     bool applyd1 = 0;
 
-    Array<int> dnums1;
-
     double sum = 0;
     for (int i = 0; i < ne; i++)
       {
@@ -1230,10 +1211,10 @@ namespace ngcomp
 	if ((domain != -1) && (domain != eldom))
 	  continue;
 
-	const FiniteElement & fel1 = fes1.GetFE(ei, lh);
+	auto el1 = fes1.GetElement (ei, lh);
+	const FiniteElement & fel1 = el1.GetFE();
 
 	ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
-	fes1.GetDofNrs (ei, dnums1);
 	/*
 	if (bound1)
 	  {
@@ -1247,13 +1228,12 @@ namespace ngcomp
 	  }
 	*/
 
-	FlatVector<SCAL> elu1(dnums1.Size() * dim1, lh);
+	FlatVector<SCAL> elu1(fel1.GetNDof() * dim1, lh);
 	FlatVector<SCAL> fluxi1(dimflux1, lh);
 	FlatVector<SCAL> fluxi2(dimflux1, lh);
 
 
-	u1.GetElementVector (dnums1, elu1);
-	fes1.TransformVec (ei, elu1, TRANSFORM_SOL);
+	u1.GetElementVector (el1, elu1);
 
 	double elerr = 0;
 
