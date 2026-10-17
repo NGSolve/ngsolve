@@ -1793,6 +1793,42 @@ namespace ngcomp
 
 
   template <class SCAL>
+  FlatArray<DofId> S_BilinearForm<SCAL> :: AddElementMatrix (const FESpace::Element & el,
+                                                             FlatMatrix<SCAL> elmat,
+                                                             bool condense_rhs, LocalHeap & lh)
+  {
+    static mutex printelmat_mutex;
+
+    el.GetFESpace().TransformMat (el, elmat, TRANSFORM_MAT_LEFT_RIGHT);
+
+    if (elmat_ev)
+      {
+        (*testout) << "sum matrix:" << endl;
+        LapackEigenSystem(elmat, lh);
+      }
+
+    // copy, condensation masks the inner dofs
+    FlatArray<DofId> dnums(el.GetDofs().Size(), lh);
+    dnums = el.GetDofs();
+
+    CondenseElementMatrix (el, dnums, elmat, condense_rhs, lh);
+
+    if (printelmat)
+      {
+        lock_guard<mutex> guard(printelmat_mutex);
+        *testout << "elem " << ElementId(el) << ", elmat = " << endl << elmat << endl;
+      }
+
+    AddElementMatrix (dnums, dnums, elmat, el, false, lh);
+
+    for (auto pre : preconditioners)
+      pre -> AddElementMatrix (dnums, elmat, el, lh);
+
+    return dnums;
+  }
+
+
+  template <class SCAL>
   void S_BilinearForm<SCAL> :: DoAssemble (LocalHeap & clh)
   {
     static Timer mattimer("Matrix assembling");
@@ -2124,32 +2160,13 @@ namespace ngcomp
                          
                          if (!elem_has_integrator) return;
                          
-                         fespace->TransformMat (el, sum_elmat, TRANSFORM_MAT_LEFT_RIGHT);
-			 
-                         if (elmat_ev)
-                           {
-                             (*testout) << "sum matrix:" << endl;
-                             LapackEigenSystem(sum_elmat, lh);
-                           }
-
-                         CondenseElementMatrix (el, dnums, sum_elmat, true, lh);
-
-                         if (printelmat)
-                           {
-                             lock_guard<mutex> guard(printelmat_mutex);
-                             *testout<< "elem " << el << ", elmat = " << endl << sum_elmat << endl;
-                           }
-                         
-                         AddElementMatrix (dnums, dnums, sum_elmat, el, false, lh);
-			 
-                         for (auto pre : preconditioners)
-                           pre -> AddElementMatrix (dnums, sum_elmat, el, lh);
+                         auto useddnums = AddElementMatrix (el, sum_elmat, true, lh);
 
                          if (check_unused)
                            {
                              if (printelmat)
-                               *testout << "set these as useddof: " << dnums << endl;
-                             for (auto d : dnums)
+                               *testout << "set these as useddof: " << useddnums << endl;
+                             for (auto d : useddnums)
                                if (IsRegularDof(d)) useddof[d] = true;
                            }
                          // timer3_VB[vb].Stop();
@@ -3813,18 +3830,7 @@ namespace ngcomp
 		   } //if VOL and skeleton bfi
                  
                  
-                 fespace->TransformMat (el, sum_elmat, TRANSFORM_MAT_LEFT_RIGHT);
-                 
-                 if (printelmat)
-                   *testout << "summat = " << sum_elmat << endl;
-                 
-
-                 CondenseElementMatrix (el, dnums, sum_elmat, false, lh);
-
-                 AddElementMatrix (dnums, dnums, sum_elmat, el, false, lh);
-
-                 for (auto pre : preconditioners)
-                   pre -> AddElementMatrix (dnums, sum_elmat, el, lh);
+                 AddElementMatrix (el, sum_elmat, false, lh);
                });
 
             progress.Done();

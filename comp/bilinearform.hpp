@@ -639,6 +639,12 @@ namespace ngcomp
 				   ElementId id, bool addatomic,
 				   LocalHeap & lh) = 0;
 
+    // elmat: the complete element matrix of el in its local basis, call once per element.
+    // transform, static condensation, add to matrix and preconditioners.
+    // returns the dofs, condensed ones masked
+    FlatArray<DofId> AddElementMatrix (const FESpace::Element & el, FlatMatrix<SCAL> elmat,
+                                       bool condense_rhs, LocalHeap & lh);
+
 
     virtual void AddDiagElementMatrix (FlatArray<int> dnums1,
                                        FlatVector<SCAL> diag,
