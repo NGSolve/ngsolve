@@ -689,11 +689,32 @@ namespace ngbla
   template <> NGS_DLL_HEADER pmatmatc<ColMajor,ColMajor> dispatch_matmatc<true,true, ColMajor,ColMajor>[9];
 
 
+  template <bool ADD, bool POS, ORDERING OA, ORDERING OB>  
+  void NgGEMMFunc (size_t ah, size_t aw, size_t bw,
+                   BareSliceMatrix<Complex,OA> a, BareSliceMatrix<Complex,OB> b, BareSliceMatrix<Complex,RowMajor> c);
+
+  template <size_t AW, bool ADD, bool POS, ORDERING OA, ORDERING OB>  
+  void NgGEMMFuncAW (size_t ah, size_t bw,
+                     BareSliceMatrix<Complex,OA> a, BareSliceMatrix<Complex,OB> b, BareSliceMatrix<Complex,RowMajor> c)
+  {
+    NgGEMMFunc<ADD,POS,OA,OB> (ah, AW, bw, a, b, c);
+  }
+  
   template <bool ADD, bool POS, ORDERING OA, ORDERING OB>
   void InitMatMatC()
   {
     Iterate<std::size(dispatch_matmatc<ADD,POS,OA,OB>)> ([&] (auto i)
-    { dispatch_matmatc<ADD,POS,OA,OB>[i] = &NgGEMMFuncSmall<i,ADD,POS,OA,OB>; });    
+    {
+#ifdef __aarch64__
+      dispatch_matmatc<ADD,POS,OA,OB>[i] = &NgGEMMFuncSmall<i,ADD,POS,OA,OB>;
+#else
+      // x86: FMAComplex shuffles make the small kernels slow
+      if constexpr (i.value == 0)
+        dispatch_matmatc<ADD,POS,OA,OB>[i] = &NgGEMMFuncSmall<i,ADD,POS,OA,OB>;
+      else
+        dispatch_matmatc<ADD,POS,OA,OB>[i] = &NgGEMMFuncAW<i,ADD,POS,OA,OB>;
+#endif
+    });    
   }
 
   template <ORDERING OA, ORDERING OB>
@@ -715,128 +736,183 @@ namespace ngbla
   }();
   
 
-  template <bool ADD, bool POS, ORDERING OA, ORDERING OB>  
-  void NgGEMMFunc2 (size_t ah, size_t aw, size_t bw,
-                    BareSliceMatrix<Complex,OA> a, BareSliceMatrix<Complex,OB> b, BareSliceMatrix<Complex,RowMajor> c)
-  {
-    size_t i = 0;
-    for ( ; i+4 <= ah; i+=4)
-      {
-        size_t j = 0;
-        for ( ; j+4 <= bw; j+=4)
-          {
-            SIMD<double,4> sum00 = 0;
-            SIMD<double,4> sum10 = 0;
-            SIMD<double,4> sum20 = 0;
-            SIMD<double,4> sum30 = 0;
-            SIMD<double,4> sum01 = 0;
-            SIMD<double,4> sum11 = 0;
-            SIMD<double,4> sum21 = 0;
-            SIMD<double,4> sum31 = 0;
-            for (size_t k = 0; k < aw; k++)
-              {
-                SIMD<double,2> a0_((double*)(void*)a.Addr(i+0,k));
-                SIMD<double,2> a1_((double*)(void*)a.Addr(i+1,k));
-                SIMD<double,2> a2_((double*)(void*)a.Addr(i+2,k));
-                SIMD<double,2> a3_((double*)(void*)a.Addr(i+3,k));
-                SIMD<double,2> b0_((double*)(void*)b.Addr(k,j+0));
-                SIMD<double,2> b1_((double*)(void*)b.Addr(k,j+1));
-                SIMD<double,2> b2_((double*)(void*)b.Addr(k,j+2));
-                SIMD<double,2> b3_((double*)(void*)b.Addr(k,j+3));
-                SIMD<double,4> a0(a0_, a0_);
-                SIMD<double,4> a1(a1_, a1_);
-                SIMD<double,4> a2(a2_, a2_);
-                SIMD<double,4> a3(a3_, a3_);
-                SIMD<double,4> b0(b0_, b1_);
-                SIMD<double,4> b1(b2_, b3_);
-                
-                FMAComplex (a0,b0,sum00);
-                FMAComplex (a1,b0,sum10);
-                FMAComplex (a2,b0,sum20);
-                FMAComplex (a3,b0,sum30);
-                FMAComplex (a0,b1,sum01);
-                FMAComplex (a1,b1,sum11);
-                FMAComplex (a2,b1,sum21);
-                FMAComplex (a3,b1,sum31);
-              }
-            Func<ADD,POS>(c(i+0,j  ), Complex(sum00[0], sum00[1]));
-            Func<ADD,POS>(c(i+0,j+1), Complex(sum00[2], sum00[3]));  
-            Func<ADD,POS>(c(i+0,j+2), Complex(sum01[0], sum01[1]));  
-            Func<ADD,POS>(c(i+0,j+3), Complex(sum01[2], sum01[3]));  
-            Func<ADD,POS>(c(i+1,j  ), Complex(sum10[0], sum10[1]));  
-            Func<ADD,POS>(c(i+1,j+1), Complex(sum10[2], sum10[3]));  
-            Func<ADD,POS>(c(i+1,j+2), Complex(sum11[0], sum11[1]));  
-            Func<ADD,POS>(c(i+1,j+3), Complex(sum11[2], sum11[3]));
+  // complex GEMM: B block packed into panels of GW simds (re/im interleaved), GH x GW register tiles
+  constexpr size_t SWC = SIMD<double>::Size();
+  constexpr size_t CW = SWC/2;   // complex numbers per simd
+#if defined(__aarch64__)
+  constexpr size_t GH = 4, GW = 4;
+#elif defined(__AVX512F__)
+  constexpr size_t GH = 4, GW = 3;
+#else
+  constexpr size_t GH = 3, GW = 2;
+#endif
 
-            Func<ADD,POS>(c(i+2,j  ), Complex(sum20[0], sum20[1]));
-            Func<ADD,POS>(c(i+2,j+1), Complex(sum20[2], sum20[3]));  
-            Func<ADD,POS>(c(i+2,j+2), Complex(sum21[0], sum21[1]));  
-            Func<ADD,POS>(c(i+2,j+3), Complex(sum21[2], sum21[3]));  
-            Func<ADD,POS>(c(i+3,j  ), Complex(sum30[0], sum30[1]));  
-            Func<ADD,POS>(c(i+3,j+1), Complex(sum30[2], sum30[3]));  
-            Func<ADD,POS>(c(i+3,j+2), Complex(sum31[0], sum31[1]));  
-            Func<ADD,POS>(c(i+3,j+3), Complex(sum31[2], sum31[3]));
-          }
-        for ( ; j < bw; j++)
+  // panel p holds B(0:kb, p*GW*CW + ...) as bb[p*kb*GW + k*w + v], last panel narrower, zero padded
+  template <ORDERING OB>
+  void PackBC (size_t kb, size_t nb, BareSliceMatrix<Complex,OB> b, SIMD<double> * bb)
+  {
+    for (size_t j = 0; j < nb; j += GW*CW, bb += kb*GW)
+      {
+        size_t nj = min(GW*CW, nb-j);
+        size_t pw = (nj+CW-1)/CW*CW;
+        Complex * pbb = (Complex*)(void*)bb;
+        if constexpr (OB == RowMajor)
+          for (size_t k = 0; k < kb; k++)
+            for (size_t q = 0; q < nj; q++)
+              pbb[k*pw+q] = b(k,j+q);
+        else
+          for (size_t q = 0; q < nj; q++)
+            for (size_t k = 0; k < kb; k++)
+              pbb[k*pw+q] = b(k,j+q);
+        for (size_t k = 0; k < kb; k++)
+          for (size_t q = nj; q < pw; q++)
+            pbb[k*pw+q] = 0.0;
+      }
+  }
+
+  template <bool ADD, bool POS>
+  INLINE void StoreC (SIMD<double> res, double * pc, size_t nvalid)
+  {
+    if (nvalid >= CW)
+      {
+        if constexpr (ADD)
+          res = POS ? SIMD<double>(pc) + res : SIMD<double>(pc) - res;
+        else if constexpr (!POS)
+          res = -res;
+        res.Store(pc);
+      }
+    else
+      {
+        SIMD<mask64> mask(int(2*nvalid));
+        if constexpr (ADD)
+          res = POS ? SIMD<double>(pc,mask) + res : SIMD<double>(pc,mask) - res;
+        else if constexpr (!POS)
+          res = -res;
+        res.Store(pc, mask);
+      }
+  }
+
+  // C(0:H, 0:ncols) op= A(0:H, 0:kb) * panel,  A(h,k) = pa[h*dah+k*dak]
+  template <size_t H, size_t W, bool ADD, bool POS>
+  INLINE void NgGEMMKernelC (size_t kb, const Complex * pa, size_t dah, size_t dak,
+                             const SIMD<double> * pb, Complex * pc, size_t dc, size_t ncols)
+  {
+#ifdef __aarch64__
+    // vcmla, no shuffles
+    SIMD<double> sum[H][W];
+    for (size_t h = 0; h < H; h++)
+      for (size_t w = 0; w < W; w++)
+        sum[h][w] = 0.0;
+    for (size_t k = 0; k < kb; k++, pb += W, pa += dak)
+      {
+        SIMD<double> bk[W];
+        for (size_t w = 0; w < W; w++) bk[w] = pb[w];
+        for (size_t h = 0; h < H; h++)
           {
-            Complex sum0 = 0;
-            Complex sum1 = 0;
-            Complex sum2 = 0;
-            Complex sum3 = 0;
-            for (size_t k = 0; k < aw; k++)
-              {
-                sum0 += a(i+0,k)*b(k,j);
-                sum1 += a(i+1,k)*b(k,j);
-                sum2 += a(i+2,k)*b(k,j);
-                sum3 += a(i+3,k)*b(k,j);
-              }
-            Func<ADD,POS>(c(i+0,j), sum0);  
-            Func<ADD,POS>(c(i+1,j), sum1);          
-            Func<ADD,POS>(c(i+2,j), sum2);  
-            Func<ADD,POS>(c(i+3,j), sum3);          
+            SIMD<double> ah((double*)(void*)(pa+h*dah));
+            for (size_t w = 0; w < W; w++)
+              FMAComplex (ah, bk[w], sum[h][w]);
           }
       }
-    for ( ; i < ah; i++)
-      for (size_t j = 0; j < bw; j++)
-        {
-          Complex sum = 0;
-          for (size_t k = 0; k < aw; k++)
-            sum += a(i,k)*b(k,j);
-          Func<ADD,POS>(c(i,j), sum);          
-        }
+#else
+    // sr += are*b, si += aim*b, combine once: c = sr + i*si
+    SIMD<double> sr[H][W], si[H][W];
+    for (size_t h = 0; h < H; h++)
+      for (size_t w = 0; w < W; w++)
+        sr[h][w] = si[h][w] = 0.0;
+    for (size_t k = 0; k < kb; k++, pb += W, pa += dak)
+      {
+        SIMD<double> bk[W];
+        for (size_t w = 0; w < W; w++) bk[w] = pb[w];
+        for (size_t h = 0; h < H; h++)
+          {
+            SIMD<double> are(pa[h*dah].real()), aim(pa[h*dah].imag());
+            for (size_t w = 0; w < W; w++)
+              {
+                sr[h][w] = FMA(are, bk[w], sr[h][w]);
+                si[h][w] = FMA(aim, bk[w], si[h][w]);
+              }
+          }
+      }
+    double sgnmem[SWC];
+    for (size_t q = 0; q < SWC; q++) sgnmem[q] = (q%2) ? 1.0 : -1.0;
+    SIMD<double> sgn(&sgnmem[0]);
+    SIMD<double> sum[H][W];
+    for (size_t h = 0; h < H; h++)
+      for (size_t w = 0; w < W; w++)
+        sum[h][w] = FMA(sgn, SwapPairs(si[h][w]), sr[h][w]);
+#endif
+    for (size_t h = 0; h < H; h++)
+      for (size_t w = 0; w < W; w++)
+        StoreC<ADD,POS> (sum[h][w], (double*)(void*)(pc+h*dc+w*CW), ncols-w*CW);
+  }
 
-    
+  template <size_t H, bool ADD, bool POS, ORDERING OA>
+  INLINE void NgGEMMPanelsC (size_t kb, size_t nb, BareSliceMatrix<Complex,OA> a, size_t i,
+                             Complex * mema, const SIMD<double> * bb, Complex * pc, size_t dc)
+  {
+    // col-major A: kb strided columns thrash L1, copy the tile k-major if B block is wide enough
+    const Complex * pa = a.Addr(i,0);
+    size_t dah = (OA == RowMajor) ? a.Dist() : 1;
+    size_t dak = (OA == RowMajor) ? 1 : a.Dist();
+    if (OA == ColMajor && nb >= 32)
+      {
+        for (size_t k = 0; k < kb; k++)
+          for (size_t h = 0; h < H; h++)
+            mema[k*H+h] = a(i+h,k);
+        pa = mema;
+        dah = 1;
+        dak = H;
+      }
 
-    /*
-    for (size_t i = 0; i < ah; i++)
-      for (size_t j = 0; j < bw; j++)
-        {
-          Complex sum = 0;
-          for (size_t k = 0; k < aw; k++)
-            sum += a(i,k)*b(k,j);
-          Func<ADD,POS>(c(i,j), sum);          
-        }
-    */
+    size_t j = 0;
+    for ( ; j+GW*CW <= nb; j += GW*CW, bb += kb*GW)
+      NgGEMMKernelC<H,GW,ADD,POS> (kb, pa, dah, dak, bb, pc+j, dc, GW*CW);
+    if (j < nb)
+      {
+        size_t wl = (nb-j+CW-1)/CW;
+        Iterate<GW> ([&] (auto w) {
+          if (w.value+1 == wl)
+            NgGEMMKernelC<H,w.value+1,ADD,POS> (kb, pa, dah, dak, bb, pc+j, dc, nb-j);
+        });
+      }
+  }
+
+  template <bool ADD, bool POS, ORDERING OA>
+  void NgGEMMRowsC (size_t ah, size_t kb, size_t nb, BareSliceMatrix<Complex,OA> a,
+                    Complex * mema, const SIMD<double> * bb, BareSliceMatrix<Complex,RowMajor> c)
+  {
+    size_t i = 0;
+    for ( ; i+GH <= ah; i += GH)
+      NgGEMMPanelsC<GH,ADD,POS> (kb, nb, a, i, mema, bb, c.Addr(i,0), c.Dist());
+    if (i < ah)
+      Iterate<GH-1> ([&] (auto r) {
+        if (r.value+1 == ah-i)
+          NgGEMMPanelsC<r.value+1,ADD,POS> (kb, nb, a, i, mema, bb, c.Addr(i,0), c.Dist());
+      });
   }
 
   template <bool ADD, bool POS, ORDERING OA, ORDERING OB>  
   void NgGEMMFunc (size_t ah, size_t aw, size_t bw,
                    BareSliceMatrix<Complex,OA> a, BareSliceMatrix<Complex,OB> b, BareSliceMatrix<Complex,RowMajor> c)
   {
-    // static Timer t("NgGEMMC"); RegionTimer reg(t);
-    
-    constexpr size_t BH=48;
-    constexpr size_t BW=48;
+    // packed B block ~200 KB; wider for col-major A to amortize the A copy
+    constexpr size_t KB = (OA == RowMajor) ? 128 : 64;
+    constexpr size_t NB = ((OA == RowMajor) ? 96 : 192) / (GW*CW) * (GW*CW);
+    alignas(64) SIMD<double> bb[KB*NB/CW];
+    alignas(64) Complex mema[(OA == RowMajor) ? 1 : GH*KB];
 
-    for (size_t i = 0; i < ah; i+= BH)
+    for (size_t j = 0; j < bw; j += NB)
       {
-        size_t imax = min(ah, i+BH);
-        size_t jmax = min(aw, BW);
-        NgGEMMFunc2<ADD,POS,OA,OB> (imax-i, jmax, bw, a.Rows(i,imax).Cols(0,jmax), b.Rows(0,jmax), c.Rows(i,imax));
-        for (size_t j = BW; j < aw; j+= BW)
+        size_t nb = min(NB, bw-j);
+        for (size_t k = 0; k < aw; k += KB)
           {
-            size_t jmax = min(aw, j+BW);
-            NgGEMMFunc2<true,POS,OA,OB> (imax-i, jmax-j, bw, a.Rows(i,imax).Cols(j,jmax), b.Rows(j,jmax), c.Rows(i,imax));            
+            size_t kb = min(KB, aw-k);
+            PackBC<OB> (kb, nb, b.Rows(k,k+kb).Cols(j,j+nb), &bb[0]);
+            if (k == 0)
+              NgGEMMRowsC<ADD,POS,OA> (ah, kb, nb, a.Cols(k,k+kb), mema, &bb[0], c.Cols(j,j+nb));
+            else
+              NgGEMMRowsC<true,POS,OA> (ah, kb, nb, a.Cols(k,k+kb), mema, &bb[0], c.Cols(j,j+nb));
           }
       }
   }
