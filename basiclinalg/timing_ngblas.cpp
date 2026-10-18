@@ -66,6 +66,8 @@ Available options timings are:
           203.. CalcInverse, ngbla LU (213 .. lapack)
           204.. Complex CalcLU (214 .. zgetrf)
           206.. Complex InverseFromLU (216 .. zgetri)
+          207.. CalcLU (217 .. dgetrf)
+          208.. InverseFromLU (218 .. dgetri)
           205.. LDL                A = nxn
           210.. CalcInverseLapack  A = nxn
           300.. CalcSVD            A = nxn
@@ -1137,36 +1139,50 @@ Available options timings are:
     if (what == 203) timeinv (0.0, false, "Inv(A) LU");
     if (what == 213) timeinv (0.0, true, "Inv(A) lapack");
 
-    // complex CalcLU (204) / zgetrf (214), InverseFromLU (206) / zgetri (216), GFlops with 8/3 n^3 and 16/3 n^3
-    if (what == 204 || what == 214 || what == 206 || what == 216)
+    // CalcLU vs getrf, InverseFromLU vs getri, GFlops with (2/3, 4/3) n^3 real resp. (8/3, 16/3) n^3 complex
+    // complex: 204/214 (CalcLU/zgetrf), 206/216 (InverseFromLU/zgetri); double: 207/217, 208/218
+    auto timelu = [&] (auto scal, bool lapack, bool inv)
       {
-        bool lapack = what >= 210;
-        bool inv = (what % 10) == 6;
-        Matrix<Complex> a(n,n), ha(n,n), lu(n,n);
+        typedef decltype(scal) T;
+        constexpr bool iscomplex = is_same_v<T,Complex>;
+        Matrix<T> a(n,n), ha(n,n), lu(n,n);
         for (int i = 0; i < n; i++)
           for (int j = 0; j < n; j++)
-            a(i,j) = Complex(sin(1.7*i*n+3.1*j), cos(2.3*i-0.9*j*n));
+            if constexpr (iscomplex)
+              a(i,j) = Complex(sin(1.7*i*n+3.1*j), cos(2.3*i-0.9*j*n));
+            else
+              a(i,j) = sin(1.7*i*n+3.1*j);
         Array<int> p(n);
 #ifdef LAPACK
         integer ni = n, info, lwork = -1;
         Array<integer> ipiv(n);
-        Complex hwork;
-        zgetri_ (&ni, &a(0,0), &ni, &ipiv[0], &hwork, &lwork, &info);
-        lwork = integer(hwork.real());
-        Array<Complex> work(lwork);
+        T hwork;
+        if constexpr (iscomplex)
+          zgetri_ (&ni, &a(0,0), &ni, &ipiv[0], &hwork, &lwork, &info);
+        else
+          dgetri (&ni, &a(0,0), &ni, &ipiv[0], &hwork, &lwork, &info);
+        lwork = integer(std::real(hwork));
+        Array<T> work(lwork);
 #else
-        if (lapack) return timings;
+        if (lapack) return;
 #endif
-        auto factor = [&] (SliceMatrix<Complex> m)
+        auto factor = [&] (SliceMatrix<T> m)
         {
 #ifdef LAPACK
-          if (lapack) { zgetrf_ (&ni, &ni, &m(0,0), &ni, &ipiv[0], &info); return; }
+          if (lapack)
+            {
+              if constexpr (iscomplex)
+                zgetrf_ (&ni, &ni, &m(0,0), &ni, &ipiv[0], &info);
+              else
+                dgetrf (&ni, &ni, &m(0,0), &ni, &ipiv[0], &info);
+              return;
+            }
 #endif
           CalcLU (m, p);
         };
         if (inv) { lu = a; factor (lu); }
 
-        double flops = (inv ? 16.0/3 : 8.0/3) * double(n)*n*n;
+        double flops = (inv ? 4.0/3 : 2.0/3) * (iscomplex ? 4 : 1) * double(n)*n*n;
         size_t its = 1e10 / flops + 1;
         if (its > maxits) its = maxits;
         Timer t("LU timing");
@@ -1178,15 +1194,24 @@ Available options timings are:
               factor (ha);
 #ifdef LAPACK
             else if (lapack)
-              zgetri_ (&ni, &ha(0,0), &ni, &ipiv[0], &work[0], &lwork, &info);
+              {
+                if constexpr (iscomplex)
+                  zgetri_ (&ni, &ha(0,0), &ni, &ipiv[0], &work[0], &lwork, &info);
+                else
+                  dgetri (&ni, &ha(0,0), &ni, &ipiv[0], &work[0], &lwork, &info);
+              }
 #endif
             else
               InverseFromLU (ha, p);
           }
         t.Stop();
-        string name = string(inv ? "InverseFromLU" : "CalcLU") + (lapack ? " lapack" : " ngbla");
+        string name = string(inv ? "InverseFromLU" : "CalcLU") + (iscomplex ? " complex" : "") + (lapack ? " lapack" : " ngbla");
         timings.push_back(make_tuple(name, 1e-9 * flops * its / t.GetTime()));
-      }
+      };
+    if (what == 204 || what == 214 || what == 206 || what == 216)
+      timelu (Complex(0), what >= 210, (what % 10) == 6);
+    if (what == 207 || what == 217 || what == 208 || what == 218)
+      timelu (0.0, what >= 210, (what % 10) == 8);
 
     if (what == 0 || what == 205)
       {
