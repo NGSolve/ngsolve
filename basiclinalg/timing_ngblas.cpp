@@ -61,7 +61,11 @@ Available options timings are:
           150.. ScalKernel     C = A * B^t,  A=4*n, B = 3*n
           151.. ScalKernel     C = A * B^t,  A=4*n, B = 3*n\n, A,B aligned
           200.. CalcInverse        A = nxn
-          201.. CalcInverse by LU  A = nxn          
+          201.. CalcInverse by LU  A = nxn
+          202.. Complex CalcInverse, ngbla LU (212 .. lapack)
+          203.. CalcInverse, ngbla LU (213 .. lapack)
+          204.. Complex CalcLU (214 .. zgetrf)
+          206.. Complex InverseFromLU (216 .. zgetri)
           205.. LDL                A = nxn
           210.. CalcInverseLapack  A = nxn
           300.. CalcSVD            A = nxn
@@ -1132,6 +1136,57 @@ Available options timings are:
     if (what == 212) timeinv (Complex(0), true, "Inv(A) complex lapack");
     if (what == 203) timeinv (0.0, false, "Inv(A) LU");
     if (what == 213) timeinv (0.0, true, "Inv(A) lapack");
+
+    // complex CalcLU (204) / zgetrf (214), InverseFromLU (206) / zgetri (216), GFlops with 8/3 n^3 and 16/3 n^3
+    if (what == 204 || what == 214 || what == 206 || what == 216)
+      {
+        bool lapack = what >= 210;
+        bool inv = (what % 10) == 6;
+        Matrix<Complex> a(n,n), ha(n,n), lu(n,n);
+        for (int i = 0; i < n; i++)
+          for (int j = 0; j < n; j++)
+            a(i,j) = Complex(sin(1.7*i*n+3.1*j), cos(2.3*i-0.9*j*n));
+        Array<int> p(n);
+#ifdef LAPACK
+        integer ni = n, info, lwork = -1;
+        Array<integer> ipiv(n);
+        Complex hwork;
+        zgetri_ (&ni, &a(0,0), &ni, &ipiv[0], &hwork, &lwork, &info);
+        lwork = integer(hwork.real());
+        Array<Complex> work(lwork);
+#else
+        if (lapack) return timings;
+#endif
+        auto factor = [&] (SliceMatrix<Complex> m)
+        {
+#ifdef LAPACK
+          if (lapack) { zgetrf_ (&ni, &ni, &m(0,0), &ni, &ipiv[0], &info); return; }
+#endif
+          CalcLU (m, p);
+        };
+        if (inv) { lu = a; factor (lu); }
+
+        double flops = (inv ? 16.0/3 : 8.0/3) * double(n)*n*n;
+        size_t its = 1e10 / flops + 1;
+        if (its > maxits) its = maxits;
+        Timer t("LU timing");
+        t.Start();
+        for (size_t j = 0; j < its; j++)
+          {
+            ha = inv ? lu : a;
+            if (!inv)
+              factor (ha);
+#ifdef LAPACK
+            else if (lapack)
+              zgetri_ (&ni, &ha(0,0), &ni, &ipiv[0], &work[0], &lwork, &info);
+#endif
+            else
+              InverseFromLU (ha, p);
+          }
+        t.Stop();
+        string name = string(inv ? "InverseFromLU" : "CalcLU") + (lapack ? " lapack" : " ngbla");
+        timings.push_back(make_tuple(name, 1e-9 * flops * its / t.GetTime()));
+      }
 
     if (what == 0 || what == 205)
       {
