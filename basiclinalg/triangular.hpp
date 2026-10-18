@@ -346,6 +346,11 @@ namespace ngbla
   {
     SolveTriangularLLN(X,T);
   }
+  extern NGS_DLL_HEADER void SolveTriangularUR (SliceMatrix<double> X, BareSliceMatrix<double> T);
+  template <> inline void SolveTriangular<UpperRight,NonNormalized> (SliceMatrix<double> X, BareSliceMatrix<double> T)
+  {
+    SolveTriangularUR(X,T);
+  }
 
 
 

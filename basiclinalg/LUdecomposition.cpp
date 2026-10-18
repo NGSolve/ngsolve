@@ -705,8 +705,18 @@ namespace ngbla
   template <typename T>
   void T_SolveTransFromLU (SliceMatrix<T> A, FlatArray<int> p, SliceMatrix<T,ColMajor> X)
   {
-    TriangularSolve<LowerLeft> (Trans(A).Bare(), X);
-    TriangularSolve<UpperRight,Normalized> (Trans(A).Bare(), X);
+    if constexpr (is_same_v<T,double>)
+      {
+        // on the row-major X^T:  X^T := X^T U^-1,  X^T := X^T L^-1
+        SliceMatrix<T> Xt = Trans(X);
+        SolveTriangular<UpperRight> (Xt, A.Bare());
+        SolveTriangular<LowerLeft,Normalized> (Xt, A.Bare());
+      }
+    else
+      {
+        TriangularSolve<LowerLeft> (Trans(A).Bare(), X);
+        TriangularSolve<UpperRight,Normalized> (Trans(A).Bare(), X);
+      }
 
     size_t n = X.Height();
 

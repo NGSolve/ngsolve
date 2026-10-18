@@ -696,6 +696,91 @@ namespace ngbla
   }
 
 
+  /* **************** UpperRight  *************************** */
+
+  // X := X * U^-1, U upper triangular; column blocks from the left.
+  // Each block is one in-place kernel call with the packed matrix
+  //   [ -U(0:i,b) inv(U_bb) ; inv(U_bb) - I ]
+  void SolveTriangularUR3 (SliceMatrix<double> X, BareSliceMatrix<double> T)
+  {
+    size_t n = X.Width();
+    size_t m = X.Height();
+
+    constexpr size_t BS = 2*SIMD<double>::Size();    
+    alignas (SIMD<double>) double memb[BS*128];
+
+    double uinv[BS][BS];
+    size_t i = 0;
+    for ( ; i+BS <= n; i += BS)
+      {
+        // inverse of the upper diagonal block
+        for (size_t c = 0; c < BS; c++)
+          for (size_t r = BS; r-- > 0; )
+            {
+              if (r > c) { uinv[r][c] = 0; continue; }
+              double sum = (r == c) ? 1.0 : 0.0;
+              for (size_t q = r+1; q <= c; q++)
+                sum -= T(i+r,i+q) * uinv[q][c];
+              uinv[r][c] = sum / T(i+r,i+r);
+            }
+        for (size_t r = 0; r < i; r++)
+          for (size_t c = 0; c < BS; c++)
+            {
+              double sum = 0;
+              for (size_t q = 0; q <= c; q++)
+                sum -= T(r,i+q) * uinv[q][c];
+              memb[BS*r+c] = sum;
+            }
+        for (size_t r = 0; r < BS; r++)
+          for (size_t c = 0; c < BS; c++)
+            memb[BS*(i+r)+c] = uinv[r][c] - ((r == c) ? 1.0 : 0.0);
+
+        size_t j = 0;
+        for ( ; j+4 <= m; j+=4)
+          MatKernelMultAB<4,2,ADD> (i+BS, &X(j,0), X.Dist(), &memb[0], BS, &X(j,i), X.Dist());
+        for ( ; j+1 <= m; j+=1)
+          MatKernelMultAB<1,2,ADD> (i+BS, &X(j,0), X.Dist(), &memb[0], BS, &X(j,i), X.Dist());
+      }
+
+    // rightmost n % BS columns
+    for (size_t k = i; k < n; k++)
+      {
+        X.Col(k) -= X.Cols(0,k) * T.Col(k).Range(0,k);
+        X.Col(k) *= 1.0/T(k,k);
+      }
+  }
+  
+  void SolveTriangularUR2 (SliceMatrix<double> X, BareSliceMatrix<double> T)
+  {
+    size_t n = X.Width();
+    if (n <= 128)
+      {
+        SolveTriangularUR3 (X,T);
+        return;
+      }
+    IntRange r1(0,n/2), r2(n/2,n);
+    auto T11 = T.Rows(r1).Cols(r1);
+    auto T12 = T.Rows(r1).Cols(r2).AddSize(r1.Size(), r2.Size());
+    auto T22 = T.Rows(r2).Cols(r2);
+    auto X1 = X.Cols(r1);
+    auto X2 = X.Cols(r2);
+
+    SolveTriangularUR2 (X1,T11);
+    X2 -= X1 * T12;
+    SolveTriangularUR2 (X2,T22);
+  }
+  
+  void SolveTriangularUR (SliceMatrix<double> X, BareSliceMatrix<double> U)  
+  {
+    size_t i = 0;
+    constexpr size_t bw = 128;
+    for ( ; i+bw <= X.Height(); i += bw)
+      SolveTriangularUR2 (X.Rows(i,i+bw), U);
+    if (i < X.Height())
+      SolveTriangularUR2 (X.Rows(i,X.Height()), U);
+  }
+
+
 
 
 
