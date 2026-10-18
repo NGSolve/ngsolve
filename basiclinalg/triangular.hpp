@@ -341,8 +341,23 @@ namespace ngbla
     TriangularSolve<!SIDE,NORM> (Trans(T), Trans(X));
   }
 
+  extern NGS_DLL_HEADER void SolveTriangularLL (SliceMatrix<double> X, BareSliceMatrix<double> T);
+  template <> inline void SolveTriangular<LowerLeft,NonNormalized> (SliceMatrix<double> X, BareSliceMatrix<double> T)
+  {
+    SolveTriangularLL(X,T);
+  }
+  extern NGS_DLL_HEADER void SolveTriangularLL (SliceMatrix<double> X, BareSliceMatrix<double,ColMajor> T);
+  template <> inline void SolveTriangular<LowerLeft,NonNormalized> (SliceMatrix<double> X, BareSliceMatrix<double,ColMajor> T)
+  {
+    SolveTriangularLL(X,T);
+  }
   extern NGS_DLL_HEADER void SolveTriangularLLN (SliceMatrix<double> X, BareSliceMatrix<double> T);
   template <> inline void SolveTriangular<LowerLeft,Normalized> (SliceMatrix<double> X, BareSliceMatrix<double> T)
+  {
+    SolveTriangularLLN(X,T);
+  }
+  extern NGS_DLL_HEADER void SolveTriangularLLN (SliceMatrix<double> X, BareSliceMatrix<double,ColMajor> T);
+  template <> inline void SolveTriangular<LowerLeft,Normalized> (SliceMatrix<double> X, BareSliceMatrix<double,ColMajor> T)
   {
     SolveTriangularLLN(X,T);
   }
@@ -350,6 +365,21 @@ namespace ngbla
   template <> inline void SolveTriangular<UpperRight,NonNormalized> (SliceMatrix<double> X, BareSliceMatrix<double> T)
   {
     SolveTriangularUR(X,T);
+  }
+  extern NGS_DLL_HEADER void SolveTriangularUR (SliceMatrix<double> X, BareSliceMatrix<double,ColMajor> T);
+  template <> inline void SolveTriangular<UpperRight,NonNormalized> (SliceMatrix<double> X, BareSliceMatrix<double,ColMajor> T)
+  {
+    SolveTriangularUR(X,T);
+  }
+  extern NGS_DLL_HEADER void SolveTriangularURN (SliceMatrix<double> X, BareSliceMatrix<double> T);
+  template <> inline void SolveTriangular<UpperRight,Normalized> (SliceMatrix<double> X, BareSliceMatrix<double> T)
+  {
+    SolveTriangularURN(X,T);
+  }
+  extern NGS_DLL_HEADER void SolveTriangularURN (SliceMatrix<double> X, BareSliceMatrix<double,ColMajor> T);
+  template <> inline void SolveTriangular<UpperRight,Normalized> (SliceMatrix<double> X, BareSliceMatrix<double,ColMajor> T)
+  {
+    SolveTriangularURN(X,T);
   }
 
 
