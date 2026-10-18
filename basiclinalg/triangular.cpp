@@ -602,6 +602,113 @@ namespace ngbla
 
 
 
+
+
+
+
+
+
+  /* ****************************** SolveTriangular ************************/ 
+  /* **************** LowerLeft - Normalized *************************** */
+
+  // X := X * L^-1, L unit lower triangular; column blocks from the right.
+  // Each block is one in-place kernel call with the packed matrix
+  //   [ inv(L_bb) - I ; -L(rest,b) inv(L_bb) ]
+  void SolveTriangularLLN3 (SliceMatrix<double> X, BareSliceMatrix<double> T)
+  {
+    size_t n = X.Width();
+    size_t m = X.Height();
+
+    constexpr size_t BS = 2*SIMD<double>::Size();    
+    alignas (SIMD<double>) double memb[BS*128];
+
+    // rightmost n % BS columns
+    size_t i = n - n % BS;
+    for (size_t k = n; k-- > i; )
+      X.Col(k) -= X.Cols(k+1,n) * T.Col(k).Range(k+1,n);
+
+    double linv[BS][BS];
+    while (i >= BS)
+      {
+        i -= BS;
+        // inverse of the unit lower diagonal block
+        for (size_t r = 0; r < BS; r++)
+          for (size_t c = 0; c < BS; c++)
+            {
+              double sum = (r == c) ? 1.0 : 0.0;
+              if (r > c)
+                {
+                  sum = -T(i+r,i+c);
+                  for (size_t q = c+1; q < r; q++)
+                    sum -= T(i+r,i+q) * linv[q][c];
+                }
+              linv[r][c] = sum;
+            }
+        for (size_t r = 0; r < BS; r++)
+          for (size_t c = 0; c < BS; c++)
+            memb[BS*r+c] = (r > c) ? linv[r][c] : 0.0;
+        for (size_t r = BS; r < n-i; r++)
+          for (size_t c = 0; c < BS; c++)
+            {
+              double sum = 0;
+              for (size_t q = c; q < BS; q++)
+                sum -= T(i+r,i+q) * linv[q][c];
+              memb[BS*r+c] = sum;
+            }
+
+        auto Xrest = X.Cols(i,n);
+        size_t j = 0;
+        for ( ; j+4 <= m; j+=4)
+          MatKernelMultAB<4,2,ADD> (n-i, &Xrest(j,0), X.Dist(), &memb[0], BS, &Xrest(j,0), X.Dist());
+        for ( ; j+1 <= m; j+=1)
+          MatKernelMultAB<1,2,ADD> (n-i, &Xrest(j,0), X.Dist(), &memb[0], BS, &Xrest(j,0), X.Dist());
+      }
+  }
+  
+  void SolveTriangularLLN2 (SliceMatrix<double> X, BareSliceMatrix<double> T)
+  {
+    size_t n = X.Width();
+    if (n <= 128)
+      {
+        SolveTriangularLLN3 (X,T);
+        return;
+      }
+    IntRange r1(0,n/2), r2(n/2,n);
+    auto T11 = T.Rows(r1).Cols(r1);
+    auto T21 = T.Rows(r2).Cols(r1).AddSize(r2.Size(), r1.Size());
+    auto T22 = T.Rows(r2).Cols(r2);
+    auto X1 = X.Cols(r1);
+    auto X2 = X.Cols(r2);
+
+    SolveTriangularLLN2 (X2,T22);
+    X1 -= X2 * T21;
+    SolveTriangularLLN2 (X1,T11);
+  }
+  
+  void SolveTriangularLLN (SliceMatrix<double> X, BareSliceMatrix<double> L)  
+  {
+    size_t i = 0;
+    constexpr size_t bw = 128;
+    for ( ; i+bw <= X.Height(); i += bw)
+      SolveTriangularLLN2 (X.Rows(i,i+bw), L);
+    if (i < X.Height())
+      SolveTriangularLLN2 (X.Rows(i,X.Height()), L);
+  }
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
   /* **************************** Generalized Triangular ************************** */
 
   template <TRIG_NORMAL NORM, ORDERING OT, ORDERING OXY>

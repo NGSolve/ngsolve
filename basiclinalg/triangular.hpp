@@ -333,6 +333,21 @@ namespace ngbla
   }
 
 
+  // X = X * T^-1
+  template <TRIG_SIDE SIDE, TRIG_NORMAL NORM=NonNormalized,
+            typename TT, typename TX, ORDERING OT, ORDERING OX>
+  void SolveTriangular (SliceMatrix<TX,OX> X, BareSliceMatrix<TT,OT> T)
+  {
+    TriangularSolve<!SIDE,NORM> (Trans(T), Trans(X));
+  }
+
+  extern NGS_DLL_HEADER void SolveTriangularLLN (SliceMatrix<double> X, BareSliceMatrix<double> T);
+  template <> inline void SolveTriangular<LowerLeft,Normalized> (SliceMatrix<double> X, BareSliceMatrix<double> T)
+  {
+    SolveTriangularLLN(X,T);
+  }
+
+
 
   template <TRIG_SIDE SIDE, TRIG_NORMAL NORM=NonNormalized, ORDERING OT, ORDERING OXY>
   extern NGS_DLL_HEADER void GeneralizedTriangularMult_SM (SliceMatrix<double, OT> T,

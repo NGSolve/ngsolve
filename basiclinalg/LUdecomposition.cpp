@@ -637,7 +637,6 @@ namespace ngbla
 
     constexpr size_t bs = 32;
     ArrayMem<T, bs*128> mem(bs*n);
-    ArrayMem<T, bs*128> memt(is_same_v<T,double> ? bs*n : 0);
     for (size_t j1 = n; j1 > 0; )
       {
         size_t j0 = (j1 > bs) ? j1-bs : 0;
@@ -658,13 +657,7 @@ namespace ngbla
           A.Cols(J) -= A.Cols(j1, n) * W.Rows(nb, n-j0);
         // X(:,J) = X(:,J) * inv(L(J,J))
         if constexpr (is_same_v<T,double>)
-          {
-            // on a transposed copy the solve runs on contiguous rows:  L(J,J)^T X(:,J)^T = X(:,J)^T
-            FlatMatrix<T> Xt(nb, n, memt.Data());
-            Xt = Trans(A.Cols(J));
-            TriangularSolve<UpperRight,Normalized> (Trans(W.Rows(0,nb)), Xt);
-            A.Cols(J) = Trans(Xt);
-          }
+          SolveTriangular<LowerLeft,Normalized> (A.Cols(J), BareSliceMatrix<T>(W.Rows(0,nb)));
         else
           SolveXLUnit<T> (A.Cols(J), W.Rows(0,nb), nb);
         j1 = j0;
