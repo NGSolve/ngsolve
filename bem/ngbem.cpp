@@ -13,6 +13,35 @@
 namespace ngsbem
 {
 
+  template <typename SCAL>
+  static FlatMatrix<SCAL> ToElementDofs (const FESpace & test_space, ElementId ei_test,
+                                         const FESpace & trial_space, ElementId ei_trial,
+                                         FlatMatrix<SCAL> elmat, LocalHeap & lh)
+  {
+    if (auto Tt = test_space.GetDofTransformation (ei_test, lh))
+      {
+        FlatMatrix<SCAL> T(Tt->Height(), Tt->Width(), lh);
+        T = *Tt;
+        FlatMatrix<SCAL> h(T.Width(), elmat.Width(), lh);
+        h = Trans(T) * elmat;
+        elmat.AssignMemory (h.Height(), h.Width(), h.Data());
+      }
+    else
+      test_space.TransformMat (ei_test, elmat, TRANSFORM_MAT_LEFT);
+
+    if (auto Tr = trial_space.GetDofTransformation (ei_trial, lh))
+      {
+        FlatMatrix<SCAL> T(Tr->Height(), Tr->Width(), lh);
+        T = *Tr;
+        FlatMatrix<SCAL> h(elmat.Height(), T.Width(), lh);
+        h = elmat * T;
+        elmat.AssignMemory (h.Height(), h.Width(), h.Data());
+      }
+    else
+      trial_space.TransformMat (ei_trial, elmat, TRANSFORM_MAT_RIGHT);
+    return elmat;
+  }
+
 
   IntOp_Parameters :: IntOp_Parameters (const Flags & flags)
   {
@@ -426,7 +455,7 @@ namespace ngsbem
             trial_space->GetDofNrs (ei_trial, trial_dnums);
             test_space->GetDofNrs (ei_test, test_dnums);
 
-            FlatMatrix<value_type> elmat(test_dnums.Size(), trial_dnums.Size(), lh);
+            FlatMatrix<value_type> elmat(test_fel.GetNDof(), trial_fel.GetNDof(), lh);
             // tassSS.Start();
             CalcElementMatrix (elmat, ei_trial, ei_test, lh);
             // tassSS.Stop();
@@ -482,7 +511,8 @@ namespace ngsbem
                   elmat.Rows(test_range).Cols(trial_range) -= shapesi1.Rows(test_range) * kernel_shapesj.Cols(trial_range);
               }
             // tasscorr.Stop();
-            nearfield_correction -> AddElementMatrix (test_dnums, trial_dnums, elmat, true);
+            auto gmat = ToElementDofs (*test_space, ei_test, *trial_space, ei_trial, elmat, lh);
+            nearfield_correction -> AddElementMatrix (test_dnums, trial_dnums, gmat, true);
           }
       });
 
@@ -580,7 +610,7 @@ namespace ngsbem
             trial_space->GetDofNrs (ei_trial, trial_dnums);
             test_space->GetDofNrs (ei_test, test_dnums);
 
-            FlatMatrix<value_type> elmat(test_dnums.Size(), trial_dnums.Size(), lh);
+            FlatMatrix<value_type> elmat(test_fel.GetNDof(), trial_fel.GetNDof(), lh);
             CalcElementMatrix (elmat, ei_trial, ei_test, lh);
 
             /*
@@ -597,7 +627,8 @@ namespace ngsbem
             trial_evaluator-> CalcMatrix(trial_fel, trial_mir, Trans(shapesj), lh);
             */
 
-            nearfield -> AddElementMatrix (test_dnums, trial_dnums, elmat, true);
+            auto gmat = ToElementDofs (*test_space, ei_test, *trial_space, ei_trial, elmat, lh);
+            nearfield -> AddElementMatrix (test_dnums, trial_dnums, gmat, true);
           }
       });
 
