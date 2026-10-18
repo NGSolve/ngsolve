@@ -42,6 +42,24 @@ namespace ngsbem
     return elmat;
   }
 
+  // element dofs -> local coefficients, nullopt if this is the identity
+  static optional<FlatMatrix<double>> ElementDofMap (const FESpace & fes, ElementId ei, LocalHeap & lh)
+  {
+    if (auto T = fes.GetDofTransformation (ei, lh))
+      return T;
+    if (!fes.NeedsTransformVec())
+      return nullopt;
+    size_t nloc = fes.GetFE (ei, lh).GetNDof();
+    FlatMatrix<double> T(nloc, nloc, lh);
+    T = Identity(nloc);
+    fes.TransformMat (ei, T, TRANSFORM_MAT_RIGHT);
+    for (size_t i = 0; i < nloc; i++)
+      for (size_t j = 0; j < nloc; j++)
+        if (T(i,j) != (i == j ? 1.0 : 0.0))
+          return T;
+    return nullopt;
+  }
+
 
   IntOp_Parameters :: IntOp_Parameters (const Flags & flags)
   {
@@ -266,6 +284,26 @@ namespace ngsbem
 
       shared_ptr<BaseMatrix> evalx;
 
+      // elements with a non-trivial dof map get individual element matrices
+      BitArray special(mesh->GetNE(vb));
+      special.Clear();
+      int nspecial = 0;
+      for (auto i : Range(compress_els))
+        if (compress_els[i] != -1)
+          {
+            HeapReset hr(lh);
+            if (ElementDofMap (fes, ElementId(vb, i), lh))
+              {
+                special.SetBit(i);
+                nspecial++;
+              }
+          }
+      shared_ptr<ElementByElementMatrix<TSCAL>> special_evalx;
+      if (nspecial)
+        special_evalx = make_shared<ElementByElementMatrix<TSCAL>>
+          (total_npts*evaluator.DimRef(), fes.GetNDof(), nspecial);
+      int cnt_special = 0;
+
       for (auto elclass_inds : table)
         {
           if (elclass_inds.Size() == 0) continue;
@@ -284,20 +322,43 @@ namespace ngsbem
 
           Matrix bmat = bmat_;
 
-          Table<DofId> xdofsin(elclass_inds.Size(), felx.GetNDof());
-          Table<DofId> xdofsout(elclass_inds.Size(), bmat.Height());
-
+          Array<size_t> inds;
           Array<DofId> dnumsx, dnumsy;
-          for (auto i : Range(elclass_inds))
+          for (auto nr : elclass_inds)
             {
-              ElementId ei(vb, elclass_inds[i]);
+              if (!special.Test(nr))
+                {
+                  inds.Append (nr);
+                  continue;
+                }
+              HeapReset hr(lh);
+              ElementId ei(vb, nr);
+              auto T = ElementDofMap (fes, ei, lh);
+              FlatMatrix<double> bt(bmat.Height(), T->Width(), lh);
+              bt = bmat * *T;
+              FlatMatrix<TSCAL> elmat(bt.Height(), bt.Width(), lh);
+              elmat = bt;
+              FlatArray<int> pts(bmat.Height(), lh);
+              for (int j = 0; j < pts.Size(); j++)
+                pts[j] = first_ip_nr[compress_els[nr]]*dim+j;
+              fes.GetDofNrs(ei, dnumsx);
+              special_evalx->AddElementMatrix (cnt_special++, pts, dnumsx, elmat);
+            }
+          if (inds.Size() == 0) continue;
+
+          Table<DofId> xdofsin(inds.Size(), felx.GetNDof());
+          Table<DofId> xdofsout(inds.Size(), bmat.Height());
+
+          for (auto i : Range(inds))
+            {
+              ElementId ei(vb, inds[i]);
               fes.GetDofNrs(ei, dnumsx);
               xdofsin[i] = dnumsx;
 
               // for (int j = 0; j < dim*ir.Size(); j++)
               //   xdofsout[i][j] = compress_els[elclass_inds[i]]*(dim*ir.Size())+j;
               for (int j = 0; j < dim*ir.Size(); j++)
-                xdofsout[i][j] = first_ip_nr[compress_els[elclass_inds[i]]]*dim+j;
+                xdofsout[i][j] = first_ip_nr[compress_els[inds[i]]]*dim+j;
             }
 
           auto part_evalx = make_shared<ConstantElementByElementMatrix<TSCAL>>
@@ -309,6 +370,14 @@ namespace ngsbem
             evalx = evalx + part_evalx;
           else
             evalx = part_evalx;
+        }
+
+      if (special_evalx)
+        {
+          if (evalx)
+            evalx = evalx + special_evalx;
+          else
+            evalx = special_evalx;
         }
 
       // Tensor<3, typename KERNEL::value_type> weights(cnt*ir.Size(),
