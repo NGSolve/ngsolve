@@ -2964,6 +2964,7 @@ auto Concat (tuple<SIMD<double,N>, Args...> tup)
           GenerateTriangular (out, false, lowerleft, normalized, RowMajor, i);
           GenerateTriangular (out, false, lowerleft, normalized, ColMajor, i);
           GenerateTriangular (out, true, lowerleft, normalized, RowMajor, i);
+          GenerateTriangular (out, true, lowerleft, normalized, ColMajor, i);
 
           GenerateTriangularXY (out, false, lowerleft, normalized, RowMajor, SET, i);
           GenerateTriangularXY (out, false, lowerleft, normalized, ColMajor, SET, i);

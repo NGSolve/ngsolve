@@ -111,6 +111,28 @@ namespace ngbla
     TriangularSolveURN(T,X);
   }
 
+  // col-major T, e.g. Trans(A)
+  extern NGS_DLL_HEADER void TriangularSolveLL (BareSliceMatrix<double,ColMajor> T, SliceMatrix<double> X);
+  template <> inline void TriangularSolve<LowerLeft,NonNormalized> (BareSliceMatrix<double,ColMajor> T, SliceMatrix<double> X)
+  {
+    TriangularSolveLL(T,X);
+  }
+  extern NGS_DLL_HEADER void TriangularSolveLLN (BareSliceMatrix<double,ColMajor> T, SliceMatrix<double> X);
+  template <> inline void TriangularSolve<LowerLeft,Normalized> (BareSliceMatrix<double,ColMajor> T, SliceMatrix<double> X)
+  {
+    TriangularSolveLLN(T,X);
+  }
+  extern NGS_DLL_HEADER void TriangularSolveUR (BareSliceMatrix<double,ColMajor> T, SliceMatrix<double> X);
+  template <> inline void TriangularSolve<UpperRight,NonNormalized> (BareSliceMatrix<double,ColMajor> T, SliceMatrix<double> X)
+  {
+    TriangularSolveUR(T,X);
+  }
+  extern NGS_DLL_HEADER void TriangularSolveURN (BareSliceMatrix<double,ColMajor> T, SliceMatrix<double> X);
+  template <> inline void TriangularSolve<UpperRight,Normalized> (BareSliceMatrix<double,ColMajor> T, SliceMatrix<double> X)
+  {
+    TriangularSolveURN(T,X);
+  }
+
   
 
   template <TRIG_SIDE SIDE, TRIG_NORMAL NORM=NonNormalized, typename TT, typename TX,
