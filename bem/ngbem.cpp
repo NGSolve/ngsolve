@@ -1481,10 +1481,11 @@ namespace ngsbem
 
           FlatMatrix<value_type> elmat(tfel.GetNDof(), sfel.GetNDof(),lh);
           CalcElementMatrix(elmat, source_el, target_el, lh);
+          auto gmat = ToElementDofs (*test_space, target_el, *trial_space, source_el, elmat, lh);
 
           for (auto [tdofind,tnr] : target_el2dof[telnr])
             for (auto [sdofind,snr] : source_el2dof[selnr])
-              mat(tdofind, sdofind) += elmat(tnr, snr);
+              mat(tdofind, sdofind) += gmat(tnr, snr);
         }
 
     return mat;
