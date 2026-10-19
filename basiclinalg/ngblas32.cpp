@@ -126,6 +126,53 @@ namespace ngbla
     constexpr size_t BK = 72;
     constexpr size_t BN = 512;
 
+    // A row-major and B larger than L1: copy each k-block of B into panels of NR
+    // columns (contiguous, row stride NR). A panel stays in L1 and the k-block of A
+    // in L2 while the kernels run over all rows; read in place, B's row stride made
+    // the kernels L2/L3-bound for large matrices
+    if constexpr (OA == RowMajor)
+      if (ah >= 16 && aw*bw > 8192)
+        {
+#ifndef NGBLAS32_PK
+#define NGBLAS32_PK 96
+#endif
+          constexpr size_t NR = NGBLAS32_FLOAT_MAX_NR;
+          constexpr size_t PK = NGBLAS32_PK;
+          size_t npanels = (bw+NR-1)/NR;
+          Array<float> mem(PK*NR*npanels);
+          for (size_t k = 0; k < aw; k += PK)
+            {
+              size_t kmax = min(aw, k+PK);
+              for (size_t j = 0, p = 0; j < bw; j += NR, p++)
+                {
+                  size_t w = min(NR, bw-j);
+                  SliceMatrix<float> panel(kmax-k, w, NR, mem.Data()+p*PK*NR);
+                  if constexpr (OB == RowMajor)
+                    panel = b.Rows(k,kmax).Cols(j,j+w);
+                  else
+                    CopyMatrix32 (kmax-k, w, b.Rows(k,kmax).Cols(j,j+w), panel);
+                }
+#ifndef NGBLAS32_MC
+#define NGBLAS32_MC 256
+#endif
+              constexpr size_t MC = NGBLAS32_MC;   // rows of A per block, the block stays in L2
+              for (size_t i = 0; i < ah; i += MC)
+                {
+                  size_t imax = min(ah, i+MC);
+                  for (size_t j = 0, p = 0; j < bw; j += NR, p++)
+                    {
+                      size_t w = min(NR, bw-j);
+                      SliceMatrix<float> panel(kmax-k, w, NR, mem.Data()+p*PK*NR);
+                      if (k == 0)
+                        NgGEBP32<ADD,POS,RowMajor,RowMajor>(imax-i, kmax-k, w, a.Rows(i,imax).Cols(k,kmax), panel, c.Rows(i,imax).Cols(j,j+w));
+                      else
+                        NgGEBP32<true,POS,RowMajor,RowMajor>(imax-i, kmax-k, w, a.Rows(i,imax).Cols(k,kmax), panel, c.Rows(i,imax).Cols(j,j+w));
+                    }
+                }
+            }
+          return;
+        }
+
     if constexpr (OB == ColMajor)
       {
         Matrix<float> packed_b(BK,min(BN,bw));
