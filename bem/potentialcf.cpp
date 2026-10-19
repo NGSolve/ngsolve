@@ -138,14 +138,13 @@ namespace ngsbem
         if (!space->DefinedOn(ei)) continue;
         if (definedon && !(*definedon).Mask().Test(mesh->GetElIndex(ei))) continue;
 
-        const FiniteElement &fel = space->GetFE(ei, lh);
+        auto el = space->GetElement(ei, lh);
+        const FiniteElement &fel = el.GetFE();
         if (fel.GetNDof() == 0) continue;   // no dofs on this element (e.g. L2 on curves): nothing to integrate
         const ElementTransformation &trafo = mesh->GetTrafo(ei, lh);
 
-        Array<DofId> dnums(fel.GetNDof(), lh);
-        space->GetDofNrs(ei, dnums);
         FlatVector<T> elvec(fel.GetNDof(), lh);
-        gf->GetElementVector(dnums, elvec);
+        gf->GetElementVector(el, elvec);
 
         IntegrationRule ir(fel.ElementType(), intorder);
         auto & miry = trafo(ir, lh);
@@ -553,14 +552,13 @@ namespace ngsbem
     auto space = this->gf->GetFESpace();
     auto mesh = space->GetMeshAccess();
 
-    const FiniteElement &fel = space->GetFE(ei, lh);
+    auto el = space->GetElement(ei, lh);
+    const FiniteElement &fel = el.GetFE();
     if (fel.GetNDof() == 0) return;   // no dofs on this element: nothing to integrate
     const ElementTransformation &trafo = mesh->GetTrafo(ei, lh);
 
-    Array<DofId> dnums(fel.GetNDof(), lh);
-    space->GetDofNrs(ei, dnums);
     FlatVector<T> elvec(fel.GetNDof(), lh);
-    gf->GetElementVector(dnums, elvec);
+    gf->GetElementVector(el, elvec);
 
     SIMD_IntegrationRule simd_ir(ir, lh);
     Vector<SIMD<T>> simd_result(Dimension());
@@ -598,7 +596,8 @@ namespace ngsbem
     auto space = this->gf->GetFESpace();
     auto mesh = space->GetMeshAccess();
 
-    const FiniteElement &fel = space->GetFE(ei, lh);
+    auto el = space->GetElement(ei, lh);
+    const FiniteElement &fel = el.GetFE();
     if (fel.GetNDof() == 0) return;   // no dofs on this element: nothing to correct
     const ElementTransformation &trafo = mesh->GetTrafo(ei, lh);
     auto et = trafo.GetElementType();
@@ -619,10 +618,8 @@ namespace ngsbem
             formula != AnalyticTriangleFormula::laplace_grad_sl)
           return;
 
-        Array<DofId> dnums(fel.GetNDof(), lh);
-        space->GetDofNrs(ei, dnums);
         FlatVector<T> elvec(fel.GetNDof(), lh);
-        gf->GetElementVector(dnums, elvec);
+        gf->GetElementVector(el, elvec);
 
         Vec<3> x = mip.GetPoint();
         IntegrationPoint ip0 = ProjectPointToReferenceTet(x, trafo);
@@ -709,10 +706,8 @@ namespace ngsbem
     if (et != ET_TRIG && et != ET_QUAD)
       return;
 
-    Array<DofId> dnums(fel.GetNDof(), lh);
-    space->GetDofNrs(ei, dnums);
     FlatVector<T> elvec(fel.GetNDof(), lh);
-    gf->GetElementVector(dnums, elvec);
+    gf->GetElementVector(el, elvec);
 
     Vec<3> x = mip.GetPoint();
     IntegrationPoint ip0 = ProjectPointToReference(x, trafo);
@@ -901,14 +896,13 @@ namespace ngsbem
           if (!space->DefinedOn(ei)) continue;
           if (definedon &&  !(*definedon).Mask().Test(mesh->GetElIndex(ei))) continue;
 
-          const FiniteElement &fel = space->GetFE(ei, lh);
+          auto el = space->GetElement(ei, lh);
+          const FiniteElement &fel = el.GetFE();
           if (fel.GetNDof() == 0) continue;   // no dofs on this element (e.g. L2 on curves): nothing to integrate
           const ElementTransformation &trafo = mesh->GetTrafo(ei, lh);
 
-          Array<DofId> dnums(fel.GetNDof(), lh);
-          space->GetDofNrs(ei, dnums);
           FlatVector<T> elvec(fel.GetNDof(), lh);
-          gf->GetElementVector(dnums, elvec);
+          gf->GetElementVector(el, elvec);
 
           // Defined for surface elements and, via the divergence theorem,
           // for tets.
