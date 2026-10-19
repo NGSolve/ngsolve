@@ -1494,7 +1494,7 @@ namespace ngbla
     // return;
 
 #ifdef __aarch64__
-    constexpr size_t bs = 4;
+    constexpr size_t bs = 8;
 #else
     constexpr size_t bs = SIMD<double>::Size();    
 #endif
