@@ -89,10 +89,58 @@ namespace ngcomp
   };
 
   template<int DIMS, int DIMR>
-  double FindClosestPoint( Vec<DIMR> pmaster, Vec<DIMR> n, double h, const ElementTransformation & trafo, IntegrationPoint & ip, Vec<DIMR> & p, bool both_sides)
-  // input arguments: pmaster, n, h (maximum distance), trafo
+  double FindClosestPoint( Vec<DIMR> pmaster, Vec<DIMR> n, double h, const DeformedBndElement<DIMR> & el2, IntegrationPoint & ip, Vec<DIMR> & p, bool both_sides)
+  // input arguments: pmaster, n (oriented primary normal), h (maximum distance), el2
   // output arguments: ip, p
   {
+    auto & trafo = el2.trafo;
+
+    if (el2.affine)
+      {
+        // the squared distance is quadratic: interior minimum or minimum on an edge
+        Vec<DIMR> nv;
+        if constexpr (DIMR == 3)
+          nv = Cross(Vec<3>(el2.jac.Col(0)), Vec<3>(el2.jac.Col(1)));
+        else
+          nv = Vec<2>(-el2.jac(1,0), el2.jac(0,0));
+        if (!both_sides && el2.orient * InnerProduct(n, nv) >= 0)
+          return 1e99;
+
+        Mat<DIMS,DIMS> g = Trans(el2.jac) * el2.jac;
+        Vec<DIMS> r = Trans(el2.jac) * (pmaster - el2.x0);
+        Vec<DIMS> lam = 0;
+        double dist2 = 1e99;
+        auto check = [&] (Vec<DIMS> l)
+        {
+          double d = L2Norm2(Vec<DIMR>(el2.x0 + el2.jac * l - pmaster));
+          if (d < dist2) { dist2 = d; lam = l; }
+        };
+
+        ArrayMem<Vec<DIMS>, 3> verts;
+        if constexpr (DIMS == 1)
+          verts = { Vec<1>(0.), Vec<1>(1.) };
+        else
+          {
+            verts = { Vec<2>(0., 0.), Vec<2>(1., 0.), Vec<2>(0., 1.) };
+            Vec<2> l = Inv(g) * r;
+            if (l(0) >= 0 && l(1) >= 0 && l(0) + l(1) <= 1)
+              check(l);
+          }
+        for (size_t i = 0; i < verts.Size(); i++)
+          {
+            Vec<DIMS> a = verts[i];
+            Vec<DIMS> v = verts[(i+1) % verts.Size()] - a;
+            Vec<DIMS> gv = g * v;
+            double t = InnerProduct(v, Vec<DIMS>(r - g * a)) / InnerProduct(v, gv);
+            check(Vec<DIMS>(a + min(1., max(0., t)) * v));
+          }
+
+        if (dist2 > h*h)
+          return sqrt(dist2);
+        ip = lam;
+        p = el2.x0 + el2.jac * lam;
+        return L2Norm(pmaster - p);
+      }
     Vec<DIMS> min_lam = 0;
     double min_dist = 1e99;
 
@@ -139,7 +187,7 @@ namespace ngcomp
         {
           IntegrationPoint ipm(0.5);
           MappedIntegrationPoint<1, DIMR> mipm{ipm, trafo};
-          is_front = InnerProduct(n, mipm.GetNV()) < 0;
+          is_front = el2.orient * InnerProduct(n, mipm.GetNV()) < 0;
         }
 
       for (double l : { lam, 0.0, 1.0 })
@@ -161,7 +209,7 @@ namespace ngcomp
       ip = min_lam;
       MappedIntegrationPoint<DIMS, DIMR> mip{ip, trafo};
       T2<DIMS> t2{mip, pmaster};
-      bool is_front = InnerProduct(n, mip.GetNV()) < 0;
+      bool is_front = el2.orient * InnerProduct(n, mip.GetNV()) < 0;
       if(both_sides)
         is_front = true;
 
@@ -227,77 +275,84 @@ namespace ngcomp
   }
 
   template<int DIM>
-  optional<ContactPair<DIM>> T_GapFunction<DIM> :: CreateContactPair(const MappedIntegrationPoint<DIM-1, DIM>& mip1, LocalHeap& lh, bool both_sides) const
+  DeformedBndElement<DIM> T_GapFunction<DIM> :: GetDeformedBndElement(const ElementTransformation & trafo, LocalHeap & lh) const
   {
-    HeapReset hr(lh);
-    // int intorder2 = 10*displacement->GetFESpace()->GetOrder();
-    auto & ip1 = mip1.IP();
-    auto & trafo1 = mip1.GetTransformation();
-    const auto & el1 = ma->GetElement(trafo1.GetElementId());
-    auto & trafo1_def = trafo1.AddDeformation(displacement.get(), lh);
-    const auto & mip1_def = static_cast<const MappedIntegrationPoint<DIM-1, DIM>&>(trafo1_def(ip1, lh));
-    double inv_fac = GetDomIn(*ma, el1) == 0 ? -1. : 1.;
+    auto ei = trafo.GetElementId();
+    DeformedBndElement<DIM> el { ei, trafo.AddDeformation(displacement.get(), lh),
+                                 GetDomIn(*ma, ma->GetElement(ei)) == 0 ? -1. : 1. };
+    el.affine = trafo.GetElementType() == (DIM == 3 ? ET_TRIG : ET_SEGM) && !trafo.IsCurvedElement()
+      && (!displacement || displacement->GetFESpace()->GetFE(ei, lh).Order() <= 1);
+    if (el.affine)
+      {
+        el.trafo.CalcPoint(IntegrationPoint(0., 0.), el.x0);
+        for (int j = 0; j < DIM-1; j++)
+          {
+            Vec<DIM> pj;
+            el.trafo.CalcPoint(IntegrationPoint(j == 0 ? 1. : 0., j == 1 ? 1. : 0.), pj);
+            for (int k = 0; k < DIM; k++)
+              el.jac(k, j) = pj(k) - el.x0(k);
+          }
+      }
+    return el;
+  }
 
-    const auto & p1 = mip1_def.GetPoint();
-
-    // find closest point
+  template<int DIM>
+  auto T_GapFunction<DIM> :: FindClosest(const ElementTransformation & trafo1, const IntegrationPoint & ip1,
+                                         LocalHeap & lh, bool both_sides) const -> optional<ClosestPoint>
+  {
+    auto bel1 = GetDeformedBndElement(trafo1, lh);
+    const auto & mip1 = static_cast<const MappedIntegrationPoint<DIM-1, DIM>&>(bel1.trafo(ip1, lh));
+    Vec<DIM> p1 = mip1.GetPoint();
+    Vec<DIM> n1 = bel1.orient * mip1.GetNV();
 
     double mindist = h;
-    IntegrationPoint ip2_min;
-    bool intersect = false;
-    int el2_min(-1);
+    optional<ClosestPoint> closest;
 
-
-    // find all bound-2 elements closer to p1 then h
-
+    // find all bound-2 elements closer to p1 than h
     netgen::Point<DIM> ngp1;
     for (int j = 0; j < DIM; j++) ngp1(j) = p1(j);
 
     auto hcurrent = h/(1024.*1024.);
     int found = 2;
     while(found>0 && hcurrent<=h)
-    {
+      {
+        netgen::Box<DIM> box(ngp1, ngp1);
+        box.Increase(hcurrent);
 
-     netgen::Box<DIM> box(ngp1, ngp1);
-     box.Increase(hcurrent);
+        searchtree->GetFirstIntersecting
+          (box.PMin(), box.PMax(),
+           [&] (int elnr2)
+           {
+             HeapReset hr(lh);
+             auto bel2 = GetDeformedBndElement(ma->GetTrafo(ElementId(BND, elnr2), lh), lh);
+             IntegrationPoint ip2;
+             Vec<DIM> p2;
+             double dist = FindClosestPoint<DIM-1,DIM>(p1, n1, mindist, bel2, ip2, p2, both_sides);
+             if(dist < mindist)
+               {
+                 mindist = dist;
+                 closest = ClosestPoint{elnr2, ip2, p1, p2};
+               }
+             return false;
+           });
 
-    Vec<DIM> p2_min;
-    searchtree->GetFirstIntersecting
-      (box.PMin(), box.PMax(),
-       [&] (int elnr2)
-       {
-         auto el2 = ma->GetElement(ElementId(BND, elnr2));
-         HeapReset hr(lh);
-         double inv_fac2 = GetDomIn(*ma, el2) == 0 ? -1. : 1.;
+        if(mindist < hcurrent)
+          found--;
+        hcurrent *= 2;
+      }
+    return closest;
+  }
 
-         auto & trafo2 = ma->GetTrafo(el2, lh);
-         auto & trafo2_def = trafo2.AddDeformation(displacement.get(), lh);
-
-         IntegrationPoint ip2;
-         Vec<DIM> p2;
-         double dist = FindClosestPoint<DIM-1,DIM>(p1, inv_fac * inv_fac2 * mip1_def.GetNV(), mindist, trafo2_def, ip2, p2, both_sides );
-         if(dist<mindist && dist < h)
-         {
-           mindist = dist;
-           el2_min = el2.Nr();
-           ip2_min = ip2;
-           p2_min = p2;
-           intersect = true;
-         }
-         return false;
-       });
-    if(mindist < hcurrent)
-      found--;
-
-    hcurrent *= 2;
-    }
-
-    if(intersect)
-    {
-      return ContactPair<DIM>{el1, ElementId(BND,el2_min),
-          ip1, ip2_min};
-    }
-    return nullopt;
+  template<int DIM>
+  optional<ContactPair<DIM>> T_GapFunction<DIM> :: CreateContactPair(const MappedIntegrationPoint<DIM-1, DIM>& mip1, LocalHeap& lh, bool both_sides) const
+  {
+    HeapReset hr(lh);
+    auto & trafo1 = mip1.GetTransformation();
+    auto closest = FindClosest(trafo1, mip1.IP(), lh, both_sides);
+    if (!closest)
+      return nullopt;
+    return ContactPair<DIM>{trafo1.GetElementId(), ElementId(BND, closest->el2),
+        mip1.IP(), closest->ip2};
   }
 
   template<int DIM>
@@ -317,23 +372,33 @@ namespace ngcomp
       (BND, clh, [&] (Ngs_Element el2, LocalHeap & lh)
        {
          if (!mask.Test(el2.GetIndex())) return;
-         auto & trafo2 = ma->GetTrafo (el2, lh);
-         auto & trafo2_def = trafo2.AddDeformation(displacement.get(), lh);
-         IntegrationRule ir2_(trafo2.GetElementType(), intorder2);
+         auto bel2 = GetDeformedBndElement(ma->GetTrafo (el2, lh), lh);
          netgen::Box<DIM> elbox{netgen::Box<DIM>::EMPTY_BOX};
          double & maxh = maxh_thread[TaskManager::GetThreadId()];
+         auto add = [] (netgen::Box<DIM> & box, Vec<DIM> x)
+         {
+           netgen::Point<DIM> p;
+           for (int j = 0; j < DIM; j++)
+             p(j) = x(j);
+           box.Add(p);
+         };
+         if (bel2.affine)
+           {
+             add(elbox, bel2.x0);
+             for (int j = 0; j < DIM-1; j++)
+               add(elbox, Vec<DIM>(bel2.x0 + bel2.jac.Col(j)));
+             maxh = max(maxh, elbox.Diam());
+             elboxes[el2.Nr()] = elbox;
+             return;
+           }
+         IntegrationRule ir2_(bel2.trafo.GetElementType(), intorder2);
          for(auto ir2 : ir2_.Split())
            {
              HeapReset hr(lh);
-             MappedIntegrationRule<DIM-1, DIM> mir2_def(ir2, trafo2_def, lh);
+             MappedIntegrationRule<DIM-1, DIM> mir2_def(ir2, bel2.trafo, lh);
              netgen::Box<DIM> partbox{netgen::Box<DIM>::EMPTY_BOX};
              for (auto & mip : mir2_def)
-               {
-                 netgen::Point<DIM> p;
-                 for (int j = 0; j < DIM; j++)
-                   p(j) = mip.GetPoint()(j);
-                 partbox.Add(p);
-               }
+               add(partbox, mip.GetPoint());
              maxh = max(maxh, partbox.Diam());
              elbox.Add(partbox.PMin());
              elbox.Add(partbox.PMax());
@@ -372,69 +437,12 @@ namespace ngcomp
   {
     LocalHeapMem<100000> lh("gapfunction");
     auto & trafo1 = ip.GetTransformation();
-    const auto & el1 = ma->GetElement(trafo1.GetElementId());
     result = 0;
-    if (!master.Mask().Test(el1.GetIndex())) return;
+    if (!master.Mask().Test(ma->GetElement(trafo1.GetElementId()).GetIndex())) return;
 
-    // int intorder2 = 2*displacement->GetFESpace()->GetOrder();
-
-    auto & trafo1_def = trafo1.AddDeformation(displacement.get(), lh);
-
-    double inv_fac = GetDomIn(*ma, el1) == 0 ? -1. : 1.;
-
-    auto & ip1 = ip.IP();
-    auto & mip = static_cast<const MappedIntegrationPoint<DIM-1, DIM>&>(trafo1_def(ip1, lh));
-    Vec<DIM> p1 = mip.GetPoint();
-
-    double mindist = 1e99;
-    // result = std::numeric_limits<double>::infinity();
     result = std::numeric_limits<double>::max();
-
-    // find all bound-2 elements closer to p1 than h
-    netgen::Point<DIM> ngp1;
-    for (int j = 0; j < DIM; j++)
-      ngp1(j) = p1(j);
-
-    auto hcurrent = h/(1024.*1024.);
-    int found = 2;
-    while(found>0 && hcurrent<=h)
-    {
-     netgen::Box<DIM> box(ngp1, ngp1);
-     box.Increase(hcurrent);
-
-    searchtree->GetFirstIntersecting
-      (box.PMin(), box.PMax(),
-       [&] (int elnr2)
-       {
-         auto el2 = ma->GetElement( ElementId (BND, elnr2) );
-         double inv_fac2 = GetDomIn(*ma, el2) == 0 ? -1. : 1.;
-         HeapReset hr(lh);
-
-         bool common_vertex = false;
-         for (auto s_v : el1.Vertices() )
-           for (auto v : el2.Vertices() )
-             if(s_v==v)
-               common_vertex = true;
-         if (common_vertex) return false;
-         auto & trafo2 = ma->GetTrafo (el2, lh);
-         auto & trafo2_def = trafo2.AddDeformation(displacement.get(), lh);
-
-         Vec<DIM> p2;
-         IntegrationPoint ip2;
-         double dist = FindClosestPoint<DIM-1,DIM>(p1, inv_fac * inv_fac2 * mip.GetNV(), mindist, trafo2_def, ip2, p2, both_sides);
-         if(dist<mindist && dist < h)
-         {
-           mindist = dist;
-           result = p2-p1;
-         }
-         return false;
-       });
-
-    if(mindist < hcurrent)
-      found--;
-
-    hcurrent *= 2;
-    }
+    if (auto closest = FindClosest(trafo1, ip.IP(), lh, both_sides))
+      result = closest->p2 - closest->p1;
   }
 
   template<int DIM>
@@ -444,6 +452,291 @@ namespace ngcomp
     auto result = hresult.AddSize(mir.Size(), Dimension());
     for (auto i : Range(mir))
       Evaluate(mir[i], result.Row(i));
+  }
+
+  template<int DIM>
+  void T_GapFunction<DIM> :: CreateClipGeometry(const ElementTransformation & trafo1, int intorder, LocalHeap & lh, bool both_sides,
+                                                ClipGeometry & geo) const
+  {
+    geo.pieces.SetSize0();
+    geo.rim1.SetSize0();
+    geo.rim2.SetSize0();
+    geo.rimel.SetSize0();
+    HeapReset hr(lh);
+    auto bel1 = GetDeformedBndElement(trafo1, lh);
+    auto & trafo1_def = bel1.trafo;
+    IntegrationPoint ipc = DIM == 3 ? IntegrationPoint(1./3, 1./3) : IntegrationPoint(0.5);
+    MappedIntegrationPoint<DIM-1, DIM> mip1(ipc, trafo1_def);
+    Vec<DIM> nv1 = bel1.orient * mip1.GetNV();
+
+    if constexpr (DIM == 3)
+      {
+        if (trafo1.GetElementType() != ET_TRIG)
+          throw Exception("ContactBoundary quadrature='clip': only triangle boundary elements supported");
+        Vec<3> P0, P1, P2;
+        trafo1_def.CalcPoint(IntegrationPoint(0., 0.), P0);
+        trafo1_def.CalcPoint(IntegrationPoint(1., 0.), P1);
+        trafo1_def.CalcPoint(IntegrationPoint(0., 1.), P2);
+        Vec<3> e1 = P1 - P0, e2 = P2 - P0;
+        Mat<2,2> G = { { InnerProduct(e1, e1), InnerProduct(e1, e2) },
+                       { InnerProduct(e1, e2), InnerProduct(e2, e2) } };
+        Mat<2,2> Ginv = Inv(G);
+        Vec<3> n1 = Cross(e1, e2);
+        n1 /= L2Norm(n1);
+        auto ref1 = [&] (Vec<3> x)
+        {
+          Vec<2> r { InnerProduct(e1, x - P0), InnerProduct(e2, x - P0) };
+          return Vec<2>(Ginv * r);
+        };
+
+        netgen::Box<3> box(netgen::Box<3>::EMPTY_BOX);
+        for (auto & P : { P0, P1, P2 })
+          box.Add(netgen::Point<3>(P(0), P(1), P(2)));
+        box.Increase(h);
+        IntegrationRule irtrig(ET_TRIG, intorder);
+        double covered = 0;
+
+        searchtree->GetFirstIntersecting
+          (box.PMin(), box.PMax(),
+           [&] (int elnr2)
+           {
+             HeapReset hr2(lh);
+             auto & trafo2 = ma->GetTrafo(ElementId(BND, elnr2), lh);
+             if (trafo2.GetElementType() != ET_TRIG)
+               throw Exception("ContactBoundary quadrature='clip': only triangle boundary elements supported");
+             auto bel2 = GetDeformedBndElement(trafo2, lh);
+             auto & trafo2_def = bel2.trafo;
+             MappedIntegrationPoint<2,3> mip2(ipc, trafo2_def);
+             if (!both_sides && bel2.orient * InnerProduct(nv1, mip2.GetNV()) >= 0)
+               return false;
+             Vec<3> Q0, Q1, Q2;
+             trafo2_def.CalcPoint(IntegrationPoint(0., 0.), Q0);
+             trafo2_def.CalcPoint(IntegrationPoint(1., 0.), Q1);
+             trafo2_def.CalcPoint(IntegrationPoint(0., 1.), Q2);
+             for (auto & Q : { Q0, Q1, Q2 })
+               if (fabs(InnerProduct(n1, Q - P0)) > h)
+                 return false;
+
+             // Sutherland-Hodgman against s >= 0, t >= 0, 1-s-t >= 0
+             ArrayMem<Vec<2>, 16> poly, next;
+             poly.Append(ref1(Q0)); poly.Append(ref1(Q1)); poly.Append(ref1(Q2));
+             for (int edge = 0; edge < 3; edge++)
+               {
+                 auto f = [edge] (Vec<2> v) { return edge == 0 ? v(0) : edge == 1 ? v(1) : 1 - v(0) - v(1); };
+                 next.SetSize0();
+                 for (size_t k = 0; k < poly.Size(); k++)
+                   {
+                     Vec<2> a = poly[k], b = poly[(k + 1) % poly.Size()];
+                     double fa = f(a), fb = f(b);
+                     if (fa >= 0) next.Append(a);
+                     if ((fa >= 0) != (fb >= 0))
+                       next.Append(a + fa / (fa - fb) * (b - a));
+                   }
+                 poly.SetSize0();
+                 for (auto & v : next)
+                   poly.Append(v);
+                 if (poly.Size() < 3)
+                   return false;
+               }
+
+             Vec<3> f1 = Q1 - Q0, f2 = Q2 - Q0;
+             Mat<2,2> G2 = { { InnerProduct(f1, f1), InnerProduct(f1, f2) },
+                             { InnerProduct(f1, f2), InnerProduct(f2, f2) } };
+             Mat<2,2> G2inv = Inv(G2);
+             Mat<2,2> F = { { InnerProduct(f1, e1), InnerProduct(f1, e2) },
+                            { InnerProduct(f2, e1), InnerProduct(f2, e2) } };
+             Vec<2> d { InnerProduct(f1, P0 - Q0), InnerProduct(f2, P0 - Q0) };
+             for (size_t k = 1; k + 1 < poly.Size(); k++)
+               {
+                 Vec<2> B = poly[k] - poly[0], C = poly[k+1] - poly[0];
+                 covered += 0.5 * fabs(B(0) * C(1) - B(1) * C(0));
+               }
+             geo.pieces.Append(ClipPiece{elnr2, Array<Vec<2>>(poly), G2inv * d, G2inv * F});
+             return false;
+           });
+
+        // primary area no secondary facet covers (rim of non-matching discretized
+        // geometry): closest-point pairing of the Gauss points outside all pieces,
+        // weighted to the uncovered measure, keeps the primary side fully coupled
+        double uncovered = 0.5 - covered;
+        if (uncovered > 1e-10)
+          {
+            auto inside = [] (const Array<Vec<2>> & poly, Vec<2> p)
+            {
+              int sign = 0;
+              for (size_t k = 0; k < poly.Size(); k++)
+                {
+                  Vec<2> a = poly[k], b = poly[(k + 1) % poly.Size()];
+                  double c = (b(0) - a(0)) * (p(1) - a(1)) - (b(1) - a(1)) * (p(0) - a(0));
+                  int sc = c > 1e-14 ? 1 : (c < -1e-14 ? -1 : 0);
+                  if (sc == 0) continue;
+                  if (sign == 0) sign = sc;
+                  else if (sc != sign) return false;
+                }
+              return true;
+            };
+            // the gap is a thin strip along the facet boundary: sample there too
+            Array<Vec<2>> samples;
+            for (auto & ip : irtrig)
+              samples.Append(Vec<2>(ip(0), ip(1)));
+            Vec<2> corners[3] = { Vec<2>(1, 0), Vec<2>(0, 1), Vec<2>(0, 0) };
+            Vec<2> center(1./3, 1./3);
+            for (int e = 0; e < 3; e++)
+              for (int k = 0; k < 16; k++)
+                {
+                  Vec<2> q = corners[e] + (k + 0.5) / 16 * (corners[(e + 1) % 3] - corners[e]);
+                  samples.Append(q + 1e-6 * (center - q));
+                }
+            ArrayMem<Vec<2>, 64> outside;
+            for (auto & p : samples)
+              {
+                bool in = false;
+                for (auto & piece : geo.pieces)
+                  if (inside(piece.poly, p)) { in = true; break; }
+                if (!in) outside.Append(p);
+              }
+            for (auto & p : outside)
+              {
+                HeapReset hr3(lh);
+                IntegrationPoint ip(p(0), p(1), 0, uncovered / outside.Size());
+                MappedIntegrationPoint<2,3> mip(ip, trafo1);
+                auto pair = CreateContactPair(mip, lh, both_sides);
+                if (!pair) continue;
+                geo.rim1.Append(ip);
+                geo.rim2.Append(pair->secondary_ip);
+                geo.rimel.Append(pair->secondary_el.Nr());
+              }
+          }
+      }
+    else
+      {
+        Vec<2> P0, P1;
+        trafo1_def.CalcPoint(IntegrationPoint(0.), P0);
+        trafo1_def.CalcPoint(IntegrationPoint(1.), P1);
+        Vec<2> e = P1 - P0;
+        double ee = InnerProduct(e, e);
+        Vec<2> n1 { -e(1), e(0) };
+        n1 /= L2Norm(n1);
+        netgen::Box<2> box(netgen::Box<2>::EMPTY_BOX);
+        box.Add(netgen::Point<2>(P0(0), P0(1)));
+        box.Add(netgen::Point<2>(P1(0), P1(1)));
+        box.Increase(h);
+        IntegrationRule irseg(ET_SEGM, intorder);
+        double covered = 0;
+
+        searchtree->GetFirstIntersecting
+          (box.PMin(), box.PMax(),
+           [&] (int elnr2)
+           {
+             HeapReset hr2(lh);
+             auto bel2 = GetDeformedBndElement(ma->GetTrafo(ElementId(BND, elnr2), lh), lh);
+             auto & trafo2_def = bel2.trafo;
+             MappedIntegrationPoint<1,2> mip2(ipc, trafo2_def);
+             if (!both_sides && bel2.orient * InnerProduct(nv1, mip2.GetNV()) >= 0)
+               return false;
+             Vec<2> Q0, Q1;
+             trafo2_def.CalcPoint(IntegrationPoint(0.), Q0);
+             trafo2_def.CalcPoint(IntegrationPoint(1.), Q1);
+             if (fabs(InnerProduct(n1, Q0 - P0)) > h || fabs(InnerProduct(n1, Q1 - P0)) > h)
+               return false;
+             double a = InnerProduct(e, Q0 - P0) / ee, b = InnerProduct(e, Q1 - P0) / ee;
+             double lo = max(0., min(a, b)), hi = min(1., max(a, b));
+             if (hi - lo < 1e-14)
+               return false;
+             covered += hi - lo;
+             Vec<2> f = Q1 - Q0;
+             double ff = InnerProduct(f, f);
+             Mat<2,2> M2 = 0.;
+             M2(0,0) = InnerProduct(f, e) / ff;
+             Array<Vec<2>> iv { Vec<2>(lo, 0.), Vec<2>(hi, 0.) };
+             geo.pieces.Append(ClipPiece{elnr2, std::move(iv), Vec<2>(InnerProduct(f, P0 - Q0) / ff, 0.), M2});
+             return false;
+           });
+
+        double uncovered = 1 - covered;
+        if (uncovered > 1e-10)
+          {
+            // the gaps sit at the segment ends: sample there too
+            Array<double> samples;
+            for (auto & ip : irseg)
+              samples.Append(ip(0));
+            for (int k = 0; k < 16; k++)
+              {
+                samples.Append(1e-6 + 0.05 * k / 16);
+                samples.Append(1 - 1e-6 - 0.05 * k / 16);
+              }
+            ArrayMem<double, 64> outside;
+            for (double t : samples)
+              {
+                bool in = false;
+                for (auto & piece : geo.pieces)
+                  if (t >= piece.poly[0](0) && t <= piece.poly[1](0)) { in = true; break; }
+                if (!in) outside.Append(t);
+              }
+            for (double t : outside)
+              {
+                HeapReset hr3(lh);
+                IntegrationPoint ip(t, 0, 0, uncovered / outside.Size());
+                MappedIntegrationPoint<1,2> mip(ip, trafo1);
+                auto pair = CreateContactPair(mip, lh, both_sides);
+                if (!pair) continue;
+                geo.rim1.Append(ip);
+                geo.rim2.Append(pair->secondary_ip);
+                geo.rimel.Append(pair->secondary_el.Nr());
+              }
+          }
+      }
+  }
+
+  // Gauss rule of order intorder on every clipped piece; primary points carry reference weights
+  static void ClipRules(const ClipGeometry & geo, int dim, int intorder,
+                        Array<IntegrationPoint> & ip1s, Array<IntegrationPoint> & ip2s, Array<int> & el2s)
+  {
+    if (dim == 3)
+      {
+        IntegrationRule irtrig(ET_TRIG, intorder);
+        for (auto & piece : geo.pieces)
+          {
+            auto & poly = piece.poly;
+            for (size_t k = 1; k + 1 < poly.Size(); k++)
+              {
+                Vec<2> A = poly[0], B = poly[k] - poly[0], C = poly[k+1] - poly[0];
+                double det = fabs(B(0) * C(1) - B(1) * C(0));
+                if (det < 1e-14)
+                  continue;
+                for (auto & ip : irtrig)
+                  {
+                    Vec<2> st = A + ip(0) * B + ip(1) * C;
+                    Vec<2> st2 = piece.c2 + piece.M2 * st;
+                    ip1s.Append(IntegrationPoint(st(0), st(1), 0, ip.Weight() * det));
+                    ip2s.Append(IntegrationPoint(st2(0), st2(1), 0, 0));
+                    el2s.Append(piece.el2);
+                  }
+              }
+          }
+      }
+    else
+      {
+        IntegrationRule irseg(ET_SEGM, intorder);
+        for (auto & piece : geo.pieces)
+          {
+            double lo = piece.poly[0](0), hi = piece.poly[1](0);
+            for (auto & ip : irseg)
+              {
+                double s1 = lo + ip(0) * (hi - lo);
+                double s2 = piece.c2(0) + piece.M2(0,0) * s1;
+                ip1s.Append(IntegrationPoint(s1, 0, 0, ip.Weight() * (hi - lo)));
+                ip2s.Append(IntegrationPoint(s2, 0, 0, 0));
+                el2s.Append(piece.el2);
+              }
+          }
+      }
+    for (size_t i = 0; i < geo.rim1.Size(); i++)
+      {
+        ip1s.Append(geo.rim1[i]);
+        ip2s.Append(geo.rim2[i]);
+        el2s.Append(geo.rimel[i]);
+      }
   }
 
   template class T_GapFunction<2>;
@@ -1017,8 +1310,14 @@ namespace ngcomp
   void ContactBoundary::
   Update(shared_ptr<GridFunction> displacement_,
          shared_ptr<BilinearForm> bf,
-         int intorder, double h, bool both_sides, bool keep_pairs, shared_ptr<ContactBoundary> other_cb)
+         int intorder, double h, bool both_sides, bool keep_pairs, shared_ptr<ContactBoundary> other_cb,
+         string quadrature)
   {
+    if (quadrature != "gauss" && quadrature != "clip")
+      throw Exception("ContactBoundary: unknown quadrature '" + quadrature + "', use 'gauss' or 'clip'");
+    bool clip = quadrature == "clip";
+    if (clip && element_boundary)
+      throw Exception("ContactBoundary: quadrature='clip' not available with element_boundary");
     if(!displacement_ && !bf)
       throw Exception("Either displacement or BilinearForm needed in ContactBoundary update!");
     if(!trial_fes)
@@ -1074,6 +1373,15 @@ namespace ngcomp
         LocalHeap lh(1000000, "ContactBoundary-Update", true);
         contact_rules.SetSize(0);
         has_contact_rules = keep_pairs;
+        bool keep_geo = clip && keep_pairs;
+        const ClipGeometry * shared_geo = nullptr;
+        if (clip && other_cb && other_cb.get() != this && other_cb->has_clip_geometry)
+          shared_geo = other_cb->clip_geometry.Data();
+        if (keep_geo)
+          clip_geometry.SetSize(mesh->GetNE(master.VB()));
+        else
+          clip_geometry.SetSize0();
+        has_clip_geometry = keep_geo;
         Iterate<2>
           ([&](auto i)
            {
@@ -1091,7 +1399,8 @@ namespace ngcomp
                        bf->DeleteSpecialElement(index);
                    }
 
-                 if(other_cb)
+                 // with 'clip' the pairing is cheap: share the search tree, clip at the own order
+                 if(other_cb && !clip)
                    {
                      if(!other_cb->has_contact_rules)
                        throw Exception("ContactBoundary passed to Update has no contact pairs (call its Update with keep_pairs=True first)");
@@ -1116,7 +1425,21 @@ namespace ngcomp
                       if(!mask.Test(el.GetIndex())) return;
                       auto& trafo = mesh->GetTrafo(el, lh);
                       Array<unique_ptr<MappedIntegrationRule<DIM-1, DIM>>> mirs;
-                      if (element_boundary)
+                      Array<IntegrationPoint> clip1, clip2;
+                      Array<int> clipnr;
+                      if (clip)
+                        {
+                          ClipGeometry own;
+                          const ClipGeometry * geo = shared_geo ? &shared_geo[el.Nr()] : &own;
+                          if (!shared_geo)
+                            {
+                              ClipGeometry & target = keep_geo ? clip_geometry[el.Nr()] : own;
+                              tgap->CreateClipGeometry(trafo, intorder, lh, both_sides, target);
+                              geo = &target;
+                            }
+                          ClipRules(*geo, DIM, intorder, clip1, clip2, clipnr);
+                        }
+                      else if (element_boundary)
                         {
                           auto eltype = trafo.GetElementType();
                           Facet2ElementTrafo transform(eltype, BND);
@@ -1134,7 +1457,7 @@ namespace ngcomp
                           IntegrationRule ir(trafo.GetElementType(), intorder);
                           mirs.Append(make_unique<MappedIntegrationRule<DIM-1, DIM>>(ir, trafo, lh));
                         }
-                      int npts = 0;
+                      int npts = clip1.Size();
                       for(const auto& mir : mirs)
                         npts += mir->Size();
                       FlatArray<IntegrationPoint> this_ir(npts, lh);
@@ -1142,6 +1465,12 @@ namespace ngcomp
                       FlatArray<size_t> other_nr(npts, lh);
 
                       int cntpair = 0;
+                      for (size_t i = 0; i < clip1.Size(); i++, cntpair++)
+                        {
+                          this_ir[cntpair] = clip1[i];
+                          other_ir[cntpair] = clip2[i];
+                          other_nr[cntpair] = clipnr[i];
+                        }
                       for(const auto& mir : mirs)
                       for(auto& mip : *mir)
                         {

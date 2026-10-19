@@ -4917,6 +4917,7 @@ operations of it are used!
           py::arg("both_sides")=false,
           py::arg("keep_pairs")=false,
           py::arg("other")=nullptr,
+          py::arg("quadrature")="gauss",
           R"delimiter(
 Update searchtree for gap function.
 If bf is given add specialelements corresponding to
@@ -4927,7 +4928,12 @@ If `maxdist` == 0. then 2*meshsize is used.
 If `keep_pairs` is True the found contact pairs are kept so that another
 ContactBoundary can reuse them.
 If `other` is given the contact pairs are taken from that ContactBoundary
-(which must have been updated with `keep_pairs=True`) instead of searching again.
+(which must have been updated with `keep_pairs=True`) instead of searching again;
+with quadrature='clip' its clipped pieces are shared and the rule on them has order `intorder`.
+`quadrature`: 'gauss' places a Gauss rule of order 'intorder' on each master element
+and pairs every point with its closest secondary point; 'clip' clips the facing
+secondary facets against each master element and puts a Gauss rule of order
+'intorder' on every piece, which integrates terms of both sides exactly for flat facets.
 )delimiter")
      .def_property_readonly("gap", &ContactBoundary::Gap)
      .def_property_readonly("normal", &ContactBoundary::Normal)

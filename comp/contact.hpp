@@ -20,6 +20,35 @@ namespace ngcomp
     IntegrationRule primary_ir, secondary_ir;
   };
 
+  // boundary element in deformed configuration, orient * normal is comparable between regions
+  template<int DIM>
+  struct DeformedBndElement
+  {
+    ElementId ei;
+    const ElementTransformation & trafo;
+    double orient;
+    bool affine;            // straight element and deformation of order <= 1
+    Vec<DIM> x0;            // if affine: x = x0 + jac * lam
+    Mat<DIM,DIM-1> jac;
+  };
+
+  // order-independent result of clipping one primary element: pieces in primary
+  // reference coordinates with the affine map to the secondary reference element
+  // (2D: intervals stored as (lo,0),(hi,0)), plus the rim completion pairs
+  struct ClipPiece
+  {
+    int el2;
+    Array<Vec<2>> poly;
+    Vec<2> c2;
+    Mat<2,2> M2;
+  };
+  struct ClipGeometry
+  {
+    Array<ClipPiece> pieces;
+    Array<IntegrationPoint> rim1, rim2;
+    Array<int> rimel;
+  };
+
   class GapFunction : public CoefficientFunctionNoDerivative
   {
   protected:
@@ -46,6 +75,17 @@ namespace ngcomp
   class T_GapFunction : public GapFunction
   {
     shared_ptr<netgen::BoxTree<DIM, int>> searchtree;
+
+    struct ClosestPoint
+    {
+      int el2;
+      IntegrationPoint ip2;
+      Vec<DIM> p1, p2;
+    };
+    DeformedBndElement<DIM> GetDeformedBndElement(const ElementTransformation & trafo, LocalHeap & lh) const;
+    // closest secondary point within h to the deformed primary point
+    optional<ClosestPoint> FindClosest(const ElementTransformation & trafo1, const IntegrationPoint & ip1,
+                                       LocalHeap & lh, bool both_sides) const;
   public:
     T_GapFunction( shared_ptr<MeshAccess> mesh_, Region primary_, Region secondary_)
       : GapFunction(mesh_, primary_, secondary_)
@@ -79,6 +119,12 @@ namespace ngcomp
                   BareSliceMatrix<> result) const override;
 
     optional<ContactPair<DIM>> CreateContactPair(const MappedIntegrationPoint<DIM-1, DIM>& mip, LocalHeap& lh, bool both_sides) const;
+
+    // segment integration: the facing secondary facets clipped against the primary
+    // reference element, a Gauss rule of order intorder on every piece; primary points
+    // carry reference weights. Flat (or rigidly moved) facets.
+    void CreateClipGeometry(const ElementTransformation & trafo1, int intorder, LocalHeap & lh, bool both_sides,
+                            ClipGeometry & geo) const;
   };
 
   template<int DIM>
@@ -197,6 +243,9 @@ namespace ngcomp
 
     bool has_contact_rules = false;
     Array<ContactRule> contact_rules;
+    // kept 'clip' geometry per primary element, shared with forms updated with other=this
+    bool has_clip_geometry = false;
+    Array<ClipGeometry> clip_geometry;
 
     void AddSpecialElements(shared_ptr<BilinearForm> bf, ContactRule rule, bool keeppairs);
     
@@ -215,7 +264,8 @@ namespace ngcomp
     // nullptr, update SpecialElements of bf
     void Update(shared_ptr<GridFunction> gf,
                 shared_ptr<BilinearForm> bf,
-                int intorder, double h, bool both_sides, bool keep_pairs = false, shared_ptr<ContactBoundary> other_cb = nullptr);
+                int intorder, double h, bool both_sides, bool keep_pairs = false, shared_ptr<ContactBoundary> other_cb = nullptr,
+                string quadrature = "gauss");
 
     shared_ptr<CoefficientFunction> Gap() const { return gap; }
     shared_ptr<CoefficientFunction> Normal() const { return normal; }

@@ -1,6 +1,7 @@
 from ngsolve import *
 from netgen.csg import *
 from netgen.geom2d import SplineGeometry
+from netgen import occ
 import pytest
 
 @pytest.fixture
@@ -118,3 +119,38 @@ def test_gapfunction():
     error = Norm(-cb.gap + center - (x,y,z)) - r
     assert Integrate(error, mesh, definedon=master, order=1) < 1e-8
 
+@pytest.mark.parametrize("dim", [2, 3])
+def test_gapfunction_affine(dim):
+    # a P1 displacement takes the exact search on affine elements, the same field
+    # in an order 2 space the Newton search: both give the same gap
+    if dim == 2:
+        lower = occ.WorkPlane().Rectangle(1, 0.3).Face()
+        upper = occ.WorkPlane().MoveTo(-0.2, 0.35).Rectangle(1.4, 0.3).Face()
+        lower.edges.Max(occ.Y).name = "master"
+        upper.edges.Min(occ.Y).name = "minion"
+        lower.faces.name, upper.faces.name = "lower", "upper"
+        lower.faces.maxh = 0.07
+        geo = occ.OCCGeometry(occ.Compound([lower, upper]), dim=2)
+        field = CF((0.1*y, 0.03*x - 0.05))
+    else:
+        lower = occ.Box((0, 0, 0), (1, 1, 0.3))
+        upper = occ.Box((-0.2, -0.2, 0.35), (1.2, 1.2, 0.6))
+        lower.faces.Max(occ.Z).name = "master"
+        upper.faces.Min(occ.Z).name = "minion"
+        lower.solids.name, upper.solids.name = "lower", "upper"
+        lower.solids.maxh = 0.15
+        geo = occ.OCCGeometry(occ.Compound([lower, upper]))
+        field = CF((0.1*y, -0.05*x, 0.03*x + 0.02*y - 0.05))
+    mesh = Mesh(geo.GenerateMesh(maxh=0.25))
+
+    master = mesh.Boundaries("master")
+    cbs = []
+    for order in (1, 2):
+        disp = GridFunction(VectorH1(mesh, order=order))
+        disp.Set(mesh.MaterialCF({"upper": field}, default=CF((0,) * dim)))
+        cb = ContactBoundary(master, mesh.Boundaries("minion"))
+        cb.Update(disp, maxdist=1.)
+        cbs.append((cb, disp))
+    gap1, gap2 = cbs[0][0].gap, cbs[1][0].gap
+    assert Integrate(Norm(gap1), mesh, definedon=master) < 1
+    assert Integrate(Norm(gap1 - gap2), mesh, definedon=master) < 1e-8
