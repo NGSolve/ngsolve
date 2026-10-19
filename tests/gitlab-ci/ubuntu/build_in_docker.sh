@@ -10,9 +10,9 @@ mkdir -p ~/.ssh
 
 if [ "$IMAGE_NAME" == "debug" ]
 then
-  export CMAKE_CXX_FLAGS="-Og -Wall -Wno-sign-compare -DDebug"
-  export CMAKE_BUILD_TYPE="Debug"
-  # export CMAKE_ARGS="$CMAKE_ARGS -DFAST_COMPILE=ON"
+  export CMAKE_CXX_FLAGS="-Wall -Wno-sign-compare"
+  export CMAKE_ARGS="$CMAKE_ARGS -DCHECK_RANGE=ON"
+  export CMAKE_BUILD_TYPE="RelWithDebInfo"
 else
   export CMAKE_BUILD_TYPE="Release"
 fi
