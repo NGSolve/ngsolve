@@ -410,12 +410,6 @@ namespace ngcomp
          double inv_fac2 = GetDomIn(*ma, el2) == 0 ? -1. : 1.;
          HeapReset hr(lh);
 
-         bool common_vertex = false;
-         for (auto s_v : el1.Vertices() )
-           for (auto v : el2.Vertices() )
-             if(s_v==v)
-               common_vertex = true;
-         if (common_vertex) return false;
          auto & trafo2 = ma->GetTrafo (el2, lh);
          auto & trafo2_def = trafo2.AddDeformation(displacement.get(), lh);
 
