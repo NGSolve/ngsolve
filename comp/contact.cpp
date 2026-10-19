@@ -94,6 +94,53 @@ namespace ngcomp
   // output arguments: ip, p
   {
     auto & trafo = el2.trafo;
+
+    if (el2.affine)
+      {
+        // the squared distance is quadratic: interior minimum or minimum on an edge
+        Vec<DIMR> nv;
+        if constexpr (DIMR == 3)
+          nv = Cross(Vec<3>(el2.jac.Col(0)), Vec<3>(el2.jac.Col(1)));
+        else
+          nv = Vec<2>(-el2.jac(1,0), el2.jac(0,0));
+        if (!both_sides && el2.orient * InnerProduct(n, nv) >= 0)
+          return 1e99;
+
+        Mat<DIMS,DIMS> g = Trans(el2.jac) * el2.jac;
+        Vec<DIMS> r = Trans(el2.jac) * (pmaster - el2.x0);
+        Vec<DIMS> lam = 0;
+        double dist2 = 1e99;
+        auto check = [&] (Vec<DIMS> l)
+        {
+          double d = L2Norm2(Vec<DIMR>(el2.x0 + el2.jac * l - pmaster));
+          if (d < dist2) { dist2 = d; lam = l; }
+        };
+
+        ArrayMem<Vec<DIMS>, 3> verts;
+        if constexpr (DIMS == 1)
+          verts = { Vec<1>(0.), Vec<1>(1.) };
+        else
+          {
+            verts = { Vec<2>(0., 0.), Vec<2>(1., 0.), Vec<2>(0., 1.) };
+            Vec<2> l = Inv(g) * r;
+            if (l(0) >= 0 && l(1) >= 0 && l(0) + l(1) <= 1)
+              check(l);
+          }
+        for (size_t i = 0; i < verts.Size(); i++)
+          {
+            Vec<DIMS> a = verts[i];
+            Vec<DIMS> v = verts[(i+1) % verts.Size()] - a;
+            Vec<DIMS> gv = g * v;
+            double t = InnerProduct(v, Vec<DIMS>(r - g * a)) / InnerProduct(v, gv);
+            check(Vec<DIMS>(a + min(1., max(0., t)) * v));
+          }
+
+        if (dist2 > h*h)
+          return sqrt(dist2);
+        ip = lam;
+        p = el2.x0 + el2.jac * lam;
+        return L2Norm(pmaster - p);
+      }
     Vec<DIMS> min_lam = 0;
     double min_dist = 1e99;
 
@@ -231,8 +278,22 @@ namespace ngcomp
   DeformedBndElement<DIM> T_GapFunction<DIM> :: GetDeformedBndElement(const ElementTransformation & trafo, LocalHeap & lh) const
   {
     auto ei = trafo.GetElementId();
-    return { ei, trafo.AddDeformation(displacement.get(), lh),
-             GetDomIn(*ma, ma->GetElement(ei)) == 0 ? -1. : 1. };
+    DeformedBndElement<DIM> el { ei, trafo.AddDeformation(displacement.get(), lh),
+                                 GetDomIn(*ma, ma->GetElement(ei)) == 0 ? -1. : 1. };
+    el.affine = trafo.GetElementType() == (DIM == 3 ? ET_TRIG : ET_SEGM) && !trafo.IsCurvedElement()
+      && (!displacement || displacement->GetFESpace()->GetFE(ei, lh).Order() <= 1);
+    if (el.affine)
+      {
+        el.trafo.CalcPoint(IntegrationPoint(0., 0.), el.x0);
+        for (int j = 0; j < DIM-1; j++)
+          {
+            Vec<DIM> pj;
+            el.trafo.CalcPoint(IntegrationPoint(j == 0 ? 1. : 0., j == 1 ? 1. : 0.), pj);
+            for (int k = 0; k < DIM; k++)
+              el.jac(k, j) = pj(k) - el.x0(k);
+          }
+      }
+    return el;
   }
 
   template<int DIM>

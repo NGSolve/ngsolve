@@ -27,6 +27,9 @@ namespace ngcomp
     ElementId ei;
     const ElementTransformation & trafo;
     double orient;
+    bool affine;            // straight element and deformation of order <= 1
+    Vec<DIM> x0;            // if affine: x = x0 + jac * lam
+    Mat<DIM,DIM-1> jac;
   };
 
   // order-independent result of clipping one primary element: pieces in primary
