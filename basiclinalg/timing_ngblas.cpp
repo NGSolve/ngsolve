@@ -249,12 +249,13 @@ Available options timings are:
           
           double tot = n*m*k;
           size_t its = 1e10 / tot + 1;
+          if (its > maxits) its = maxits;
           // MultMatMat(a,b,c);
           if (tot < 1e6)
             {
               c = a * b;
               double err = L2Norm(a*b-c);
-              if (err > 1e-8)
+              if (err > (sizeof(a(0,0)) == 4 ? 1e-5*L2Norm(c) : 1e-8))
                 throw Exception("MultMatMat is faulty");
           }
         
@@ -302,6 +303,7 @@ Available options timings are:
         c = 0.0;
         double tot = n*m*k;
         size_t its = 1e10 / tot + 1;
+        if (its > maxits) its = maxits;
         // MultMatMat(a,b,c);
         {
           Timer t("C += A*B");
@@ -645,6 +647,7 @@ Available options timings are:
         c = 0.0;        
         double tot = n*m*k;
         size_t its = 1e10 / tot + 1;
+          if (its > maxits) its = maxits;
         {
           Timer t("C = A*B");
           t.Start();
@@ -802,6 +805,7 @@ Available options timings are:
           }
         double tot = n*m*k;
         size_t its = 5e8 / tot + 1;
+          if (its > maxits) its = maxits;
         {
           Timer t("C = A^t*B");
           t.Start();
