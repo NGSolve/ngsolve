@@ -372,23 +372,33 @@ namespace ngcomp
       (BND, clh, [&] (Ngs_Element el2, LocalHeap & lh)
        {
          if (!mask.Test(el2.GetIndex())) return;
-         auto & trafo2 = ma->GetTrafo (el2, lh);
-         auto & trafo2_def = trafo2.AddDeformation(displacement.get(), lh);
-         IntegrationRule ir2_(trafo2.GetElementType(), intorder2);
+         auto bel2 = GetDeformedBndElement(ma->GetTrafo (el2, lh), lh);
          netgen::Box<DIM> elbox{netgen::Box<DIM>::EMPTY_BOX};
          double & maxh = maxh_thread[TaskManager::GetThreadId()];
+         auto add = [] (netgen::Box<DIM> & box, Vec<DIM> x)
+         {
+           netgen::Point<DIM> p;
+           for (int j = 0; j < DIM; j++)
+             p(j) = x(j);
+           box.Add(p);
+         };
+         if (bel2.affine)
+           {
+             add(elbox, bel2.x0);
+             for (int j = 0; j < DIM-1; j++)
+               add(elbox, Vec<DIM>(bel2.x0 + bel2.jac.Col(j)));
+             maxh = max(maxh, elbox.Diam());
+             elboxes[el2.Nr()] = elbox;
+             return;
+           }
+         IntegrationRule ir2_(bel2.trafo.GetElementType(), intorder2);
          for(auto ir2 : ir2_.Split())
            {
              HeapReset hr(lh);
-             MappedIntegrationRule<DIM-1, DIM> mir2_def(ir2, trafo2_def, lh);
+             MappedIntegrationRule<DIM-1, DIM> mir2_def(ir2, bel2.trafo, lh);
              netgen::Box<DIM> partbox{netgen::Box<DIM>::EMPTY_BOX};
              for (auto & mip : mir2_def)
-               {
-                 netgen::Point<DIM> p;
-                 for (int j = 0; j < DIM; j++)
-                   p(j) = mip.GetPoint()(j);
-                 partbox.Add(p);
-               }
+               add(partbox, mip.GetPoint());
              maxh = max(maxh, partbox.Diam());
              elbox.Add(partbox.PMin());
              elbox.Add(partbox.PMax());
