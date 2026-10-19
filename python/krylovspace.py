@@ -229,33 +229,33 @@ class LinearSolver(BaseMatrix):
             self.display(self.fig)
             
         if self.plotrates:
+            import time
             if self.iterations == 1:
                 import matplotlib.pyplot as plt
-                from IPython.display import display, clear_output
+                from IPython.display import display
                 fig, ax = plt.subplots()
-                self.plt = plt
-                self.ax = ax
                 self.fig = fig
+                self.ax = ax
                 self.line, = ax.semilogy([], [], label='error')
-                self.ax.set_xlabel('iteration')
-                self.ax.set_ylabel('error')
-                self.ax.set_title('CG Solver Convergence')
-                self.ax.legend()
+                ax.set_xlabel('iteration')
+                ax.set_ylabel('error')
+                ax.set_title(self.name + ' Convergence')
+                ax.legend()
+                plt.close(fig)  # no extra auto-display at cell end
                 self.its = []
                 self.ress = []
-                self.clear_output = clear_output
-                self.display = display
-                plt.ioff()
-                self.plt.show()
-                
+                self.plot_handle = display(fig, display_id=True)
+                self.last_plot = time.time()
+
             self.its.append(self.iterations)
             self.ress.append(residual)
-            self.line.set_data(self.its, self.ress)
-            self.ax.relim()
-            self.ax.autoscale_view()
-            self.plt.draw()
-            self.clear_output(wait=True)
-            self.display(self.fig)
+            # png rendering costs ~40ms, so throttle redraws
+            if is_converged or time.time() - self.last_plot > 0.25:
+                self.line.set_data(self.its, self.ress)
+                self.ax.relim()
+                self.ax.autoscale_view()
+                self.plot_handle.update(self.fig)
+                self.last_plot = time.time()
 
             
         return is_converged
