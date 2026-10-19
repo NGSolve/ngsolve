@@ -63,7 +63,7 @@ def facet_space(mesh, order):
 
 
 def interior_dofs(mesh, fes, inside):
-    # side-a dofs of facets away from the rim, where the two discrete rims differ
+    # side-a dofs of boundary elements away from the rim, where the two discrete rims differ
     sel = np.zeros(fes.ndof, dtype=bool)
     for el in mesh.Elements(BND):
         if mesh.GetBoundaries()[el.index] == "interface_a":

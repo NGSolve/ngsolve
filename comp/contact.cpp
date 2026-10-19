@@ -89,10 +89,11 @@ namespace ngcomp
   };
 
   template<int DIMS, int DIMR>
-  double FindClosestPoint( Vec<DIMR> pmaster, Vec<DIMR> n, double h, const ElementTransformation & trafo, IntegrationPoint & ip, Vec<DIMR> & p, bool both_sides)
-  // input arguments: pmaster, n, h (maximum distance), trafo
+  double FindClosestPoint( Vec<DIMR> pmaster, Vec<DIMR> n, double h, const DeformedBndElement<DIMR> & el2, IntegrationPoint & ip, Vec<DIMR> & p, bool both_sides)
+  // input arguments: pmaster, n (oriented primary normal), h (maximum distance), el2
   // output arguments: ip, p
   {
+    auto & trafo = el2.trafo;
     Vec<DIMS> min_lam = 0;
     double min_dist = 1e99;
 
@@ -139,7 +140,7 @@ namespace ngcomp
         {
           IntegrationPoint ipm(0.5);
           MappedIntegrationPoint<1, DIMR> mipm{ipm, trafo};
-          is_front = InnerProduct(n, mipm.GetNV()) < 0;
+          is_front = el2.orient * InnerProduct(n, mipm.GetNV()) < 0;
         }
 
       for (double l : { lam, 0.0, 1.0 })
@@ -161,7 +162,7 @@ namespace ngcomp
       ip = min_lam;
       MappedIntegrationPoint<DIMS, DIMR> mip{ip, trafo};
       T2<DIMS> t2{mip, pmaster};
-      bool is_front = InnerProduct(n, mip.GetNV()) < 0;
+      bool is_front = el2.orient * InnerProduct(n, mip.GetNV()) < 0;
       if(both_sides)
         is_front = true;
 
@@ -227,77 +228,70 @@ namespace ngcomp
   }
 
   template<int DIM>
-  optional<ContactPair<DIM>> T_GapFunction<DIM> :: CreateContactPair(const MappedIntegrationPoint<DIM-1, DIM>& mip1, LocalHeap& lh, bool both_sides) const
+  DeformedBndElement<DIM> T_GapFunction<DIM> :: GetDeformedBndElement(const ElementTransformation & trafo, LocalHeap & lh) const
   {
-    HeapReset hr(lh);
-    // int intorder2 = 10*displacement->GetFESpace()->GetOrder();
-    auto & ip1 = mip1.IP();
-    auto & trafo1 = mip1.GetTransformation();
-    const auto & el1 = ma->GetElement(trafo1.GetElementId());
-    auto & trafo1_def = trafo1.AddDeformation(displacement.get(), lh);
-    const auto & mip1_def = static_cast<const MappedIntegrationPoint<DIM-1, DIM>&>(trafo1_def(ip1, lh));
-    double inv_fac = GetDomIn(*ma, el1) == 0 ? -1. : 1.;
+    auto ei = trafo.GetElementId();
+    return { ei, trafo.AddDeformation(displacement.get(), lh),
+             GetDomIn(*ma, ma->GetElement(ei)) == 0 ? -1. : 1. };
+  }
 
-    const auto & p1 = mip1_def.GetPoint();
-
-    // find closest point
+  template<int DIM>
+  auto T_GapFunction<DIM> :: FindClosest(const ElementTransformation & trafo1, const IntegrationPoint & ip1,
+                                         LocalHeap & lh, bool both_sides) const -> optional<ClosestPoint>
+  {
+    auto bel1 = GetDeformedBndElement(trafo1, lh);
+    const auto & mip1 = static_cast<const MappedIntegrationPoint<DIM-1, DIM>&>(bel1.trafo(ip1, lh));
+    Vec<DIM> p1 = mip1.GetPoint();
+    Vec<DIM> n1 = bel1.orient * mip1.GetNV();
 
     double mindist = h;
-    IntegrationPoint ip2_min;
-    bool intersect = false;
-    int el2_min(-1);
+    optional<ClosestPoint> closest;
 
-
-    // find all bound-2 elements closer to p1 then h
-
+    // find all bound-2 elements closer to p1 than h
     netgen::Point<DIM> ngp1;
     for (int j = 0; j < DIM; j++) ngp1(j) = p1(j);
 
     auto hcurrent = h/(1024.*1024.);
     int found = 2;
     while(found>0 && hcurrent<=h)
-    {
+      {
+        netgen::Box<DIM> box(ngp1, ngp1);
+        box.Increase(hcurrent);
 
-     netgen::Box<DIM> box(ngp1, ngp1);
-     box.Increase(hcurrent);
+        searchtree->GetFirstIntersecting
+          (box.PMin(), box.PMax(),
+           [&] (int elnr2)
+           {
+             HeapReset hr(lh);
+             auto bel2 = GetDeformedBndElement(ma->GetTrafo(ElementId(BND, elnr2), lh), lh);
+             IntegrationPoint ip2;
+             Vec<DIM> p2;
+             double dist = FindClosestPoint<DIM-1,DIM>(p1, n1, mindist, bel2, ip2, p2, both_sides);
+             if(dist < mindist)
+               {
+                 mindist = dist;
+                 closest = ClosestPoint{elnr2, ip2, p1, p2};
+               }
+             return false;
+           });
 
-    Vec<DIM> p2_min;
-    searchtree->GetFirstIntersecting
-      (box.PMin(), box.PMax(),
-       [&] (int elnr2)
-       {
-         auto el2 = ma->GetElement(ElementId(BND, elnr2));
-         HeapReset hr(lh);
-         double inv_fac2 = GetDomIn(*ma, el2) == 0 ? -1. : 1.;
+        if(mindist < hcurrent)
+          found--;
+        hcurrent *= 2;
+      }
+    return closest;
+  }
 
-         auto & trafo2 = ma->GetTrafo(el2, lh);
-         auto & trafo2_def = trafo2.AddDeformation(displacement.get(), lh);
-
-         IntegrationPoint ip2;
-         Vec<DIM> p2;
-         double dist = FindClosestPoint<DIM-1,DIM>(p1, inv_fac * inv_fac2 * mip1_def.GetNV(), mindist, trafo2_def, ip2, p2, both_sides );
-         if(dist<mindist && dist < h)
-         {
-           mindist = dist;
-           el2_min = el2.Nr();
-           ip2_min = ip2;
-           p2_min = p2;
-           intersect = true;
-         }
-         return false;
-       });
-    if(mindist < hcurrent)
-      found--;
-
-    hcurrent *= 2;
-    }
-
-    if(intersect)
-    {
-      return ContactPair<DIM>{el1, ElementId(BND,el2_min),
-          ip1, ip2_min};
-    }
-    return nullopt;
+  template<int DIM>
+  optional<ContactPair<DIM>> T_GapFunction<DIM> :: CreateContactPair(const MappedIntegrationPoint<DIM-1, DIM>& mip1, LocalHeap& lh, bool both_sides) const
+  {
+    HeapReset hr(lh);
+    auto & trafo1 = mip1.GetTransformation();
+    auto closest = FindClosest(trafo1, mip1.IP(), lh, both_sides);
+    if (!closest)
+      return nullopt;
+    return ContactPair<DIM>{trafo1.GetElementId(), ElementId(BND, closest->el2),
+        mip1.IP(), closest->ip2};
   }
 
   template<int DIM>
@@ -372,63 +366,12 @@ namespace ngcomp
   {
     LocalHeapMem<100000> lh("gapfunction");
     auto & trafo1 = ip.GetTransformation();
-    const auto & el1 = ma->GetElement(trafo1.GetElementId());
     result = 0;
-    if (!master.Mask().Test(el1.GetIndex())) return;
+    if (!master.Mask().Test(ma->GetElement(trafo1.GetElementId()).GetIndex())) return;
 
-    // int intorder2 = 2*displacement->GetFESpace()->GetOrder();
-
-    auto & trafo1_def = trafo1.AddDeformation(displacement.get(), lh);
-
-    double inv_fac = GetDomIn(*ma, el1) == 0 ? -1. : 1.;
-
-    auto & ip1 = ip.IP();
-    auto & mip = static_cast<const MappedIntegrationPoint<DIM-1, DIM>&>(trafo1_def(ip1, lh));
-    Vec<DIM> p1 = mip.GetPoint();
-
-    double mindist = 1e99;
-    // result = std::numeric_limits<double>::infinity();
     result = std::numeric_limits<double>::max();
-
-    // find all bound-2 elements closer to p1 than h
-    netgen::Point<DIM> ngp1;
-    for (int j = 0; j < DIM; j++)
-      ngp1(j) = p1(j);
-
-    auto hcurrent = h/(1024.*1024.);
-    int found = 2;
-    while(found>0 && hcurrent<=h)
-    {
-     netgen::Box<DIM> box(ngp1, ngp1);
-     box.Increase(hcurrent);
-
-    searchtree->GetFirstIntersecting
-      (box.PMin(), box.PMax(),
-       [&] (int elnr2)
-       {
-         auto el2 = ma->GetElement( ElementId (BND, elnr2) );
-         double inv_fac2 = GetDomIn(*ma, el2) == 0 ? -1. : 1.;
-         HeapReset hr(lh);
-
-         auto & trafo2 = ma->GetTrafo (el2, lh);
-         auto & trafo2_def = trafo2.AddDeformation(displacement.get(), lh);
-
-         Vec<DIM> p2;
-         IntegrationPoint ip2;
-         double dist = FindClosestPoint<DIM-1,DIM>(p1, inv_fac * inv_fac2 * mip.GetNV(), mindist, trafo2_def, ip2, p2, both_sides);
-         if(dist<mindist && dist < h)
-         {
-           mindist = dist;
-           result = p2-p1;
-         }
-         return false;
-       });
-
-    if(mindist < hcurrent)
-      found--;
-
-    hcurrent *= 2;
-    }
+    if (auto closest = FindClosest(trafo1, ip.IP(), lh, both_sides))
+      result = closest->p2 - closest->p1;
   }
 
   template<int DIM>
@@ -449,17 +392,16 @@ namespace ngcomp
     geo.rim2.SetSize0();
     geo.rimel.SetSize0();
     HeapReset hr(lh);
-    auto & trafo1_def = trafo1.AddDeformation(displacement.get(), lh);
-    const auto & el1 = ma->GetElement(trafo1.GetElementId());
-    double inv_fac = GetDomIn(*ma, el1) == 0 ? -1. : 1.;
+    auto bel1 = GetDeformedBndElement(trafo1, lh);
+    auto & trafo1_def = bel1.trafo;
     IntegrationPoint ipc = DIM == 3 ? IntegrationPoint(1./3, 1./3) : IntegrationPoint(0.5);
     MappedIntegrationPoint<DIM-1, DIM> mip1(ipc, trafo1_def);
-    Vec<DIM> nv1 = mip1.GetNV();
+    Vec<DIM> nv1 = bel1.orient * mip1.GetNV();
 
     if constexpr (DIM == 3)
       {
         if (trafo1.GetElementType() != ET_TRIG)
-          throw Exception("ContactBoundary quadrature='clip': only triangle facets supported");
+          throw Exception("ContactBoundary quadrature='clip': only triangle boundary elements supported");
         Vec<3> P0, P1, P2;
         trafo1_def.CalcPoint(IntegrationPoint(0., 0.), P0);
         trafo1_def.CalcPoint(IntegrationPoint(1., 0.), P1);
@@ -487,15 +429,14 @@ namespace ngcomp
           (box.PMin(), box.PMax(),
            [&] (int elnr2)
            {
-             auto el2 = ma->GetElement(ElementId(BND, elnr2));
              HeapReset hr2(lh);
-             auto & trafo2 = ma->GetTrafo(el2, lh);
+             auto & trafo2 = ma->GetTrafo(ElementId(BND, elnr2), lh);
              if (trafo2.GetElementType() != ET_TRIG)
-               throw Exception("ContactBoundary quadrature='clip': only triangle facets supported");
-             auto & trafo2_def = trafo2.AddDeformation(displacement.get(), lh);
-             double inv_fac2 = GetDomIn(*ma, el2) == 0 ? -1. : 1.;
+               throw Exception("ContactBoundary quadrature='clip': only triangle boundary elements supported");
+             auto bel2 = GetDeformedBndElement(trafo2, lh);
+             auto & trafo2_def = bel2.trafo;
              MappedIntegrationPoint<2,3> mip2(ipc, trafo2_def);
-             if (!both_sides && InnerProduct(inv_fac * inv_fac2 * nv1, mip2.GetNV()) >= 0)
+             if (!both_sides && bel2.orient * InnerProduct(nv1, mip2.GetNV()) >= 0)
                return false;
              Vec<3> Q0, Q1, Q2;
              trafo2_def.CalcPoint(IntegrationPoint(0., 0.), Q0);
@@ -616,13 +557,11 @@ namespace ngcomp
           (box.PMin(), box.PMax(),
            [&] (int elnr2)
            {
-             auto el2 = ma->GetElement(ElementId(BND, elnr2));
              HeapReset hr2(lh);
-             auto & trafo2 = ma->GetTrafo(el2, lh);
-             auto & trafo2_def = trafo2.AddDeformation(displacement.get(), lh);
-             double inv_fac2 = GetDomIn(*ma, el2) == 0 ? -1. : 1.;
+             auto bel2 = GetDeformedBndElement(ma->GetTrafo(ElementId(BND, elnr2), lh), lh);
+             auto & trafo2_def = bel2.trafo;
              MappedIntegrationPoint<1,2> mip2(ipc, trafo2_def);
-             if (!both_sides && InnerProduct(inv_fac * inv_fac2 * nv1, mip2.GetNV()) >= 0)
+             if (!both_sides && bel2.orient * InnerProduct(nv1, mip2.GetNV()) >= 0)
                return false;
              Vec<2> Q0, Q1;
              trafo2_def.CalcPoint(IntegrationPoint(0.), Q0);

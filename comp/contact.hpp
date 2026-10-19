@@ -20,7 +20,16 @@ namespace ngcomp
     IntegrationRule primary_ir, secondary_ir;
   };
 
-  // order-independent result of clipping one primary facet: pieces in primary
+  // boundary element in deformed configuration, orient * normal is comparable between regions
+  template<int DIM>
+  struct DeformedBndElement
+  {
+    ElementId ei;
+    const ElementTransformation & trafo;
+    double orient;
+  };
+
+  // order-independent result of clipping one primary element: pieces in primary
   // reference coordinates with the affine map to the secondary reference element
   // (2D: intervals stored as (lo,0),(hi,0)), plus the rim completion pairs
   struct ClipPiece
@@ -63,6 +72,17 @@ namespace ngcomp
   class T_GapFunction : public GapFunction
   {
     shared_ptr<netgen::BoxTree<DIM, int>> searchtree;
+
+    struct ClosestPoint
+    {
+      int el2;
+      IntegrationPoint ip2;
+      Vec<DIM> p1, p2;
+    };
+    DeformedBndElement<DIM> GetDeformedBndElement(const ElementTransformation & trafo, LocalHeap & lh) const;
+    // closest secondary point within h to the deformed primary point
+    optional<ClosestPoint> FindClosest(const ElementTransformation & trafo1, const IntegrationPoint & ip1,
+                                       LocalHeap & lh, bool both_sides) const;
   public:
     T_GapFunction( shared_ptr<MeshAccess> mesh_, Region primary_, Region secondary_)
       : GapFunction(mesh_, primary_, secondary_)
