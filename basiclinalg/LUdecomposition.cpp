@@ -154,37 +154,10 @@ namespace ngbla
   static Timer calcLUSearch("CalcLU - search");  
   static Timer calcLUSwap("CalcLU - swap");  
   */
-  void CalcLURec (SliceMatrix<double> a, FlatArray<int> p, IntRange r)
+  // leaf of 4 columns; works on the panel only (r.First() == 0), piv returns the pivot rows
+  INLINE void CalcLULeaf (SliceMatrix<double> a, FlatArray<int> piv, IntRange r)
   {
     size_t n = a.Height();
-    
-    /*
-    if (r.Size() == 0) return;
-    if (r.Size() == 1)
-      {
-        size_t i = r.First();
-        
-        size_t imax = i;
-        double valmax = fabs(a(i,i));
-      
-        for (size_t j = i+1; j < n; j++)
-          if (double valj = fabs(a(j,i)) > valmax)
-            {
-              valmax = valj;
-              imax = j;
-            }
-        
-        if (imax != i)
-          {
-            Swap (p[i], p[imax]);
-            SwapVectors (a.Row(i), a.Row(imax));
-          }
-        
-        if (i+1 < n)
-          a.Col(i).Range(i+1,n) *= 1.0/a(i,i);
-        return;
-      }
-    */
     constexpr size_t bs = 4;
     if (r.Size() <= bs)
       {
@@ -213,10 +186,10 @@ namespace ngbla
               rowmax = max(rowmax, fabs(a(imax,j)));
             if (!(valmax > 1e-20*rowmax))
               throw Exception ("CalcLU: matrix singular");
+            piv[i-r.First()] = imax;
             if (imax != i)
               {
                 // RegionTimer reg(calcLUSwap);                
-                Swap (p[i], p[imax]);
                 SwapVectors (a.Row(i), a.Row(imax));
               }
 
@@ -305,6 +278,86 @@ namespace ngbla
 
         return;
       }
+  }
+
+  template <typename T>
+  INLINE void SwapRowRange (SliceMatrix<T> a, size_t i, size_t j, size_t first, size_t next)
+  {
+    if (first >= next) return;
+    if constexpr (is_same_v<T,double>)
+      SwapVectors (a.Row(i).Range(first,next), a.Row(j).Range(first,next));
+    else
+      for (size_t k = first; k < next; k++)
+        Swap (a(i,k), a(j,k));
+  }
+
+  // leaf on the panel A(f:n, r). Walking down a tall column panel with a row
+  // stride of a multiple of 2 KB thrashes the cache sets, then use a contiguous copy
+  template <typename T>
+  INLINE void PackedLeaf (SliceMatrix<T> a, FlatArray<int> p, IntRange r)
+  {
+    constexpr size_t bs = 4;
+    size_t n = a.Height(), W = a.Width(), f = r.First(), w = r.Size(), h = n-f;
+    int piv[bs];
+    bool pack = (a.Dist()*sizeof(T)) % 2048 == 0 && h > 32;
+    if (pack)
+      {
+        ArrayMem<double, 2*bs*256> mem(bs*h*sizeof(T)/sizeof(double));
+        SliceMatrix<T> Pc(h, w, bs, (T*)(void*)mem.Data());
+        Pc = a.Rows(f,n).Cols(r);
+        CalcLULeaf (Pc, FlatArray<int>(w, piv), IntRange(0,w));
+        a.Rows(f,n).Cols(r) = Pc;
+      }
+    else   // the leaf swaps the columns f..W itself
+      CalcLULeaf (a.Rows(f,n).Cols(f,W), FlatArray<int>(w, piv), IntRange(0,w));
+
+    for (size_t i = 0; i < w; i++)
+      if (size_t im = f+piv[i]; im != f+i)
+        {
+          Swap (p[f+i], p[im]);
+          SwapRowRange (a, f+i, im, 0, f);
+          if (pack)
+            SwapRowRange (a, f+i, im, r.Next(), W);
+        }
+  }
+
+  void CalcLURec (SliceMatrix<double> a, FlatArray<int> p, IntRange r)
+  {
+    size_t n = a.Height();
+    
+    /*
+    if (r.Size() == 0) return;
+    if (r.Size() == 1)
+      {
+        size_t i = r.First();
+        
+        size_t imax = i;
+        double valmax = fabs(a(i,i));
+      
+        for (size_t j = i+1; j < n; j++)
+          if (double valj = fabs(a(j,i)) > valmax)
+            {
+              valmax = valj;
+              imax = j;
+            }
+        
+        if (imax != i)
+          {
+            Swap (p[i], p[imax]);
+            SwapVectors (a.Row(i), a.Row(imax));
+          }
+        
+        if (i+1 < n)
+          a.Col(i).Range(i+1,n) *= 1.0/a(i,i);
+        return;
+      }
+    */
+    constexpr size_t bs = 4;
+    if (r.Size() <= bs)
+      {
+        PackedLeaf (a, p, r);
+        return;
+      }
     
     size_t half = r.Size()/2;
     if (half > bs)
@@ -345,7 +398,7 @@ namespace ngbla
   inline double CAbs1 (Complex z) { return fabs(z.real())+fabs(z.imag()); }
 
   // as the double version
-  void CalcLURec (SliceMatrix<Complex> a, FlatArray<int> p, IntRange r)
+  INLINE void CalcLULeaf (SliceMatrix<Complex> a, FlatArray<int> piv, IntRange r)
   {
     size_t n = a.Height();
     constexpr size_t bs = 4;
@@ -376,9 +429,9 @@ namespace ngbla
               rowmax = max(rowmax, CAbs1(a(imax,j)));
             if (!(CAbs1(a(imax,i)) > 1e-20*rowmax))
               throw Exception ("CalcLU: matrix singular");
+            piv[i-r.First()] = imax;
             if (imax != i)
               {
-                Swap (p[i], p[imax]);
                 for (size_t k = 0; k < a.Width(); k++)
                   Swap (a(i,k), a(imax,k));
               }
@@ -430,9 +483,9 @@ namespace ngbla
               rowmax = max(rowmax, CAbs1(a(imax,j)));
             if (!(valmax > 1e-20*rowmax))
               throw Exception ("CalcLU: matrix singular");
+            piv[i-r.First()] = imax;
             if (imax != i)
               {
-                Swap (p[i], p[imax]);
                 for (size_t k = 0; k < a.Width(); k++)
                   Swap (a(i,k), a(imax,k));
               }
@@ -446,6 +499,17 @@ namespace ngbla
                   a(j,k) -= fac*a(i,k);
               }
           }
+        return;
+      }
+  }
+
+  void CalcLURec (SliceMatrix<Complex> a, FlatArray<int> p, IntRange r)
+  {
+    size_t n = a.Height();
+    constexpr size_t bs = 4;
+    if (r.Size() <= bs)
+      {
+        PackedLeaf (a, p, r);
         return;
       }
 

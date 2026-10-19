@@ -52,6 +52,7 @@ Available options timings are:
           52 .. C = A * B^t,   A=n*k, B=m*k, C=n*m
           60 .. C -= A^t * D B,  A=n*k, B=n*m, C = k*m, D=diag
           61 .. C = A^t B,  A=n*k, B=n*m, C = k*m
+          62 .. C = A^t B^t,  A=m*n, B=k*m, C = n*k
           70 .. C += A B^t,  A=n*k, B=m*k, C = n*m, A,B SIMD
 	  80 .. (x,y)        inner product, size n
           100.. MultAddKernel  C += A * B,  A=4*n, B=n*3SW
@@ -746,6 +747,38 @@ Available options timings are:
         }
       }
 
+    if (what == 62)
+      {
+        // C = A^t*B^t,  A = m*n, B = k*m, C = n*k
+        Matrix<> a(m,n), b(k,m), c(n,k);
+        for (size_t i = 0; i < a.Height(); i++)
+          for (size_t j = 0; j < a.Width(); j++)
+            a(i,j) = sin(i+1) * cos(j);
+        for (size_t i = 0; i < b.Height(); i++)
+          for (size_t j = 0; j < b.Width(); j++)
+            b(i,j) = cos(i+3) * cos(j);
+        c = Trans(a)*Trans(b);
+        if (n*m*k <= 1e6)
+          {
+            Matrix<> at = Trans(a), bt = Trans(b);
+            if (double err = L2Norm(at*bt-c); err > 1e-8)
+              cout << "MultAtBt is faulty, err = " << err << endl;
+          }
+        double tot = n*m*k;
+        size_t its = 1e10 / tot + 1;
+        if (its > maxits) its = maxits;
+        Timer t("C = A^t*B^t");
+        t.Start();
+        if (!lapack)
+          for (size_t j = 0; j < its; j++)
+            c = Trans(a)*Trans(b);
+        else
+          for (size_t j = 0; j < its; j++)
+            c = Trans(a)*Trans(b) | Lapack;
+        t.Stop();
+        timings.push_back(make_tuple("MultAtBt", 1e-9 * tot *its / t.GetTime()));
+      }
+
     if (what == 0 || what == 61)
       {
         // C=A^t*B
@@ -1361,9 +1394,14 @@ Available options timings are:
 
         size_t tot = 4*n*m*k;
         size_t its = 1e10 / tot + 1;
+        if (its > maxits) its = maxits;
         t.Start();
-        for (int j = 0; j < its; j++)
-          c=a*b;
+        if (!lapack)
+          for (int j = 0; j < its; j++)
+            c=a*b;
+        else
+          for (int j = 0; j < its; j++)
+            c=a*b | Lapack;
         t.Stop();
         t.AddFlops(tot);
         cout << "MatMat,complex, RowMajor, RowMajor, GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
