@@ -43,7 +43,7 @@
     - docker run --rm -v "$PWD:/w" alpine chown -R $(id -u):$(id -g) /w/logs || true
 
 ubuntu_docu_build:
-  <<: *ubuntu_avx
+  <<: *ubuntu_docu
   <<: *build_linux
 
 ubuntu_debug_build:
