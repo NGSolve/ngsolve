@@ -31,7 +31,7 @@ pip_pyodide:
   stage: build
   tags:
     - linux
-    - pip
+    - bash
   script:
     - ./tests/gitlab-ci/pyodide/build.sh
   when: manual
