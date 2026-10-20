@@ -112,7 +112,7 @@ namespace ngcomp
       "#include <cstddef>\n"
       "#include <cmath>\n"
       "using std::sqrt;\n"
-      "static inline double L2Norm2 (double v) { return v*v; }\n"
+      "[[maybe_unused]] static inline double L2Norm2 (double v) { return v*v; }\n"
       "extern \"C\" void ApplyIPFunction (size_t nip, double * input, size_t dist_input,\n"
       "                      double * output, size_t dist_output,\n"
       "                      size_t dist, double * pnts, double * nvs,\n"
