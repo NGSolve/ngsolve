@@ -8,24 +8,19 @@
     - avx
     - bash
 
-.template_ubuntu_avx: &ubuntu_avx
+.template_ubuntu_docu: &ubuntu_docu
   <<: *ubuntu
   variables:
-    IMAGE_NAME: "avx"
+    IMAGE_NAME: "docu"
     UBUNTU_VERSION: $UBUNTU_VERSION_LTS
   only:
     - schedules
     - tags
 
-.template_ubuntu_avx512: &ubuntu_avx512
-  tags:
-    - avx512
-  variables:
-    IMAGE_NAME: "avx512"
-    UBUNTU_VERSION: $UBUNTU_VERSION_LTS
-
 .template_ubuntu_debug: &ubuntu_debug
   <<: *ubuntu
+  only:
+    - schedules
   variables:
     IMAGE_NAME: "debug"
     UBUNTU_VERSION: $UBUNTU_VERSION_LTS
@@ -47,12 +42,8 @@
   after_script:
     - docker run --rm -v "$PWD:/w" alpine chown -R $(id -u):$(id -g) /w/logs || true
 
-ubuntu_avx_build:
+ubuntu_docu_build:
   <<: *ubuntu_avx
-  <<: *build_linux
-
-.ubuntu_avx512_build:
-  <<: *ubuntu_avx512
   <<: *build_linux
 
 ubuntu_debug_build:
@@ -67,7 +58,7 @@ docu_test:
   <<: *ubuntu
   <<: *build_linux
   variables:
-    IMAGE_NAME: "avx"
+    IMAGE_NAME: "docu"
     UBUNTU_VERSION: $UBUNTU_VERSION_LTS
     SHOW_LOGS: "1"
     RUN_TESTS_AFTER_BUILD: "0"
