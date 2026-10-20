@@ -5132,6 +5132,10 @@ namespace ngfem
       if (!proxy->Evaluator()->SupportsVB(vb))
         throw Exception ("Trialfunction does not support "+ToString(vb)+"-forms, maybe a Trace() operator is missing, type = "+proxy->Evaluator()->Name());
 
+    for (auto proxy : trial_proxies)
+      if (proxy->Evaluator()->IsNonlinear())
+        has_nonlinear_proxy = true;
+
     nonzeros = Matrix<bool>(trial_cum.Last(), trial_cum.Last());
     nonzeros_proxies = Matrix<bool>(trial_proxies.Size(), trial_proxies.Size());
     nonzeros_proxies = false;
@@ -5666,7 +5670,7 @@ namespace ngfem
                   */
                   {
                     RegionTimer reg(tbmat);
-                    proxy1->Evaluator()->CalcMatrix(fel, mir, bmat1);
+                    proxy1->Evaluator()->CalcLinearizedMatrix(fel, mir, elveclin, bmat1);
                   }
 
                   hdbmat1.Rows(r1) = 0.0; 
@@ -5688,13 +5692,32 @@ namespace ngfem
                       }
                     else
                       {
-                        proxy2->Evaluator()->CalcMatrix(fel, mir, bmat2);
+                        proxy2->Evaluator()->CalcLinearizedMatrix(fel, mir, elveclin, bmat2);
                         AddABt (hbmat2.Rows(r2), hdbmat1.Rows(r1), elmat.Rows(r2).Cols(r1));
                         AddABt (hdbmat1.Rows(r1), hbmat2.Rows(r2), elmat.Rows(r1).Cols(r2));
                       }
                     // elmat.Rows(r1).Cols(r2) = Trans(part_elmat); // buggy if both evaluators act on same element
                   }
                 }
+
+    // contributions due to non-linear diffops: dW/dB * B''
+    for (auto proxy : trial_proxies)
+      if (proxy->Evaluator()->IsNonlinear())
+        {
+          HeapReset hr(lh);
+          FlatMatrix<SIMD<double>> dWdB(proxy->Dimension(), mir.Size(), lh);
+          FlatMatrix<AutoDiff<1,SIMD<double>>> vals(1, mir.Size(), lh);
+          ud.testfunction = nullptr;
+          for (int k = 0; k < proxy->Dimension(); k++)
+            {
+              ud.trialfunction = proxy;
+              ud.trial_comp = k;
+              cf -> Evaluate(mir, vals);
+              for (size_t j = 0; j < mir.Size(); j++)
+                dWdB(k,j) = vals(0,j).DValue(0);
+            }
+          proxy->Evaluator()->CalcHessianAdd (fel, mir, dWdB, elveclin, elmat, lh);
+        }
   }
 
   
@@ -5807,7 +5830,7 @@ namespace ngfem
   {
     // static Timer t("SymbolicEnergy::ApplyElementMatrix", NoTracing); 
         
-    if (simd_evaluate) //  && !element_boundary)
+    if (simd_evaluate && !has_nonlinear_proxy) //  && !element_boundary)
       {
         try
           {

@@ -54,12 +54,13 @@ namespace ngcomp
                      {
                        diffop->Apply(*fe, mir, *elvec, Trans(values), lh);
                      }
-      if constexpr (is_same<MIR, BaseMappedIntegrationRule>::value &&
-                    is_same<T,AutoDiffDiff<1,double>>::value)
+      else if constexpr (is_same<MIR, BaseMappedIntegrationRule>::value &&
+                         (is_same<T,AutoDiff<1,double>>::value || is_same<T,AutoDiffDiff<1,double>>::value))
                      {
+                       // independent of proxies: derivatives are zero
                        Matrix<> tmp(mir.Size(), Dimension());
                        diffop->Apply(*fe, mir, *elvec, tmp, lh);
-                       values.AddSize(mir.Size(), Dimension()) = Trans(tmp);
+                       values.AddSize(Dimension(), mir.Size()) = Trans(tmp);
                      }
       else if constexpr (is_same<MIR, SIMD_BaseMappedIntegrationRule>::value &&
                          is_same<T,SIMD<double>>::value)
@@ -67,13 +68,11 @@ namespace ngcomp
                        diffop->Apply(*fe, mir, *elvec, values);
                      }
       else if constexpr (is_same<MIR, SIMD_BaseMappedIntegrationRule>::value &&
-                         is_same<T,AutoDiffDiff<1,SIMD<double>>>::value)
+                         (is_same<T,AutoDiff<1,SIMD<double>>>::value || is_same<T,AutoDiffDiff<1,SIMD<double>>>::value))
                      {
-                       /*
-                       BareSliceMatrix<SIMD<double>> hvalues(3*values.Dist(), &values(0).Value(),
-                                                             DummySize(Dimension(), mir.Size()));
-                       */
-                       BareSliceMatrix<SIMD<double>> hvalues(Dimension(), mir.Size(), 3*values.Dist(), &values(0).Value());
+                       // values in place, value is the first entry of T, derivatives are zero
+                       constexpr size_t stride = sizeof(T) / sizeof(SIMD<double>);
+                       BareSliceMatrix<SIMD<double>> hvalues(Dimension(), mir.Size(), stride*values.Dist(), &values(0).Value());
                        
                        // Evaluate (ir, hvalues);
                        diffop->Apply(*fe, mir, *elvec, hvalues);                       
@@ -1035,6 +1034,119 @@ namespace ngcomp
         }
       // cout << "hessian2 = " << endl << hessian2 << endl;
     } 
+
+    // inverse of dual mass matrix, false if single_bli needs scalar evaluation
+    bool CalcDualMassInverse (const FiniteElement & interpol_fel, const ElementTransformation & trafo,
+                              FlatMatrix<> elmat, LocalHeap & lh) const
+    {
+      elmat = 0.0;
+      bool symmetric_so_far = false;
+      try
+        {
+          for (auto & sbfi : single_bli)
+            sbfi->CalcElementMatrixAdd (interpol_fel, trafo, elmat, symmetric_so_far, lh);
+        }
+      catch (const ExceptionNOSIMD& e)
+        {
+          for (auto & sbfi : single_bli)
+            sbfi->SetSimdEvaluate(false);
+          for (auto & sbfi : m3_bli)
+            sbfi->SetSimdEvaluate(false);
+          return false;
+        }
+      CalcInverse(elmat);
+      return true;
+    }
+
+    void CalcLinearizedMatrix (const FiniteElement & inner_fel,
+                               const SIMD_BaseMappedIntegrationRule & mir,
+                               BareSliceVector<double> x,
+                               BareSliceMatrix<SIMD<double>> mat) const override
+    {
+      static Timer t("interpolateDiffOp, CalcLinearizedMatrix SIMD");
+      RegionTracer reg(TaskManager::GetThreadId(), t);
+      if (testfunction)
+        throw ExceptionNOSIMD("InterpolateDiffOp, linearization of testfunction");
+
+      auto & lh = TLHeap();
+      HeapReset hr(lh);
+      const ElementTransformation & trafo = mir.GetTransformation();
+      auto save_ud = trafo.PushUserData();
+      auto & interpol_fel = fes->GetFE(trafo.GetElementId(), lh);
+      size_t nint = interpol_fel.GetNDof();
+      size_t nshape = inner_fel.GetNDof();
+      size_t ms = mir.Size();
+
+      FlatMatrix<> elmat(nint, lh);
+      if (!CalcDualMassInverse (interpol_fel, trafo, elmat, lh))
+        if (!CalcDualMassInverse (interpol_fel, trafo, elmat, lh))
+          throw ExceptionNOSIMD("InterpolateDiffOp, dual mass matrix");
+
+      MixedFiniteElement mfe(inner_fel, interpol_fel);
+      FlatMatrix<> m3(nint, nshape, lh), m3i(nint, nshape, lh);
+      FlatVector<> elvec(nshape, lh);
+      elvec = x;
+      m3 = 0.0;
+      for (auto & sbfi : m3_bli)
+        {
+          sbfi->CalcLinearizedElementMatrix (mfe, trafo, elvec, m3i, lh);
+          m3 += m3i;
+        }
+      FlatMatrix<> m2m3 = elmat * m3 | lh;
+
+      // mat(i*Dim+d, p) = sum_j m2m3(j,i) * m1(j*Dim+d, p)
+      constexpr size_t W = SIMD<double>::Size();
+      FlatMatrix<SIMD<double>> m1(nint*Dim(), ms, lh);
+      diffop->CalcMatrix(interpol_fel, mir, m1);
+      FlatMatrix<SIMD<double>> res(nshape*Dim(), ms, lh);
+      FlatMatrix<> m1d(nint, Dim()*ms*W, (double*)m1.Data());
+      FlatMatrix<> resd(nshape, Dim()*ms*W, (double*)res.Data());
+      resd = Trans(m2m3) * m1d;
+      mat.AddSize(nshape*Dim(), ms) = res;
+    }
+
+    void CalcHessianAdd (const FiniteElement & inner_fel,
+                         const SIMD_BaseMappedIntegrationRule & mir,
+                         BareSliceMatrix<SIMD<double>> wprime,
+                         BareSliceVector<> elvecu,
+                         SliceMatrix<> hessian,   
+                         LocalHeap & lh) const override
+    {
+      static Timer t("interpolateDiffOp, Hessian SIMD");
+      RegionTracer reg(TaskManager::GetThreadId(), t);
+      HeapReset hr(lh);
+
+      const ElementTransformation & trafo = mir.GetTransformation();
+      auto save_ud = trafo.PushUserData();
+      auto & interpol_fel = fes->GetFE(trafo.GetElementId(), lh);
+      size_t nint = interpol_fel.GetNDof();
+      size_t nshape = inner_fel.GetNDof();
+
+      FlatMatrix<> elmat(nint, lh);
+      if (!CalcDualMassInverse (interpol_fel, trafo, elmat, lh))
+        if (!CalcDualMassInverse (interpol_fel, trafo, elmat, lh))
+          throw ExceptionNOSIMD("InterpolateDiffOp, dual mass matrix");
+
+      FlatMatrix<SIMD<double>> wp(Dim(), mir.Size(), lh);
+      for (size_t i = 0; i < mir.Size(); i++)
+        for (size_t d = 0; d < Dim(); d++)
+          wp(d,i) = mir[i].GetWeight() * wprime(d,i);
+
+      FlatVector<> rhs(nint, lh);
+      rhs = 0.0;
+      diffop->AddTrans(interpol_fel, mir, wp, rhs);
+      FlatVector<> v2 = Trans(elmat) * rhs | lh;
+
+      dual_fecf->Set (&interpol_fel, &v2);
+      FlatVector<> fvelvecu(nshape, lh);
+      fvelvecu = elvecu;
+      FlatMatrix<> hessian2(nshape, lh);
+      for (auto & hbfi : hessian_bfi)
+        {
+          hbfi->CalcLinearizedElementMatrix(inner_fel, trafo, fvelvecu, hessian2, lh);
+          hessian += hessian2;
+        }
+    }
   };
     
 

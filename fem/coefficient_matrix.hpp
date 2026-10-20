@@ -341,10 +341,10 @@ namespace ngfem
     void T_Evaluate (const MIR & mir, BareSliceMatrix<T,ORD> values) const 
     {
       FlatArray<int> hdims = Dimensions();    
-      STACK_ARRAY(T, hmem1, mir.Size()*hdims[0]*inner_dim);
-      STACK_ARRAY(T, hmem2, mir.Size()*hdims[1]*inner_dim);
-      FlatMatrix<T,ORD> va(hdims[0]*inner_dim, mir.Size(), &hmem1[0]);
-      FlatMatrix<T,ORD> vb(hdims[1]*inner_dim, mir.Size(), &hmem2[0]);
+      auto & lh = TLHeap();
+      HeapReset hr(lh);
+      FlatMatrix<T,ORD> va(hdims[0]*inner_dim, mir.Size(), lh);
+      FlatMatrix<T,ORD> vb(hdims[1]*inner_dim, mir.Size(), lh);
 
       c1->Evaluate (mir, va);
       c2->Evaluate (mir, vb);
@@ -553,8 +553,9 @@ namespace ngfem
     void T_Evaluate (const MIR & mir, BareSliceMatrix<T,ORD> values) const 
     {
       size_t dim1 = c1->Dimension();
-      STACK_ARRAY(T, hmem1, mir.Size()*dim1);
-      FlatMatrix<T,ORD> va(dim1, mir.Size(), &hmem1[0]);
+      auto & lh = TLHeap();
+      HeapReset hr(lh);
+      FlatMatrix<T,ORD> va(dim1, mir.Size(), lh);
 
       c1->Evaluate (mir, va);
       c2->Evaluate (mir, values);
@@ -970,8 +971,9 @@ public:
                    BareSliceMatrix<T,ORD> result) const
   {
     int hd = c1->Dimensions()[0];
-    STACK_ARRAY(T, hmem, hd*hd*mir.Size());
-    FlatMatrix<T,ORD> m1(hd*hd, mir.Size(), &hmem[0]);
+    auto & lh = TLHeap();
+    HeapReset hr(lh);
+    FlatMatrix<T,ORD> m1(hd*hd, mir.Size(), lh);
     c1->Evaluate (mir, m1);
     
     for (size_t i = 0; i < mir.Size(); i++)

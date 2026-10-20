@@ -2184,8 +2184,9 @@ public:
   {
     size_t w = ir.Size();
     __assume (w > 0);
-    STACK_ARRAY(T, hmem1, w);
-    FlatMatrix<T,ORD> temp1(1, w, &hmem1[0]);
+    auto & lh = TLHeap();
+    HeapReset hr(lh);
+    FlatMatrix<T,ORD> temp1(1, w, lh);
     
     c1->Evaluate (ir, temp1);
     c2->Evaluate (ir, values);
@@ -3068,8 +3069,9 @@ public:
   {
     size_t np = ir.Size();
     size_t dim1 = c1->Dimension();
-    STACK_ARRAY(T,mem, np*dim1);
-    FlatMatrix<T,ORD> m1(dim1, np, &mem[0]);
+    auto & lh = TLHeap();
+    HeapReset hr(lh);
+    FlatMatrix<T,ORD> m1(dim1, np, lh);
     c1->Evaluate (ir, m1);
     
     for (size_t i = 0; i < np; i++)
@@ -3521,10 +3523,10 @@ public:
   {
     // FlatArray<int> hdims = Dimensions();
     int dim = Dimension();
-    STACK_ARRAY(T, hmem1, ir.Size()*dim*inner_dim);
-    STACK_ARRAY(T, hmem2, ir.Size()*inner_dim);
-    FlatMatrix<T,ORD> temp1(dim*inner_dim, ir.Size(), &hmem1[0]);
-    FlatMatrix<T,ORD> temp2(inner_dim, ir.Size(), &hmem2[0]);
+    auto & lh = TLHeap();
+    HeapReset hr(lh);
+    FlatMatrix<T,ORD> temp1(dim*inner_dim, ir.Size(), lh);
+    FlatMatrix<T,ORD> temp2(inner_dim, ir.Size(), lh);
     c1->Evaluate (ir, temp1);
     c2->Evaluate (ir, temp2);
     values.AddSize(Dimension(),ir.Size()) = T(0.0);
@@ -3691,10 +3693,10 @@ public:
   template <typename MIR, typename T, ORDERING ORD>
   void T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const
   {
-    STACK_ARRAY(T, hmem1, ir.Size()*3);
-    STACK_ARRAY(T, hmem2, ir.Size()*3);
-    FlatMatrix<T,ORD> temp1(3, ir.Size(), &hmem1[0]);
-    FlatMatrix<T,ORD> temp2(3, ir.Size(), &hmem2[0]);
+    auto & lh = TLHeap();
+    HeapReset hr(lh);
+    FlatMatrix<T,ORD> temp1(3, ir.Size(), lh);
+    FlatMatrix<T,ORD> temp2(3, ir.Size(), lh);
     c1->Evaluate (ir, temp1);
     c2->Evaluate (ir, temp2);
     for (size_t k = 0; k < ir.Size(); k++)
@@ -4508,8 +4510,9 @@ public:
   template <typename MIR, typename T, ORDERING ORD>
   void T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const
   {
-    STACK_ARRAY(T, hmem, ir.Size()*dim1);
-    FlatMatrix<T,ORD> temp(dim1, ir.Size(), &hmem[0]);
+    auto & lh = TLHeap();
+    HeapReset hr(lh);
+    FlatMatrix<T,ORD> temp(dim1, ir.Size(), lh);
     
     c1->Evaluate (ir, temp);
     size_t nv = ir.Size();
@@ -4747,8 +4750,9 @@ public:
   template <typename MIR, typename T, ORDERING ORD>
   void T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const
   {
-    STACK_ARRAY(T, hmem, ir.Size()*dim1);
-    FlatMatrix<T,ORD> temp(dim1, ir.Size(), &hmem[0]);
+    auto & lh = TLHeap();
+    HeapReset hr(lh);
+    FlatMatrix<T,ORD> temp(dim1, ir.Size(), lh);
     
     c1->Evaluate (ir, temp);
     for (size_t i = 0; i < mapping.Size(); i++)
@@ -5073,8 +5077,9 @@ public:
   template <typename MIR, typename T, ORDERING ORD>
   void T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const
   {
-    STACK_ARRAY(T, hmem, ir.Size()*dim1);
-    FlatMatrix<T,ORD> temp(dim1, ir.Size(), &hmem[0]);
+    auto & lh = TLHeap();
+    HeapReset hr(lh);
+    FlatMatrix<T,ORD> temp(dim1, ir.Size(), lh);
     
     c1->Evaluate (ir, temp);
 
@@ -5238,9 +5243,9 @@ public:
   template <typename MIR, typename T, ORDERING ORD>
   void T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const
   {
-    STACK_ARRAY(T, hmem, ir.Size()*c1->Dimension());
-    FlatMatrix<T,ORD> temp(c1->Dimension(), ir.Size(), &hmem[0]);
-    STACK_ARRAY(T, hmem2, ir.Size()*c1->Dimension());  // 
+    auto & lh = TLHeap();
+    HeapReset hr(lh);
+    FlatMatrix<T,ORD> temp(c1->Dimension(), ir.Size(), lh);
     
     c1->Evaluate (ir, temp);
 
@@ -5249,7 +5254,8 @@ public:
 
     for (int dir = 0; dir < vectors.Size(); dir++)
       {
-        FlatMatrix<T,ORD> vi(vectors[dir]->Dimension(), ir.Size(), &hmem2[0]);
+        HeapReset hrdir(lh);
+        FlatMatrix<T,ORD> vi(vectors[dir]->Dimension(), ir.Size(), lh);
         vectors[dir]->Evaluate(ir, vi);
 
         size_t newdim = actdim / vi.Height();
@@ -5280,8 +5286,9 @@ public:
                    FlatArray<BareSliceMatrix<T,ORD>> input,                       
                    BareSliceMatrix<T,ORD> values) const
   {
-    STACK_ARRAY(T, hmem, ir.Size()*c1->Dimension());
-    FlatMatrix<T,ORD> temp(c1->Dimension(), ir.Size(), &hmem[0]);
+    auto & lh = TLHeap();
+    HeapReset hr(lh);
+    FlatMatrix<T,ORD> temp(c1->Dimension(), ir.Size(), lh);
     
     // c1->Evaluate (ir, temp);
     temp = input[0];
@@ -5485,12 +5492,12 @@ public:
   template <typename MIR, typename T, ORDERING ORD>
   void T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> hvalues) const
   {
-    STACK_ARRAY(T, hmem, ir.Size()*c1->Dimension());
-    FlatMatrix<T,ORD> temp(c1->Dimension(), ir.Size(), &hmem[0]);
+    auto & lh = TLHeap();
+    HeapReset hr(lh);
+    FlatMatrix<T,ORD> temp(c1->Dimension(), ir.Size(), lh);
     c1->Evaluate (ir, temp);
 
-    STACK_ARRAY(T, hmem2, ir.Size()*vec->Dimension());
-    FlatMatrix<T,ORD> vi(vec->Dimension(), ir.Size(), &hmem2[0]);
+    FlatMatrix<T,ORD> vi(vec->Dimension(), ir.Size(), lh);
     vec->Evaluate(ir, vi);
 
     size_t nv = ir.Size();
@@ -6154,12 +6161,11 @@ class IfPosCoefficientFunction : public T_CoefficientFunction<IfPosCoefficientFu
       size_t np = ir.Size();
       size_t dim = Dimension();
       
-      STACK_ARRAY(T, hmem1, np);
-      FlatMatrix<T,ORD> if_values(1, np, hmem1);
-      STACK_ARRAY(T, hmem2, np*dim);
-      FlatMatrix<T,ORD> then_values(dim, np, hmem2);
-      STACK_ARRAY(T, hmem3, np*dim);
-      FlatMatrix<T,ORD> else_values(dim, np, hmem3);
+      auto & lh = TLHeap();
+      HeapReset hr(lh);
+      FlatMatrix<T,ORD> if_values(1, np, lh);
+      FlatMatrix<T,ORD> then_values(dim, np, lh);
+      FlatMatrix<T,ORD> else_values(dim, np, lh);
       
       cf_if->Evaluate (ir, if_values);
       cf_then->Evaluate (ir, then_values);

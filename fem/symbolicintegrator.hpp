@@ -873,6 +873,7 @@ public:
     Matrix<bool> nonzeros;    // do components interact ? 
     Matrix<bool> nonzeros_proxies; // do proxies interact ?
     Array<shared_ptr<CoefficientFunction>> dcf, ddcf;
+    bool has_nonlinear_proxy = false;  // simd apply assumes linear diffops
     
   public:
     SymbolicEnergy (shared_ptr<CoefficientFunction> acf, VorB avb, VorB aelement_vb);

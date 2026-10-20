@@ -149,6 +149,21 @@ namespace ngfem
                     BareSliceVector<> elvecu,
                     SliceMatrix<> hessian,   
                     LocalHeap & lh) const { ; } 
+
+    // simd versions, nonlinear diffops throw NOSIMD if not overloaded
+    NGS_DLL_HEADER virtual void
+    CalcLinearizedMatrix (const FiniteElement & fel,
+                          const SIMD_BaseMappedIntegrationRule & mir,
+                          BareSliceVector<double> x,
+                          BareSliceMatrix<SIMD<double>> mat) const;
+
+    NGS_DLL_HEADER virtual void
+    CalcHessianAdd (const FiniteElement & fel,
+                    const SIMD_BaseMappedIntegrationRule & mir,
+                    BareSliceMatrix<SIMD<double>> wprime,
+                    BareSliceVector<> elvecu,
+                    SliceMatrix<> hessian,   
+                    LocalHeap & lh) const;
     
     NGS_DLL_HEADER virtual void
     Apply (const FiniteElement & fel,

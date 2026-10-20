@@ -102,6 +102,28 @@ namespace ngfem
     CalcMatrix (fel, mir, mat, lh);
   }
 
+  void DifferentialOperator ::
+  CalcLinearizedMatrix (const FiniteElement & fel,
+                        const SIMD_BaseMappedIntegrationRule & mir,
+                        BareSliceVector<double> x,
+                        BareSliceMatrix<SIMD<double>> mat) const
+  {
+    if (IsNonlinear())
+      throw ExceptionNOSIMD(string("CalcLinearizedMatrix(SIMD) not overloaded, type = ") + typeid(*this).name());
+    CalcMatrix (fel, mir, mat);
+  }
+
+  void DifferentialOperator ::
+  CalcHessianAdd (const FiniteElement & fel,
+                  const SIMD_BaseMappedIntegrationRule & mir,
+                  BareSliceMatrix<SIMD<double>> wprime,
+                  BareSliceVector<> elvecu,
+                  SliceMatrix<> hessian,   
+                  LocalHeap & lh) const
+  {
+    if (IsNonlinear())
+      throw ExceptionNOSIMD(string("CalcHessianAdd(SIMD) not overloaded, type = ") + typeid(*this).name());
+  }
   
   void DifferentialOperator ::
   Apply (const FiniteElement & fel,
