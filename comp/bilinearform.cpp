@@ -1780,29 +1780,22 @@ namespace ngcomp
   }
 
 
-  // elmat (test x trial) from the local bases to the element dofs: T_test^T elmat T_trial
-  template <typename SCAL>
-  static FlatMatrix<SCAL> ToElementDofs (const FESpace & test_fes, ElementId ei_test,
-                                         const FESpace & trial_fes, ElementId ei_trial,
-                                         FlatMatrix<SCAL> elmat, LocalHeap & lh)
+  // rows of elmat from the local basis of fes to the element dofs: T^T elmat.
+  // for the columns call it with Trans(elmat), which flips the ordering
+  template <typename SCAL, ORDERING ORD>
+  static FlatMatrix<SCAL,ORD> ToElementDofs (const FESpace & fes, ElementId ei,
+                                             FlatMatrix<SCAL,ORD> elmat, LocalHeap & lh)
   {
-    if (auto T = trial_fes.GetDofTransformation (ei_trial, lh))
+    if (auto T = fes.GetDofTransformation (ei, lh))
       {
-        FlatMatrix<SCAL> hmat(elmat.Height(), T->Width(), lh);
-        hmat = elmat * *T;
-        elmat.AssignMemory (hmat.Height(), hmat.Width(), hmat.Data());
-      }
-    else
-      trial_fes.TransformMat (ei_trial, elmat, TRANSFORM_MAT_RIGHT);
-
-    if (auto T = test_fes.GetDofTransformation (ei_test, lh))
-      {
-        FlatMatrix<SCAL> hmat(T->Width(), elmat.Width(), lh);
+        FlatMatrix<SCAL,ORD> hmat(T->Width(), elmat.Width(), lh);
         hmat = Trans(*T) * elmat;
-        elmat.AssignMemory (hmat.Height(), hmat.Width(), hmat.Data());
+        return hmat;
       }
+    if constexpr (ORD == RowMajor)
+      fes.TransformMat (ei, elmat, TRANSFORM_MAT_LEFT);
     else
-      test_fes.TransformMat (ei_test, elmat, TRANSFORM_MAT_LEFT);
+      fes.TransformMat (ei, Trans(elmat), TRANSFORM_MAT_RIGHT);
     return elmat;
   }
 
@@ -1811,7 +1804,8 @@ namespace ngcomp
                                                  const FESpace::Element & el_trial,
                                                  FlatMatrix<SCAL> elmat, LocalHeap & lh)
   {
-    auto gmat = ToElementDofs (el_test.GetFESpace(), el_test, el_trial.GetFESpace(), el_trial, elmat, lh);
+    auto hmat = ToElementDofs (el_trial.GetFESpace(), el_trial, Trans(elmat), lh);
+    auto gmat = ToElementDofs (el_test.GetFESpace(), el_test, Trans(hmat), lh);
     AddElementMatrix (el_test.GetDofs(), el_trial.GetDofs(), gmat, el_test, false, lh);
   }
 
@@ -1823,7 +1817,8 @@ namespace ngcomp
     static mutex printelmat_mutex;
 
     auto & fes = el.GetFESpace();
-    auto gmat = ToElementDofs (fes, el, fes, el, elmat, lh);
+    auto hmat = ToElementDofs (fes, el, Trans(elmat), lh);
+    auto gmat = ToElementDofs (fes, el, Trans(hmat), lh);
     elmat.AssignMemory (gmat.Height(), gmat.Width(), gmat.Data());
 
     if (elmat_ev)
