@@ -1,4 +1,5 @@
 import math
+import numpy as np
 import pytest
 from ngsolve import *
 from netgen.occ import *
@@ -64,6 +65,34 @@ def test_mixed_poisson(nsheets):
 def test_mixed_poisson_condense():
     mesh, _ = SheetMesh(3)
     assert MixedPoisson(mesh, 2) == pytest.approx(MixedPoisson(mesh, 2, condense=True), rel=1e-8)
+
+
+@pytest.mark.parametrize("nsheets", [2, 3])
+def test_mixed_spaces(nsheets):
+    # forms with different trial and test spaces equal the blocks of the compound space form
+    mesh, _ = SheetMesh(nsheets, maxh=0.4, angles=[0, math.pi/2] if nsheets == 2 else None)
+    V = HDivSurface(mesh, order=2)
+    Q = SurfaceL2(mesh, order=1)
+    u, v = V.TnT()
+    p, q = Q.TnT()
+    b = BilinearForm(trialspace=V, testspace=Q)
+    b += div(u.Trace())*q*ds
+    b.Assemble()
+    bt = BilinearForm(trialspace=Q, testspace=V)
+    bt += p*div(v.Trace())*ds
+    bt.Assemble()
+
+    X = V*Q
+    (sig, uu), (tau, vv) = X.TnT()
+    a = BilinearForm(X)
+    a += (div(sig.Trace())*vv + uu*div(tau.Trace()))*ds
+    a.Assemble()
+    A = np.asarray(a.mat.ToDense())
+    B = np.asarray(b.mat.ToDense())
+    BT = np.asarray(bt.mat.ToDense())
+    nv = V.ndof
+    assert np.linalg.norm(B - A[nv:, :nv]) < 1e-12 * np.linalg.norm(B)
+    assert np.linalg.norm(BT - A[:nv, nv:]) < 1e-12 * np.linalg.norm(BT)
 
 
 @pytest.mark.parametrize("order", [1, 2])

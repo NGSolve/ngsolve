@@ -648,6 +648,10 @@ namespace ngcomp
     void AddElementMatrix (const FESpace::Element & el, FlatMatrix<SCAL> elmat,
                            bool condense_rhs, LocalHeap & lh);
 
+    // mixed forms: elmat (test x trial) in the local bases, transformed and added
+    void AddElementMatrix (const FESpace::Element & el_test, const FESpace::Element & el_trial,
+                           FlatMatrix<SCAL> elmat, LocalHeap & lh);
+
 
     virtual void AddDiagElementMatrix (FlatArray<int> dnums1,
                                        FlatVector<SCAL> diag,
