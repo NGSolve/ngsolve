@@ -1281,6 +1281,11 @@ namespace ngla
   T_MatAdd (T sa, const SparseMatrix<T> & mata,
           T sb, const SparseMatrix<T> & matb)
   {
+    if (auto syma = dynamic_cast<const SparseMatrixSymmetric<T>*>(&mata))
+      return T_MatAdd(sa, *MakeFullMatrix(*syma), sb, matb);
+    if (auto symb = dynamic_cast<const SparseMatrixSymmetric<T>*>(&matb))
+      return T_MatAdd(sa, mata, sb, *MakeFullMatrix(*symb));
+
     if (mata.Shape() != matb.Shape())
       throw Exception("MatAdd, A.shape = "
                       +ToString(mata.Height())+"x"+ToString(mata.Width())
@@ -1377,6 +1382,11 @@ namespace ngla
   shared_ptr<SparseMatrix<TM_Res>>
   MatMult (const SparseMatrix<TM1> & mata, const SparseMatrix<TM2> & matb, bool sort_output)
   {
+    if (auto syma = dynamic_cast<const SparseMatrixSymmetric<TM1>*>(&mata))
+      return MatMult<TM_Res,TM1,TM2>(*MakeFullMatrix(*syma), matb, sort_output);
+    if (auto symb = dynamic_cast<const SparseMatrixSymmetric<TM2>*>(&matb))
+      return MatMult<TM_Res,TM1,TM2>(mata, *MakeFullMatrix(*symb), sort_output);
+
     static Timer t ("sparse matrix multiplication");
     static Timer t1a ("sparse matrix multiplication - setup a");
     static Timer t1b ("sparse matrix multiplication - setup b");
