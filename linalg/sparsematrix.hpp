@@ -725,6 +725,11 @@ namespace ngla
       return make_shared<SparseMatrixSymmetric> (*this);
     }
 
+    virtual shared_ptr<BaseSparseMatrix> CreateTranspose (bool sorted = true) const override
+    {
+      return make_shared<SparseMatrixSymmetric> (*this);
+    }
+
     virtual void AddElementMatrix(FlatArray<int> dnums1, 
 				  FlatArray<int> dnums2, 
 				  BareSliceMatrix<TSCAL> elmat,
