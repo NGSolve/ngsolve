@@ -13,35 +13,6 @@
 namespace ngsbem
 {
 
-  template <typename SCAL>
-  static FlatMatrix<SCAL> ToElementDofs (const FESpace & test_space, ElementId ei_test,
-                                         const FESpace & trial_space, ElementId ei_trial,
-                                         FlatMatrix<SCAL> elmat, LocalHeap & lh)
-  {
-    if (auto Tt = test_space.GetDofTransformation (ei_test, lh))
-      {
-        FlatMatrix<SCAL> T(Tt->Height(), Tt->Width(), lh);
-        T = *Tt;
-        FlatMatrix<SCAL> h(T.Width(), elmat.Width(), lh);
-        h = Trans(T) * elmat;
-        elmat.AssignMemory (h.Height(), h.Width(), h.Data());
-      }
-    else
-      test_space.TransformMat (ei_test, elmat, TRANSFORM_MAT_LEFT);
-
-    if (auto Tr = trial_space.GetDofTransformation (ei_trial, lh))
-      {
-        FlatMatrix<SCAL> T(Tr->Height(), Tr->Width(), lh);
-        T = *Tr;
-        FlatMatrix<SCAL> h(elmat.Height(), T.Width(), lh);
-        h = elmat * T;
-        elmat.AssignMemory (h.Height(), h.Width(), h.Data());
-      }
-    else
-      trial_space.TransformMat (ei_trial, elmat, TRANSFORM_MAT_RIGHT);
-    return elmat;
-  }
-
   // element dofs -> local coefficients, nullopt if this is the identity
   static optional<FlatMatrix<double>> ElementDofMap (const FESpace & fes, ElementId ei, LocalHeap & lh)
   {
@@ -580,7 +551,8 @@ namespace ngsbem
                   elmat.Rows(test_range).Cols(trial_range) -= shapesi1.Rows(test_range) * kernel_shapesj.Cols(trial_range);
               }
             // tasscorr.Stop();
-            auto gmat = ToElementDofs (*test_space, ei_test, *trial_space, ei_trial, elmat, lh);
+            auto hmat = ToElementDofs (*trial_space, ei_trial, Trans(elmat), lh);
+            auto gmat = ToElementDofs (*test_space, ei_test, Trans(hmat), lh);
             nearfield_correction -> AddElementMatrix (test_dnums, trial_dnums, gmat, true);
           }
       });
@@ -696,7 +668,8 @@ namespace ngsbem
             trial_evaluator-> CalcMatrix(trial_fel, trial_mir, Trans(shapesj), lh);
             */
 
-            auto gmat = ToElementDofs (*test_space, ei_test, *trial_space, ei_trial, elmat, lh);
+            auto hmat = ToElementDofs (*trial_space, ei_trial, Trans(elmat), lh);
+            auto gmat = ToElementDofs (*test_space, ei_test, Trans(hmat), lh);
             nearfield -> AddElementMatrix (test_dnums, trial_dnums, gmat, true);
           }
       });
@@ -1481,7 +1454,8 @@ namespace ngsbem
 
           FlatMatrix<value_type> elmat(tfel.GetNDof(), sfel.GetNDof(),lh);
           CalcElementMatrix(elmat, source_el, target_el, lh);
-          auto gmat = ToElementDofs (*test_space, target_el, *trial_space, source_el, elmat, lh);
+          auto hmat = ToElementDofs (*trial_space, source_el, Trans(elmat), lh);
+          auto gmat = ToElementDofs (*test_space, target_el, Trans(hmat), lh);
 
           for (auto [tdofind,tnr] : target_el2dof[telnr])
             for (auto [sdofind,snr] : source_el2dof[selnr])

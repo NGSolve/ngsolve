@@ -1780,25 +1780,6 @@ namespace ngcomp
   }
 
 
-  // rows of elmat from the local basis of fes to the element dofs: T^T elmat.
-  // for the columns call it with Trans(elmat), which flips the ordering
-  template <typename SCAL, ORDERING ORD>
-  static FlatMatrix<SCAL,ORD> ToElementDofs (const FESpace & fes, ElementId ei,
-                                             FlatMatrix<SCAL,ORD> elmat, LocalHeap & lh)
-  {
-    if (auto T = fes.GetDofTransformation (ei, lh))
-      {
-        FlatMatrix<SCAL,ORD> hmat(T->Width(), elmat.Width(), lh);
-        hmat = Trans(*T) * elmat;
-        return hmat;
-      }
-    if constexpr (ORD == RowMajor)
-      fes.TransformMat (ei, elmat, TRANSFORM_MAT_LEFT);
-    else
-      fes.TransformMat (ei, Trans(elmat), TRANSFORM_MAT_RIGHT);
-    return elmat;
-  }
-
   template <class SCAL>
   void S_BilinearForm<SCAL> :: AddElementMatrix (const FESpace::Element & el_test,
                                                  const FESpace::Element & el_trial,
