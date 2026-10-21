@@ -1213,8 +1213,9 @@ namespace ngla
   }
   // #endif
   
-  shared_ptr<SparseMatrix<double>>
-  MakeFullMatrix (const SparseMatrix<double> & mat)
+  template <class TM>
+  shared_ptr<SparseMatrix<TM>>
+  MakeFullMatrix (const SparseMatrixSymmetric<TM> & mat)
   {
     Array<int> cnt(mat.Width());
     cnt = 0;
@@ -1225,7 +1226,8 @@ namespace ngla
           if (c < i) cnt[c]++;
       }
     
-    auto full = make_shared<SparseMatrix<double>>(cnt);
+    auto full = make_shared<SparseMatrix<TM>>(cnt);
+    full->CopyVectorScalar (mat);
     cnt = 0;
 
     ParallelFor (mat.Height(), [&] (int i)
@@ -1244,7 +1246,7 @@ namespace ngla
           int c = mat.GetRowIndices(i)[ci];
           if (c == i) continue;
           full -> GetRowIndices(c)[cnt[c]] = i;
-          full -> GetRowValues(c)[cnt[c]] = mat.GetRowValues(i)[ci];
+          full -> GetRowValues(c)[cnt[c]] = Trans(mat.GetRowValues(i)[ci]);
           cnt[c] ++;
         }
     return full;    
