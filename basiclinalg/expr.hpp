@@ -1590,10 +1590,21 @@ namespace ngbla
       
     if (h*w == 0) return 0; 
 
-    auto sum = InnerProduct (a.Spec()(0), b.Spec()(0));
-    for (size_t i = 1; i < h*w; i++)
-      sum += InnerProduct (a.Spec()(i), b.Spec()(i));
-    return sum;
+    if constexpr (TA::IsLinear() && TB::IsLinear())
+      {
+        auto sum = InnerProduct (a.Spec()(0), b.Spec()(0));
+        for (size_t i = 1; i < h*w; i++)
+          sum += InnerProduct (a.Spec()(i), b.Spec()(i));
+        return sum;
+      }
+    else
+      {
+        auto sum = InnerProduct (a.Spec()(0,0), b.Spec()(0,0));
+        for (size_t i = 0; i < h; i++)
+          for (size_t j = (i == 0) ? 1 : 0; j < w; j++)
+            sum += InnerProduct (a.Spec()(i,j), b.Spec()(i,j));
+        return sum;
+      }
   }
 
 
