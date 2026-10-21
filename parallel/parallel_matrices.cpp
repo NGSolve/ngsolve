@@ -417,7 +417,7 @@ auto _dummy_init = [] () {
   ParallelMatrix :: ParallelMatrix (shared_ptr<BaseMatrix> amat,
 				    shared_ptr<ParallelDofs> apardofs,
 				    PARALLEL_OP aop)
-    : ParallelMatrix(amat, apardofs, apardofs)
+    : ParallelMatrix(amat, apardofs, apardofs, aop)
   { }
 
 
@@ -534,7 +534,7 @@ auto _dummy_init = [] () {
 
   shared_ptr<BaseMatrix> ParallelMatrix :: CreateMatrix () const
   {
-    return make_shared<ParallelMatrix> (mat->CreateMatrix(), paralleldofs);
+    return make_shared<ParallelMatrix> (mat->CreateMatrix(), row_paralleldofs, col_paralleldofs, op);
   }
 
   AutoVector ParallelMatrix :: CreateVector () const
