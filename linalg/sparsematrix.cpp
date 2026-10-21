@@ -1281,9 +1281,11 @@ namespace ngla
   T_MatAdd (T sa, const SparseMatrix<T> & mata,
           T sb, const SparseMatrix<T> & matb)
   {
-    if (auto syma = dynamic_cast<const SparseMatrixSymmetric<T>*>(&mata))
+    auto syma = dynamic_cast<const SparseMatrixSymmetric<T>*>(&mata);
+    auto symb = dynamic_cast<const SparseMatrixSymmetric<T>*>(&matb);
+    if (syma && !symb)
       return T_MatAdd(sa, *MakeFullMatrix(*syma), sb, matb);
-    if (auto symb = dynamic_cast<const SparseMatrixSymmetric<T>*>(&matb))
+    if (symb && !syma)
       return T_MatAdd(sa, mata, sb, *MakeFullMatrix(*symb));
 
     if (mata.Shape() != matb.Shape())
@@ -1315,7 +1317,11 @@ namespace ngla
        TasksPerThread(10));
 
 
-    auto sum = make_shared<SparseMatrix<T>>(cnt, matb.Width());
+    shared_ptr<SparseMatrix<T>> sum;
+    if (syma && symb)
+      sum = make_shared<SparseMatrixSymmetric<T>>(cnt);
+    else
+      sum = make_shared<SparseMatrix<T>>(cnt, matb.Width());
     sum->AsVector() = 0.0;
     
     // fill col-indices
