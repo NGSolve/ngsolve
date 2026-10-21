@@ -1411,7 +1411,7 @@ namespace ngbla
     typedef T TELEM;
     /// scalar type of elements (double or Complex)
     typedef typename mat_traits<T>::TSCAL TSCAL;
-    static constexpr bool IsLinear() { return false; } 
+    static constexpr bool IsLinear() { return ORD==RowMajor && std::is_same<TDIST,unused_dist>(); }
     // 
     MatrixView() = default;
     // : h{0}, w{0}, dist{0}, data{nullptr} { } 
