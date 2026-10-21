@@ -3488,7 +3488,7 @@ namespace ngfem
           cout << IM(6) << e.What() << endl
                << "switching to scalar evaluation" << endl;
           simd_evaluate = false;
-          ApplyElementMatrix (fel, trafo, elx, ely, precomputed, lh);
+          ApplyElementMatrixTrans (fel, trafo, elx, ely, precomputed, lh);
           return;
         }
 
@@ -3633,7 +3633,7 @@ namespace ngfem
           cout << IM(6) << e.What() << endl
                << "switching to scalar evaluation" << endl;
           simd_evaluate = false;
-          T_ApplyElementMatrixEB<SCAL,SCAL_SHAPES> (fel, trafo, elx, ely, precomputed, lh);
+          T_ApplyElementMatrixTransEB<SCAL,SCAL_SHAPES> (fel, trafo, elx, ely, precomputed, lh);
           return;
         }
     
