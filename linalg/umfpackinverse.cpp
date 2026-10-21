@@ -388,7 +388,8 @@ namespace ngla
         double *data_y = reinterpret_cast<double *>(hy.Data());
 
         for (int i : Range(compress.Size()) )
-           hx(i) = mx(compress[i]);
+          for (int j = 0; j < entrysize; j++)
+            hx(i*entrysize+j) = mx(compress[i]*entrysize+j);
 
         int status = umfpack_zl_solve ( sys, rowstart.Data(), indices.Data(), data, nullptr, data_y, nullptr, data_x, nullptr, this->Numeric, nullptr, nullptr );
         umfpack_zl_report_status( nullptr, status );
@@ -396,7 +397,8 @@ namespace ngla
 
         my = 0;
         for (int i : Range(compress.Size()) )
-           my(compress[i]) = hy(i);
+          for (int j = 0; j < entrysize; j++)
+            my(compress[i]*entrysize+j) = hy(i*entrysize+j);
 
       }
     else
