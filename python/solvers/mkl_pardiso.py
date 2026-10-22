@@ -192,12 +192,17 @@ class MKLPardiso(ngla.SparseFactorizationInterface):
 
     def get_csr(self):
         mat = self.GetInnerMatrix()
-        if self.is_symmetric.is_true or self._force_symmetric:
-            mat = (
-                mat.CreateTranspose()
-                if self.is_symmetric_storage
-                else ngla.ExtractTri(mat, lower=False)
-            )
+        if self.is_symmetric_storage:
+            # pardiso needs the upper triangle, transpose the stored lower one
+            vals, cols, ptr = [v.NumPy() for v in mat.CSR()]
+            n = mat.height
+            rows = np.repeat(np.arange(n, dtype=np.int32), np.diff(ptr.astype(np.int64)))
+            order = np.lexsort((rows, cols))
+            indptr = np.zeros(n + 1, dtype=np.int32)
+            np.cumsum(np.bincount(cols, minlength=n), out=indptr[1:])
+            data = [vals[order], rows[order], indptr]
+        elif self.is_symmetric.is_true or self._force_symmetric:
+            mat = ngla.ExtractTri(mat, lower=False)
             data = [np.array(v.NumPy()) for v in mat.CSR()]
         else:
             data = [v.NumPy() for v in mat.CSR()]
