@@ -460,7 +460,7 @@ namespace ngsbem
             IntegrationRule irtrig(ET_TRIG, order), irquad(ET_QUAD, order), irsegm(ET_SEGM, order);
             auto verts = ElementTopology::GetVertices(et);
             auto faces = ElementTopology::GetFaces(et);
-            IntegrationRule ir(faces.Size()*irquad.Size()*irsegm.Size(), lh);
+            IntegrationRule ir(faces.Size()*max(irtrig.Size(), irquad.Size())*irsegm.Size(), lh);
             size_t cnt = 0;
 
             for (int f = 0; f < faces.Size(); f++)
