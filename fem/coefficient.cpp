@@ -478,6 +478,8 @@ namespace ngfem
   shared_ptr<CoefficientFunction>
   ConstantCoefficientFunction :: DiffJacobi (const CoefficientFunction * var, T_DJC & cache) const
   {
+    if (this == var)
+      return make_shared<ConstantCoefficientFunction>(1);
     return ZeroCF(var->Dimensions());
   }
 

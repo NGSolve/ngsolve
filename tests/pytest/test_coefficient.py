@@ -1,6 +1,7 @@
 
 import pytest
 from pytest import approx
+from math import isnan
 from ngsolve import *
 from meshes import *
 
@@ -42,6 +43,24 @@ def test_pow(unit_mesh_2d):
         assert CompareCfs(base**(-p),1.0/c,unit_mesh_2d)
         assert CompareCfs(base**float(p),c,unit_mesh_2d)
         assert CompareCfs(base**CoefficientFunction(p),c,unit_mesh_2d)
+
+def test_pow_negative_base(unit_mesh_2d):
+    # float exponent on a sign-changing base
+    assert Integrate((0.5-x)**2., unit_mesh_2d) == approx(1/12, rel=1e-12)
+    assert Integrate(((0.5-x)**2.).Compile(), unit_mesh_2d) == approx(1/12, rel=1e-12)
+    base = 0.5-x
+    CompareCfs = lambda c1, c2, mesh: Integrate((c1-c2)*(c1-c2), mesh) == approx(0,abs=1e-12)
+    for p in range(1,6):
+        c = CoefficientFunction(1.0)
+        for i in range(p):
+            c = c*base
+        assert CompareCfs(base**float(p),c,unit_mesh_2d)
+        assert CompareCfs(base**CoefficientFunction(float(p)),c,unit_mesh_2d)
+        assert CompareCfs((base**float(p)).Compile(),c,unit_mesh_2d)
+        # Parameter exponent is not reduced to products -> SIMD pow
+        assert CompareCfs(base**Parameter(float(p)),c,unit_mesh_2d)
+    assert Integrate(base**Parameter(0.), unit_mesh_2d) == approx(1)
+    assert isnan(Integrate(base**Parameter(1.5), unit_mesh_2d))
 
 def test_domainwise_cf(domain2_mesh_2d):
     c_vec = CoefficientFunction([(x,y),(1,3)])

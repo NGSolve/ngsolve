@@ -76,8 +76,13 @@ namespace ngfem
              shared_ptr<CoefficientFunction> y)
           -> shared_ptr<CoefficientFunction>
     {
-      FUNC func;
-      return BinaryOpCF(x, y, func, FUNC::Name());
+      if constexpr (requires { FUNC::Create(x, y); })
+        return FUNC::Create(x, y);
+      else
+        {
+          FUNC func;
+          return BinaryOpCF(x, y, func, FUNC::Name());
+        }
     }, py::arg(arg0.c_str()), py::arg(arg1.c_str()), description.c_str());
   }
 

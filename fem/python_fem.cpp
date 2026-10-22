@@ -232,14 +232,65 @@ cl_BinaryOpCF<GenericATan2>::DiffJacobi(const CoefficientFunction * var, T_DJC &
 
 
 
+static shared_ptr<CoefficientFunction> IntPow (shared_ptr<CoefficientFunction> c1, int p)
+{
+  shared_ptr<CoefficientFunction> one = make_shared<ConstantCoefficientFunction>(1.0);
+  if(p==0) return one;
+
+  unsigned n = abs(p);
+  shared_ptr<CoefficientFunction> square = c1;
+  shared_ptr<CoefficientFunction> res;
+
+  // exponentiation by squaring
+  while(n)
+    {
+      if(n%2)
+        res = res ? res*square : square;
+      n /= 2;
+      if(n)
+        square = square*square;
+    }
+
+  if(p<0)
+    return one/res;
+  else
+    return res;
+}
+
 struct GenericPow {
   double operator() (double x, double y) const { return pow(x,y); }
   Complex operator() (Complex x, Complex y) const { return pow(x,y); }
+  template <int N>
+  SIMD<double,N> operator() (SIMD<double,N> x, SIMD<double,N> y) const
+  {
+    SIMD<double,N> r = exp (log(fabs(x))*y);
+    SIMD<double,N> yhalf = 0.5*y;
+    auto yint = round(y) == y;
+    auto yodd = yint && (round(yhalf) != yhalf);
+    // negative base: sign from odd integer exponent, NaN for non-integer exponent
+    SIMD<double,N> rneg = If(yint, If(yodd, -r, r),
+                             SIMD<double,N>(std::numeric_limits<double>::quiet_NaN()));
+    r = If(x < SIMD<double,N>(0.0), rneg, r);
+    return If(y == SIMD<double,N>(0.0), SIMD<double,N>(1.0), r);
+  }
   template <typename T1, typename T2> T1 operator() (T1 x, T2 y) const
   {
       return exp (log(x)*y);
-  }    
+  }
   static string Name() { return "pow"; }
+  static shared_ptr<CoefficientFunction> Create (shared_ptr<CoefficientFunction> x,
+                                                 shared_ptr<CoefficientFunction> y)
+  {
+    // constant, scalar, small integer exponent -> multiplications
+    if (x->Dimension() == 1)
+      if (auto cy = dynamic_pointer_cast<ConstantCoefficientFunction>(y))
+        {
+          double p = cy->EvaluateConst();
+          if (p == round(p) && fabs(p) <= 64)
+            return IntPow (x, int(p));
+        }
+    return BinaryOpCF(x, y, GenericPow(), Name());
+  }
   void DoArchive(Archive& ar) {}
 };
 
@@ -887,31 +938,10 @@ val : can be one of the following:
     
     .def ("__pow__", [] (shared_ptr<CF> c1, int p)
            {
-             shared_ptr<CF> one = make_shared<ConstantCoefficientFunction>(1.0);
-             if(p==0) return one;
-
-             unsigned n = abs(p);
-             shared_ptr<CF> square = c1;
-             shared_ptr<CF> res;
-
-             // exponentiation by squaring
-             while(n)
-             {
-               if(n%2)
-               {
-                 // check if res was not yet assigned any value
-                 res = res ? res*square : square;
-               }
-               square = square*square;
-               n /= 2;
-             }
-
-             if(p<0)
-               return one/res;
-             else
-               return res;
+             return IntPow(c1, p);
            }, py::arg("exponent") )
-    .def ("__pow__", [m] (shared_ptr<CF> c1, double c2) { return m.attr("pow")(c1, c2); })
+    .def ("__pow__", [] (shared_ptr<CF> c1, double c2)
+          { return GenericPow::Create(c1, make_shared<ConstantCoefficientFunction>(c2)); })
     .def ("__rpow__", [m] (shared_ptr<CF> c1, double c2) { return m.attr("pow")(c2, c1); })
     .def ("__pow__", [m] (shared_ptr<CF> c1, shared_ptr<CF> c2) { return m.attr("pow")(c1, c2); })
     .def("__or__", [] (shared_ptr<CF> c1, shared_ptr<CF> c2)
