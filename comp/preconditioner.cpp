@@ -472,15 +472,13 @@ namespace ngcomp
     
     shared_ptr<BilinearForm> lo_bfa = bfa->GetLowOrderBilinearForm();
 
-    string invtype, loinvtype = default_inversetype;
-    invtype = dynamic_cast<const BaseSparseMatrix & > (bfa->GetMatrix()).SetInverseType (inversetype);
-    if (lo_bfa)
-      loinvtype = dynamic_cast<const BaseSparseMatrix & > (lo_bfa->GetMatrix()) .SetInverseType (inversetype);
+    string invtype = dynamic_cast<const BaseSparseMatrix & > (bfa->GetMatrix()).SetInverseType (inversetype);
+    auto & coarsemat = (lo_bfa ? lo_bfa : bfa)->GetMatrix(0);
+    string coarseinvtype = dynamic_cast<const BaseSparseMatrix & > (coarsemat).SetInverseType (inversetype);
     if (flags.FlagsFlagDefined("inverse_flags"))
       {
         bfa->GetMatrix().SetInverseFlags (flags.GetFlagsFlag("inverse_flags"));
-        if (lo_bfa)
-          lo_bfa->GetMatrix().SetInverseFlags (flags.GetFlagsFlag("inverse_flags"));
+        coarsemat.SetInverseFlags (flags.GetFlagsFlag("inverse_flags"));
       }
 
 
@@ -515,9 +513,8 @@ namespace ngcomp
     if (test) Test();
     if (mgtest) MgTest();
 
+    dynamic_cast<const BaseSparseMatrix & > (coarsemat).SetInverseType ( coarseinvtype );
     dynamic_cast<const BaseSparseMatrix & > (bfa->GetMatrix()).SetInverseType ( invtype );
-    if (lo_bfa)
-      dynamic_cast<const BaseSparseMatrix & > (lo_bfa->GetMatrix()) .SetInverseType ( loinvtype );
   }
   
   
