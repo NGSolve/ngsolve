@@ -10,10 +10,34 @@ def _stream_package(solver):
     return pkg if pkg in package_wrapper.PACKAGE else "cuda"
 
 
+def _hybrid_execution(limit=None):
+    # keep the factors in host memory, limit is the device memory used as working space
+    # (bytes, "6GiB", "80%"), default 90% of the free device memory
+    import nvmath.sparse.advanced as nvs
+    if limit is None:
+        from cuda.bindings import runtime
+        err, free, total = runtime.cudaMemGetInfo()
+        limit = int(0.9 * free)
+    elif isinstance(limit, float):
+        limit = int(limit)
+    return nvs.ExecutionCUDA(hybrid_memory_mode_options=nvs.HybridMemoryModeOptions(
+        hybrid_memory_mode=True, hybrid_device_memory_limit=limit))
+
+
 class CudssSolver(ngla.SparseFactorizationInterface):
     solver = None
     dtype = np.float64
     spd = False
+
+    def __init__(self, *args, **kwargs):
+        """inverse flag hybrid: True or device memory limit (bytes, "6GiB", "80%") to keep
+        the factors in host memory, False to never do so. Default: switch to hybrid
+        memory mode if the factors do not fit into device memory."""
+        super().__init__(*args, **kwargs)
+        self.hybrid = None
+        if args and hasattr(args[0], "inverse_flags"):
+            self.hybrid = args[0].inverse_flags.ToDict().get("hybrid")
+        self._hybrid_active = self.hybrid not in (None, False)
 
     @TimeFunction
     def Analyze(self):
@@ -53,9 +77,15 @@ class CudssSolver(ngla.SparseFactorizationInterface):
             options.sparse_system_view = nvs.DirectSolverMatrixViewType.LOWER
 
         tmp = np.empty(csr.shape[1], dtype=csr.dtype)
-        self.solver = nvs.DirectSolver(csr, tmp, options=options)
+        self.solver = nvs.DirectSolver(csr, tmp, options=options,
+                                       execution=self._execution())
         self.solver.plan()
         self._is_first_factor_call = True
+
+    def _execution(self):
+        if not self._hybrid_active:
+            return None
+        return _hybrid_execution(None if self.hybrid in (None, True) else self.hybrid)
 
     @TimeFunction
     def Factor(self):
@@ -72,7 +102,18 @@ class CudssSolver(ngla.SparseFactorizationInterface):
             stream_holder = utils.get_or_create_stream(self.solver.device_id, None, _stream_package(self.solver))
             values_tensor = NumpyTensor(values)
             self.solver.a.values.copy_(values_tensor, stream_holder)
-        self.solver.factorize()
+        try:
+            self.solver.factorize()
+        except Exception as e:
+            from nvmath.bindings.cudss import cuDSSError, Status
+            if self.hybrid is not None or not (isinstance(e, cuDSSError) and e.status == Status.ALLOC_FAILED):
+                raise
+            print("cuDSS: factors do not fit into device memory, switching to hybrid memory mode")
+            self._hybrid_active = True
+            self.solver.free()
+            self.solver = None
+            self.Analyze()
+            self.solver.factorize()
         self._is_first_factor_call = False
 
     @TimeFunction
