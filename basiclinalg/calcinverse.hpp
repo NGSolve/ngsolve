@@ -12,9 +12,16 @@ namespace ngbla
 
   /// Calculate inverse. Gauss elimination with row pivoting
   template <class T2>
-  extern NGS_DLL_HEADER void CalcInverse (FlatMatrix<T2> inv, INVERSE_LIB il = INVERSE_LIB::INV_CHOOSE);
+  extern NGS_DLL_HEADER void CalcInverse (SliceMatrix<T2> inv, INVERSE_LIB il = INVERSE_LIB::INV_CHOOSE);
 
-  extern NGS_DLL_HEADER void CalcInverse (FlatMatrix<double> inv, INVERSE_LIB il = INVERSE_LIB::INV_CHOOSE);
+  extern NGS_DLL_HEADER void CalcInverse (SliceMatrix<double> inv, INVERSE_LIB il = INVERSE_LIB::INV_CHOOSE);
+
+  // FlatMatrix, Matrix, ...
+  template <typename T, typename TH, typename TW, typename TDIST>
+  inline void CalcInverse (MatrixView<T,RowMajor,TH,TW,TDIST> inv, INVERSE_LIB il = INVERSE_LIB::INV_CHOOSE)
+  {
+    CalcInverse (SliceMatrix<T>(inv), il);
+  }
 
   template <class T, class T2>
   inline void CalcInverse (const FlatMatrix<T> m, FlatMatrix<T2> inv)

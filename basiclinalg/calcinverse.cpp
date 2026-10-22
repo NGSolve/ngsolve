@@ -24,7 +24,7 @@ namespace ngbla
 
 
   template <class T2>
-  void T_CalcInverse (FlatMatrix<T2> inv)
+  void T_CalcInverse (SliceMatrix<T2> inv)
   {
     // static Timer t("CalcInverse");
     // RegionTimer reg(t);
@@ -82,13 +82,13 @@ namespace ngbla
 	for (int k = 0; k < n; k++)
 	  if (k != j)
 	    {
-	      T2 help = inv(n*k+j);
+	      T2 help = inv(k,j);
 	      T2 h = help * hr;   
 
 	      for (int i = 0; i < n; i++)
 		{
-		  T2 h = help * inv(n*j+i); 
-		  inv(n*k+i) -= h;
+		  T2 h = help * inv(j,i); 
+		  inv(k,i) -= h;
 		}
 
 	      inv(k,j) = -h;
@@ -163,7 +163,7 @@ namespace ngbla
 
 
   template <>
-  void CalcInverse (FlatMatrix<Complex> inv, INVERSE_LIB il)
+  void CalcInverse (SliceMatrix<Complex> inv, INVERSE_LIB il)
   {
     // crossover vs lapack: ~450 Accelerate (M4), ~60 MKL (AVX512)
     if (il == INVERSE_LIB::INV_CHOOSE)
@@ -190,16 +190,16 @@ namespace ngbla
     T_CalcInverse (inv);    
   }
   */
-  template void CalcInverse (FlatMatrix<float> inv, INVERSE_LIB il);  
+  template void CalcInverse (SliceMatrix<float> inv, INVERSE_LIB il);  
 
 
   template <class T2>
-  extern void CalcInverse (FlatMatrix<T2> inv, INVERSE_LIB il)
+  extern void CalcInverse (SliceMatrix<T2> inv, INVERSE_LIB il)
   {
     T_CalcInverse (inv);
   }
 
-  extern NGS_DLL_HEADER void CalcInverse (FlatMatrix<double> inv, INVERSE_LIB il)
+  extern NGS_DLL_HEADER void CalcInverse (SliceMatrix<double> inv, INVERSE_LIB il)
   {
     if (il == INVERSE_LIB::INV_CHOOSE)
       il = inv.Height() >= 100 ? INVERSE_LIB::INV_LAPACK : INVERSE_LIB::INV_NGBLA_LU;
@@ -251,8 +251,8 @@ namespace ngbla
 
 
 #define INST(N) \
-  template void CalcInverse (FlatMatrix<Mat<N,N,double> > inv, INVERSE_LIB il); \
-  template void CalcInverse (FlatMatrix<Mat<N,N,Complex> > inv, INVERSE_LIB il);
+  template void CalcInverse (SliceMatrix<Mat<N,N,double> > inv, INVERSE_LIB il); \
+  template void CalcInverse (SliceMatrix<Mat<N,N,Complex> > inv, INVERSE_LIB il);
   NGS_FOR_SYS_DIMS(INST)
 #undef INST
 
