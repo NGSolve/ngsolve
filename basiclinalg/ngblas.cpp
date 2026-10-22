@@ -3122,267 +3122,31 @@ void T_AddABt (SliceMatrix<Complex> a, SliceMatrix<Complex> b, BareSliceMatrix<C
   
   
   // ************************************** Complex ADB^t *********************
-  
-  /*
-  
-  void CopyMatrixInScaleRows (size_t h, size_t w,
-                              Complex * ps, size_t dists,
-                              Complex * pd, size_t distd,
-                              Complex * pscale, size_t distscale)
-  {
-    for (size_t i = 0; i < h; i++, ps += dists, pd += distd, pscale += distscale)
-      {
-        Complex scale = *pscale;
-        for (size_t j = 0; j < w; j++)
-          pd[j] = scale * ps[j];
-      }
-  }
-  
-  */
-  
-  void CopyMatrixInScaleRows (size_t h, size_t w,
-                              Complex * ps, size_t dists,
-                              Complex * pd, size_t distd,
-                              Complex * pscale, size_t distscale)
-  {
-    for (size_t i = 0; i < h; i++, ps += dists, pd += distd, pscale += distscale)
-      {
-        SIMD<Complex> scale (*pscale);
-        size_t j = 0;
-        size_t WS = SIMD<double>::Size();
-        for ( ; j+4*WS <= w; j+=4*WS)
-          {
-            SIMD<Complex> val1, val2, val3, val4;
-            val1.LoadFast(ps+j);
-            val2.LoadFast(ps+j+WS);
-            val3.LoadFast(ps+j+2*WS);
-            val4.LoadFast(ps+j+3*WS);
-            val1 = val1 * scale;
-            val2 = val2 * scale;
-            val3 = val3 * scale;
-            val4 = val4 * scale;
-            val1.StoreFast(pd+j);
-            val2.StoreFast(pd+j+WS);
-            val3.StoreFast(pd+j+2*WS);
-            val4.StoreFast(pd+j+3*WS);
-          }
-        for ( ; j+WS <= w; j+=WS)
-          {
-            SIMD<Complex> val;
-            val.LoadFast(ps+j);
-            val = val * scale;
-            val.StoreFast(pd+j);
-          }
-        SIMD<Complex> val;
-        val.LoadFast(ps+j, w-j);
-        val = val * scale;
-        val.StoreFast(pd+j, w-j);
-      }
-  }  
 
-
-
-  
-
-  
-  void KernelScal4x4Trans (Complex * pa, size_t da,
-                           Complex * pb, size_t db,
-                           Complex * pc, size_t dc,
-                           size_t ninner)
-  {
-    SIMD<Complex> sum1, sum2, sum3, sum4;
-    sum1.LoadFast (pc);
-    sum2.LoadFast (pc+dc);
-    sum3.LoadFast (pc+2*dc);
-    sum4.LoadFast (pc+3*dc);
-    for (size_t i = 0; i < ninner; i++, pa += da, pb += db)
-      {
-        SIMD<Complex> b1;
-        b1.LoadFast(pb);
-        sum1 = sum1 - SIMD<Complex> (pa[0]) * b1;
-        sum2 = sum2 - SIMD<Complex> (pa[1]) * b1;
-        sum3 = sum3 - SIMD<Complex> (pa[2]) * b1;
-        sum4 = sum4 - SIMD<Complex> (pa[3]) * b1;
-      }
-    sum1.StoreFast(pc);
-    sum2.StoreFast(pc+dc);
-    sum3.StoreFast(pc+2*dc);
-    sum4.StoreFast(pc+3*dc);
-  }
-
-  void KernelScal4x4Trans (Complex * pa, size_t da,
-                           Complex * pb, size_t db,
-                           Complex * pc, size_t dc,
-                           size_t ninner, int mask)
-  {
-    SIMD<Complex> sum1, sum2, sum3, sum4;
-    sum1.LoadFast (pc, mask);
-    sum2.LoadFast (pc+dc, mask);
-    sum3.LoadFast (pc+2*dc, mask);
-    sum4.LoadFast (pc+3*dc, mask);
-    for (size_t i = 0; i < ninner; i++, pa += da, pb += db)
-      {
-        SIMD<Complex> b1;
-        b1.LoadFast(pb, mask);
-        sum1 = sum1 - SIMD<Complex> (pa[0]) * b1;
-        sum2 = sum2 - SIMD<Complex> (pa[1]) * b1;
-        sum3 = sum3 - SIMD<Complex> (pa[2]) * b1;
-        sum4 = sum4 - SIMD<Complex> (pa[3]) * b1;
-      }
-    sum1.StoreFast(pc, mask);
-    sum2.StoreFast(pc+dc, mask);
-    sum3.StoreFast(pc+2*dc, mask);
-    sum4.StoreFast(pc+3*dc, mask);
-  }
-  
-
-   
-  void KernelScal1x4Trans (Complex * pa, size_t da,
-                           Complex * pb, size_t db,
-                           Complex * pc, size_t dc,
-                           size_t ninner)
-  {
-    SIMD<Complex> sum1;
-    sum1.LoadFast (pc);
-    for (size_t i = 0; i < ninner; i++, pa += da, pb += db)
-      {
-        SIMD<Complex> b1;
-        b1.LoadFast(pb);
-        sum1 = sum1 - SIMD<Complex> (*pa) * b1;
-      }
-    sum1.StoreFast(pc);
-  }
-  
-  void KernelScal1x4Trans (Complex * pa, size_t da,
-                           Complex * pb, size_t db,
-                           Complex * pc, size_t dc,
-                           size_t ninner, int mask)
-  {
-    SIMD<Complex> sum1;
-    sum1.LoadFast (pc, mask);
-    for (size_t i = 0; i < ninner; i++, pa += da, pb += db)
-      {
-        SIMD<Complex> b1;
-        b1.LoadFast(pb, mask);
-        sum1 = sum1 - SIMD<Complex> (*pa) * b1;
-      }
-    sum1.StoreFast(pc, mask);
-  }
-  
-  void MySubAtDB_BB (
-                      Complex * pa, size_t da,
-                      Complex * pb, size_t db,
-                      Complex * pc, size_t dc,
-                      size_t na, size_t nb, size_t ninner
-                      )
-  {
-    size_t WS = SIMD<double>::Size();
-    size_t i = 0;
-    for ( ; i+4 <= na; i+=4, pa += 4, pc += 4*dc)
-      {
-        size_t j = 0;
-        for ( ; j+WS <= nb; j+=WS)
-          KernelScal4x4Trans (pa, da, pb+j, db, pc+j, dc, ninner);
-        if (j < nb)
-          KernelScal4x4Trans (pa, da, pb+j, db, pc+j, dc, ninner, nb-j);          
-          /* maybe better for AVX, but not portable to 512
-          {
-          for ( ; j < nb; j++)
-            Complex tmpc[4] = { pc[j], pc[dc+j], pc[2*dc+j], pc[3*dc+j] };
-            KernelScal1x4Trans (pb+j, db, pa, da, tmpc, 1, ninner);
-            pc[j] = tmpc[0];
-            pc[dc+j] = tmpc[1];
-            pc[2*dc+j] = tmpc[2];
-            pc[3*dc+j] = tmpc[3];
-          }
-          */
-      }
-    for ( ; i < na; i++, pa ++, pc += dc)
-      {
-        size_t j = 0;
-        for ( ; j+WS <= nb; j+=WS)
-          KernelScal1x4Trans (pa, da, pb+j, db, pc+j, dc, ninner);
-        if (j < nb)
-          KernelScal1x4Trans (pa, da, pb+j, db, pc+j, dc, ninner, nb-j);
-      }
-  }
-
-  /*
-
-  void MySubAtDB_BB (
-                     Complex * pa, size_t da,
-                     Complex * pb, size_t db,
-                     Complex * pc, size_t dc,
-                     size_t na, size_t nb, size_t ninner
-                     )
-  {
-  // SliceMatrix<Complex> a(ninner, na, da, pa);
-  // SliceMatrix<Complex> b(ninner, nb, db, pb);
-  // SliceMatrix<Complex> c(na, nb, dc, pc);
-  // c -= Trans(a) * b; //  | Lapack;
-
-    for (size_t i = 0; i < na; i++)
-      for (size_t j = 0; j < nb; j++)
-        {
-          Complex sum = pc[i*dc+j];
-          for (size_t k = 0; k < ninner; k++)
-            sum -= pa[k*da+i] * pb[k*db+j];
-          pc[i*dc+j] = sum;
-        }
-  }
-  */
-
-
-  constexpr size_t CNA = 32;
-  constexpr size_t CNB = 32;
-  constexpr size_t CNK = 32;
-  
-  void MySubAtDB_BP (SliceMatrix<Complex> a,
-                     SliceVector<Complex> diag,
-                     SliceMatrix<Complex> b, SliceMatrix<Complex> c)
-  {
-    // alignas (64) Complex mema[CNA*CNK];   // slow !!!
-    alignas (64) double mema[2*CNA*CNK];
-    size_t na = a.Width();
-    size_t nb = b.Width();
-    size_t k = a.Height();
-    
-    CopyMatrixInScaleRows (k, na,
-                           a.Data(), a.Dist(), (Complex*)&mema[0], CNA,
-                           diag.Data(), diag.Dist());
-
-    size_t i = 0;
-    constexpr size_t bs = CNB;
-    for ( ; i+bs <= nb; i += bs)
-      MySubAtDB_BB ((Complex*)mema, CNA, &b(size_t(0),i), b.Dist(), &c(size_t(0),i), c.Dist(), na, bs,k);
-    if (i < nb)
-      MySubAtDB_BB ((Complex*)mema, CNA, &b(size_t(0),i), b.Dist(), &c(size_t(0),i), c.Dist(), na, nb-i, k);    
-  }
-  
-  void MySubAtDB_PM (SliceMatrix<Complex> a,
-                     SliceVector<Complex> diag,
-                     SliceMatrix<Complex> b, SliceMatrix<Complex> c)
-  {
-    size_t k = a.Height();
-    size_t i = 0;
-    constexpr size_t bs = CNK;
-    for ( ; i+bs <= k; i += bs) 
-      MySubAtDB_BP (a.Rows(i,i+bs), diag.Range(i,i+bs), b.Rows(i,i+bs), c);
-    if (i < k)
-      MySubAtDB_BP (a.Rows(i,k), diag.Range(i,k), b.Rows(i,k), c);      
-  }
-  
+  // c -= Trans(a) diag b, via the tuned complex GEMM
   void SubAtDB (SliceMatrix<Complex> a,
                 SliceVector<Complex> diag,
                 SliceMatrix<Complex> b, SliceMatrix<Complex> c)
   {
-    size_t na = a.Width();
-    size_t i = 0;
-    constexpr size_t bs = CNA;
-    for ( ; i+bs <= na; i += bs)
-      MySubAtDB_PM (a.Cols(i,i+bs), diag, b, c.Rows(i,i+bs));
-    if (i < na)
-      MySubAtDB_PM (a.Cols(i,na), diag, b, c.Rows(i,na));
+    constexpr size_t BA = 64, BK = 64;
+    alignas (64) double mema[2*BA*BK];   // no Complex[]: avoids zero-init
+
+    for (size_t i = 0; i < a.Width(); i += BA)
+      {
+        size_t i2 = min2(i+BA, a.Width());
+        for (size_t k = 0; k < a.Height(); k += BK)
+          {
+            size_t k2 = min2(k+BK, a.Height());
+            SliceMatrix<Complex> loca(i2-i, k2-k, BK, (Complex*)&mema[0]);
+            for (size_t kk = k; kk < k2; kk++)
+              {
+                Complex s = -diag(kk);
+                for (size_t ii = i; ii < i2; ii++)
+                  loca(ii-i, kk-k) = s * a(kk,ii);
+              }
+            c.Rows(i,i2) += loca * b.Rows(k,k2);
+          }
+      }
   }
 
 
