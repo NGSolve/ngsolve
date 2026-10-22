@@ -699,8 +699,17 @@ namespace ngfem
               }
             else
               {
-                mat.Rows(nedge, nd) += dualsD.Rows(nedge, nd) * Trans(shapesD);
+                // only rows with duals on this face/cell
+                size_t r0 = nd, r1 = nedge;
                 for (size_t i : Range(nedge, nd))
+                  if (L2Norm(dualsD.Row(i)) > 0)
+                    {
+                      r0 = min(r0, i);
+                      r1 = i+1;
+                    }
+                if (r0 >= r1) continue;
+                mat.Rows(r0, r1) += dualsD.Rows(r0, r1) * Trans(shapesD);
+                for (size_t i : Range(r0, r1))
                   rhs(i) += HSum(InnerProduct(fvals.AsVector(), dualsRS.Row(i)));
               }
           }
@@ -721,8 +730,11 @@ namespace ngfem
         auto rf = rhs.Range(nedge, nd);
         rf -= mat.Rows(nedge, nd).Cols(0, nedge) * ue;
         auto mff = mat.Rows(nedge, nd).Cols(nedge, nd);
-        CalcInverse (mff);
-        coefs.Col(0).Range(nedge, nd) = mff * rf;
+        size_t nf = nd-nedge;
+        FlatArray<int> piv(nf, lh);
+        CalcLU (mff, piv);
+        SolveFromLU (mff, piv, SliceMatrix<double,ColMajor>(nf, 1, nf, rf.Data()));
+        coefs.Col(0).Range(nedge, nd) = rf;
       }
   }
 
