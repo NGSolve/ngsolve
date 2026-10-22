@@ -2193,7 +2193,7 @@ shared_ptr<BaseMatrix> InverseSparseMatrixTM (shared_ptr<const SparseMatrix<TM>>
       if(invtype == "superlu") return new SuperLUInverse<TM> (*A, subset, clusters);
   #endif
   #ifdef USE_UMFPACK
-	  if(invtype == "umfpack") return make_shared<UmfpackInverse<TM>>(A, subset, clusters);
+	  if(invtype == "umfpack") return make_shared<UmfpackInverse<TM>>(A, subset, clusters, dynamic_pointer_cast<const SparseMatrixSymmetric<TM>>(A) != nullptr);
   #endif
   #ifdef USE_MUMPS
       if(invtype == "mumps") return make_shared<MumpsInverse<TM>> (*A, subset, clusters);
