@@ -178,8 +178,7 @@ static RegisterClassForArchive<cl_BinaryOpCF<GenericBSpline2D>, CoefficientFunct
 template <> void
 cl_UnaryOpCF<GenericBSpline>::GenerateCode(Code &code, FlatArray<int> inputs, int index) const
 {
-  // bspline.hpp is not automatically included. so we should include it:
-  code.top+= "#include <bspline.hpp>\n";
+  code.top+= "extern \"C++\" {\n#include <bspline.hpp>\n}\n";
   
   stringstream s;
   s << "reinterpret_cast<BSpline*>(" << code.AddPointer(lam.sp.get()) << ")";
