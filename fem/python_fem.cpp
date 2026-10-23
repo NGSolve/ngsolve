@@ -184,7 +184,7 @@ cl_UnaryOpCF<GenericBSpline>::GenerateCode(Code &code, FlatArray<int> inputs, in
   s << "reinterpret_cast<BSpline*>(" << code.AddPointer(lam.sp.get()) << ")";
   code.body += Var(index,0,1).Assign(s.str());
   
-  Var(index).Assign( Var(inputs[0],0,c1->Dimensions()).Func(Var(index,0,1).S()+"->operator()"));
+  code.body += Var(index).Assign( Var(inputs[0],0,c1->Dimensions()).Func(Var(index,0,1).S()+"->operator()"));
 }
 
 template <> shared_ptr<CoefficientFunction>
