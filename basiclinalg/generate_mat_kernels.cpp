@@ -2781,17 +2781,19 @@ auto Concat (tuple<SIMD<double,N>, Args...> tup)
       << "     double ** ppa," << endl
       << "     double ** ppb);" << endl;
 
-  GenerateMultiVecScalAB (out, 6, 4);
-  GenerateMultiVecScalAB (out, 3, 4);
-  GenerateMultiVecScalAB (out, 1, 4);
-  GenerateMultiVecScalAB (out, 6, 2);
-  GenerateMultiVecScalAB (out, 3, 2);
-  GenerateMultiVecScalAB (out, 8, 1);
-  GenerateMultiVecScalAB (out, 6, 1);
-  GenerateMultiVecScalAB (out, 4, 1);
-  GenerateMultiVecScalAB (out, 3, 1);
-  GenerateMultiVecScalAB (out, 2, 1);
-  GenerateMultiVecScalAB (out, 1, 1);
+  // MultiVecScalAB, MultiVecScalC, MultiScaleAdd and MultiScaleAddC
+  // are templates in matkernel.hpp now
+  // GenerateMultiVecScalAB (out, 6, 4);
+  // GenerateMultiVecScalAB (out, 3, 4);
+  // GenerateMultiVecScalAB (out, 1, 4);
+  // GenerateMultiVecScalAB (out, 6, 2);
+  // GenerateMultiVecScalAB (out, 3, 2);
+  // GenerateMultiVecScalAB (out, 8, 1);
+  // GenerateMultiVecScalAB (out, 6, 1);
+  // GenerateMultiVecScalAB (out, 4, 1);
+  // GenerateMultiVecScalAB (out, 3, 1);
+  // GenerateMultiVecScalAB (out, 2, 1);
+  // GenerateMultiVecScalAB (out, 1, 1);
 
 
   // MultiVecScalC
@@ -2801,20 +2803,20 @@ auto Concat (tuple<SIMD<double,N>, Args...> tup)
       << "     Complex ** ppb," << endl
       << "     Complex* pc, size_t dc);" << endl;
 
-  GenerateMultiVecScalC(out, 6, 2, 0);
-  GenerateMultiVecScalC(out, 6, 1, 0);
-  GenerateMultiVecScalC(out, 3, 2, 0);
-  GenerateMultiVecScalC(out, 3, 1, 0);
-  GenerateMultiVecScalC(out, 1, 8, 0);
-  GenerateMultiVecScalC(out, 1, 4, 0);
-  GenerateMultiVecScalC(out, 1, 1, 0);
-  GenerateMultiVecScalC(out, 6, 2, 1);
-  GenerateMultiVecScalC(out, 6, 1, 1);
-  GenerateMultiVecScalC(out, 3, 2, 1);
-  GenerateMultiVecScalC(out, 3, 1, 1);
-  GenerateMultiVecScalC(out, 1, 8, 1);
-  GenerateMultiVecScalC(out, 1, 4, 1);
-  GenerateMultiVecScalC(out, 1, 1, 1);
+  // GenerateMultiVecScalC(out, 6, 2, 0);
+  // GenerateMultiVecScalC(out, 6, 1, 0);
+  // GenerateMultiVecScalC(out, 3, 2, 0);
+  // GenerateMultiVecScalC(out, 3, 1, 0);
+  // GenerateMultiVecScalC(out, 1, 8, 0);
+  // GenerateMultiVecScalC(out, 1, 4, 0);
+  // GenerateMultiVecScalC(out, 1, 1, 0);
+  // GenerateMultiVecScalC(out, 6, 2, 1);
+  // GenerateMultiVecScalC(out, 6, 1, 1);
+  // GenerateMultiVecScalC(out, 3, 2, 1);
+  // GenerateMultiVecScalC(out, 3, 1, 1);
+  // GenerateMultiVecScalC(out, 1, 8, 1);
+  // GenerateMultiVecScalC(out, 1, 4, 1);
+  // GenerateMultiVecScalC(out, 1, 1, 1);
 
 
 
@@ -2826,15 +2828,15 @@ auto Concat (tuple<SIMD<double,N>, Args...> tup)
       << "     double ** pb, " << endl
       << "     double * pc, size_t dc);" << endl;
 
-  GenerateMultiScaleAdd(out, 6, 6);
-  GenerateMultiScaleAdd(out, 2, 6);
-  GenerateMultiScaleAdd(out, 1, 6);
-  GenerateMultiScaleAdd(out, 6, 2);
-  GenerateMultiScaleAdd(out, 2, 2);
-  GenerateMultiScaleAdd(out, 1, 2);
-  GenerateMultiScaleAdd(out, 6, 1);
-  GenerateMultiScaleAdd(out, 2, 1);
-  GenerateMultiScaleAdd(out, 1, 1);
+  // GenerateMultiScaleAdd(out, 6, 6);
+  // GenerateMultiScaleAdd(out, 2, 6);
+  // GenerateMultiScaleAdd(out, 1, 6);
+  // GenerateMultiScaleAdd(out, 6, 2);
+  // GenerateMultiScaleAdd(out, 2, 2);
+  // GenerateMultiScaleAdd(out, 1, 2);
+  // GenerateMultiScaleAdd(out, 6, 1);
+  // GenerateMultiScaleAdd(out, 2, 1);
+  // GenerateMultiScaleAdd(out, 1, 1);
 
 
     // MultiScaleAddC
@@ -2845,12 +2847,12 @@ auto Concat (tuple<SIMD<double,N>, Args...> tup)
       << "     Complex * pc, size_t dc);" << endl;
 
 
-  GenerateMultiScaleAddC (out, 3, 4);
-  GenerateMultiScaleAddC (out, 2, 4);
-  GenerateMultiScaleAddC (out, 1, 4);
-  GenerateMultiScaleAddC (out, 3, 1);
-  GenerateMultiScaleAddC (out, 2, 1);
-  GenerateMultiScaleAddC (out, 1, 1);
+  // GenerateMultiScaleAddC (out, 3, 4);
+  // GenerateMultiScaleAddC (out, 2, 4);
+  // GenerateMultiScaleAddC (out, 1, 4);
+  // GenerateMultiScaleAddC (out, 3, 1);
+  // GenerateMultiScaleAddC (out, 2, 1);
+  // GenerateMultiScaleAddC (out, 1, 1);
 
 
   
