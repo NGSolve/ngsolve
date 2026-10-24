@@ -1203,41 +1203,28 @@ restart : int = None
     def _SolveImpl(self, rhs : BaseVector, sol : BaseVector):
         is_complex = rhs.is_complex
         A, pre, innerproduct, norm = self.mat, self.pre, self.innerproduct, self.norm
-        n = len(rhs)
-        m = self.maxiter
+        m = self.maxiter if self.restart is None else min(self.restart, self.maxiter)
         sn = Vector(m, is_complex)
         cs = Vector(m, is_complex)
-        sn[:] = 0
-        cs[:] = 0
+        beta = Vector(m+1, is_complex)
         if self.callback_sol is not None:
             sol_start = sol.CreateVector()
-            sol_start.data = sol
         r = rhs.CreateVector()
         tmp = rhs.CreateVector()
-        tmp.data = rhs - A * sol
-        r.data = pre * tmp
-        Q = []
-        H = []
-        Q.append(rhs.CreateVector())
-        r_norm = norm(r)
-        if self.CheckResidual(abs(r_norm)):
-            return sol
-        Q[0].data = 1./r_norm * r
-        beta = Vector(m+1, is_complex)
-        beta[:] = 0
-        beta[0] = r_norm
 
         def arnoldi(A,Q,k):
             q = rhs.CreateVector()
             tmp.data = A * Q[k]
             q.data = pre * tmp
+            q_norm = norm(q)
             h = Vector(m+1, is_complex)
             h[:] = 0
             for i in range(k+1):
                 h[i] = innerproduct(Q[i],q)
                 q -= h[i] * Q[i]
             h[k+1] = norm(q)
-            if abs(h[k+1]) < 1e-12:
+            # lucky breakdown: q lies in the Krylov space
+            if abs(h[k+1]) <= 1e-12 * q_norm:
                 return h, None
             q *= 1./h[k+1].real
             return h, q
@@ -1275,39 +1262,38 @@ restart : int = None
             for i in range(k+1):
                 sol.data += y[i] * Q[i]
 
-        for k in range(m):
-            h,q = arnoldi(A,Q,k)
-            H.append(h)
-            if q is None:
-                break
-            Q.append(q)
-            apply_givens_rotation(h, cs, sn, k)
-            beta[k+1] = -sn[k].conjugate() * beta[k]
-            beta[k] = cs[k] * beta[k]
-            error = abs(beta[k+1])
-            if self.callback_sol is not None:
-                calcSolution(k)
-            if self.CheckResidual(error):
-                break
-            if self.restart is not None and (k+1 == self.restart and not (self.restart == self.maxiter)):
-                calcSolution(k)
-                del Q
-                restarted_solver = GMRESSolver(mat=self.mat,
-                                               pre=self.pre,
-                                               tol=0,
-                                               atol=self._final_residual,
-                                               callback=self.callback,
-                                               callback_sol=self.callback_sol,
-                                               maxiter=self.maxiter,
-                                               restart=self.restart,
-                                               printrates=self.printrates)
-                restarted_solver.iterations = self.iterations
-                sol = restarted_solver.Solve(rhs = rhs, sol = sol, initialize=False)
-                self.residuals += restarted_solver.residuals
-                self.iterations = restarted_solver.iterations
+        # each pass is one restart cycle of at most m steps
+        while True:
+            tmp.data = rhs - A * sol
+            r.data = pre * tmp
+            r_norm = norm(r)
+            if not self.residuals and self.CheckResidual(abs(r_norm)):
                 return sol
-        calcSolution(k)
-        return sol
+            if self.callback_sol is not None:
+                sol_start.data = sol
+            Q = [rhs.CreateVector()]
+            Q[0].data = 1./r_norm * r
+            H = []
+            sn[:] = 0
+            cs[:] = 0
+            beta[:] = 0
+            beta[0] = r_norm
+
+            for k in range(m):
+                h,q = arnoldi(A,Q,k)
+                H.append(h)
+                apply_givens_rotation(h, cs, sn, k)
+                beta[k+1] = -sn[k].conjugate() * beta[k]
+                beta[k] = cs[k] * beta[k]
+                if self.callback_sol is not None:
+                    calcSolution(k)
+                converged = self.CheckResidual(abs(beta[k+1]))
+                if converged or q is None:
+                    break
+                Q.append(q)
+            calcSolution(k)
+            if converged or q is None:
+                return sol
 
 def GMRES(A, b, pre=None, freedofs=None, x=None, maxsteps = 100, tol = None, innerproduct=None,
           callback=None, restart=None, startiteration=0, printrates=True, reltol=None):
