@@ -45,7 +45,7 @@ RUN ln -s /usr/bin/python3 /usr/bin/python
 RUN pip install --break-system-packages "cmake<4"
 
 FROM builder AS build_occ
-ENV OCC_VERSION 7_9_3
+ENV OCC_VERSION 8_0_1
 ADD ./tests/gitlab-ci/pyodide/build_opencascade.sh /root/
 ADD ./tests/gitlab-ci/pyodide/occ.patch /root/
 RUN bash /root/build_opencascade.sh

@@ -2696,35 +2696,37 @@ auto Concat (tuple<SIMD<double,N>, Args...> tup)
       << "(size_t n, double * pa, size_t da, SIMD<double> * pb, size_t db, SIMD<double> * pc, size_t dc);" << endl;
 
   
-  for (int i = 1; i <= 4; i++)
-    {
-      GenerateMultAB (out, 1, i);  
-      GenerateMultAB (out, 2, i);
-      GenerateMultAB (out, 3, i);
-      GenerateMultAB (out, 4, i);
-      GenerateMultAB (out, 5, i);
-      GenerateMultAB (out, 6, i);
+  // MatKernelMultAB, MatKernelAlignedMultAB, MatKernelMultABMask and
+  // MatKernelScalAB are templates in matkernel.hpp now
+  // for (int i = 1; i <= 4; i++)
+    // {
+      // GenerateMultAB (out, 1, i);  
+      // GenerateMultAB (out, 2, i);
+      // GenerateMultAB (out, 3, i);
+      // GenerateMultAB (out, 4, i);
+      // GenerateMultAB (out, 5, i);
+      // GenerateMultAB (out, 6, i);
       
-      AlignedGenerateMultAB (out, 1, i, SET);  
-      AlignedGenerateMultAB (out, 2, i, SET);
-      AlignedGenerateMultAB (out, 3, i, SET);
-      AlignedGenerateMultAB (out, 4, i, SET);
-      AlignedGenerateMultAB (out, 5, i, SET);
-      AlignedGenerateMultAB (out, 6, i, SET);
-    }
+      // AlignedGenerateMultAB (out, 1, i, SET);  
+      // AlignedGenerateMultAB (out, 2, i, SET);
+      // AlignedGenerateMultAB (out, 3, i, SET);
+      // AlignedGenerateMultAB (out, 4, i, SET);
+      // AlignedGenerateMultAB (out, 5, i, SET);
+      // AlignedGenerateMultAB (out, 6, i, SET);
+    // }
 
-  for (int i = 5; i <= 16; i++)
-    GenerateMultAB (out, 1, i);  
-  for (int i = 5; i <= 12; i++)
-    GenerateMultAB (out, 2, i);
-  GenerateMultAB (out, 8, 1);
-  GenerateMultAB (out, 12, 1);
+  // for (int i = 5; i <= 16; i++)
+    // GenerateMultAB (out, 1, i);  
+  // for (int i = 5; i <= 12; i++)
+    // GenerateMultAB (out, 2, i);
+  // GenerateMultAB (out, 8, 1);
+  // GenerateMultAB (out, 12, 1);
 
 
-  GenerateMultAB (out, 4, 6);    
-  GenerateMultAB (out, 3, 8);  
+  // GenerateMultAB (out, 4, 6);    
+  // GenerateMultAB (out, 3, 8);  
   // GenerateMultAB (out, 2, 12);  
-  GenerateMultAB (out, 1, 24);  
+  // GenerateMultAB (out, 1, 24);  
   
 
   out << "template <size_t H, OPERATION OP>" << endl
@@ -2734,12 +2736,12 @@ auto Concat (tuple<SIMD<double,N>, Args...> tup)
       << "inline void MatKernelMultABMask" << endl
       << "(size_t n, SIMD<mask64> mask, double * pa, size_t da, SIMD<double> * pb, size_t db, double * pc, size_t dc);" << endl;
 
-  GenerateMultABMask (out, 1);  
-  GenerateMultABMask (out, 2);
-  GenerateMultABMask (out, 3);
-  GenerateMultABMask (out, 4);
-  GenerateMultABMask (out, 5);
-  GenerateMultABMask (out, 6);
+  // GenerateMultABMask (out, 1);  
+  // GenerateMultABMask (out, 2);
+  // GenerateMultABMask (out, 3);
+  // GenerateMultABMask (out, 4);
+  // GenerateMultABMask (out, 5);
+  // GenerateMultABMask (out, 6);
 
   
   // Scal AB
@@ -2759,17 +2761,17 @@ auto Concat (tuple<SIMD<double,N>, Args...> tup)
       << "     SIMD<double> * pa, size_t da," << endl
       << "     SIMD<double> * pb, size_t db);" << endl;
 
-  GenerateScalAB (out, 6, 4);  
-  GenerateScalAB (out, 3, 4);  
-  GenerateScalAB (out, 1, 4);
-  GenerateScalAB (out, 6, 2);  
-  GenerateScalAB (out, 3, 2);  
-  GenerateScalAB (out, 8, 1);  
-  GenerateScalAB (out, 6, 1);  
-  GenerateScalAB (out, 4, 1);  
-  GenerateScalAB (out, 3, 1);  
-  GenerateScalAB (out, 2, 1);  
-  GenerateScalAB (out, 1, 1);  
+  // GenerateScalAB (out, 6, 4);  
+  // GenerateScalAB (out, 3, 4);  
+  // GenerateScalAB (out, 1, 4);
+  // GenerateScalAB (out, 6, 2);  
+  // GenerateScalAB (out, 3, 2);  
+  // GenerateScalAB (out, 8, 1);  
+  // GenerateScalAB (out, 6, 1);  
+  // GenerateScalAB (out, 4, 1);  
+  // GenerateScalAB (out, 3, 1);  
+  // GenerateScalAB (out, 2, 1);  
+  // GenerateScalAB (out, 1, 1);  
   
   
     // MultiVecScalAB

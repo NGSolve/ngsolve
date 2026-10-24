@@ -685,8 +685,11 @@ namespace ngbla
   template <int H, int W = H, typename T = double>
   class Mat : public MatExpr<Mat<H,W,T> >
   {
-    // T data[(H*W>0) ? H*W : 1];
-    HTArray<H*W,T> data;
+    // rows of rows: recursion depth H+W instead of H*W
+    static constexpr bool nested = H > 0 && W > 0;
+    using TDATA = std::conditional_t<nested, HTArray<H,HTArray<W,T>>, HTArray<H*W,T>>;
+    TDATA data;
+    static_assert(!nested || sizeof(TDATA) == H*W*sizeof(T), "Mat rows must be contiguous");
   public:
     typedef T TELEM;
     typedef typename mat_traits<T>::TSCAL TSCAL;
@@ -713,7 +716,7 @@ namespace ngbla
     INLINE Mat (TSCAL s)     
     {
       for (size_t i = 0; i < H*W; i++) 
-        data[i] = s;
+        Data()[i] = s;
     }
 
     Mat (initializer_list<initializer_list<T>> llist)
@@ -732,7 +735,7 @@ namespace ngbla
     Mat (tuple<TTUP...> tup)
     {
       constexpr int s = tuple_size<decltype(tup)>();
-      Iterate<s> ([this, tup] (auto i) { this->data[i] = std::get<i>(tup); });
+      Iterate<s> ([this, tup] (auto i) { this->Data()[i] = std::get<i>(tup); });
     }
 
     template <class... T2>
@@ -762,7 +765,7 @@ namespace ngbla
     INLINE Mat & operator= (TSCAL s) 
     {
       for (size_t i = 0; i < H*W; i++)
-        data[i] = s;
+        Data()[i] = s;
       return *this;
     }
 
@@ -770,16 +773,35 @@ namespace ngbla
     INLINE auto & ViewRW() { return *this; }
     INLINE auto Shape() const { return tuple(IC<H>(), IC<W>()); }
     
-    INLINE T* Data() noexcept { return data.Ptr(); }
-    INLINE const T* Data() const noexcept { return data.Ptr(); }
+    INLINE T* Data() noexcept
+    {
+      if constexpr (nested) return data.Ptr()->Ptr();
+      else return data.Ptr();
+    }
+    INLINE const T* Data() const noexcept
+    {
+      if constexpr (nested) return data.Ptr()->Ptr();
+      else return data.Ptr();
+    }
     /// linear access
-    INLINE TELEM & operator() (size_t i) { return data[i]; }
+    INLINE TELEM & operator() (size_t i) { return Data()[i]; }
     /// access element
-    INLINE TELEM & operator() (size_t i, size_t j) { return data[i*W+j]; }
+    INLINE TELEM & operator() (size_t i, size_t j) { return Data()[i*W+j]; }
+    /// compile-time access, keeps entries in registers
+    template <int I, int J>
+    INLINE T Get() const { return const_cast<Mat&>(*this).template Ref<I,J>(); }
+    template <int I, int J>
+    INLINE void Set(T val) { Ref<I,J>() = val; }
+    template <int I, int J>
+    INLINE T & Ref()
+    {
+      if constexpr (nested) return data.template Elem<I>().template Elem<J>();
+      else return data.template Elem<I*W+J>();
+    }
     /// linear access
-    INLINE const TELEM & operator() (size_t i) const { return data[i]; }
+    INLINE const TELEM & operator() (size_t i) const { return Data()[i]; }
     /// access element
-    INLINE const TELEM & operator() (size_t i, size_t j) const { return data[i*W+j]; }
+    INLINE const TELEM & operator() (size_t i, size_t j) const { return Data()[i*W+j]; }
 
     /// the height
     INLINE static constexpr auto Height ()  { return IC<H>(); }
@@ -859,18 +881,18 @@ namespace ngbla
     
     auto AsVector() 
     {
-      return FlatVec<H*W,T> (data.Ptr());
+      return FlatVec<H*W,T> (Data());
     }
 
     auto AsVector() const
     {
-      return FlatVec<H*W,const T> (data.Ptr());
+      return FlatVec<H*W,const T> (Data());
     }
 
     template <typename ARCHIVE>
     void DoArchive(ARCHIVE& ar)
     {
-      ar.Do(&data[0], H*W);
+      ar.Do(Data(), H*W);
     }
   };
 
