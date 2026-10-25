@@ -1642,7 +1642,8 @@ namespace ngfem
                       SliceMatrix<SCAL_RES> part_elmat = elmat.Rows(r2).Cols(r1);
 
                       // vector-space form: B with VSDim rows per dof, D -> E2^T D E1
-                      auto ev1 = proxy1->Evaluator(), ev2 = proxy2->Evaluator();
+                      auto & ev1 = proxy1->Evaluator();  // reference: a shared_ptr copy is an atomic op per element
+                      auto & ev2 = proxy2->Evaluator();
                       bool use_vs = is_same_v<SCAL_SHAPES,double> &&
                         ev1->GetVSEmbedding().has_value() && ev2->GetVSEmbedding().has_value();
                       size_t vdim1 = use_vs ? ev1->VSDim() : dim_proxy1;
