@@ -1855,6 +1855,49 @@ namespace ngbla
   }
 
 
+  // H rows of c against columns 0 .. i+H-1 (lower triangle of the diagonal block included),
+  // 4-wide steps also across the diagonal while c is wide enough: entries above the diagonal are modified
+  template <size_t H, typename TAB, typename FUNC>
+  INLINE void TAddABtSymRows (size_t i, size_t wa, size_t wc,
+                              TAB * pa, size_t da, TAB * pb, size_t db, double * pc, size_t dc,
+                              FUNC func)
+  {
+    size_t j = 0;
+    for ( ; j < i+H && j+4 <= wc; j += 4, pb += 4*db)
+      {
+        auto scal = MatKernelScalAB<H,4>(wa, pa, da, pb, db);
+        Iterate<H> ([&] (auto ii) {
+            double * pci = pc+ii.value*dc+j;
+            func (SIMD<double,4>(pci), get<ii.value>(scal)).Store(pci);
+          });
+      }
+    for ( ; j < i+H; j++, pb += db)
+      {
+        auto scal = MatKernelScalAB<H,1>(wa, pa, da, pb, db);
+        Iterate<H> ([&] (auto ii) {
+            double * pci = pc+ii.value*dc+j;
+            *pci = func (*pci, get<ii.value>(scal));
+          });
+      }
+  }
+
+  // HA x 4 blocks, the last rows as one block of their own height
+  template <size_t HA, typename TAB, typename FUNC>
+  INLINE void TAddABtSymBlocks (size_t wa, size_t hc, size_t wc,
+                                TAB * pa, size_t da, TAB * pb, size_t db, double * pc, size_t dc,
+                                FUNC func)
+  {
+    size_t i = 0;
+    for ( ; i+HA <= hc; i += HA, pa += HA*da, pc += HA*dc)
+      TAddABtSymRows<HA> (i, wa, wc, pa, da, pb, db, pc, dc, func);
+    Iterate<HA> ([&] (auto h) {
+        if constexpr (h.value > 0)
+          if (hc-i == h.value)
+            TAddABtSymRows<h.value> (i, wa, wc, pa, da, pb, db, pc, dc, func);
+      });
+  }
+
+
   void AddABtSym (SliceMatrix<double> a,
                   SliceMatrix<double> b,
                   BareSliceMatrix<double> c)
@@ -1869,9 +1912,11 @@ namespace ngbla
                   SliceMatrix<SIMD<double>> b,
                   BareSliceMatrix<double> c)
   {
-    TAddABt4Sym(a.Width(), a.Height(), b.Height(),
-                a.Data(), a.Width(), b.Data(), b.Width(), c.Data(), c.Dist(),
-                [] (auto c, auto ab) { return c+ab; });
+    // 4x4 blocks fit the triangle and leave registers to spare (32 registers), 3x4 otherwise
+    constexpr size_t HA = reg32 ? 4 : 3;
+    TAddABtSymBlocks<HA> (a.Width(), a.Height(), b.Height(),
+                          a.Data(), a.Dist(), b.Data(), b.Dist(), c.Data(), c.Dist(),
+                          [] (auto c, auto ab) { return c+ab; });
     /*
     AddABtSym (SliceMatrix<double> (AFlatMatrix<double>(a)),
                SliceMatrix<double> (AFlatMatrix<double>(b)), c);
