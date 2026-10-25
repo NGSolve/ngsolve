@@ -655,3 +655,745 @@ NGK_INLINE void MultiScaleAddC (size_t n, Complex ** ppa, Complex ** ppb, Comple
 {
   MultiScaleAddC_impl<H,W> (n, ppa, ppb, pc, dc);
 }
+
+
+
+/* ************** ShortSum, AtB_SmallWA, Daxpy kernels ************** */
+
+#if defined(__GNUC__) || defined(__clang__)
+#define NGK_UNROLL4 _Pragma("GCC unroll 4")
+#else
+#define NGK_UNROLL4
+#endif
+
+// sum (op)= a*b, fused or as separate mul and add
+template <OPERATION OP, bool FUSED, typename T>
+NGK_INLINE T KUpdate (T a, T b, T sum)
+{
+  constexpr bool neg = OP == SUB || OP == SETNEG;
+  if constexpr (FUSED)
+    return neg ? FNMA(a, b, sum) : FMA(a, b, sum);
+  else
+    return neg ? sum - a*b : sum + a*b;
+}
+
+// C = A * B, A is ha x WA (short), C rows by panels of NV vectors of type TS
+template <size_t WA, OPERATION OP>
+struct KShortSum
+{
+  static constexpr int SW = SIMD<double>::Size();
+
+  // one panel of C: NV vectors per row, the last one masked if MASK
+  template <typename TS, int NV, bool MASK, bool FUSED, bool UNROLL>
+  static NGK_INLINE void Panel (size_t ha, double * pa, size_t da, double * pb, size_t db,
+                                double * pc, size_t dc, SIMD<mask64> mask)
+  {
+    constexpr int R = TS::Size();
+    Mat<WA,NV,TS> b;
+    KFor<0,int(WA)> ([] (auto k, Mat<WA,NV,TS> & b, double *& pb, size_t & db, SIMD<mask64> & mask) NGK_LAMBDA_INLINE
+      {
+        KFor<0,NV> ([] (auto v, auto k, Mat<WA,NV,TS> & b, double *& pb, size_t & db, SIMD<mask64> & mask) NGK_LAMBDA_INLINE
+          {
+            if constexpr (MASK && v == NV-1)
+              b.template Set<k,v> (TS(pb+k*db+v*R, mask));
+            else
+              b.template Set<k,v> (TS(pb+k*db+v*R));
+          }, k, b, pb, db, mask);
+      }, b, pb, db, mask);
+
+    __assume(ha>0);
+    auto row = [] (Mat<WA,NV,TS> & b, double * pa2, double * pc2, SIMD<mask64> & mask) NGK_LAMBDA_INLINE
+      {
+        Mat<1,NV,TS> sum;
+        KFor<0,NV> ([] (auto v, Mat<1,NV,TS> & sum, double *& pc2, SIMD<mask64> & mask) NGK_LAMBDA_INLINE
+          {
+            if constexpr (OP == SET || OP == SETNEG)
+              sum.template Set<0,v> (TS(0.0));
+            else if constexpr (MASK && v == NV-1)
+              sum.template Set<0,v> (TS(pc2+v*R, mask));
+            else
+              sum.template Set<0,v> (TS(pc2+v*R));
+          }, sum, pc2, mask);
+        KFor<0,int(WA)> ([] (auto k, Mat<1,NV,TS> & sum, Mat<WA,NV,TS> & b, double *& pa2) NGK_LAMBDA_INLINE
+          {
+            KFor<0,NV> ([] (auto v, auto k, Mat<1,NV,TS> & sum, Mat<WA,NV,TS> & b, double *& pa2) NGK_LAMBDA_INLINE
+              { sum.template Set<0,v> (KUpdate<OP,FUSED> (TS(pa2[k]), b.template Get<k,v>(), sum.template Get<0,v>())); },
+              k, sum, b, pa2);
+          }, sum, b, pa2);
+        KFor<0,NV> ([] (auto v, Mat<1,NV,TS> & sum, double *& pc2, SIMD<mask64> & mask) NGK_LAMBDA_INLINE
+          {
+            if constexpr (MASK && v == NV-1)
+              sum.template Get<0,v>().Store(pc2+v*R, mask);
+            else
+              sum.template Get<0,v>().Store(pc2+v*R);
+          }, sum, pc2, mask);
+      };
+    double * pa2 = pa, * pc2 = pc;
+    if constexpr (UNROLL)
+      {
+        NGK_UNROLL4
+        for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+          row (b, pa2, pc2, mask);
+      }
+    else
+      for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)
+        row (b, pa2, pc2, mask);
+  }
+
+  static NGK_INLINE void Run (size_t ha, size_t wb, double * pa, size_t da, double * pb, size_t db, double * pc, size_t dc)
+  {
+    SIMD<mask64> mask(SW);
+    for (size_t i = 0; i+SW <= wb; i += SW, pb += SW, pc += SW)
+      Panel<SIMD<double>,1,false,true,true> (ha, pa, da, pb, db, pc, dc, mask);
+    size_t rest = wb % SW;
+    if (rest == 0) return;
+    Panel<SIMD<double>,1,true,false,true> (ha, pa, da, pb, db, pc, dc, SIMD<mask64>(rest));
+  }
+
+  template <int R>
+  static NGK_INLINE void Rest2 (size_t rest, size_t ha, double * pa, size_t da, double *& pb, size_t db, double *& pc, size_t dc)
+  {
+    if constexpr (R >= 1)
+      {
+        if constexpr (R <= SW)
+          if (rest & R)
+            {
+              Panel<SIMD<double,R>,1,false,false,true> (ha, pa, da, pb, db, pc, dc, SIMD<mask64>(SW));
+              pc += R;
+              pb += R;
+            }
+        Rest2<R/2> (rest, ha, pa, da, pb, db, pc, dc);
+      }
+  }
+
+  // B width unrolled by 2
+  static NGK_INLINE void Run2 (size_t ha, size_t wb, double * pa, size_t da, double * pb, size_t db, double * pc, size_t dc)
+  {
+    SIMD<mask64> mask(SW);
+    for (size_t i = 0; i+2*SW <= wb; i += 2*SW, pb += 2*SW, pc += 2*SW)
+      Panel<SIMD<double>,2,false,true,false> (ha, pa, da, pb, db, pc, dc, mask);
+    size_t rest = wb % (2*SW);
+    if (rest == 0) return;
+    Rest2<8> (rest, ha, pa, da, pb, db, pc, dc);
+  }
+};
+
+template <size_t WA, OPERATION OP>
+NGK_INLINE void MatKernelShortSum_impl (size_t ha, size_t wb, double * pa, size_t da, double * pb, size_t db, double * pc, size_t dc)
+{
+  KShortSum<WA,OP>::Run (ha, wb, pa, da, pb, db, pc, dc);
+}
+
+template <size_t WA, OPERATION OP>
+NGK_INLINE void MatKernelShortSum2_impl (size_t ha, size_t wb, double * pa, size_t da, double * pb, size_t db, double * pc, size_t dc)
+{
+  KShortSum<WA,OP>::Run2 (ha, wb, pa, da, pb, db, pc, dc);
+}
+
+
+// C = A^t * B, A is ha x WA (short), all updates fused
+template <size_t WA, OPERATION OP>
+struct KAtB_SmallWA
+{
+  static constexpr int SW = SIMD<double>::Size();
+
+  template <int NV, bool MASK>
+  static NGK_INLINE void Panel (size_t ha, double * pa, size_t da, double * pb, size_t db,
+                                double * pc, size_t dc, SIMD<mask64> mask)
+  {
+    typedef Mat<WA,NV,SIMD<double>> TSUM;
+    TSUM sum;
+    double * pc2 = pc;
+    KFor<0,int(WA)> ([] (auto k, TSUM & sum, double *& pc2, size_t & dc, SIMD<mask64> & mask) NGK_LAMBDA_INLINE
+      {
+        KFor<0,NV> ([] (auto v, auto k, TSUM & sum, double *& pc2, SIMD<mask64> & mask) NGK_LAMBDA_INLINE
+          {
+            if constexpr (OP == SET || OP == SETNEG)
+              sum.template Set<k,v> (SIMD<double>(0.0));
+            else if constexpr (MASK)
+              sum.template Set<k,v> (SIMD<double>(pc2+v*SW, mask));
+            else
+              sum.template Set<k,v> (SIMD<double>(pc2+v*SW));
+          }, k, sum, pc2, mask);
+        pc2 += dc;
+      }, sum, pc2, dc, mask);
+
+    __assume(ha>0);
+    auto row = [] (TSUM & sum, double * pa2, double * pb2, SIMD<mask64> & mask) NGK_LAMBDA_INLINE
+      {
+        Mat<1,NV,SIMD<double>> b;
+        KFor<0,NV> ([] (auto v, Mat<1,NV,SIMD<double>> & b, double *& pb2, SIMD<mask64> & mask) NGK_LAMBDA_INLINE
+          {
+            if constexpr (MASK) b.template Set<0,v> (SIMD<double>(pb2+v*SW, mask));
+            else b.template Set<0,v> (SIMD<double>(pb2+v*SW));
+          }, b, pb2, mask);
+        KFor<0,int(WA)> ([] (auto k, TSUM & sum, Mat<1,NV,SIMD<double>> & b, double *& pa2) NGK_LAMBDA_INLINE
+          {
+            KFor<0,NV> ([] (auto v, auto k, TSUM & sum, Mat<1,NV,SIMD<double>> & b, double *& pa2) NGK_LAMBDA_INLINE
+              { sum.template Set<k,v> (KUpdate<OP,true> (b.template Get<0,v>(), SIMD<double>(pa2[k]), sum.template Get<k,v>())); },
+              k, sum, b, pa2);
+          }, sum, b, pa2);
+      };
+    double * pa2 = pa, * pb2 = pb;
+    NGK_UNROLL4
+    for (size_t j = 0; j < ha; j++, pa2 += da, pb2 += db)
+      row (sum, pa2, pb2, mask);
+
+    pc2 = pc;
+    KFor<0,int(WA)> ([] (auto k, TSUM & sum, double *& pc2, size_t & dc, SIMD<mask64> & mask) NGK_LAMBDA_INLINE
+      {
+        KFor<0,NV> ([] (auto v, auto k, TSUM & sum, double *& pc2, SIMD<mask64> & mask) NGK_LAMBDA_INLINE
+          {
+            if constexpr (MASK) sum.template Get<k,v>().Store(pc2+v*SW, mask);
+            else sum.template Get<k,v>().Store(pc2+v*SW);
+          }, k, sum, pc2, mask);
+        pc2 += dc;
+      }, sum, pc2, dc, mask);
+  }
+
+  template <int NV0>
+  static NGK_INLINE void Run (size_t ha, size_t wb, double * pa, size_t da, double * pb, size_t db, double * pc, size_t dc)
+  {
+    SIMD<mask64> mask(SW);
+    size_t i = 0;
+    if constexpr (NV0 > 1)
+      for ( ; i+NV0*SW <= wb; i += NV0*SW, pb += NV0*SW, pc += NV0*SW)
+        Panel<NV0,false> (ha, pa, da, pb, db, pc, dc, mask);
+    for ( ; i+SW <= wb; i += SW, pb += SW, pc += SW)
+      Panel<1,false> (ha, pa, da, pb, db, pc, dc, mask);
+    size_t rest = wb % SW;
+    if (rest == 0) return;
+    Panel<1,true> (ha, pa, da, pb, db, pc, dc, SIMD<mask64>(rest));
+  }
+};
+
+template <size_t WA, OPERATION OP>
+NGK_INLINE void MatKernelAtB_SmallWA_impl (size_t ha, size_t wb, double * pa, size_t da, double * pb, size_t db, double * pc, size_t dc)
+{
+  KAtB_SmallWA<WA,OP>::template Run<1> (ha, wb, pa, da, pb, db, pc, dc);
+}
+
+template <size_t WA, OPERATION OP>
+NGK_INLINE void MatKernelAtB_SmallWA2_impl (size_t ha, size_t wb, double * pa, size_t da, double * pb, size_t db, double * pc, size_t dc)
+{
+  KAtB_SmallWA<WA,OP>::template Run<3> (ha, wb, pa, da, pb, db, pc, dc);
+}
+
+
+// C (op)= A * B, A is H x W (small, kept in registers), B is W x n
+template <size_t H, size_t W, OPERATION OP>
+struct KDaxpy
+{
+  static constexpr int SW = SIMD<double>::Size();
+  typedef Mat<H,W,SIMD<double>> TA;
+  typedef Mat<H,1,SIMD<double>> TC;
+
+  template <bool MASK>
+  static NGK_INLINE void Step (TA & a, KPtrs<W,double> & pb, KPtrs<H,double> & pc, size_t i, SIMD<mask64> mask)
+  {
+    TC c;
+    KFor<0,int(H)> ([] (auto k, TC & c, KPtrs<H,double> & pc, size_t & i, SIMD<mask64> & mask) NGK_LAMBDA_INLINE
+      {
+        if constexpr (OP == SET || OP == SETNEG)
+          c.template Set<k,0> (SIMD<double>(0.0));
+        else if constexpr (MASK)
+          c.template Set<k,0> (SIMD<double>(pc.template Get<k,0>()+i, mask));
+        else
+          c.template Set<k,0> (SIMD<double>(pc.template Get<k,0>()+i));
+      }, c, pc, i, mask);
+    KFor<0,int(W)> ([] (auto j, TA & a, TC & c, KPtrs<W,double> & pb, size_t & i, SIMD<mask64> & mask) NGK_LAMBDA_INLINE
+      {
+        SIMD<double> b = MASK ? SIMD<double>(pb.template Get<j,0>()+i, mask) : SIMD<double>(pb.template Get<j,0>()+i);
+        KFor<0,int(H)> ([] (auto k, auto j, TA & a, TC & c, SIMD<double> & b) NGK_LAMBDA_INLINE
+          { c.template Set<k,0> (KUpdate<OP,!MASK> (a.template Get<k,j>(), b, c.template Get<k,0>())); }, j, a, c, b);
+      }, a, c, pb, i, mask);
+    KFor<0,int(H)> ([] (auto k, TC & c, KPtrs<H,double> & pc, size_t & i, SIMD<mask64> & mask) NGK_LAMBDA_INLINE
+      {
+        if constexpr (MASK) c.template Get<k,0>().Store(pc.template Get<k,0>()+i, mask);
+        else c.template Get<k,0>().Store(pc.template Get<k,0>()+i);
+      }, c, pc, i, mask);
+  }
+
+  static NGK_INLINE void Run (size_t n, double * pa, size_t da, double * pb, size_t db, double * pc, size_t dc)
+  {
+    TA a;
+    KFor<0,int(H)> ([] (auto k, TA & a, double *& pa, size_t & da) NGK_LAMBDA_INLINE
+      { KFor<0,int(W)> ([] (auto j, auto k, TA & a, double *& pa, size_t & da) NGK_LAMBDA_INLINE
+        { a.template Set<k,j> (SIMD<double>(pa[k*da+j])); }, k, a, pa, da); }, a, pa, da);
+    KPtrs<H,double> pci;
+    KFor<0,int(H)> ([] (auto k, KPtrs<H,double> & pci, double *& pc, size_t & dc) NGK_LAMBDA_INLINE
+      { pci.template Set<k,0> (pc+k*dc); }, pci, pc, dc);
+    KPtrs<W,double> pbj;
+    KFor<0,int(W)> ([] (auto j, KPtrs<W,double> & pbj, double *& pb, size_t & db) NGK_LAMBDA_INLINE
+      { pbj.template Set<j,0> (pb+j*db); }, pbj, pb, db);
+    SIMD<mask64> mask(SW);
+    size_t i = 0;
+    for ( ; i+SW <= n; i += SW)
+      Step<false> (a, pbj, pci, i, mask);
+    Step<true> (a, pbj, pci, i, SIMD<mask64>(n%SW));
+  }
+};
+
+template <size_t H, size_t W, OPERATION OP>
+NGK_INLINE void MatKernelDaxpy_impl (size_t n, double * pa, size_t da, double * pb, size_t db, double * pc, size_t dc)
+{
+  KDaxpy<H,W,OP>::Run (n, pa, da, pb, db, pc, dc);
+}
+
+template <size_t WA, OPERATION OP>
+NGK_INLINE void MatKernelShortSum (size_t ha, size_t wb, double * pa, size_t da, double * pb, size_t db, double * pc, size_t dc)
+{
+  MatKernelShortSum_impl<WA,OP> (ha, wb, pa, da, pb, db, pc, dc);
+}
+
+template <size_t WA, OPERATION OP>
+NGK_INLINE void MatKernelShortSum2 (size_t ha, size_t wb, double * pa, size_t da, double * pb, size_t db, double * pc, size_t dc)
+{
+  MatKernelShortSum2_impl<WA,OP> (ha, wb, pa, da, pb, db, pc, dc);
+}
+
+template <size_t WA, OPERATION OP>
+NGK_INLINE void MatKernelAtB_SmallWA (size_t ha, size_t wb, double * pa, size_t da, double * pb, size_t db, double * pc, size_t dc)
+{
+  MatKernelAtB_SmallWA_impl<WA,OP> (ha, wb, pa, da, pb, db, pc, dc);
+}
+
+template <size_t WA, OPERATION OP>
+NGK_INLINE void MatKernelAtB_SmallWA2 (size_t ha, size_t wb, double * pa, size_t da, double * pb, size_t db, double * pc, size_t dc)
+{
+  MatKernelAtB_SmallWA2_impl<WA,OP> (ha, wb, pa, da, pb, db, pc, dc);
+}
+
+template <size_t H, size_t W, OPERATION OP>
+NGK_INLINE void MatKernelDaxpy (size_t n, double * pa, size_t da, double * pb, size_t db, double * pc, size_t dc)
+{
+  MatKernelDaxpy_impl<H,W,OP> (n, pa, da, pb, db, pc, dc);
+}
+
+
+
+/* ****************** MatVec kernels, fixed width WA ****************** */
+
+// y (op)= A * x,  MODE: SET, ADD, or KSCALE for y += s * A * x
+constexpr int KSCALE = 16;
+
+template <size_t WA, int MODE>
+struct KMatVec
+{
+  static constexpr int SW = SIMD<double>::Size();
+  static constexpr int NF = WA / SW;
+  static constexpr int R = WA % SW;
+  static constexpr bool R1 = SW == 4 && R == 1;   // scalar tail
+  static constexpr bool R2 = SW == 4 && R == 2;   // half-vector tail
+  static constexpr bool RM = R && !R1 && !R2;     // masked tail
+  typedef Mat<NF,1,SIMD<double>> TX;
+  typedef std::conditional_t<R1, double, std::conditional_t<R2, SIMD<double,2>, SIMD<double>>> TXT;
+
+  // row sums of H rows, SW-vectors per row
+  template <int H>
+  static NGK_INLINE Mat<H,1,SIMD<double>> Rows (double * pa, size_t da, TX & xs, TXT & xt, SIMD<mask64> & mask)
+  {
+    typedef Mat<H,1,SIMD<double>> TS;
+    TS sum;
+    KZero<H,1> (sum);
+    KFor<0,NF> ([] (auto b, TS & sum, double *& pa, size_t & da, TX & xs) NGK_LAMBDA_INLINE
+      {
+        KFor<0,H> ([] (auto k, auto b, TS & sum, double *& pa, size_t & da, TX & xs) NGK_LAMBDA_INLINE
+          { sum.template Set<k,0> (sum.template Get<k,0>() + SIMD<double>(pa+k*da+b*SW) * xs.template Get<b,0>()); },
+          b, sum, pa, da, xs);
+      }, sum, pa, da, xs);
+    KFor<0,H> ([] (auto k, TS & sum, double *& pa, size_t & da, TXT & xt, SIMD<mask64> & mask) NGK_LAMBDA_INLINE
+      {
+        constexpr size_t o = NF*SW;
+        if constexpr (R1 && H < 4)
+          sum.template Set<k,0> (sum.template Get<k,0>() + SIMD<double,4> (pa[k*da+o] * xt, 0,0,0));
+        else if constexpr (R2)
+          sum.template Set<k,0> (sum.template Get<k,0>() + SIMD<double,4> (SIMD<double,2>(pa+k*da+o) * xt, SIMD<double,2>(0.0)));
+        else if constexpr (RM)
+          sum.template Set<k,0> (sum.template Get<k,0>() + SIMD<double>(pa+k*da+o, mask) * xt);
+      }, sum, pa, da, xt, mask);
+    return sum;
+  }
+
+  static NGK_INLINE void Run (double s, size_t ha, double * pa, size_t da, double * x, double * y)
+  {
+    TX xs;
+    KFor<0,NF> ([] (auto b, TX & xs, double *& x) NGK_LAMBDA_INLINE
+      { xs.template Set<b,0> (SIMD<double>(x+b*SW)); }, xs, x);
+    SIMD<mask64> mask(R);
+    TXT xt{};
+    if constexpr (R1) xt = x[NF*SW];
+    if constexpr (R2) xt = SIMD<double,2>(x+NF*SW);
+    if constexpr (RM) xt = SIMD<double>(x+NF*SW, mask);
+
+    size_t i = 0;
+    for ( ; i+4 <= ha; i += 4, pa += 4*da)
+      {
+        auto sum = Rows<4> (pa, da, xs, xt, mask);
+        SIMD<double,4> vsum = HSum(sum.template Get<0,0>(), sum.template Get<1,0>(), sum.template Get<2,0>(), sum.template Get<3,0>());
+        if constexpr (R1)
+          vsum += xt * SIMD<double,4> (pa[0*da+NF*SW], pa[1*da+NF*SW], pa[2*da+NF*SW], pa[3*da+NF*SW]);
+        if constexpr (MODE == KSCALE)
+          {
+            vsum *= SIMD<double,4>(s);
+            vsum += SIMD<double,4>(y+i);
+          }
+        else if constexpr (MODE == ADD)
+          vsum += SIMD<double,4>(y+i);
+        vsum.Store(y+i);
+      }
+    if (ha & 2)
+      {
+        auto sum = Rows<2> (pa, da, xs, xt, mask);
+        SIMD<double,2> vsum = HSum(sum.template Get<0,0>(), sum.template Get<1,0>());
+        if constexpr (MODE == KSCALE)
+          {
+            vsum *= SIMD<double,2>(s);
+            vsum += SIMD<double,2>(y+i);
+          }
+        else if constexpr (MODE == ADD)
+          vsum += SIMD<double,2>(y+i);
+        vsum.Store(y+i);
+        i += 2; pa += 2*da;
+      }
+    if (ha & 1)
+      {
+        auto sum = Rows<1> (pa, da, xs, xt, mask);
+        if constexpr (MODE == KSCALE)
+          y[i] += s*HSum(sum.template Get<0,0>());
+        else if constexpr (MODE == ADD)
+          y[i] += HSum(sum.template Get<0,0>());
+        else
+          y[i] = HSum(sum.template Get<0,0>());
+      }
+  }
+};
+
+template <size_t WA, OPERATION OP>
+NGK_INLINE void KernelMatVec_impl (size_t ha, double * pa, size_t da, double * x, double * y)
+{
+  KMatVec<WA,OP>::Run (0.0, ha, pa, da, x, y);
+}
+
+template <size_t WA>
+NGK_INLINE void KernelAddMatVec_impl (double s, size_t ha, double * pa, size_t da, double * x, double * y)
+{
+  KMatVec<WA,KSCALE>::Run (s, ha, pa, da, x, y);
+}
+
+
+// y(0:WA) += s * sum_i A(i,:) * x[ind[i]],  U independent accumulators
+template <size_t WA>
+struct KAddMatTransVecI
+{
+  static constexpr int SW = SIMD<double>::Size();
+  static constexpr int NF = WA / SW;
+  static constexpr int R = WA % SW;
+  static constexpr int U = NF <= 1 ? 4 : (NF <= 4 ? 2 : 1);
+  static constexpr bool R1 = R == 1;
+  static constexpr bool R2 = R == 2 && SW == 4;
+  typedef std::conditional_t<R1, SIMD<double,1>, std::conditional_t<R2, SIMD<double,2>, SIMD<double>>> TR;
+  typedef Mat<NF,U,SIMD<double>> TY;
+  typedef Mat<1,U,TR> TYR;
+
+  template <int J>
+  static NGK_INLINE void Row (TY & sy, TYR & syr, double * pa, double xv, SIMD<mask64> & mask)
+  {
+    SIMD<double> sx(xv);
+    KFor<0,NF> ([] (auto b, TY & sy, double *& pa, SIMD<double> & sx) NGK_LAMBDA_INLINE
+      { sy.template Set<b,J> (sy.template Get<b,J>() + SIMD<double>(pa+b*SW) * sx); }, sy, pa, sx);
+    if constexpr (R1)
+      syr.template Set<0,J> (syr.template Get<0,J>() + TR(pa+NF*SW) * sx[0]);
+    else if constexpr (R2)
+      syr.template Set<0,J> (syr.template Get<0,J>() + TR(pa+NF*SW) * sx.Lo());
+    else if constexpr (R > 0)
+      syr.template Set<0,J> (syr.template Get<0,J>() + SIMD<double>(pa+NF*SW, mask) * sx);
+  }
+
+  // remaining r < U rows go to accumulators r, r-1, ..., 1
+  template <int J>
+  static NGK_INLINE void Rest (size_t r, TY & sy, TYR & syr, double *& pa, size_t da, double * x, int * ind, size_t & i, SIMD<mask64> & mask)
+  {
+    if constexpr (J >= 1)
+      {
+        if (r >= J)
+          {
+            Row<J> (sy, syr, pa, x[ind[i]], mask);
+            pa += da; i++;
+          }
+        Rest<J-1> (r, sy, syr, pa, da, x, ind, i, mask);
+      }
+  }
+
+  static NGK_INLINE void Run (double s, size_t ha, double * pa, size_t da, double * x, double * y, int * ind)
+  {
+    TY sy;
+    KZero<NF,U> (sy);
+    TYR syr;
+    KFor<0,U> ([] (auto j, TYR & syr) NGK_LAMBDA_INLINE { syr.template Set<0,j> (TR(0.0)); }, syr);
+    SIMD<mask64> mask(R);
+
+    size_t i;
+    for (i = 0; i+U <= ha; i += U)
+      KFor<0,U> ([] (auto j, TY & sy, TYR & syr, double *& pa, size_t & da, double *& x, int *& ind, size_t & i, SIMD<mask64> & mask) NGK_LAMBDA_INLINE
+        {
+          Row<j> (sy, syr, pa, x[ind[i+j]], mask);
+          pa += da;
+        }, sy, syr, pa, da, x, ind, i, mask);
+    Rest<U-1> (ha-i, sy, syr, pa, da, x, ind, i, mask);
+
+    if constexpr (U > 1)
+      {
+        KFor<0,NF> ([] (auto b, TY & sy) NGK_LAMBDA_INLINE
+          {
+            if constexpr (U == 2)
+              sy.template Set<b,0> (sy.template Get<b,0>() + sy.template Get<b,1>());
+            else
+              sy.template Set<b,0> (sy.template Get<b,0>() + (sy.template Get<b,1>() + sy.template Get<b,2>() + sy.template Get<b,3>()));
+          }, sy);
+        if constexpr (R > 0)
+          {
+            if constexpr (U == 2)
+              syr.template Set<0,0> (syr.template Get<0,0>() + syr.template Get<0,1>());
+            else
+              syr.template Set<0,0> (syr.template Get<0,0>() + (syr.template Get<0,1>() + syr.template Get<0,2>() + syr.template Get<0,3>()));
+          }
+      }
+
+    KFor<0,NF> ([] (auto b, TY & sy, double & s, double *& y) NGK_LAMBDA_INLINE
+      { (s * sy.template Get<b,0>() + SIMD<double>(y+b*SW)).Store(y+b*SW); }, sy, s, y);
+    if constexpr (R1 || R2)
+      (s * syr.template Get<0,0>() + TR(y+NF*SW)).Store(y+NF*SW);
+    else if constexpr (R > 0)
+      (s * syr.template Get<0,0>() + SIMD<double>(y+NF*SW, mask)).Store(y+NF*SW, mask);
+  }
+};
+
+template <size_t WA>
+NGK_INLINE void KernelAddMatTransVecI_impl (double s, size_t ha, double * pa, size_t da, double * x, double * y, int * ind)
+{
+  KAddMatTransVecI<WA>::Run (s, ha, pa, da, x, y, ind);
+}
+
+template <size_t WA, OPERATION OP>
+NGK_INLINE void KernelMatVec (size_t ha, double * pa, size_t da, double * x, double * y)
+{
+  KernelMatVec_impl<WA,OP> (ha, pa, da, x, y);
+}
+
+template <size_t WA>
+NGK_INLINE void KernelAddMatVec (double s, size_t ha, double * pa, size_t da, double * x, double * y)
+{
+  KernelAddMatVec_impl<WA> (s, ha, pa, da, x, y);
+}
+
+template <size_t WA>
+NGK_INLINE void KernelAddMatTransVecI (double s, size_t ha, double * pa, size_t da, double * x, double * y, int * ind)
+{
+  KernelAddMatTransVecI_impl<WA> (s, ha, pa, da, x, y, ind);
+}
+
+
+
+/* *************** Triangular kernels, DIM x DIM blocks *************** */
+
+// X = T X or X = T^-1 X, T is lower-left or upper-right, X has wx columns
+template <TRIG_SIDE SIDE, TRIG_NORMAL NORM, ORDERING ORD, int DIM>
+struct KTriangular
+{
+  static constexpr int SW = SIMD<double>::Size();
+  static constexpr bool LOWER = SIDE == LowerLeft;
+  static constexpr bool NORMALIZED = NORM == Normalized;
+  typedef Mat<DIM,DIM,SIMD<double>> TT;
+  typedef Mat<DIM,1,SIMD<double>> TX;
+
+  template <int I, int J> static constexpr bool Used ()
+  { return LOWER ? (J < I || (J == I && !NORMALIZED)) : (J > I || (J == I && !NORMALIZED)); }
+
+  static NGK_INLINE void LoadT (TT & t, double * pt, size_t dt)
+  {
+    KFor<0,DIM> ([] (auto i, TT & t, double *& pt, size_t & dt) NGK_LAMBDA_INLINE
+      {
+        KFor<0,DIM> ([] (auto j, auto i, TT & t, double *& pt, size_t & dt) NGK_LAMBDA_INLINE
+          {
+            if constexpr (Used<i,j>())
+              t.template Set<i,j> (SIMD<double> (ORD == RowMajor ? pt[i*dt+j] : pt[i+dt*j]));
+          }, i, t, pt, dt);
+      }, t, pt, dt);
+  }
+
+  // row I of the operation, rows processed in the generator's order
+  template <bool SOLVE, int I>
+  static NGK_INLINE void Row (TT & t, TX & inv, TX & x)
+  {
+    SIMD<double> xi = x.template Get<I,0>();
+    if constexpr (!SOLVE && !NORMALIZED)
+      xi *= t.template Get<I,I>();
+    KFor<0,DIM> ([] (auto j, TT & t, TX & x, SIMD<double> & xi) NGK_LAMBDA_INLINE
+      {
+        if constexpr (j != I && Used<I,j>())
+          {
+            if constexpr (SOLVE) xi -= t.template Get<I,j>() * x.template Get<j,0>();
+            else xi += t.template Get<I,j>() * x.template Get<j,0>();
+          }
+      }, t, x, xi);
+    if constexpr (SOLVE && !NORMALIZED)
+      xi *= inv.template Get<I,0>();
+    x.template Set<I,0> (xi);
+  }
+
+  template <bool SOLVE>
+  static NGK_INLINE void Op (TT & t, TX & inv, TX & x)
+  {
+    // mult: lower bottom-up, upper top-down; solve the reverse
+    constexpr bool down = SOLVE ? LOWER : !LOWER;
+    KFor<0,DIM> ([] (auto k, TT & t, TX & inv, TX & x) NGK_LAMBDA_INLINE
+      {
+        constexpr int I = down ? int(k) : DIM-1-int(k);
+        Row<SOLVE,I> (t, inv, x);
+      }, t, inv, x);
+  }
+
+  template <bool SOLVE, bool MASK>
+  static NGK_INLINE void Step (TT & t, TX & inv, double * px, size_t dx, SIMD<mask64> mask)
+  {
+    TX x;
+    KFor<0,DIM> ([] (auto k, TX & x, double *& px, size_t & dx, SIMD<mask64> & mask) NGK_LAMBDA_INLINE
+      { x.template Set<k,0> (MASK ? SIMD<double>(px+k*dx, mask) : SIMD<double>(px+k*dx)); }, x, px, dx, mask);
+    Op<SOLVE> (t, inv, x);
+    KFor<0,DIM> ([] (auto k, TX & x, double *& px, size_t & dx, SIMD<mask64> & mask) NGK_LAMBDA_INLINE
+      {
+        constexpr bool skip = NORMALIZED && (LOWER ? k == 0 : k == DIM-1);
+        if constexpr (!skip)
+          {
+            if constexpr (MASK) x.template Get<k,0>().Store(px+k*dx, mask);
+            else x.template Get<k,0>().Store(px+k*dx);
+          }
+      }, x, px, dx, mask);
+  }
+
+  template <bool SOLVE>
+  static NGK_INLINE void Run (size_t wx, double * pt, size_t dt, double * px, size_t dx)
+  {
+    TT t;
+    LoadT (t, pt, dt);
+    TX inv;
+    if constexpr (SOLVE && !NORMALIZED)
+      KFor<0,DIM> ([] (auto k, TT & t, TX & inv) NGK_LAMBDA_INLINE
+        { inv.template Set<k,0> (1.0 / t.template Get<k,k>()); }, t, inv);
+    SIMD<mask64> mask(SW);
+    size_t i = 0;
+    for ( ; i+SW <= wx; i += SW)
+      Step<SOLVE,false> (t, inv, px+i, dx, mask);
+    size_t rest = wx % SW;
+    if (rest == 0) return;
+    Step<SOLVE,true> (t, inv, px+i, dx, SIMD<mask64>(rest));
+  }
+};
+
+template <TRIG_SIDE SIDE, TRIG_NORMAL NORM, ORDERING ORD, int DIM>
+NGK_INLINE void KernelTriangularMult_impl (size_t wx, double * pt, size_t dt, double * px, size_t dx)
+{
+  KTriangular<SIDE,NORM,ORD,DIM>::template Run<false> (wx, pt, dt, px, dx);
+}
+
+template <TRIG_SIDE SIDE, TRIG_NORMAL NORM, ORDERING ORD, int DIM>
+NGK_INLINE void KernelTriangularSolve_impl (size_t wx, double * pt, size_t dt, double * px, size_t dx)
+{
+  KTriangular<SIDE,NORM,ORD,DIM>::template Run<true> (wx, pt, dt, px, dx);
+}
+
+
+// Y (op)= T X, fused updates, a normalized diagonal counts as 1
+template <TRIG_SIDE SIDE, TRIG_NORMAL NORM, ORDERING ORD, OPERATION OP, int DIM>
+struct KTriangularMultXY
+{
+  static constexpr int SW = SIMD<double>::Size();
+  static constexpr bool LOWER = SIDE == LowerLeft;
+  static constexpr bool NORMALIZED = NORM == Normalized;
+  typedef Mat<DIM,DIM,SIMD<double>> TT;
+  typedef Mat<DIM,1,SIMD<double>> TX;
+
+  static NGK_INLINE void LoadT (TT & t, double * pt, size_t dt)
+  {
+    KFor<0,DIM> ([] (auto i, TT & t, double *& pt, size_t & dt) NGK_LAMBDA_INLINE
+      {
+        KFor<0,DIM> ([] (auto j, auto i, TT & t, double *& pt, size_t & dt) NGK_LAMBDA_INLINE
+          {
+            if constexpr (j == i && NORMALIZED)
+              t.template Set<i,j> (SIMD<double>(1.0));
+            else if constexpr (LOWER ? j <= i : j >= i)
+              t.template Set<i,j> (SIMD<double> (ORD == RowMajor ? pt[i*dt+j] : pt[i+dt*j]));
+          }, i, t, pt, dt);
+      }, t, pt, dt);
+  }
+
+  template <bool MASK>
+  static NGK_INLINE void Step (TT & t, double * px, size_t dx, double * py, size_t dy, SIMD<mask64> mask)
+  {
+    TX x, y;
+    KFor<0,DIM> ([] (auto k, TX & x, TX & y, double *& px, size_t & dx, double *& py, size_t & dy, SIMD<mask64> & mask) NGK_LAMBDA_INLINE
+      {
+        x.template Set<k,0> (MASK ? SIMD<double>(px+k*dx, mask) : SIMD<double>(px+k*dx));
+        if constexpr (OP == SET || OP == SETNEG)
+          y.template Set<k,0> (SIMD<double>(0.0));
+        else
+          y.template Set<k,0> (MASK ? SIMD<double>(py+k*dy, mask) : SIMD<double>(py+k*dy));
+      }, x, y, px, dx, py, dy, mask);
+    // lower bottom-up, upper top-down, as generated
+    KFor<0,DIM> ([] (auto k, TT & t, TX & x, TX & y) NGK_LAMBDA_INLINE
+      {
+        constexpr int I = LOWER ? DIM-1-int(k) : int(k);
+        SIMD<double> yi = y.template Get<I,0>();
+        IC<I> ic;
+        KFor<0,DIM> ([] (auto j, auto i, TT & t, TX & x, SIMD<double> & yi) NGK_LAMBDA_INLINE
+          {
+            if constexpr (LOWER ? j <= i : j >= i)
+              yi = KUpdate<OP,true> (t.template Get<i,j>(), x.template Get<j,0>(), yi);
+          }, ic, t, x, yi);
+        y.template Set<I,0> (yi);
+      }, t, x, y);
+    KFor<0,DIM> ([] (auto k, TX & y, double *& py, size_t & dy, SIMD<mask64> & mask) NGK_LAMBDA_INLINE
+      {
+        if constexpr (MASK) y.template Get<k,0>().Store(py+k*dy, mask);
+        else y.template Get<k,0>().Store(py+k*dy);
+      }, y, py, dy, mask);
+  }
+
+  static NGK_INLINE void Run (size_t wx, double * pt, size_t dt, double * px, size_t dx, double * py, size_t dy)
+  {
+    TT t;
+    LoadT (t, pt, dt);
+    SIMD<mask64> mask(SW);
+    size_t i = 0;
+    for ( ; i+SW <= wx; i += SW)
+      Step<false> (t, px+i, dx, py+i, dy, mask);
+    size_t rest = wx % SW;
+    if (rest == 0) return;
+    Step<true> (t, px+i, dx, py+i, dy, SIMD<mask64>(rest));
+  }
+};
+
+template <TRIG_SIDE SIDE, TRIG_NORMAL NORM, ORDERING ORD, OPERATION OP, int DIM>
+NGK_INLINE void KernelTriangularMultXY_impl (size_t wx, double * pt, size_t dt, double * px, size_t dx, double * py, size_t dy)
+{
+  KTriangularMultXY<SIDE,NORM,ORD,OP,DIM>::Run (wx, pt, dt, px, dx, py, dy);
+}
+
+template <TRIG_SIDE SIDE, TRIG_NORMAL NORM, ORDERING ORD, int DIM>
+NGK_INLINE void KernelTriangularMult (size_t wx, double * pt, size_t dt, double * px, size_t dx)
+{
+  KernelTriangularMult_impl<SIDE,NORM,ORD,DIM> (wx, pt, dt, px, dx);
+}
+
+template <TRIG_SIDE SIDE, TRIG_NORMAL NORM, ORDERING ORD, int DIM>
+NGK_INLINE void KernelTriangularSolve (size_t wx, double * pt, size_t dt, double * px, size_t dx)
+{
+  KernelTriangularSolve_impl<SIDE,NORM,ORD,DIM> (wx, pt, dt, px, dx);
+}
+
+template <TRIG_SIDE SIDE, TRIG_NORMAL NORM, ORDERING ORD, OPERATION OP, int DIM>
+NGK_INLINE void KernelTriangularMultXY (size_t wx, double * pt, size_t dt, double * px, size_t dx, double * py, size_t dy)
+{
+  KernelTriangularMultXY_impl<SIDE,NORM,ORD,OP,DIM> (wx, pt, dt, px, dx, py, dy);
+}

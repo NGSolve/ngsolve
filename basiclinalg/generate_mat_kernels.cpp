@@ -2856,16 +2856,17 @@ auto Concat (tuple<SIMD<double,N>, Args...> tup)
 
 
   
-  out << "template <size_t H, size_t W>" << endl
-      << "inline void MyScalTrans" << endl
-      << "(size_t n, double * pa, size_t da, double * pb, size_t db, double * pc, size_t dc);" << endl;
+  // MyScalTrans is not used anywhere
+  // out << "template <size_t H, size_t W>" << endl
+  //     << "inline void MyScalTrans" << endl
+  //     << "(size_t n, double * pa, size_t da, double * pb, size_t db, double * pc, size_t dc);" << endl;
   
-  GenKernel (out, 1, 4);
-  GenKernel (out, 2, 4);
-  GenKernel (out, 3, 4);
-  GenKernel (out, 4, 4);
-  GenKernel (out, 5, 4);
-  GenKernel (out, 6, 4);
+  // GenKernel (out, 1, 4);
+  // GenKernel (out, 2, 4);
+  // GenKernel (out, 3, 4);
+  // GenKernel (out, 4, 4);
+  // GenKernel (out, 5, 4);
+  // GenKernel (out, 6, 4);
 
   out << "template <size_t H, size_t W, OPERATION OP>" << endl
       << "inline void MatKernelDaxpy" << endl
@@ -2874,17 +2875,19 @@ auto Concat (tuple<SIMD<double,N>, Args...> tup)
       << "inline void MatKernelDaxpy" << endl
       << "(size_t n, double * pa, size_t da, SIMD<double> * pb, size_t db, SIMD<double> * pc, size_t dc);" << endl;
 
-  for (int i = 0; i <= 12; i++)
-    GenerateDaxpy (out, 1, i);
+  // MatKernelDaxpy, MatKernelShortSum(2) and MatKernelAtB_SmallWA(2)
+  // are templates in matkernel.hpp now
+  // for (int i = 0; i <= 12; i++)
+    // GenerateDaxpy (out, 1, i);
 
-  GenerateDaxpy (out, 2, 1);  
-  GenerateDaxpy (out, 2, 2);  
-  GenerateDaxpy (out, 2, 3);  
-  GenerateDaxpy (out, 2, 4);  
-  GenerateDaxpy (out, 3, 1);  
-  GenerateDaxpy (out, 3, 2);  
-  GenerateDaxpy (out, 3, 3);  
-  GenerateDaxpy (out, 3, 4);
+  // GenerateDaxpy (out, 2, 1);  
+  // GenerateDaxpy (out, 2, 2);  
+  // GenerateDaxpy (out, 2, 3);  
+  // GenerateDaxpy (out, 2, 4);  
+  // GenerateDaxpy (out, 3, 1);  
+  // GenerateDaxpy (out, 3, 2);  
+  // GenerateDaxpy (out, 3, 3);  
+  // GenerateDaxpy (out, 3, 4);
 
   out << "// C = A * B,  with short inner loop\n"
       << "template <size_t WA, OPERATION OP>\n"
@@ -2896,9 +2899,9 @@ auto Concat (tuple<SIMD<double,N>, Args...> tup)
       << "inline void MatKernelShortSum2\n"
       << "(size_t ha, size_t wb, double * pa, size_t da, double * pb, size_t db, double * pc, size_t dc);\n";
 
-  for (int i = 0; i <= 12; i++)
-    for (auto op : { SET, SETNEG, ADD, SUB })
-      GenerateShortSum (out, i, op);  
+  // for (int i = 0; i <= 12; i++)
+    // for (auto op : { SET, SETNEG, ADD, SUB })
+      // GenerateShortSum (out, i, op);  
 
 
   out << "// C = A^t * B,  with short inner loop\n"
@@ -2911,38 +2914,40 @@ auto Concat (tuple<SIMD<double,N>, Args...> tup)
       << "inline void MatKernelAtB_SmallWA2\n"
       << "(size_t ha, size_t wb, double * pa, size_t da, double * pb, size_t db, double * pc, size_t dc);\n";
 
-  for (int i = 0; i <= 12; i++)
-    for (OP op : { SET, ADD, SUB, SETNEG })
-      GenerateAtB_SmallWA (out, i, op);
+  // for (int i = 0; i <= 12; i++)
+    // for (OP op : { SET, ADD, SUB, SETNEG })
+      // GenerateAtB_SmallWA (out, i, op);
   
-  for (int i = 0; i <= 8; i++)    
-    for (OP op : { SET, ADD, SUB, SETNEG })
-      GenerateAtB_SmallWA2 (out, i, op);
+  // for (int i = 0; i <= 8; i++)    
+    // for (OP op : { SET, ADD, SUB, SETNEG })
+      // GenerateAtB_SmallWA2 (out, i, op);
   
   out << "// y = A * x,  with fix width" << endl;
   out << "template <size_t WA, OPERATION OP>" << endl
       << "inline void KernelMatVec" << endl
       << "(size_t ha, double * pa, size_t da, double * x, double * y);" << endl;
-  for (int i = 0; i <= 24; i++)
-    {
-      GenerateMatVec (out, i, SET);
-      GenerateMatVec (out, i, ADD);
-    }
+  // KernelMatVec, KernelAddMatVec and KernelAddMatTransVecI
+  // are templates in matkernel.hpp now
+  // for (int i = 0; i <= 24; i++)
+    // {
+      // GenerateMatVec (out, i, SET);
+      // GenerateMatVec (out, i, ADD);
+    // }
 
   out << "// y += s * A * x,  with fix width" << endl;
   out << "template <size_t WA>" << endl
       << "inline void KernelAddMatVec" << endl
       << "(double s, size_t ha, double * pa, size_t da, double * x, double * y);" << endl;
-  for (int i = 0; i <= 24; i++)
-    GenerateAddMatVec (out, i);
+  // for (int i = 0; i <= 24; i++)
+    // GenerateAddMatVec (out, i);
 
 
   out << "// y += s * A^t * x(ind),  with fix width" << endl;
   out << "template <size_t WA>" << endl
       << "inline void KernelAddMatTransVecI" << endl
       << "(double s, size_t ha, double * pa, size_t da, double * x, double * y, int * ind);" << endl;
-  for (int i = 0; i <= 24; i++)
-    GenerateAddMatTransVecI (out, i);
+  // for (int i = 0; i <= 24; i++)
+    // GenerateAddMatTransVecI (out, i);
 
 
 
@@ -2952,30 +2957,30 @@ auto Concat (tuple<SIMD<double,N>, Args...> tup)
       << "inline void KernelTriangularMult (size_t wx, double * pt, size_t dt, double * px, size_t dx);" << endl;
   out << "template <TRIG_SIDE SIDE, TRIG_NORMAL NORM, ORDERING ORD, OPERATION OP, int DIM>" << endl
       << "inline void KernelTriangularMultXY (size_t wx, double * pt, size_t dt, "
-      << "double * px, size_t dx, double * py, size_t dy) { " << endl
-      << "cerr << \"missing implementation, side = \" << SIDE << \" norm = \" << NORM" << endl
-      << "<< \" ORD = \" << ORD << \", OP = \" << OP << \", DIM = \" << DIM << endl; }" << endl;
+      << "double * px, size_t dx, double * py, size_t dy);" << endl;
   out << "template <TRIG_SIDE SIDE, TRIG_NORMAL NORM, ORDERING ORD, int DIM>" << endl
       << "inline void KernelTriangularSolve (size_t wx, double * pt, size_t dt, double * px, size_t dx);" << endl;
 
 
-  for (int i = 0; i <= 4; i++)
-    for (bool lowerleft : { false, true })
-      for (bool normalized : { false, true })
-        {
+  // KernelTriangularMult, KernelTriangularMultXY and KernelTriangularSolve
+  // are templates in matkernel.hpp now
+  // for (int i = 0; i <= 4; i++)
+    // for (bool lowerleft : { false, true })
+      // for (bool normalized : { false, true })
+        // {
           // bool solve, bool lowerleft, bool normalized, bool trans, int dim
           
-          GenerateTriangular (out, false, lowerleft, normalized, RowMajor, i);
-          GenerateTriangular (out, false, lowerleft, normalized, ColMajor, i);
-          GenerateTriangular (out, true, lowerleft, normalized, RowMajor, i);
-          GenerateTriangular (out, true, lowerleft, normalized, ColMajor, i);
+          // GenerateTriangular (out, false, lowerleft, normalized, RowMajor, i);
+          // GenerateTriangular (out, false, lowerleft, normalized, ColMajor, i);
+          // GenerateTriangular (out, true, lowerleft, normalized, RowMajor, i);
+          // GenerateTriangular (out, true, lowerleft, normalized, ColMajor, i);
 
-          GenerateTriangularXY (out, false, lowerleft, normalized, RowMajor, SET, i);
-          GenerateTriangularXY (out, false, lowerleft, normalized, ColMajor, SET, i);
-          GenerateTriangularXY (out, false, lowerleft, normalized, RowMajor, ADD, i);
-          GenerateTriangularXY (out, false, lowerleft, normalized, ColMajor, ADD, i);
-          GenerateTriangularXY (out, false, lowerleft, normalized, RowMajor, SUB, i);
-          GenerateTriangularXY (out, false, lowerleft, normalized, ColMajor, SUB, i);
+          // GenerateTriangularXY (out, false, lowerleft, normalized, RowMajor, SET, i);
+          // GenerateTriangularXY (out, false, lowerleft, normalized, ColMajor, SET, i);
+          // GenerateTriangularXY (out, false, lowerleft, normalized, RowMajor, ADD, i);
+          // GenerateTriangularXY (out, false, lowerleft, normalized, ColMajor, ADD, i);
+          // GenerateTriangularXY (out, false, lowerleft, normalized, RowMajor, SUB, i);
+          // GenerateTriangularXY (out, false, lowerleft, normalized, ColMajor, SUB, i);
           
           /*
           GenerateTriangular (out, false, true, true, RowMajor, i);
@@ -2990,5 +2995,5 @@ auto Concat (tuple<SIMD<double,N>, Args...> tup)
           GenerateTriangular (out, true, false, false, RowMajor, i);
           GenerateTriangular (out, true, false, true, RowMajor, i);
           */
-        }
+        // }
 }
