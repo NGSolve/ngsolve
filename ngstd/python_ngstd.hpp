@@ -133,12 +133,6 @@ typedef py::gil_scoped_acquire AcquireGIL;
 typedef py::gil_scoped_release ReleaseGIL; 
 
 
-inline void InitSlice( const py::slice &inds, size_t len, size_t &start, size_t &step, size_t &n ) {
-      size_t stop;
-      if (!inds.compute(len, &start, &stop, &step, &n))                                          
-        throw py::error_already_set();
-}
-
 template<typename T>
 py::array_t<T> MoveToNumpyArray( Array<T> &a )
 {
@@ -186,53 +180,6 @@ public:
 template <typename T>
 inline T NonElement() { return cl_NonElement<T>::Val(); }
 */
-
-//////////////////////////////////////////////////////////////////////
-// read-only bracket operator
-template< typename T, typename TELEM, typename TCLASS = py::class_<T>>
-void PyDefROBracketOperator( py::module &m, TCLASS &c )
-{
-    auto Get = [](T& self, int i) {
-      if (i < 0) i += self.Size();
-      if( i<self.Size() && i>=0 )
-        return self[i];
-      throw py::index_error();
-      return TELEM();
-    }; 
-    c.def("__getitem__", Get,py::arg("pos"), "Return value at given position");
-    c.def("Get", Get, py::arg("pos"), "Return value at given position");
-}
-
-// read-write bracket operator
-template< typename T, typename TELEM, typename TCLASS = py::class_<T>>
-void PyDefBracketOperator( py::module &m, TCLASS &c )
-{
-    PyDefROBracketOperator<T, TELEM>(m, c);
-    auto Set = [](T& self, int i, TELEM val) {
-      if (i < 0) i += self.Size();      
-      if( i<self.Size() && i>=0 )
-        self[i] = val;
-      else
-        throw py::index_error();
-    };
-    c.def("__setitem__", Set, py::arg("pos"), py::arg("value"), "Set value at given position");
-    c.def("Set", Set, py::arg("pos"), py::arg("value"), "Set value at given position");
-}
-
-
-//////////////////////////////////////////////////////////////////////
-// Export len, bracket operator and iterator protocol at once
-template <typename T, typename TELEM = double, typename TCLASS = py::class_<T> >
-void PyDefVector( py::module &m, TCLASS &c )
-{
-  c.def("__len__",  []( T& v) { return v.Size();}, "Return length of the array"  );
-    c.def("__iter__", [] (T &v)
-      { return py::make_iterator(v.begin(), v.end()); },
-      py::keep_alive<0,1>()
-    );
-    PyDefBracketOperator<T, TELEM>(m,c);
-}
-
 
 //////////////////////////////////////////////////////////////////
 // SymbolTable - template

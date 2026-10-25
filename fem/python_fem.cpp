@@ -789,8 +789,7 @@ val : can be one of the following:
            if (dims.Size() != 1)
              throw py::index_error();
 
-           size_t start, step, n;
-           InitSlice( inds, dims[0], start, step, n );
+           auto [start, step, n] = InitSlice (inds, dims[0]);
            int first = start;
            Array<int> num = { int(n) };
            Array<int> dist = { int(step) };
@@ -884,8 +883,7 @@ val : can be one of the following:
                  {
                    py::slice slice = comps[i].cast<py::slice>();
                    numslice++;
-                   size_t start, step, n;
-                   InitSlice(slice, dims[i], start, step, n);
+                   auto [start, step, n] = InitSlice (slice, dims[i]);
                    num.Append(int(n));
                    for (auto j : Range(dist.Size()))
                        dist[j] *= dims[i];

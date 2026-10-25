@@ -504,8 +504,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
            }, py::arg("ind"), "Return value at given position" )
     .def("__getitem__", [](BaseVector & self,  py::slice inds )
       {
-          size_t start, step, n;
-          InitSlice( inds, self.Size(), start, step, n );
+          auto [start, step, n] = InitSlice (inds, self.Size());
           if (step != 1)
             throw Exception ("slices with non-unit distance not allowed");
           return shared_ptr<BaseVector>(self.Range(start, start+n));
@@ -534,8 +533,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
       }, py::arg("ind"), py::arg("value"), "Set value at given position" )
     .def("__setitem__", [](BaseVector & self,  py::slice inds, double d )
       {
-          size_t start, step, n;
-          InitSlice( inds, self.Size(), start, step, n );
+          auto [start, step, n] = InitSlice (inds, self.Size());
           if (step != 1)
             throw Exception ("slices with non-unit distance not allowed");          
 	  if(n==self.Size()) {
@@ -546,24 +544,21 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
       }, py::arg("inds"), py::arg("value"), "Set value at given positions" )
     .def("__setitem__", [](BaseVector & self,  py::slice inds, Complex z )
       {
-          size_t start, step, n;
-          InitSlice( inds, self.Size(), start, step, n );
+          auto [start, step, n] = InitSlice (inds, self.Size());
           if (step != 1)
             throw Exception ("slices with non-unit distance not allowed");          
           self.Range(start,start+n) = z;
       }, py::arg("inds"), py::arg("value"), "Set value at given positions" )
     .def("__setitem__", [](BaseVector & self, py::slice inds, shared_ptr<BaseVector> v )
       {
-        size_t start, step, n;
-        InitSlice( inds, self.Size(), start, step, n );
+        auto [start, step, n] = InitSlice (inds, self.Size());
         if (step != 1)
           throw Exception ("slices with non-unit distance not allowed");          
         self.Range(start, start+n) = *v;
       }, py::arg("inds"), py::arg("vec") )
     .def("__setitem__", [](BaseVector & self, py::slice inds, DynamicVectorExpression expr)
       {
-        size_t start, step, n;
-        InitSlice( inds, self.Size(), start, step, n );
+        auto [start, step, n] = InitSlice (inds, self.Size());
         if (step != 1)
           throw Exception ("slices with non-unit distance not allowed");          
         // self.Range(start, start+n) = *v;
@@ -773,8 +768,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
            return self[ind];
          })
     .def("__getitem__", [](MultiVector & self, py::slice inds) {
-        size_t start, step, n;
-        InitSlice( inds, self.Size(), start, step, n );
+        auto [start, step, n] = InitSlice (inds, self.Size());
         if (step != 1)
           throw Exception ("slices with non-unit distance not allowed");
         return shared_ptr<MultiVector>(self.Range(IntRange(start, start+n)));
@@ -799,15 +793,13 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
         })
     
     .def("__setitem__", [](MultiVector & self, py::slice inds, MultiVector & y) {
-          size_t start, step, n;
-          InitSlice( inds, self.Size(), start, step, n );
+          auto [start, step, n] = InitSlice (inds, self.Size());
           if (step != 1)
             throw Exception ("slices with non-unit distance not allowed");
           *self.Range(IntRange(start, start+n)) = y;
       })
     .def("__setitem__", [](MultiVector & self, py::slice inds, const MultiVectorExpr & v2) {
-          size_t start, step, n;
-          InitSlice( inds, self.Size(), start, step, n );
+          auto [start, step, n] = InitSlice (inds, self.Size());
           if (step != 1)
             throw Exception ("slices with non-unit distance not allowed");
           auto selfr = self.Range(IntRange(start, start+n));
@@ -828,12 +820,10 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
 	 {
 	   auto vecs = get<0>(ind);
 	   auto subvecs = get<1>(ind);
-	   size_t start1, step1, n1;
-	   InitSlice( vecs, self.Size(), start1, step1, n1 );
+	   auto [start1, step1, n1] = InitSlice (vecs, self.Size());
 	   if (step1 != 1)
 	     throw Exception ("slices with non-unit distance not allowed");
-	   size_t start2, step2, n2;
-	   InitSlice( subvecs, self.RefVec()->Size(), start2, step2, n2 );
+	   auto [start2, step2, n2] = InitSlice (subvecs, self.RefVec()->Size());
 	   if (step2 != 1)
 	     throw Exception ("slices with non-unit distance not allowed");
 	   return self.Range(IntRange(start1,start1+n1))->VectorRange(IntRange(start2, start2+n2));

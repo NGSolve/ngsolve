@@ -958,15 +958,20 @@ namespace ngbla
     template <int I, class... T2>
     void Set(const TELEM &v, T2... rest)
     {
-      data[I] = v;
+      data.template Elem<I>() = v;
       Set<I+1>(rest...);
     }
 
+    /// compile-time access, keeps entries in registers
     template <int I>
-    void Set(const TELEM &v)
+    INLINE void Set(const TELEM &v)
     {
-      data[I] = v;
+      data.template Elem<I>() = v;
     }
+    template <int I>
+    INLINE T Get() const { return const_cast<Vec&>(*this).data.template Elem<I>(); }
+    template <int I>
+    INLINE T & Ref() { return data.template Elem<I>(); }
 
     // template <class... T2,
     // enable_if_t<S==1+sizeof...(T2),bool> = true>
@@ -1096,6 +1101,9 @@ namespace ngbla
     INLINE Vec (const Expr<TB> & v) {;}
     INLINE auto View() const { return Vec(*this); }
     INLINE auto Shape() const { return tuple(IC<0>()); }    
+    template <int I> T Get() const;
+    template <int I> void Set (T v);
+    template <int I> T & Ref();
     INLINE constexpr size_t Size() const { return 0; }
     INLINE constexpr size_t Height() const { return 0; }
     INLINE constexpr size_t Width() const { return 1; }

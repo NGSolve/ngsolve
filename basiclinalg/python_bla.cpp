@@ -1,9 +1,57 @@
 #ifdef NGS_PYTHON
 #include <pybind11/numpy.h>
-#include "../ngstd/python_ngstd.hpp"
+#include <core/python_ngcore.hpp>
 #include <bla.hpp>
 
 using namespace ngbla;
+
+//////////////////////////////////////////////////////////////////////
+// read-only bracket operator
+template< typename T, typename TELEM, typename TCLASS = py::class_<T>>
+void PyDefROBracketOperator( py::module &m, TCLASS &c )
+{
+    auto Get = [](T& self, int i) {
+      if (i < 0) i += self.Size();
+      if( i<self.Size() && i>=0 )
+        return self[i];
+      throw py::index_error();
+      return TELEM();
+    }; 
+    c.def("__getitem__", Get,py::arg("pos"), "Return value at given position");
+    c.def("Get", Get, py::arg("pos"), "Return value at given position");
+}
+
+// read-write bracket operator
+template< typename T, typename TELEM, typename TCLASS = py::class_<T>>
+void PyDefBracketOperator( py::module &m, TCLASS &c )
+{
+    PyDefROBracketOperator<T, TELEM>(m, c);
+    auto Set = [](T& self, int i, TELEM val) {
+      if (i < 0) i += self.Size();      
+      if( i<self.Size() && i>=0 )
+        self[i] = val;
+      else
+        throw py::index_error();
+    };
+    c.def("__setitem__", Set, py::arg("pos"), py::arg("value"), "Set value at given position");
+    c.def("Set", Set, py::arg("pos"), py::arg("value"), "Set value at given position");
+}
+
+
+//////////////////////////////////////////////////////////////////////
+// Export len, bracket operator and iterator protocol at once
+template <typename T, typename TELEM = double, typename TCLASS = py::class_<T> >
+void PyDefVector( py::module &m, TCLASS &c )
+{
+  c.def("__len__",  []( T& v) { return v.Size();}, "Return length of the array"  );
+    c.def("__iter__", [] (T &v)
+      { return py::make_iterator(v.begin(), v.end()); },
+      py::keep_alive<0,1>()
+    );
+    PyDefBracketOperator<T, TELEM>(m,c);
+}
+
+
 
 
 #ifdef __clang__
@@ -66,8 +114,7 @@ void PyVecAccess( py::module &m, TCLASS &c )
 {
         typedef typename T::TSCAL TSCAL;
         c.def("__getitem__", [](T &self, py::slice inds )-> TNEW {
-            size_t start, step, n;
-            InitSlice( inds, self.Size(), start, step, n );
+            auto [start, step, n] = InitSlice (inds, self.Size());
             TNEW res(n);
             for (int i=0; i<n; i++, start+=step)
                 res[i] = self[start];
@@ -82,22 +129,19 @@ void PyVecAccess( py::module &m, TCLASS &c )
                 return res;
           }, py::arg("ind"), "Return values at given positions"  );
         c.def("__setitem__", [](T &self, py::slice inds, const T & rv ) {
-            size_t start, step, n;
-            InitSlice( inds, self.Size(), start, step, n );
+            auto [start, step, n] = InitSlice (inds, self.Size());
             for (int i=0; i<n; i++, start+=step)
               self[start] = rv[i];
           }, py::arg("inds"), py::arg("rv"), "Set values at given positions" );
         c.def("__setitem__", [](T &self, py::slice inds, TSCAL val ) {
-            size_t start, step, n;
-            InitSlice( inds, self.Size(), start, step, n );
+            auto [start, step, n] = InitSlice (inds, self.Size());
             for (int i=0; i<n; i++, start+=step)
                 self[start] = val;
           }, py::arg("inds"), py::arg("value"), "Set value at given positions" );
         // c.def("__setitem__", [](T &self, py::slice inds, const std::vector<TSCAL> & vec ) {
         c.def("__setitem__", [](T &self, py::slice inds, py::array_t<TSCAL> bvec ) {
             auto vec = bvec. template unchecked<1>();
-            size_t start, step, n;
-            InitSlice( inds, self.Size(), start, step, n );
+            auto [start, step, n] = InitSlice (inds, self.Size());
             for (int i=0; i<n; i++, start+=step)
               self[start] = vec(i);
           }, py::arg("inds"), py::arg("value"), "Set value at given positions" );
@@ -170,8 +214,7 @@ void PyMatAccess( TCLASS &c )
             if(py::isinstance<py::int_>(cols)) {
               auto row_slice = rows.cast<py::slice>();
               auto col = self.Col(cols.cast<int>());
-              size_t start, step, n;
-              InitSlice( row_slice, self.Height(), start, step, n );
+              auto [start, step, n] = InitSlice (row_slice, self.Height());
               for (int i=0; i<n; i++, start+=step)
                 col[start] = v[i];
               return;
@@ -196,8 +239,7 @@ void PyMatAccess( TCLASS &c )
             if(py::isinstance<py::int_>(cols)) {
               auto row_slice = rows.cast<py::slice>();
               auto col = self.Col(cols.cast<int>());
-              size_t start, step, n;
-              InitSlice( row_slice, self.Height(), start, step, n );
+              auto [start, step, n] = InitSlice (row_slice, self.Height());
               for (int i=0; i<n; i++, start+=step)
                 col[start] = val;
               return;
@@ -206,8 +248,7 @@ void PyMatAccess( TCLASS &c )
             // Both elements are slices
             try {
               py::slice row_slice = rows.cast<py::slice> ();
-              size_t start, step, n;
-              InitSlice( row_slice, self.Height(), start, step, n );
+              auto [start, step, n] = InitSlice (row_slice, self.Height());
               for (int i=0; i<n; i++, start+=step) {
                 py::object row = py::cast(self.Row(start));
                 row.attr("__setitem__")(cols,val);
@@ -227,18 +268,15 @@ void PyMatAccess( TCLASS &c )
               auto row_slice = rows.cast<py::slice> ();
               auto col_slice = cols.cast<py::slice> ();
               /*
-              size_t start, step, n;
-              InitSlice( row_slice, self.Height(), start, step, n );
+              auto [start, step, n] = InitSlice (row_slice, self.Height());
               for (int i=0; i<n; i++, start+=step) {
                 py::object row = py::cast(self.Row(start));
                 py::object f = row.attr("__setitem__");
                 f(row, cols, rmat.Row(i));
               }
               */
-              size_t rstart, rstep, rn;              
-              size_t cstart, cstep, cn;
-              InitSlice( row_slice, self.Height(), rstart, rstep, rn );
-              InitSlice( col_slice, self.Width(), cstart, cstep, cn );
+              auto [rstart, rstep, rn] = InitSlice (row_slice, self.Height());
+              auto [cstart, cstep, cn] = InitSlice (col_slice, self.Width());
               for (int i = 0, ii=rstart; i < rn; i++, ii+=rstep)
                 for (int j = 0, jj = cstart; j < cn; j++, jj+=cstep)
                   self(ii,jj) = rmat(i,j);
@@ -253,8 +291,7 @@ void PyMatAccess( TCLASS &c )
           }
 
           static TNEW RowGetSlice( TMAT & self,  py::slice inds ) {
-            size_t start, step, n;
-            InitSlice( inds, self.Height(), start, step, n );
+            auto [start, step, n] = InitSlice (inds, self.Height());
             TNEW res(n, self.Width());
             for (int i=0; i<n; i++, start+=step)
               res.Row(i) = self.Row(start);
@@ -270,15 +307,13 @@ void PyMatAccess( TCLASS &c )
           }
 
           static void RowSetSlice( TMAT & self,  py::slice inds, const TMAT &r ) {
-            size_t start, step, n;
-            InitSlice( inds, self.Height(), start, step, n );
+            auto [start, step, n] = InitSlice (inds, self.Height());
             for (int i=0; i<n; i++, start+=step)
               self.Row(start) = r.Row(i);
           }
 
           static void RowSetSliceScal( TMAT & self,  py::slice inds, TSCAL r ) {
-            size_t start, step, n;
-            InitSlice( inds, self.Height(), start, step, n );
+            auto [start, step, n] = InitSlice (inds, self.Height());
             for (int i=0; i<n; i++, start+=step)
               self.Row(start) = r;
           }
@@ -288,8 +323,7 @@ void PyMatAccess( TCLASS &c )
           }
 
           static TNEW ColGetSlice( const TMAT & self,  py::slice inds ) {
-            size_t start, step, n;
-            InitSlice( inds, self.Width(), start, step, n );
+            auto [start, step, n] = InitSlice (inds, self.Width());
             TNEW res(self.Height(),n);
             for (int i=0; i<n; i++, start+=step)
               res.Col(i) = self.Col(start);
@@ -305,15 +339,13 @@ void PyMatAccess( TCLASS &c )
           }
 
           static void ColSetSlice( TMAT & self,  py::slice inds, const TMAT &r ) {
-            size_t start, step, n;
-            InitSlice( inds, self.Width(), start, step, n );
+            auto [start, step, n] = InitSlice (inds, self.Width());
             for (int i=0; i<n; i++, start+=step)
               self.Col(start) = r.Col(i);
           }
 
           static void ColSetSliceScal( TMAT & self,  py::slice inds, TSCAL r ) {
-            size_t start, step, n;
-            InitSlice( inds, self.Width(), start, step, n );
+            auto [start, step, n] = InitSlice (inds, self.Width());
             for (int i=0; i<n; i++, start+=step)
               self.Col(start) = r;
           }
@@ -493,7 +525,7 @@ void NGS_DLL_HEADER ExportNgbla(py::module & m) {
                 else return py::cast(Vector<double>(n));
                 },
             py::arg("length"),
-          py::arg("complex")=false, docu_string(R"raw_string(
+          py::arg("complex")=false, R"raw_string(
 
 Parameters:
 
@@ -502,7 +534,7 @@ length : int
 
 complex : bool
   input complex values
-)raw_string")
+)raw_string"
            );
 //     m.def("Vector",
 //             [] (py::list values) {
@@ -511,13 +543,13 @@ complex : bool
 //                                  v(i) = values[i].cast<double>();
 //                                return v;
 //                              },
-//             py::arg("vals"), docu_string(R"raw_string(
+//             py::arg("vals"), R"raw_string(
 
 // Parameters:
 
 // vals : list
 //        input list of values
-// )raw_string")
+// )raw_string"
 //            );
     
     m.def("Vector", [] (py::buffer b, bool copy)
@@ -589,13 +621,13 @@ complex : bool
                               return py::cast(v);
 
                              },
-            py::arg("vals"), docu_string(R"raw_string(
+            py::arg("vals"), R"raw_string(
 
 Parameters:
 
 vals : list
        input list of values
-)raw_string")
+)raw_string"
            );
     m.def("Vector",
             [] (py::tuple values) ->py::object {
@@ -621,13 +653,13 @@ vals : list
                                  }
                                throw Exception("cannot make a vector from tuple");
               },
-            py::arg("vals"), docu_string(R"raw_string(
+            py::arg("vals"), R"raw_string(
 Parameters:
 
 vals : tuple
        input tuple of values
 
-)raw_string")
+)raw_string"
            );
 */
 
@@ -764,7 +796,7 @@ vals : tuple
           },
           py::arg("height"), 
           py::arg("width")=nullopt, 
-          py::arg("complex")=false, docu_string(R"raw_string(
+          py::arg("complex")=false, R"raw_string(
 Creates a matrix of given height and width.
 
 Parameters:
@@ -778,7 +810,7 @@ width : int
 complex : bool
   input complex values
 
-)raw_string")
+)raw_string"
            );
 
 
