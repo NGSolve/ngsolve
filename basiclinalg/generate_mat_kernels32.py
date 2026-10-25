@@ -748,78 +748,95 @@ INLINE void MatKernelComplex32
  BareSliceMatrix<Complex32,OB> b,
  BareSliceMatrix<Complex32,RowMajor> c);
 
+template <size_t AW, bool ADD, bool POS,
+          ORDERING OA, ORDERING OB>
+inline void MatKernelFloatSmallK
+(size_t ah, size_t bw,
+ BareSliceMatrix<float,OA> a,
+ BareSliceMatrix<float,OB> b,
+ BareSliceMatrix<float,RowMajor> c);
+
+template <size_t AW, bool ADD, bool POS,
+          ORDERING OA, ORDERING OB>
+inline void MatKernelComplex32SmallK
+(size_t ah, size_t bw,
+ BareSliceMatrix<Complex32,OA> a,
+ BareSliceMatrix<Complex32,OB> b,
+ BareSliceMatrix<Complex32,RowMajor> c);
+
 """
         )
 
-        ### Float fixed small-K kernels
-        generate_float_small_k(out, simd_size)
+        # all kernels are templates in matkernel32.hpp now
+        # ### Float fixed small-K kernels
+        # generate_float_small_k(out, simd_size)
 
-        ### Complex32 fixed small-K kernels
-        generate_complex32_small_k(out, simd_size)
+        # ### Complex32 fixed small-K kernels
+        # generate_complex32_small_k(out, simd_size)
 
-        ### Float outer-product kernels for all layouts except RowMajor x ColMajor
-        for height in range(1, 5):
-            width = 1
-            while width <= 8 * simd_size:
-                for add in (False, True):
-                    for pos in (False, True):
-                        for ordering_a, ordering_b in (
-                            ("ColMajor", "RowMajor"),
-                            ("RowMajor", "RowMajor"),
-                            ("ColMajor", "ColMajor"),
-                        ):
-                            generate_float_kernel(
-                                out,
-                                simd_size,
-                                height,
-                                width,
-                                add,
-                                pos,
-                                ordering_a,
-                                ordering_b,
-                            )
-                width *= 2
+        # ### Float outer-product kernels for all layouts except RowMajor x ColMajor
+        # for height in range(1, 5):
+        #     width = 1
+        #     while width <= 8 * simd_size:
+        #         for add in (False, True):
+        #             for pos in (False, True):
+        #                 for ordering_a, ordering_b in (
+        #                     ("ColMajor", "RowMajor"),
+        #                     ("RowMajor", "RowMajor"),
+        #                     ("ColMajor", "ColMajor"),
+        #                 ):
+        #                     generate_float_kernel(
+        #                         out,
+        #                         simd_size,
+        #                         height,
+        #                         width,
+        #                         add,
+        #                         pos,
+        #                         ordering_a,
+        #                         ordering_b,
+        #                     )
+        #         width *= 2
 
-        ### Float inner-product kernels for RowMajor A x ColMajor B
-        for height in range(1, 5):
-            width = 1
-            while width <= 4:
-                for add in (False, True):
-                    for pos in (False, True):
-                        for ordering_a, ordering_b in (
-                            ("RowMajor", "ColMajor"),
-                        ):
-                            generate_float_inner_product_kernel(
-                                out,
-                                simd_size,
-                                height,
-                                width,
-                                add,
-                                pos,
-                                ordering_a,
-                                ordering_b,
-                            )
-                width *= 2
+        # ### Float inner-product kernels for RowMajor A x ColMajor B
+        # for height in range(1, 5):
+        #     width = 1
+        #     while width <= 4:
+        #         for add in (False, True):
+        #             for pos in (False, True):
+        #                 for ordering_a, ordering_b in (
+        #                     ("RowMajor", "ColMajor"),
+        #                 ):
+        #                     generate_float_inner_product_kernel(
+        #                         out,
+        #                         simd_size,
+        #                         height,
+        #                         width,
+        #                         add,
+        #                         pos,
+        #                         ordering_a,
+        #                         ordering_b,
+        #                     )
+        #         width *= 2
 
-        ### General Complex32 kernels for all A and B layouts
-        for height in range(1, 5):
-            width = 1
-            while width <= 4 * simd_size:
-                for add in (False, True):
-                    for pos in (False, True):
-                        for ordering_a in ("ColMajor", "RowMajor"):
-                            for ordering_b in ("ColMajor", "RowMajor"):
-                                generate_complex32_kernel(
-                                    out,
-                                    simd_size,
-                                    height,
-                                    width,
-                                    add,
-                                    pos,
-                                    ordering_a,
-                                    ordering_b,
-                                )
-                width *= 2
+        # ### General Complex32 kernels for all A and B layouts
+        # for height in range(1, 5):
+        #     width = 1
+        #     while width <= 4 * simd_size:
+        #         for add in (False, True):
+        #             for pos in (False, True):
+        #                 for ordering_a in ("ColMajor", "RowMajor"):
+        #                     for ordering_b in ("ColMajor", "RowMajor"):
+        #                         generate_complex32_kernel(
+        #                             out,
+        #                             simd_size,
+        #                             height,
+        #                             width,
+        #                             add,
+        #                             pos,
+        #                             ordering_a,
+        #                             ordering_b,
+        #                         )
+        #         width *= 2
 
         out.write(
             f"""#if defined(__AVX512F__) || defined(__arm64__) || defined(__aarch64__)

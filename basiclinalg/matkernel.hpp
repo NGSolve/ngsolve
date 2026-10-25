@@ -17,12 +17,17 @@
   - no local C arrays: MSVC then copies registers every iteration
   - no capturing lambdas: in big callers MSVC leaves their closure
     objects out of line; bodies are stateless, state is passed by KFor
-  - everything __forceinline on MSVC, plain inline is not reliable
+  - everything __forceinline on MSVC, plain inline is not reliable,
+    except ScalAB and MultiVec entries: INLINE keeps big callers small
 */
 
 #ifdef _MSC_VER
 #define NGK_INLINE __forceinline
 #define NGK_LAMBDA_INLINE [[msvc::forceinline]]
+#elif defined(__clang__)
+// no debug info for the per-index helpers, it dominated compile time
+#define NGK_INLINE __attribute__((always_inline,nodebug)) inline
+#define NGK_LAMBDA_INLINE __attribute__((always_inline,nodebug))
 #else
 #define NGK_INLINE NETGEN_INLINE
 #define NGK_LAMBDA_INLINE NETGEN_LAMBDA_INLINE
@@ -97,24 +102,18 @@ struct KMultAB
   }
 };
 
-template <size_t H, size_t W, OPERATION OP, typename TB>
-NGK_INLINE void MatKernelMultAB_impl (size_t n, double * pa, size_t da, TB * pb, size_t db, double * pc, size_t dc)
-{
-  KMultAB<H,W,OP,TB>::Run (n, pa, da, pb, db, pc, dc);
-}
-
 template <size_t H, size_t W, OPERATION OP>
 NGK_INLINE void MatKernelMultAB
 (size_t n, double * pa, size_t da, double * pb, size_t db, double * pc, size_t dc)
 {
-  MatKernelMultAB_impl<H,W,OP> (n, pa, da, pb, db, pc, dc);
+  KMultAB<H,W,OP,double>::Run (n, pa, da, pb, db, pc, dc);
 }
 
 template <size_t H, size_t W, OPERATION OP>
 NGK_INLINE void MatKernelMultAB
 (size_t n, double * pa, size_t da, SIMD<double> * pb, size_t db, double * pc, size_t dc)
 {
-  MatKernelMultAB_impl<H,W,OP> (n, pa, da, pb, db, pc, dc);
+  KMultAB<H,W,OP,SIMD<double>>::Run (n, pa, da, pb, db, pc, dc);
 }
 
 
@@ -163,17 +162,10 @@ struct KAlignedMultAB
 };
 
 template <size_t H, size_t W>
-NGK_INLINE void MatKernelAlignedMultAB_impl
-(size_t n, double * pa, size_t da, SIMD<double> * pb, size_t db, SIMD<double> * pc, size_t dc)
-{
-  KAlignedMultAB<H,W>::Run (n, pa, da, pb, db, pc, dc);
-}
-
-template <size_t H, size_t W>
 NGK_INLINE void MatKernelAlignedMultAB
 (size_t n, double * pa, size_t da, SIMD<double> * pb, size_t db, SIMD<double> * pc, size_t dc)
 {
-  MatKernelAlignedMultAB_impl<H,W> (n, pa, da, pb, db, pc, dc);
+  KAlignedMultAB<H,W>::Run (n, pa, da, pb, db, pc, dc);
 }
 
 
@@ -220,24 +212,18 @@ struct KMultABMask
   }
 };
 
-template <size_t H, OPERATION OP, typename TB>
-NGK_INLINE void MatKernelMultABMask_impl (size_t n, SIMD<mask64> mask, double * pa, size_t da, TB * pb, size_t db, double * pc, size_t dc)
-{
-  KMultABMask<H,OP,TB>::Run (n, mask, pa, da, pb, db, pc, dc);
-}
-
 template <size_t H, OPERATION OP>
 NGK_INLINE void MatKernelMultABMask
 (size_t n, SIMD<mask64> mask, double * pa, size_t da, double * pb, size_t db, double * pc, size_t dc)
 {
-  MatKernelMultABMask_impl<H,OP> (n, mask, pa, da, pb, db, pc, dc);
+  KMultABMask<H,OP,double>::Run (n, mask, pa, da, pb, db, pc, dc);
 }
 
 template <size_t H, OPERATION OP>
 NGK_INLINE void MatKernelMultABMask
 (size_t n, SIMD<mask64> mask, double * pa, size_t da, SIMD<double> * pb, size_t db, double * pc, size_t dc)
 {
-  MatKernelMultABMask_impl<H,OP> (n, mask, pa, da, pb, db, pc, dc);
+  KMultABMask<H,OP,SIMD<double>>::Run (n, mask, pa, da, pb, db, pc, dc);
 }
 
 
@@ -320,22 +306,16 @@ struct KScalAB
   }
 };
 
-template <size_t H, size_t W, bool ALLFMA = false, typename T>
-NGK_INLINE auto MatKernelScalAB_impl (size_t n, T * pa, size_t da, T * pb, size_t db)
+template <size_t H, size_t W>
+INLINE auto MatKernelScalAB (size_t n, double * pa, size_t da, double * pb, size_t db)
 {
-  return KScalAB<H,W,ALLFMA,T>::Run (n, pa, da, pb, db);
+  return KScalAB<H,W,false,double>::Run (n, pa, da, pb, db);
 }
 
 template <size_t H, size_t W>
-NGK_INLINE auto MatKernelScalAB (size_t n, double * pa, size_t da, double * pb, size_t db)
+INLINE auto MatKernelScalAB (size_t n, SIMD<double> * pa, size_t da, SIMD<double> * pb, size_t db)
 {
-  return MatKernelScalAB_impl<H,W> (n, pa, da, pb, db);
-}
-
-template <size_t H, size_t W>
-NGK_INLINE auto MatKernelScalAB (size_t n, SIMD<double> * pa, size_t da, SIMD<double> * pb, size_t db)
-{
-  return MatKernelScalAB_impl<H,W> (n, pa, da, pb, db);
+  return KScalAB<H,W,false,SIMD<double>>::Run (n, pa, da, pb, db);
 }
 
 
@@ -424,12 +404,6 @@ struct KMultiVecScalAB
   }
 };
 
-template <size_t H, size_t W>
-NGK_INLINE auto MultiVecScalAB_impl (size_t n, double ** ppa, double ** ppb)
-{
-  return KMultiVecScalAB<H,W>::Run (n, ppa, ppb);
-}
-
 
 // C = A * B^t (or conj(B)^t), complex rows
 template <size_t H, size_t W, bool CONJ>
@@ -508,12 +482,6 @@ struct KMultiVecScalC
   }
 };
 
-template <size_t H, size_t W, bool CONJ>
-NGK_INLINE void MultiVecScalC_impl (size_t n, Complex ** ppa, Complex ** ppb, Complex * pc, size_t dc)
-{
-  KMultiVecScalC<H,W,CONJ>::Run (n, ppa, ppb, pc, dc);
-}
-
 
 // A[i] += sum_j c(i,j) * B[j],  c(i,j) = pc[i+j*dc]
 template <size_t H, size_t W>
@@ -558,12 +526,6 @@ struct KMultiScaleAdd
       Step<true> (c, pa, pb, i, SIMD<mask64>(r));
   }
 };
-
-template <size_t H, size_t W>
-NGK_INLINE void MultiScaleAdd_impl (size_t n, double ** ppa, double ** ppb, double * pc, size_t dc)
-{
-  KMultiScaleAdd<H,W>::Run (n, ppa, ppb, pc, dc);
-}
 
 
 // complex A[i] += sum_j c(i,j) * B[j]
@@ -618,33 +580,27 @@ struct KMultiScaleAddC
 };
 
 template <size_t H, size_t W>
-NGK_INLINE void MultiScaleAddC_impl (size_t n, Complex ** ppa, Complex ** ppb, Complex * pc, size_t dc)
+INLINE auto MultiVecScalAB (size_t n, double ** ppa, double ** ppb)
 {
-  KMultiScaleAddC<H,W>::Run (n, ppa, ppb, pc, dc);
-}
-
-template <size_t H, size_t W>
-NGK_INLINE auto MultiVecScalAB (size_t n, double ** ppa, double ** ppb)
-{
-  return MultiVecScalAB_impl<H,W> (n, ppa, ppb);
+  return KMultiVecScalAB<H,W>::Run (n, ppa, ppb);
 }
 
 template <size_t H, size_t W, bool conjugate>
-NGK_INLINE void MultiVecScalC (size_t n, Complex ** ppa, Complex ** ppb, Complex * pc, size_t dc)
+INLINE void MultiVecScalC (size_t n, Complex ** ppa, Complex ** ppb, Complex * pc, size_t dc)
 {
-  MultiVecScalC_impl<H,W,conjugate> (n, ppa, ppb, pc, dc);
+  KMultiVecScalC<H,W,conjugate>::Run (n, ppa, ppb, pc, dc);
 }
 
 template <size_t H, size_t W>
-NGK_INLINE void MultiScaleAdd (size_t n, double ** ppa, double ** ppb, double * pc, size_t dc)
+INLINE void MultiScaleAdd (size_t n, double ** ppa, double ** ppb, double * pc, size_t dc)
 {
-  MultiScaleAdd_impl<H,W> (n, ppa, ppb, pc, dc);
+  KMultiScaleAdd<H,W>::Run (n, ppa, ppb, pc, dc);
 }
 
 template <size_t H, size_t W>
-NGK_INLINE void MultiScaleAddC (size_t n, Complex ** ppa, Complex ** ppb, Complex * pc, size_t dc)
+INLINE void MultiScaleAddC (size_t n, Complex ** ppa, Complex ** ppb, Complex * pc, size_t dc)
 {
-  MultiScaleAddC_impl<H,W> (n, ppa, ppb, pc, dc);
+  KMultiScaleAddC<H,W>::Run (n, ppa, ppb, pc, dc);
 }
 
 
@@ -769,18 +725,6 @@ struct KShortSum
   }
 };
 
-template <size_t WA, OPERATION OP>
-NGK_INLINE void MatKernelShortSum_impl (size_t ha, size_t wb, double * pa, size_t da, double * pb, size_t db, double * pc, size_t dc)
-{
-  KShortSum<WA,OP>::Run (ha, wb, pa, da, pb, db, pc, dc);
-}
-
-template <size_t WA, OPERATION OP>
-NGK_INLINE void MatKernelShortSum2_impl (size_t ha, size_t wb, double * pa, size_t da, double * pb, size_t db, double * pc, size_t dc)
-{
-  KShortSum<WA,OP>::Run2 (ha, wb, pa, da, pb, db, pc, dc);
-}
-
 
 // C = A^t * B, A is ha x WA (short), all updates fused
 template <size_t WA, OPERATION OP>
@@ -858,18 +802,6 @@ struct KAtB_SmallWA
   }
 };
 
-template <size_t WA, OPERATION OP>
-NGK_INLINE void MatKernelAtB_SmallWA_impl (size_t ha, size_t wb, double * pa, size_t da, double * pb, size_t db, double * pc, size_t dc)
-{
-  KAtB_SmallWA<WA,OP>::template Run<1> (ha, wb, pa, da, pb, db, pc, dc);
-}
-
-template <size_t WA, OPERATION OP>
-NGK_INLINE void MatKernelAtB_SmallWA2_impl (size_t ha, size_t wb, double * pa, size_t da, double * pb, size_t db, double * pc, size_t dc)
-{
-  KAtB_SmallWA<WA,OP>::template Run<3> (ha, wb, pa, da, pb, db, pc, dc);
-}
-
 
 // C (op)= A * B, A is H x W (small, kept in registers), B is W x n
 template <size_t H, size_t W, OPERATION OP>
@@ -925,40 +857,34 @@ struct KDaxpy
   }
 };
 
-template <size_t H, size_t W, OPERATION OP>
-NGK_INLINE void MatKernelDaxpy_impl (size_t n, double * pa, size_t da, double * pb, size_t db, double * pc, size_t dc)
-{
-  KDaxpy<H,W,OP>::Run (n, pa, da, pb, db, pc, dc);
-}
-
 template <size_t WA, OPERATION OP>
 NGK_INLINE void MatKernelShortSum (size_t ha, size_t wb, double * pa, size_t da, double * pb, size_t db, double * pc, size_t dc)
 {
-  MatKernelShortSum_impl<WA,OP> (ha, wb, pa, da, pb, db, pc, dc);
+  KShortSum<WA,OP>::Run (ha, wb, pa, da, pb, db, pc, dc);
 }
 
 template <size_t WA, OPERATION OP>
 NGK_INLINE void MatKernelShortSum2 (size_t ha, size_t wb, double * pa, size_t da, double * pb, size_t db, double * pc, size_t dc)
 {
-  MatKernelShortSum2_impl<WA,OP> (ha, wb, pa, da, pb, db, pc, dc);
+  KShortSum<WA,OP>::Run2 (ha, wb, pa, da, pb, db, pc, dc);
 }
 
 template <size_t WA, OPERATION OP>
 NGK_INLINE void MatKernelAtB_SmallWA (size_t ha, size_t wb, double * pa, size_t da, double * pb, size_t db, double * pc, size_t dc)
 {
-  MatKernelAtB_SmallWA_impl<WA,OP> (ha, wb, pa, da, pb, db, pc, dc);
+  KAtB_SmallWA<WA,OP>::template Run<1> (ha, wb, pa, da, pb, db, pc, dc);
 }
 
 template <size_t WA, OPERATION OP>
 NGK_INLINE void MatKernelAtB_SmallWA2 (size_t ha, size_t wb, double * pa, size_t da, double * pb, size_t db, double * pc, size_t dc)
 {
-  MatKernelAtB_SmallWA2_impl<WA,OP> (ha, wb, pa, da, pb, db, pc, dc);
+  KAtB_SmallWA<WA,OP>::template Run<3> (ha, wb, pa, da, pb, db, pc, dc);
 }
 
 template <size_t H, size_t W, OPERATION OP>
 NGK_INLINE void MatKernelDaxpy (size_t n, double * pa, size_t da, double * pb, size_t db, double * pc, size_t dc)
 {
-  MatKernelDaxpy_impl<H,W,OP> (n, pa, da, pb, db, pc, dc);
+  KDaxpy<H,W,OP>::Run (n, pa, da, pb, db, pc, dc);
 }
 
 
@@ -1060,18 +986,6 @@ struct KMatVec
   }
 };
 
-template <size_t WA, OPERATION OP>
-NGK_INLINE void KernelMatVec_impl (size_t ha, double * pa, size_t da, double * x, double * y)
-{
-  KMatVec<WA,OP>::Run (0.0, ha, pa, da, x, y);
-}
-
-template <size_t WA>
-NGK_INLINE void KernelAddMatVec_impl (double s, size_t ha, double * pa, size_t da, double * x, double * y)
-{
-  KMatVec<WA,KSCALE>::Run (s, ha, pa, da, x, y);
-}
-
 
 // y(0:WA) += s * sum_i A(i,:) * x[ind[i]],  U independent accumulators
 template <size_t WA>
@@ -1160,28 +1074,22 @@ struct KAddMatTransVecI
   }
 };
 
-template <size_t WA>
-NGK_INLINE void KernelAddMatTransVecI_impl (double s, size_t ha, double * pa, size_t da, double * x, double * y, int * ind)
-{
-  KAddMatTransVecI<WA>::Run (s, ha, pa, da, x, y, ind);
-}
-
 template <size_t WA, OPERATION OP>
 NGK_INLINE void KernelMatVec (size_t ha, double * pa, size_t da, double * x, double * y)
 {
-  KernelMatVec_impl<WA,OP> (ha, pa, da, x, y);
+  KMatVec<WA,OP>::Run (0.0, ha, pa, da, x, y);
 }
 
 template <size_t WA>
 NGK_INLINE void KernelAddMatVec (double s, size_t ha, double * pa, size_t da, double * x, double * y)
 {
-  KernelAddMatVec_impl<WA> (s, ha, pa, da, x, y);
+  KMatVec<WA,KSCALE>::Run (s, ha, pa, da, x, y);
 }
 
 template <size_t WA>
 NGK_INLINE void KernelAddMatTransVecI (double s, size_t ha, double * pa, size_t da, double * x, double * y, int * ind)
 {
-  KernelAddMatTransVecI_impl<WA> (s, ha, pa, da, x, y, ind);
+  KAddMatTransVecI<WA>::Run (s, ha, pa, da, x, y, ind);
 }
 
 
@@ -1282,18 +1190,6 @@ struct KTriangular
   }
 };
 
-template <TRIG_SIDE SIDE, TRIG_NORMAL NORM, ORDERING ORD, int DIM>
-NGK_INLINE void KernelTriangularMult_impl (size_t wx, double * pt, size_t dt, double * px, size_t dx)
-{
-  KTriangular<SIDE,NORM,ORD,DIM>::template Run<false> (wx, pt, dt, px, dx);
-}
-
-template <TRIG_SIDE SIDE, TRIG_NORMAL NORM, ORDERING ORD, int DIM>
-NGK_INLINE void KernelTriangularSolve_impl (size_t wx, double * pt, size_t dt, double * px, size_t dx)
-{
-  KTriangular<SIDE,NORM,ORD,DIM>::template Run<true> (wx, pt, dt, px, dx);
-}
-
 
 // Y (op)= T X, fused updates, a normalized diagonal counts as 1
 template <TRIG_SIDE SIDE, TRIG_NORMAL NORM, ORDERING ORD, OPERATION OP, int DIM>
@@ -1365,26 +1261,20 @@ struct KTriangularMultXY
   }
 };
 
-template <TRIG_SIDE SIDE, TRIG_NORMAL NORM, ORDERING ORD, OPERATION OP, int DIM>
-NGK_INLINE void KernelTriangularMultXY_impl (size_t wx, double * pt, size_t dt, double * px, size_t dx, double * py, size_t dy)
-{
-  KTriangularMultXY<SIDE,NORM,ORD,OP,DIM>::Run (wx, pt, dt, px, dx, py, dy);
-}
-
 template <TRIG_SIDE SIDE, TRIG_NORMAL NORM, ORDERING ORD, int DIM>
 NGK_INLINE void KernelTriangularMult (size_t wx, double * pt, size_t dt, double * px, size_t dx)
 {
-  KernelTriangularMult_impl<SIDE,NORM,ORD,DIM> (wx, pt, dt, px, dx);
+  KTriangular<SIDE,NORM,ORD,DIM>::template Run<false> (wx, pt, dt, px, dx);
 }
 
 template <TRIG_SIDE SIDE, TRIG_NORMAL NORM, ORDERING ORD, int DIM>
 NGK_INLINE void KernelTriangularSolve (size_t wx, double * pt, size_t dt, double * px, size_t dx)
 {
-  KernelTriangularSolve_impl<SIDE,NORM,ORD,DIM> (wx, pt, dt, px, dx);
+  KTriangular<SIDE,NORM,ORD,DIM>::template Run<true> (wx, pt, dt, px, dx);
 }
 
 template <TRIG_SIDE SIDE, TRIG_NORMAL NORM, ORDERING ORD, OPERATION OP, int DIM>
 NGK_INLINE void KernelTriangularMultXY (size_t wx, double * pt, size_t dt, double * px, size_t dx, double * py, size_t dy)
 {
-  KernelTriangularMultXY_impl<SIDE,NORM,ORD,OP,DIM> (wx, pt, dt, px, dx, py, dy);
+  KTriangularMultXY<SIDE,NORM,ORD,OP,DIM>::Run (wx, pt, dt, px, dx, py, dy);
 }
