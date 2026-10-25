@@ -9,6 +9,7 @@
    Finite Element Space
 */
 
+#include <bit>
 #include "fespace.hpp"
 #include <multigrid.hpp>
 #include <diagonalmatrix.hpp>
@@ -507,6 +508,76 @@ lot of new non-zero entries in the matrix!\n" << endl;
   }
 
 
+  // blocks of B elements sorted by smallest vertex number, greedy coloring of blocks
+  static void BuildBlockColoring (const FESpace & fes, const MeshAccess & ma, VorB vb,
+                                  Table<int> & blocks, Table<int> & coloring)
+  {
+    static Timer t("FESpace - block coloring"); RegionTimer reg(t);
+    constexpr size_t B = 256;
+    Array<int> els, key;
+    for (size_t nr = 0; nr < ma.GetNE(vb); nr++)
+      {
+        ElementId ei(vb, nr);
+        if (!fes.DefinedOn(ei)) continue;
+        int minv = numeric_limits<int>::max();
+        for (auto v : ma.GetElVertices(ei)) minv = min(minv, int(v));
+        els.Append(nr);
+        key.Append(minv);
+      }
+    Array<int> index(els.Size());
+    for (int i = 0; i < index.Size(); i++) index[i] = i;
+    QuickSortI (key, index);
+
+    size_t nb = (els.Size()+B-1) / B;
+    Array<int> bsize(nb);
+    for (size_t b = 0; b < nb; b++) bsize[b] = min(B, els.Size()-b*B);
+    blocks = Table<int>(bsize);
+    for (size_t i = 0; i < els.Size(); i++)
+      blocks[i/B][i%B] = els[index[i]];
+
+    Array<int> bcol(nb);
+    bcol = -1;
+    Array<uint64_t> mask(fes.GetNDof());
+    Array<DofId> dofs;
+    size_t found = 0;
+    int basecol = 0, maxcolor = -1;
+    while (found < nb)
+      {
+        mask = 0;
+        for (size_t b = 0; b < nb; b++)
+          {
+            if (bcol[b] >= 0) continue;
+            auto block_dofs = [&] (auto func)
+            {
+              for (int el : blocks[b])
+                {
+                  fes.GetDofNrs(ElementId(vb, el), dofs);
+                  for (auto d : dofs)
+                    if (IsRegularDof(d) && !fes.IsAtomicDof(d)) func(d);
+                }
+            };
+            uint64_t check = 0;
+            block_dofs ([&] (DofId d) { check |= mask[d]; });
+            if (check == ~uint64_t(0)) continue;
+            int bit = std::countr_zero(~check);
+            block_dofs ([&] (DofId d) { mask[d] |= uint64_t(1) << bit; });
+            bcol[b] = basecol + bit;
+            maxcolor = max(maxcolor, bcol[b]);
+            found++;
+          }
+        basecol += 64;
+      }
+
+    Array<int> cntcol(maxcolor+1);
+    cntcol = 0;
+    for (int c : bcol) cntcol[c]++;
+    coloring = Table<int>(cntcol);
+    cntcol = 0;
+    for (size_t b = 0; b < nb; b++)
+      coloring[bcol[b]][cntcol[bcol[b]]++] = b;
+  }
+
+
   void FESpace :: FinalizeUpdate()
   {
     static Timer timer ("FESpace::FinalizeUpdate");
@@ -532,6 +603,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
       {
 	for(auto vb : {VOL, BND, BBND, BBBND})
 	  element_coloring[vb] = Table<int>(low_order_space->element_coloring[vb]);
+        element_blocks[VOL] = Table<int>(low_order_space->element_blocks[VOL]);
+        block_coloring[VOL] = Table<int>(low_order_space->block_coloring[VOL]);
       }
     else
       {
@@ -740,6 +813,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
           *testout << "needed " << maxcolor+1 << " colors" 
                    << " for " << ((vb == VOL) ? "vol" : "bnd") << endl;
       }
+      BuildBlockColoring (*this, *ma, VOL, element_blocks[VOL], block_coloring[VOL]);
       }
     // invalidate facet_coloring
     facet_coloring = Table<int>();
@@ -2144,7 +2218,37 @@ lot of new non-zero entries in the matrix!\n" << endl;
   {
     static mutex copyex_mutex;
     const Table<int> & element_coloring = fes.ElementColoring(vb);
-    
+
+    if (const Table<int> & blocks = fes.ElementBlocks(vb); blocks.Size())
+      {
+        auto do_block = [&] (int b, LocalHeap & lh)
+        {
+          for (int nr : blocks[b])
+            {
+              HeapReset hr(lh);
+              func (FESpace::Element(fes, ElementId (vb, nr), lh), lh);
+            }
+        };
+        if (auto *task_manager = GetTaskManager(); task_manager)
+          for (FlatArray<int> blocks_of_col : fes.BlockColoring(vb))
+            {
+              SharedLoop2 sl(blocks_of_col.Range());
+              task_manager -> CreateJob
+                ( [&] (const TaskInfo & ti)
+                  {
+                    LocalHeap lh = clh.Split(ti.thread_nr, ti.nthreads);
+                    for (int mynr : sl)
+                      do_block (blocks_of_col[mynr], lh);
+                    ProgressOutput::SumUpLocal();
+                  } );
+            }
+        else
+          for (FlatArray<int> blocks_of_col : fes.BlockColoring(vb))
+            for (int b : blocks_of_col)
+              do_block (b, clh);
+        return;
+      }
+
     if (auto *task_manager = GetTaskManager(); task_manager)
       {
         for (FlatArray<int> els_of_col : element_coloring)

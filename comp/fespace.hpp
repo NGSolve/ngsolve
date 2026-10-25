@@ -206,6 +206,8 @@ ANY                  1 1 1 1 | 15
 
     
     Table<int> element_coloring[4]; 
+    // locality-preserving: blocks of elements sorted by min vertex, blocks colored
+    Table<int> element_blocks[4], block_coloring[4];
     Table<int> facet_coloring;  // elements on facet in own colors (DG)
     Array<COUPLING_TYPE> ctofdof;
 
@@ -268,6 +270,8 @@ ANY                  1 1 1 1 | 15
 
     const Table<int> & ElementColoring(VorB vb = VOL) const 
     { return element_coloring[vb]; }
+    const Table<int> & ElementBlocks(VorB vb = VOL) const { return element_blocks[vb]; }
+    const Table<int> & BlockColoring(VorB vb = VOL) const { return block_coloring[vb]; }
 
     const Table<int> & FacetColoring() const;
     

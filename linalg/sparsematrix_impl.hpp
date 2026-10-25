@@ -153,7 +153,39 @@ namespace ngla
     static Timer timer_addelmat_nonsym("SparseMatrix::AddElementMatrix", NoTracing);
     RegionTimer reg (timer_addelmat_nonsym);
     reg.AddFlops (dnums1.Size()*dnums2.Size());
-    
+
+    // small elements: position = #(rowind < col), counted for all cols at once (SIMD, no sort)
+    auto scatter = [&] (auto W)
+    {
+      constexpr int w = W;
+      Scalar2ElemMatrix<TM, TSCAL> elmat (elmat1);
+      int c[w];
+      for (int j = 0; j < w; j++) c[j] = j < dnums2.Size() ? dnums2[j] : 0;
+      for (int i = 0; i < dnums1.Size(); i++)
+        if (IsRegularIndex(dnums1[i]))
+          {
+            FlatArray rowind = this->GetRowIndices(dnums1[i]);
+            FlatVector<TM> rowvals = this->GetRowValues(dnums1[i]);
+            int cnt[w] = { 0 };
+            for (auto r : rowind)
+              for (int j = 0; j < w; j++)
+                cnt[j] += r < c[j];
+            for (int j = 0; j < dnums2.Size(); j++)
+              if (IsRegularIndex(c[j]))
+                {
+                  int k = cnt[j];
+                  if (k >= rowind.Size() || rowind[k] != c[j])
+                    throw Exception ("SparseMatrix::AddElementMatrix: illegal dnums");
+                  if (use_atomic)
+                    AtomicAdd (rowvals(k), elmat(i,j));
+                  else
+                    rowvals(k) += elmat(i,j);
+                }
+          }
+    };
+    if (dnums2.Size() <= 8) { scatter (integral_constant<int,8>()); return; }
+    if (dnums2.Size() <= 16) { scatter (integral_constant<int,16>()); return; }
+
     ArrayMem<int, 50> map(dnums2.Size());
     for (int i = 0; i < map.Size(); i++) map[i] = i;
     QuickSortI (dnums2, map);

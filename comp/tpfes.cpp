@@ -221,6 +221,7 @@ namespace ngcomp
     for(auto fes : spaces_y)
       fes->FinalizeUpdate();
     FESpace::FinalizeUpdate();
+    element_blocks[VOL] = Table<int>();   // blocks are for mesh elements
     element_coloring[VOL] = Table<int>(nel,1);
     for (int i : Range(nel))
       element_coloring[VOL][i][0] = i;
