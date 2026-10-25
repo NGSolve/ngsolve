@@ -1183,16 +1183,21 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     {
       if (string * invstr = get_if<string>(&inverse))
         if (*invstr != "")
-          m.SetInverseType(*invstr);
+          {
+            m.SetInverseType(*invstr);
+            m.SetInverseCreator(nullptr);
+          }
 
       if (py::object * invobj = get_if<py::object>(&inverse))
         {
-          // std::function<shared_ptr<BaseMatrix>(shared_ptr<BaseMatrix>,shared_ptr<BitArray>)>
+          // stored in the matrix, which may be deleted without holding the gil
+          shared_ptr<py::object> pyfunc(new py::object(*invobj),
+                                        [](py::object * f) { py::gil_scoped_acquire acq; delete f; });
           BaseMatrix::T_INVCREATOR func =
-            [&](shared_ptr<BaseMatrix> mat, shared_ptr<BitArray> subset, shared_ptr<const Array<int>>) -> shared_ptr<BaseMatrix>
+            [pyfunc](shared_ptr<BaseMatrix> mat, shared_ptr<BitArray> subset, shared_ptr<const Array<int>>) -> shared_ptr<BaseMatrix>
             {
               py::gil_scoped_acquire acq;
-              py::object inv = (*invobj)(py::cast(mat), py::cast(subset));
+              py::object inv = (*pyfunc)(py::cast(mat), py::cast(subset));
               return py::cast<shared_ptr<BaseMatrix>> (inv);
             };
           m.SetInverseCreator(func);

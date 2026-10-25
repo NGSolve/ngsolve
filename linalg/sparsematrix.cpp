@@ -2213,7 +2213,22 @@ shared_ptr<BaseMatrix> CreateSparseMatrixInverse(shared_ptr<const BaseSparseMatr
   RegisterAccelerateSparseInverse();
 #endif
   if (baseA->invcreator)
-    return baseA->invcreator(const_pointer_cast<BaseSparseMatrix>(baseA), subset, clusters);
+    {
+      // the creator may call Inverse of the same matrix, so it is removed while it runs
+      auto creator = std::move(baseA->invcreator);
+      baseA->invcreator = nullptr;
+      try
+        {
+          auto inv = creator(const_pointer_cast<BaseSparseMatrix>(baseA), subset, clusters);
+          baseA->invcreator = std::move(creator);
+          return inv;
+        }
+      catch (...)
+        {
+          baseA->invcreator = std::move(creator);
+          throw;
+        }
+    }
 
   auto index = BaseMatrix::invcreators.CheckIndex(baseA->GetInverseType());
   if(index != -1)
