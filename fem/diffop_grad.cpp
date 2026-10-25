@@ -83,6 +83,8 @@ namespace ngfem
 
   template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpDivVectorH1<2> >;
   template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpDivVectorH1<3> >;
+  template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpStrainVectorH1<2> >;
+  template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpStrainVectorH1<3> >;
   template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpDivBoundaryVectorH1<2> >;
   template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpDivBoundaryVectorH1<3> >;
 }

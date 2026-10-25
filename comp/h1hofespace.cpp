@@ -2523,6 +2523,7 @@ into the wirebasket.
           evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdVectorH1<2,BND>>>();
           flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpGradBoundaryVectorH1<2>>>();
           additional_evaluators.Set ("div", make_shared<T_DifferentialOperator<DiffOpDivVectorH1<2>>> ()); 
+          additional_evaluators.Set ("strain", make_shared<StrainVectorH1DifferentialOperator<2>> ());
           additional_evaluators.Set ("divfree_reconstruction", make_shared<T_DifferentialOperator<DiffOpDivFreeReconstructVectorH1<2>>> ());
           additional_evaluators.Set ("Grad", make_shared<T_DifferentialOperator<DiffOpGradVectorH1<2>>> ());
           additional_evaluators.Set ("Gradboundary", make_shared<T_DifferentialOperator<DiffOpGradBoundaryVectorH1<2>>>());
@@ -2540,6 +2541,7 @@ into the wirebasket.
           evaluator[BBND] = make_shared<T_DifferentialOperator<DiffOpIdVectorH1<3,BBND>>>();
           
           additional_evaluators.Set ("div", make_shared<T_DifferentialOperator<DiffOpDivVectorH1<3>>> ());
+          additional_evaluators.Set ("strain", make_shared<StrainVectorH1DifferentialOperator<3>> ());
           additional_evaluators.Set ("Grad", make_shared<T_DifferentialOperator<DiffOpGradVectorH1<3>>> ());
           additional_evaluators.Set ("Gradboundary", make_shared<T_DifferentialOperator<DiffOpGradBoundaryVectorH1<3>>>());
           additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpDualVectorH1<3,3>>> ());
@@ -2557,6 +2559,18 @@ into the wirebasket.
   DocInfo VectorH1FESpace :: GetDocu ()
   {
     DocInfo docu = CompoundFESpace::GetDocu();
+    docu.short_docu = "A vector-valued H1 finite element space.";
+    docu.long_docu =
+      R"raw_string(Each component is an H1HighOrderFESpace.
+
+Besides Grad, div and the trace operators, the space provides the operator 'strain',
+the symmetric gradient Sym(Grad(u)) as a dim x dim matrix. It carries a vector-space
+embedding with dim*(dim+1)/2 independent components, and symbolic integrators assemble
+in this smaller space, which makes elasticity element matrices considerably cheaper:
+
+    eu, ev = u.Operator("strain"), v.Operator("strain")
+    a = BilinearForm(2*mu*InnerProduct(eu, ev)*dx + lam*div(u)*div(v)*dx)
+)raw_string";
     docu.Arg("interleaved") = "bool = False\n"
       "  ordering of dofs changed to x0, y0, z0, x1 ....";
     docu.Arg("dirichletx") = "regexpr\n"

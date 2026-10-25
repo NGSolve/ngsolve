@@ -2567,6 +2567,123 @@ namespace ngfem
     }
   };
 
+  // symmetric gradient, as 3x3 matrix (dim 9); vector-space form has D(D+1)/2 entries
+  template <int DIM_SPC>
+  class DiffOpStrainVectorH1 : public DiffOp<DiffOpStrainVectorH1<DIM_SPC> >
+  {
+  public:
+    static constexpr int DIM = 1;
+    static constexpr int DIM_SPACE = DIM_SPC;
+    static constexpr int DIM_ELEMENT = DIM_SPC;
+    static constexpr int DIM_DMAT = DIM_SPC*DIM_SPC;
+    static constexpr int DIM_VS = DIM_SPC*(DIM_SPC+1)/2;
+    static constexpr int DIFFORDER = 1;
+
+    static string Name() { return "strain"; }
+    static IVec<2> GetDimensions() { return { DIM_SPC, DIM_SPC }; }
+
+    template <typename FEL, typename MIP, typename MAT>
+    static void GenerateMatrix (const FEL & bfel, const MIP & mip,
+                                MAT && mat, LocalHeap & lh)
+    {
+      auto & fel = static_cast<const VectorFiniteElement&> (bfel);
+      auto & feli = static_cast<const ScalarFiniteElement<DIM_SPC>&> (fel[0]);
+      size_t ndi = feli.GetNDof();
+      HeapReset hr(lh);
+      FlatMatrix<> grad(ndi, DIM_SPC, lh);
+      feli.CalcMappedDShape (mip, grad);
+      mat.AddSize(DIM_DMAT, bfel.GetNDof()) = 0.0;
+      for (int c = 0; c < DIM_SPC; c++)
+        for (size_t s = 0; s < ndi; s++)
+          for (int k = 0; k < DIM_SPC; k++)
+            {
+              mat(c*DIM_SPC+k, c*ndi+s) += 0.5*grad(s,k);
+              mat(k*DIM_SPC+c, c*ndi+s) += 0.5*grad(s,k);
+            }
+    }
+
+    static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
+                                      const SIMD_BaseMappedIntegrationRule & mir,
+                                      BareSliceMatrix<SIMD<double>> bmat)
+    {
+      auto & fel = static_cast<const VectorFiniteElement&> (bfel);
+      auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
+      size_t ndi = feli.GetNDof(), np = mir.Size();
+      STACK_ARRAY(SIMD<double>, mem, DIM_SPC*ndi*np);
+      FlatMatrix<SIMD<double>> grad(DIM_SPC*ndi, np, &mem[0]);
+      feli.CalcMappedDShape (mir, grad);
+      auto mat = bmat.AddSize(DIM_DMAT*bfel.GetNDof(), np);
+      mat = SIMD<double>(0.0);
+      for (int c = 0; c < DIM_SPC; c++)
+        for (size_t s = 0; s < ndi; s++)
+          {
+            size_t first = (c*ndi+s)*DIM_DMAT;
+            for (int k = 0; k < DIM_SPC; k++)
+              {
+                mat.Row(first+c*DIM_SPC+k) += 0.5*grad.Row(s*DIM_SPC+k);
+                mat.Row(first+k*DIM_SPC+c) += 0.5*grad.Row(s*DIM_SPC+k);
+              }
+          }
+    }
+
+    // DIM_VS rows per dof, ordering (i,j), j <= i, as SymMatrixDifferentialOperator
+    static void GenerateMatrixVS (const FiniteElement & bfel,
+                                  const SIMD_BaseMappedIntegrationRule & mir,
+                                  BareSliceMatrix<SIMD<double>> bmat)
+    {
+      auto & fel = static_cast<const VectorFiniteElement&> (bfel);
+      auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
+      size_t ndi = feli.GetNDof(), np = mir.Size();
+      STACK_ARRAY(SIMD<double>, mem, DIM_SPC*ndi*np);
+      FlatMatrix<SIMD<double>> grad(DIM_SPC*ndi, np, &mem[0]);
+      feli.CalcMappedDShape (mir, grad);
+      for (int c = 0; c < DIM_SPC; c++)
+        for (size_t s = 0; s < ndi; s++)
+          {
+            size_t first = (c*ndi+s)*DIM_VS;
+            for (int i = 0, ii = 0; i < DIM_SPC; i++)
+              for (int j = 0; j <= i; j++, ii++)
+                {
+                  auto row = bmat.Row(first+ii).Range(np);
+                  if (i == j)
+                    {
+                      if (i == c) row = grad.Row(s*DIM_SPC+i);
+                      else row = SIMD<double>(0.0);
+                    }
+                  else if (i == c) row = 0.5*grad.Row(s*DIM_SPC+j);
+                  else if (j == c) row = 0.5*grad.Row(s*DIM_SPC+i);
+                  else row = SIMD<double>(0.0);
+                }
+          }
+    }
+  };
+
+  template <int DIM_SPC>
+  class StrainVectorH1DifferentialOperator : public T_DifferentialOperator<DiffOpStrainVectorH1<DIM_SPC>>
+  {
+  public:
+    StrainVectorH1DifferentialOperator()
+    {
+      Matrix<> emb(DIM_SPC*DIM_SPC, DIM_SPC*(DIM_SPC+1)/2);
+      emb = 0.0;
+      for (int i = 0, ii = 0; i < DIM_SPC; i++)
+        for (int j = 0; j <= i; j++, ii++)
+          {
+            emb(i*DIM_SPC+j, ii) = 1;
+            emb(j*DIM_SPC+i, ii) = 1;
+          }
+      this->SetVectorSpaceEmbedding(emb);
+    }
+
+    using DifferentialOperator::CalcMatrixVS;
+    void CalcMatrixVS (const FiniteElement & fel,
+                       const SIMD_BaseMappedIntegrationRule & mir,
+                       BareSliceMatrix<SIMD<double>> mat) const override
+    {
+      DiffOpStrainVectorH1<DIM_SPC>::GenerateMatrixVS (fel, mir, mat);
+    }
+  };
+
   template <int DIM_SPC>  
   class DiffOpDivBoundaryVectorH1 : public DiffOp<DiffOpDivBoundaryVectorH1<DIM_SPC> >
   {

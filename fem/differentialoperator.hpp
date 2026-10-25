@@ -28,6 +28,7 @@ namespace ngfem
     
     int vsdim;    // symmetric 3x3 matrix has dim=9, but vector-space dim=6
     optional<Matrix<>> vsembedding;
+    Matrix<> vsembedding_pinv;   // left inverse: vs = pinv * full
   protected:
     VorB vb;
     int difforder;
@@ -61,8 +62,7 @@ namespace ngfem
     virtual void DoArchive(Archive & ar) { ; }
 
     void SetDimensions (const Array<int> & adims) { dimensions = adims; }
-    void SetVectorSpaceEmbedding (Matrix <> emb)
-    { vsembedding = emb; vsdim = emb.Width(); }
+    NGS_DLL_HEADER void SetVectorSpaceEmbedding (Matrix <> emb);
     optional<FlatMatrix<>> GetVSEmbedding() const { return vsembedding; }
     
     ///
@@ -131,6 +131,12 @@ namespace ngfem
                   const BaseMappedIntegrationPoint & mip,
                   SliceMatrix<double,ColMajor> mat,   
                   LocalHeap & lh) const;
+
+    /// VSDim rows per dof (if vs-embedding is set), default extracts from CalcMatrix
+    NGS_DLL_HEADER virtual void
+    CalcMatrixVS (const FiniteElement & fel,
+                  const SIMD_BaseMappedIntegrationRule & mir,
+                  BareSliceMatrix<SIMD<double>> mat) const;
 
     NGS_DLL_HEADER virtual void
     CalcLinearizedMatrix (const FiniteElement & fel,

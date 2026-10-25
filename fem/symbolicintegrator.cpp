@@ -1641,16 +1641,23 @@ namespace ngfem
                       IntRange r2 = proxy2->Evaluator()->UsedDofs(fel_test);
                       SliceMatrix<SCAL_RES> part_elmat = elmat.Rows(r2).Cols(r1);
 
-                      FlatMatrix<SIMD<SCAL_SHAPES>> bbmat1(elmat.Width() * dim_proxy1, ir.Size(), lh);
-                      FlatMatrix<SIMD<SCAL>> bdbmat1(elmat.Width() * dim_proxy2, ir.Size(), lh);
+                      // vector-space form: B with VSDim rows per dof, D -> E2^T D E1
+                      auto ev1 = proxy1->Evaluator(), ev2 = proxy2->Evaluator();
+                      bool use_vs = is_same_v<SCAL_SHAPES,double> &&
+                        ev1->GetVSEmbedding().has_value() && ev2->GetVSEmbedding().has_value();
+                      size_t vdim1 = use_vs ? ev1->VSDim() : dim_proxy1;
+                      size_t vdim2 = use_vs ? ev2->VSDim() : dim_proxy2;
+
+                      FlatMatrix<SIMD<SCAL_SHAPES>> bbmat1(elmat.Width() * vdim1, ir.Size(), lh);
+                      FlatMatrix<SIMD<SCAL>> bdbmat1(elmat.Width() * vdim2, ir.Size(), lh);
                       FlatMatrix<SIMD<SCAL_SHAPES>> bbmat2 =
                               samediffop ?
                                 bbmat1
                                 :
-                                FlatMatrix<SIMD<SCAL_SHAPES>>(elmat.Height() * dim_proxy2, ir.Size(), lh);
+                                FlatMatrix<SIMD<SCAL_SHAPES>>(elmat.Height() * vdim2, ir.Size(), lh);
 
-                      FlatMatrix<SIMD<SCAL>> hbdbmat1(elmat.Width(), dim_proxy2 * ir.Size(), bdbmat1.Data());
-                      FlatMatrix<SIMD<SCAL_SHAPES>> hbbmat2(elmat.Height(), dim_proxy2 * ir.Size(), bbmat2.Data());
+                      FlatMatrix<SIMD<SCAL>> hbdbmat1(elmat.Width(), vdim2 * ir.Size(), bdbmat1.Data());
+                      FlatMatrix<SIMD<SCAL_SHAPES>> hbbmat2(elmat.Height(), vdim2 * ir.Size(), bbmat2.Data());
 
                       if (ddcf_dtest_dtrial(l1nr, k1nr))
                         {
@@ -1713,6 +1720,68 @@ namespace ngfem
                       // NgProfiler::StopThreadTimer (timer_SymbBFIscale, TaskManager::GetThreadId());
                       // bbmat1 = 0.0;
                       // bbmat2 = 0.0;
+                      bool vs_handled = false;
+                      if constexpr (is_same_v<SCAL_SHAPES,double>)
+                        if (use_vs)
+                        {
+                          FlatMatrix<> E1 = *ev1->GetVSEmbedding(), E2 = *ev2->GetVSEmbedding();
+                          bool diag_vs = is_diagonal && samediffop;
+                          for (size_t kk = 0; kk < E1.Height(); kk++)
+                            {
+                              int cnt = 0;
+                              for (size_t k = 0; k < vdim1; k++)
+                                if (E1(kk,k) != 0) cnt++;
+                              if (cnt > 1) diag_vs = false;
+                            }
+
+                          // dvs row j*vdim1+k: test-comp j, trial-comp k, weights included
+                          FlatMatrix<SIMD<SCAL>> dvs(vdim2*vdim1, ir.Size(), lh);
+                          dvs = SIMD<SCAL>(0.0);
+                          auto add_dvs = [&] (size_t jj, size_t kk, auto pv)
+                          {
+                            for (size_t k = 0; k < vdim1; k++)
+                              if (double e1 = E1(kk,k); e1 != 0)
+                                for (size_t j = 0; j < vdim2; j++)
+                                  if (double e2 = E2(jj,j); e2 != 0)
+                                    {
+                                      auto row = dvs.Row(j*vdim1+k);
+                                      for (size_t i = 0; i < ir.Size(); i++)
+                                        row(i) += (e1*e2) * pv(i);
+                                    }
+                          };
+                          if (is_diagonal)
+                            for (size_t kk = 0; kk < dim_proxy1; kk++)
+                              add_dvs (kk, kk, diagproxyvalues.Row(kk));
+                          else
+                            for (size_t jj = 0; jj < dim_proxy2; jj++)
+                              for (size_t kk = 0; kk < dim_proxy1; kk++)
+                                if (nonzeros(l1+jj, k1+kk))
+                                  {
+                                    auto pv = ddcf_dtest_dtrial(l1nr, k1nr) ?
+                                      proxyvalues.Row(jj*dim_proxy1+kk) : proxyvalues.Row(kk*dim_proxy2+jj);
+                                    add_dvs (jj, kk, [&] (size_t i) { return pv(i)*weights(i); });
+                                  }
+
+                          ev1->CalcMatrixVS(fel_trial, mir, bbmat1);
+                          if (!samediffop)
+                            ev2->CalcMatrixVS(fel_test, mir, bbmat2);
+
+                          hbdbmat1.Rows(r1) = 0.0;
+                          for (size_t j = 0; j < vdim2; j++)
+                            for (size_t k = 0; k < vdim1; k++)
+                              {
+                                if (diag_vs && j != k) continue;
+                                auto d = dvs.Row(j*vdim1+k);
+                                auto bbmat1_k = bbmat1.RowSlice(k, vdim1).Rows(r1);
+                                auto bdbmat1_j = bdbmat1.RowSlice(j, vdim2).Rows(r1);
+                                for (size_t i = 0; i < ir.Size(); i++)
+                                  bdbmat1_j.Col(i).Range(0,r1.Size()) += d(i) * bbmat1_k.Col(i);
+                              }
+                          symmetric_so_far &= samediffop && diag_vs;
+                          vs_handled = true;
+                        }
+                      if (!vs_handled)
+                      {
                       {
                         // RegionTimer regbmat(timer_SymbBFIbmat);
                         proxy1->Evaluator()->CalcMatrix(fel_trial, mir, bbmat1);
@@ -1795,6 +1864,7 @@ namespace ngfem
                       // AddABt (bbmat2.Rows(r2), bdbmat1.Rows(r1), elmat.Rows(r2).Cols(r1));
 
                       symmetric_so_far &= samediffop && is_diagonal;
+                      }
                       /*
                       if (symmetric_so_far)
                         AddABtSym (AFlatMatrix<double>(hbbmat2.Rows(r2)),

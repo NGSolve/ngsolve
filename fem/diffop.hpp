@@ -657,6 +657,11 @@ namespace ngfem
                   SliceMatrix<double,ColMajor> mat, 
                   LocalHeap & lh) const override;
 
+    NGS_DLL_HEADER virtual void
+    CalcMatrixVS (const FiniteElement & fel,
+                  const SIMD_BaseMappedIntegrationRule & mir,
+                  BareSliceMatrix<SIMD<double>> mat) const override;
+
     NGS_DLL_HEADER virtual void 
     CalcMatrix (const FiniteElement & bfel,
                 const SIMD_BaseMappedIntegrationRule & mir,
@@ -717,6 +722,11 @@ namespace ngfem
                   const BaseMappedIntegrationPoint & mip,
                   SliceMatrix<double,ColMajor> mat, 
                   LocalHeap & lh) const override;
+
+    NGS_DLL_HEADER virtual void
+    CalcMatrixVS (const FiniteElement & fel,
+                  const SIMD_BaseMappedIntegrationRule & mir,
+                  BareSliceMatrix<SIMD<double>> mat) const override;
 
     NGS_DLL_HEADER virtual void 
     CalcMatrix (const FiniteElement & bfel,
@@ -787,6 +797,11 @@ namespace ngfem
                   const BaseMappedIntegrationPoint & mip,
                   SliceMatrix<double,ColMajor> mat, 
                   LocalHeap & lh) const override;
+
+    NGS_DLL_HEADER virtual void
+    CalcMatrixVS (const FiniteElement & fel,
+                  const SIMD_BaseMappedIntegrationRule & mir,
+                  BareSliceMatrix<SIMD<double>> mat) const override;
 
     NGS_DLL_HEADER virtual void 
     CalcMatrix (const FiniteElement & bfel,
