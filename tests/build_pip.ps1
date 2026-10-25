@@ -45,7 +45,7 @@ foreach ($pydir in $pythons) {
     & $python -m pip uninstall -y bleach requests-toolbelt
 
     Invoke-Step { & $python -m pip install -U build delvewheel "scikit-build-core>=0.10" pybind11-stubgen ninja cmake }
-    Invoke-Step { & $python -m pip install -U netgen-occt==8.0.1.dev0 netgen-occt-devel==8.0.1.dev0 "netgen-mesher==$netgen_version" "ngsolve-openblas==$env:OPENBLAS_VERSION_PIP" }
+    Invoke-Step { & $python -m pip install -U netgen-occt==7.8.1 netgen-occt-devel==7.8.1 "netgen-mesher==$netgen_version" "ngsolve-openblas==$env:OPENBLAS_VERSION_PIP" }
 
     if (test-path dist) { cmd.exe /c rd /s /q dist }
 

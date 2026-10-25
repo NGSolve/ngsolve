@@ -2,7 +2,7 @@
 requires = [
     "scikit-build-core>=0.10",
     "pybind11-stubgen>=2.5",
-    "netgen-occt-devel==8.0.1.dev0",
+    "netgen-occt-devel==7.8.1",
 ]
 build-backend = "scikit_build_core.build"
 
@@ -82,6 +82,6 @@ archs = ["universal2"]
 test-skip = "*_universal2:x86_64"
 environment = { NETGEN_ARCH = "avx2", MACOSX_DEPLOYMENT_TARGET = "10.15", CMAKE_OSX_ARCHITECTURES = "arm64;x86_64" }
 # NETGEN_VERSION is exported by tests/build_pip_mac.sh before cibuildwheel runs.
-before-build = "pip install -U \"scikit-build-core>=0.10\" pybind11-stubgen netgen-occt==8.0.1.dev0 netgen-occt-devel==8.0.1.dev0 netgen-mesher==${NETGEN_VERSION} ninja cmake"
+before-build = "pip install -U \"scikit-build-core>=0.10\" pybind11-stubgen netgen-occt==7.8.1 netgen-occt-devel==7.8.1 netgen-mesher==${NETGEN_VERSION} ninja cmake"
 # set DYLD_LIBRARY_PATH to find OCC libraries, ignore libs provided by other packages
 repair-wheel-command = "LIBDIR=\"$(python3 -c 'import sys, os; print(os.path.join(sys.prefix, \"lib\"))')\"; DYLD_LIBRARY_PATH=\"$LIBDIR\" delocate-wheel --ignore-missing-dependencies --require-archs {delocate_archs} --exclude libTK --exclude libngcore --exclude libnglib --exclude libnetgen -w {dest_dir} {wheel}"

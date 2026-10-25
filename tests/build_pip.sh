@@ -25,7 +25,7 @@ do
     $PYDIR/python3 ./tests/utils.py --check-pip --package ngsolve || continue
 
     $PYDIR/pip install -U build twine ninja cmake "scikit-build-core>=0.10" pybind11-stubgen
-    $PYDIR/pip install -U netgen-occt==8.0.1.dev0 netgen-occt-devel==8.0.1.dev0 netgen-mesher==$NETGEN_VERSION "ngsolve-openblas==$OPENBLAS_VERSION_PIP"
+    $PYDIR/pip install -U netgen-occt==7.8.1 netgen-occt-devel==7.8.1 netgen-mesher==$NETGEN_VERSION "ngsolve-openblas==$OPENBLAS_VERSION_PIP"
 
     # Point CMake at the Python prefix for Tcl/Tk discovery and pin the python root
     PYPREFIX=$($PYDIR/python3 -c 'import sys; print(sys.prefix)')
