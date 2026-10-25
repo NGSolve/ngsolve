@@ -7,6 +7,7 @@
 
 #define FILE_SPARSEMATRIX_CPP
 
+#include <bit>
 #include "sparsematrix.hpp"
 #include "device_sparsematrix.hpp"
 #include "jacobi.hpp"
@@ -476,22 +477,14 @@ namespace ngla
   static Table<int> BuildDof2Element (FlatTable<int> rowelements, size_t ndof)
   {
     size_t nel = rowelements.Size();
+    // about 128 element blocks and 128 dof blocks: few, well filled buckets;
+    // more blocks if the packed (row_lo, dof_lo) pair would not fit into an int
     int rowbits = UsedBits (nel);
-    int rowbits_lo = rowbits - rowbits/2;
+    int rowbits_lo = max(0, rowbits-7);
     int dofbits = UsedBits (ndof);
-    int dofbits_lo = dofbits - dofbits/2;
-
-    if (rowbits_lo + dofbits_lo > 30)
-      { // packed pair does not fit into int, fall back to atomic counting
-        TableCreator<int> creator(ndof);
-        for ( ; !creator.Done(); creator++)
-          ParallelFor (Range(nel), [&] (int i)
-                       {
-                         for (auto e : rowelements[i])
-                           creator.Add(e, i);
-                       }, TasksPerThread(10));
-        return creator.MoveTable();
-      }
+    int dofbits_lo = max(0, dofbits-7);
+    while (rowbits_lo + dofbits_lo > 30)
+      (rowbits_lo > dofbits_lo ? rowbits_lo : dofbits_lo)--;
 
     size_t rows_lo = size_t(1) << rowbits_lo;
     size_t dofs_lo = size_t(1) << dofbits_lo;
@@ -502,7 +495,8 @@ namespace ngla
     Array<int> cnt_coo(nrows_hi*ndofs_hi);
     auto rowblock = [&] (size_t row_hi, auto f)
     {
-      auto mycnt = cnt_coo.Range(row_hi*ndofs_hi, (row_hi+1)*ndofs_hi);
+      // task-local counters: neighbouring rows of cnt_coo belong to other threads (false sharing)
+      ArrayMem<int, 1024> mycnt(ndofs_hi);
       mycnt = 0;
       size_t rowend = min(nel, (row_hi+1)*rows_lo);
       for (size_t row = row_hi*rows_lo; row < rowend; row++)
@@ -511,6 +505,7 @@ namespace ngla
             auto [dof_hi, dof_lo] = Split (d, dofbits_lo);
             f (row_hi*ndofs_hi+dof_hi, mycnt[dof_hi]++, int((row-row_hi*rows_lo)*dofs_lo+dof_lo));
           }
+      cnt_coo.Range(row_hi*ndofs_hi, (row_hi+1)*ndofs_hi) = mycnt;
     };
     ParallelJob ([&] (TaskInfo & ti) { rowblock (ti.task_nr, [] (size_t, int, int) { }); }, nrows_hi);
     Table<int> coo(cnt_coo);
@@ -590,73 +585,86 @@ namespace ngla
     
 
 
+    // distinct columns of row i: per-thread bitset, words = touched 64-bit words
+    Array<Array<uint64_t>> marks(TaskManager::GetNumThreads());
+    if (!symmetric)
+      for (auto & m : marks)
+        {
+          m.SetSize((awidth+63)/64);
+          m = 0;
+        }
+    auto CollectColumns = [&] (int i, Array<uint64_t> & mark, ArrayMem<int,400> & words)
+    {
+      size_t bound = 0;
+      for (int elnr : dof2element[i])
+        bound += colelements[elnr].Size();
+      words.SetSize(bound);
+      int * pw = words.Data(), nw = 0;
+      for (int elnr : dof2element[i])
+        for (int col : colelements[elnr])
+          {
+            uint64_t & w = mark[col>>6];
+            if (!w) pw[nw++] = col>>6;
+            w |= uint64_t(1) << (col & 63);
+          }
+      words.SetSize(nw);
+    };
+    // row i has the same elements as row i-1 (e.g. several dofs on one edge)
+    auto SameElements = [&] (int i)
+    {
+      auto e1 = dof2element[i], e0 = dof2element[i-1];
+      if (e1.Size() != e0.Size()) return false;
+      for (size_t j = 0; j < e1.Size(); j++)
+        if (e1[j] != e0[j]) return false;
+      return true;
+    };
+
     for (int loop = 1; loop <= 2; loop++)
       {
         if (!symmetric)
           {
-            if (loop == 1)
-              {
-                // count distinct columns per row with a per-thread bitset
-                Array<Array<uint64_t>> marks(TaskManager::GetNumThreads());
-                for (auto & m : marks)
-                  {
-                    m.SetSize((awidth+63)/64);
-                    m = 0;
-                  }
-                ParallelForRange
-                  (Range(ndof), [&](IntRange myr)
+            ParallelForRange
+              (Range(ndof), [&](IntRange myr)
+               {
+                 auto & mark = marks[TaskManager::GetThreadId()];
+                 ArrayMem<int, 400> words;
+                 for (int i : myr)
                    {
-                     auto & mark = marks[TaskManager::GetThreadId()];
-                     ArrayMem<int, 400> row;
-                     for (int i : myr)
+                     if (i > myr.First() && SameElements(i))
                        {
-                         row.SetSize0();
-                         for (int elnr : dof2element[i])
-                           for (int col : colelements[elnr])
-                             {
-                               uint64_t bit = uint64_t(1) << (col & 63);
-                               if (!(mark[col>>6] & bit))
-                                 {
-                                   mark[col>>6] |= bit;
-                                   row.Append(col);
-                                 }
-                             }
-                         cnt[i] = row.Size();
-                         for (int col : row)
-                           mark[col>>6] &= ~(uint64_t(1) << (col & 63));
+                         if (loop == 1)
+                           cnt[i] = cnt[i-1];
+                         else
+                           colnr.Range(firsti[i], firsti[i+1]) = colnr.Range(firsti[i-1], firsti[i]);
+                         continue;
                        }
-                   },
-                   TasksPerThread(4));
-              }
-            else
-              {
-                ParallelForRange 
-                  (Range(ndof), [&](IntRange myr) 
-                   {
-                     ArrayMem<int, 50> sizes;
-                     ArrayMem<int*, 50> ptrs;
-                     
-                     for (int i : myr)
+
+                     CollectColumns (i, mark, words);
+                     if (loop == 1)
                        {
-                         sizes.SetSize(dof2element[i].Size());
-                         ptrs.SetSize(dof2element[i].Size());
-                         
-                         for (int j : dof2element[i].Range())
+                         size_t c = 0;
+                         for (int w : words)
                            {
-                             sizes[j] = colelements[dof2element[i][j]].Size();
-                             ptrs[j] = colelements[dof2element[i][j]].Addr(0);
+                             c += std::popcount(mark[w]);
+                             mark[w] = 0;
                            }
-                         
-                         auto ptr = colnr.Data()+firsti[i];
-                         MergeArrays(ptrs, sizes, [&ptr] (int col) 
-                                     {
-                                       *ptr = col;
-                                       ptr++;
-                                     } );
+                         cnt[i] = c;
                        }
-                   },
-                   TasksPerThread(20));
-              }
+                     else
+                       {
+                         // sorted touched words give sorted columns
+                         std::sort (words.begin(), words.end());
+                         int * ptr = colnr.Data()+firsti[i];
+                         for (int w : words)
+                           {
+                             for (uint64_t bits = mark[w]; bits; bits &= bits-1)
+                               *ptr++ = 64*w + std::countr_zero(bits);
+                             mark[w] = 0;
+                           }
+                       }
+                   }
+               },
+               TasksPerThread(32));
           }
         else
           {
