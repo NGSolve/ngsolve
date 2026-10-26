@@ -513,7 +513,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
                                   Table<int> & blocks, Table<int> & coloring)
   {
     static Timer t("FESpace - block coloring"); RegionTimer reg(t);
-    constexpr size_t B = 256;
     Array<int> els, key;
     for (size_t nr = 0; nr < ma.GetNE(vb); nr++)
       {
@@ -528,6 +527,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
     for (int i = 0; i < index.Size(); i++) index[i] = i;
     QuickSortI (key, index);
 
+    // smaller blocks on small meshes, to keep threads busy
+    size_t B = clamp<size_t> (els.Size() / (64*max(1, TaskManager::GetMaxThreads())), 16, 256);
     size_t nb = (els.Size()+B-1) / B;
     Array<int> bsize(nb);
     for (size_t b = 0; b < nb; b++) bsize[b] = min(B, els.Size()-b*B);
@@ -2219,7 +2220,17 @@ lot of new non-zero entries in the matrix!\n" << endl;
     static mutex copyex_mutex;
     const Table<int> & element_coloring = fes.ElementColoring(vb);
 
-    if (const Table<int> & blocks = fes.ElementBlocks(vb); blocks.Size())
+    const Table<int> & blocks = fes.ElementBlocks(vb);
+    const Table<int> & block_coloring = fes.BlockColoring(vb);
+    // estimated parallel time (in elements) of both colorings
+    size_t nt = TaskManager::GetNumThreads();
+    size_t tblocks = 0, tels = 0;
+    for (auto c : block_coloring)
+      if (c.Size()) tblocks += (c.Size()+nt-1)/nt * blocks[c[0]].Size();
+    for (auto c : element_coloring) tels += (c.Size()+nt-1)/nt;
+    // blocks gain locality, but lose parallelism on small meshes
+    bool use_blocks = blocks.Size() && (!GetTaskManager() || tblocks <= 1.5 * tels);
+    if (use_blocks)
       {
         auto do_block = [&] (int b, LocalHeap & lh)
         {
@@ -2230,7 +2241,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
             }
         };
         if (auto *task_manager = GetTaskManager(); task_manager)
-          for (FlatArray<int> blocks_of_col : fes.BlockColoring(vb))
+          for (FlatArray<int> blocks_of_col : block_coloring)
             {
               SharedLoop2 sl(blocks_of_col.Range());
               task_manager -> CreateJob
@@ -2243,7 +2254,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
                   } );
             }
         else
-          for (FlatArray<int> blocks_of_col : fes.BlockColoring(vb))
+          for (FlatArray<int> blocks_of_col : block_coloring)
             for (int b : blocks_of_col)
               do_block (b, clh);
         return;
