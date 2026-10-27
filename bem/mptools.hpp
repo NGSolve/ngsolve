@@ -84,14 +84,44 @@ namespace ngsbem
   class NGS_DLL_HEADER SphericalHarmonics
   {
     int order;
-    Vector<entry_type> coefs;
+    unique_ptr<entry_type[]> owned;   // null if memory is from LocalHeap or user
+    FlatVector<entry_type> coefs;
 
   public:
     using complex_type = typename mat_traits<entry_type>::TSCAL;
     using real_type = typename scal_traits<complex_type>::TSCAL_REAL;
 
     SphericalHarmonics (int aorder)
-      : order(aorder), coefs(sqr(order+1)) { coefs=0.0; }
+      : order(aorder), owned(new entry_type[sqr(order+1)]),
+        coefs(sqr(order+1), owned.get()) { coefs=0.0; }
+
+    SphericalHarmonics (int aorder, LocalHeap & lh)
+      : order(aorder), coefs(sqr(order+1), lh) { coefs=0.0; }
+
+    // wraps sqr(order+1) existing coefficients, not initialized
+    SphericalHarmonics (int aorder, entry_type * mem)
+      : order(aorder), coefs(sqr(order+1), mem) { }
+
+    // copies always own their memory
+    SphericalHarmonics (const SphericalHarmonics & sh2)
+      : SphericalHarmonics(sh2.order) { coefs = sh2.coefs; }
+
+    SphericalHarmonics (SphericalHarmonics && sh2)
+      : order(sh2.order), owned(std::move(sh2.owned)), coefs(sh2.coefs) { }
+
+    SphericalHarmonics & operator= (const SphericalHarmonics & sh2)
+    {
+      coefs = sh2.coefs;
+      return *this;
+    }
+
+    SphericalHarmonics & operator= (SphericalHarmonics && sh2)
+    {
+      order = sh2.order;
+      owned = std::move(sh2.owned);
+      coefs.AssignMemory(sh2.coefs.Size(), sh2.coefs.Data());
+      return *this;
+    }
 
     int Order() const { return order; }
     FlatVector<entry_type> Coefs() const { return coefs; }
@@ -253,14 +283,44 @@ namespace ngsbem
   {
     int order;
     size_t dim;
-    Matrix<TSCAL,RowMajor> coefs;
+    unique_ptr<TSCAL[]> owned;
+    FlatMatrix<TSCAL,RowMajor> coefs;
 
   public:
     using real_type = typename scal_traits<TSCAL>::TSCAL_REAL;
     using complex_type = TSCAL;
 
     SphericalHarmonics (int aorder, size_t adim)
-      : order(aorder), dim(adim), coefs(sqr(order+1), dim) { coefs = TSCAL(0.0); }
+      : order(aorder), dim(adim), owned(new TSCAL[sqr(order+1)*adim]),
+        coefs(sqr(order+1), dim, owned.get()) { coefs = TSCAL(0.0); }
+
+    SphericalHarmonics (int aorder, size_t adim, LocalHeap & lh)
+      : order(aorder), dim(adim), coefs(sqr(order+1), dim, lh) { coefs = TSCAL(0.0); }
+
+    // wraps existing coefficients, not initialized
+    SphericalHarmonics (int aorder, size_t adim, TSCAL * mem)
+      : order(aorder), dim(adim), coefs(sqr(order+1), dim, mem) { }
+
+    SphericalHarmonics (const SphericalHarmonics & sh2)
+      : SphericalHarmonics(sh2.order, sh2.dim) { coefs = sh2.coefs; }
+
+    SphericalHarmonics (SphericalHarmonics && sh2)
+      : order(sh2.order), dim(sh2.dim), owned(std::move(sh2.owned)), coefs(sh2.coefs) { }
+
+    SphericalHarmonics & operator= (const SphericalHarmonics & sh2)
+    {
+      coefs = sh2.coefs;
+      return *this;
+    }
+
+    SphericalHarmonics & operator= (SphericalHarmonics && sh2)
+    {
+      order = sh2.order;
+      dim = sh2.dim;
+      owned = std::move(sh2.owned);
+      coefs.AssignMemory(sh2.coefs.Height(), sh2.coefs.Width(), sh2.coefs.Data());
+      return *this;
+    }
 
     int Order() const { return order; }
     size_t Dim() const { return dim; }
@@ -462,9 +522,17 @@ namespace ngsbem
     SphericalExpansion (int aorder, T_Kappa akappa, double artyp) 
     : sh(aorder), kappa(akappa), rtyp(artyp) { }
 
+    SphericalExpansion (int aorder, T_Kappa akappa, double artyp, LocalHeap & lh)
+      requires (!std::is_same_v<entry_type,Vector<complex_type>>)
+    : sh(aorder, lh), kappa(akappa), rtyp(artyp) { }
+
     SphericalExpansion (int aorder, T_Kappa akappa, double artyp, size_t adim)
       requires std::is_same_v<entry_type,Vector<complex_type>>
     : sh(aorder, adim), kappa(akappa), rtyp(artyp) { }
+
+    SphericalExpansion (int aorder, T_Kappa akappa, double artyp, size_t adim, LocalHeap & lh)
+      requires std::is_same_v<entry_type,Vector<complex_type>>
+    : sh(aorder, adim, lh), kappa(akappa), rtyp(artyp) { }
 
   
     entry_type & Coef(int n, int m) { return sh.Coef(n,m); }
