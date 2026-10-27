@@ -1006,10 +1006,13 @@ namespace ngsbem
         if (i > nterms+100000)
           throw Exception("bessel failed 1");
       }
-    
-    Array<bool> iscale(ntop+1);
-    Vector<Tz> fjtmp(ntop+1);
 
+    LocalHeap & lh = TLHeap();
+    HeapReset hr(lh);
+    FlatArray<bool> iscale(ntop+1, lh);
+    FlatVector<Tz> fjtmp(ntop+1, lh);
+
+    
     /*
       c ... Step 2: Recursion back down to generate the unscaled jfuns:
       c             if magnitude exceeds UPBOUND2, rescale and continue the 
