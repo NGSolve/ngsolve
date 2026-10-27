@@ -140,12 +140,13 @@ namespace ngsbem
   {
     auto [theta, phi] = Polar(x);
 
-    ArrayMem<real_type,1600> mem(sqr(order+1));
-    FlatMatrix<real_type> legfunc(order+1, order+1, mem.Data());
+    auto & lh = TLHeap();
+    HeapReset hr(lh);
+    FlatMatrix<real_type> legfunc(order+1, order+1, lh);
     real_type costheta = cos(theta);
     NormalizedLegendreFunctions (order, order, costheta, legfunc);
     
-    VectorMem<50,complex_type> exp_imphi(order+1);
+    FlatVector<complex_type> exp_imphi(order+1, lh);
     complex_type exp_iphi(cos(phi), sin(phi));
     
     complex_type prod = 1.0/sqrt(4*M_PI);
@@ -1225,8 +1226,10 @@ namespace ngsbem
       throw Exception("AddCharge assumes singular MP");
     
     using radial_type = std::conditional_t<IsComplex<T_Kappa>(),complex_type,real_type>;
-    VectorMem<50,radial_type> radial(sh.Order()+1);
-    VectorMem<1000,complex_type> sh_shapes(sqr (sh.Order()+1));
+    auto & lh = TLHeap();
+    HeapReset hr(lh);
+    FlatVector<radial_type> radial(sh.Order()+1, lh);
+    FlatVector<complex_type> sh_shapes(sqr (sh.Order()+1), lh);
     
     // SphericalBessel(sh.Order(), kappa*L2Norm(x), Scale(), radial);
     besseljs3d<radial_type>(sh.Order(), radial_type(kappa)*real_type(L2Norm(x)), Scale(), radial);
