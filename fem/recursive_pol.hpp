@@ -1505,24 +1505,111 @@ namespace ngfem
   class NormalizedLegendreFunctions : public RecursivePolynomialNonStatic<NormalizedLegendreFunctions>
   {
     int  m;
-    static Matrix<double,ColMajor> matA, matB;
+    static Matrix<double,RowMajor> matA, matB;   // y(n) = A x y(n-1) + B y(n-2)
+    static Vector<double> sqrt2np1, diagfac;   // sqrt(2n+1), sqrt((2m-1)/(2m))
   public:
     NormalizedLegendreFunctions (size_t _m) : m(_m) { }
-    
+
 
     static void Calc(int mmax)
     {
       if (matA.Height() >= mmax+1) return;
-      matA.SetSize(mmax+1, mmax+1);
-      matB.SetSize(mmax+1, mmax+1);
-      for (int m = 0; m <= mmax; m++)
-        for (int n = m+2; n <= mmax; n++)
-          {
-            matA(n,m) = (2*n-1) / sqrt((n-m+0.0)*(n+m));
-            matB(n,m) = sqrt((n+m-1.0)*(n-m-1.0)) / sqrt((n-m+0.0)*(n+m));
-          }
+      // width padded to SIMD blocks of up to 8 columns
+      size_t w = (mmax+8) & ~size_t(7);
+      matA.SetSize(mmax+1, w);
+      matB.SetSize(mmax+1, w);
+      // n <= m: A=0, B=1, the recursion y(n) = y(n-2) carries the seeds to the diagonal
+      matA = 0.0;
+      matB = 1.0;
+      sqrt2np1.SetSize(mmax+1);
+      diagfac.SetSize(mmax+1);
+      for (int n = 0; n <= mmax; n++)
+        sqrt2np1(n) = sqrt(2*n+1.0);
+      diagfac(0) = 1;
+      for (int m = 1; m <= mmax; m++)
+        diagfac(m) = sqrt((2*m-1.0)/(2*m));
+      for (int n = 1; n <= mmax; n++)
+        {
+          matA(n,n-1) = sqrt(2*n-1.0);
+          matB(n,n-1) = 0.0;
+          for (int m = 0; m+2 <= n; m++)
+            {
+              matA(n,m) = (2*n-1) / sqrt((n-m+0.0)*(n+m));
+              matB(n,m) = -sqrt((n+m-1.0)*(n-m-1.0)) / sqrt((n-m+0.0)*(n+m));
+            }
+        }
     }
     
+  private:
+    // blocks of W columns, y(n,m) = values(m,n), needs nmax < matA.Height()
+    template <typename T, typename TY>
+    static void EvalSIMD (size_t mmax, size_t nmax, T x, TY y)
+    {
+      constexpr int W = 8;   // fastest on M4 (W=2,4,8 tested)
+      double u = -sqrt((1-x)*(1+x));
+      size_t mtop = std::min(mmax, nmax);
+      auto scale = sqrt2np1.Data();
+      double xd = x;
+      double dm = 1;   // running unscaled diagonal y(m,m)
+
+      for (size_t m0 = 0; m0 <= mtop; m0 += W)
+        {
+          size_t nl = std::min<size_t>(W, mtop+1-m0);
+          double diag[W];
+          for (int k = 0; k < W; k++)
+            {
+              size_t m = m0+k;
+              if (m > 0 && m <= mtop)
+                dm = dm*u*diagfac(m);
+              diag[k] = (m <= mtop) ? dm : 0.0;
+            }
+          double sub0 = xd*diag[0]*scale[m0];
+          // seed rows m0, m0+1: lane k gets diag in row m0+k%2, see Calc
+          double s0[W], s1[W];
+          for (int k = 0; k < W; k++)
+            {
+              s0[k] = (k % 2) ? 0.0 : diag[k];
+              s1[k] = (k % 2) ? diag[k] : 0.0;
+            }
+          s1[0] = sub0;
+          SIMD<double,W> v2(&s0[0]), v1(&s1[0]);
+
+          y(m0,m0) = scale[m0]*diag[0];
+          if (m0+1 <= nmax)
+            {
+              y(m0+1,m0) = scale[m0+1]*sub0;
+              if (nl > 1) y(m0+1,m0+1) = scale[m0+1]*diag[1];
+            }
+
+          for (size_t n = m0+2; n <= nmax; n++)
+            {
+              SIMD<double,W> a(&matA(n,m0)), b(&matB(n,m0));
+              SIMD<double,W> v = FMA(a * xd, v1, b * v2);
+              v2 = v1;
+              v1 = v;
+              SIMD<double,W> s = scale[n] * v;
+              // lanes above the diagonal carry seeds, not stored
+              size_t nst = std::min<size_t>(nl, n-m0+1);
+              if constexpr (TY::Ordering() == RowMajor && std::is_same_v<T,double>)
+                {
+                  // contiguous row: explicit SIMD store, the loop below becomes memcpy
+                  if (nst == W)
+                    s.Store(&y(n,m0));
+                  else
+                    s.Store(&y(n,m0), SIMD<mask64,W>(int64_t(nst)));
+                }
+              else if (nst == W)
+                for (int k = 0; k < W; k++)
+                  y(n,m0+k) = s[k];
+              else
+                for (size_t k = 0; k < nst; k++)
+                  y(n,m0+k) = s[k];
+            }
+        }
+    }
+
+  public:
+    // values(m,n), only entries m <= n are set
     template <typename T, typename S>
     NormalizedLegendreFunctions (size_t mmax, size_t nmax, T x, S && values)
     {
@@ -1535,10 +1622,16 @@ namespace ngfem
       // better stability for m > 1000
 
       auto y = Trans(values);
-      
-      y = 0.0;
+
       T u = -sqrt((1-x)*(1+x));
       y(0,0)=1;
+
+      if constexpr (std::is_same_v<T,double> || std::is_same_v<T,float>)
+        if (nmax+1 <= matA.Height())
+          {
+            EvalSIMD (mmax, nmax, x, y);
+            return;
+          }
 
       if (mmax+1 > matA.Height() || nmax > matA.Width())
         {
@@ -1572,7 +1665,7 @@ namespace ngfem
                   
                   for (int n = m+2; n <= nmax; n++)
                     {
-                      T valnew = coefsA(n) * x * val - coefsB(n) * valold;
+                      T valnew = coefsA(n) * x * val + coefsB(n) * valold;
                       y(n,m) = valnew;
                       valold = val;
                       val = valnew;
@@ -1580,7 +1673,7 @@ namespace ngfem
                 }
               /*
               for (int n = m+2; n <= nmax; n++)
-                y(n,m) = matA(n,m) * x * y(n-1,m) - matB(n,m) * y(n-2,m);
+                y(n,m) = matA(n,m) * x * y(n-1,m) + matB(n,m) * y(n-2,m);
               */
             }
         }

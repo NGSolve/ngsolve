@@ -155,8 +155,10 @@ namespace ngfem
       }
   }
 
-  Matrix<double,ColMajor> NormalizedLegendreFunctions :: matA;
-  Matrix<double,ColMajor> NormalizedLegendreFunctions :: matB;
+  Matrix<double,RowMajor> NormalizedLegendreFunctions :: matA;
+  Matrix<double,RowMajor> NormalizedLegendreFunctions :: matB;
+  Vector<double> NormalizedLegendreFunctions :: sqrt2np1;
+  Vector<double> NormalizedLegendreFunctions :: diagfac;
   
 
   class InitRecPol
