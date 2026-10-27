@@ -669,6 +669,20 @@ namespace ngfem
 
     NGS_DLL_HEADER virtual void
     Apply (const FiniteElement & bfel,
+           const BaseMappedIntegrationPoint & mip,
+           BareSliceVector<double> x, 
+           FlatVector<double> flux,
+           LocalHeap & lh) const override;
+
+    NGS_DLL_HEADER virtual void
+    ApplyTrans (const FiniteElement & bfel,
+                const BaseMappedIntegrationPoint & mip,
+                FlatVector<double> flux,
+                BareSliceVector<double> x, 
+                LocalHeap & lh) const override;
+
+    NGS_DLL_HEADER virtual void
+    Apply (const FiniteElement & bfel,
 	   const SIMD_BaseMappedIntegrationRule & bmir,
 	   BareSliceVector<double> x, 
 	   BareSliceMatrix<SIMD<double>> flux) const override;
@@ -732,6 +746,20 @@ namespace ngfem
     CalcMatrix (const FiniteElement & bfel,
                 const SIMD_BaseMappedIntegrationRule & mir,
                 BareSliceMatrix<SIMD<double>> bmat) const override;
+
+    NGS_DLL_HEADER virtual void
+    Apply (const FiniteElement & bfel,
+           const BaseMappedIntegrationPoint & mip,
+           BareSliceVector<double> x, 
+           FlatVector<double> flux,
+           LocalHeap & lh) const override;
+
+    NGS_DLL_HEADER virtual void
+    ApplyTrans (const FiniteElement & bfel,
+                const BaseMappedIntegrationPoint & mip,
+                FlatVector<double> flux,
+                BareSliceVector<double> x, 
+                LocalHeap & lh) const override;
 
     NGS_DLL_HEADER virtual void
     Apply (const FiniteElement & bfel,

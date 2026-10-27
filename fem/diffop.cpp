@@ -1514,6 +1514,46 @@ namespace ngfem
 
 
 
+  void SymMatrixDifferentialOperator ::
+  Apply (const FiniteElement & bfel,
+         const BaseMappedIntegrationPoint & mip,
+         BareSliceVector<double> x, 
+         FlatVector<double> flux,
+         LocalHeap & lh) const
+  {
+    auto & fel = static_cast<const SymMatrixFiniteElement&> (bfel).ScalFE();
+    size_t ndi = fel.GetNDof();
+
+    double hval;
+    for (int i = 0, ii = 0; i < vdim; i++)
+      for (int j = 0; j <= i; j++, ii++)
+        {
+          diffop->Apply (fel, mip, x.Range(ii*ndi, (ii+1)*ndi), FlatVector<double>(1, &hval), lh);
+          flux(i*vdim+j) = hval;
+          flux(j*vdim+i) = hval;
+        }
+  }
+
+  void SymMatrixDifferentialOperator ::
+  ApplyTrans (const FiniteElement & bfel,
+              const BaseMappedIntegrationPoint & mip,
+              FlatVector<double> flux,
+              BareSliceVector<double> x, 
+              LocalHeap & lh) const
+  {
+    auto & fel = static_cast<const SymMatrixFiniteElement&> (bfel).ScalFE();
+    size_t ndi = fel.GetNDof();
+
+    for (int i = 0, ii = 0; i < vdim; i++)
+      for (int j = 0; j <= i; j++, ii++)
+        {
+          double hval = flux(i*vdim+j);
+          if (i != j) hval += flux(j*vdim+i);
+          diffop->ApplyTrans (fel, mip, FlatVector<double>(1, &hval), x.Range(ii*ndi, (ii+1)*ndi), lh);
+        }
+  }
+
+
   SkewMatrixDifferentialOperator ::
   SkewMatrixDifferentialOperator (shared_ptr<DifferentialOperator> adiffop, 
                                   int avdim)
@@ -1723,7 +1763,7 @@ namespace ngfem
     size_t ndi = fel.GetNDof();
     size_t dimi = 1;  // diffop->Dim();
 
-    mat.AddSize(Dim(), fel.GetNDof()) = 0.0;
+    mat.AddSize(Dim(), bfel.GetNDof()) = 0.0;
     diffop->CalcMatrix (fel, mip, mat.Rows(dimi).Cols(ndi), lh);
     for (int i = 0, ii = 0; i < vdim; i++)
       for (int j = 0; j <= i; j++, ii++)
@@ -1816,6 +1856,55 @@ namespace ngfem
         }
 
 //    cout << "SymDevMatrixDifferentialOperator :: CalcMatrix (SIMD)" << endl;
+  }
+
+  void SymDevMatrixDifferentialOperator ::
+  Apply (const FiniteElement & bfel,
+         const BaseMappedIntegrationPoint & mip,
+         BareSliceVector<double> x, 
+         FlatVector<double> flux,
+         LocalHeap & lh) const
+  {
+    auto & fel = static_cast<const SymMatrixFiniteElement&> (bfel).ScalFE();
+    size_t ndi = fel.GetNDof();
+    int vsdim = vdim*(vdim+1)/2-1;
+
+    double hval, trace = 0;
+    for (int i = 0, ii = 0; i < vdim; i++)
+      for (int j = 0; j <= i; j++, ii++)
+        if (ii < vsdim)
+          {
+            diffop->Apply (fel, mip, x.Range(ii*ndi, (ii+1)*ndi), FlatVector<double>(1, &hval), lh);
+            flux(i*vdim+j) = hval;
+            flux(j*vdim+i) = hval;
+            if (i == j) trace += hval;
+          }
+    flux(vdim*vdim-1) = -trace;
+  }
+
+  void SymDevMatrixDifferentialOperator ::
+  ApplyTrans (const FiniteElement & bfel,
+              const BaseMappedIntegrationPoint & mip,
+              FlatVector<double> flux,
+              BareSliceVector<double> x, 
+              LocalHeap & lh) const
+  {
+    auto & fel = static_cast<const SymMatrixFiniteElement&> (bfel).ScalFE();
+    size_t ndi = fel.GetNDof();
+    int vsdim = vdim*(vdim+1)/2-1;
+    double last = flux(vdim*vdim-1);
+
+    for (int i = 0, ii = 0; i < vdim; i++)
+      for (int j = 0; j <= i; j++, ii++)
+        if (ii < vsdim)
+          {
+            double hval = flux(i*vdim+j);
+            if (i != j)
+              hval += flux(j*vdim+i);
+            else
+              hval -= last;
+            diffop->ApplyTrans (fel, mip, FlatVector<double>(1, &hval), x.Range(ii*ndi, (ii+1)*ndi), lh);
+          }
   }
 
   void SymDevMatrixDifferentialOperator ::

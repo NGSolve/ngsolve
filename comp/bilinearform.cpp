@@ -865,7 +865,7 @@ namespace ngcomp
         mats.SetSize(ma->GetNLevels());
         shared_ptr<BaseMatrix> app = 
           make_shared<BilinearFormApplication> (dynamic_pointer_cast<BilinearForm>(this->shared_from_this()), lh);
-        cout << "craete bilinearformapplication" << endl;
+
         if (fespace->IsParallel())
           app = make_shared<ParallelMatrix> (app, GetTrialSpace()->GetParallelDofs(), GetTestSpace()->GetParallelDofs(), C2D);
         

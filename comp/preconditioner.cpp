@@ -387,6 +387,8 @@ namespace ngcomp
   DocInfo MGPreconditioner :: GetDocu ()
   {
     DocInfo docu = Preconditioner::GetDocu();
+    docu.Arg("inverse") = "string = "+default_inversetype+"\n"
+      "  sparse direct solver for the coarse grid problem";
     docu.Arg("inverse_flags") = "dict = {}\n"
       "  flags passed to the inverse";
     docu.short_docu = "A multigrid preconditioner.";
