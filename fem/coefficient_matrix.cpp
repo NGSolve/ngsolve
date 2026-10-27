@@ -51,12 +51,6 @@ namespace ngfem
     { return "inverse"; }
 
   
-    virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
-    {
-      c1->TraverseTree (func);
-      func(*this);
-    }
-
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override {
       // auto mat_type = "Mat<"+ToString(D)+","+ToString(D)+","+code.res_type+">";
       auto mat_type = "Mat<"+ToString(D)+","+ToString(D)+","+code.GetType(this->IsComplex())+">";
@@ -222,12 +216,6 @@ namespace ngfem
     {
       CoefficientFunction::DoArchive(ar);
       ar.Shallow(c1);
-    }
-
-    virtual void TraverseTree(const function<void(CoefficientFunction &)> &func) override
-    {
-      c1->TraverseTree(func);
-      func(*this);
     }
 
     virtual Array<shared_ptr<CoefficientFunction>>
@@ -489,12 +477,6 @@ namespace ngfem
       ar.Shallow(c1);
     }
   
-    virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
-    {
-      c1->TraverseTree (func);
-      func(*this);
-    }
-
     shared_ptr<CoefficientFunction>
     Transform(CoefficientFunction::T_Transform& transformation) const override
     {
@@ -694,12 +676,6 @@ namespace ngfem
     virtual string GetDescription () const override
     { return "cofactor"; }
   
-    virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
-    {
-      c1->TraverseTree (func);
-      func(*this);
-    }
-
     shared_ptr<CoefficientFunction>
     Transform(CoefficientFunction::T_Transform& transformation) const override
     {
@@ -910,12 +886,6 @@ namespace ngfem
       ar.Shallow(c1);
     }
   
-    virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
-    {
-      c1->TraverseTree (func);
-      func(*this);
-    }
-
     virtual string GetDescription () const override
     { return "symmetric"; }
 
@@ -1061,12 +1031,6 @@ namespace ngfem
       ar.Shallow(c1);
     }
   
-    virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
-    {
-      c1->TraverseTree (func);
-      func(*this);
-    }
-
     virtual string GetDescription () const override
     { return "skew"; }
   

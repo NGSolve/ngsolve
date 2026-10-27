@@ -1145,12 +1145,6 @@ namespace ngcomp
   }
     */
 
-    virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
-    {
-      cf->TraverseTree (func);
-      func(*this);
-    }
-
     /*
       // TODO
     shared_ptr<CoefficientFunction> Transform

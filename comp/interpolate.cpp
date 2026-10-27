@@ -349,12 +349,6 @@ namespace ngcomp
       func->NonZeroPattern(ud, input, values);
     }
 
-    void TraverseTree (const function<void(CoefficientFunction&)> & func_) override
-    {
-      func->TraverseTree(func_);
-      func_(*this);
-    }
-
     shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const override
     {
       if (this == var) return dir;
@@ -421,7 +415,7 @@ namespace ngcomp
 
 
       //Get FESpace of proxy to interpolate
-      func->TraverseTree
+      func->TraverseDAG
       ( [&] (CoefficientFunction & nodecf)
         {
           if (auto proxy = dynamic_cast<ProxyFunction*> (&nodecf))
@@ -1154,7 +1148,7 @@ namespace ngcomp
   {
     shared_ptr<FESpace> space;
     
-    func->TraverseTree
+    func->TraverseDAG
       ( [&] (CoefficientFunction & nodecf)
         {
           if (auto proxy = dynamic_cast<ProxyFunction*> (&nodecf))
@@ -1216,7 +1210,7 @@ namespace ngcomp
     bool has_trial = false, has_test = false;
     VorB vb = VOL;
 
-    func->TraverseTree
+    func->TraverseDAG
       ( [&] (CoefficientFunction & nodecf)
         {
           

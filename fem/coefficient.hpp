@@ -81,7 +81,6 @@ namespace ngfem
     virtual void CalcEquivalenceKey();
     const string & EquivalenceKey();
     ///
-    virtual int NumRegions () { return INT_MAX; }
     virtual bool DefinedOn (const ElementTransformation & trafo) { return true; }
     ///
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const = 0;
@@ -235,14 +234,6 @@ namespace ngfem
       result = dres;
     }
     
-    virtual void EvaluateDeriv (const BaseMappedIntegrationRule & ir,
-                                FlatMatrix<Complex> result,
-                                FlatMatrix<Complex> deriv) const
-    {
-      Evaluate (ir, result);
-      deriv = 0;
-    }
-
     bool ElementwiseConstant () const { return elementwise_constant; }
     virtual bool IsZeroCF() const;
     // virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const;
@@ -275,7 +266,7 @@ namespace ngfem
     }
     
     virtual void PrintReport (ostream & ost) const;
-    virtual void PrintReportRec (ostream & ost, int level) const;
+    void PrintReportRec (ostream & ost, int level) const;
     virtual string GetDescription () const;
     void SetDescription (string desc) { description = desc; }
 
@@ -301,7 +292,12 @@ namespace ngfem
     virtual shared_ptr<CoefficientFunction> Operator (const string & name) const;
     virtual shared_ptr<CoefficientFunction> Operator (shared_ptr<class DifferentialOperator> diffop) const;
     
-    virtual void TraverseTree (const function<void(CoefficientFunction&)> & func);
+    void TraverseTree (const function<void(CoefficientFunction&)> & func)
+    {
+      for (auto & incf : InputCoefficientFunctions())
+        if (incf) incf->TraverseTree (func);
+      func(*this);
+    }
 
     typedef std::set<CoefficientFunction*> T_Visited;
     // like TraverseTree, but visits every node of the expression DAG once.
@@ -806,10 +802,6 @@ namespace ngfem
     void Evaluate(const BaseMappedIntegrationPoint & ip,
                   FlatVector<Complex> result) const override
     { cf->Evaluate(ip, result); }
-    void EvaluateDeriv(const BaseMappedIntegrationRule & ir,
-                       FlatMatrix<Complex> result,
-                       FlatMatrix<Complex> deriv) const override
-    { cf->EvaluateDeriv(ir, result, deriv); }
 
     void NonZeroPattern (const class ProxyUserData & ud,
                          FlatVector<AutoDiffDiff<1,NonZero>> nonzero) const override
@@ -820,11 +812,6 @@ namespace ngfem
                          FlatVector<AutoDiffDiff<1,NonZero>> values) const override
     { cf->NonZeroPattern(ud, input, values); }
 
-    void TraverseTree (const function<void(CoefficientFunction&)> & func) override
-    {
-      cf->TraverseTree(func);
-      func(*this);
-    }
     Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
     { return { cf }; }
   };
@@ -850,8 +837,6 @@ namespace ngfem
 
     ///
     virtual ~DomainVariableCoefficientFunction ();
-    ///
-    virtual int NumRegions () { return (fun.Size() == 1) ? INT_MAX : fun.Size(); }
     ///
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const;
 
@@ -1219,12 +1204,6 @@ public:
     return newcf;
   }
 
-  virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
-  {
-    c1->TraverseTree (func);
-    func(*this);
-  }
-
   virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
   { return Array<shared_ptr<CoefficientFunction>>({ c1 }); }
 
@@ -1528,13 +1507,6 @@ public:
             code.body += Var(index,i,this->Dimensions()).Assign( expr, false );
           }
       }
-  }
-
-  virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
-  {
-    c1->TraverseTree (func);
-    c2->TraverseTree (func);
-    func(*this);
   }
 
   virtual bool DefinedOn (const ElementTransformation & trafo) override

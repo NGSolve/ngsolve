@@ -30,11 +30,6 @@ namespace ngfem
       this->equivalence_key = "identity(" + ToString(Dimensions()[0]) + ")";
     }
   
-    virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
-    {
-      func(*this);
-    }
-
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
     {
       FlatArray<int> hdims = Dimensions();
@@ -166,13 +161,6 @@ namespace ngfem
       this->equivalence_key = "(" + c1->EquivalenceKey() + "@" + c2->EquivalenceKey() + ")";
     }
   
-    virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
-    {
-      c1->TraverseTree (func);
-      c2->TraverseTree (func);
-      func(*this);
-    }
-
     shared_ptr<CoefficientFunction>
     Transform(CoefficientFunction::T_Transform& transformation) const override
     {
@@ -477,13 +465,6 @@ namespace ngfem
     virtual string GetDescription () const override
     { return "diagmat-matrix multiply"; }
   
-    virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
-    {
-      c1->TraverseTree (func);
-      c2->TraverseTree (func);
-      func(*this);
-    }
-
     shared_ptr<CoefficientFunction>
     Transform(CoefficientFunction::T_Transform& transformation) const override
     {
@@ -681,12 +662,6 @@ namespace ngfem
       this->equivalence_key = "transpose(" + c1->EquivalenceKey() + ")";
     }
   
-    virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
-    {
-      c1->TraverseTree (func);
-      func(*this);
-    }
-
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override {
       FlatArray<int> hdims = Dimensions();
       // code.Declare (code.res_type, index, this->Dimensions());
@@ -882,12 +857,6 @@ public:
     */
   }
   
-  virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
-  {
-    c1->TraverseTree (func);
-    func(*this);
-  }
-
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override {
     CodeExpr result;
     int dim1 = c1->Dimensions()[0];

@@ -564,7 +564,7 @@ namespace ngsbem
     Array<tuple<shared_ptr<ProxyFunction>, shared_ptr<CoefficientFunction>>>  proxylin;
     Array<ProxyFunction*> proxies;
     
-    cf->TraverseTree
+    cf->TraverseDAG
       ([&] (CoefficientFunction & nodecf)
       {
         if (auto proxy = dynamic_cast<ProxyFunction*> (&nodecf))

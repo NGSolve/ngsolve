@@ -311,11 +311,6 @@ namespace ngfem
   }
   
   
-  void CoefficientFunction :: TraverseTree (const function<void(CoefficientFunction&)> & func)
-  {
-    func(*this);
-  }
-
   void CoefficientFunction :: 
   Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<double> hvalues) const
   {
@@ -694,8 +689,6 @@ namespace ngfem
   public:
     ///
     DomainConstantCoefficientFunction (const Array<double> & aval);
-    ///
-    virtual int NumRegions () override { return val.Size(); }
     ///
     virtual ~DomainConstantCoefficientFunction ();
     ///
@@ -1395,11 +1388,6 @@ public:
   }
 
 
-  virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
-  {
-    func(*this);
-  }
-
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
     for (int i : Range(Dimension()))
@@ -1509,11 +1497,6 @@ public:
   virtual string GetDescription() const override
   {
     return "OneVectorCF";
-  }
-
-  virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
-  {
-    func(*this);
   }
 
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
@@ -1629,11 +1612,6 @@ public:
   }
 
   virtual bool IsZeroCF() const override { return true; }
-
-  virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
-  {
-    func(*this);
-  }
 
   void CalcEquivalenceKey () override
   {
@@ -1770,12 +1748,6 @@ public:
     code.Declare (index, this->Dimensions(), IsComplex());  
     for (int i = 0; i < Dimension(); i++)
       code.body += Var(index,i,this->Dimensions()).Assign(Var(scal) * Var(inputs[0],i,c1->Dimensions()), false);      
-  }
-
-  virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
-  {
-    c1->TraverseTree (func);
-    func(*this);
   }
 
   shared_ptr<CoefficientFunction>
@@ -1978,12 +1950,6 @@ public:
   // virtual bool IsComplex() const { return true; }
   // virtual int Dimension() const { return c1->Dimension(); }
 
-  virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
-  {
-    c1->TraverseTree (func);
-    func(*this);
-  }
-
   virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
   { return Array<shared_ptr<CoefficientFunction>>({ c1 }); }
   
@@ -2085,13 +2051,6 @@ public:
     SetDimensions (c2->Dimensions());
   }
   
-  virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
-  {
-    c1->TraverseTree (func);
-    c2->TraverseTree (func);
-    func(*this);
-  }
-
   void DoArchive(Archive& ar) override
   {
     BASE::DoArchive(ar);
@@ -2325,13 +2284,6 @@ public:
     code.body += Var(index).Assign(result.S(), false);
   }
 
-  virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
-  {
-    c1->TraverseTree (func);
-    c2->TraverseTree (func);
-    func(*this);
-  }
-
   virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
   { return Array<shared_ptr<CoefficientFunction>>({ c1, c2 }); }  
   
@@ -2556,13 +2508,6 @@ public:
     code.body += Var(index).Assign(result.S(), false);
   }
 
-  virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
-  {
-    c1->TraverseTree (func);
-    c2->TraverseTree (func);
-    func(*this);
-  }
-
   virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
   { return Array<shared_ptr<CoefficientFunction>>({ c1, c2 }); }  
 
@@ -2781,12 +2726,6 @@ public:
     for (int i = 0; i < c1->Dimension(); i++)
       result += Var(inputs[0], i, c1->Dimensions()) * Var(inputs[0], i, c1->Dimensions());
     code.body += Var(index).Assign(result.S(), false);
-  }
-
-  virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
-  {
-    c1->TraverseTree (func);
-    func(*this);
   }
 
   virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
@@ -3013,12 +2952,6 @@ public:
     ar.Shallow(c1) & dim1;
   }
   
-  virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
-  {
-    c1->TraverseTree (func);
-    func(*this);
-  }
-
   shared_ptr<CoefficientFunction> Transform
   (CoefficientFunction::T_Transform& transformation) const override
   {
@@ -3222,12 +3155,6 @@ public:
     ar.Shallow(c1) & dim1;
   }
   
-  virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
-  {
-    c1->TraverseTree (func);
-    func(*this);
-  }
-
   virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
   { return Array<shared_ptr<CoefficientFunction>>({ c1 }); }  
   
@@ -3366,13 +3293,6 @@ public:
   // virtual bool IsComplex() const { return c1->IsComplex() || c2->IsComplex(); }
   // virtual int Dimension() const { return dims[0]; }
   // virtual Array<int> Dimensions() const { return Array<int> (dims); } 
-
-  virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
-  {
-    c1->TraverseTree (func);
-    c2->TraverseTree (func);
-    func(*this);
-  }
 
   shared_ptr<CoefficientFunction> Transform
   (CoefficientFunction::T_Transform& transformation) const override
@@ -3625,13 +3545,6 @@ public:
   virtual string GetDescription () const override
   { return "cross-product"; }
   
-  virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
-  {
-    c1->TraverseTree (func);
-    c2->TraverseTree (func);
-    func(*this);
-  }
-
   virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
   { return Array<shared_ptr<CoefficientFunction>>({ c1, c2 }); }
 
@@ -4446,12 +4359,6 @@ public:
     code.body += Var(index).Assign( Var(inputs[0], comp, c1->Dimensions() ), false);    
   }
 
-  virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
-  {
-    c1->TraverseTree (func);
-    func(*this);
-  }
-
   shared_ptr<CoefficientFunction> Transform
   (CoefficientFunction::T_Transform& transformation) const override
   {
@@ -4724,12 +4631,6 @@ public:
       code.body += Var(index, i, num).Assign( Var(inputs[0], mapping[i], dims1), false);
   }
   
-  virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
-  {
-    c1->TraverseTree (func);
-    func(*this);
-  }
-
   virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
   { return Array<shared_ptr<CoefficientFunction>>({ c1 }); }
 
@@ -5063,12 +4964,6 @@ public:
   }
 
   
-  virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
-  {
-    c1->TraverseTree (func);
-    func(*this);
-  }
-
 //  virtual string GetDescription () const override
 //  { return "extend-dimension"; }
   
@@ -5222,14 +5117,6 @@ public:
   }
   */
   
-  virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
-  {
-    c1->TraverseTree (func);
-    for (auto v : vectors)
-      v->TraverseTree (func);
-    func(*this);
-  }
-
   virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
   {
     
@@ -5478,13 +5365,6 @@ public:
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   */
   
-  virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
-  {
-    c1->TraverseTree (func);
-    vec->TraverseTree (func);
-    func(*this);
-  }
-
   virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
   { return Array<shared_ptr<CoefficientFunction>>({ c1, vec }); }
   
@@ -5675,14 +5555,6 @@ public:
       code.body += "  "+Var(index, i, Dimensions()).Assign(string("0.0"), false);      
     code.body += "  break;\n";
     code.body += "}\n";
-  }
-
-  virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
-  {
-    for (auto & cf : ci)
-      if (cf)
-        cf->TraverseTree (func);
-    func(*this);
   }
 
   shared_ptr<CoefficientFunction> Transform
@@ -5983,12 +5855,6 @@ public:
     return make_shared<OtherCoefficientFunction>(diff_cf);
   }
 
-  virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
-  {
-    c1->TraverseTree (func);
-    func(*this);
-  }
-
   virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
   {
     Array<shared_ptr<CoefficientFunction>> cfa;
@@ -6256,14 +6122,6 @@ class IfPosCoefficientFunction : public T_CoefficientFunction<IfPosCoefficientFu
       }
     }
     
-    virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
-    {
-      cf_if->TraverseTree (func);
-      cf_then->TraverseTree (func);
-      cf_else->TraverseTree (func);
-      func(*this);
-    }
-    
     virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
     {
       return Array<shared_ptr<CoefficientFunction>>( { cf_if, cf_then, cf_else } );
@@ -6384,13 +6242,6 @@ public:
     auto newcf = make_shared<VectorialCoefficientFunction>(std::move(cfs));
     transformation.cache[thisptr] = newcf;
     return newcf;
-  }
-
-  virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
-  {
-    for (auto cf : ci)
-      cf->TraverseTree (func);
-    func(*this);
   }
 
   virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
@@ -6620,12 +6471,6 @@ class NGS_DLL_HEADER FrozenCoefficientFunction
   
   ~FrozenCoefficientFunction() { ; }
   
-  void TraverseTree (const function<void(CoefficientFunction&)> & func) override
-  {
-    cf->TraverseTree (func);
-    func(*this);
-  }
-
   string GetDescription () const override
   {
     return "frozen";
@@ -7070,13 +6915,6 @@ class CompiledCoefficientFunction : public CompiledCoefficientFunctionInterface 
         }
     }
 
-    void TraverseTree (const function<void(CoefficientFunction&)> & func) override
-    {
-      cf -> TraverseTree (func);
-      // func(*cf);
-      func(*this);      
-    }
-
     // virtual bool IsComplex() const { return cf->IsComplex(); }
     // virtual int Dimension() const { return cf->Dimension(); }
     // virtual Array<int> Dimensions() const  { return cf->Dimensions(); } 
@@ -7354,12 +7192,6 @@ class RealCF : public CoefficientFunctionNoDerivative
       return "RealCF";
     }
 
-    virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
-    {
-      cf->TraverseTree (func);
-      func(*this);
-    }
-
     void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
     {
       for (int i = 0; i < Dimension(); i++)
@@ -7444,12 +7276,6 @@ class RealCF : public CoefficientFunctionNoDerivative
       return "ImagCF";
     }
 
-    virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
-    {
-      cf->TraverseTree (func);
-      func(*this);
-    }
-    
     virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
     { return Array<shared_ptr<CoefficientFunction>>({ cf }); }
     
@@ -7528,12 +7354,6 @@ class RealImagCF : public CoefficientFunctionNoDerivative
     virtual string GetDescription() const override
     {
       return "RealImagCF";
-    }
-
-    virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
-    {
-      cf->TraverseTree (func);
-      func(*this);
     }
 
     void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
@@ -7692,11 +7512,6 @@ public:
       func->NonZeroPattern(ud, input, values);
     }
 
-  void TraverseTree (const function<void(CoefficientFunction&)> & func_) override
-    {
-      func->TraverseTree(func_);
-      func_(*this);
-    }
 };
 
 shared_ptr<CoefficientFunction> LoggingCF(shared_ptr<CoefficientFunction> func, string logfile)
@@ -7721,7 +7536,7 @@ public:
     : T_CoefficientFunction<CacheCoefficientFunction>(f->Dimension(), f->IsComplex()),
     func(f)
   {
-    func->TraverseTree([&](CoefficientFunction &nodecf) {
+    func->TraverseDAG([&](CoefficientFunction &nodecf) {
       if (dynamic_cast<ProxyFunction *>(&nodecf))
         throw Exception("CacheCoefficientFunction: func to be cache must not contain proxy functions");
     });
@@ -7823,12 +7638,6 @@ public:
     values = input[0];
   }
   
-  void TraverseTree (const function<void(CoefficientFunction&)> & func_) override
-  {
-    func->TraverseTree(func_);
-    func_(*this);
-  }
-
   shared_ptr<CoefficientFunction>
   Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const override
   {

@@ -340,13 +340,6 @@ namespace ngfem {
             return node;
           }
 
-          virtual void TraverseTree(const function<void(CoefficientFunction &)> &func) override
-          {
-            const auto incfs = InputCoefficientFunctions();
-            for_each(incfs.begin(), incfs.end(), [&](const auto &cf) { cf->TraverseTree(func); });
-            func(*this);
-          }
-
           virtual string GetDescription() const override;
 
           virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override {
