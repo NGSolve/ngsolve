@@ -2656,6 +2656,11 @@ namespace ngfem
                 }
           }
     }
+
+    static shared_ptr<CoefficientFunction>
+    DiffShape (shared_ptr<CoefficientFunction> proxy,
+               shared_ptr<CoefficientFunction> dir,
+               bool Eulerian);
   };
 
   template <int DIM_SPC>
@@ -2965,6 +2970,8 @@ namespace ngfem
 
   extern template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpDivVectorH1<2> >;
   extern template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpDivVectorH1<3> >;
+  extern template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpStrainVectorH1<2> >;
+  extern template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpStrainVectorH1<3> >;
   extern template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpDivBoundaryVectorH1<2> >;
   extern template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpDivBoundaryVectorH1<3> >;
 

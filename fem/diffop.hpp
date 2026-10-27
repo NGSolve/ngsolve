@@ -901,10 +901,21 @@ namespace ngfem
                   SliceMatrix<double,ColMajor> mat, 
                   LocalHeap & lh) const override
     {
-      mat.AddSize(Dim(), bfel.GetNDof()) = 0;
+      mat = 0.0;   // VSDim rows
       const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
       IntRange r = BlockDim() * fel.GetRange(comp);
       diffop->CalcMatrixVS (fel[comp], mip, mat.Cols(r), lh);
+    }
+
+    NGS_DLL_HEADER virtual void
+    CalcMatrixVS (const FiniteElement & bfel,
+                  const SIMD_BaseMappedIntegrationRule & mir,
+                  BareSliceMatrix<SIMD<double>> mat) const override
+    {
+      // like SIMD CalcMatrix: rows of other components not zeroed
+      const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      IntRange r = VSDim() * BlockDim() * fel.GetRange(comp);
+      diffop->CalcMatrixVS (fel[comp], mir, mat.Rows(r));
     }
 
     NGS_DLL_HEADER virtual void

@@ -927,7 +927,7 @@ namespace ngfem
         return transformation.cache[thisptr];
       if(transformation.replace.count(thisptr))
         return transformation.replace[thisptr];
-      auto newcf = make_shared<SymmetricCoefficientFunction>(c1->Transform(transformation));
+      auto newcf = SymmetricCF(c1->Transform(transformation));
       transformation.cache[thisptr] = newcf;
       return newcf;
     }
@@ -1309,6 +1309,13 @@ namespace ngfem
   {
     if (coef->IsZeroCF())
       return coef;
+
+    // Sym(Grad(u)) -> u.Operator("strain"), if the space provides it
+    if (auto proxy = dynamic_pointer_cast<ProxyFunction> (coef))
+      if (auto prim = dynamic_pointer_cast<ProxyFunction> (proxy->Primary()))
+        if (prim->GetAdditionalEvaluator("strain") &&
+            (proxy == prim->Deriv() || proxy == prim->GetAdditionalProxy("Grad")))
+          return prim->GetAdditionalProxy("strain");
 
     return make_shared<SymmetricCoefficientFunction> (coef);
   }

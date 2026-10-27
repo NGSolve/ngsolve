@@ -93,6 +93,90 @@ def test_matrixvalued_embedding(kwargs):
         assert abs(lhs-rhs) <= 1e-10 * abs(rhs)
 
 
+# strain and sym. matrix components inside a compound space, at nonzero offset
+@pytest.mark.parametrize("dim", [2, 3])
+def test_strain_compound(dim):
+    mesh = MakeMesh(dim)
+    fes = H1(mesh, order=1) * VectorH1(mesh, order=2) * MatrixValued(H1(mesh, order=1), symmetric=True)
+    (p, u, s), (q, v, t) = fes.TnT()
+    eu, ev = u.Operator("strain"), v.Operator("strain")
+    forms = [
+        (2*InnerProduct(Sym(Grad(u)), Sym(Grad(v))) + div(u)*div(v) + p*q,
+         2*InnerProduct(eu, ev) + Trace(eu)*Trace(ev) + p*q),
+        (InnerProduct(Sym(Grad(u)), Sym(Grad(v))) + p*div(v) + div(u)*q,
+         InnerProduct(eu, ev) + p*Trace(ev) + Trace(eu)*q),
+        (InnerProduct(Sym(Grad(u)), t) + InnerProduct(s, Sym(Grad(v))) + InnerProduct(s, t),
+         InnerProduct(eu, t) + InnerProduct(s, ev) + InnerProduct(s, t)),
+    ]
+    for f_ref, f_strain in forms:
+        a_ref = BilinearForm(f_ref*dx).Assemble()
+        a_strain = BilinearForm(f_strain*dx).Assemble()
+        assert RelDiff(a_ref, a_strain) < 1e-12
+
+    gx, gy = GridFunction(fes), GridFunction(fes)
+    gx.vec.FV().NumPy()[:] = np.sin(np.arange(fes.ndof))
+    gy.vec.FV().NumPy()[:] = np.cos(np.arange(fes.ndof))
+    a = BilinearForm(InnerProduct(eu, ev)*dx + InnerProduct(s, t)*dx).Assemble()
+    lhs = InnerProduct(gy.vec, a.mat*gx.vec)
+    rhs = Integrate(InnerProduct(Sym(Grad(gx.components[1])), Sym(Grad(gy.components[1])))
+                    + InnerProduct(gx.components[2], gy.components[2]), mesh, order=6)
+    assert abs(lhs-rhs) <= 1e-10 * abs(rhs)
+
+
+def ManualSym(G):
+    return 0.5*(G+G.trans)
+
+
+@pytest.mark.parametrize("dim", [2, 3])
+def test_symgrad_rewrite(dim):
+    mesh = MakeMesh(dim)
+    fes = VectorH1(mesh, order=2)
+    u, v = fes.TnT()
+    assert Sym(Grad(u)) is u.Operator("strain")
+    assert Sym(Grad(v)) is v.Operator("strain")
+    C = CF(tuple(range(dim*dim)), dims=(dim, dim))
+    assert Sym(C).Replace({C: Grad(u)}) is u.Operator("strain")
+
+    (p, w), (q, z) = (H1(mesh, order=1) * fes).TnT()
+    assert Sym(Grad(w)) is w.Operator("strain")
+
+    # no strain operator: stays Sym
+    uh = H1(mesh, order=2, dim=dim).TrialFunction()
+    assert "strain" not in str(Sym(Grad(uh)))
+
+
+@pytest.mark.parametrize("dim", [2, 3])
+def test_strain_diffshape_and_variation(dim):
+    mesh = MakeMesh(dim)
+    fes = VectorH1(mesh, order=2)
+    u, v = fes.TnT()
+    VEC = H1(mesh, order=1, dim=dim)
+    X = GridFunction(VEC)
+    X.Set(CF(tuple(x*y+0.3*(i+1)*x for i in range(dim))))
+    gfu = GridFunction(fes)
+    gfu.Set(CF(tuple(sin(x+(i+1)*y) for i in range(dim))))
+
+    # proxy path
+    a = BilinearForm(InnerProduct(Sym(Grad(u)), Sym(Grad(v))).DiffShape(X)*dx).Assemble()
+    a_ref = BilinearForm(InnerProduct(ManualSym(Grad(u)), ManualSym(Grad(v))).DiffShape(X)*dx).Assemble()
+    assert RelDiff(a_ref, a) < 1e-12
+
+    # gridfunction path
+    PSI = VEC.TestFunction()
+    eps, eps_ref = gfu.Operator("strain"), ManualSym(Grad(gfu))
+    f = LinearForm((InnerProduct(eps, eps)*dx).DiffShape(PSI)).Assemble()
+    f_ref = LinearForm((InnerProduct(eps_ref, eps_ref)*dx).DiffShape(PSI)).Assemble()
+    assert Norm(f.vec-f_ref.vec) <= 1e-12 * Norm(f_ref.vec)
+
+    W = lambda E: (InnerProduct(E, E)**2)*dx
+    a, a_ref = BilinearForm(fes), BilinearForm(fes)
+    a += Variation(W(Sym(Grad(u))))
+    a_ref += Variation(W(ManualSym(Grad(u))))
+    a.AssembleLinearization(gfu.vec)
+    a_ref.AssembleLinearization(gfu.vec)
+    assert RelDiff(a_ref, a) < 1e-12
+
+
 def test_strain_complex_coefficient():
     mesh = MakeMesh(3)
     fes = VectorH1(mesh, order=2, complex=True)

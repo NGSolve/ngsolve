@@ -43,6 +43,17 @@ namespace ngfem
     return -proxy*dir->Operator("Grad");
   }
 
+  template <int DIM_SPC>
+  shared_ptr<CoefficientFunction> DiffOpStrainVectorH1<DIM_SPC> ::
+  DiffShape (shared_ptr<CoefficientFunction> proxy,
+             shared_ptr<CoefficientFunction> dir,
+             bool Eulerian)
+  {
+    if (Eulerian) throw Exception("DiffShape Eulerian not implemented for DiffOpStrainVectorH1");
+    // not a plain proxy, so no rewrite back to strain
+    return -SymmetricCF(proxy->Primary()->Operator("Grad") * dir->Operator("Grad"));
+  }
+
   
   template <int DIM_SPC>
   shared_ptr<CoefficientFunction> DiffOpGradBoundaryVectorH1<DIM_SPC> ::

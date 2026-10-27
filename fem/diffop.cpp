@@ -87,7 +87,15 @@ namespace ngfem
               SliceMatrix<double,ColMajor> mat, 
               LocalHeap & lh) const 
   {
-    CalcMatrix (fel, mip, mat, lh);
+    if (!vsembedding)
+      {
+        CalcMatrix (fel, mip, mat, lh);
+        return;
+      }
+    HeapReset hr(lh);
+    FlatMatrix<double,ColMajor> full(Dim(), fel.GetNDof(), lh);
+    CalcMatrix (fel, mip, full, lh);
+    mat = vsembedding_pinv * full;
   }
 
   void DifferentialOperator :: SetVectorSpaceEmbedding (Matrix<> emb)
