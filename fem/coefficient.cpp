@@ -392,7 +392,48 @@ namespace ngfem
   void CoefficientFunction :: 
   NonZeroPattern (const class ProxyUserData & ud, FlatVector<AutoDiffDiff<1,NonZero>> values) const
   {
-    values = AutoDiffDiff<1,NonZero> (true);
+    NonZeroPatternDAG(*this).Evaluate (ud, values);
+  }
+
+  NonZeroPatternDAG :: NonZeroPatternDAG (const CoefficientFunction & cf)
+  {
+    const_cast<CoefficientFunction&>(cf).TraverseDAG
+      ([&] (CoefficientFunction & node) { steps.Append (&node); });
+
+    std::map<const CoefficientFunction*, int> nr;
+    offsets.Append (0);
+    first_input.Append (0);
+    for (int i : Range(steps))
+      {
+        nr[steps[i]] = i;
+        offsets.Append (offsets.Last() + steps[i]->Dimension());
+        auto incfs = steps[i]->InputCoefficientFunctions();
+        for (auto & incf : incfs)
+          inputs.Append (incf ? nr[incf.get()] : -1);
+        first_input.Append (inputs.Size());
+        max_inputs = max(max_inputs, incfs.Size());
+      }
+  }
+
+  void NonZeroPatternDAG ::
+  Evaluate (const ProxyUserData & ud, FlatVector<AutoDiffDiff<1,NonZero>> values) const
+  {
+    typedef AutoDiffDiff<1,NonZero> T;
+    ArrayMem<T,1000> mem(offsets.Last());
+    ArrayMem<FlatVector<T>,100> in(max_inputs);
+    auto result = [&] (int i) { return FlatVector<T> (offsets[i+1]-offsets[i], mem.Data()+offsets[i]); };
+
+    for (int i : Range(steps))
+      {
+        auto ini = inputs.Range(first_input[i], first_input[i+1]);
+        for (int j : Range(ini))
+          if (ini[j] == -1)
+            new (&in[j]) FlatVector<T> (0, mem.Data());
+          else
+            new (&in[j]) FlatVector<T> (result(ini[j]));
+        steps[i] -> NonZeroPattern (ud, in.Range(0, ini.Size()), result(i));
+      }
+    values = result(steps.Size()-1);
   }
 
   // shared_ptr<CoefficientFunction> shape = make_shared<ConstantCoefficientFunction>(1);
@@ -1437,13 +1478,6 @@ public:
 
 
   virtual void NonZeroPattern (const class ProxyUserData & ud,
-                               FlatVector<AutoDiffDiff<1,NonZero>> values) const override
-  {
-    values = AutoDiffDiff<1,NonZero>(false);
-    values(coord) = AutoDiffDiff<1,NonZero>(true);
-  }
-  
-  virtual void NonZeroPattern (const class ProxyUserData & ud,
                                FlatArray<FlatVector<AutoDiffDiff<1,NonZero>>> input,
                                FlatVector<AutoDiffDiff<1,NonZero>> values) const override
   {
@@ -1534,12 +1568,6 @@ public:
     values.AddSize(Dimension(), ir.Size()) = T(1.0);
   }
 
-  virtual void NonZeroPattern (const class ProxyUserData & ud,
-                               FlatVector<AutoDiffDiff<1,NonZero>> values) const override
-  {
-    values = AutoDiffDiff<1,NonZero>(true);
-  }
-  
   virtual void NonZeroPattern (const class ProxyUserData & ud,
                                FlatArray<FlatVector<AutoDiffDiff<1,NonZero>>> input,
                                FlatVector<AutoDiffDiff<1,NonZero>> values) const override
@@ -1670,12 +1698,6 @@ public:
 
 
 
-  virtual void NonZeroPattern (const class ProxyUserData & ud,
-                               FlatVector<AutoDiffDiff<1,NonZero>> values) const override
-  {
-    values = AutoDiffDiff<1,NonZero>(false);
-  }
-  
   virtual void NonZeroPattern (const class ProxyUserData & ud,
                                FlatArray<FlatVector<AutoDiffDiff<1,NonZero>>> input,
                                FlatVector<AutoDiffDiff<1,NonZero>> values) const override
@@ -1889,11 +1911,6 @@ public:
     c1->NonZeroPattern (ud, nonzero, nonzero_deriv, nonzero_dderiv);
   }
   */
-  virtual void NonZeroPattern (const class ProxyUserData & ud,
-                               FlatVector<AutoDiffDiff<1,NonZero>> values) const override
-  {
-    c1->NonZeroPattern (ud, values);
-  }
   
   virtual void NonZeroPattern (const class ProxyUserData & ud,
                                FlatArray<FlatVector<AutoDiffDiff<1,NonZero>>> input,
@@ -2003,9 +2020,11 @@ public:
     c1->NonZeroPattern (ud, nonzero, nonzero_deriv, nonzero_dderiv);
   }
   */
-  virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<AutoDiffDiff<1,NonZero>> values) const override
+  virtual void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatArray<FlatVector<AutoDiffDiff<1,NonZero>>> input,
+                               FlatVector<AutoDiffDiff<1,NonZero>> values) const override
   {
-    c1->NonZeroPattern (ud, values);
+    values = input[0];
   }
   
   shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var,
@@ -2223,16 +2242,6 @@ public:
       }
   }
   */
-  virtual void NonZeroPattern (const class ProxyUserData & ud,
-                               FlatVector<AutoDiffDiff<1,NonZero>> values) const override
-  {
-    int dim = Dimension();
-    Vector<AutoDiffDiff<1,NonZero>> v1(1), v2(dim);
-    c1->NonZeroPattern (ud, v1);
-    c2->NonZeroPattern (ud, v2);
-    for (size_t j = 0; j < dim; j++)
-      values(j) = v1(0) * v2(j);
-  }
 
 
   
@@ -2389,16 +2398,6 @@ public:
     nonzero_dderiv = nzdd;
   }
   */
-  virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<AutoDiffDiff<1,NonZero>> values) const override
-  {
-    Vector<AutoDiffDiff<1,NonZero>> v1(dim1), v2(dim1);
-    c1->NonZeroPattern (ud, v1);
-    c2->NonZeroPattern (ud, v2);
-    AutoDiffDiff<1,NonZero> sum(false);
-    for (int i = 0; i < dim1; i++)
-      sum += v1(i)*v2(i);
-    values(0) = sum;
-  }
 
   virtual void NonZeroPattern (const class ProxyUserData & ud,
                                FlatArray<FlatVector<AutoDiffDiff<1,NonZero>>> input,
@@ -2656,18 +2655,6 @@ public:
   
   
 
-  virtual void NonZeroPattern (const class ProxyUserData & ud,
-                               FlatVector<AutoDiffDiff<1,NonZero>> values) const override
-  {
-    Vector<AutoDiffDiff<1,NonZero>> v1(DIM), v2(DIM);
-    c1->NonZeroPattern (ud, v1);
-    c2->NonZeroPattern (ud, v2);
-    AutoDiffDiff<1,NonZero> sum(false);
-    for (int i = 0; i < DIM; i++)
-      sum += v1(i)*v2(i);
-    values(0) = sum;
-  }
-
   
   virtual void NonZeroPattern (const class ProxyUserData & ud,
                                FlatArray<FlatVector<AutoDiffDiff<1,NonZero>>> input,
@@ -2843,17 +2830,6 @@ public:
     return res;
   }
   
-
-  virtual void NonZeroPattern (const class ProxyUserData & ud,
-                               FlatVector<AutoDiffDiff<1,NonZero>> values) const override
-  {
-    Vector<AutoDiffDiff<1,NonZero>> v1(DIM);
-    c1->NonZeroPattern (ud, v1);
-    AutoDiffDiff<1,NonZero> sum(false);
-    for (int i = 0; i < DIM; i++)
-      sum += v1(i)*v1(i);
-    values(0) = sum;
-  }
 
   
   virtual void NonZeroPattern (const class ProxyUserData & ud,
@@ -3064,20 +3040,6 @@ public:
   }
   */
 
-  virtual void NonZeroPattern (const class ProxyUserData & ud,
-                               FlatVector<AutoDiffDiff<1,NonZero>> values) const override
-  {
-    Vector<AutoDiffDiff<1,NonZero>> v1(dim1);
-    c1->NonZeroPattern (ud, v1);
-
-    AutoDiffDiff<1,NonZero> sum(false);
-    for (int i = 0; i < dim1; i++)
-      sum += v1(i);
-    values(0).Value() = sum.Value();
-    values(0).DValue(0) = sum.DValue(0);
-    values(0).DDValue(0) = sum.DValue(0) || sum.DDValue(0);
-  }
-
   
   virtual void NonZeroPattern (const class ProxyUserData & ud,
                                FlatArray<FlatVector<AutoDiffDiff<1,NonZero>>> input,
@@ -3238,10 +3200,11 @@ public:
     nonzero_dderiv = nzd || nzdd;
   }
   */
-  virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<AutoDiffDiff<1,NonZero>> values) const override
+  virtual void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatArray<FlatVector<AutoDiffDiff<1,NonZero>>> input,
+                               FlatVector<AutoDiffDiff<1,NonZero>> values) const override
   {
-    Vector<AutoDiffDiff<1,NonZero>> v1(dim1);
-    c1->NonZeroPattern (ud, v1);
+    auto v1 = input[0];
     AutoDiffDiff<1,NonZero> sum(false);
     for (int i = 0; i < dim1; i++)
       sum = sum + v1(i);
@@ -3372,20 +3335,6 @@ public:
         }
   }
   */
-  virtual void NonZeroPattern (const class ProxyUserData & ud,
-                               FlatVector<AutoDiffDiff<1,NonZero>> values) const override
-  {
-    // FlatArray<int> hdims = Dimensions();
-    Vector<AutoDiffDiff<1,NonZero>> va(Dimension()*inner_dim), vb(inner_dim);
-    c1->NonZeroPattern (ud, va);
-    c2->NonZeroPattern (ud, vb);
-    
-    values = NonZero(false);
-    
-    for (size_t i = 0; i < Dimension(); i++)
-      for (size_t j = 0; j < inner_dim; j++)
-        values(i) += va(i*inner_dim+j) * vb(j);
-  }
   
   virtual void NonZeroPattern (const class ProxyUserData & ud,
                                FlatArray<FlatVector<AutoDiffDiff<1,NonZero>>> input,
@@ -3556,18 +3505,6 @@ public:
     code.body += Var(index, 2).Assign (Var(inputs[0],0)*Var(inputs[1],1)-Var(inputs[0],1)*Var(inputs[1],0), false);
   }
 
-  virtual void NonZeroPattern (const class ProxyUserData & ud,
-                               FlatVector<AutoDiffDiff<1,NonZero>> values) const override
-  {
-    Vector<AutoDiffDiff<1,NonZero>> va(3), vb(3);
-    c1->NonZeroPattern (ud, va);
-    c2->NonZeroPattern (ud, vb);
-    
-    values(0) = va(1)*vb(2)+va(2)*vb(1);
-    values(1) = va(2)*vb(0)+va(0)*vb(2);
-    values(2) = va(0)*vb(1)+va(1)*vb(0);    
-  }
-  
   virtual void NonZeroPattern (const class ProxyUserData & ud,
                                FlatArray<FlatVector<AutoDiffDiff<1,NonZero>>> input,
                                FlatVector<AutoDiffDiff<1,NonZero>> values) const override
@@ -4479,13 +4416,6 @@ public:
     nonzero_dderiv(0) = dd1(comp);
   }  
   */
-  virtual void NonZeroPattern (const class ProxyUserData & ud,
-                               FlatVector<AutoDiffDiff<1,NonZero>> values) const override
-  {
-    Vector<AutoDiffDiff<1,NonZero>> v1(c1->Dimension());
-    c1->NonZeroPattern (ud, v1);
-    values(0) = v1(comp);
-  }
 
   virtual void NonZeroPattern (const class ProxyUserData & ud,
                                FlatArray<FlatVector<AutoDiffDiff<1,NonZero>>> input,
@@ -4715,21 +4645,11 @@ public:
   }  
   
 
-  virtual void NonZeroPattern (const class ProxyUserData & ud,
-                               FlatVector<AutoDiffDiff<1,NonZero>> values) const override
-  {
-    Vector<AutoDiffDiff<1,NonZero>> v1(c1->Dimension());
-    c1->NonZeroPattern (ud, v1);
-    for (auto i : Range(mapping))
-      values(i) = v1(mapping[i]);
-  }
-
 
   virtual void NonZeroPattern (const class ProxyUserData & ud,
                                FlatArray<FlatVector<AutoDiffDiff<1,NonZero>>> input,
                                FlatVector<AutoDiffDiff<1,NonZero>> values) const override
   {
-    c1->NonZeroPattern (ud, input[0]);
     for (auto i : Range(mapping))
       values(i) = input[0](mapping[i]);
   }
@@ -5033,16 +4953,6 @@ public:
   }
 
   virtual void NonZeroPattern (const class ProxyUserData & ud,
-                               FlatVector<AutoDiffDiff<1,NonZero>> values) const override
-  {
-    Vector<AutoDiffDiff<1,NonZero>> v1(c1->Dimension());
-    c1->NonZeroPattern (ud, v1);
-    values = NonZero(false);
-    for (int i = 0; i < mapping.Size(); i++)
-      values[mapping[i]] = v1[i];
-  }
-
-  virtual void NonZeroPattern (const class ProxyUserData & ud,
                                FlatArray<FlatVector<AutoDiffDiff<1,NonZero>>> input,
                                FlatVector<AutoDiffDiff<1,NonZero>> values) const override
   {
@@ -5205,30 +5115,6 @@ public:
   }
 
 
-
-  virtual void NonZeroPattern (const class ProxyUserData & ud,
-                               FlatVector<AutoDiffDiff<1,NonZero>> values) const override
-  {
-    Vector<AutoDiffDiff<1,NonZero>> temp(c1->Dimension());
-    
-    c1->NonZeroPattern (ud, temp);
-
-    size_t actdim = c1->Dimension();
-    for (int dir = 0; dir < vectors.Size(); dir++)
-      {
-        Vector<AutoDiffDiff<1,NonZero>> vi(vectors[dir]->Dimension());
-        vectors[dir]->NonZeroPattern(ud, vi);
-        
-        size_t newdim = actdim / vi.Height();
-        for (size_t i = 0; i < newdim; i++)
-          temp(i) = temp(i)*vi(0);
-        for (size_t j = 1; j < vi.Height(); j++)
-          for (size_t i = 0; i < newdim; i++)
-            temp(i) += temp(j*newdim+i)*vi(j);
-        actdim = newdim;
-      }
-    values(0) = temp(0);
-  }
 
   virtual void NonZeroPattern (const class ProxyUserData & ud,
                                FlatArray<FlatVector<AutoDiffDiff<1,NonZero>>> input,
@@ -5412,22 +5298,6 @@ public:
           values.Row(i*dimafter+k) += pw_mult(vi.Row(j), temp.Row(ii));
   }
 
-
-  virtual void NonZeroPattern (const class ProxyUserData & ud,
-                               FlatVector<AutoDiffDiff<1,NonZero>> values) const override
-  {
-    Vector<AutoDiffDiff<1,NonZero>> temp(c1->Dimension()), vi(vec->Dimension());
-    c1->NonZeroPattern (ud, temp);
-    vec->NonZeroPattern (ud, vi);
-    
-    values.Range(Dimension()) = NonZero(false);
-    values = NonZero(false);
-
-    for (int i = 0, ii = 0; i < dimbefore; i++)
-      for (int j = 0; j < vec->Dimension(); j++)
-        for (int k = 0; k < dimafter; k++, ii++)
-          values(i*dimafter+k) += vi(j)*temp(ii);
-  }
 
 
   virtual void NonZeroPattern (const class ProxyUserData & ud,
@@ -5741,20 +5611,6 @@ public:
         }
   }
   */
-  virtual void NonZeroPattern (const class ProxyUserData & ud,
-                               FlatVector<AutoDiffDiff<1,NonZero>> values) const override 
-  {
-    size_t dim = Dimension();
-    Vector<AutoDiffDiff<1,NonZero>> nzi(dim);
-    values = AutoDiffDiff<1,NonZero> (false);
-    for (auto & aci : ci)
-      if (aci)
-        {
-          aci -> NonZeroPattern(ud, nzi);
-          for (size_t i = 0; i < values.Size(); i++)
-            values(i) += nzi(i);
-        }
-  }
   
   virtual void NonZeroPattern (const class ProxyUserData & ud,
                                FlatArray<FlatVector<AutoDiffDiff<1,NonZero>>> input,
@@ -6129,16 +5985,6 @@ class IfPosCoefficientFunction : public T_CoefficientFunction<IfPosCoefficientFu
 
 
     virtual void NonZeroPattern (const class ProxyUserData & ud,
-                                 FlatVector<AutoDiffDiff<1,NonZero>> values) const override
-    {
-      int dim = Dimension();
-      Vector<AutoDiffDiff<1,NonZero>> v1(dim), v2(dim);
-      cf_then->NonZeroPattern (ud, v1);
-      cf_else->NonZeroPattern (ud, v2);
-      values = v1+v2;
-    }
-    
-    virtual void NonZeroPattern (const class ProxyUserData & ud,
                                  FlatArray<FlatVector<AutoDiffDiff<1,NonZero>>> input,
                                  FlatVector<AutoDiffDiff<1,NonZero>> values) const override
     {
@@ -6269,17 +6115,6 @@ public:
       }
   }
   */
-  virtual void NonZeroPattern (const class ProxyUserData & ud,
-                               FlatVector<AutoDiffDiff<1,NonZero>> values) const override
-  {
-    int base = 0;
-    for (auto cf : ci)
-      {
-        int dimi = cf->Dimension();
-        cf->NonZeroPattern(ud, values.Range(base,base+dimi));
-        base += dimi;
-      }
-  }
   
   virtual void NonZeroPattern (const class ProxyUserData & ud,
                                FlatArray<FlatVector<AutoDiffDiff<1,NonZero>>> input,
@@ -7015,39 +6850,6 @@ class CompiledCoefficientFunction : public CompiledCoefficientFunctionInterface 
         }
     }
     */
-    void NonZeroPattern (const class ProxyUserData & ud, FlatVector<AutoDiffDiff<1,NonZero>> nonzero) const override
-    {
-      typedef AutoDiffDiff<1,NonZero> T;
-      ArrayMem<T, 1000> hmem(totdim);
-      size_t mem_ptr = 0;
-      ArrayMem<FlatVector<T>,100> temp(steps.Size());
-      ArrayMem<FlatVector<T>,100> in(max_inputsize);
-
-      // used if nullptr are in tree
-      FlatVector<T> zerovec(0, hmem.Data());
-
-      for (size_t i = 0; i < steps.Size(); i++)
-        {
-          new (&temp[i]) FlatVector<T> (dim[i], &hmem[mem_ptr]);
-          mem_ptr += dim[i];
-        }
-      
-      for (size_t i = 0; i < steps.Size(); i++)
-        {
-          auto inputi = inputs[i];
-          for (int nr : Range(inputi))
-          {
-            if(inputi[nr] == -1)
-              new (&in[nr]) FlatVector<T> (zerovec);
-            else
-              new (&in[nr]) FlatVector<T> (temp[inputi[nr]]);
-          }
-          steps[i] -> NonZeroPattern (ud, in.Range(0, inputi.Size()), temp[i]);
-        }
-      auto & last = temp.Last();
-      for (size_t i = 0; i < nonzero.Size(); i++)
-        nonzero(i) = last(i);
-    }
     
     void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<double> values) const override
     {
@@ -7500,16 +7302,10 @@ public:
     }
 
   void NonZeroPattern (const class ProxyUserData & ud,
-                               FlatVector<AutoDiffDiff<1,NonZero>> nonzero) const override
-    {
-      func->NonZeroPattern(ud, nonzero);
-    }
-
-  void NonZeroPattern (const class ProxyUserData & ud,
                                FlatArray<FlatVector<AutoDiffDiff<1,NonZero>>> input,
                                FlatVector<AutoDiffDiff<1,NonZero>> values) const override
     {
-      func->NonZeroPattern(ud, input, values);
+      values = input[0];
     }
 
 };
@@ -7623,12 +7419,6 @@ public:
   string GetDescription() const override
   {
     return "CacheCF";
-  }
-  
-  void NonZeroPattern (const class ProxyUserData & ud,
-                       FlatVector<AutoDiffDiff<1,NonZero>> nonzero) const override
-  {
-    func->NonZeroPattern(ud, nonzero);
   }
   
   void NonZeroPattern (const class ProxyUserData & ud,

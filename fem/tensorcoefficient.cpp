@@ -92,6 +92,7 @@ namespace ngfem {
             nzvec = NonZero(false);
 
             ProxyUserData ud;
+            NonZeroPatternDAG nzdag(*cf);
             DummyFE<ET_TRIG> dummyfe;
             ud.fel = &dummyfe;
             ud.eval_deriv = 1;
@@ -111,7 +112,7 @@ namespace ngfem {
                 }
             });
 
-            cf->NonZeroPattern(ud, nzvec_ad);
+            nzdag.Evaluate(ud, nzvec_ad);
             for (size_t i: Range(nzvec_ad))
                 nzvec[i] = nzvec[i] || nzvec_ad[i].Value();
 
@@ -120,7 +121,7 @@ namespace ngfem {
                     for (int k2 : Range(test_proxy->Dimension())) {
                         ud.testfunction = test_proxy;
                         ud.test_comp = k2;
-                        cf->NonZeroPattern(ud, nzvec_ad);
+                        nzdag.Evaluate(ud, nzvec_ad);
                         for (size_t i: Range(nzvec_ad))
                             nzvec[i] = nzvec[i] || nzvec_ad[i].Value();
                     }
@@ -129,7 +130,7 @@ namespace ngfem {
                     for (auto l2 : Range(trial_proxy->Dimension())) {
                         ud.trialfunction = trial_proxy;
                         ud.trial_comp = l2;
-                        cf->NonZeroPattern(ud, nzvec_ad);
+                        nzdag.Evaluate(ud, nzvec_ad);
                         for (size_t i: Range(nzvec_ad))
                             nzvec[i] = nzvec[i] || nzvec_ad[i].Value();
 
@@ -137,7 +138,7 @@ namespace ngfem {
                             for (auto k2 : Range(test_proxy->Dimension())) {
                                 ud.testfunction = test_proxy;
                                 ud.test_comp = k2;
-                                cf->NonZeroPattern(ud, nzvec_ad);
+                                nzdag.Evaluate(ud, nzvec_ad);
                                 for (size_t i: Range(nzvec_ad))
                                     nzvec[i] = nzvec[i] || nzvec_ad[i].Value();
                             }
@@ -1311,35 +1312,6 @@ namespace ngfem {
               code.body += Var(index, res_idx, result_dims).Declare(code.GetType(this->IsComplex()), 0.0);
               declared[res_idx] = true;
             }
-          }
-        }
-
-        void EinsumCoefficientFunction::NonZeroPattern(
-            const class ProxyUserData &ud,
-            FlatVector<AutoDiffDiff<1, NonZero>> values) const
-        {
-          if (node)
-          {
-            node->NonZeroPattern(ud, values);
-            return;
-          }
-
-          Array<Vector<AutoDiffDiff<1, NonZero>>> vecs(cfs.Size());
-          for (int i: Range(cfs)) {
-            vecs[i].SetSize(cfs[i]->Dimension());
-            cfs[i]->NonZeroPattern(ud, vecs[i]);
-          }
-
-          values = NonZero(false);
-          const auto cres = cfs.Size();
-          for (size_t I: Range(index_maps.Height())) {
-            if (!nz_all(I))
-              continue;
-            const auto& I_map = index_maps.Row(I);
-            AutoDiffDiff<1, NonZero> tmp(true);
-            for (size_t i: Range(vecs))
-              tmp *= vecs[i](I_map(i));
-            values(I_map(cres)) += tmp;
           }
         }
 

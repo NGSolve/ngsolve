@@ -337,16 +337,10 @@ namespace ngcomp
     }
 
     void NonZeroPattern (const class ProxyUserData & ud,
-			 FlatVector<AutoDiffDiff<1,NonZero>> nonzero) const override
-    {
-      func->NonZeroPattern(ud, nonzero);
-    }
-
-    void NonZeroPattern (const class ProxyUserData & ud,
 			 FlatArray<FlatVector<AutoDiffDiff<1,NonZero>>> input,
 			 FlatVector<AutoDiffDiff<1,NonZero>> values) const override
     {
-      func->NonZeroPattern(ud, input, values);
+      values = input[0];
     }
 
     shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const override

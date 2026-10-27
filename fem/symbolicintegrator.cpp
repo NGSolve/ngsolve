@@ -821,6 +821,7 @@ namespace ngfem
 
   void ProxyFunction ::
   NonZeroPattern (const class ProxyUserData & ud,
+                  FlatArray<FlatVector<AutoDiffDiff<1,NonZero>>> input,
                   FlatVector<AutoDiffDiff<1,NonZero>> values) const
   {
     Vector<bool> nz(values.Size()), nzd(values.Size()), nzdd(values.Size());
@@ -1305,6 +1306,7 @@ namespace ngfem
     nonzeros_deriv = Matrix<bool>(cnttest, cnttrial);
 
     ProxyUserData ud;
+    NonZeroPatternDAG nzdag(*cf);
     // Vector<bool> nzvec(1), nzdvec(1), nzddvec(1);
     Vector<AutoDiffDiff<1,NonZero>> nzvec(1);
     int k = 0;
@@ -1319,7 +1321,7 @@ namespace ngfem
                 ud.trial_comp = l2;
                 ud.testfunction = test_proxies[k1];
                 ud.test_comp = k2;
-                cf -> NonZeroPattern (ud, nzvec);
+                nzdag.Evaluate (ud, nzvec);
                 nonzeros(k,l) = nzvec(0).Value();
                 l++;
               }
@@ -1342,7 +1344,7 @@ namespace ngfem
                 ud.trial_comp = l2;
                 ud.testfunction = test_proxies[k1];
                 ud.test_comp = k2;
-                cf -> NonZeroPattern (ud, nzvec); 
+                nzdag.Evaluate (ud, nzvec);
                 // nonzeros_deriv(k,l) = nzdvec(0);
                 nonzeros_deriv(k,l) = nzvec(0).DValue(0);
                 l++;
@@ -5212,6 +5214,7 @@ namespace ngfem
     nonzeros_proxies = false;
 
     ProxyUserData ud;
+    NonZeroPatternDAG nzdag(*cf);
     DummyFE<ET_TRIG> dummyfe;
     ud.fel = &dummyfe;
     Vector<AutoDiffDiff<1,NonZero>> nzvec(1);
@@ -5227,7 +5230,7 @@ namespace ngfem
                 ud.trial_comp = l2;
                 ud.testfunction = trial_proxies[k1];
                 ud.test_comp = k2;
-                cf -> NonZeroPattern (ud, nzvec);
+                nzdag.Evaluate (ud, nzvec);
                 // nzddvec(0) = true;
                 // nonzeros(k,l) = nzddvec(0);
                 nonzeros(k,l) = nzvec(0).DDValue(0);

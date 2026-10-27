@@ -350,9 +350,6 @@ namespace ngfem {
                                     bool skip_zeroes = true) const;
 
           virtual void NonZeroPattern(const class ProxyUserData &ud,
-                                      FlatVector<AutoDiffDiff<1,NonZero>> values) const override;
-
-          virtual void NonZeroPattern(const class ProxyUserData &ud,
                                       FlatArray<FlatVector<AutoDiffDiff<1,NonZero>>> input,
                                       FlatVector<AutoDiffDiff<1,NonZero>> values) const override;
 
