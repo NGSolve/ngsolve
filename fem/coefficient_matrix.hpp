@@ -5,12 +5,12 @@ namespace ngfem
 {
 
 
-  class IdentityCoefficientFunction : public T_CoefficientFunction<IdentityCoefficientFunction>
+  class IdentityCoefficientFunction : public T_CoefficientFunction<IdentityCoefficientFunction, CoefficientFunctionNoDerivative>
   {
-    using BASE = T_CoefficientFunction<IdentityCoefficientFunction>;
+    using BASE = T_CoefficientFunction<IdentityCoefficientFunction, CoefficientFunctionNoDerivative>;
   public:
     IdentityCoefficientFunction (int dim)
-      : T_CoefficientFunction<IdentityCoefficientFunction>(1, false)
+      : BASE(1, false)
     {
       SetDimensions (ngstd::IVec<2> (dim, dim) );
     }
@@ -58,7 +58,7 @@ namespace ngfem
         values(i*(hd+1)) = AutoDiffDiff<1,NonZero>(true);
     }
 
-    using T_CoefficientFunction<IdentityCoefficientFunction>::Evaluate;
+    using BASE::Evaluate;
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
     {
       throw Exception ("IdentityCF:: scalar evaluate for matrix called");
@@ -75,39 +75,6 @@ namespace ngfem
         for (int j = 0; j < hd; j++)
           result(j*(hd+1), i) = T(1.0);
     }  
-
-    template <typename MIR, typename T, ORDERING ORD>
-    void T_Evaluate (const MIR & ir,
-                     FlatArray<BareSliceMatrix<T,ORD>> input,                       
-                     BareSliceMatrix<T,ORD> values) const
-    {
-      int hd = Dimensions()[0];
-      size_t np = ir.Size();
-      values.AddSize(Dimension(), np) = T(0.0);
-    
-      for (size_t j = 0; j < hd; j++)
-        for (size_t i = 0; i < np; i++)
-          values(j*(hd+1), i) = T(1.0);
-    }
-
-    shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var,
-                                          shared_ptr<CoefficientFunction> dir) const override
-    {
-      if (this == var) return dir;
-      return ZeroCF(this->Dimensions());
-    }
-
-    shared_ptr<CoefficientFunction>
-    DiffJacobi (const CoefficientFunction * var, T_DJC & cache) const override
-    {
-      if (this == var)
-        return IdentityCF(this->Dimensions());
-
-      int dim = Dimensions()[0];
-      Array<int> resdims = { dim, dim };
-      resdims += var->Dimensions();
-      return ZeroCF( resdims );
-    }
 
   
   };
@@ -950,7 +917,7 @@ public:
   extern template class T_CoefficientFunction<MultDiagMatCoefficientFunction>;  
   extern template class T_CoefficientFunction<TransposeCoefficientFunction>;
   extern template class T_CoefficientFunction<TraceCoefficientFunction>;    
-  extern template class T_CoefficientFunction<IdentityCoefficientFunction>;      
+  extern template class T_CoefficientFunction<IdentityCoefficientFunction, CoefficientFunctionNoDerivative>;      
 }
 
 

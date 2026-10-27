@@ -114,11 +114,6 @@ namespace ngfem
         }
     }
 
-    template <typename MIR, typename T, ORDERING ORD>
-    void T_Evaluate (const MIR & ir,
-                     FlatArray<BareSliceMatrix<T,ORD>> input,                       
-                     BareSliceMatrix<T,ORD> values) const
-    { T_Evaluate (ir, values); }
 
     /*
       virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,

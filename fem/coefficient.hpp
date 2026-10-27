@@ -507,6 +507,17 @@ namespace ngfem
     using BASE::IsComplex;
     using BASE::Dimension;
     using BASE::BASE;
+
+    // leaves may omit the input version
+    template <typename MIR, typename TIN, typename TVAL>
+    void T_EvaluateInput (const MIR & ir, TIN input, TVAL values) const
+    {
+      if constexpr (is_base_of_v<CoefficientFunctionNoDerivative, BASE> &&
+                    !requires { static_cast<const TCF*>(this)->T_Evaluate (ir, input, values); })
+        static_cast<const TCF*>(this) -> T_Evaluate (ir, values);
+      else
+        static_cast<const TCF*>(this) -> T_Evaluate (ir, input, values);
+    }
       
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const override
     { static_cast<const TCF*>(this) -> /* template */ T_Evaluate /* <SIMD<double>> */ (ir, values); }
@@ -555,7 +566,7 @@ namespace ngfem
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
                            FlatArray<BareSliceMatrix<SIMD<double>>> input,
                            BareSliceMatrix<SIMD<double>> values) const override
-    {  static_cast<const TCF*>(this) -> /* template */ T_Evaluate /* <SIMD<double>> */ (ir, input, values); }
+    {  T_EvaluateInput (ir, input, values); }
 
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<double> values) const override
     { static_cast<const TCF*>(this) -> /* template */ T_Evaluate (ir, Trans(values)); }
@@ -563,7 +574,7 @@ namespace ngfem
     virtual void Evaluate (const BaseMappedIntegrationRule & ir,
                            FlatArray<BareSliceMatrix<double,ColMajor>> input,
                            BareSliceMatrix<double,ColMajor> values) const override
-    { static_cast<const TCF*>(this) -> T_Evaluate (ir, input, values); }
+    { T_EvaluateInput (ir, input, values); }
     
     
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<Complex> values) const override
@@ -591,7 +602,7 @@ namespace ngfem
     virtual void Evaluate (const BaseMappedIntegrationRule & ir,
                            FlatArray<BareSliceMatrix<AutoDiff<1,double>,ColMajor>> input,
                            BareSliceMatrix<AutoDiff<1,double>,ColMajor> values) const override
-    { static_cast<const TCF*>(this) -> T_Evaluate (ir, input, values); }
+    { T_EvaluateInput (ir, input, values); }
         
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, 
                            BareSliceMatrix<AutoDiff<1,SIMD<double>>> values) const override
@@ -600,7 +611,7 @@ namespace ngfem
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
                            FlatArray<BareSliceMatrix<AutoDiff<1,SIMD<double>>>> input,
                            BareSliceMatrix<AutoDiff<1,SIMD<double>>> values) const override
-    {  static_cast<const TCF*>(this) -> /* template */ T_Evaluate /* <AutoDiff<1,SIMD<double>>> */ (ir, input, values); }
+    {  T_EvaluateInput (ir, input, values); }
 
 
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, 
@@ -610,7 +621,7 @@ namespace ngfem
     virtual void Evaluate (const BaseMappedIntegrationRule & ir,
                            FlatArray<BareSliceMatrix<AutoDiffDiff<1,double>,ColMajor>> input,
                            BareSliceMatrix<AutoDiffDiff<1,double>,ColMajor> values) const override
-    { static_cast<const TCF*>(this) -> T_Evaluate (ir, input, values); }
+    { T_EvaluateInput (ir, input, values); }
     
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, 
                            BareSliceMatrix<AutoDiffDiff<1,SIMD<double>>> values) const override
@@ -619,7 +630,7 @@ namespace ngfem
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
                            FlatArray<BareSliceMatrix<AutoDiffDiff<1,SIMD<double>>>> input,
                            BareSliceMatrix<AutoDiffDiff<1,SIMD<double>>> values) const override
-    {  static_cast<const TCF*>(this) -> /* template */ T_Evaluate /* <AutoDiffDiff<1,SIMD<double>>> */ (ir, input, values); }
+    {  T_EvaluateInput (ir, input, values); }
   };
 
 
@@ -676,11 +687,6 @@ namespace ngfem
         values(0,i) = val;
     }
       
-    template <typename MIR, typename T, ORDERING ORD>
-      void T_Evaluate (const MIR & ir,
-                       FlatArray<BareSliceMatrix<T,ORD>> input,                       
-                       BareSliceMatrix<T,ORD> values) const
-    { T_Evaluate (ir, values); }
 
     virtual void PrintReport (ostream & ost) const override;
     virtual string GetDescription () const override;

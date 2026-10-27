@@ -1219,7 +1219,7 @@ namespace ngfem
   template class T_CoefficientFunction<MultDiagMatCoefficientFunction>;  
   template class T_CoefficientFunction<TransposeCoefficientFunction>;
   template class T_CoefficientFunction<TraceCoefficientFunction>;
-  template class T_CoefficientFunction<IdentityCoefficientFunction>;    
+  template class T_CoefficientFunction<IdentityCoefficientFunction, CoefficientFunctionNoDerivative>;    
   
   static RegisterClassForArchive<TransposeCoefficientFunction, CoefficientFunction> regtransposecf;
   static RegisterClassForArchive<SymmetricCoefficientFunction, CoefficientFunction> regsymmetriccf;

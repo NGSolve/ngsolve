@@ -17,7 +17,7 @@
 
 namespace ngcomp
 {
-  class HatFunction : public T_CoefficientFunction<HatFunction>
+  class HatFunction : public T_CoefficientFunction<HatFunction, CoefficientFunctionNoDerivative>
   {
     size_t vnum;
   public:
@@ -59,13 +59,6 @@ namespace ngcomp
         cout << "can evaluate only for double or simd<double>" << endl;
     }
     
-    template <typename MIR, typename T, ORDERING ORD>
-    void T_Evaluate (const MIR & ir,
-                     FlatArray<BareSliceMatrix<T,ORD>> input,                       
-                     BareSliceMatrix<T,ORD> values) const
-    {
-      T_Evaluate (ir, values);
-    }    
   };
 
   

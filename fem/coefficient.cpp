@@ -526,7 +526,7 @@ namespace ngfem
 
 
   /// The coefficient is constant everywhere
-  class NGS_DLL_HEADER ConstantCoefficientFunctionC : public CoefficientFunction
+  class NGS_DLL_HEADER ConstantCoefficientFunctionC : public CoefficientFunctionNoDerivative
   {
     ///
     Complex val;
@@ -554,14 +554,12 @@ namespace ngfem
     
     void PrintReport (ostream & ost) const override;
     void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override;
-    virtual shared_ptr<CoefficientFunction>
-      DiffJacobi (const CoefficientFunction * var, T_DJC & cache) const override;
   };
   
   ///
   ConstantCoefficientFunctionC ::   
   ConstantCoefficientFunctionC (Complex aval) 
-    : CoefficientFunction(1, true), val(aval) 
+    : CoefficientFunctionNoDerivative(1, true), val(aval) 
   { ; }
 
   
@@ -603,11 +601,6 @@ namespace ngfem
     code.body += Var(index).Assign(Var(val));
   }
 
-  shared_ptr<CoefficientFunction>
-  ConstantCoefficientFunctionC :: DiffJacobi (const CoefficientFunction * var, T_DJC & cache) const
-  {
-    return ZeroCF(var->Dimensions());
-  }
 
   
 
@@ -741,11 +734,6 @@ namespace ngfem
 
     template <typename MIR, typename T, ORDERING ORD>
       void T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const;
-    template <typename MIR, typename T, ORDERING ORD>
-      void T_Evaluate (const MIR & ir,
-                       FlatArray<BareSliceMatrix<T,ORD>> input,                       
-                       BareSliceMatrix<T,ORD> values) const
-    { T_Evaluate (ir, values); }
     
     virtual double EvaluateConst () const override { return val[0]; }
     double operator[] (int i) const { return val[i]; }
@@ -1393,17 +1381,17 @@ void FileCoefficientFunction :: StopWriteIps(const string & infofilename)
 #endif
 
 
-class UnitVectorCoefficientFunction : public T_CoefficientFunction<UnitVectorCoefficientFunction>
+class UnitVectorCoefficientFunction : public T_CoefficientFunction<UnitVectorCoefficientFunction, CoefficientFunctionNoDerivative>
 {
-  using BASE = T_CoefficientFunction<UnitVectorCoefficientFunction>;
+  using BASE = T_CoefficientFunction<UnitVectorCoefficientFunction, CoefficientFunctionNoDerivative>;
   int coord;
 public:
-  UnitVectorCoefficientFunction () : T_CoefficientFunction<UnitVectorCoefficientFunction>(1, false)
+  UnitVectorCoefficientFunction () : BASE(1, false)
   {
     SetDimension(1);
   }
   
-  UnitVectorCoefficientFunction (int dim, int _coord) : T_CoefficientFunction<UnitVectorCoefficientFunction>(dim, false), coord(_coord)
+  UnitVectorCoefficientFunction (int dim, int _coord) : BASE(dim, false), coord(_coord)
   {
     if (coord >= dim)
       throw Exception("In UnitVectorCoefficientFunction: coord >= dim");
@@ -1443,7 +1431,7 @@ public:
         }
   }
 
-  using T_CoefficientFunction<UnitVectorCoefficientFunction>::Evaluate;
+  using BASE::Evaluate;
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
   {
     if (Dimension() > 1)
@@ -1460,15 +1448,6 @@ public:
 
   template <typename MIR, typename T, ORDERING ORD>
   void T_Evaluate (const MIR & ir,
-                   BareSliceMatrix<T,ORD> values) const
-  {
-    values.AddSize(Dimension(), ir.Size()) = T(0.0);
-    values.Row(coord).Range(ir.Size()) = T(1.0);
-  }
-
-  template <typename MIR, typename T, ORDERING ORD>
-  void T_Evaluate (const MIR & ir,
-                   FlatArray<BareSliceMatrix<T,ORD>> input,                       
                    BareSliceMatrix<T,ORD> values) const
   {
     values.AddSize(Dimension(), ir.Size()) = T(0.0);
@@ -1494,13 +1473,7 @@ public:
       throw Exception ("cannot apply operator "+name+" for constant");
     return ZeroCF ( Array( { spacedim } ) );
   }
-  
-  shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var,
-                                        shared_ptr<CoefficientFunction> dir) const override
-  {
-    return ZeroCF(Dimensions());
-  }
-  
+    
 };
 
 
@@ -1508,16 +1481,16 @@ public:
 
 
 
-class OneVectorCoefficientFunction : public T_CoefficientFunction<OneVectorCoefficientFunction>
+class OneVectorCoefficientFunction : public T_CoefficientFunction<OneVectorCoefficientFunction, CoefficientFunctionNoDerivative>
 {
-  using BASE = T_CoefficientFunction<OneVectorCoefficientFunction>;
+  using BASE = T_CoefficientFunction<OneVectorCoefficientFunction, CoefficientFunctionNoDerivative>;
 public:
-  OneVectorCoefficientFunction () : T_CoefficientFunction<OneVectorCoefficientFunction>(1, false)
+  OneVectorCoefficientFunction () : BASE(1, false)
   {
     SetDimension(1);
   }
   
-  OneVectorCoefficientFunction (int dim) : T_CoefficientFunction<OneVectorCoefficientFunction>(dim, false)
+  OneVectorCoefficientFunction (int dim) : BASE(dim, false)
   { } 
 
 
@@ -1539,7 +1512,7 @@ public:
       code.body += Var(index,i, Dimensions()).Assign(string("1.0"));
   }
 
-  using T_CoefficientFunction<OneVectorCoefficientFunction>::Evaluate;
+  using BASE::Evaluate;
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
   {
     if (Dimension() > 1)
@@ -1555,14 +1528,6 @@ public:
 
   template <typename MIR, typename T, ORDERING ORD>
   void T_Evaluate (const MIR & ir,
-                   BareSliceMatrix<T,ORD> values) const
-  {
-    values.AddSize(Dimension(), ir.Size()) = T(1.0);
-  }
-
-  template <typename MIR, typename T, ORDERING ORD>
-  void T_Evaluate (const MIR & ir,
-                   FlatArray<BareSliceMatrix<T,ORD>> input,                       
                    BareSliceMatrix<T,ORD> values) const
   {
     values.AddSize(Dimension(), ir.Size()) = T(1.0);
@@ -1584,13 +1549,7 @@ public:
       throw Exception ("cannot apply operator "+name+" for constant");
     return ZeroCF ( Array( { spacedim } ) );
   }
-  
-  shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var,
-                                        shared_ptr<CoefficientFunction> dir) const override
-  {
-    return ZeroCF(Dimensions());
-  }
-  
+    
 };
 
 
@@ -1598,26 +1557,26 @@ public:
 
 
 
-class ZeroCoefficientFunction : public T_CoefficientFunction<ZeroCoefficientFunction>
+class ZeroCoefficientFunction : public T_CoefficientFunction<ZeroCoefficientFunction, CoefficientFunctionNoDerivative>
 {
-  using BASE = T_CoefficientFunction<ZeroCoefficientFunction>;
+  using BASE = T_CoefficientFunction<ZeroCoefficientFunction, CoefficientFunctionNoDerivative>;
 public:
-  ZeroCoefficientFunction () : T_CoefficientFunction<ZeroCoefficientFunction>(1, false)
+  ZeroCoefficientFunction () : BASE(1, false)
   {
     SetDimension(1);
   }
   
-  ZeroCoefficientFunction (int dim) : T_CoefficientFunction<ZeroCoefficientFunction>(1, false)
+  ZeroCoefficientFunction (int dim) : BASE(1, false)
   {
     SetDimensions(Array({dim}));
   }
 
-  ZeroCoefficientFunction (int dim1, int dim2) : T_CoefficientFunction<ZeroCoefficientFunction>(1, false)
+  ZeroCoefficientFunction (int dim1, int dim2) : BASE(1, false)
   {
     SetDimensions(Array( {dim1,dim2} ));
   }
 
-  ZeroCoefficientFunction (Array<int> dims) : T_CoefficientFunction<ZeroCoefficientFunction>(1, false)
+  ZeroCoefficientFunction (Array<int> dims) : BASE(1, false)
   {
     SetDimensions(std::move(dims));
   }
@@ -1667,7 +1626,7 @@ public:
       code.body += Var(index,i,this->Dimensions()).Assign(string("0.0"), false);      
   }
 
-  using T_CoefficientFunction<ZeroCoefficientFunction>::Evaluate;
+  using BASE::Evaluate;
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
   {
     if (Dimension() > 1)
@@ -1683,14 +1642,6 @@ public:
 
   template <typename MIR, typename T, ORDERING ORD>
   void T_Evaluate (const MIR & ir,
-                   BareSliceMatrix<T,ORD> values) const
-  {
-    values.AddSize(Dimension(), ir.Size()) = T(0.0);
-  }
-
-  template <typename MIR, typename T, ORDERING ORD>
-  void T_Evaluate (const MIR & ir,
-                   FlatArray<BareSliceMatrix<T,ORD>> input,                       
                    BareSliceMatrix<T,ORD> values) const
   {
     values.AddSize(Dimension(), ir.Size()) = T(0.0);
@@ -6331,13 +6282,6 @@ class NGS_DLL_HEADER FrozenCoefficientFunction
     cf -> Evaluate (ir, values);
   }
   
-  template <typename MIR, typename T, ORDERING ORD>
-    void T_Evaluate (const MIR & ir,
-                     FlatArray<BareSliceMatrix<T,ORD>> input,                       
-                     BareSliceMatrix<T,ORD> values) const
-  {
-    cf -> Evaluate (ir, values);
-  }
 
   shared_ptr<CoefficientFunction>
     Operator (const string & name) const override
@@ -6970,14 +6914,30 @@ class CompiledCoefficientFunction : public CompiledCoefficientFunctionInterface 
     }
   };
 
-class RealCF : public CoefficientFunctionNoDerivative
+  // evaluates complex cf, calls func(i, j, value)
+  template <typename MIR, typename FUNC>
+  void EvaluateComplexCF (const CoefficientFunction & cf, const MIR & ir, FUNC func)
   {
+    constexpr bool simd = is_same_v<MIR,SIMD_BaseMappedIntegrationRule>;
+    using TC = conditional_t<simd, SIMD<Complex>, Complex>;
+    size_t dim = cf.Dimension(), np = ir.Size();
+    STACK_ARRAY(TC, mem, dim*np);
+    FlatMatrix<TC, simd ? RowMajor : ColMajor> tmp(dim, np, &mem[0]);
+    cf.Evaluate (ir, tmp);
+    for (size_t i = 0; i < dim; i++)
+      for (size_t j = 0; j < np; j++)
+        func (i, j, tmp(i,j));
+  }
+
+class RealCF : public T_CoefficientFunction<RealCF>
+  {
+    using BASE = T_CoefficientFunction<RealCF>;
     shared_ptr<CoefficientFunction> cf;
     bool cf_is_complex;
   public:
     RealCF() = default;
     RealCF(shared_ptr<CoefficientFunction> _cf)
-      : CoefficientFunctionNoDerivative(_cf->Dimension(),false), cf(_cf)
+      : BASE(_cf->Dimension(),false), cf(_cf)
     {
       cf_is_complex = cf->IsComplex();
       SetDimensions(cf->Dimensions());
@@ -6985,7 +6945,7 @@ class RealCF : public CoefficientFunctionNoDerivative
 
     void DoArchive(Archive& ar) override
     {
-      CoefficientFunctionNoDerivative::DoArchive(ar);
+      BASE::DoArchive(ar);
       ar.Shallow(cf) & cf_is_complex;
     }
 
@@ -6997,79 +6957,72 @@ class RealCF : public CoefficientFunctionNoDerivative
     void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
     {
       for (int i = 0; i < Dimension(); i++)
-        code.body += Var(index,i,Dimensions()).Assign( string(Var(inputs[0],i,cf->Dimensions())) + ".real()");
+        code.body += Var(index,i,Dimensions()).Assign( string(Var(inputs[0],i,cf->Dimensions())) + (cf_is_complex ? ".real()" : ""));
     }
     
     virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
     { return Array<shared_ptr<CoefficientFunction>>({ cf }); }
-    
-      using CoefficientFunctionNoDerivative::Evaluate;
-    virtual double Evaluate(const BaseMappedIntegrationPoint& ip) const override
-    {
-      if(cf->IsComplex())
-        {
-          Vec<1,Complex> val;
-          cf->Evaluate(ip,val);
-          return val(0).real();
-        }
-      return cf->Evaluate(ip);
-    }
 
-    virtual void Evaluate(const BaseMappedIntegrationPoint& ip, FlatVector<> vec) const override
+    using BASE::Evaluate;
+    template <typename MIR, typename T, ORDERING ORD>
+    void T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const
     {
-      if(cf->IsComplex())
-        {
-          VectorMem<10,Complex> complex_vec(vec.Size());
-          cf->Evaluate(ip,complex_vec);
-          vec = Real(complex_vec);
-        }
+      if (!cf_is_complex)
+        cf->Evaluate (ir, values);
       else
-          cf->Evaluate(ip,vec);
+        // no complex AutoDiff: derivative of complex input is lost here
+        EvaluateComplexCF (*cf, ir, [&](size_t i, size_t j, auto v) { values(i,j) = T(v.real()); });
     }
 
-    virtual void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<double> values) const override
+    template <typename MIR, typename T, ORDERING ORD>
+    void T_Evaluate (const MIR & ir, FlatArray<BareSliceMatrix<T,ORD>> input,
+                     BareSliceMatrix<T,ORD> values) const
     {
       if (!cf_is_complex)
-        {
-          cf->Evaluate(ir, values);
-          return;
-        }
-
-      STACK_ARRAY(Complex, mem, ir.Size()*Dimension());
-      FlatMatrix<Complex> cvalues(ir.Size(), Dimension(), &mem[0]);
-      cf->Evaluate (ir, cvalues);
-      values.AddSize(ir.Size(), Dimension()) = Real(cvalues);
+        values.AddSize(Dimension(), ir.Size()) = input[0].AddSize(Dimension(), ir.Size());
+      else
+        T_Evaluate (ir, values);
     }
 
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
-                           BareSliceMatrix<SIMD<double>> values) const override
+    virtual void NonZeroPattern (const class ProxyUserData & ud,
+                                 FlatArray<FlatVector<AutoDiffDiff<1,NonZero>>> input,
+                                 FlatVector<AutoDiffDiff<1,NonZero>> values) const override
     {
-      if (!cf_is_complex)
-        {
-          cf->Evaluate(ir, values);
-          return;
-        }
+      values = input[0];
+    }
 
-      STACK_ARRAY(SIMD<Complex>, mem, ir.Size()*Dimension());
-      FlatMatrix<SIMD<Complex>> cvalues(Dimension(), ir.Size(), &mem[0]);
-      cf->Evaluate (ir, cvalues);
-      values.AddSize(Dimension(), ir.Size()) = Real(cvalues);
+    shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var,
+                                          shared_ptr<CoefficientFunction> dir) const override
+    {
+      if (this == var) return dir;
+      auto dcf = cf->Diff(var, dir);
+      if (!dcf->IsComplex()) return dcf;
+      return make_shared<RealCF>(dcf);
+    }
+
+    shared_ptr<CoefficientFunction>
+    DiffJacobi (const CoefficientFunction * var, T_DJC & cache) const override
+    {
+      if (this == var || cf_is_complex)
+        return BASE::DiffJacobi(var, cache);
+      return cf->DiffJacobi(var, cache);
     }
   };
 
-  class ImagCF : public CoefficientFunctionNoDerivative
+  class ImagCF : public T_CoefficientFunction<ImagCF>
   {
+    using BASE = T_CoefficientFunction<ImagCF>;
     shared_ptr<CoefficientFunction> cf;
   public:
     ImagCF() = default;
-    ImagCF(shared_ptr<CoefficientFunction> _cf) : CoefficientFunctionNoDerivative(_cf->Dimension(),false), cf(_cf)
+    ImagCF(shared_ptr<CoefficientFunction> _cf) : BASE(_cf->Dimension(),false), cf(_cf)
     {
       SetDimensions(cf->Dimensions());
     }
 
     void DoArchive(Archive& ar) override
     {
-      CoefficientFunctionNoDerivative::DoArchive(ar);
+      BASE::DoArchive(ar);
       ar.Shallow(cf);
     }
 
@@ -7081,64 +7034,64 @@ class RealCF : public CoefficientFunctionNoDerivative
     virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
     { return Array<shared_ptr<CoefficientFunction>>({ cf }); }
     
-    using CoefficientFunctionNoDerivative::Evaluate;
-    virtual double Evaluate(const BaseMappedIntegrationPoint& ip) const override
-    {
-      if(!cf->IsComplex())
-          throw Exception("real cf has no imag part!");
-
-      VectorMem<10,Complex> val(cf->Dimension());
-      cf->Evaluate(ip,val);
-      return val(0).imag();
-    }
-
-    virtual void Evaluate(const BaseMappedIntegrationPoint& ip, FlatVector<> vec) const override
-    {
-      if(cf->IsComplex())
-        {
-          VectorMem<10,Complex> complex_vec(vec.Size());
-          cf->Evaluate(ip,complex_vec);
-          vec = Imag(complex_vec);
-        }
-      else
-          cf->Evaluate(ip,vec);
-    }
-
-    virtual void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<double> values) const override
-    {
-      if (cf->IsComplex())
-        {
-          STACK_ARRAY(Complex, mem, ir.Size()*Dimension());
-          FlatMatrix<Complex> cvalues(ir.Size(), Dimension(), &mem[0]);
-          cf->Evaluate (ir, cvalues);
-          values.AddSize(ir.Size(),Dimension()) = Imag(cvalues);
-        }
-      else
-        values.AddSize(ir.Size(),Dimension()) = 0.;
-    }
-
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
-                           BareSliceMatrix<SIMD<double>> values) const override
+    using BASE::Evaluate;
+    template <typename MIR, typename T, ORDERING ORD>
+    void T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const
     {
       if (!cf->IsComplex())
-          throw Exception("real cf has no imag part!");
+        values.AddSize(Dimension(), ir.Size()) = T(0.0);
+      else
+        EvaluateComplexCF (*cf, ir, [&](size_t i, size_t j, auto v) { values(i,j) = T(v.imag()); });
+    }
 
-      STACK_ARRAY(SIMD<Complex>, mem, ir.Size()*Dimension());
-      FlatMatrix<SIMD<Complex>> cvalues(Dimension(), ir.Size(), &mem[0]);
-      cf->Evaluate (ir, cvalues);
-      values.AddSize(Dimension(), ir.Size()) = Imag(cvalues);
+    template <typename MIR, typename T, ORDERING ORD>
+    void T_Evaluate (const MIR & ir, FlatArray<BareSliceMatrix<T,ORD>> input,
+                     BareSliceMatrix<T,ORD> values) const
+    {
+      T_Evaluate (ir, values);
+    }
+
+    virtual void NonZeroPattern (const class ProxyUserData & ud,
+                                 FlatArray<FlatVector<AutoDiffDiff<1,NonZero>>> input,
+                                 FlatVector<AutoDiffDiff<1,NonZero>> values) const override
+    {
+      if (cf->IsComplex())
+        values = input[0];
+      else
+        values = AutoDiffDiff<1,NonZero>(false);
+    }
+
+    shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var,
+                                          shared_ptr<CoefficientFunction> dir) const override
+    {
+      if (this == var) return dir;
+      auto dcf = cf->Diff(var, dir);
+      if (!dcf->IsComplex()) return ZeroCF(Dimensions());
+      return make_shared<ImagCF>(dcf);
+    }
+
+    shared_ptr<CoefficientFunction>
+    DiffJacobi (const CoefficientFunction * var, T_DJC & cache) const override
+    {
+      if (this == var || cf->IsComplex())
+        return BASE::DiffJacobi(var, cache);
+      Array<int> resultdims;
+      resultdims += Dimensions();
+      resultdims += var->Dimensions();
+      return ZeroCF(resultdims);
     }
   };
 
 
 
-class RealImagCF : public CoefficientFunctionNoDerivative
+class RealImagCF : public T_CoefficientFunction<RealImagCF>
   {
+    using BASE = T_CoefficientFunction<RealImagCF>;
     shared_ptr<CoefficientFunction> cf;
   public:
     RealImagCF() = default;
     RealImagCF(shared_ptr<CoefficientFunction> _cf)
-      : CoefficientFunctionNoDerivative(2*_cf->Dimension(),false), cf(_cf)
+      : BASE(2*_cf->Dimension(),false), cf(_cf)
     {
       if(!cf->IsComplex())
         throw Exception("RealImagCF only defined for complex CF");
@@ -7149,7 +7102,7 @@ class RealImagCF : public CoefficientFunctionNoDerivative
 
     void DoArchive(Archive& ar) override
     {
-      CoefficientFunctionNoDerivative::DoArchive(ar);
+      BASE::DoArchive(ar);
       ar.Shallow(cf);
     }
 
@@ -7170,54 +7123,42 @@ class RealImagCF : public CoefficientFunctionNoDerivative
     virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
     { return Array<shared_ptr<CoefficientFunction>>({ cf }); }
     
-    using CoefficientFunctionNoDerivative::Evaluate;
-
-    virtual double Evaluate(const BaseMappedIntegrationPoint& ip) const override
+    using BASE::Evaluate;
+    template <typename MIR, typename T, ORDERING ORD>
+    void T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const
     {
-      throw Exception("double eval doesn't make sense for RealImagCF");
-    }
-    
-    virtual void Evaluate(const BaseMappedIntegrationPoint& ip, FlatVector<> vec) const override
-    {
-      if(cf->IsComplex()) // for now: musst be complex anyway
-        {
-          /*
-          VectorMem<10,Complex> complex_vec(vec.Size());
-          cf->Evaluate(ip,complex_vec);
-          vec = Real(complex_vec);
-          */
-          FlatVector<Complex> complex_vec(vec.Size()/2, (Complex*)(void*)vec.Data());
-          cf->Evaluate(ip, complex_vec);
-        }
-      else
-        throw Exception("realimag only defined for complex input");
-        // cf->Evaluate(ip,vec);
+      EvaluateComplexCF (*cf, ir, [&](size_t i, size_t j, auto v)
+                         {
+                           values(2*i,j) = T(v.real());
+                           values(2*i+1,j) = T(v.imag());
+                         });
     }
 
-    virtual void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<double> values) const override
+    template <typename MIR, typename T, ORDERING ORD>
+    void T_Evaluate (const MIR & ir, FlatArray<BareSliceMatrix<T,ORD>> input,
+                     BareSliceMatrix<T,ORD> values) const
     {
-      BareSliceMatrix<Complex,RowMajor> cvalues(ir.Size(), cf->Dimension(), values.Dist()/2, (Complex*)(void*)values.Data());
-      cf -> Evaluate (ir, cvalues);
+      T_Evaluate (ir, values);
     }
 
-    /*
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
-                           BareSliceMatrix<SIMD<double>> values) const override
+    virtual void NonZeroPattern (const class ProxyUserData & ud,
+                                 FlatArray<FlatVector<AutoDiffDiff<1,NonZero>>> input,
+                                 FlatVector<AutoDiffDiff<1,NonZero>> values) const override
     {
-      // can use memory, but needs shuffling
-      
-      if (!cf_is_complex)
-        {
-          cf->Evaluate(ir, values);
-          return;
-        }
-
-      STACK_ARRAY(SIMD<Complex>, mem, ir.Size()*Dimension());
-      FlatMatrix<SIMD<Complex>> cvalues(Dimension(), ir.Size(), &mem[0]);
-      cf->Evaluate (ir, cvalues);
-      values.AddSize(Dimension(), ir.Size()) = Real(cvalues);
+      for (size_t i = 0; i < cf->Dimension(); i++)
+        values(2*i) = values(2*i+1) = input[0](i);
     }
-    */
+
+    shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var,
+                                          shared_ptr<CoefficientFunction> dir) const override
+    {
+      if (this == var) return dir;
+      auto dcf = cf->Diff(var, dir);
+      if (dcf->IsZeroCF()) return ZeroCF(Dimensions());
+      if (!dcf->IsComplex())
+        throw Exception("RealImagCF::Diff: real derivative of complex input not supported");
+      return make_shared<RealImagCF>(dcf);
+    }
   };
 
 
