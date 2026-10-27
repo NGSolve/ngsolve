@@ -488,9 +488,20 @@ namespace ngbla
       SetVector (scal, *this);
       return *this;
     }
-    
+
+    /// set vector to constant element
+    template <typename T2>
+    requires (std::is_same_v<T2, std::remove_cv_t<T>> && !std::is_same_v<T2,TSCAL>)
+    INLINE auto & operator= (const T2 & val)
+    {
+      for (size_t i = 0; i < Size(); i++)
+        Data()[i*Dist()] = val;
+      return *this;
+    }
+
     template <int D, typename TSCAL2>
-    INLINE auto & operator= (const Vec<D,TSCAL2> & v) 
+    requires (!std::is_same_v<Vec<D,TSCAL2>, std::remove_cv_t<T>>)
+    INLINE auto & operator= (const Vec<D,TSCAL2> & v)
     {
       NETGEN_CHECK_RANGE(D,0,Size()+1);
       for (int i = 0; i < D; i++)
@@ -687,6 +698,13 @@ namespace ngbla
       return *this;
     }
 
+    /// set vector to constant element
+    Vector & operator= (const T & val) requires (!std::is_same_v<T,TSCAL>)
+    {
+      FlatVector<T>::operator= (val);
+      return *this;
+    }
+
     /// set vector size
     void SetSize(size_t as)
     {
@@ -768,6 +786,13 @@ namespace ngbla
     INLINE VectorMem & operator= (TSCAL scal)
     {
       FlatVector<T>::operator= (scal);
+      return *this;
+    }
+
+    /// set vector to constant element
+    INLINE VectorMem & operator= (const T & val) requires (!std::is_same_v<T,TSCAL>)
+    {
+      FlatVector<T>::operator= (val);
       return *this;
     }
 
