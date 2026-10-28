@@ -509,7 +509,8 @@ namespace ngsbem
     target.SH().Coefs()=0.0;
 
     size_t entry_size = is_dynamic ? sizeof(complex_type)*dim : sizeof(entry_type);
-    LocalHeap lh(( 32*( (os+ot+1)*(os+ot+1) + (os+1 + ot+1) ) + 2*entry_size*(os+ot+3)+ 8*4*(os+ot+1) + 500));
+    TempHeap tlh(( 32*( (os+ot+1)*(os+ot+1) + (os+1 + ot+1) ) + 2*entry_size*(os+ot+3)+ 8*4*(os+ot+1) + 500));
+    LocalHeap & lh = tlh;
 
     using trafo_type =
         std::conditional_t<
