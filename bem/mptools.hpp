@@ -66,20 +66,19 @@ namespace ngsbem
     T * Get (int level, size_t n)
     {
       if (n == 0) return nullptr;
+      if (level < 0 || level >= int(levels.size())) throw Exception("CoefPool: level out of range");
       size_t bytes = (n*sizeof(T)+63) & ~size_t(63);
       auto & l = *levels[level];
       std::byte * row;
       {
         lock_guard<mutex> guard(l.m);
-        if (l.rowsize == 0)
-          {
-            l.rowsize = bytes;
-            l.rows_per_chunk = max(size_t(16), (size_t(8)<<20) / bytes);
-            l.used = l.rows_per_chunk;
-          }
+        if (l.rowsize == 0) l.rowsize = bytes;
         if (bytes != l.rowsize) throw Exception("CoefPool: different row sizes on one level");
         if (l.used == l.rows_per_chunk)
           {
+            // chunks grow geometrically from 16 rows up to about 8 MB
+            size_t maxrows = max(size_t(16), (size_t(8)<<20) / bytes);
+            l.rows_per_chunk = l.rows_per_chunk ? min(2*l.rows_per_chunk, maxrows) : 16;
             l.chunks.Append (unique_ptr<std::byte[]>(new std::byte[l.rows_per_chunk*bytes+64]));
             l.used = 0;
           }
