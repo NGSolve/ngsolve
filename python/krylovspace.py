@@ -1224,7 +1224,7 @@ restart : int = None
                 q -= h[i] * Q[i]
             h[k+1] = norm(q)
             # lucky breakdown: q lies in the Krylov space
-            if abs(h[k+1]) <= 1e-12 * q_norm:
+            if h[k+1].real == 0:
                 return h, None
             q *= 1./h[k+1].real
             return h, q
