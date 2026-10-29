@@ -279,6 +279,16 @@ if (USE_LAPACK)
     list(APPEND NGSOLVE_COMPILE_DEFINITIONS LAPACK)
 endif (USE_LAPACK)
 
+# linked against the ngsolve_openblas python package -> import it at runtime
+set(USE_NGSOLVE_OPENBLAS OFF)
+if (USE_LAPACK AND NOT USE_MKL)
+    foreach(lib ${LAPACK_LIBRARIES})
+        if(lib MATCHES "[/\\\\]ngsolve_openblas[/\\\\]")
+            set(USE_NGSOLVE_OPENBLAS ON)
+        endif()
+    endforeach()
+endif()
+
 #######################################################################
 set(MAX_SYS_DIM "3" CACHE STRING "Maximum compile-time size of SparseMatrix entries.")
 if (NOT MAX_SYS_DIM)
