@@ -36,7 +36,7 @@ namespace ngsbem
 
     Matrix<real_type> legfunc(order+1, order+1);
     real_type costheta = cos(theta);
-    NormalizedLegendreFunctions (order, order, costheta, legfunc);
+    NormalizedLegendreFunctions::EvalAll (order, costheta, legfunc);
     Vector<complex_type> exp_imphi(order+1);
     complex_type exp_iphi(cos(phi), sin(phi));
     complex_type prod = 1.0;
@@ -51,9 +51,9 @@ namespace ngsbem
     for (int n = 0; n <= order; n++)
       {
         for (int m = -n; m < 0; m++, ii++)
-          sum += conj(exp_imphi(-m)) * legfunc(-m, n) * coefs(ii);
+          sum += conj(exp_imphi(-m)) * legfunc(n, -m) * coefs(ii);
         for (int m = 0; m <= n; m++, ii++)
-          sum += exp_imphi(m) * legfunc(m, n) * coefs(ii);
+          sum += exp_imphi(m) * legfunc(n, m) * coefs(ii);
       }
 
     sum /= sqrt(4*M_PI);
@@ -70,7 +70,7 @@ namespace ngsbem
       
     Matrix<real_type> legfunc(order+1, order+1);
     real_type costheta = cos(theta);
-    NormalizedLegendreFunctions (order, order, costheta, legfunc);
+    NormalizedLegendreFunctions::EvalAll (order, costheta, legfunc);
     Vector<complex_type> exp_imphi(order+1);
     complex_type exp_iphi(cos(phi), sin(phi));
     complex_type prod = 1.0;
@@ -86,9 +86,9 @@ namespace ngsbem
     // for (int n = 0; n <= order; n++)
     {
       for (int m = -n; m < 0; m++, ii++)
-        sum += conj(exp_imphi(-m)) * legfunc(-m, n) * coefsn(ii);
+        sum += conj(exp_imphi(-m)) * legfunc(n, -m) * coefsn(ii);
       for (int m = 0; m <= n; m++, ii++)
-        sum += exp_imphi(m) * legfunc(m, n) * coefsn(ii);
+        sum += exp_imphi(m) * legfunc(n, m) * coefsn(ii);
     }
 
     sum /= sqrt(4*M_PI);
@@ -108,7 +108,7 @@ namespace ngsbem
     ArrayMem<real_type,1600> mem(sqr(order+1));
     FlatMatrix<real_type> legfunc(order+1, order+1, mem.Data());
     real_type costheta = cos(theta);
-    NormalizedLegendreFunctions (order, order, costheta, legfunc);
+    NormalizedLegendreFunctions::EvalAll (order, costheta, legfunc);
 
     VectorMem<40,complex_type> exp_imphi(order+1);
     complex_type exp_iphi(cos(phi), sin(phi));
@@ -123,11 +123,11 @@ namespace ngsbem
       {
         auto coefsn = CoefsN(n);
         
-        entry_type sum1{exp_imphi(0)*legfunc(0,n)*coefsn(n)}, sum2{0.0};
+        entry_type sum1{exp_imphi(0)*legfunc(n,0)*coefsn(n)}, sum2{0.0};
         for (int m = 1; m <= n; m++)
           {
-            sum1 += exp_imphi(m) * legfunc(m, n) * coefsn(n+m);
-            sum2 += conj(exp_imphi(m)) * legfunc(m, n) * coefsn(n-m);
+            sum1 += exp_imphi(m) * legfunc(n, m) * coefsn(n+m);
+            sum2 += conj(exp_imphi(m)) * legfunc(n, m) * coefsn(n-m);
           }
         
         vals(n) = sum1+sum2;        
@@ -144,7 +144,7 @@ namespace ngsbem
     HeapReset hr(lh);
     FlatMatrix<real_type> legfunc(order+1, order+1, lh);
     real_type costheta = cos(theta);
-    NormalizedLegendreFunctions (order, order, costheta, legfunc);
+    NormalizedLegendreFunctions::EvalAll (order, costheta, legfunc);
     
     FlatVector<complex_type> exp_imphi(order+1, lh);
     complex_type exp_iphi(cos(phi), sin(phi));
@@ -160,11 +160,11 @@ namespace ngsbem
     for (int n = 0; n <= order; n++)
       {
         size_t base = ii+n;
-        shapes(base) = exp_imphi(0)*legfunc(0,n);
+        shapes(base) = exp_imphi(0)*legfunc(n,0);
         for (ptrdiff_t m = 1; m <= n; m++)
           {
-            shapes(base-m) = conj(exp_imphi(m))*legfunc(m,n);
-            shapes(base+m) = exp_imphi(m)*legfunc(m,n);
+            shapes(base-m) = conj(exp_imphi(m))*legfunc(n,m);
+            shapes(base+m) = exp_imphi(m)*legfunc(n,m);
           }
         ii = base+n+1;
       }
@@ -272,11 +272,11 @@ namespace ngsbem
     double c = cos(alpha);
 
     FlatMatrix<> normalized_leg_func(order+2, order+2, lh);
-    NormalizedLegendreFunctions(order+1, order+1, c, normalized_leg_func);
+    NormalizedLegendreFunctions::EvalAll(order+1, c, normalized_leg_func);
 
     if (alpha < 0)
       for (int i = 1; i <= order+1; i+=2)
-        normalized_leg_func.Row(i) *= -1;
+        normalized_leg_func.Col(i) *= -1;
       
     // cout << "leg = " << endl << normalized_leg_func << endl;
 
@@ -297,11 +297,11 @@ namespace ngsbem
 
         // Step 2
         // H(0,m)
-        trafo.Col(n) = 1.0/sqrt(2*n+1) * normalized_leg_func.Col(n).Range(n+1);
+        trafo.Col(n) = 1.0/sqrt(2*n+1) * normalized_leg_func.Row(n).Range(n+1);
         for (int m = 1; m <= n; m += 2) trafo(m,n) *= -1;
         // Step 3
         // H(1,m)
-        FlatVector<double> tmp = 1.0/sqrt(2*n+3) * normalized_leg_func.Col(n+1).Range(n+2) | lh;
+        FlatVector<double> tmp = 1.0/sqrt(2*n+3) * normalized_leg_func.Row(n+1).Range(n+2) | lh;
         for (int m = 1; m < tmp.Size(); m += 2) tmp(m) *= -1;
         for (int m = 1; m <= n; m++)
           trafo.Col(n+1)(m) = 1/sh.CalcBmn(0,n+1) * (  sh.CalcBmn(-m-1, n+1)*(1-c)/2 * tmp(m+1)

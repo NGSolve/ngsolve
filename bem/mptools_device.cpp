@@ -558,22 +558,22 @@ namespace ngsbem
       if (!std::isfinite(theta))
         throw Exception("fmm device RotateY: theta is not finite");
       RotationHost rot;
-      // leg(m,n) = normalized P_n^m(cos theta)
+      // leg(n,m) = normalized P_n^m(cos theta)
       double s = sin(theta);
       double c = cos(theta);
       Matrix<> leg(order+2, order+2);
-      NormalizedLegendreFunctions (order+1, order+1, c, leg);
+      NormalizedLegendreFunctions::EvalAll (order+1, c, leg);
       if (theta < 0)
         for (int m = 1; m <= order+1; m += 2)
-          leg.Row(m) *= -1;
+          leg.Col(m) *= -1;
       rot.scal = { s, (1-c)/2, (1+c)/2 };
 
-      // the kernel reads legendre[n*(order+2)+m]: the transpose of leg
+      // the kernel reads legendre[n*(order+2)+m]
       int width = order+2;
       rot.legendre.SetSize (size_t(width)*width);
       for (int n = 0; n < width; n++)
         for (int m = 0; m < width; m++)
-          rot.legendre[size_t(n)*width+m] = leg(m,n);
+          rot.legendre[size_t(n)*width+m] = leg(n,m);
       return rot;
     }
 

@@ -1541,92 +1541,133 @@ namespace ngfem
     }
     
   private:
-    // blocks of W columns, y(n,m) = values(m,n), needs nmax < matA.Height()
+    template <typename T> struct SIMDElem { using type = double; };
+    template <typename E, int N> struct SIMDElem<SIMD<E,N>> { using type = E; };
+
+    // blocks of W columns, y(n,m), needs nmax < matA.Height()
+    // scalar x: one SIMD<double,W> across the columns
+    // SIMD x (over points): W independent T registers, one per column
     template <typename T, typename TY>
     static void EvalSIMD (size_t mmax, size_t nmax, T x, TY y)
     {
-      constexpr int W = 8;   // fastest on M4 (W=2,4,8 tested)
-      double u = -sqrt((1-x)*(1+x));
+      constexpr bool scalar = std::is_same_v<T,double> || std::is_same_v<T,float>;
+      using TS = std::conditional_t<scalar, double, T>;
+      // fastest on M4: W=8 for scalar, 128 bytes in flight for SIMD x
+      constexpr int W = scalar ? 8 : std::clamp(int(128/sizeof(T)), 1, 8);
+      static_assert(W <= 8, "matA width padded to 8");
+      using TV = std::conditional_t<scalar, SIMD<double,W>, std::array<T,W>>;
+      // coefficient type: double, or float for SIMD<float> x
+      using TE = typename SIMDElem<T>::type;
+
+      TS xd = x;
+      TS u = -sqrt((1-xd)*(1+xd));
       size_t mtop = std::min(mmax, nmax);
       auto scale = sqrt2np1.Data();
-      double xd = x;
-      double dm = 1;   // running unscaled diagonal y(m,m)
+      TS dm = 1.0;   // running unscaled diagonal y(m,m)
 
       for (size_t m0 = 0; m0 <= mtop; m0 += W)
         {
           size_t nl = std::min<size_t>(W, mtop+1-m0);
-          double diag[W];
+          TS diag[W];
           for (int k = 0; k < W; k++)
             {
               size_t m = m0+k;
               if (m > 0 && m <= mtop)
-                dm = dm*u*diagfac(m);
-              diag[k] = (m <= mtop) ? dm : 0.0;
+                dm = dm*u*TE(diagfac(m));
+              diag[k] = (m <= mtop) ? dm : TS(0.0);
             }
-          double sub0 = xd*diag[0]*scale[m0];
+          TS sub0 = xd*diag[0]*TE(scale[m0]);
           // seed rows m0, m0+1: lane k gets diag in row m0+k%2, see Calc
-          double s0[W], s1[W];
+          TS s0[W], s1[W];
           for (int k = 0; k < W; k++)
             {
-              s0[k] = (k % 2) ? 0.0 : diag[k];
-              s1[k] = (k % 2) ? diag[k] : 0.0;
+              s0[k] = (k % 2) ? TS(0.0) : diag[k];
+              s1[k] = (k % 2) ? diag[k] : TS(0.0);
             }
           s1[0] = sub0;
-          SIMD<double,W> v2(&s0[0]), v1(&s1[0]);
+          TV v2, v1;
+          if constexpr (scalar)
+            {
+              v2 = TV(&s0[0]);
+              v1 = TV(&s1[0]);
+            }
+          else
+            for (int k = 0; k < W; k++)
+              {
+                v2[k] = s0[k];
+                v1[k] = s1[k];
+              }
 
-          y(m0,m0) = scale[m0]*diag[0];
+          y(m0,m0) = TE(scale[m0])*diag[0];
           if (m0+1 <= nmax)
             {
-              y(m0+1,m0) = scale[m0+1]*sub0;
-              if (nl > 1) y(m0+1,m0+1) = scale[m0+1]*diag[1];
+              y(m0+1,m0) = TE(scale[m0+1])*sub0;
+              if (nl > 1) y(m0+1,m0+1) = TE(scale[m0+1])*diag[1];
             }
 
           for (size_t n = m0+2; n <= nmax; n++)
             {
-              SIMD<double,W> a(&matA(n,m0)), b(&matB(n,m0));
-              SIMD<double,W> v = FMA(a * xd, v1, b * v2);
-              v2 = v1;
-              v1 = v;
-              SIMD<double,W> s = scale[n] * v;
+              if constexpr (scalar)
+                {
+                  SIMD<double,W> a(&matA(n,m0)), b(&matB(n,m0));
+                  SIMD<double,W> v = FMA(a * xd, v1, b * v2);
+                  v2 = v1;
+                  v1 = v;
+                }
+              else
+                {
+                  const double * a = &matA(n,m0);
+                  const double * b = &matB(n,m0);
+                  for (int k = 0; k < W; k++)
+                    {
+                      T v = FMA(TE(a[k])*x, v1[k], TE(b[k])*v2[k]);
+                      v2[k] = v1[k];
+                      v1[k] = v;
+                    }
+                }
               // lanes above the diagonal carry seeds, not stored
               size_t nst = std::min<size_t>(nl, n-m0+1);
-              if constexpr (TY::Ordering() == RowMajor && std::is_same_v<T,double>)
+              if constexpr (scalar)
                 {
-                  // contiguous row: explicit SIMD store, the loop below becomes memcpy
-                  if (nst == W)
-                    s.Store(&y(n,m0));
+                  SIMD<double,W> s = scale[n] * v1;
+                  if constexpr (TY::Ordering() == RowMajor && std::is_same_v<T,double>)
+                    {
+                      // contiguous row: explicit SIMD store, the loop below becomes memcpy
+                      if (nst == W)
+                        s.Store(&y(n,m0));
+                      else
+                        s.Store(&y(n,m0), SIMD<mask64,W>(int64_t(nst)));
+                    }
+                  else if (nst == W)
+                    for (int k = 0; k < W; k++)
+                      y(n,m0+k) = s[k];
                   else
-                    s.Store(&y(n,m0), SIMD<mask64,W>(int64_t(nst)));
+                    for (size_t k = 0; k < nst; k++)
+                      y(n,m0+k) = s[k];
                 }
               else if (nst == W)
                 for (int k = 0; k < W; k++)
-                  y(n,m0+k) = s[k];
+                  y(n,m0+k) = TE(scale[n])*v1[k];
               else
                 for (size_t k = 0; k < nst; k++)
-                  y(n,m0+k) = s[k];
+                  y(n,m0+k) = TE(scale[n])*v1[k];
             }
         }
     }
 
   public:
-    // values(m,n), only entries m <= n are set
+    // values(n,m) for 0 <= m <= n <= nmax, entries m > n are not touched
+    // row-major values give contiguous stores
     template <typename T, typename S>
-    NormalizedLegendreFunctions (size_t mmax, size_t nmax, T x, S && values)
+    static void EvalAll (size_t nmax, T x, S && values)
     {
-      /*
-      values.Rows(mmax+1).Cols(nmax+1) = 0.0;
-      for (size_t i = 0; i <= mmax; i++)
-        NormalizedLegendreFunctions(i).Eval(nmax-i, x, values.Row(i).Range(i,nmax+1));
-      */
-
-      // better stability for m > 1000
-
-      auto y = Trans(values);
+      size_t mmax = nmax;
+      auto y = values.View();
 
       T u = -sqrt((1-x)*(1+x));
       y(0,0)=1;
 
-      if constexpr (std::is_same_v<T,double> || std::is_same_v<T,float>)
+      if constexpr (std::is_same_v<T,double> || std::is_same_v<T,float> || requires { T::Size(); })
         if (nmax+1 <= matA.Height())
           {
             EvalSIMD (mmax, nmax, x, y);
