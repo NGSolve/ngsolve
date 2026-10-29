@@ -215,6 +215,33 @@ namespace ngla
     params[26] = 1; // check input matrix
     params[59] = 0; // 0..incore, 1..depending on MKL_PARDISO_MAX_CORE_SIZE, 2..ooc
 
+    const Flags & flags = a->GetInverseFlags();
+    if (flags.StringFlagDefined("ordering"))
+      {
+        string ordering = flags.GetStringFlag("ordering");
+        if (ordering == "minimum_degree") params[1] = 0;
+        else if (ordering == "metis") params[1] = 2;
+        else if (ordering == "parallel_metis") params[1] = 3;
+        else throw Exception("PardisoInverse: unknown ordering '" + ordering
+                             + "', use minimum_degree, metis or parallel_metis");
+      }
+    if (flags.NumFlagDefined("refinement"))
+      params[7] = int(flags.GetNumFlag("refinement", 16));
+    if (flags.NumFlagDefined("msglevel"))
+      print = flags.GetNumFlag("msglevel", 0) != 0;
+    for (int i = 0; i < flags.GetNNumFlags(); i++)
+      {
+        string name;
+        double val = flags.GetNumFlag(i, name);
+        if (name.size() > 5 && name.substr(0, 5) == "iparm")
+          {
+            int nr = stoi(name.substr(5));
+            if (nr < 0 || nr >= 64)
+              throw Exception("PardisoInverse: " + name + " out of range");
+            params[nr] = int(val);
+          }
+      }
+
     for (int i = 0; i < 128; i++) pt[i] = 0;
 
 #ifdef MKL_PARDISO
