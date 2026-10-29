@@ -29,7 +29,7 @@ target_link_libraries(ngsbem ${LAPACK_CMAKE_LINK_INTERFACE} "$<BUILD_INTERFACE:n
 install( TARGETS ngsbem ${ngs_install_dir} )
 
 install( FILES
-        mptools.hpp mptools_device.hpp fmminterface.hpp potentialtools.hpp mp_coefficient.hpp
+        mptools.hpp besseljs3d.hpp mptools_device.hpp fmminterface.hpp potentialtools.hpp mp_coefficient.hpp
         kernels.hpp integralkernel.hpp bem_diffops.hpp diffopwithfactor.hpp
         intrules_SauterSchwab.hpp analytic_integrals.hpp
         DESTINATION ${NGSOLVE_INSTALL_DIR_INCLUDE}

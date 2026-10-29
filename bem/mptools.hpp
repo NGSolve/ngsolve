@@ -11,6 +11,7 @@
 #include <coefficient.hpp>
 #include <recursive_pol.hpp>
 #include "fmminterface.hpp"
+#include "besseljs3d.hpp"
 
 
 namespace ngsbem
@@ -413,11 +414,7 @@ namespace ngsbem
   };
 
 
-  // https://fortran-lang.discourse.group/t/looking-for-spherical-bessel-and-hankel-functions-of-first-and-second-kind-and-arbitrary-order/2308/2
-  template <typename T>
-  NGS_DLL_HEADER  
-  void besseljs3d (int nterms, T z, double scale,
-                   SliceVector<T> fjs, SliceVector<T> fjder = {0, 1, nullptr});
+  // besseljs3d: bem/besseljs3d.hpp
 
   
   /*

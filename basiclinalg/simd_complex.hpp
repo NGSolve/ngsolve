@@ -73,7 +73,7 @@ namespace ngcore
     void LoadFast (Complex * p)
     {
       SIMD<double,N> c1((double*)p);
-      SIMD<double,N> c2((double*)(p+SIMD<double>::Size()/2));
+      SIMD<double,N> c2((double*)(p+SIMD<double,N>::Size()/2));
       std::tie(re,im) = Unpack(c1,c2);
     }
 
@@ -225,8 +225,8 @@ namespace ngcore
   template <int N>
   INLINE SIMD<Complex, N> Inv (SIMD<Complex, N> a)
   {
-    SIMD<double> n2 = a.real()*a.real()+a.imag()*a.imag();
-    return SIMD<Complex, N> (a.real()/n2, -a.imag()/n2);
+    SIMD<double,N> inv = 1.0 / (a.real()*a.real()+a.imag()*a.imag());
+    return SIMD<Complex, N> (a.real()*inv, -a.imag()*inv);
   }
   
   template <int N> INLINE auto operator/ (double a, SIMD<Complex, N> b)
