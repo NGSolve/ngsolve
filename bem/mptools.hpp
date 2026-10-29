@@ -1484,6 +1484,19 @@ namespace ngsbem
         return sum;
       }
 
+      // the number of sources EvaluateMP sums directly for the target p
+      size_t CountDirect (Vec<3> p) const
+      {
+        if (charges.Size() || dipoles.Size() || chargedipoles.Size() || !childs[0])
+          return total_sources;
+        if (L2Norm(p-center) > fmm_params.eval_separation*r)
+          return 0;
+        size_t sum = 0;
+        for (auto & child : childs)
+          sum += child->CountDirect(p);
+        return sum;
+      }
+
       // device_order as EvaluateMP
       entry_type EvaluateMPDeriv(Vec<3> p, Vec<3> d, int device_order = -1) const
       {
@@ -2077,7 +2090,8 @@ namespace ngsbem
         Vec<3> dist = center-singnode.center;
 
         // if (L2Norm(dist)*mp.Kappa() > (mp.Order()+singnode.mp.Order()))
-        if (L2Norm(dist) > params.separation*(r + singnode.r))
+        // the larger box sets the distance: a big box next to a small one converges like two big ones
+        if (L2Norm(dist) > 2*params.separation*max(r, singnode.r))
           {
             if (singnode.mp.Order() > 2 * mp.Order() &&
                 singnode.childs[0] &&
@@ -2535,8 +2549,8 @@ namespace ngsbem
             {
               if (a.ExpansionShape() < b.ExpansionShape()) return true;
               if (b.ExpansionShape() < a.ExpansionShape()) return false;
-              if (a.len < (1-1e-8) * b.len) return true;
-              if (a.len > (1+1e-8) * b.len) return false;
+              if (a.len < (1-1e-12) * b.len) return true;
+              if (a.len > (1+1e-12) * b.len) return false;
               return a.theta < b.theta;
             });
           }
@@ -2548,10 +2562,11 @@ namespace ngsbem
           Array<double> group_lengths;
           Array<double> group_thetas;
           RecordingSR * previous_record = nullptr;
+          // all members are translated with the len and theta of the group's first record, so compare with that one
           for (auto & record : recording)
             {
-              bool len_changed = fabs(record.len - current_len) > 1e-8;
-              bool theta_changed = fabs(record.theta - current_theta) > 1e-8;
+              bool len_changed = fabs(record.len - current_len) > 1e-12 * record.len;
+              bool theta_changed = fabs(record.theta - current_theta) > 1e-12;
               bool shape_changed = previous_record && !record.HasSameExpansionShape(*previous_record);
               if ((len_changed || theta_changed || shape_changed) && current_batch.Size() > 0) {
                 batch_group.Append(current_batch);
@@ -2560,8 +2575,11 @@ namespace ngsbem
                 current_batch.SetSize(0);
               }
               
-              current_len = record.len;
-              current_theta = record.theta;
+              if (current_batch.Size() == 0)
+                {
+                  current_len = record.len;
+                  current_theta = record.theta;
+                }
               current_batch.Append(&record);
               previous_record = &record;
             }
@@ -2702,12 +2720,30 @@ namespace ngsbem
       M2LCounts counts;
       counts.num_s2r = recording.Size();
 
-      root.TraverseTree([&](Node & node) {
-        if (node.childs[0]) return;
-        size_t target_count = node.targets.Size() + node.vol_targets.Size();
-        for (auto * sn : node.singnodes)
-          counts.num_direct_evaluations += target_count * size_t(sn->total_sources);
-      });
+      // per target, the singular nodes on its path from the root, as Evaluate visits them
+      Array<const typename SingularMLExpansion<elem_type,T_Kappa>::Node*> path;
+      auto count = [&](auto & self, const Node & node) -> void
+      {
+        size_t n0 = path.Size();
+        for (auto * sn : node.singnodes) path.Append(sn);
+        if (node.childs[0])
+          {
+            for (auto & child : node.childs)
+              if (child) self(self, *child);
+          }
+        else
+          {
+            for (auto * sn : path)
+              {
+                for (auto p : node.targets)
+                  counts.num_direct_evaluations += sn->CountDirect(p);
+                for (auto [p, rad] : node.vol_targets)
+                  counts.num_direct_evaluations += sn->CountDirect(p);
+              }
+          }
+        path.SetSize(n0);
+      };
+      count(count, root);
       return counts;
     }
 

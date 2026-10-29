@@ -155,7 +155,7 @@ Keyword arguments:
     Frequency-dependent order factor: order = fmm_minorder + fmm_order_factor*abs(kappa)*r.
   fmm_separation : float, default 2.0
     Box-box admissibility factor for M2L translations: a source/target box pair
-    is treated as far if dist(centers) > fmm_separation*(r_source+r_target).
+    is treated as far if dist(centers) > 2*fmm_separation*max(r_source,r_target).
     Raise for more accurate translations at the cost of more near-field work.
   fmm_eval_separation : float, default 3.0
     Same as fmm_separation but for single-point evaluation;

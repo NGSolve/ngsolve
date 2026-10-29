@@ -79,6 +79,18 @@ namespace ngsbem
     {
       std::tie(cx, rx) = GetCenterAndRadius(xpts);      
       std::tie(cy, ry) = GetCenterAndRadius(ypts);
+      // overlapping clouds share one root box: equal box offsets in both trees let the S->R translations batch exactly
+      if (xpts.Size() && ypts.Size() && MaxNorm(cx-cy) <= 0.5*(rx+ry))
+        {
+          Vec<3> xmin, xmax;
+          for (int j = 0; j < 3; j++)
+            {
+              xmin(j) = min(cx(j)-0.5*rx, cy(j)-0.5*ry);
+              xmax(j) = max(cx(j)+0.5*rx, cy(j)+0.5*ry);
+            }
+          cx = cy = 0.5*(xmin+xmax);
+          rx = ry = MaxNorm(xmax-xmin);
+        }
     }
 
     int VHeight() const override { return  ypts.Size()*kernelshape[0]; }
