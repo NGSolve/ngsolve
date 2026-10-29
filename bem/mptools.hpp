@@ -40,7 +40,7 @@ namespace ngsbem
   public:
     TempHeap (size_t size) : hr(TLHeap())
     {
-      if (TLHeap().Available() < size + 1024) own.emplace(size);
+      if (TLHeap().Available() < size + 1024) own.emplace(size + 1024);
     }
     operator LocalHeap & () { return own ? *own : TLHeap(); }
   };
@@ -771,6 +771,7 @@ namespace ngsbem
     {
       const SphericalExpansion<Singular,entry_type,T_Kappa> * mp_source;
       SphericalExpansion<Singular,entry_type,T_Kappa> * mp_target;
+      MyMutex * target_lock;
       Vec<3> dist;
       double len, theta, phi;
       bool flipz;
@@ -778,8 +779,8 @@ namespace ngsbem
       RecordingSS() = default;
       RecordingSS (const SphericalExpansion<Singular,entry_type,T_Kappa> * amp_source,
                    SphericalExpansion<Singular,entry_type,T_Kappa> * amp_target,
-                   Vec<3> adist)
-        : mp_source(amp_source), mp_target(amp_target), dist(adist)
+                   MyMutex * atarget_lock, Vec<3> adist)
+        : mp_source(amp_source), mp_target(amp_target), target_lock(atarget_lock), dist(adist)
       {
         std::tie(len, theta, phi) = SphericalCoordinates(adist);
         // flipz = false;       
@@ -793,7 +794,10 @@ namespace ngsbem
       constexpr int vec_length = VecLength<entry_type>;
       if (batch.Size() <= 1)
         for (auto* rec : batch)
-          rec->mp_source->TransformAdd(*rec->mp_target, rec->dist, true);
+          {
+            MyLock guard(*rec->target_lock);
+            rec->mp_source->TransformAdd(*rec->mp_target, rec->dist);
+          }
       else if (batch.Size()*vec_length <= FMM_DYNAMIC_BATCH_LANES)
         ProcessDynamicBatchSS(batch, len, theta);
       else
@@ -842,10 +846,12 @@ namespace ngsbem
         {
           auto source_mati = vec_target.SH().Coefs().Cols(i*vec_length, (i+1)*vec_length);
           auto target_mati = VecVector2Matrix (batch[i]->mp_target->SH().Coefs());
+          MyLock guard(*batch[i]->target_lock);
           batch[i]->mp_target->SH().RotateZFlip(-batch[i]->phi, batch[i]->flipz,
                                       [source_mati, target_mati] (size_t ii, complex_type factor)
                                       {
-                                        AtomicAdd (VectorView(target_mati.Row(ii)), factor * source_mati.Row(ii));
+                                        auto t = target_mati.Row(ii); auto s = source_mati.Row(ii);
+                                        for (size_t k = 0; k < t.Size(); k++) t(k) += factor * s(k);
                                       });
       }
     }
@@ -857,6 +863,7 @@ namespace ngsbem
       int level;
       std::array<unique_ptr<Node>,8> childs;
       SphericalExpansion<Singular, entry_type,T_Kappa> mp;
+      MyMutex lock;
 
       Array<tuple<Vec<3>, entry_type>> charges;
       Array<tuple<Vec<3>, Vec<3>, entry_type>> dipoles;
@@ -1392,7 +1399,7 @@ namespace ngsbem
             
             for (auto & child : childs){
               if (child->mp.SH().Coefs().Size() > 0)
-                recording += RecordingSS(&child->mp, &mp, center-child->center);
+                recording += RecordingSS(&child->mp, &mp, &lock, center-child->center);
             }
           }
         else
@@ -1826,6 +1833,7 @@ namespace ngsbem
     {
       const SphericalExpansion<Singular,elem_type,T_Kappa> * mpS;
       SphericalExpansion<Regular,elem_type,T_Kappa> * mpR;
+      MyMutex * lockR;
       Vec<3> dist;
       double len, theta, phi;
       bool flipz;
@@ -1833,8 +1841,8 @@ namespace ngsbem
       RecordingSR() = default;
       RecordingSR (const SphericalExpansion<Singular,elem_type,T_Kappa> * ampS,
                    SphericalExpansion<Regular,elem_type,T_Kappa> * ampR,
-                   Vec<3> adist)
-        : mpS(ampS), mpR(ampR), dist(adist)
+                   MyMutex * alockR, Vec<3> adist)
+        : mpS(ampS), mpR(ampR), lockR(alockR), dist(adist)
       {
         std::tie(len, theta, phi) = SphericalCoordinates(dist);
         flipz = theta > M_PI/2;
@@ -1877,7 +1885,10 @@ namespace ngsbem
       constexpr int vec_length = VecLength<elem_type>;
       if (batch.Size() <= 1)
         for (auto* rec : batch)
-          rec->mpS->TransformAdd(*rec->mpR, rec->dist, true);
+          {
+            MyLock guard(*rec->lockR);
+            rec->mpS->TransformAdd(*rec->mpR, rec->dist);
+          }
       else if (batch.Size()*vec_length <= FMM_DYNAMIC_BATCH_LANES)
         ProcessDynamicBatchSR(batch, len, theta);
       else
@@ -1925,11 +1936,12 @@ namespace ngsbem
         auto source_mati = vec_target.SH().Coefs().Cols(i*vec_length, (i+1)*vec_length);
         auto targeti = VecVector2Matrix(batch[i]->mpR->SH().Coefs());
         
+        MyLock guard(*batch[i]->lockR);
         tmp_target.SH().RotateZFlip(-batch[i]->phi, batch[i]->flipz,
                                 [source_mati, targeti] (size_t ii, complex_type factor)
                                           {
-                                            // source_i.Row(ii) = factor * source_mati.Row(ii);
-                                            AtomicAdd (VectorView(targeti.Row(ii)), factor * source_mati.Row(ii));
+                                            auto t = targeti.Row(ii); auto s = source_mati.Row(ii);
+                                            for (size_t k = 0; k < t.Size(); k++) t(k) += factor * s(k);
                                           });
         // for (int j = 0; j < tmp_target.SH().Coefs().Size(); j++)
         // AtomicAdd(batch[i]->mpR->SH().Coefs()[j], tmp_target.SH().Coefs()[j]);
@@ -2004,6 +2016,7 @@ namespace ngsbem
       int level;
       std::array<unique_ptr<Node>,8> childs;
       SphericalExpansion<Regular,elem_type,T_Kappa> mp;
+      MyMutex lock;
       Array<Vec<3>> targets;
       Array<tuple<Vec<3>,double>> vol_targets;      
       int total_targets;
@@ -2079,7 +2092,7 @@ namespace ngsbem
               }
 
             // static Timer t("mptool transform Helmholtz-criterion"); RegionTimer r(t);
-            recording += RecordingSR(&singnode.mp, &mp, dist);
+            recording += RecordingSR(&singnode.mp, &mp, &lock, dist);
             return;
           }
 
