@@ -296,7 +296,7 @@ namespace ngla {
                 if (parallel)
                   {
                     hv2 = *ipmat * hv;
-                    Vector<T> prod = -this->T_InnerProduct<T> (hv2);
+                    Vector<T> prod = -Conj(this->T_InnerProduct<T> (hv2, true));
                     Axpy (prod, *this, hv);
                     oldR -= prod;                    
                   }
@@ -305,7 +305,7 @@ namespace ngla {
                     for (int i = 0; i < this->Size(); i++)
                       {
                         hv2 = *ipmat * hv;
-                        T ip = -::InnerProduct<T> (*(*this)[i], hv2);
+                        T ip = -Conj(::InnerProduct<T> (*(*this)[i], hv2, true));
                         hv += ip * *(*this)[i];
                         R(i) -= ip;                        
                       }
@@ -313,7 +313,7 @@ namespace ngla {
               }
             hv2 = *ipmat * hv;
             // double norm = sqrt(InnerProduct(hv, hv2));
-            double norm = sqrt(fabs(InnerProduct<T>(hv, hv2)));
+            double norm = sqrt(fabs(InnerProduct<T>(hv, hv2, true)));
             R(osize) = norm;            
             hv /= norm;
           }
