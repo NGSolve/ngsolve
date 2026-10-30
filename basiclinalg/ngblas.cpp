@@ -3440,7 +3440,7 @@ void T_AddABt (SliceMatrix<Complex> a, SliceMatrix<Complex> b, BareSliceMatrix<C
   double MatKernelMaskedScalAB (size_t n,
 				double * pa, size_t da,
 				double * pb, size_t db,
-				const BitArray & ba)
+				const BitArray & ba) NETGEN_NOEXCEPT
   {
     SIMD<double,8> sum0 = 0.0;
     SIMD<double,8> sum1 = 0.0;
@@ -3477,7 +3477,7 @@ void T_AddABt (SliceMatrix<Complex> a, SliceMatrix<Complex> b, BareSliceMatrix<C
   double MatKernelMaskedScalAB (size_t n,
 				double * pa, size_t da,
 				double * pb, size_t db,
-				const BitArray & ba)
+				const BitArray & ba) NETGEN_NOEXCEPT
   {
     SIMD<double,4> sum0 = 0.0;
     SIMD<double,4> sum1 = 0.0;
@@ -3511,7 +3511,7 @@ void T_AddABt (SliceMatrix<Complex> a, SliceMatrix<Complex> b, BareSliceMatrix<C
   double MatKernelMaskedScalAB (size_t n,
 				double * pa, size_t da,
 				double * pb, size_t db,
-				const BitArray & ba)
+				const BitArray & ba) NETGEN_NOEXCEPT
   {
     SIMD<double,2> sum0 = 0.0;
     SIMD<double,2> sum1 = 0.0;
