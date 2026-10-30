@@ -46,6 +46,32 @@ namespace ngsbem
     operator LocalHeap & () { return own ? *own : TLHeap(); }
   };
 
+  // sorts a by less (a strict weak ordering): chunks sorted in parallel, then merged pairwise in parallel passes
+  template <typename T, typename LESS>
+  void ParallelSort (FlatArray<T> a, LESS less)
+  {
+    size_t n = a.Size();
+    size_t nchunks = 1;
+    while (nchunks < 2*size_t(TaskManager::GetNumThreads()) && n / (2*nchunks) >= 10000) nchunks *= 2;
+    auto bound = [&] (size_t i) { return i * n / nchunks; };
+    ParallelFor (nchunks, [&](size_t i) { std::sort (a.Data()+bound(i), a.Data()+bound(i+1), less); }, nchunks);
+    if (nchunks == 1) return;
+
+    Array<T> tmp(n);
+    FlatArray<T> src = a, dst = tmp;
+    for (size_t width = 1; width < nchunks; width *= 2)
+      {
+        size_t npairs = nchunks / (2*width);
+        ParallelFor (npairs, [&](size_t i) {
+          size_t lo = bound(2*i*width), mid = bound((2*i+1)*width), hi = bound((2*i+2)*width);
+          std::merge (src.Data()+lo, src.Data()+mid, src.Data()+mid, src.Data()+hi, dst.Data()+lo, less);
+        }, npairs);
+        std::swap (src, dst);
+      }
+    if (src.Data() != a.Data())
+      ParallelFor (n, [&](size_t i) { a[i] = src[i]; });
+  }
+
   // zeroed coefficient rows for the tree nodes, equal size per level, in large chunks;
   // freed all at once with the tree (many separate >16 KB blocks are very slow to free on Windows)
   class CoefPool
@@ -2536,6 +2562,8 @@ namespace ngsbem
             RegionTimer rrec(trec);
             root.AddSingularNode(singmp->root, !onlytargets, recording);
           }
+          struct SRKey { int os, ot; double rs, rt, len, theta; RecordingSR * rec; };
+          Array<SRKey> keys;
 
           // a cached device plan (FMM_Operator): replayed without sorting and grouping the S->R records
           if (fmm_params.device != FMM_Device::None && onlytargets
@@ -2545,13 +2573,25 @@ namespace ngsbem
           // cout << "recorded: " << recording.Size() << endl;
           {
             RegionTimer reg(tsort);
-            QuickSort (recording, [] (auto & a, auto & b)
+            // compact keys, len and theta cut to 40 mantissa bits (rel. 1e-12): a strict ordering that keeps
+            // records equal up to rounding together
+            auto snap = [] (double x)
             {
-              if (a.ExpansionShape() < b.ExpansionShape()) return true;
-              if (b.ExpansionShape() < a.ExpansionShape()) return false;
-              if (a.len < (1-1e-12) * b.len) return true;
-              if (a.len > (1+1e-12) * b.len) return false;
-              return a.theta < b.theta;
+              uint64_t bits; memcpy (&bits, &x, 8);
+              bits &= ~((uint64_t(1) << 12) - 1);
+              memcpy (&x, &bits, 8);
+              return x;
+            };
+            keys.SetSize (recording.Size());
+            ParallelFor (recording.Size(), [&](size_t i)
+            {
+              auto & rec = recording[i];
+              keys[i] = { rec.mpS->Order(), rec.mpR->Order(), rec.mpS->RTyp(), rec.mpR->RTyp(),
+                          snap(rec.len), snap(rec.theta), &rec };
+            });
+            ParallelSort (FlatArray<SRKey>(keys), [] (const SRKey & a, const SRKey & b)
+            {
+              return std::tie (a.os, a.ot, a.rs, a.rt, a.len, a.theta) < std::tie (b.os, b.ot, b.rs, b.rt, b.len, b.theta);
             });
           }
           
@@ -2563,8 +2603,9 @@ namespace ngsbem
           Array<double> group_thetas;
           RecordingSR * previous_record = nullptr;
           // all members are translated with the len and theta of the group's first record, so compare with that one
-          for (auto & record : recording)
+          for (auto & key : keys)
             {
+              auto & record = *key.rec;
               bool len_changed = fabs(record.len - current_len) > 1e-12 * record.len;
               bool theta_changed = fabs(record.theta - current_theta) > 1e-12;
               bool shape_changed = previous_record && !record.HasSameExpansionShape(*previous_record);
