@@ -68,41 +68,54 @@ namespace ngla
       }
 
     atomic<int> cnt_final(0);
+    atomic<bool> abort(false);
     SharedLoop sl(Range(ready));
 
-    TaskManager :: CreateJob 
-      ([&] (const TaskInfo & ti)
-       {
-        TPToken ptoken(queue); 
-        TCToken ctoken(queue); 
-        
-        for (int i : sl)
-          queue.enqueue (ptoken, ready[i]);
-
-        auto *tm = GetTaskManager();
-        while (1)
+    try
+      {
+        TaskManager :: CreateJob
+          ([&] (const TaskInfo & ti)
            {
-             if (cnt_final >= num_final) break;
+            TPToken ptoken(queue);
+            TCToken ctoken(queue);
 
-             while (tm->ProcessTask()); // do the nested tasks
-             
-             int nr;
-             if(!queue.try_dequeue_from_producer(ptoken, nr)) 
-               if(!queue.try_dequeue(ctoken, nr))  
-                 continue; 
-             
-             func(nr);
+            for (int i : sl)
+              queue.enqueue (ptoken, ready[i]);
 
-             if (dag[nr].Size() == 0)
-               cnt_final++;
-
-             for (int j : dag[nr])
+            auto *tm = GetTaskManager();
+            while (1)
                {
-                 if (--cnt_dep[j] == 0)
-                   queue.enqueue (ptoken, j);
+                 if (cnt_final >= num_final || abort) break;
+
+                 while (tm->ProcessTask()); // do the nested tasks
+
+                 int nr;
+                 if(!queue.try_dequeue_from_producer(ptoken, nr))
+                   if(!queue.try_dequeue(ctoken, nr))
+                     continue;
+
+                 // a failed task never releases its successors, so all threads must stop
+                 try { func(nr); }
+                 catch (...) { abort = true; throw; }
+
+                 if (dag[nr].Size() == 0)
+                   cnt_final++;
+
+                 for (int j : dag[nr])
+                   {
+                     if (--cnt_dep[j] == 0)
+                       queue.enqueue (ptoken, j);
+                   }
                }
-           }
-       });
+           });
+      }
+    catch (...)
+      {
+        // queue is static, drop leftover task numbers of the aborted dag
+        int nr;
+        while (queue.try_dequeue(nr));
+        throw;
+      }
   }
 
 

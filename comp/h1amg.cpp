@@ -77,47 +77,60 @@ namespace ngcomp
       }
 
     atomic<int> cnt_final(0);
+    atomic<bool> abort(false);
     SharedLoop2 sl(Range(ready));
 
-    task_manager -> CreateJob
-      ([&] (const TaskInfo & ti)
-       {
-         size_t my_final = 0;
-         TPToken ptoken(queue);
-         TCToken ctoken(queue);
-
-         for (int i : sl)
-           queue.enqueue (ptoken, ready[i]);
-
-         while (1)
+    try
+      {
+        task_manager -> CreateJob
+          ([&] (const TaskInfo & ti)
            {
-             if (cnt_final >= num_final) break;
+             size_t my_final = 0;
+             TPToken ptoken(queue);
+             TCToken ctoken(queue);
 
-             int nr;
-             if(!queue.try_dequeue_from_producer(ptoken, nr))
-               if(!queue.try_dequeue(ctoken, nr))
-                 {
-                   if (my_final)
-                     {
-                       cnt_final += my_final;
-                       my_final = 0;
-                     }
-                   continue;
-                 }
+             for (int i : sl)
+               queue.enqueue (ptoken, ready[i]);
 
-             if (dag[nr].Size() == 0)
-               my_final++;
-             // cnt_final++;
-
-             func(nr);
-
-             for (int j : dag[nr])
+             while (1)
                {
-                 if (--cnt_dep[j] == 0)
-                   queue.enqueue (ptoken, j);
+                 if (cnt_final >= num_final || abort) break;
+
+                 int nr;
+                 if(!queue.try_dequeue_from_producer(ptoken, nr))
+                   if(!queue.try_dequeue(ctoken, nr))
+                     {
+                       if (my_final)
+                         {
+                           cnt_final += my_final;
+                           my_final = 0;
+                         }
+                       continue;
+                     }
+
+                 if (dag[nr].Size() == 0)
+                   my_final++;
+                 // cnt_final++;
+
+                 // a failed task never releases its successors, so all threads must stop
+                 try { func(nr); }
+                 catch (...) { abort = true; throw; }
+
+                 for (int j : dag[nr])
+                   {
+                     if (--cnt_dep[j] == 0)
+                       queue.enqueue (ptoken, j);
+                   }
                }
-           }
-       });
+           });
+      }
+    catch (...)
+      {
+        // queue is static, drop leftover task numbers of the aborted dag
+        int nr;
+        while (queue.try_dequeue(nr));
+        throw;
+      }
   }
 
 
