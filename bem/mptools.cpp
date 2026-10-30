@@ -252,8 +252,13 @@ namespace ngsbem
   {
     using real_type = typename SH::real_type;
     int order = sh.Order();
-    auto & lh = TLHeap();
-    HeapReset hr(lh);
+    // scratch of transformN(order): Dmn, trafo, tmp, and the coefficient copy in apply
+    auto coefs = sh.Coefs();
+    size_t coef_bytes = coefs.Height()*coefs.Width()*sizeof(*coefs.Data()) / sqr(order+1);
+    size_t nbytes = sizeof(real_type)*(2*order+1 + (order+1)*(2*order+1)) + sizeof(double)*(order+2)
+      + coef_bytes*(2*order+1) + 256;
+    size_t legbytes = sizeof(double)*sqr(order+2) + 64;
+    TempHeap lh(parallel ? legbytes : legbytes+nbytes);
     // static Timer t("mptool sh RotateY"+ToString(sizeof(entry_type)/sizeof(Complex)));
     // RegionTimer rg(t, order);
     
@@ -382,10 +387,10 @@ namespace ngsbem
           transformN (n, slh);          
       }, TasksPerThread(4));
       */
-      ParallelForRange (IntRange(1,order+1), [transformN] (IntRange r)
+      ParallelForRange (IntRange(1,order+1), [transformN,nbytes] (IntRange r)
       {
         // each worker its own heap, Split() would give only 1/nthreads
-        auto & tlh = TLHeap();
+        TempHeap tlh(nbytes);
         for (auto n : r)
           transformN (n, tlh);
       }, TasksPerThread(4));

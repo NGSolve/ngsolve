@@ -19,7 +19,7 @@ namespace ngsbem
     double fmm_order_factor = 2.0;
     double fmm_separation = 2.0;
     double fmm_eval_separation = 3.0;
-    double fmm_split_kr = 5.0;
+    double fmm_split_kr = 20.0;
     int fmm_maxlevel = 20;
     FMM_Device fmm_device = FMM_Device::None;
   public:

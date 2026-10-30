@@ -45,7 +45,7 @@ namespace ngsbem
     double order_factor = 2.0;    // order = minorder + order_factor kappa r
     double separation = 2.0;
     double eval_separation = 3.0;
-    double split_kr = 5.0;
+    double split_kr = 20.0;
     int maxlevel = 20;
     FMM_Device device = FMM_Device::None;
     // set by FMM_Operator when device != None

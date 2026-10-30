@@ -159,7 +159,7 @@ Keyword arguments:
     Raise for more accurate translations at the cost of more near-field work.
   fmm_eval_separation : float, default 3.0
     Same as fmm_separation but for single-point evaluation;
-  fmm_split_kr : float, default 5.0
+  fmm_split_kr : float, default 20.0
     A leaf with abs(kappa)*r >= fmm_split_kr keeps subdividing even when it
     holds fewer than fmm_maxdirect points.
   fmm_maxlevel : int, default 20
