@@ -663,7 +663,7 @@ namespace ngbla
       FlatVector<T>::operator= (v2);
     }
 
-    Vector (Vector && v2)
+    Vector (Vector && v2) noexcept
       : FlatVector<T> (v2.Size(), v2.Data())
     {
       v2.layout = { nullptr, 0 };
@@ -737,7 +737,7 @@ namespace ngbla
       return *this;
     }
 
-    Vector & operator= (Vector && v2)
+    Vector & operator= (Vector && v2) noexcept
     {
       // this->size = v2.size;
       // Swap (this->data, v2.data);

@@ -343,28 +343,28 @@ namespace ngbla
   void NgGEMM32Intern (size_t ah, size_t aw, size_t bw,
                       BareSliceMatrix<T,OA> a,
                       BareSliceMatrix<T,OB> b,
-                      BareSliceMatrix<T,RowMajor> c)
+                      BareSliceMatrix<T,RowMajor> c) NETGEN_NOEXCEPT
   {
     NgGEMM32Intern<ADD,POS> (ah, aw, bw, a, b, c);
   }
-  template NGS_DLL_HEADER void NgGEMM32Intern<float,false,false,RowMajor,RowMajor>(size_t, size_t, size_t, BareSliceMatrix<float,RowMajor>, BareSliceMatrix<float,RowMajor>, BareSliceMatrix<float,RowMajor>);
-  template NGS_DLL_HEADER void NgGEMM32Intern<float,false,true,RowMajor,RowMajor>(size_t, size_t, size_t, BareSliceMatrix<float,RowMajor>, BareSliceMatrix<float,RowMajor>, BareSliceMatrix<float,RowMajor>);
-  template NGS_DLL_HEADER void NgGEMM32Intern<float,true,false,RowMajor,RowMajor>(size_t, size_t, size_t, BareSliceMatrix<float,RowMajor>, BareSliceMatrix<float,RowMajor>, BareSliceMatrix<float,RowMajor>);
-  template NGS_DLL_HEADER void NgGEMM32Intern<float,true,true,RowMajor,RowMajor>(size_t, size_t, size_t, BareSliceMatrix<float,RowMajor>, BareSliceMatrix<float,RowMajor>, BareSliceMatrix<float,RowMajor>);
-  template NGS_DLL_HEADER void NgGEMM32Intern<float,false,false,RowMajor,ColMajor>(size_t, size_t, size_t, BareSliceMatrix<float,RowMajor>, BareSliceMatrix<float,ColMajor>, BareSliceMatrix<float,RowMajor>);
-  template NGS_DLL_HEADER void NgGEMM32Intern<float,false,true,RowMajor,ColMajor>(size_t, size_t, size_t, BareSliceMatrix<float,RowMajor>, BareSliceMatrix<float,ColMajor>, BareSliceMatrix<float,RowMajor>);
-  template NGS_DLL_HEADER void NgGEMM32Intern<float,true,false,RowMajor,ColMajor>(size_t, size_t, size_t, BareSliceMatrix<float,RowMajor>, BareSliceMatrix<float,ColMajor>, BareSliceMatrix<float,RowMajor>);
-  template NGS_DLL_HEADER void NgGEMM32Intern<float,true,true,RowMajor,ColMajor>(size_t, size_t, size_t, BareSliceMatrix<float,RowMajor>, BareSliceMatrix<float,ColMajor>, BareSliceMatrix<float,RowMajor>);
-  template NGS_DLL_HEADER void NgGEMM32Intern<float,false,false,ColMajor,RowMajor>(size_t, size_t, size_t, BareSliceMatrix<float,ColMajor>, BareSliceMatrix<float,RowMajor>, BareSliceMatrix<float,RowMajor>);
-  template NGS_DLL_HEADER void NgGEMM32Intern<float,false,true,ColMajor,RowMajor>(size_t, size_t, size_t, BareSliceMatrix<float,ColMajor>, BareSliceMatrix<float,RowMajor>, BareSliceMatrix<float,RowMajor>);
-  template NGS_DLL_HEADER void NgGEMM32Intern<float,true,false,ColMajor,RowMajor>(size_t, size_t, size_t, BareSliceMatrix<float,ColMajor>, BareSliceMatrix<float,RowMajor>, BareSliceMatrix<float,RowMajor>);
-  template NGS_DLL_HEADER void NgGEMM32Intern<float,true,true,ColMajor,RowMajor>(size_t, size_t, size_t, BareSliceMatrix<float,ColMajor>, BareSliceMatrix<float,RowMajor>, BareSliceMatrix<float,RowMajor>);
-  template NGS_DLL_HEADER void NgGEMM32Intern<float,false,false,ColMajor,ColMajor>(size_t, size_t, size_t, BareSliceMatrix<float,ColMajor>, BareSliceMatrix<float,ColMajor>, BareSliceMatrix<float,RowMajor>);
-  template NGS_DLL_HEADER void NgGEMM32Intern<float,false,true,ColMajor,ColMajor>(size_t, size_t, size_t, BareSliceMatrix<float,ColMajor>, BareSliceMatrix<float,ColMajor>, BareSliceMatrix<float,RowMajor>);
-  template NGS_DLL_HEADER void NgGEMM32Intern<float,true,false,ColMajor,ColMajor>(size_t, size_t, size_t, BareSliceMatrix<float,ColMajor>, BareSliceMatrix<float,ColMajor>, BareSliceMatrix<float,RowMajor>);
-  template NGS_DLL_HEADER void NgGEMM32Intern<float,true,true,ColMajor,ColMajor>(size_t, size_t, size_t, BareSliceMatrix<float,ColMajor>, BareSliceMatrix<float,ColMajor>, BareSliceMatrix<float,RowMajor>);
-  template NGS_DLL_HEADER void NgGEMM32Intern<Complex32,false,false,RowMajor,RowMajor>(size_t, size_t, size_t, BareSliceMatrix<Complex32,RowMajor>, BareSliceMatrix<Complex32,RowMajor>, BareSliceMatrix<Complex32,RowMajor>);
-  template NGS_DLL_HEADER void NgGEMM32Intern<Complex32,false,true,RowMajor,RowMajor>(size_t, size_t, size_t, BareSliceMatrix<Complex32,RowMajor>, BareSliceMatrix<Complex32,RowMajor>, BareSliceMatrix<Complex32,RowMajor>);
+  template NGS_DLL_HEADER void NgGEMM32Intern<float,false,false,RowMajor,RowMajor>(size_t, size_t, size_t, BareSliceMatrix<float,RowMajor>, BareSliceMatrix<float,RowMajor>, BareSliceMatrix<float,RowMajor>) NETGEN_NOEXCEPT;
+  template NGS_DLL_HEADER void NgGEMM32Intern<float,false,true,RowMajor,RowMajor>(size_t, size_t, size_t, BareSliceMatrix<float,RowMajor>, BareSliceMatrix<float,RowMajor>, BareSliceMatrix<float,RowMajor>) NETGEN_NOEXCEPT;
+  template NGS_DLL_HEADER void NgGEMM32Intern<float,true,false,RowMajor,RowMajor>(size_t, size_t, size_t, BareSliceMatrix<float,RowMajor>, BareSliceMatrix<float,RowMajor>, BareSliceMatrix<float,RowMajor>) NETGEN_NOEXCEPT;
+  template NGS_DLL_HEADER void NgGEMM32Intern<float,true,true,RowMajor,RowMajor>(size_t, size_t, size_t, BareSliceMatrix<float,RowMajor>, BareSliceMatrix<float,RowMajor>, BareSliceMatrix<float,RowMajor>) NETGEN_NOEXCEPT;
+  template NGS_DLL_HEADER void NgGEMM32Intern<float,false,false,RowMajor,ColMajor>(size_t, size_t, size_t, BareSliceMatrix<float,RowMajor>, BareSliceMatrix<float,ColMajor>, BareSliceMatrix<float,RowMajor>) NETGEN_NOEXCEPT;
+  template NGS_DLL_HEADER void NgGEMM32Intern<float,false,true,RowMajor,ColMajor>(size_t, size_t, size_t, BareSliceMatrix<float,RowMajor>, BareSliceMatrix<float,ColMajor>, BareSliceMatrix<float,RowMajor>) NETGEN_NOEXCEPT;
+  template NGS_DLL_HEADER void NgGEMM32Intern<float,true,false,RowMajor,ColMajor>(size_t, size_t, size_t, BareSliceMatrix<float,RowMajor>, BareSliceMatrix<float,ColMajor>, BareSliceMatrix<float,RowMajor>) NETGEN_NOEXCEPT;
+  template NGS_DLL_HEADER void NgGEMM32Intern<float,true,true,RowMajor,ColMajor>(size_t, size_t, size_t, BareSliceMatrix<float,RowMajor>, BareSliceMatrix<float,ColMajor>, BareSliceMatrix<float,RowMajor>) NETGEN_NOEXCEPT;
+  template NGS_DLL_HEADER void NgGEMM32Intern<float,false,false,ColMajor,RowMajor>(size_t, size_t, size_t, BareSliceMatrix<float,ColMajor>, BareSliceMatrix<float,RowMajor>, BareSliceMatrix<float,RowMajor>) NETGEN_NOEXCEPT;
+  template NGS_DLL_HEADER void NgGEMM32Intern<float,false,true,ColMajor,RowMajor>(size_t, size_t, size_t, BareSliceMatrix<float,ColMajor>, BareSliceMatrix<float,RowMajor>, BareSliceMatrix<float,RowMajor>) NETGEN_NOEXCEPT;
+  template NGS_DLL_HEADER void NgGEMM32Intern<float,true,false,ColMajor,RowMajor>(size_t, size_t, size_t, BareSliceMatrix<float,ColMajor>, BareSliceMatrix<float,RowMajor>, BareSliceMatrix<float,RowMajor>) NETGEN_NOEXCEPT;
+  template NGS_DLL_HEADER void NgGEMM32Intern<float,true,true,ColMajor,RowMajor>(size_t, size_t, size_t, BareSliceMatrix<float,ColMajor>, BareSliceMatrix<float,RowMajor>, BareSliceMatrix<float,RowMajor>) NETGEN_NOEXCEPT;
+  template NGS_DLL_HEADER void NgGEMM32Intern<float,false,false,ColMajor,ColMajor>(size_t, size_t, size_t, BareSliceMatrix<float,ColMajor>, BareSliceMatrix<float,ColMajor>, BareSliceMatrix<float,RowMajor>) NETGEN_NOEXCEPT;
+  template NGS_DLL_HEADER void NgGEMM32Intern<float,false,true,ColMajor,ColMajor>(size_t, size_t, size_t, BareSliceMatrix<float,ColMajor>, BareSliceMatrix<float,ColMajor>, BareSliceMatrix<float,RowMajor>) NETGEN_NOEXCEPT;
+  template NGS_DLL_HEADER void NgGEMM32Intern<float,true,false,ColMajor,ColMajor>(size_t, size_t, size_t, BareSliceMatrix<float,ColMajor>, BareSliceMatrix<float,ColMajor>, BareSliceMatrix<float,RowMajor>) NETGEN_NOEXCEPT;
+  template NGS_DLL_HEADER void NgGEMM32Intern<float,true,true,ColMajor,ColMajor>(size_t, size_t, size_t, BareSliceMatrix<float,ColMajor>, BareSliceMatrix<float,ColMajor>, BareSliceMatrix<float,RowMajor>) NETGEN_NOEXCEPT;
+  template NGS_DLL_HEADER void NgGEMM32Intern<Complex32,false,false,RowMajor,RowMajor>(size_t, size_t, size_t, BareSliceMatrix<Complex32,RowMajor>, BareSliceMatrix<Complex32,RowMajor>, BareSliceMatrix<Complex32,RowMajor>) NETGEN_NOEXCEPT;
+  template NGS_DLL_HEADER void NgGEMM32Intern<Complex32,false,true,RowMajor,RowMajor>(size_t, size_t, size_t, BareSliceMatrix<Complex32,RowMajor>, BareSliceMatrix<Complex32,RowMajor>, BareSliceMatrix<Complex32,RowMajor>) NETGEN_NOEXCEPT;
   template NGS_DLL_HEADER void NgGEMM32Intern<Complex32,true,false,RowMajor,RowMajor>(size_t, size_t, size_t, BareSliceMatrix<Complex32,RowMajor>, BareSliceMatrix<Complex32,RowMajor>, BareSliceMatrix<Complex32,RowMajor>);
   template NGS_DLL_HEADER void NgGEMM32Intern<Complex32,true,true,RowMajor,RowMajor>(size_t, size_t, size_t, BareSliceMatrix<Complex32,RowMajor>, BareSliceMatrix<Complex32,RowMajor>, BareSliceMatrix<Complex32,RowMajor>);
   template NGS_DLL_HEADER void NgGEMM32Intern<Complex32,false,false,RowMajor,ColMajor>(size_t, size_t, size_t, BareSliceMatrix<Complex32,RowMajor>, BareSliceMatrix<Complex32,ColMajor>, BareSliceMatrix<Complex32,RowMajor>);

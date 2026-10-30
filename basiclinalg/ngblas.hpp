@@ -121,7 +121,7 @@ namespace ngbla
   }
 
 
-  typedef void (*pmultadd_matvec)(double s, BareSliceMatrix<>, FlatVector<>, FlatVector<>);
+  typedef void (*pmultadd_matvec)(double s, BareSliceMatrix<>, FlatVector<>, FlatVector<>) NETGEN_NOEXCEPT;
   extern NGS_DLL_HEADER pmultadd_matvec dispatch_addmatvec[25];
   
   inline void MultAddMatVec (double s, BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y)
@@ -155,8 +155,8 @@ namespace ngbla
   
 
   extern NGS_DLL_HEADER void MultAddMatTransVecIndirect_intern
-  (double s, BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y, FlatArray<int> ind);
-  typedef void (*pmultadd_mattransvecind)(double s, BareSliceMatrix<>, FlatVector<>, FlatVector<>, FlatArray<int>);
+  (double s, BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y, FlatArray<int> ind) NETGEN_NOEXCEPT;
+  typedef void (*pmultadd_mattransvecind)(double s, BareSliceMatrix<>, FlatVector<>, FlatVector<>, FlatArray<int>) NETGEN_NOEXCEPT;
   extern NGS_DLL_HEADER pmultadd_mattransvecind dispatch_addmattransvecI[25];
   
   inline void MultAddMatTransVecIndirect (double s, BareSliceMatrix<> a,
@@ -183,7 +183,7 @@ namespace ngbla
   // (inner dimension aw, for AtB the height of C), the last entry the general kernel
   template <typename T, ORDERING OA, ORDERING OB>
   using pgemm = void REGCALL (*)(size_t ah, size_t aw, size_t bw, BareSliceMatrix<T,OA>,
-                                 BareSliceMatrix<T,OB>, BareSliceMatrix<T,RowMajor>);
+                                 BareSliceMatrix<T,OB>, BareSliceMatrix<T,RowMajor>) NETGEN_NOEXCEPT;
 
   template <ORDERING OA, ORDERING OB> inline constexpr size_t gemm_dispatch_size = 14;
   template <> inline constexpr size_t gemm_dispatch_size<RowMajor,ColMajor> = 26;
@@ -233,7 +233,7 @@ namespace ngbla
   { NgGEMM<true,false> (a, b, c); }
 
   extern NGS_DLL_HEADER void MultMatMat_intern (size_t ha, size_t wa, size_t wb,
-                                 BareSliceMatrix<> a, BareSliceMatrix<SIMD<double>> b, BareSliceMatrix<SIMD<double>> c);
+                                 BareSliceMatrix<> a, BareSliceMatrix<SIMD<double>> b, BareSliceMatrix<SIMD<double>> c) NETGEN_NOEXCEPT;
   
   inline void MultMatMat (SliceMatrix<> a, SliceMatrix<SIMD<double>> b, SliceMatrix<SIMD<double>> c)
   {
@@ -258,52 +258,52 @@ namespace ngbla
   { NgGEMM<true,false> (a, Trans(b), c.AddSize(a.Height(), b.Height())); }
   inline void SubABt (SliceMatrix<float> a, SliceMatrix<float> b, BareSliceMatrix<float> c) { c -= a*b; }
   
-  extern NGS_DLL_HEADER void AddABt (SliceMatrix<SIMD<double>> a, SliceMatrix<SIMD<double>> b, BareSliceMatrix<double> c);  
-  extern NGS_DLL_HEADER void SubABt (SliceMatrix<SIMD<double>> a, SliceMatrix<SIMD<double>> b, BareSliceMatrix<double> c);
+  extern NGS_DLL_HEADER void AddABt (SliceMatrix<SIMD<double>> a, SliceMatrix<SIMD<double>> b, BareSliceMatrix<double> c) NETGEN_NOEXCEPT;  
+  extern NGS_DLL_HEADER void SubABt (SliceMatrix<SIMD<double>> a, SliceMatrix<SIMD<double>> b, BareSliceMatrix<double> c) NETGEN_NOEXCEPT;
 
 
   //  copied from symbolicintegrator, needs some rework 
-  extern NGS_DLL_HEADER void AddABtSym (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c);    
-  extern NGS_DLL_HEADER void AddABtSym (SliceMatrix<SIMD<double>> a, SliceMatrix<SIMD<double>> b, BareSliceMatrix<double> c);
+  extern NGS_DLL_HEADER void AddABtSym (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c) NETGEN_NOEXCEPT;    
+  extern NGS_DLL_HEADER void AddABtSym (SliceMatrix<SIMD<double>> a, SliceMatrix<SIMD<double>> b, BareSliceMatrix<double> c) NETGEN_NOEXCEPT;
   
-  extern NGS_DLL_HEADER void AddABt (FlatMatrix<SIMD<Complex>> a, FlatMatrix<SIMD<Complex>> b, SliceMatrix<Complex> c);
-  extern NGS_DLL_HEADER void AddABtSym (FlatMatrix<SIMD<Complex>> a, FlatMatrix<SIMD<Complex>> b, SliceMatrix<Complex> c);
-  extern NGS_DLL_HEADER void AddABt (SliceMatrix<SIMD<double>> a, SliceMatrix<SIMD<Complex>> b, SliceMatrix<Complex> c);
-  extern NGS_DLL_HEADER void AddABt (SliceMatrix<SIMD<Complex>> a, SliceMatrix<SIMD<double>> b, SliceMatrix<Complex> c);
+  extern NGS_DLL_HEADER void AddABt (FlatMatrix<SIMD<Complex>> a, FlatMatrix<SIMD<Complex>> b, SliceMatrix<Complex> c) NETGEN_NOEXCEPT;
+  extern NGS_DLL_HEADER void AddABtSym (FlatMatrix<SIMD<Complex>> a, FlatMatrix<SIMD<Complex>> b, SliceMatrix<Complex> c) NETGEN_NOEXCEPT;
+  extern NGS_DLL_HEADER void AddABt (SliceMatrix<SIMD<double>> a, SliceMatrix<SIMD<Complex>> b, SliceMatrix<Complex> c) NETGEN_NOEXCEPT;
+  extern NGS_DLL_HEADER void AddABt (SliceMatrix<SIMD<Complex>> a, SliceMatrix<SIMD<double>> b, SliceMatrix<Complex> c) NETGEN_NOEXCEPT;
 
   extern NGS_DLL_HEADER void AddABtSym (FlatMatrix<SIMD<double>> a,
                          FlatMatrix<SIMD<Complex>> b,
-                         SliceMatrix<Complex> c);
+                         SliceMatrix<Complex> c) NETGEN_NOEXCEPT;
   extern NGS_DLL_HEADER void AddABt (FlatMatrix<SIMD<double>> a,
                       FlatMatrix<SIMD<double>> b,
-                      SliceMatrix<Complex> c);
+                      SliceMatrix<Complex> c) NETGEN_NOEXCEPT;
 
   extern NGS_DLL_HEADER void AddABtSym (FlatMatrix<SIMD<double>> a,
                          FlatMatrix<SIMD<double>> b,
-                         SliceMatrix<Complex> c);
+                         SliceMatrix<Complex> c) NETGEN_NOEXCEPT;
   
   extern NGS_DLL_HEADER void AddABt (SliceMatrix<double> a,
                       SliceMatrix<double> b,
-                      SliceMatrix<Complex> c);
+                      SliceMatrix<Complex> c) NETGEN_NOEXCEPT;
 
   extern NGS_DLL_HEADER void AddABtSym (SliceMatrix<double> a,
                          SliceMatrix<double> b,
-                         SliceMatrix<Complex> c);
+                         SliceMatrix<Complex> c) NETGEN_NOEXCEPT;
   
 
 
-  extern NGS_DLL_HEADER void AddABt (SliceMatrix<double> a, SliceMatrix<Complex> b, BareSliceMatrix<Complex> c);
-  extern NGS_DLL_HEADER void AddABt (SliceMatrix<Complex> a, SliceMatrix<Complex> b, BareSliceMatrix<Complex> c);
-  extern NGS_DLL_HEADER void SubABt (SliceMatrix<Complex> a, SliceMatrix<Complex> b, BareSliceMatrix<Complex> c);  
+  extern NGS_DLL_HEADER void AddABt (SliceMatrix<double> a, SliceMatrix<Complex> b, BareSliceMatrix<Complex> c) NETGEN_NOEXCEPT;
+  extern NGS_DLL_HEADER void AddABt (SliceMatrix<Complex> a, SliceMatrix<Complex> b, BareSliceMatrix<Complex> c) NETGEN_NOEXCEPT;
+  extern NGS_DLL_HEADER void SubABt (SliceMatrix<Complex> a, SliceMatrix<Complex> b, BareSliceMatrix<Complex> c) NETGEN_NOEXCEPT;  
 
-  extern NGS_DLL_HEADER void AddABtSym (SliceMatrix<double> a, SliceMatrix<Complex> b, BareSliceMatrix<Complex> c);
-  extern NGS_DLL_HEADER void AddABtSym (SliceMatrix<Complex> a, SliceMatrix<Complex> b, BareSliceMatrix<Complex> c);
+  extern NGS_DLL_HEADER void AddABtSym (SliceMatrix<double> a, SliceMatrix<Complex> b, BareSliceMatrix<Complex> c) NETGEN_NOEXCEPT;
+  extern NGS_DLL_HEADER void AddABtSym (SliceMatrix<Complex> a, SliceMatrix<Complex> b, BareSliceMatrix<Complex> c) NETGEN_NOEXCEPT;
 
 
   extern NGS_DLL_HEADER
-  void ScaleCols (SliceMatrix<double,RowMajor> a, BareSliceVector<double> diag);
+  void ScaleCols (SliceMatrix<double,RowMajor> a, BareSliceVector<double> diag) NETGEN_NOEXCEPT;
   extern NGS_DLL_HEADER
-  void ScaleCols (SliceMatrix<double,ColMajor> a, BareSliceVector<double> diag);
+  void ScaleCols (SliceMatrix<double,ColMajor> a, BareSliceVector<double> diag) NETGEN_NOEXCEPT;
 
   template <ORDERING ord>
   INLINE void ScaleRows (SliceMatrix<double,ord> a, BareSliceVector<double> diag)
@@ -317,17 +317,17 @@ namespace ngbla
   extern NGS_DLL_HEADER
   void SubADBt (SliceMatrix<double> a,
                 SliceVector<double> diag,
-                SliceMatrix<double> b, SliceMatrix<double> c);
+                SliceMatrix<double> b, SliceMatrix<double> c) NETGEN_NOEXCEPT;
 
   extern NGS_DLL_HEADER
   void SubAtDB (SliceMatrix<double> a,
                 SliceVector<double> diag,
-                SliceMatrix<double> b, SliceMatrix<double> c);
+                SliceMatrix<double> b, SliceMatrix<double> c) NETGEN_NOEXCEPT;
 
   extern NGS_DLL_HEADER
   void SubAtDB (SliceMatrix<Complex> a,
                 SliceVector<Complex> diag,
-                SliceMatrix<Complex> b, SliceMatrix<Complex> c);
+                SliceMatrix<Complex> b, SliceMatrix<Complex> c) NETGEN_NOEXCEPT;
 
   template <typename T>
   void SubADBt (SliceMatrix<T,ColMajor> a,
@@ -345,18 +345,18 @@ namespace ngbla
 
   // ip(i,j) = InnerProduct(x_i, y_j)
   extern NGS_DLL_HEADER  
-  void PairwiseInnerProduct (size_t n, FlatArray<double*> x, FlatArray<double*> y, BareSliceMatrix<double> ip);
+  void PairwiseInnerProduct (size_t n, FlatArray<double*> x, FlatArray<double*> y, BareSliceMatrix<double> ip) NETGEN_NOEXCEPT;
 
   extern NGS_DLL_HEADER
-  void PairwiseInnerProduct (size_t n, FlatArray<Complex*> x, FlatArray<Complex*> y, BareSliceMatrix<Complex> ip, bool conj);
+  void PairwiseInnerProduct (size_t n, FlatArray<Complex*> x, FlatArray<Complex*> y, BareSliceMatrix<Complex> ip, bool conj) NETGEN_NOEXCEPT;
 
 
   // x_i += sum_j a(i,j) y_j
   extern NGS_DLL_HEADER  
-  void MultiVectorAdd (size_t n, FlatArray<double*> x, FlatArray<double*> y, BareSliceMatrix<double> a);
+  void MultiVectorAdd (size_t n, FlatArray<double*> x, FlatArray<double*> y, BareSliceMatrix<double> a) NETGEN_NOEXCEPT;
 
   extern NGS_DLL_HEADER
-  void MultiVectorAdd (size_t n, FlatArray<Complex*> x, FlatArray<Complex*> y, BareSliceMatrix<Complex> a);
+  void MultiVectorAdd (size_t n, FlatArray<Complex*> x, FlatArray<Complex*> y, BareSliceMatrix<Complex> a) NETGEN_NOEXCEPT;
 
 
 
@@ -405,7 +405,7 @@ namespace ngbla
     (size_t ah, size_t aw, size_t bw,
      BareSliceMatrix<T,OA> a,
      BareSliceMatrix<T,OB> b,
-     BareSliceMatrix<T,RowMajor> c);
+     BareSliceMatrix<T,RowMajor> c) NETGEN_NOEXCEPT;
 
   template <bool ADD, bool POS, typename T, ORDERING OA, ORDERING OB>
     requires (std::is_same_v<T,float> || std::is_same_v<T,Complex32>)
@@ -997,7 +997,7 @@ namespace ngbla
   extern NGS_DLL_HEADER pmatmatc<OA,OB> dispatch_matmatc[9];
 
   template <bool ADD, bool POS, ORDERING OA, ORDERING OB>
-  extern NGS_DLL_HEADER void NgGEMMBare (size_t ah, size_t aw, size_t bw, BareSliceMatrix<Complex,OA> a, BareSliceMatrix<Complex,OB> b, BareSliceMatrix<Complex,RowMajor> c);
+  extern NGS_DLL_HEADER void NgGEMMBare (size_t ah, size_t aw, size_t bw, BareSliceMatrix<Complex,OA> a, BareSliceMatrix<Complex,OB> b, BareSliceMatrix<Complex,RowMajor> c) NETGEN_NOEXCEPT;
 
 
   template <bool ADD, bool POS, ORDERING OA, ORDERING OB>
@@ -1077,7 +1077,7 @@ namespace ngbla
   double MatKernelMaskedScalAB (size_t n,
 				double * pa, size_t da,
 				double * pb, size_t db,
-				const BitArray & ba);
+				const BitArray & ba) NETGEN_NOEXCEPT;
 
   extern string GetTimingHelpString();
   extern list<tuple<string,double>> Timing (int what, size_t n, size_t m, size_t k,

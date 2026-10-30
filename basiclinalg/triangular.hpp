@@ -89,45 +89,45 @@ namespace ngbla
       }
   }
 
-  extern NGS_DLL_HEADER void TriangularSolveLL (BareSliceMatrix<double> T, SliceMatrix<double> X);
+  extern NGS_DLL_HEADER void TriangularSolveLL (BareSliceMatrix<double> T, SliceMatrix<double> X) NETGEN_NOEXCEPT;
   template <> inline void TriangularSolve<LowerLeft,NonNormalized> (BareSliceMatrix<double> T, SliceMatrix<double> X)
   {
     TriangularSolveLL(T,X);
   }
-  extern NGS_DLL_HEADER void TriangularSolveLLN (BareSliceMatrix<double> T, SliceMatrix<double> X);
+  extern NGS_DLL_HEADER void TriangularSolveLLN (BareSliceMatrix<double> T, SliceMatrix<double> X) NETGEN_NOEXCEPT;
   template <> inline void TriangularSolve<LowerLeft,Normalized> (BareSliceMatrix<double> T, SliceMatrix<double> X)
   {
     TriangularSolveLLN(T,X);
   }
 
-  extern NGS_DLL_HEADER void TriangularSolveUR (BareSliceMatrix<double> T, SliceMatrix<double> X);
+  extern NGS_DLL_HEADER void TriangularSolveUR (BareSliceMatrix<double> T, SliceMatrix<double> X) NETGEN_NOEXCEPT;
   template <> inline void TriangularSolve<UpperRight,NonNormalized> (BareSliceMatrix<double> T, SliceMatrix<double> X)
   {
     TriangularSolveUR(T,X);
   }
-  extern NGS_DLL_HEADER void TriangularSolveURN (BareSliceMatrix<double> T, SliceMatrix<double> X);
+  extern NGS_DLL_HEADER void TriangularSolveURN (BareSliceMatrix<double> T, SliceMatrix<double> X) NETGEN_NOEXCEPT;
   template <> inline void TriangularSolve<UpperRight,Normalized> (BareSliceMatrix<double> T, SliceMatrix<double> X)
   {
     TriangularSolveURN(T,X);
   }
 
   // col-major T, e.g. Trans(A)
-  extern NGS_DLL_HEADER void TriangularSolveLL (BareSliceMatrix<double,ColMajor> T, SliceMatrix<double> X);
+  extern NGS_DLL_HEADER void TriangularSolveLL (BareSliceMatrix<double,ColMajor> T, SliceMatrix<double> X) NETGEN_NOEXCEPT;
   template <> inline void TriangularSolve<LowerLeft,NonNormalized> (BareSliceMatrix<double,ColMajor> T, SliceMatrix<double> X)
   {
     TriangularSolveLL(T,X);
   }
-  extern NGS_DLL_HEADER void TriangularSolveLLN (BareSliceMatrix<double,ColMajor> T, SliceMatrix<double> X);
+  extern NGS_DLL_HEADER void TriangularSolveLLN (BareSliceMatrix<double,ColMajor> T, SliceMatrix<double> X) NETGEN_NOEXCEPT;
   template <> inline void TriangularSolve<LowerLeft,Normalized> (BareSliceMatrix<double,ColMajor> T, SliceMatrix<double> X)
   {
     TriangularSolveLLN(T,X);
   }
-  extern NGS_DLL_HEADER void TriangularSolveUR (BareSliceMatrix<double,ColMajor> T, SliceMatrix<double> X);
+  extern NGS_DLL_HEADER void TriangularSolveUR (BareSliceMatrix<double,ColMajor> T, SliceMatrix<double> X) NETGEN_NOEXCEPT;
   template <> inline void TriangularSolve<UpperRight,NonNormalized> (BareSliceMatrix<double,ColMajor> T, SliceMatrix<double> X)
   {
     TriangularSolveUR(T,X);
   }
-  extern NGS_DLL_HEADER void TriangularSolveURN (BareSliceMatrix<double,ColMajor> T, SliceMatrix<double> X);
+  extern NGS_DLL_HEADER void TriangularSolveURN (BareSliceMatrix<double,ColMajor> T, SliceMatrix<double> X) NETGEN_NOEXCEPT;
   template <> inline void TriangularSolve<UpperRight,Normalized> (BareSliceMatrix<double,ColMajor> T, SliceMatrix<double> X)
   {
     TriangularSolveURN(T,X);
@@ -235,10 +235,10 @@ namespace ngbla
   }
 
   
-  extern NGS_DLL_HEADER void TriangularMultLL (BareSliceMatrix<double> T, SliceMatrix<double> X);
-  extern NGS_DLL_HEADER void TriangularMultLLN (BareSliceMatrix<double> T, SliceMatrix<double> X);
-  extern NGS_DLL_HEADER void TriangularMultLL (BareSliceMatrix<double,ColMajor> T, SliceMatrix<double> X);
-  extern NGS_DLL_HEADER void TriangularMultLLN (BareSliceMatrix<double,ColMajor> T, SliceMatrix<double> X);
+  extern NGS_DLL_HEADER void TriangularMultLL (BareSliceMatrix<double> T, SliceMatrix<double> X) NETGEN_NOEXCEPT;
+  extern NGS_DLL_HEADER void TriangularMultLLN (BareSliceMatrix<double> T, SliceMatrix<double> X) NETGEN_NOEXCEPT;
+  extern NGS_DLL_HEADER void TriangularMultLL (BareSliceMatrix<double,ColMajor> T, SliceMatrix<double> X) NETGEN_NOEXCEPT;
+  extern NGS_DLL_HEADER void TriangularMultLLN (BareSliceMatrix<double,ColMajor> T, SliceMatrix<double> X) NETGEN_NOEXCEPT;
 
   template <> inline void TriangularMult<LowerLeft,NonNormalized> (BareSliceMatrix<double> T, SliceMatrix<double> X)
   {
@@ -262,10 +262,10 @@ namespace ngbla
 
 
   
-  extern NGS_DLL_HEADER void TriangularMultUR (BareSliceMatrix<double> T, SliceMatrix<double> X);
-  extern NGS_DLL_HEADER void TriangularMultURN (BareSliceMatrix<double> T, SliceMatrix<double> X);
-  extern NGS_DLL_HEADER void TriangularMultUR (BareSliceMatrix<double,ColMajor> T, SliceMatrix<double> X);
-  extern NGS_DLL_HEADER void TriangularMultURN (BareSliceMatrix<double,ColMajor> T, SliceMatrix<double> X);
+  extern NGS_DLL_HEADER void TriangularMultUR (BareSliceMatrix<double> T, SliceMatrix<double> X) NETGEN_NOEXCEPT;
+  extern NGS_DLL_HEADER void TriangularMultURN (BareSliceMatrix<double> T, SliceMatrix<double> X) NETGEN_NOEXCEPT;
+  extern NGS_DLL_HEADER void TriangularMultUR (BareSliceMatrix<double,ColMajor> T, SliceMatrix<double> X) NETGEN_NOEXCEPT;
+  extern NGS_DLL_HEADER void TriangularMultURN (BareSliceMatrix<double,ColMajor> T, SliceMatrix<double> X) NETGEN_NOEXCEPT;
   
   template <> inline void TriangularMult<UpperRight,NonNormalized> (BareSliceMatrix<double> T, SliceMatrix<double> X)
   {
@@ -321,12 +321,12 @@ namespace ngbla
     TriangularMult<!SIDE,NORM> (Trans(T), Trans(X));
   }
 
-  extern NGS_DLL_HEADER void MultTriangularLLN (SliceMatrix<double> X, BareSliceMatrix<double> T);
+  extern NGS_DLL_HEADER void MultTriangularLLN (SliceMatrix<double> X, BareSliceMatrix<double> T) NETGEN_NOEXCEPT;
   template <> inline void MultTriangular<LowerLeft,Normalized> (SliceMatrix<double> X, SliceMatrix<double> T)
   {
     MultTriangularLLN(X,T);
   }
-  extern NGS_DLL_HEADER void MultTriangularUR (SliceMatrix<double> X, BareSliceMatrix<double> T);
+  extern NGS_DLL_HEADER void MultTriangularUR (SliceMatrix<double> X, BareSliceMatrix<double> T) NETGEN_NOEXCEPT;
   template <> inline void MultTriangular<UpperRight> (SliceMatrix<double> X, SliceMatrix<double> T)
   {
     MultTriangularUR(X,T);
@@ -341,42 +341,42 @@ namespace ngbla
     TriangularSolve<!SIDE,NORM> (Trans(T), Trans(X));
   }
 
-  extern NGS_DLL_HEADER void SolveTriangularLL (SliceMatrix<double> X, BareSliceMatrix<double> T);
+  extern NGS_DLL_HEADER void SolveTriangularLL (SliceMatrix<double> X, BareSliceMatrix<double> T) NETGEN_NOEXCEPT;
   template <> inline void SolveTriangular<LowerLeft,NonNormalized> (SliceMatrix<double> X, BareSliceMatrix<double> T)
   {
     SolveTriangularLL(X,T);
   }
-  extern NGS_DLL_HEADER void SolveTriangularLL (SliceMatrix<double> X, BareSliceMatrix<double,ColMajor> T);
+  extern NGS_DLL_HEADER void SolveTriangularLL (SliceMatrix<double> X, BareSliceMatrix<double,ColMajor> T) NETGEN_NOEXCEPT;
   template <> inline void SolveTriangular<LowerLeft,NonNormalized> (SliceMatrix<double> X, BareSliceMatrix<double,ColMajor> T)
   {
     SolveTriangularLL(X,T);
   }
-  extern NGS_DLL_HEADER void SolveTriangularLLN (SliceMatrix<double> X, BareSliceMatrix<double> T);
+  extern NGS_DLL_HEADER void SolveTriangularLLN (SliceMatrix<double> X, BareSliceMatrix<double> T) NETGEN_NOEXCEPT;
   template <> inline void SolveTriangular<LowerLeft,Normalized> (SliceMatrix<double> X, BareSliceMatrix<double> T)
   {
     SolveTriangularLLN(X,T);
   }
-  extern NGS_DLL_HEADER void SolveTriangularLLN (SliceMatrix<double> X, BareSliceMatrix<double,ColMajor> T);
+  extern NGS_DLL_HEADER void SolveTriangularLLN (SliceMatrix<double> X, BareSliceMatrix<double,ColMajor> T) NETGEN_NOEXCEPT;
   template <> inline void SolveTriangular<LowerLeft,Normalized> (SliceMatrix<double> X, BareSliceMatrix<double,ColMajor> T)
   {
     SolveTriangularLLN(X,T);
   }
-  extern NGS_DLL_HEADER void SolveTriangularUR (SliceMatrix<double> X, BareSliceMatrix<double> T);
+  extern NGS_DLL_HEADER void SolveTriangularUR (SliceMatrix<double> X, BareSliceMatrix<double> T) NETGEN_NOEXCEPT;
   template <> inline void SolveTriangular<UpperRight,NonNormalized> (SliceMatrix<double> X, BareSliceMatrix<double> T)
   {
     SolveTriangularUR(X,T);
   }
-  extern NGS_DLL_HEADER void SolveTriangularUR (SliceMatrix<double> X, BareSliceMatrix<double,ColMajor> T);
+  extern NGS_DLL_HEADER void SolveTriangularUR (SliceMatrix<double> X, BareSliceMatrix<double,ColMajor> T) NETGEN_NOEXCEPT;
   template <> inline void SolveTriangular<UpperRight,NonNormalized> (SliceMatrix<double> X, BareSliceMatrix<double,ColMajor> T)
   {
     SolveTriangularUR(X,T);
   }
-  extern NGS_DLL_HEADER void SolveTriangularURN (SliceMatrix<double> X, BareSliceMatrix<double> T);
+  extern NGS_DLL_HEADER void SolveTriangularURN (SliceMatrix<double> X, BareSliceMatrix<double> T) NETGEN_NOEXCEPT;
   template <> inline void SolveTriangular<UpperRight,Normalized> (SliceMatrix<double> X, BareSliceMatrix<double> T)
   {
     SolveTriangularURN(X,T);
   }
-  extern NGS_DLL_HEADER void SolveTriangularURN (SliceMatrix<double> X, BareSliceMatrix<double,ColMajor> T);
+  extern NGS_DLL_HEADER void SolveTriangularURN (SliceMatrix<double> X, BareSliceMatrix<double,ColMajor> T) NETGEN_NOEXCEPT;
   template <> inline void SolveTriangular<UpperRight,Normalized> (SliceMatrix<double> X, BareSliceMatrix<double,ColMajor> T)
   {
     SolveTriangularURN(X,T);
@@ -387,7 +387,7 @@ namespace ngbla
   template <TRIG_SIDE SIDE, TRIG_NORMAL NORM=NonNormalized, ORDERING OT, ORDERING OXY>
   extern NGS_DLL_HEADER void GeneralizedTriangularMult_SM (SliceMatrix<double, OT> T,
                                                            SliceMatrix<double, OXY> X,
-                                                           SliceMatrix<double, OXY> Y);
+                                                           SliceMatrix<double, OXY> Y) NETGEN_NOEXCEPT;
     
   template <TRIG_SIDE SIDE, TRIG_NORMAL NORM=NonNormalized, typename TT, typename TX, typename TY>
   void GeneralizedTriangularMult (const TT & T,
@@ -402,7 +402,7 @@ namespace ngbla
   template <TRIG_SIDE SIDE, TRIG_NORMAL NORM=NonNormalized, ORDERING OT, ORDERING OXY>
   extern NGS_DLL_HEADER void GeneralizedTriangularSub_SM (SliceMatrix<double, OT> T,
                                                            SliceMatrix<double, OXY> X,
-                                                           SliceMatrix<double, OXY> Y);
+                                                           SliceMatrix<double, OXY> Y) NETGEN_NOEXCEPT;
 
     
   template <TRIG_SIDE SIDE, TRIG_NORMAL NORM=NonNormalized, typename TT, typename TX, typename TY>
@@ -526,12 +526,12 @@ namespace ngbla
 
   
   extern NGS_DLL_HEADER void CalcLU (SliceMatrix<double> A, FlatArray<int> p);
-  extern NGS_DLL_HEADER void InverseFromLU (SliceMatrix<double> A, FlatArray<int> p);
+  extern NGS_DLL_HEADER void InverseFromLU (SliceMatrix<double> A, FlatArray<int> p) NETGEN_NOEXCEPT;
   extern NGS_DLL_HEADER void CalcLU (SliceMatrix<Complex> A, FlatArray<int> p);
-  extern NGS_DLL_HEADER void InverseFromLU (SliceMatrix<Complex> A, FlatArray<int> p);
-  extern NGS_DLL_HEADER void SolveFromLU (SliceMatrix<double> A, FlatArray<int> p, SliceMatrix<double,ColMajor> X);
-  extern NGS_DLL_HEADER void SolveTransFromLU (SliceMatrix<double> A, FlatArray<int> p, SliceMatrix<double,ColMajor> X);
-  extern NGS_DLL_HEADER void SolveTransFromLU (SliceMatrix<Complex> A, FlatArray<int> p, SliceMatrix<Complex,ColMajor> X);
+  extern NGS_DLL_HEADER void InverseFromLU (SliceMatrix<Complex> A, FlatArray<int> p) NETGEN_NOEXCEPT;
+  extern NGS_DLL_HEADER void SolveFromLU (SliceMatrix<double> A, FlatArray<int> p, SliceMatrix<double,ColMajor> X) NETGEN_NOEXCEPT;
+  extern NGS_DLL_HEADER void SolveTransFromLU (SliceMatrix<double> A, FlatArray<int> p, SliceMatrix<double,ColMajor> X) NETGEN_NOEXCEPT;
+  extern NGS_DLL_HEADER void SolveTransFromLU (SliceMatrix<Complex> A, FlatArray<int> p, SliceMatrix<Complex,ColMajor> X) NETGEN_NOEXCEPT;
   
 
   

@@ -158,13 +158,13 @@ namespace ngbla
     TriangularMultLL1<NORM> (T11.Bare(), X1);
   }
 
-  void TriangularMultLL (BareSliceMatrix<double> T, SliceMatrix<double> X)
+  void TriangularMultLL (BareSliceMatrix<double> T, SliceMatrix<double> X) NETGEN_NOEXCEPT
   { TriangularMultLL1<NonNormalized> (T,X); }
-  void TriangularMultLLN (BareSliceMatrix<double> T, SliceMatrix<double> X)
+  void TriangularMultLLN (BareSliceMatrix<double> T, SliceMatrix<double> X) NETGEN_NOEXCEPT
   { TriangularMultLL1<Normalized> (T,X); }
-  void TriangularMultLL (BareSliceMatrix<double,ColMajor> T, SliceMatrix<double> X)
+  void TriangularMultLL (BareSliceMatrix<double,ColMajor> T, SliceMatrix<double> X) NETGEN_NOEXCEPT
   { TriangularMultLL1<NonNormalized> (T,X); }
-  void TriangularMultLLN (BareSliceMatrix<double,ColMajor> T, SliceMatrix<double> X)
+  void TriangularMultLLN (BareSliceMatrix<double,ColMajor> T, SliceMatrix<double> X) NETGEN_NOEXCEPT
   { TriangularMultLL1<Normalized> (T,X); }
 
   
@@ -243,13 +243,13 @@ namespace ngbla
     TriangularMultUR1<NORM> (T22.Bare(), X2);
   }
   
-  void TriangularMultUR (BareSliceMatrix<double> T, SliceMatrix<double> X)
+  void TriangularMultUR (BareSliceMatrix<double> T, SliceMatrix<double> X) NETGEN_NOEXCEPT
   { TriangularMultUR1<NonNormalized> (T,X); }
-  void TriangularMultURN (BareSliceMatrix<double> T, SliceMatrix<double> X)
+  void TriangularMultURN (BareSliceMatrix<double> T, SliceMatrix<double> X) NETGEN_NOEXCEPT
   { TriangularMultUR1<Normalized> (T,X); }
-  void TriangularMultUR (BareSliceMatrix<double,ColMajor> T, SliceMatrix<double> X)
+  void TriangularMultUR (BareSliceMatrix<double,ColMajor> T, SliceMatrix<double> X) NETGEN_NOEXCEPT
   { TriangularMultUR1<NonNormalized> (T,X); }
-  void TriangularMultURN (BareSliceMatrix<double,ColMajor> T, SliceMatrix<double> X)
+  void TriangularMultURN (BareSliceMatrix<double,ColMajor> T, SliceMatrix<double> X) NETGEN_NOEXCEPT
   { TriangularMultUR1<Normalized> (T,X); }
 
 
@@ -325,13 +325,13 @@ namespace ngbla
     TriangularSolveLL1<NORM,ORD> (T22, X2);
   }
 
-  void TriangularSolveLL (BareSliceMatrix<double> L, SliceMatrix<double> X)
+  void TriangularSolveLL (BareSliceMatrix<double> L, SliceMatrix<double> X) NETGEN_NOEXCEPT
   { TriangularSolveLL1<NonNormalized> (L,X); }
-  void TriangularSolveLLN (BareSliceMatrix<double> L, SliceMatrix<double> X)
+  void TriangularSolveLLN (BareSliceMatrix<double> L, SliceMatrix<double> X) NETGEN_NOEXCEPT
   { TriangularSolveLL1<Normalized> (L,X); }
-  void TriangularSolveLL (BareSliceMatrix<double,ColMajor> L, SliceMatrix<double> X)
+  void TriangularSolveLL (BareSliceMatrix<double,ColMajor> L, SliceMatrix<double> X) NETGEN_NOEXCEPT
   { TriangularSolveLL1<NonNormalized> (L,X); }
-  void TriangularSolveLLN (BareSliceMatrix<double,ColMajor> L, SliceMatrix<double> X)
+  void TriangularSolveLLN (BareSliceMatrix<double,ColMajor> L, SliceMatrix<double> X) NETGEN_NOEXCEPT
   { TriangularSolveLL1<Normalized> (L,X); }
 
 
@@ -408,13 +408,13 @@ namespace ngbla
     TriangularSolveUR1<NORM,ORD> (T11, X1);
   }
 
-  void TriangularSolveUR (BareSliceMatrix<double> U, SliceMatrix<double> X)
+  void TriangularSolveUR (BareSliceMatrix<double> U, SliceMatrix<double> X) NETGEN_NOEXCEPT
   { TriangularSolveUR1<NonNormalized> (U,X); }
-  void TriangularSolveURN (BareSliceMatrix<double> U, SliceMatrix<double> X)
+  void TriangularSolveURN (BareSliceMatrix<double> U, SliceMatrix<double> X) NETGEN_NOEXCEPT
   { TriangularSolveUR1<Normalized> (U,X); }
-  void TriangularSolveUR (BareSliceMatrix<double,ColMajor> U, SliceMatrix<double> X)
+  void TriangularSolveUR (BareSliceMatrix<double,ColMajor> U, SliceMatrix<double> X) NETGEN_NOEXCEPT
   { TriangularSolveUR1<NonNormalized> (U,X); }
-  void TriangularSolveURN (BareSliceMatrix<double,ColMajor> U, SliceMatrix<double> X)
+  void TriangularSolveURN (BareSliceMatrix<double,ColMajor> U, SliceMatrix<double> X) NETGEN_NOEXCEPT
   { TriangularSolveUR1<Normalized> (U,X); }
 
 
@@ -493,7 +493,7 @@ namespace ngbla
     MultTriangularLLN2 (X2,T22);
   }
   
-  void MultTriangularLLN (SliceMatrix<double> X, BareSliceMatrix<double> L)  
+  void MultTriangularLLN (SliceMatrix<double> X, BareSliceMatrix<double> L) NETGEN_NOEXCEPT  
   {
     size_t i = 0;
     constexpr size_t bw = 128;
@@ -584,7 +584,7 @@ namespace ngbla
     MultTriangularUR2 (X1,T11);
   }
 
-  void MultTriangularUR (SliceMatrix<double> X, BareSliceMatrix<double> U)  
+  void MultTriangularUR (SliceMatrix<double> X, BareSliceMatrix<double> U) NETGEN_NOEXCEPT  
   {
     // MultTriangularUR3 (X, L);
     // return;
@@ -699,13 +699,13 @@ namespace ngbla
     SolveTriangularLL1<NORM,ORD> (X1,T11);
   }
 
-  void SolveTriangularLL (SliceMatrix<double> X, BareSliceMatrix<double> T)
+  void SolveTriangularLL (SliceMatrix<double> X, BareSliceMatrix<double> T) NETGEN_NOEXCEPT
   { SolveTriangularLL1<NonNormalized> (X,T); }
-  void SolveTriangularLLN (SliceMatrix<double> X, BareSliceMatrix<double> T)
+  void SolveTriangularLLN (SliceMatrix<double> X, BareSliceMatrix<double> T) NETGEN_NOEXCEPT
   { SolveTriangularLL1<Normalized> (X,T); }
-  void SolveTriangularLL (SliceMatrix<double> X, BareSliceMatrix<double,ColMajor> T)
+  void SolveTriangularLL (SliceMatrix<double> X, BareSliceMatrix<double,ColMajor> T) NETGEN_NOEXCEPT
   { SolveTriangularLL1<NonNormalized> (X,T); }
-  void SolveTriangularLLN (SliceMatrix<double> X, BareSliceMatrix<double,ColMajor> T)
+  void SolveTriangularLLN (SliceMatrix<double> X, BareSliceMatrix<double,ColMajor> T) NETGEN_NOEXCEPT
   { SolveTriangularLL1<Normalized> (X,T); }
 
 
@@ -796,13 +796,13 @@ namespace ngbla
     SolveTriangularUR1<NORM,ORD> (X2,T22);
   }
 
-  void SolveTriangularUR (SliceMatrix<double> X, BareSliceMatrix<double> T)
+  void SolveTriangularUR (SliceMatrix<double> X, BareSliceMatrix<double> T) NETGEN_NOEXCEPT
   { SolveTriangularUR1<NonNormalized> (X,T); }
-  void SolveTriangularURN (SliceMatrix<double> X, BareSliceMatrix<double> T)
+  void SolveTriangularURN (SliceMatrix<double> X, BareSliceMatrix<double> T) NETGEN_NOEXCEPT
   { SolveTriangularUR1<Normalized> (X,T); }
-  void SolveTriangularUR (SliceMatrix<double> X, BareSliceMatrix<double,ColMajor> T)
+  void SolveTriangularUR (SliceMatrix<double> X, BareSliceMatrix<double,ColMajor> T) NETGEN_NOEXCEPT
   { SolveTriangularUR1<NonNormalized> (X,T); }
-  void SolveTriangularURN (SliceMatrix<double> X, BareSliceMatrix<double,ColMajor> T)
+  void SolveTriangularURN (SliceMatrix<double> X, BareSliceMatrix<double,ColMajor> T) NETGEN_NOEXCEPT
   { SolveTriangularUR1<Normalized> (X,T); }
 
 
@@ -913,49 +913,49 @@ namespace ngbla
   template <>
   void GeneralizedTriangularMult_SM<LowerLeft,Normalized> (SliceMatrix<double,ColMajor> T,
                                                           SliceMatrix<double,RowMajor> X,
-                                                          SliceMatrix<double,RowMajor> Y)
+                                                          SliceMatrix<double,RowMajor> Y) NETGEN_NOEXCEPT
   { GeneralizedTriangularMultLL<Normalized> (T,X,Y); }
 
   template <>
   void GeneralizedTriangularMult_SM<LowerLeft,Normalized> (SliceMatrix<double,RowMajor> T,
                                                           SliceMatrix<double,RowMajor> X,
-                                                          SliceMatrix<double,RowMajor> Y)
+                                                          SliceMatrix<double,RowMajor> Y) NETGEN_NOEXCEPT
   { GeneralizedTriangularMultLL<Normalized> (T,X,Y); }
 
   template <>
   void GeneralizedTriangularMult_SM<LowerLeft,Normalized> (SliceMatrix<double,ColMajor> T,
                                                           SliceMatrix<double,ColMajor> X,
-                                                          SliceMatrix<double,ColMajor> Y)
+                                                          SliceMatrix<double,ColMajor> Y) NETGEN_NOEXCEPT
   { GeneralizedTriangularMultLL<Normalized> (T,X,Y); }
 
   template <>
   void GeneralizedTriangularMult_SM<LowerLeft,Normalized> (SliceMatrix<double,RowMajor> T,
                                                           SliceMatrix<double,ColMajor> X,
-                                                          SliceMatrix<double,ColMajor> Y)
+                                                          SliceMatrix<double,ColMajor> Y) NETGEN_NOEXCEPT
   { GeneralizedTriangularMultLL<Normalized> (T,X,Y); }
 
   template <>
   void GeneralizedTriangularMult_SM<UpperRight,Normalized> (SliceMatrix<double,ColMajor> T,
                                                           SliceMatrix<double,RowMajor> X,
-                                                          SliceMatrix<double,RowMajor> Y)
+                                                          SliceMatrix<double,RowMajor> Y) NETGEN_NOEXCEPT
   { GeneralizedTriangularMultUR<Normalized> (T,X,Y); }
 
   template <>
   void GeneralizedTriangularMult_SM<UpperRight,Normalized> (SliceMatrix<double,RowMajor> T,
                                                           SliceMatrix<double,RowMajor> X,
-                                                          SliceMatrix<double,RowMajor> Y)
+                                                          SliceMatrix<double,RowMajor> Y) NETGEN_NOEXCEPT
   { GeneralizedTriangularMultUR<Normalized> (T,X,Y); }
 
   template <>
   void GeneralizedTriangularMult_SM<UpperRight,Normalized> (SliceMatrix<double,ColMajor> T,
                                                           SliceMatrix<double,ColMajor> X,
-                                                          SliceMatrix<double,ColMajor> Y)
+                                                          SliceMatrix<double,ColMajor> Y) NETGEN_NOEXCEPT
   { GeneralizedTriangularMultUR<Normalized> (T,X,Y); }
 
   template <>
   void GeneralizedTriangularMult_SM<UpperRight,Normalized> (SliceMatrix<double,RowMajor> T,
                                                           SliceMatrix<double,ColMajor> X,
-                                                          SliceMatrix<double,ColMajor> Y)
+                                                          SliceMatrix<double,ColMajor> Y) NETGEN_NOEXCEPT
   { GeneralizedTriangularMultUR<Normalized> (T,X,Y); }
 
 
@@ -1066,25 +1066,25 @@ namespace ngbla
   template <>
   void GeneralizedTriangularSub_SM<LowerLeft,Normalized> (SliceMatrix<double,ColMajor> T,
                                                           SliceMatrix<double,RowMajor> X,
-                                                          SliceMatrix<double,RowMajor> Y)
+                                                          SliceMatrix<double,RowMajor> Y) NETGEN_NOEXCEPT
   { GeneralizedTriangularSubLL<Normalized> (T,X,Y); }
 
   template <>
   void GeneralizedTriangularSub_SM<LowerLeft,Normalized> (SliceMatrix<double,RowMajor> T,
                                                           SliceMatrix<double,RowMajor> X,
-                                                          SliceMatrix<double,RowMajor> Y)
+                                                          SliceMatrix<double,RowMajor> Y) NETGEN_NOEXCEPT
   { GeneralizedTriangularSubLL<Normalized> (T,X,Y); }
 
   template <>
   void GeneralizedTriangularSub_SM<LowerLeft,Normalized> (SliceMatrix<double,ColMajor> T,
                                                           SliceMatrix<double,ColMajor> X,
-                                                          SliceMatrix<double,ColMajor> Y)
+                                                          SliceMatrix<double,ColMajor> Y) NETGEN_NOEXCEPT
   { GeneralizedTriangularSubLL<Normalized> (T,X,Y); }
 
   template <>
   void GeneralizedTriangularSub_SM<LowerLeft,Normalized> (SliceMatrix<double,RowMajor> T,
                                                           SliceMatrix<double,ColMajor> X,
-                                                          SliceMatrix<double,ColMajor> Y)
+                                                          SliceMatrix<double,ColMajor> Y) NETGEN_NOEXCEPT
   { GeneralizedTriangularSubLL<Normalized> (T,X,Y); }
   
   

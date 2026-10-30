@@ -550,7 +550,7 @@ namespace ngbla
     }
     
     /// move matrix
-    INLINE Matrix (Matrix && m2)
+    INLINE Matrix (Matrix && m2) noexcept
       : FlatMatrix<T,ORD> (0, 0, nullptr)
     {
       ngcore::Swap(this->layout, m2.layout);
@@ -658,7 +658,7 @@ namespace ngbla
       return *this;
     }
 
-    Matrix & operator= (Matrix && m2) 
+    Matrix & operator= (Matrix && m2) noexcept
     {
       // this->h = m2.h;      
       // this->w = m2.w;

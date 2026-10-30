@@ -738,18 +738,18 @@ namespace ngbla
       }
   }
 
-  void InverseFromLU (SliceMatrix<double> A, FlatArray<int> p)
+  void InverseFromLU (SliceMatrix<double> A, FlatArray<int> p) NETGEN_NOEXCEPT
   {
     T_InverseFromLU (A, p);
   }
 
-  void InverseFromLU (SliceMatrix<Complex> A, FlatArray<int> p)
+  void InverseFromLU (SliceMatrix<Complex> A, FlatArray<int> p) NETGEN_NOEXCEPT
   {
     T_InverseFromLU (A, p);
   }
 
 
-  void SolveFromLU (SliceMatrix<double> A, FlatArray<int> p, SliceMatrix<double,ColMajor> X)
+  void SolveFromLU (SliceMatrix<double> A, FlatArray<int> p, SliceMatrix<double,ColMajor> X) NETGEN_NOEXCEPT
   {
     size_t n = X.Height();
     VectorMem<100,double> hv(n);
@@ -795,12 +795,12 @@ namespace ngbla
     
   }
 
-  void SolveTransFromLU (SliceMatrix<double> A, FlatArray<int> p, SliceMatrix<double,ColMajor> X)
+  void SolveTransFromLU (SliceMatrix<double> A, FlatArray<int> p, SliceMatrix<double,ColMajor> X) NETGEN_NOEXCEPT
   {
     T_SolveTransFromLU (A, p, X);
   }
 
-  void SolveTransFromLU (SliceMatrix<Complex> A, FlatArray<int> p, SliceMatrix<Complex,ColMajor> X)
+  void SolveTransFromLU (SliceMatrix<Complex> A, FlatArray<int> p, SliceMatrix<Complex,ColMajor> X) NETGEN_NOEXCEPT
   {
     T_SolveTransFromLU (A, p, X);
   }

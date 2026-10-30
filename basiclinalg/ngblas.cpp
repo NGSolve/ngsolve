@@ -154,7 +154,7 @@ namespace ngbla
   }
 
   template <int SX>
-  void MultAddMatVecShort (double s, BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y)
+  void MultAddMatVecShort (double s, BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y) NETGEN_NOEXCEPT
   {
     KernelAddMatVec<SX> (s, y.Size(), a.Data(), a.Dist(), x.Data(), y.Data());
   }
@@ -202,7 +202,7 @@ namespace ngbla
   }
 
 
-  NGS_DLL_HEADER void MultAddMatVec_intern (double s, BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y)
+  NGS_DLL_HEADER void MultAddMatVec_intern (double s, BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y) NETGEN_NOEXCEPT
   {
     // y += s * a.AddSize(y.Size(),x.Size()) * x;
 
@@ -356,7 +356,7 @@ namespace ngbla
 
 
   template <int SX>
-  void MultAddMatTransVecShort (double s, BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y)
+  void MultAddMatTransVecShort (double s, BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y) NETGEN_NOEXCEPT
   {
     double hx[max(1,SX)];
     for (size_t i = 0; i < SX; i++)
@@ -366,7 +366,7 @@ namespace ngbla
   
 
 
-  NGS_DLL_HEADER void MultAddMatTransVec_intern (double s, BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y)
+  NGS_DLL_HEADER void MultAddMatTransVec_intern (double s, BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y) NETGEN_NOEXCEPT
   {
     constexpr int SW = SIMD<double>::Size();
     size_t h = x.Size();
@@ -681,13 +681,13 @@ namespace ngbla
 
   template <int SX>
   void MultAddMatTransVecShortI (double s, BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y,
-                                 FlatArray<int> ind)
+                                 FlatArray<int> ind) NETGEN_NOEXCEPT
   {
     KernelAddMatTransVecI<SX> (s, ind.Size(), &a(0,0), a.Dist(), x.Data(), y.Data(), &ind[0]);
   }
 
   NGS_DLL_HEADER void MultAddMatTransVecIndirect_intern (double s, BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y,
-                                                         FlatArray<int> ind)
+                                                         FlatArray<int> ind) NETGEN_NOEXCEPT
   {
     constexpr int BS = 24;
     size_t i = 0;
@@ -1098,7 +1098,7 @@ namespace ngbla
 
   template <size_t WA, OPERATION OP=SET> 
   REGCALL void MultMatMat_intern2_ShortSumW (size_t ha, size_t /* wa */, size_t wb,
-                                             BareSliceMatrix<> a, BareSliceMatrix<> b, BareSliceMatrix<> c)
+                                             BareSliceMatrix<> a, BareSliceMatrix<> b, BareSliceMatrix<> c) NETGEN_NOEXCEPT
   {
     if constexpr (WA <= 7 || reg32) 
       MatKernelShortSum2<WA,OP> (ha, wb, a.Data(), a.Dist(), b.Data(), b.Dist(), c.Data(), c.Dist());
@@ -1118,7 +1118,7 @@ namespace ngbla
   
   template <OPERATION OP>
   void REGCALL MultAB_intern (size_t ha, size_t wa, size_t wb,
-                              BareSliceMatrix<> a, BareSliceMatrix<> b, BareSliceMatrix<> c)
+                              BareSliceMatrix<> a, BareSliceMatrix<> b, BareSliceMatrix<> c) NETGEN_NOEXCEPT
   {
     if constexpr (OP == SET)
       if (ha <= 4)
@@ -1233,7 +1233,7 @@ namespace ngbla
 
   // c = a * b
   void MultMatMat_intern (size_t ha, size_t wa, size_t wb,
-                          BareSliceMatrix<> a, BareSliceMatrix<SIMD<double>> b, BareSliceMatrix<SIMD<double>> c)
+                          BareSliceMatrix<> a, BareSliceMatrix<SIMD<double>> b, BareSliceMatrix<SIMD<double>> c) NETGEN_NOEXCEPT
   {
     size_t k = 0;
     constexpr size_t SW = SIMD<double>::Size();
@@ -1341,7 +1341,7 @@ namespace ngbla
   // c = Trans(at) * b, at = Trans(a) is k x WA
   template <size_t WA, OPERATION OP>
   void REGCALL MultAtBSmallWA (size_t /* ah */, size_t aw, size_t bw, BareSliceMatrix<double,ColMajor> a,
-                               BareSliceMatrix<double> b, BareSliceMatrix<double> c)
+                               BareSliceMatrix<double> b, BareSliceMatrix<double> c) NETGEN_NOEXCEPT
   {
     auto at = Trans(a);
     if constexpr (WA <= 4)
@@ -1482,7 +1482,7 @@ namespace ngbla
   // c = Trans(a) * b, a = Trans(ac) is k x m
   template <OPERATION OP>
   void REGCALL MultAtB_intern (size_t wa, size_t ha, size_t wb, BareSliceMatrix<double,ColMajor> ac,
-                               BareSliceMatrix<double> b, BareSliceMatrix<double> c)
+                               BareSliceMatrix<double> b, BareSliceMatrix<double> c) NETGEN_NOEXCEPT
   {
     auto a = Trans(ac);
     if (wb <= 8)
@@ -1526,7 +1526,7 @@ namespace ngbla
   // c = a * Trans(bt), bt = Trans(b) is bw x SX
   template <int SX, OPERATION OP>
   void REGCALL MultABtSmallWA (size_t ah, size_t /* aw */, size_t bw, BareSliceMatrix<> a,
-                               BareSliceMatrix<double,ColMajor> b, BareSliceMatrix<> c)
+                               BareSliceMatrix<double,ColMajor> b, BareSliceMatrix<> c) NETGEN_NOEXCEPT
   {
     auto bt = Trans(b);
     double * pa = a.Data();
@@ -1652,7 +1652,7 @@ namespace ngbla
   // c = a * Trans(bt), bt = Trans(b)
   template <OPERATION OP>
   void REGCALL MultABt_intern (size_t ah, size_t aw, size_t bw, BareSliceMatrix<> a,
-                               BareSliceMatrix<double,ColMajor> b, BareSliceMatrix<> c)
+                               BareSliceMatrix<double,ColMajor> b, BareSliceMatrix<> c) NETGEN_NOEXCEPT
   {
     constexpr size_t bs = 256; // inner-product loop
     auto bt = Trans(b);
@@ -1669,7 +1669,7 @@ namespace ngbla
   // c = Trans(at) * Trans(bt): pack Trans(bt) blockwise and run the AtB kernels
   template <OPERATION OP>
   void REGCALL MultAtBt_intern (size_t ah, size_t aw, size_t bw, BareSliceMatrix<double,ColMajor> a,
-                                BareSliceMatrix<double,ColMajor> b, BareSliceMatrix<> c)
+                                BareSliceMatrix<double,ColMajor> b, BareSliceMatrix<> c) NETGEN_NOEXCEPT
   {
     constexpr size_t BK = 120, BN = 120;
     constexpr size_t N = gemm_dispatch_size<ColMajor,RowMajor>;
@@ -1778,13 +1778,13 @@ namespace ngbla
                 pa, a.Dist(), pb, b.Dist(), pc, c.Dist(), func);
   }
   
-  void AddABt (SliceMatrix<SIMD<double>> a, SliceMatrix<SIMD<double>> b, BareSliceMatrix<double> c)
+  void AddABt (SliceMatrix<SIMD<double>> a, SliceMatrix<SIMD<double>> b, BareSliceMatrix<double> c) NETGEN_NOEXCEPT
   {
     // c += a * Trans(b);
     TAddABt1 (a, b, c, [] (auto c, auto ab) { return c+ab; });
   }
 
-  void SubABt (SliceMatrix<SIMD<double>> a, SliceMatrix<SIMD<double>> b, BareSliceMatrix<double> c)
+  void SubABt (SliceMatrix<SIMD<double>> a, SliceMatrix<SIMD<double>> b, BareSliceMatrix<double> c) NETGEN_NOEXCEPT
   {
     // c -= a * Trans(b);
     TAddABt1 (a, b, c, [] (auto c, auto ab) { return c-ab; });
@@ -1900,7 +1900,7 @@ namespace ngbla
 
   void AddABtSym (SliceMatrix<double> a,
                   SliceMatrix<double> b,
-                  BareSliceMatrix<double> c)
+                  BareSliceMatrix<double> c) NETGEN_NOEXCEPT
   {
     TAddABt4Sym(a.Width(), a.Height(), b.Height(),
                 a.Data(), a.Dist(), b.Data(), b.Dist(), c.Data(), c.Dist(),
@@ -1910,7 +1910,7 @@ namespace ngbla
 
   void AddABtSym (SliceMatrix<SIMD<double>> a,
                   SliceMatrix<SIMD<double>> b,
-                  BareSliceMatrix<double> c)
+                  BareSliceMatrix<double> c) NETGEN_NOEXCEPT
   {
     // 4x4 blocks fit the triangle and leave registers to spare (32 registers), 3x4 otherwise
     constexpr size_t HA = reg32 ? 4 : 3;
@@ -1935,7 +1935,7 @@ namespace ngbla
 
   void AddABt (FlatMatrix<SIMD<Complex>> a,
                FlatMatrix<SIMD<Complex>> b,
-               SliceMatrix<Complex> c)
+               SliceMatrix<Complex> c) NETGEN_NOEXCEPT
   {
     for (size_t i = 0; i < c.Height(); i++)
       for (size_t j = 0; j < c.Width(); j++)
@@ -1949,7 +1949,7 @@ namespace ngbla
   
   void AddABtSym (FlatMatrix<SIMD<Complex>> a,
                   FlatMatrix<SIMD<Complex>> b,
-                  SliceMatrix<Complex> c)
+                  SliceMatrix<Complex> c) NETGEN_NOEXCEPT
   {
     AddABt (a, b, c);
   }
@@ -2080,7 +2080,7 @@ namespace ngbla
   
   void AddABt (SliceMatrix<SIMD<double>> a,
                SliceMatrix<SIMD<Complex>> b,
-               SliceMatrix<Complex> c)
+               SliceMatrix<Complex> c) NETGEN_NOEXCEPT
   {
     // RegionTimer reg(timer_addabtdc);
     // NgProfiler::AddThreadFlops(timer_addabtdc, TaskManager::GetThreadId(),
@@ -2095,7 +2095,7 @@ namespace ngbla
 
 
 
-  void AddABt (SliceMatrix<SIMD<Complex>> a, SliceMatrix<SIMD<double>> b, SliceMatrix<Complex> c)
+  void AddABt (SliceMatrix<SIMD<Complex>> a, SliceMatrix<SIMD<double>> b, SliceMatrix<Complex> c) NETGEN_NOEXCEPT
   {
     /*
     RegionTimer reg(timer_addabtcd);
@@ -2119,7 +2119,7 @@ namespace ngbla
   
   void AddABtSym (FlatMatrix<SIMD<double>> a,
                   FlatMatrix<SIMD<Complex>> b,
-                  SliceMatrix<Complex> c)
+                  SliceMatrix<Complex> c) NETGEN_NOEXCEPT
   {
     size_t ha = a.Height();
     size_t bs = 192;
@@ -2221,7 +2221,7 @@ namespace ngbla
   
   void AddABt (FlatMatrix<SIMD<double>> a,
                FlatMatrix<SIMD<double>> b,
-               SliceMatrix<Complex> c)
+               SliceMatrix<Complex> c) NETGEN_NOEXCEPT
   {
     constexpr size_t M = 92;
     constexpr size_t N = 64;
@@ -2242,7 +2242,7 @@ namespace ngbla
   
   void AddABtSym (FlatMatrix<SIMD<double>> a,
                   FlatMatrix<SIMD<double>> b,
-                  SliceMatrix<Complex> c)
+                  SliceMatrix<Complex> c) NETGEN_NOEXCEPT
   {
     constexpr size_t N = 92;
     double mem[N*N];
@@ -2267,7 +2267,7 @@ namespace ngbla
   
   void AddABt (SliceMatrix<double> a,
                SliceMatrix<double> b,
-               SliceMatrix<Complex> c)
+               SliceMatrix<Complex> c) NETGEN_NOEXCEPT
   {
     constexpr size_t M = 92;
     constexpr size_t N = 64;
@@ -2288,7 +2288,7 @@ namespace ngbla
   
   void AddABtSym (SliceMatrix<double> a,
                   SliceMatrix<double> b,
-                  SliceMatrix<Complex> c)
+                  SliceMatrix<Complex> c) NETGEN_NOEXCEPT
   {
     constexpr size_t N = 92;
     double mem[N*N];
@@ -2425,7 +2425,7 @@ namespace ngbla
 
 
   
-  void AddABt (SliceMatrix<double> a, SliceMatrix<Complex> b, BareSliceMatrix<Complex> bc)
+  void AddABt (SliceMatrix<double> a, SliceMatrix<Complex> b, BareSliceMatrix<Complex> bc) NETGEN_NOEXCEPT
   {
     // c.AddSize(a.Height(), b.Height()) += a * Trans(b);
     // return;
@@ -2539,7 +2539,7 @@ namespace ngbla
       }
   }
   
-  void AddABtSym (SliceMatrix<double> a, SliceMatrix<Complex> b, BareSliceMatrix<Complex> bc)
+  void AddABtSym (SliceMatrix<double> a, SliceMatrix<Complex> b, BareSliceMatrix<Complex> bc) NETGEN_NOEXCEPT
   {
     // c.AddSize(a.Height(), b.Height()) += a * Trans(b) | Lapack;
 
@@ -2868,12 +2868,12 @@ void T_AddABt (SliceMatrix<Complex> a, SliceMatrix<Complex> b, BareSliceMatrix<C
   }
 
 
-  void AddABt (SliceMatrix<Complex> a, SliceMatrix<Complex> b, BareSliceMatrix<Complex> c)
+  void AddABt (SliceMatrix<Complex> a, SliceMatrix<Complex> b, BareSliceMatrix<Complex> c) NETGEN_NOEXCEPT
   {
     T_AddABt (a, b, c, [](auto ab, auto c) { c += ab; });
   }
 
-  void SubABt (SliceMatrix<Complex> a, SliceMatrix<Complex> b, BareSliceMatrix<Complex> c)
+  void SubABt (SliceMatrix<Complex> a, SliceMatrix<Complex> b, BareSliceMatrix<Complex> c) NETGEN_NOEXCEPT
   {
     T_AddABt (a, b, c, [](auto ab, auto c) { c -= ab; });
   }
@@ -2881,7 +2881,7 @@ void T_AddABt (SliceMatrix<Complex> a, SliceMatrix<Complex> b, BareSliceMatrix<C
 
 
   
-  void AddABtSym (SliceMatrix<Complex> a, SliceMatrix<Complex> b, BareSliceMatrix<Complex> c)
+  void AddABtSym (SliceMatrix<Complex> a, SliceMatrix<Complex> b, BareSliceMatrix<Complex> c) NETGEN_NOEXCEPT
   {
     // c.AddSize(a.Height(), b.Height()) += a * Trans(b) | Lapack;
     AddABt (a, b, c);
@@ -3102,7 +3102,7 @@ void T_AddABt (SliceMatrix<Complex> a, SliceMatrix<Complex> b, BareSliceMatrix<C
   
   void SubAtDB (SliceMatrix<double> a,
                 SliceVector<double> diag,
-                SliceMatrix<double> b, SliceMatrix<double> c)
+                SliceMatrix<double> b, SliceMatrix<double> c) NETGEN_NOEXCEPT
   {
     for (size_t i = 0; i < a.Width(); i += NA)
       {
@@ -3115,7 +3115,7 @@ void T_AddABt (SliceMatrix<Complex> a, SliceMatrix<Complex> b, BareSliceMatrix<C
   
   void SubADBt (SliceMatrix<double> a,
                 SliceVector<double> diag,
-                SliceMatrix<double> b, SliceMatrix<double> c)
+                SliceMatrix<double> b, SliceMatrix<double> c) NETGEN_NOEXCEPT
   {
     static Timer t("SubADBt"); RegionTimer r(t);
     t.AddFlops(diag.Size()*c.Height()*c.Width());
@@ -3146,7 +3146,7 @@ void T_AddABt (SliceMatrix<Complex> a, SliceMatrix<Complex> b, BareSliceMatrix<C
   }
 
 
-  void ScaleCols (SliceMatrix<double,RowMajor> a, BareSliceVector<double> diag)
+  void ScaleCols (SliceMatrix<double,RowMajor> a, BareSliceVector<double> diag) NETGEN_NOEXCEPT
   {
     static Timer t("ScaleCols, RowMajor"); RegionTimer r(t);
     t.AddFlops(a.Height()*a.Width());
@@ -3155,7 +3155,7 @@ void T_AddABt (SliceMatrix<Complex> a, SliceMatrix<Complex> b, BareSliceMatrix<C
       a.Col(i) *= diag(i);
   }
 
-  void ScaleCols (SliceMatrix<double,ColMajor> a, BareSliceVector<double> diag)
+  void ScaleCols (SliceMatrix<double,ColMajor> a, BareSliceVector<double> diag) NETGEN_NOEXCEPT
   {
     static Timer t("ScaleCols, ColMajor"); RegionTimer r(t);
     t.AddFlops(a.Height()*a.Width());
@@ -3171,7 +3171,7 @@ void T_AddABt (SliceMatrix<Complex> a, SliceMatrix<Complex> b, BareSliceMatrix<C
   // c -= Trans(a) diag b, via the tuned complex GEMM
   void SubAtDB (SliceMatrix<Complex> a,
                 SliceVector<Complex> diag,
-                SliceMatrix<Complex> b, SliceMatrix<Complex> c)
+                SliceMatrix<Complex> b, SliceMatrix<Complex> c) NETGEN_NOEXCEPT
   {
     constexpr size_t BA = 64, BK = 64;
     alignas (64) double mema[2*BA*BK];   // no Complex[]: avoids zero-init
@@ -3195,7 +3195,7 @@ void T_AddABt (SliceMatrix<Complex> a, SliceMatrix<Complex> b, BareSliceMatrix<C
   }
 
 
-  void PairwiseInnerProduct (size_t n, FlatArray<double*> x, FlatArray<double*> y, BareSliceMatrix<double> ip) {
+  void PairwiseInnerProduct (size_t n, FlatArray<double*> x, FlatArray<double*> y, BareSliceMatrix<double> ip) NETGEN_NOEXCEPT {
 
     #ifdef __AVX512F__
         constexpr size_t HA = 6;
@@ -3268,7 +3268,7 @@ void T_AddABt (SliceMatrix<Complex> a, SliceMatrix<Complex> b, BareSliceMatrix<C
   }
 
 
-  void PairwiseInnerProduct (size_t n, FlatArray<Complex*> x, FlatArray<Complex*> y, BareSliceMatrix<Complex> ip, bool conj) {
+  void PairwiseInnerProduct (size_t n, FlatArray<Complex*> x, FlatArray<Complex*> y, BareSliceMatrix<Complex> ip, bool conj) NETGEN_NOEXCEPT {
 
     #ifdef __AVX512F__
         constexpr size_t HA = 6;
@@ -3342,7 +3342,7 @@ void T_AddABt (SliceMatrix<Complex> a, SliceMatrix<Complex> b, BareSliceMatrix<C
 
 
     // x_i += sum_j a(j,i) y_j
-  void MultiVectorAdd (size_t n, FlatArray<double*> x, FlatArray<double*> y, BareSliceMatrix<double> a) {
+  void MultiVectorAdd (size_t n, FlatArray<double*> x, FlatArray<double*> y, BareSliceMatrix<double> a) NETGEN_NOEXCEPT {
 
     constexpr int Hx = 6;
     constexpr int Hy = 6;
@@ -3391,7 +3391,7 @@ void T_AddABt (SliceMatrix<Complex> a, SliceMatrix<Complex> b, BareSliceMatrix<C
   }
 
 
-    void MultiVectorAdd (size_t n, FlatArray<Complex*> x, FlatArray<Complex*> y, BareSliceMatrix<Complex> a) {
+    void MultiVectorAdd (size_t n, FlatArray<Complex*> x, FlatArray<Complex*> y, BareSliceMatrix<Complex> a) NETGEN_NOEXCEPT {
 
     constexpr int Hx = 3;
     constexpr int Hy = 4;
@@ -3565,7 +3565,7 @@ void T_AddABt (SliceMatrix<Complex> a, SliceMatrix<Complex> b, BareSliceMatrix<C
   double MatKernelMaskedScalAB (size_t n,
 				double * pa, size_t da,
 				double * pb, size_t db,
-				const BitArray & ba)
+				const BitArray & ba) NETGEN_NOEXCEPT
   {
     double vhsum[8] = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
     int i(0);
