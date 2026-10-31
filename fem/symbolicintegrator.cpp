@@ -5205,9 +5205,6 @@ namespace ngfem
       if (!proxy->Evaluator()->SupportsVB(vb))
         throw Exception ("Trialfunction does not support "+ToString(vb)+"-forms, maybe a Trace() operator is missing, type = "+proxy->Evaluator()->Name());
 
-    for (auto proxy : trial_proxies)
-      if (proxy->Evaluator()->IsNonlinear())
-        has_nonlinear_proxy = true;
 
     nonzeros = Matrix<bool>(trial_cum.Last(), trial_cum.Last());
     nonzeros_proxies = Matrix<bool>(trial_proxies.Size(), trial_proxies.Size());
@@ -5264,7 +5261,10 @@ namespace ngfem
             for (int i = 0; i < trial_proxies.Size(); i++)
               {
                 CoefficientFunction::T_DJC cache;                
-                auto diffi = cf->DiffJacobi(trial_proxies[i], cache);
+                // scalar energy: gradient by reverse mode
+                auto diffi = (cf->Dimension() == 1)
+                  ? cf->VJP(trial_proxies[i], make_shared<ConstantCoefficientFunction>(1), cache)
+                  : cf->DiffJacobi(trial_proxies[i], cache);
                 dcf[i] = diffi;
                 cout << IM(5) << "diffi = " << *diffi << endl;
                 /*
@@ -5623,11 +5623,14 @@ namespace ngfem
     
             FlatMatrix<AutoDiffDiff<1,SIMD<double>>> ddval(1, mir.Size(), lh);
             FlatArray<FlatMatrix<SIMD<double>>> diags(trial_proxies.Size(), lh);
+            // diags are only used where no dcf is available
+            bool need_diags = false;
+            for (auto d : dcf) if (!d) need_diags = true;
             for (int k1 : Range(trial_proxies))
               {
                 auto proxy = trial_proxies[k1];
                 new(&diags[k1]) FlatMatrix<SIMD<double>>(proxy->Dimension(), mir.Size(), lh);
-                if (nonzeros_proxies(k1,k1))
+                if (nonzeros_proxies(k1,k1) && need_diags)
                   for (int k = 0; k < proxy->Dimension(); k++)
                     {
                       ud.trialfunction = proxy;
@@ -5894,6 +5897,49 @@ namespace ngfem
       }
   }
 
+  // d energy / d proxy_i at the points: from the symbolic gradient if available, else by AutoDiff per component
+  void SymbolicEnergy :: EnergyGradient (int i, const SIMD_BaseMappedIntegrationRule & mir, ProxyUserData & ud,
+                                         FlatMatrix<SIMD<double>> grad, LocalHeap & lh) const
+  {
+    auto proxy = trial_proxies[i];
+    if (i < dcf.Size() && dcf[i])
+      {
+        ud.trialfunction = nullptr;
+        dcf[i] -> Evaluate (mir, grad);
+        return;
+      }
+    FlatMatrix<AutoDiff<1,SIMD<double>>> vals(1, mir.Size(), lh);
+    for (int k = 0; k < proxy->Dimension(); k++)
+      {
+        ud.trialfunction = proxy;
+        ud.trial_comp = k;
+        cf -> Evaluate(mir, vals);
+        for (size_t j = 0; j < mir.Size(); j++)
+          grad(k,j) = vals(0,j).DValue(0);
+      }
+  }
+
+  void SymbolicEnergy :: EnergyGradient (int i, const BaseMappedIntegrationRule & mir, ProxyUserData & ud,
+                                         FlatMatrix<double> grad, LocalHeap & lh) const
+  {
+    auto proxy = trial_proxies[i];
+    if (i < dcf.Size() && dcf[i])
+      {
+        ud.trialfunction = nullptr;
+        dcf[i] -> Evaluate (mir, grad);
+        return;
+      }
+    FlatMatrix<AutoDiff<1>> dval(mir.Size(), 1, lh);
+    for (int k = 0; k < proxy->Dimension(); k++)
+      {
+        ud.trialfunction = proxy;
+        ud.trial_comp = k;
+        cf -> Evaluate (mir, dval);
+        for (size_t j = 0; j < mir.Size(); j++)
+          grad(j,k) = dval(j,0).DValue(0);
+      }
+  }
+
   void
   SymbolicEnergy :: ApplyElementMatrix (const FiniteElement & fel, 
                                         const ElementTransformation & trafo, 
@@ -5904,7 +5950,7 @@ namespace ngfem
   {
     // static Timer t("SymbolicEnergy::ApplyElementMatrix", NoTracing); 
         
-    if (simd_evaluate && !has_nonlinear_proxy) //  && !element_boundary)
+    if (simd_evaluate)
       {
         try
           {
@@ -5925,24 +5971,17 @@ namespace ngfem
                   proxy->Evaluator()->Apply(fel, mir, elx, ud.GetAMemory(proxy));
                 
                 ely = 0;
-                for (auto proxy : trial_proxies)
+                for (auto i : Range(trial_proxies))
                   {
+                    auto proxy = trial_proxies[i];
                     HeapReset hr(lh);
                     FlatMatrix<SIMD<double>> proxyvalues(proxy->Dimension(), ir.Size(), lh);
-                    FlatMatrix<AutoDiff<1,SIMD<double>>> vals(1, ir.Size(), lh);
-                    for (int k = 0; k < proxy->Dimension(); k++)
-                      {
-                        ud.trialfunction = proxy;
-                        ud.trial_comp = k;
-                        cf -> Evaluate(mir, vals);
-                        for (size_t j = 0; j < ir.Size(); j++)
-                          proxyvalues(k,j) = vals(0,j).DValue(0);
-                      }
+                    EnergyGradient (i, mir, ud, proxyvalues, lh);
 
                     for (size_t j = 0; j < ir.Size(); j++)
                       proxyvalues.Col(j) *= mir[j].GetWeight();
                     
-                    proxy->Evaluator()->AddTrans(fel, mir, proxyvalues, ely);
+                    proxy->Evaluator()->AddLinearizedTrans(fel, mir, elx, proxyvalues, ely, lh);
                   }
               }
             else
@@ -5973,24 +6012,17 @@ namespace ngfem
                     for (ProxyFunction * proxy : trial_proxies)
                       proxy->Evaluator()->Apply(fel, mir, elx, ud.GetAMemory(proxy));
                 
-                    for (auto proxy : trial_proxies)
+                    for (auto i : Range(trial_proxies))
                       {
+                        auto proxy = trial_proxies[i];
                         HeapReset hr(lh);
                         FlatMatrix<SIMD<double>> proxyvalues(proxy->Dimension(), mir.Size(), lh);
-                        FlatMatrix<AutoDiff<1,SIMD<double>>> vals(1, mir.Size(), lh);
-                        for (int k = 0; k < proxy->Dimension(); k++)
-                          {
-                            ud.trialfunction = proxy;
-                            ud.trial_comp = k;
-                            cf -> Evaluate(mir, vals);
-                            for (size_t j = 0; j < mir.Size(); j++)
-                              proxyvalues(k,j) = vals(0,j).DValue(0);
-                          }
+                        EnergyGradient (i, mir, ud, proxyvalues, lh);
                         
                         for (size_t j = 0; j < mir.Size(); j++)
                           proxyvalues.Col(j) *= mir[j].GetWeight();
                         
-                        proxy->Evaluator()->AddTrans(fel, mir, proxyvalues, ely);
+                        proxy->Evaluator()->AddLinearizedTrans(fel, mir, elx, proxyvalues, ely, lh);
                       }
                   }
               }
@@ -6025,21 +6057,14 @@ namespace ngfem
         
         ely = 0;
         FlatVector<> ely1(ely.Size(), lh);
-        FlatMatrix<AutoDiff<1>> dval(mir.Size(), 1, lh);
-        
-        for (auto proxy : trial_proxies)
+
+        for (auto ip : Range(trial_proxies))
           {
+            auto proxy = trial_proxies[ip];
             HeapReset hr(lh);
             FlatMatrix<> proxyvalues(mir.Size(), proxy->Dimension(), lh);
-            for (int k = 0; k < proxy->Dimension(); k++)
-              {
-                ud.trialfunction = proxy;
-                ud.trial_comp = k;
-                cf -> Evaluate (mir, dval);
-                for (size_t i = 0; i < mir.Size(); i++)
-                  proxyvalues(i,k) = dval(i,0).DValue(0);
-              }
-            
+            EnergyGradient (ip, mir, ud, proxyvalues, lh);
+
             for (int i = 0; i < mir.Size(); i++)
               proxyvalues.Row(i) *= mir[i].GetWeight();
             
@@ -6077,24 +6102,14 @@ namespace ngfem
               }
         
             FlatVector<> ely1(ely.Size(), lh);
-            // FlatMatrix<> val(mir.Size(), 1,lh), deriv(mir.Size(), 1,lh);
-            FlatMatrix<AutoDiff<1>> dval(mir.Size(), 1, lh);
-            
-            for (auto proxy : trial_proxies)
+
+            for (auto ip : Range(trial_proxies))
               {
+                auto proxy = trial_proxies[ip];
                 HeapReset hr(lh);
                 FlatMatrix<> proxyvalues(mir.Size(), proxy->Dimension(), lh);
-                for (int k = 0; k < proxy->Dimension(); k++)
-                  {
-                    ud.trialfunction = proxy;
-                    ud.trial_comp = k;
-                    // cf -> EvaluateDeriv (mir, val, deriv);
-                    // proxyvalues.Col(k) = deriv.Col(0);
-                    cf -> Evaluate (mir, dval);
-                    for (size_t i = 0; i < mir.Size(); i++)
-                      proxyvalues(i,k) = dval(i,0).DValue(0);
-                  }
-                
+                EnergyGradient (ip, mir, ud, proxyvalues, lh);
+
                 for (int i = 0; i < mir.Size(); i++)
                   proxyvalues.Row(i) *= mir[i].GetWeight();
                 

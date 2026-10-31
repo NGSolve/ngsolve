@@ -271,6 +271,15 @@ namespace ngfem
       ApplyTrans (fel, mir, flux, x, lh);
     }
 
+    // simd version, x += B'(elveclin)^T flux; default via CalcLinearizedMatrix for nonlinear diffops
+    NGS_DLL_HEADER virtual void
+    AddLinearizedTrans (const FiniteElement & fel,
+                          const SIMD_BaseMappedIntegrationRule & mir,
+                          BareSliceVector<double> elveclin,
+                          BareSliceMatrix<SIMD<double>> flux,
+                          BareSliceVector<double> x,
+                          LocalHeap & lh) const;
+
 
     /// calculates matrix on reference element
     

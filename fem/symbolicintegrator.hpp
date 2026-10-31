@@ -857,7 +857,11 @@ public:
     Matrix<bool> nonzeros;    // do components interact ? 
     Matrix<bool> nonzeros_proxies; // do proxies interact ?
     Array<shared_ptr<CoefficientFunction>> dcf, ddcf;
-    bool has_nonlinear_proxy = false;  // simd apply assumes linear diffops
+
+    void EnergyGradient (int i, const SIMD_BaseMappedIntegrationRule & mir, ProxyUserData & ud,
+                         FlatMatrix<SIMD<double>> grad, LocalHeap & lh) const;
+    void EnergyGradient (int i, const BaseMappedIntegrationRule & mir, ProxyUserData & ud,
+                         FlatMatrix<double> grad, LocalHeap & lh) const;
     
   public:
     SymbolicEnergy (shared_ptr<CoefficientFunction> acf, VorB avb, VorB aelement_vb);
