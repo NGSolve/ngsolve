@@ -1095,6 +1095,47 @@ namespace ngcomp
       mat.AddSize(nshape*Dim(), ms) = res;
     }
 
+    // x += (M^-1 db/du)^T B^T flux = grad_u <dual(M^-T B^T flux), func>
+    void AddLinearizedTrans (const FiniteElement & inner_fel,
+                             const SIMD_BaseMappedIntegrationRule & mir,
+                             BareSliceVector<double> elveclin,
+                             BareSliceMatrix<SIMD<double>> flux,
+                             BareSliceVector<double> x,
+                             LocalHeap & lh) const override
+    {
+      if (testfunction)
+        {
+          DifferentialOperator::AddLinearizedTrans (inner_fel, mir, elveclin, flux, x, lh);
+          return;
+        }
+      HeapReset hr(lh);
+      const ElementTransformation & trafo = mir.GetTransformation();
+      auto save_ud = trafo.PushUserData();
+      auto & interpol_fel = fes->GetFE(trafo.GetElementId(), lh);
+      size_t nint = interpol_fel.GetNDof();
+      size_t nshape = inner_fel.GetNDof();
+
+      FlatMatrix<> elmat(nint, lh);
+      FlatArray<int> piv(nint, lh);
+      if (!CalcDualMassLU (interpol_fel, trafo, elmat, piv, lh))
+        if (!CalcDualMassLU (interpol_fel, trafo, elmat, piv, lh))
+          throw ExceptionNOSIMD("InterpolateDiffOp, dual mass matrix");
+
+      FlatVector<> v(nint, lh);
+      v = 0.0;
+      diffop->AddTrans(interpol_fel, mir, flux, v);
+      SolveTransFromLU (elmat, piv, FlatMatrix<double,ColMajor>(nint, 1, v.Data()));
+
+      dual_fecf->Set (&interpol_fel, &v);
+      FlatVector<> u(nshape, lh), y(nshape, lh);
+      u = elveclin;
+      for (auto & hbfi : hessian_bfi)
+        {
+          hbfi->ApplyElementMatrix (inner_fel, trafo, u, y, nullptr, lh);
+          x.Range(nshape) += y;
+        }
+    }
+
     void CalcHessianAdd (const FiniteElement & inner_fel,
                          const SIMD_BaseMappedIntegrationRule & mir,
                          BareSliceMatrix<SIMD<double>> wprime,
