@@ -88,6 +88,15 @@ def mk_linear_form(fes, cf):
     return L
 
 def compare_lf(make_lf, fes):
+    # with uses_diff the cf is evaluated only once anyway, test the per-component path
+    uses_diff = ngsglobals.symbolic_integrator_uses_diff
+    ngsglobals.symbolic_integrator_uses_diff = False
+    try:
+        _compare_lf(make_lf, fes)
+    finally:
+        ngsglobals.symbolic_integrator_uses_diff = uses_diff
+
+def _compare_lf(make_lf, fes):
     logfile = mk_logfile("baseline.log")
     L = make_lf(fes, LoggingCF(mk_cf(fes), logfile=str(logfile)))
     baseline = eval_count(logfile)
