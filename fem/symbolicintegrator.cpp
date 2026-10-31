@@ -2281,7 +2281,19 @@ namespace ngfem
                         HeapReset hr(lh);
                         FlatMatrix<SIMD<SCAL>> proxyvalues(dim_proxy1*dim_proxy2, ir_facet.Size(), lh);
                 
-                        // td.Start();
+                        if (ddcf_dtest_dtrial.Height() > l1 && ddcf_dtest_dtrial(l1, k1))
+                          {
+                            // symbolic Jacobian, index l*dim1+k
+                            FlatMatrix<SIMD<SCAL>> dd(dim_proxy2*dim_proxy1, mir.Size(), lh);
+                            ud.trialfunction = nullptr;
+                            ud.testfunction = nullptr;
+                            ddcf_dtest_dtrial(l1, k1) -> Evaluate (mir, dd);
+                            for (size_t k = 0; k < dim_proxy1; k++)
+                              for (size_t l = 0; l < dim_proxy2; l++)
+                                for (size_t i = 0; i < mir.Size(); i++)
+                                  proxyvalues(k*dim_proxy2+l, i) = mir[i].GetWeight() * dd(l*dim_proxy1+k, i);
+                          }
+                        else
                         for (int k = 0; k < dim_proxy1; k++)
                           for (int l = 0; l < dim_proxy2; l++)
                             {
@@ -2566,6 +2578,56 @@ namespace ngfem
     CalcElementMatrix(fel, trafo, elmat, lh);
   }
   
+  // d^2 cf / d test_l1 d trial_k1 at the points, rows k*dim2+l: from symbolic derivatives if available
+  void SymbolicBilinearFormIntegrator ::
+  LinearizedProxyValues (int l1, int k1, const SIMD_BaseMappedIntegrationRule & mir, ProxyUserData & ud,
+                         FlatMatrix<SIMD<double>> proxyvalues, LocalHeap & lh) const
+  {
+    HeapReset hr(lh);
+    auto proxy1 = trial_proxies[k1];
+    auto proxy2 = test_proxies[l1];
+    size_t dim1 = proxy1->Dimension(), dim2 = proxy2->Dimension();
+    if (ddcf_dtest_dtrial.Height() > l1 && ddcf_dtest_dtrial(l1, k1))
+      {
+        // symbolic Jacobian, index l*dim1+k
+        FlatMatrix<SIMD<double>> dd(dim2*dim1, mir.Size(), lh);
+        ud.trialfunction = nullptr;
+        ud.testfunction = nullptr;
+        ddcf_dtest_dtrial(l1, k1) -> Evaluate (mir, dd);
+        for (size_t k = 0; k < dim1; k++)
+          for (size_t l = 0; l < dim2; l++)
+            proxyvalues.Row(k*dim2+l) = dd.Row(l*dim1+k);
+        return;
+      }
+    if (l1 < dcf_dtest.Size() && dcf_dtest[l1])
+      {
+        FlatMatrix<AutoDiff<1,SIMD<double>>> dval(dim2, mir.Size(), lh);
+        ud.testfunction = nullptr;
+        for (size_t k = 0; k < dim1; k++)
+          {
+            ud.trialfunction = proxy1;
+            ud.trial_comp = k;
+            dcf_dtest[l1] -> Evaluate (mir, dval);
+            for (size_t l = 0; l < dim2; l++)
+              for (size_t j = 0; j < mir.Size(); j++)
+                proxyvalues(k*dim2+l, j) = dval(l,j).DValue(0);
+          }
+        return;
+      }
+    FlatMatrix<AutoDiff<1,SIMD<double>>> val(1, mir.Size(), lh);
+    for (size_t k = 0, kk = 0; k < dim1; k++)
+      for (size_t l = 0; l < dim2; l++, kk++)
+        {
+          ud.trialfunction = proxy1;
+          ud.trial_comp = k;
+          ud.testfunction = proxy2;
+          ud.test_comp = l;
+          cf -> Evaluate (mir, val);
+          for (size_t j = 0; j < mir.Size(); j++)
+            proxyvalues(kk, j) = val(0,j).DValue(0);
+        }
+  }
+
   void 
   SymbolicBilinearFormIntegrator ::
   CalcLinearizedElementMatrix (const FiniteElement & fel,
@@ -2627,8 +2689,6 @@ namespace ngfem
             ud.AssignMemory (cf, ir.GetNIP(), cf->Dimension(), lh,
                              cf->IsComplex());
     
-          // AFlatMatrix<> val(1, mir.IR().GetNIP(), lh);
-          FlatMatrix<AutoDiff<1,SIMD<double>>> val(1, mir.Size(), lh);
           elmat = 0;
 
           IntRange unified_r1(0, 0);
@@ -2648,26 +2708,7 @@ namespace ngfem
                   
                   FlatMatrix<SIMD<double>> proxyvalues(proxy1->Dimension()*proxy2->Dimension(), ir.Size(), lh);
                   
-                  for (size_t k = 0, kk = 0; k < proxy1->Dimension(); k++)
-                    for (size_t l = 0; l < proxy2->Dimension(); l++, kk++)
-                      {
-                        ud.trialfunction = proxy1;
-                        ud.trial_comp = k;
-                        ud.testfunction = proxy2;
-                        ud.test_comp = l;
-                        // cf -> EvaluateDeriv (mir, val, proxyvalues.Rows(kk,kk+1));
-                        cf -> Evaluate (mir, val);
-                        auto row = proxyvalues.Row(kk);
-                        for (auto j : Range(mir.Size()))
-                          row(j) = val(j).DValue(0);
-                        /*
-                        if (HSum(L2Norm2(row)) > 0 && !nonzeros_deriv(test_cum[l1]+l, trial_cum[k1]+k))
-                          {
-                            cout << "wrong nonzero deriv" << endl;
-                            cout << "nonzeros_deriv = " << endl << nonzeros_deriv << endl;
-                          }
-                        */
-                      }
+                  LinearizedProxyValues (l1, k1, mir, ud, proxyvalues, lh);
                   
                   for (size_t i = 0; i < mir.Size(); i++)
                     proxyvalues.Col(i) *= mir[i].GetWeight();
@@ -2864,7 +2905,6 @@ namespace ngfem
               for (CoefficientFunction * cf : gridfunction_cfs)
                 ud.AssignMemory (cf, ir_facet.GetNIP(), cf->Dimension(), lh,cf->IsComplex());
 
-              FlatMatrix<AutoDiff<1,SIMD<double>>> val(1, mir.Size(), lh);
               
               for (int l1 : Range(test_proxies))
                 {
@@ -2882,20 +2922,7 @@ namespace ngfem
                       
                       FlatMatrix<SIMD<double>> proxyvalues(proxy1->Dimension()*proxy2->Dimension(), ir_facet.Size(), lh);
                       
-                      for (size_t k = 0, kk = 0; k < proxy1->Dimension(); k++)
-                        for (size_t l = 0; l < proxy2->Dimension(); l++, kk++)
-                          {
-                            // RegionTimer reg(td);                            
-                            ud.trialfunction = proxy1;
-                            ud.trial_comp = k;
-                            ud.testfunction = proxy2;
-                            ud.test_comp = l;
-                            
-                            cf -> Evaluate (mir, val);
-                            auto row = proxyvalues.Row(kk);
-                            for (auto j : Range(mir.Size()))
-                              row(j) = val(j).DValue(0);
-                          }
+                      LinearizedProxyValues (l1, k1, mir, ud, proxyvalues, lh);
 
                       for (size_t i = 0; i < mir.Size(); i++)
                         proxyvalues.Col(i) *= mir[i].GetWeight();                        

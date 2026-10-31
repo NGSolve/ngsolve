@@ -1023,9 +1023,9 @@ namespace ngcomp
       // cout << "hessian2 = " << endl << hessian2 << endl;
     } 
 
-    // inverse of dual mass matrix, false if single_bli needs scalar evaluation
-    bool CalcDualMassInverse (const FiniteElement & interpol_fel, const ElementTransformation & trafo,
-                              FlatMatrix<> elmat, LocalHeap & lh) const
+    // LU of dual mass matrix, false if single_bli needs scalar evaluation
+    bool CalcDualMassLU (const FiniteElement & interpol_fel, const ElementTransformation & trafo,
+                         FlatMatrix<> elmat, FlatArray<int> piv, LocalHeap & lh) const
     {
       elmat = 0.0;
       bool symmetric_so_far = false;
@@ -1042,7 +1042,7 @@ namespace ngcomp
             sbfi->SetSimdEvaluate(false);
           return false;
         }
-      CalcInverse(elmat);
+      CalcLU(elmat, piv);
       return true;
     }
 
@@ -1066,12 +1066,14 @@ namespace ngcomp
       size_t ms = mir.Size();
 
       FlatMatrix<> elmat(nint, lh);
-      if (!CalcDualMassInverse (interpol_fel, trafo, elmat, lh))
-        if (!CalcDualMassInverse (interpol_fel, trafo, elmat, lh))
+      FlatArray<int> piv(nint, lh);
+      if (!CalcDualMassLU (interpol_fel, trafo, elmat, piv, lh))
+        if (!CalcDualMassLU (interpol_fel, trafo, elmat, piv, lh))
           throw ExceptionNOSIMD("InterpolateDiffOp, dual mass matrix");
 
       MixedFiniteElement mfe(inner_fel, interpol_fel);
-      FlatMatrix<> m3(nint, nshape, lh), m3i(nint, nshape, lh);
+      FlatMatrix<double,ColMajor> m3(nint, nshape, lh);
+      FlatMatrix<> m3i(nint, nshape, lh);
       FlatVector<> elvec(nshape, lh);
       elvec = x;
       m3 = 0.0;
@@ -1080,16 +1082,16 @@ namespace ngcomp
           sbfi->CalcLinearizedElementMatrix (mfe, trafo, elvec, m3i, lh);
           m3 += m3i;
         }
-      FlatMatrix<> m2m3 = elmat * m3 | lh;
+      SolveFromLU (elmat, piv, m3);
 
-      // mat(i*Dim+d, p) = sum_j m2m3(j,i) * m1(j*Dim+d, p)
+      // mat(i*Dim+d, p) = sum_j (M^-1 m3)(j,i) * m1(j*Dim+d, p)
       constexpr size_t W = SIMD<double>::Size();
       FlatMatrix<SIMD<double>> m1(nint*Dim(), ms, lh);
       diffop->CalcMatrix(interpol_fel, mir, m1);
       FlatMatrix<SIMD<double>> res(nshape*Dim(), ms, lh);
       FlatMatrix<> m1d(nint, Dim()*ms*W, (double*)m1.Data());
       FlatMatrix<> resd(nshape, Dim()*ms*W, (double*)res.Data());
-      resd = Trans(m2m3) * m1d;
+      resd = Trans(m3) * m1d;
       mat.AddSize(nshape*Dim(), ms) = res;
     }
 
@@ -1111,8 +1113,9 @@ namespace ngcomp
       size_t nshape = inner_fel.GetNDof();
 
       FlatMatrix<> elmat(nint, lh);
-      if (!CalcDualMassInverse (interpol_fel, trafo, elmat, lh))
-        if (!CalcDualMassInverse (interpol_fel, trafo, elmat, lh))
+      FlatArray<int> piv(nint, lh);
+      if (!CalcDualMassLU (interpol_fel, trafo, elmat, piv, lh))
+        if (!CalcDualMassLU (interpol_fel, trafo, elmat, piv, lh))
           throw ExceptionNOSIMD("InterpolateDiffOp, dual mass matrix");
 
       FlatMatrix<SIMD<double>> wp(Dim(), mir.Size(), lh);
@@ -1123,9 +1126,9 @@ namespace ngcomp
       FlatVector<> rhs(nint, lh);
       rhs = 0.0;
       diffop->AddTrans(interpol_fel, mir, wp, rhs);
-      FlatVector<> v2 = Trans(elmat) * rhs | lh;
+      SolveTransFromLU (elmat, piv, FlatMatrix<double,ColMajor>(nint, 1, rhs.Data()));
 
-      dual_fecf->Set (&interpol_fel, &v2);
+      dual_fecf->Set (&interpol_fel, &rhs);
       FlatVector<> fvelvecu(nshape, lh);
       fvelvecu = elvecu;
       FlatMatrix<> hessian2(nshape, lh);
