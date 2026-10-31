@@ -275,6 +275,13 @@ namespace ngfem
     // returns Jacobi-matrix (possible as higher order tensor)
     virtual shared_ptr<CoefficientFunction>
       DiffJacobi (const CoefficientFunction * var, T_DJC & cache) const;
+    // vector-Jacobian product w^T d this / d var (reverse mode), result has dims of var
+    virtual shared_ptr<CoefficientFunction>
+      VJP (const CoefficientFunction * var, shared_ptr<CoefficientFunction> w, T_DJC & cache) const;
+    // local reverse-mode rule: w^T d this / d input_i for every input, empty if not provided
+    virtual Array<shared_ptr<CoefficientFunction>>
+      InputVJP (shared_ptr<CoefficientFunction> w) const
+      { return Array<shared_ptr<CoefficientFunction>>(); }
 
 
     // returns primary operator
@@ -1298,6 +1305,12 @@ public:
     // throw Exception ("unarycf "+name+" does not provide a derivative");
   }
 
+  Array<shared_ptr<CoefficientFunction>> InputVJP (shared_ptr<CoefficientFunction> w) const override
+  {
+    // componentwise: diagonal Jacobian, so VJP = directional derivative
+    return { this->Diff(c1.get(), w) };
+  }
+
   virtual shared_ptr<CoefficientFunction>
   DiffJacobi (const CoefficientFunction * var, T_DJC & cache) const override
   {
@@ -1647,6 +1660,9 @@ public:
   virtual shared_ptr<CoefficientFunction>
   DiffJacobi (const CoefficientFunction * var, T_DJC & cache) const override
   { return BASE::DiffJacobi(var, cache); }
+
+  Array<shared_ptr<CoefficientFunction>> InputVJP (shared_ptr<CoefficientFunction> w) const override
+  { return Array<shared_ptr<CoefficientFunction>>(); }
 
   /*
   virtual void NonZeroPattern (const class ProxyUserData & ud,

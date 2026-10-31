@@ -89,6 +89,12 @@ namespace ngfem
     int inner_dim;
     using BASE = T_CoefficientFunction<MultMatMatCoefficientFunction>;
   public:
+    Array<shared_ptr<CoefficientFunction>> InputVJP (shared_ptr<CoefficientFunction> w) const override
+    {
+      // A B: A gets w B^T, B gets A^T w
+      return { w * c2->Transpose(), c1->Transpose() * w };
+    }
+
     // MultMatMatCoefficientFunction() = default;
     MultMatMatCoefficientFunction (shared_ptr<CoefficientFunction> ac1,
                                    shared_ptr<CoefficientFunction> ac2)
@@ -718,6 +724,11 @@ namespace ngfem
       return TransposeCF (c1->Diff(var, dir));
     }
 
+    Array<shared_ptr<CoefficientFunction>> InputVJP (shared_ptr<CoefficientFunction> w) const override
+    {
+      return { w->Transpose() };
+    }
+
     shared_ptr<CoefficientFunction> DiffJacobi (const CoefficientFunction * var, T_DJC & cache) const override
     {
       auto thisptr = const_pointer_cast<CoefficientFunction>(this->shared_from_this());
@@ -742,6 +753,11 @@ class TraceCoefficientFunction : public T_CoefficientFunction<TraceCoefficientFu
   shared_ptr<CoefficientFunction> c1;
   using BASE = T_CoefficientFunction<TraceCoefficientFunction>;
 public:
+  Array<shared_ptr<CoefficientFunction>> InputVJP (shared_ptr<CoefficientFunction> w) const override
+  {
+    return { w * IdentityCF(c1->Dimensions()[0]) };
+  }
+
   // TraceCoefficientFunction() = default;
   TraceCoefficientFunction (shared_ptr<CoefficientFunction> ac1)
     : T_CoefficientFunction<TraceCoefficientFunction>(1, ac1->IsComplex()), c1(ac1)

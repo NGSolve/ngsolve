@@ -259,6 +259,78 @@ namespace ngfem
   }
 
   shared_ptr<CoefficientFunction> CoefficientFunction ::
+  VJP (const CoefficientFunction * var, shared_ptr<CoefficientFunction> w, T_DJC & cache) const
+  {
+    if (w->IsZeroCF())
+      return ZeroCF(var->Dimensions());
+    if (this == var)
+      return w->Reshape(var->Dimensions());
+
+    // reverse sweep over the DAG: nodes come inputs-first, seeds are accumulated per node
+    Array<CoefficientFunction*> nodes;
+    std::map<const CoefficientFunction*, bool> dep;
+    const_cast<CoefficientFunction*>(this)->TraverseDAG
+      ([&] (CoefficientFunction & cf)
+       {
+         bool d = (&cf == var);
+         for (auto & in : cf.InputCoefficientFunctions())
+           if (dep[in.get()]) d = true;
+         dep[&cf] = d;
+         nodes.Append(&cf);
+       });
+
+    std::map<const CoefficientFunction*, shared_ptr<CoefficientFunction>> adj;
+    shared_ptr<CoefficientFunction> res;
+    auto add = [] (shared_ptr<CoefficientFunction> & a, shared_ptr<CoefficientFunction> c)
+    { a = a ? a + c : c; };
+    adj[this] = w->Reshape(Dimensions());
+
+    for (int i = nodes.Size()-1; i >= 0; i--)
+      {
+        auto node = nodes[i];
+        auto it = adj.find(node);
+        if (it == adj.end() || !dep[node] || it->second->IsZeroCF()) continue;
+        auto a = it->second;
+        if (node == var) { add(res, a); continue; }
+
+        auto inputs = node->InputCoefficientFunctions();
+        int nd = node->Dimension();
+        Array<shared_ptr<CoefficientFunction>> contrib;
+        if (node->GetDescription() == "reshape")
+          contrib = { a };
+        else
+          try { contrib = node->InputVJP(a); }
+          catch (const Exception &) { contrib.SetSize0(); }
+
+        if (contrib.Size() == 0 && inputs.Size() == 1)
+          {
+            // local Jacobian w.r.t. the only input
+            T_DJC lcache;
+            auto J = node->DiffJacobi(inputs[0].get(), lcache);
+            int ni = inputs[0]->Dimension();
+            if (J->IsZeroCF())
+              continue;
+            contrib = { J->Reshape(nd, ni)->Transpose() * a->Reshape(nd) };
+          }
+
+        if (contrib.Size() == 0)
+          {
+            // no rule: full Jacobian of this node w.r.t. var
+            auto J = node->DiffJacobi(var, cache);
+            if (!J->IsZeroCF())
+              add(res, (J->Reshape(nd, var->Dimension())->Transpose() * a->Reshape(nd))
+                  ->Reshape(var->Dimensions()));
+            continue;
+          }
+
+        for (int k = 0; k < inputs.Size(); k++)
+          if (contrib[k] && dep[inputs[k].get()] && !contrib[k]->IsZeroCF())
+            add(adj[inputs[k].get()], contrib[k]->Reshape(inputs[k]->Dimensions()));
+      }
+    return res ? res->Reshape(var->Dimensions()) : ZeroCF(var->Dimensions());
+  }
+
+  shared_ptr<CoefficientFunction> CoefficientFunction ::
   Primary() const
   {
     throw Exception(string("Primary not implemented for CF ")+
@@ -1682,6 +1754,11 @@ class ScaleCoefficientFunction : public T_CoefficientFunction<ScaleCoefficientFu
   shared_ptr<CoefficientFunction> c1;
   typedef T_CoefficientFunction<ScaleCoefficientFunction> BASE;
 public:
+  Array<shared_ptr<CoefficientFunction>> InputVJP (shared_ptr<CoefficientFunction> w) const override
+  {
+    return { scal * w };
+  }
+
   ScaleCoefficientFunction() = default;
   ScaleCoefficientFunction (double ascal, 
                             shared_ptr<CoefficientFunction> ac1)
@@ -2012,6 +2089,12 @@ class MultScalVecCoefficientFunction : public T_CoefficientFunction<MultScalVecC
   shared_ptr<CoefficientFunction> c2;  // vector
   typedef T_CoefficientFunction<MultScalVecCoefficientFunction> BASE;
 public:
+  Array<shared_ptr<CoefficientFunction>> InputVJP (shared_ptr<CoefficientFunction> w) const override
+  {
+    int n = c2->Dimension();
+    return { InnerProduct(w->Reshape(n), c2->Reshape(n)), c1 * w };
+  }
+
   MultScalVecCoefficientFunction() = default;
   MultScalVecCoefficientFunction (shared_ptr<CoefficientFunction> ac1,
                                   shared_ptr<CoefficientFunction> ac2)
@@ -2217,6 +2300,11 @@ class MultVecVecCoefficientFunction : public T_CoefficientFunction<MultVecVecCoe
   int dim1;
   using BASE = T_CoefficientFunction<MultVecVecCoefficientFunction>;
 public:
+  Array<shared_ptr<CoefficientFunction>> InputVJP (shared_ptr<CoefficientFunction> w) const override
+  {
+    return { w * c2->Reshape(c1->Dimensions()), w * c1->Reshape(c2->Dimensions()) };
+  }
+
   MultVecVecCoefficientFunction() = default;
   MultVecVecCoefficientFunction (shared_ptr<CoefficientFunction> ac1,
                                  shared_ptr<CoefficientFunction> ac2)
@@ -2389,8 +2477,7 @@ public:
       dv1v2 = c2;
     else
       {
-        auto dvc1 = c1->DiffJacobi (var, cache);
-        dv1v2 = dvc1 -> Reshape(dimip, dimvar) -> Transpose() * vc2;
+        dv1v2 = c1->VJP (var, vc2, cache);
         dv1v2 = dv1v2 -> Reshape (var->Dimensions());
       }
 
@@ -2398,8 +2485,7 @@ public:
       dv2v1 = c1;
     else
       {
-        auto dvc2 = c2->DiffJacobi (var, cache);
-        dv2v1 = dvc2 -> Reshape(dimip, dimvar) -> Transpose() * vc1;
+        dv2v1 = c2->VJP (var, vc1, cache);
         dv2v1 = dv2v1 -> Reshape (var->Dimensions());
       }
     auto res = dv1v2 + dv2v1;
@@ -2420,6 +2506,11 @@ class T_MultVecVecCoefficientFunction : public T_CoefficientFunction<T_MultVecVe
   using BASE = T_CoefficientFunction<T_MultVecVecCoefficientFunction<DIM>>;
   using typename BASE::T_DJC;
 public:
+  Array<shared_ptr<CoefficientFunction>> InputVJP (shared_ptr<CoefficientFunction> w) const override
+  {
+    return { w * c2->Reshape(c1->Dimensions()), w * c1->Reshape(c2->Dimensions()) };
+  }
+
   T_MultVecVecCoefficientFunction() = default;
   T_MultVecVecCoefficientFunction (shared_ptr<CoefficientFunction> ac1,
                                    shared_ptr<CoefficientFunction> ac2)
@@ -2586,8 +2677,7 @@ public:
       dv1v2 = c2;
     else
       {
-        auto dvc1 = c1->DiffJacobi (var, cache);
-        dv1v2 = dvc1 -> Reshape(dimip, dimvar) -> Transpose() * vc2;
+        dv1v2 = c1->VJP (var, vc2, cache);
         dv1v2 = dv1v2 -> Reshape (var->Dimensions());
       }
 
@@ -2595,8 +2685,7 @@ public:
       dv2v1 = c1;
     else
       {
-        auto dvc2 = c2->DiffJacobi (var, cache);
-        dv2v1 = dvc2 -> Reshape(dimip, dimvar) -> Transpose() * vc1;
+        dv2v1 = c2->VJP (var, vc1, cache);
         dv2v1 = dv2v1 -> Reshape (var->Dimensions());        
       }
     auto res = dv1v2 + dv2v1;
@@ -2633,6 +2722,11 @@ class T_MultVecVecSameCoefficientFunction : public T_CoefficientFunction<T_MultV
   using BASE = T_CoefficientFunction<T_MultVecVecSameCoefficientFunction<DIM>>;
   using typename BASE::T_DJC;
 public:
+  Array<shared_ptr<CoefficientFunction>> InputVJP (shared_ptr<CoefficientFunction> w) const override
+  {
+    return { 2.0 * (w * c1) };
+  }
+
   T_MultVecVecSameCoefficientFunction() = default;
   T_MultVecVecSameCoefficientFunction (shared_ptr<CoefficientFunction> ac1)
     : T_CoefficientFunction<T_MultVecVecSameCoefficientFunction<DIM>>(1, ac1->IsComplex()), c1(ac1)
@@ -2772,8 +2866,7 @@ public:
       dv1v1 = c1;
     else
       {
-        auto dvc1 = c1->DiffJacobi (var, cache);
-        dv1v1 = dvc1 -> Reshape(dimip, dimvar) -> Transpose() * vc1;
+        dv1v1 = c1->VJP (var, vc1, cache);
         dv1v1 = dv1v1 -> Reshape (var->Dimensions());
       }
     auto res = 2*dv1v1;
@@ -2865,6 +2958,13 @@ class NormCoefficientFunction : public T_CoefficientFunction<NormCoefficientFunc
   typedef double TIN;
   using BASE = T_CoefficientFunction<NormCoefficientFunction>;
 public:
+  Array<shared_ptr<CoefficientFunction>> InputVJP (shared_ptr<CoefficientFunction> w) const override
+  {
+    if (c1->IsComplex()) return Array<shared_ptr<CoefficientFunction>>();
+    auto self = const_pointer_cast<CoefficientFunction>(this->shared_from_this());
+    return { (w / self) * c1 };
+  }
+
   NormCoefficientFunction() = default;
   NormCoefficientFunction (shared_ptr<CoefficientFunction> ac1)
     : T_CoefficientFunction<NormCoefficientFunction> (1, false), c1(ac1)
@@ -3032,8 +3132,7 @@ public:
       dv1v1 = c1;
     else
       {
-        auto dvc1 = c1->DiffJacobi (var, cache);
-        dv1v1 = dvc1 -> Reshape(dimip, dimvar) -> Transpose() * vc1;
+        dv1v1 = c1->VJP (var, vc1, cache);
         dv1v1 = dv1v1 -> Reshape (var->Dimensions());
       }
     auto res = (1.0 / const_cast<CoefficientFunction*>((CoefficientFunction*)this)->shared_from_this()) * dv1v1;
@@ -3384,6 +3483,15 @@ public:
     return c1->Diff(var,dir)*c2 + c1 * c2->Diff(var,dir);
   }
   
+  Array<shared_ptr<CoefficientFunction>> InputVJP (shared_ptr<CoefficientFunction> w) const override
+  {
+    // A v: A gets w v^T, v gets A^T w
+    int h = Dimension();
+    auto wv = w->Reshape(h);
+    return { (wv->Reshape(h, 1) * c2->Reshape(1, inner_dim))->Reshape(c1->Dimensions()),
+             c1->Reshape(h, inner_dim)->Transpose() * wv };
+  }
+
   shared_ptr<CoefficientFunction> DiffJacobi (const CoefficientFunction * var, T_DJC & cache) const override
   {
     auto thisptr = const_pointer_cast<CoefficientFunction>(this->shared_from_this());
@@ -3425,6 +3533,11 @@ class CrossProductCoefficientFunction : public T_CoefficientFunction<CrossProduc
   shared_ptr<CoefficientFunction> c2;
   using BASE = T_CoefficientFunction<CrossProductCoefficientFunction>;
 public:
+  Array<shared_ptr<CoefficientFunction>> InputVJP (shared_ptr<CoefficientFunction> w) const override
+  {
+    return { CrossProduct(c2, w), CrossProduct(w, c1) };
+  }
+
   CrossProductCoefficientFunction() = default;
   CrossProductCoefficientFunction (shared_ptr<CoefficientFunction> ac1,
                                    shared_ptr<CoefficientFunction> ac2)
@@ -3824,6 +3937,32 @@ cl_BinaryOpCF<GenericDiv>::DiffJacobi(const CoefficientFunction * var, T_DJC & c
   return res;
 }
 
+template <> Array<shared_ptr<CoefficientFunction>>
+cl_BinaryOpCF<GenericPlus>::InputVJP (shared_ptr<CoefficientFunction> w) const
+{ return { w, w }; }
+
+template <> Array<shared_ptr<CoefficientFunction>>
+cl_BinaryOpCF<GenericMinus>::InputVJP (shared_ptr<CoefficientFunction> w) const
+{ return { w, -1.0 * w }; }
+
+template <> Array<shared_ptr<CoefficientFunction>>
+cl_BinaryOpCF<GenericMult>::InputVJP (shared_ptr<CoefficientFunction> w) const
+{
+  if (c1->Dimension() == 1 && c2->Dimension() == 1)
+    return { w * c2, w * c1 };
+  if (c1->Dimensions() == c2->Dimensions())
+    return { CWMult(w, c2), CWMult(w, c1) };
+  return Array<shared_ptr<CoefficientFunction>>();
+}
+
+template <> Array<shared_ptr<CoefficientFunction>>
+cl_BinaryOpCF<GenericDiv>::InputVJP (shared_ptr<CoefficientFunction> w) const
+{
+  if (c1->Dimension() == 1 && c2->Dimension() == 1)
+    return { w / c2, -1.0 * (w * c1) / (c2 * c2) };
+  return Array<shared_ptr<CoefficientFunction>>();
+}
+
 
 
 
@@ -4212,6 +4351,11 @@ class ComponentCoefficientFunction : public T_CoefficientFunction<ComponentCoeff
   int comp;
   typedef T_CoefficientFunction<ComponentCoefficientFunction> BASE;
 public:
+  Array<shared_ptr<CoefficientFunction>> InputVJP (shared_ptr<CoefficientFunction> w) const override
+  {
+    return { w * UnitVectorCF(c1->Dimension(), comp) };
+  }
+
   ComponentCoefficientFunction() = default;
   ComponentCoefficientFunction (shared_ptr<CoefficientFunction> ac1,
                                 int acomp)
@@ -4424,6 +4568,21 @@ class SubTensorCoefficientFunction : public T_CoefficientFunction<SubTensorCoeff
   typedef T_CoefficientFunction<SubTensorCoefficientFunction> BASE;
   Array<int> mapping; // output index -> input index
 public:
+  Array<shared_ptr<CoefficientFunction>> InputVJP (shared_ptr<CoefficientFunction> w) const override
+  {
+    // scatter w back into the shape of c1
+    auto wv = w->Reshape(Dimension());
+    Array<shared_ptr<CoefficientFunction>> comps(dim1);
+    for (int i = 0; i < mapping.Size(); i++)
+      {
+        auto wi = MakeComponentCoefficientFunction(wv, i);
+        comps[mapping[i]] = comps[mapping[i]] ? comps[mapping[i]] + wi : wi;
+      }
+    for (auto & c : comps)
+      if (!c) c = ZeroCF(Array<int>());
+    return { MakeVectorialCoefficientFunction(std::move(comps)) };
+  }
+
   SubTensorCoefficientFunction() = default;
   SubTensorCoefficientFunction (shared_ptr<CoefficientFunction> ac1,
                                 int afirst, Array<int> anum, Array<int> adist)
@@ -6509,6 +6668,13 @@ class CompiledCoefficientFunction : public CompiledCoefficientFunctionInterface 
       auto res = Compile (diff_cf, _real_compile, _maxderiv, _wait, _keep_files);
       cache[thisptr] = res;
       return res;
+    }
+
+    shared_ptr<CoefficientFunction>
+    VJP (const CoefficientFunction * var, shared_ptr<CoefficientFunction> w, T_DJC & cache) const override
+    {
+      if (var == this) return CoefficientFunction::VJP(var, w, cache);
+      return Compile (cf->VJP (var, w, cache), _real_compile, _maxderiv, _wait, _keep_files);
     }
 
 

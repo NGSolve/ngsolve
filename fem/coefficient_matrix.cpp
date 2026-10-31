@@ -34,6 +34,14 @@ namespace ngfem
     using BASE = T_CoefficientFunction<InverseCoefficientFunction<D>>;
     using typename BASE::T_DJC;
   public:
+    Array<shared_ptr<CoefficientFunction>> InputVJP (shared_ptr<CoefficientFunction> w) const override
+    {
+      // d A^{-1}: -A^{-T} w A^{-T}
+      auto self = const_pointer_cast<CoefficientFunction>(this->shared_from_this());
+      auto it = self->Transpose();
+      return { -1.0 * (it * w * it) };
+    }
+
     InverseCoefficientFunction() = default;
     InverseCoefficientFunction (shared_ptr<CoefficientFunction> ac1)
       : T_CoefficientFunction<InverseCoefficientFunction>(D*D, ac1->IsComplex()), c1(ac1)
@@ -434,6 +442,11 @@ namespace ngfem
     shared_ptr<CoefficientFunction> c1;
     using BASE = T_CoefficientFunction<DeterminantCoefficientFunction<D>>;
   public:
+    Array<shared_ptr<CoefficientFunction>> InputVJP (shared_ptr<CoefficientFunction> w) const override
+    {
+      return { w * CofactorCF(c1) };
+    }
+
     DeterminantCoefficientFunction() = default;
     DeterminantCoefficientFunction (shared_ptr<CoefficientFunction> ac1)
       : T_CoefficientFunction<DeterminantCoefficientFunction>(1, ac1->IsComplex()), c1(ac1)
@@ -623,6 +636,24 @@ namespace ngfem
     shared_ptr<CoefficientFunction> c1;
     using BASE = T_CoefficientFunction<CofactorCoefficientFunction<D>>;
   public:
+    Array<shared_ptr<CoefficientFunction>> InputVJP (shared_ptr<CoefficientFunction> w) const override
+    {
+      if constexpr (D == 1)
+        return { ZeroCF(c1->Dimensions()) };
+      else if constexpr (D == 2)
+        return { CofactorCF(w) };   // Cof is linear and self-adjoint in 2D
+      else if constexpr (D == 3)
+        {
+          // Cayley-Hamilton: Cof A = 1/2 (trA^2 - tr A^2) I - trA A^T + (A^T)^2
+          auto A = c1, AT = c1->Transpose(), WT = w->Transpose();
+          auto trA = TraceCF(A), trW = TraceCF(w);
+          auto I = IdentityCF(3);
+          return { trW * (trA * I - AT) - TraceCF(w * A) * I - trA * WT + WT * AT + AT * WT };
+        }
+      else
+        return Array<shared_ptr<CoefficientFunction>>();
+    }
+
     CofactorCoefficientFunction() = default;
     CofactorCoefficientFunction (shared_ptr<CoefficientFunction> ac1)
       : T_CoefficientFunction<CofactorCoefficientFunction>(D*D, ac1->IsComplex()), c1(ac1)
