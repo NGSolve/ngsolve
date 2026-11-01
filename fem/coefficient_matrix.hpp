@@ -3,16 +3,20 @@
 
 namespace ngfem
 {
-  // c[i,j,...] = sum_k t[i,k,...] m[k,j]
+  // r[h,b,a,t] = c[h,a,b,t], reshaped to dims
+  shared_ptr<CoefficientFunction> SwapAxesCF (shared_ptr<CoefficientFunction> c,
+                                              int head, int n1, int n2, int tail,
+                                              FlatArray<int> dims);
+  // c[i,j,A,B] = sum_k t[i,k,A] m[k,j,B]
   shared_ptr<CoefficientFunction> MultTensorMatCF (shared_ptr<CoefficientFunction> t,
                                                    shared_ptr<CoefficientFunction> m);
-  // r[i,I,...] = eps_ijk eps_IJK a[j,J,...] b[k,K]
+  // r[i,I,A,B] = eps_ijk eps_IJK a[j,J,A] b[k,K,B]
   shared_ptr<CoefficientFunction> TensorCrossCF (shared_ptr<CoefficientFunction> a,
                                                  shared_ptr<CoefficientFunction> b);
   // r[i...,j...] = a[i...] b[j...]
   shared_ptr<CoefficientFunction> TensorProductCF (shared_ptr<CoefficientFunction> a,
                                                    shared_ptr<CoefficientFunction> b);
-  // r[i,...] = eps_ijk a[j] b[k,...]
+  // r[i,A,B] = eps_ijk a[j,A] b[k,B]
   shared_ptr<CoefficientFunction> CrossTensorCF (shared_ptr<CoefficientFunction> a,
                                                  shared_ptr<CoefficientFunction> b);
 

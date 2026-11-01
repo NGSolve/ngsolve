@@ -97,7 +97,28 @@ def test_diff(unit_mesh_3d):
 
     for cf in cfs:
         assert Integrate( Norm(cf.Diff(u,CF((1,0,0)))-cf.Diff(u)*CF((1,0,0))),unit_mesh_3d) == approx(0.0)
-    
+
+def test_diff_nested(unit_mesh_2d):
+    # Jacobian of Jacobian vs directional derivatives, matrix and vector variables
+    G = CF(tuple(0.1*i+x*(i%3)+y*(i%2)+(i in (0,4,8)) for i in range(9)), dims=(3,3)).MakeVariable()
+    v = CF((x+1,y,2)).MakeVariable()
+    B = CF((1,x,2, y,3,1, x,0,4), dims=(3,3))
+    def unit(var, k):
+        return CF(tuple(float(i==k) for i in range(var.dim)), dims=tuple(var.dims))
+    cases = [ (Cof(G), G, G), (G*Cof(G), G, G), (G*G*v, G, v), (Inv(G)*B, G, G),
+              (Cross(v,G*v), v, v), (Cross(G*v,v), G, v), (Cross(Cof(G)*v,G*v), G, G),
+              (OuterProduct(G*v,v), v, G) ]
+    mp = unit_mesh_2d(0.3, 0.4)
+    for cf, x1, x2 in cases:
+        H = cf.Diff(x1).Diff(x2)
+        h = H(mp)
+        for k in range(x1.dim):
+            for l in range(x2.dim):
+                ref = cf.Diff(x1,unit(x1,k)).Diff(x2,unit(x2,l))(mp)
+                ref = ref if isinstance(ref, tuple) else (ref,)
+                hkl = h[(k*x2.dim+l)::x1.dim*x2.dim]
+                assert hkl == approx(ref, abs=1e-12)
+
 if __name__ == "__main__":
     test_pow()
     test_ParameterCF()

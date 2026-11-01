@@ -174,7 +174,7 @@ namespace ngfem
                           " does not fit current dimension "+ToString(coef->Dimension()));
       }
             
-    if (coef -> GetDescription() == "reshape") //  && coef.use_count() == 1)
+    if (coef -> GetDescription() == "reshape" && !coef->IsVariable())
       {
         // cout << "double reshape found" << endl;
         auto inputs = coef->InputCoefficientFunctions();
