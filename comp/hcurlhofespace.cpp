@@ -202,7 +202,15 @@ namespace ngcomp
 
   }
   
-  HCurlHighOrderFESpace :: ~HCurlHighOrderFESpace () { ; }
+  HCurlHighOrderFESpace :: ~HCurlHighOrderFESpace () { ClearDualInverse(); }
+
+  void HCurlHighOrderFESpace :: ClearDualInverse ()
+  {
+    for (auto & mode : dual_inverse)
+      for (auto & row : mode)
+        for (auto & slot : row)
+          delete [] slot.exchange(nullptr);
+  }
   
   DocInfo HCurlHighOrderFESpace :: GetDocu ()
   {
@@ -230,6 +238,7 @@ namespace ngcomp
   void HCurlHighOrderFESpace :: Update()
   {
     FESpace::Update();
+    ClearDualInverse();
 
     int dim = ma->GetDimension(); 
 
@@ -1138,7 +1147,35 @@ namespace ngcomp
           hofe -> SetType1 (type1);          
           hofe -> ComputeNDof();
           // hofe -> SetDiscontinuous(discontinuous);
-          
+
+          // full order, and gradients on all or on no nodes of the element
+          if constexpr (ET == ET_TRIG || ET == ET_QUAD || ET == ET_TET)
+            if (!type1)
+              {
+                bool grad = usegrad_cell[ei.Nr()];
+                bool same = true;
+                for (auto e : ngel.Edges()) same &= usegrad_edge[e] == grad;
+                if constexpr (ET_trait<ET>::DIM == 3)
+                  for (auto f : ngel.Faces()) same &= usegrad_face[f] == grad;
+                HCurlHighOrderFE<ET> full(order);
+                if (!grad)
+                  {
+                    bool nog[12] = { };
+                    full.SetUseGradEdge (nog);
+                    full.SetUseGradFace (nog);
+                    full.SetUseGradCell (false);
+                    full.ComputeNDof();
+                  }
+                if (same && hofe->GetNDof() == full.GetNDof() && hofe->Order() == full.Order())
+                  {
+                    int cls = 0, bit = 0;
+                    for (int i = 0; i < ngel.vertices.Size(); i++)
+                      for (int j = i+1; j < ngel.vertices.Size(); j++, bit++)
+                        if (ngel.vertices[i] > ngel.vertices[j]) cls |= 1 << bit;
+                    int row = (ET == ET_TRIG) ? 0 : (ET == ET_QUAD) ? 1 : 2;
+                    hofe -> SetDualInverse (&dual_inverse[grad][row][cls]);
+                  }
+              }
           return *hofe;
         }
       case BND:

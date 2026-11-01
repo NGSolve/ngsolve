@@ -52,7 +52,11 @@ namespace ngcomp
     bool nodalp2;
     bool nodal;
     bool highest_order_dc;
-    bool test_ho_prolongation;    
+    bool test_ho_prolongation;
+
+    // D^-1 of full-order trigs, quads, tets, per vertex-order class
+    mutable std::atomic<double*> dual_inverse[3][64] {};
+    void ClearDualInverse ();
   public:
 
     H1HighOrderFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool checkflags=false);

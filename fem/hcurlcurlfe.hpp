@@ -15,6 +15,7 @@
 #include "recursive_pol.hpp"
 #include "recursive_pol_trig.hpp"
 #include "recursive_pol_tet.hpp"
+#include "dualinverse.hpp"
 
 namespace ngfem
 {
@@ -637,11 +638,30 @@ namespace ngfem
     IVec<DIM-1> order_facet[ET_trait<ET>::N_FACET];
     IVec<DIM> order_inner;
 
-    
+    // lazily filled D^-1 for full-order elements, owned by the space
+    std::atomic<double*> * dual_inverse = nullptr;
+
   public:
     using VertexOrientedFE<ET>::SetVertexNumbers;
     T_HCurlCurlFE * SetVertexNumbers (FlatArray<int> vnums) override
     { VertexOrientedFE<ELEMENT_TYPE(ET)>::SetVertexNumbers(vnums); return this; }
+
+    void SetDualInverse (std::atomic<double*> * slot) { dual_inverse = slot; }
+
+    using HCurlCurlFiniteElement<DIM>::SolveDuality;
+    bool SolveDuality (SliceVector<> rhs, SliceVector<> u, LocalHeap & lh) const override
+    {
+      if (!dual_inverse) return false;
+      u = FlatMatrix<>(ndof, ndof, GetDualInverse<ET,DIM*DIM> (*this, *dual_inverse, lh)) * rhs;
+      return true;
+    }
+
+    bool SolveDualityTrans (SliceVector<> rhs, SliceVector<> u, LocalHeap & lh) const override
+    {
+      if (!dual_inverse) return false;
+      u = Trans(FlatMatrix<>(ndof, ndof, GetDualInverse<ET,DIM*DIM> (*this, *dual_inverse, lh))) * rhs;
+      return true;
+    }
     
     T_HCurlCurlFE (int aorder)
     {

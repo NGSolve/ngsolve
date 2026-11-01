@@ -518,7 +518,14 @@ namespace ngcomp
 
   H1HighOrderFESpace :: ~H1HighOrderFESpace ()
   {
-    ;
+    ClearDualInverse();
+  }
+
+  void H1HighOrderFESpace :: ClearDualInverse ()
+  {
+    for (auto & row : dual_inverse)
+      for (auto & slot : row)
+        delete [] slot.exchange(nullptr);
   }
 
   DocInfo H1HighOrderFESpace :: GetDocu ()
@@ -570,6 +577,7 @@ into the wirebasket.
 
     // timer1.Start();
     FESpace::Update();
+    ClearDualInverse();
 
     if (order_policy == CONSTANT_ORDER)
       fixed_order = true;
@@ -1156,8 +1164,20 @@ into the wirebasket.
                        break;
                      }
                    }
-                 
+
                  hofe -> ComputeNDof();
+
+                 if constexpr (ET == ET_TRIG || ET == ET_QUAD || ET == ET_TET)
+                   if (!nodalp2 && hofe->GetNDof() == ET_trait<ET>::PolDimension(order))
+                     {
+                       auto vnums = ngel.Vertices();
+                       int cls = 0, bit = 0;
+                       for (int i = 0; i < vnums.Size(); i++)
+                         for (int j = i+1; j < vnums.Size(); j++, bit++)
+                           if (vnums[i] > vnums[j]) cls |= 1 << bit;
+                       int row = (ET == ET_TRIG) ? 0 : (ET == ET_QUAD) ? 1 : 2;
+                       hofe -> SetDualInverse (&dual_inverse[row][cls]);
+                     }
                  return *hofe;
                });
           }

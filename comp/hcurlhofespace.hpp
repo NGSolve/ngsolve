@@ -76,6 +76,10 @@ namespace ngcomp
     bool discontinuous;
     bool highest_order_dc;
     bool type1;        // first family
+
+    // D^-1 of full-order trigs, quads, tets, per [nograd/grad][type][vertex-order class]
+    mutable std::atomic<double*> dual_inverse[2][3][64] {};
+    void ClearDualInverse ();
     bool wb_loedge;    // keep linear on edge as wb-dof
     bool ctupgrade = true;  // set WIREBASKET_DOF on badly shaped elements
     

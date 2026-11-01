@@ -12,6 +12,7 @@
 
 #include "thcurlfe.hpp"
 #include "recursive_pol.hpp"
+#include "dualinverse.hpp"
 
 namespace ngfem
 {
@@ -56,6 +57,9 @@ namespace ngfem
     IVec<N_FACE, bool> usegrad_face;
     bool usegrad_cell;
     bool type1;   
+
+    // lazily filled D^-1 for full-order elements, owned by the space
+    std::atomic<double*> * dual_inverse = nullptr;
 
     using BASE::ndof;
     using BASE::order;
@@ -139,6 +143,23 @@ namespace ngfem
     virtual void EvaluateDual (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const override;
     virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> values,
                                BareSliceVector<double> coefs) const override;
+
+    void SetDualInverse (std::atomic<double*> * slot) { dual_inverse = slot; }
+
+    using BASE::SolveDuality;
+    bool SolveDuality (SliceVector<> rhs, SliceVector<> u, LocalHeap & lh) const override
+    {
+      if (!dual_inverse) return false;
+      u = FlatMatrix<>(ndof, ndof, GetDualInverse<ET,DIM> (*this, *dual_inverse, lh)) * rhs;
+      return true;
+    }
+
+    bool SolveDualityTrans (SliceVector<> rhs, SliceVector<> u, LocalHeap & lh) const override
+    {
+      if (!dual_inverse) return false;
+      u = Trans(FlatMatrix<>(ndof, ndof, GetDualInverse<ET,DIM> (*this, *dual_inverse, lh))) * rhs;
+      return true;
+    }
   };
 
 

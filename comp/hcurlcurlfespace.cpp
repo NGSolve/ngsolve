@@ -1847,9 +1847,17 @@ Einstein: Einstein tensor Ein_ij(g) = Ric_ij(g)-0.5*S(g) g_ij
     return docu;
   }
 
+  void HCurlCurlFESpace :: ClearDualInverse ()
+  {
+    for (auto & row : dual_inverse)
+      for (auto & slot : row)
+        delete [] slot.exchange(nullptr);
+  }
+
   void HCurlCurlFESpace :: Update()
   {
     int dim = ma->GetDimension();
+    ClearDualInverse();
 
     bool first_update = GetTimeStamp() < ma->GetTimeStamp();
     if (first_update) timestamp = NGS_Object::GetNextTimeStamp();
@@ -2123,6 +2131,41 @@ Einstein: Einstein tensor Ein_ij(g) = Ric_ij(g)-0.5*S(g) g_ij
   }
 
 
+  // full-order element (VOL, or BND of a surface space): share D^-1 per vertex-order class
+  template <ELEMENT_TYPE ET>
+  void HCurlCurlFESpace :: SetDualInverse (HCurlCurlFE<ET> * fe, ElementId ei) const
+  {
+    Ngs_Element ngel = ma->GetElement(ei);
+    if (ei.VB() == BND)
+      {
+        if (order_facet[ei.Nr()][0] != order || order_facet[ei.Nr()][1] != order) return;
+        for (auto e : ngel.Edges())
+          if (order_edge[e][0] != order) return;
+      }
+    else
+      {
+        if (order_inner[ei.Nr()][0] != order || order_inner[ei.Nr()][1] != order) return;
+        for (auto f : ngel.Facets())
+          if (order_facet[f][0] != order) return;
+      }
+    if constexpr (ET_trait<ET>::DIM == 3)
+      {
+        if (order_inner[ei.Nr()][2] != order) return;
+        for (auto f : ngel.Facets())
+          if (order_facet[f][1] != order) return;
+        for (auto e : ngel.Edges())
+          if (order_edge[e][0] != order) return;
+      }
+
+    auto vnums = ngel.Vertices();
+    int cls = 0, bit = 0;
+    for (int i = 0; i < vnums.Size(); i++)
+      for (int j = i+1; j < vnums.Size(); j++, bit++)
+        if (vnums[i] > vnums[j]) cls |= 1 << bit;
+    int row = (ET == ET_TRIG) ? 0 : (ET == ET_QUAD) ? 1 : 2;
+    fe->SetDualInverse (&dual_inverse[row][cls]);
+  }
+
   FiniteElement & HCurlCurlFESpace :: GetFE (ElementId ei,Allocator & alloc) const
   {
     Ngs_Element ngel = ma->GetElement(ei);
@@ -2150,6 +2193,7 @@ Einstein: Einstein tensor Ein_ij(g) = Ric_ij(g)-0.5*S(g) g_ij
                 fetr->SetOrderEdge(ii++,order_edge[e][0]);
               fetr->SetOrderInner(order_facet[ei.Nr()]);
               fetr->ComputeNDof();
+              SetDualInverse (fetr, ei);
               return *fetr;
             }
             
@@ -2162,6 +2206,7 @@ Einstein: Einstein tensor Ein_ij(g) = Ric_ij(g)-0.5*S(g) g_ij
                 fequ->SetOrderEdge(ii++,order_edge[e][0]);
               fequ->SetOrderInner(order_facet[ei.Nr()]);
               fequ->ComputeNDof();
+              SetDualInverse (fequ, ei);
               return *fequ;
               }
             
@@ -2217,9 +2262,10 @@ Einstein: Einstein tensor Ein_ij(g) = Ric_ij(g)-0.5*S(g) g_ij
           ii = 0;
           for(auto f : ngel.Facets())
             fe->SetOrderFacet(ii++,order_facet[f]);
-          
+
           fe->SetOrderInner(order_inner[ei.Nr()]);
           fe->ComputeNDof();
+          SetDualInverse (fe, ei);
           return *fe;
         }
       case ET_QUAD:
@@ -2234,6 +2280,7 @@ Einstein: Einstein tensor Ein_ij(g) = Ric_ij(g)-0.5*S(g) g_ij
             fe->SetOrderFacet(ii++,order_facet[f]);
           fe->SetOrderInner(order_inner[ei.Nr()]);
           fe->ComputeNDof();
+          SetDualInverse (fe, ei);
           return *fe;
         }
       case ET_PRISM:
@@ -2276,6 +2323,7 @@ Einstein: Einstein tensor Ein_ij(g) = Ric_ij(g)-0.5*S(g) g_ij
             fe->SetOrderFacet(ii++,order_facet[f]);
           fe->SetOrderInner(order_inner[ei.Nr()]);
           fe->ComputeNDof();
+          SetDualInverse (fe, ei);
           return *fe;
         }
       default:

@@ -10,6 +10,8 @@
 
 #include "fespace.hpp"
 
+namespace ngfem { template <ELEMENT_TYPE ET> class HCurlCurlFE; }
+
 namespace ngcomp
 {
 
@@ -33,8 +35,14 @@ namespace ngcomp
     int uniform_order_inner;
     int uniform_order_edge;
 
+    // D^-1 of full-order trigs, quads, tets, per vertex-order class
+    mutable std::atomic<double*> dual_inverse[3][64] {};
+    void ClearDualInverse ();
+    template <ELEMENT_TYPE ET> void SetDualInverse (HCurlCurlFE<ET> * fe, ElementId ei) const;
+
   public:
     HCurlCurlFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool checkflags=false);
+    ~HCurlCurlFESpace () { ClearDualInverse(); }
 
     virtual string GetClassName () const override
     {

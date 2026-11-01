@@ -87,6 +87,8 @@ namespace ngfem
       
     virtual bool SolveDuality (SliceVector<> rhs, SliceVector<> u, LocalHeap & lh) const { return false; }
     virtual bool SolveDuality (SliceVector<Complex> rhs, SliceVector<Complex> u, LocalHeap & lh) const { return false; }
+    // u = D^-T rhs
+    virtual bool SolveDualityTrans (SliceVector<> rhs, SliceVector<> u, LocalHeap & lh) const { return false; }
     
     virtual list<tuple<string,double>> Timing () const { return list<tuple<string,double>>(); }
   };
