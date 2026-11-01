@@ -49,6 +49,7 @@ namespace ngfem
   }
 
 
+  struct CodeExpr;
   struct Code
   {
     string top;
@@ -81,9 +82,11 @@ namespace ngfem
       return code;
     }
 
-    [[deprecated("use Declare(i,dims,iscomplex) instead")]]  
+    // explicit type, prefer Declare(i,dims,iscomplex)
     NGS_DLL_HEADER void Declare (string type, int i, FlatArray<int> dims);
     NGS_DLL_HEADER void Declare (int i, FlatArray<int> dims, bool iscomplex);
+    // declaring assignment of component comp, plain code deduces the type
+    NGS_DLL_HEADER string AssignNew (int i, int comp, FlatArray<int> dims, CodeExpr expr, bool iscomplex) const;
     NGS_DLL_HEADER string GetType (bool iscomplex) const;
   };
 

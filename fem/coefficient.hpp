@@ -1132,6 +1132,7 @@ namespace ngfem
 
 
   // *************************** CoefficientFunction Algebra ********************************
+  struct GenericIdentity;
   template <typename OP>
   class cl_UnaryOpCF : public T_CoefficientFunction<cl_UnaryOpCF<OP>>
 {
@@ -1177,6 +1178,15 @@ public:
   
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
+    if constexpr (std::is_same_v<OP, GenericIdentity>)
+      if (!code_uses_tensors)
+        {
+          // alias, no copy
+          for (int i = 0; i < this->Dimension(); i++)
+            code.body += "auto &" + Var(index, i, this->Dimensions()).S()
+              + " = " + Var(inputs[0], i, c1->Dimensions()).S() + ";\n";
+          return;
+        }
     //code.Declare (code.res_type, index, this->Dimensions());
     code.Declare (index, this->Dimensions(), this->IsComplex());
     if (code_uses_tensors)

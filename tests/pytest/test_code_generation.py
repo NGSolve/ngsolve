@@ -96,6 +96,48 @@ def test_code_generation_derivatives_2d(unit_mesh_2d):
     a += InnerProduct(Grad(u), Grad(v)).Compile(realcompile=True, wait=True, keep_files=True) * dx
     a.Assemble()
 
+def _codegen_groups(mesh):
+    from ngsolve.fem import Einsum
+    A = CF((x+2,y,1, 2,x*y+1,3, 0.5,5,y+3), dims=(3,3))
+    B = CF((1,x,2, y,3,1, x,0,4), dims=(3,3))
+    A2 = CF((x+2,y, 1,x+3), dims=(2,2))
+    v, w = CF((x+1,y,2)), CF((1,x,y))
+    gf = GridFunction(H1(mesh, order=2))
+    gf.Set(x*x+y)
+    gfc = GridFunction(H1(mesh, order=2, complex=True))
+    gfc.Set(x+1j*y)
+    G = CF((x,y,0.1, 0.2,x*y+1,0.3, 0.4,0.5,y+1), dims=(3,3)).MakeVariable()
+    zc = x+1j*y
+    return {
+        "scalar" : [ CF(3.5), Parameter(0.7)*x, sin(x)+exp(y)+sqrt(1+x)+atan(y)+log(2+x)+erf(x)+floor(3*x),
+                     x/(1+y)-x*y+(x+1)**y+atan2(y,x+1), IfPos(x-0.5, x, y), (x+y)**2 ],
+        "tensor" : [ x*v, InnerProduct(v,w), Norm(v), Normalize(v), Cross(v,w), OuterProduct(v,w),
+                     A*v, A*B, A.trans, Trace(A), Det(A), Inv(A), Cof(A), Sym(A), Skew(A), Id(3)*x,
+                     A[1,:]+A[:,0], A.Reshape((9,)), v.Reshape((1,3)), CF((0,1,0))*x,
+                     Inv(A2), Cof(A2), Det(A2), Einsum("ij,jk->ik", A, B) ],
+        "special" : [ specialcf.normal(2)*x, specialcf.tangential(2)*y, specialcf.mesh_size*x,
+                      gf*x, Grad(gf)*y, mesh.MaterialCF({"default" : 2.0}, default=1.0)*x ],
+        "derivative" : [ Cof(G).Diff(G), (Inv(G)*B).Diff(G), (Cof(G)*v).Diff(G),
+                         Cross(Normalize(Cof(G)*v), Normalize(G*w)).Diff(G) ],
+        "complex" : [ zc*zc+exp(zc), gfc*x ],
+    }
+
+@pytest.mark.parametrize("tensors", [False, True])
+@pytest.mark.parametrize("group", ["scalar", "tensor", "special", pytest.param("derivative", marks=pytest.mark.slow), "complex"])
+def test_code_generation_node_types(unit_mesh_2d, group, tensors):
+    # all functions of a group in one compiled vector
+    cf = CF(tuple(f.Reshape((f.dim,)) for f in _codegen_groups(unit_mesh_2d)[group]))
+    old = ngsglobals.code_uses_tensors
+    ngsglobals.code_uses_tensors = tensors
+    try:
+        cfc = cf.Compile(True, wait=True, maxderiv=1)
+    finally:
+        ngsglobals.code_uses_tensors = old
+    for p in [(0.3,0.4), (0.71,0.22)]:
+        mp = unit_mesh_2d(*p)
+        assert cfc(mp) == approx(cf(mp))
+    assert Integrate(Norm(cfc-cf), unit_mesh_2d) == approx(0, abs=1e-10)
+
 def test_code_generation_python_module(unit_mesh_3d):
     from ngsolve.fem import CompilePythonModule
 

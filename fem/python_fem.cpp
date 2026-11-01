@@ -182,9 +182,9 @@ cl_UnaryOpCF<GenericBSpline>::GenerateCode(Code &code, FlatArray<int> inputs, in
   
   stringstream s;
   s << "reinterpret_cast<BSpline*>(" << code.AddPointer(lam.sp.get()) << ")";
-  code.body += Var(index,0,1).Assign(s.str());
+  code.body += Var("bspline", index).Assign(s.str());
   
-  code.body += Var(index).Assign( Var(inputs[0],0,c1->Dimensions()).Func(Var(index,0,1).S()+"->operator()"));
+  code.body += code.AssignNew(index, 0, Array<int>(), Var(inputs[0],0,c1->Dimensions()).Func(Var("bspline", index).S()+"->operator()"), false);
 }
 
 template <> shared_ptr<CoefficientFunction>
@@ -459,7 +459,7 @@ direction : int
       if(code.is_simd)
       {
         string type = "SIMD<double>";
-        code.body += Var(index).Declare(type);
+        code.Declare (type, index, Array<int>());
         code.body += "if (mir[0].IP().FacetNr() != -1)\n{";
         code.body +=  Var(index).Assign( CodeExpr("fabs (ip.GetJacobiDet()) / ip.GetMeasure()"), false );
         code.body += "}else\n";
@@ -467,7 +467,7 @@ direction : int
       }
       else
       {
-        code.body += Var(index).Declare( "double" );
+        code.Declare ("double", index, Array<int>());
         code.body += R"CODE_(
         {
           double tmp_res = 0.0;

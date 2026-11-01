@@ -5294,17 +5294,23 @@ namespace ngfem
                   : cf->DiffJacobi(trial_proxies[i], cache);
                 dcf[i] = diffi;
                 cout << IM(5) << "diffi = " << *diffi << endl;
-                /*
-                  // compile time too long, at the moment
-                for (int j = 0; j < trial_proxies.Size(); j++)
-                  {
-                    // cout << "diff_" << i << "," << j << " = " << endl;
-                    CoefficientFunction::T_DJC cache;                                    
-                    ddcf[i*trial_proxies.Size()+j] = diffi->DiffJacobi(trial_proxies[j], cache);
-                    cout << IM(5) <<  "ddcf = " << *ddcf[i*trial_proxies.Size()+j] << endl;
-                  }
-                */
               }
+
+            // Hessian blocks, only k1 >= l1 are used; forward mode w.r.t. the smaller proxy
+            // derivatives of compiled cfs are compiled the same way
+            int np = trial_proxies.Size();
+            for (int i = 0; i < np; i++)
+              for (int j = 0; j <= i; j++)
+                {
+                  if (!nonzeros_proxies(i,j) || !dcf[i] || !dcf[j]) continue;
+                  int ni = trial_proxies[i]->Dimension(), nj = trial_proxies[j]->Dimension();
+                  CoefficientFunction::T_DJC cache;
+                  if (nj > ni)
+                    ddcf[i*np+j] = dcf[j]->DiffJacobi(trial_proxies[i], cache) -> Reshape(nj, ni) -> Transpose() -> Reshape(ni*nj);
+                  else
+                    ddcf[i*np+j] = dcf[i]->DiffJacobi(trial_proxies[j], cache);
+                  cout << IM(5) << "ddcf = " << *ddcf[i*np+j] << endl;
+                }
           }
         catch (const Exception& e)
           {
@@ -5691,13 +5697,13 @@ namespace ngfem
                   {
                   RegionTimer reg(tdmat);
 
-                  /*
                   if (ddcf[k1*trial_proxies.Size()+l1])
                     {
+                      ud.trialfunction = nullptr;
+                      ud.testfunction = nullptr;
                       ddcf[k1*trial_proxies.Size()+l1]->Evaluate(mir, proxyvalues2);
                     }
-                  */
-                  if (dcf[k1])
+                  else if (dcf[k1])
                     {
                       HeapReset hr(lh);
                       FlatMatrix<AutoDiff<1,SIMD<double>>> dval(dim_proxy1, mir.Size(), lh);

@@ -1275,6 +1275,8 @@ namespace ngfem {
 
           FlatArray<bool> declared(index_maps.Height(), lh);
           declared = false;
+          if (code_uses_tensors)
+            code.Declare (index, result_dims, IsComplex());
 
           const bool sparse_eval = get_option(options, "sparse_evaluation", sparse_evaluation_default);
           const auto cres = cfs.Size();
@@ -1304,12 +1306,15 @@ namespace ngfem {
                 if (declared[res_idx]) {
                   code.body += Var(index, res_idx, result_dims).S() + " += " + s.S() + ";\n";
                 } else {
-                  code.body += Var(index, res_idx, result_dims).Assign(s);
+                  code.body += Var(index, res_idx, result_dims).Assign(s, !code_uses_tensors);
                   declared[res_idx] = true;
                 }
               }
             } else if (!declared[res_idx]) {
-              code.body += Var(index, res_idx, result_dims).Declare(code.GetType(this->IsComplex()), 0.0);
+              if (code_uses_tensors)
+                code.body += Var(index, res_idx, result_dims).Assign(CodeExpr("0.0"), false);
+              else
+                code.body += Var(index, res_idx, result_dims).Declare(code.GetType(this->IsComplex()), 0.0);
               declared[res_idx] = true;
             }
           }

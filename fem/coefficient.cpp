@@ -258,6 +258,18 @@ namespace ngfem
     return res;
   }
 
+  // J(c)^T v, forward Jacobi re-uses the DiffJacobi cache
+  static shared_ptr<CoefficientFunction>
+  JacobiTransposeVec (shared_ptr<CoefficientFunction> c, shared_ptr<CoefficientFunction> v,
+                      const CoefficientFunction * var, CoefficientFunction::T_DJC & cache)
+  {
+    auto J = c->DiffJacobi (var, cache);
+    if (J->IsZeroCF())
+      return ZeroCF (var->Dimensions());
+    int dim = c->Dimension(), dimvar = var->Dimension();
+    return (v->Reshape(1, dim) * J->Reshape(dim, dimvar)) -> Reshape (var->Dimensions());
+  }
+
   shared_ptr<CoefficientFunction> CoefficientFunction ::
   VJP (const CoefficientFunction * var, shared_ptr<CoefficientFunction> w, T_DJC & cache) const
   {
@@ -670,7 +682,7 @@ namespace ngfem
 
   void ConstantCoefficientFunctionC :: GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
-    code.body += Var(index).Assign(Var(val));
+    code.body += code.AssignNew(index, 0, Array<int>(), Var(val), true);
   }
 
 
@@ -892,7 +904,7 @@ namespace ngfem
           code.header += ", ";
       }
       code.header += "};\n";
-      code.header += Var(index).Assign("tmp_"+ToLiteral(index) + "[mir.GetTransformation().GetElementIndex()]");
+      code.header += code.AssignNew(index, 0, Array<int>(), "tmp_"+ToLiteral(index) + "[mir.GetTransformation().GetElementIndex()]", false);
     }
 
 
@@ -1499,7 +1511,7 @@ public:
           else
             code.body += Var(index,i, Dimensions()).Assign(string("0.0"));
           */
-          code.body += Var(index,i, Dimensions()).Assign(string( (i==coord) ? "1.0" : "0.0"));          
+          code.body += code.AssignNew(index, i, Dimensions(), string( (i==coord) ? "1.0" : "0.0"), false);
         }
   }
 
@@ -1581,7 +1593,7 @@ public:
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
     for (int i : Range(Dimension()))
-      code.body += Var(index,i, Dimensions()).Assign(string("1.0"));
+      code.body += code.AssignNew(index, i, Dimensions(), string("1.0"), false);
   }
 
   using BASE::Evaluate;
@@ -1774,6 +1786,8 @@ public:
     BASE::DoArchive(archive);
     archive.Shallow(c1) & scal;
   }
+
+  auto GetCArgs() const { return tuple { scal, c1 }; }
 
   virtual void PrintReport (ostream & ost) const override
   {
@@ -2001,7 +2015,7 @@ public:
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
     for (int i = 0; i < c1->Dimension(); i++)
-      code.body += Var(index,i,Dimensions()).Assign( Var(scal) * Var(inputs[0],i,c1->Dimensions()) );
+      code.body += code.AssignNew(index, i, Dimensions(), Var(scal) * Var(inputs[0],i,c1->Dimensions()), IsComplex());
   }
 
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const  override
@@ -2248,8 +2262,7 @@ public:
     auto diffc1 = c1->DiffJacobi(var, cache);
     auto diffc2 = c2->DiffJacobi(var, cache);
     
-    auto prod1_ = c2 -> Reshape(mydim, 1) * diffc1 -> Reshape(1, dimvar);
-    auto prod1 = prod1_ -> Reshape(dimres);
+    auto prod1 = TensorProductCF (c2, diffc1) -> Reshape(dimres);
 
     auto prod2 = c1 * diffc2;
     auto res = prod1 + prod2;
@@ -2477,16 +2490,14 @@ public:
       dv1v2 = c2;
     else
       {
-        dv1v2 = c1->VJP (var, vc2, cache);
-        dv1v2 = dv1v2 -> Reshape (var->Dimensions());
+        dv1v2 = JacobiTransposeVec (c1, vc2, var, cache);
       }
 
     if (c2.get() == var)
       dv2v1 = c1;
     else
       {
-        dv2v1 = c2->VJP (var, vc1, cache);
-        dv2v1 = dv2v1 -> Reshape (var->Dimensions());
+        dv2v1 = JacobiTransposeVec (c2, vc1, var, cache);
       }
     auto res = dv1v2 + dv2v1;
     cache[thisptr] = res;
@@ -2677,16 +2688,14 @@ public:
       dv1v2 = c2;
     else
       {
-        dv1v2 = c1->VJP (var, vc2, cache);
-        dv1v2 = dv1v2 -> Reshape (var->Dimensions());
+        dv1v2 = JacobiTransposeVec (c1, vc2, var, cache);
       }
 
     if (c2.get() == var)
       dv2v1 = c1;
     else
       {
-        dv2v1 = c2->VJP (var, vc1, cache);
-        dv2v1 = dv2v1 -> Reshape (var->Dimensions());        
+        dv2v1 = JacobiTransposeVec (c2, vc1, var, cache);
       }
     auto res = dv1v2 + dv2v1;
     cache[thisptr] = res;
@@ -2866,8 +2875,7 @@ public:
       dv1v1 = c1;
     else
       {
-        dv1v1 = c1->VJP (var, vc1, cache);
-        dv1v1 = dv1v1 -> Reshape (var->Dimensions());
+        dv1v1 = JacobiTransposeVec (c1, vc1, var, cache);
       }
     auto res = 2*dv1v1;
     cache[thisptr] = res;
@@ -3132,8 +3140,7 @@ public:
       dv1v1 = c1;
     else
       {
-        dv1v1 = c1->VJP (var, vc1, cache);
-        dv1v1 = dv1v1 -> Reshape (var->Dimensions());
+        dv1v1 = JacobiTransposeVec (c1, vc1, var, cache);
       }
     auto res = (1.0 / const_cast<CoefficientFunction*>((CoefficientFunction*)this)->shared_from_this()) * dv1v1;
     cache[thisptr] = res;
@@ -3229,7 +3236,7 @@ public:
     auto res = CodeExpr();
     for (int i = 0; i < c1->Dimension(); i++)
       res += Var(inputs[0],i,c1->Dimensions()).Func("L2Norm2");
-    code.body += Var(index).Assign( res.Func("sqrt"));
+    code.body += code.AssignNew(index, 0, Array<int>(), res.Func("sqrt"), false);
   }
 
   /*
@@ -3488,7 +3495,7 @@ public:
     // A v: A gets w v^T, v gets A^T w
     int h = Dimension();
     auto wv = w->Reshape(h);
-    return { (wv->Reshape(h, 1) * c2->Reshape(1, inner_dim))->Reshape(c1->Dimensions()),
+    return { TensorProductCF (wv, c2->Reshape(inner_dim))->Reshape(c1->Dimensions()),
              c1->Reshape(h, inner_dim)->Transpose() * wv };
   }
 
@@ -3510,9 +3517,7 @@ public:
     auto diffc1 = c1->DiffJacobi (var, cache);
     auto diffc2 = c2->DiffJacobi (var, cache);
     
-    auto diffc1_trans = diffc1 -> TensorTranspose(0,1) -> Reshape(inner_dim, h*dimvar) -> Transpose();
-    auto prod1 = (diffc1_trans * c2) -> Reshape(h,dimvar);
-    auto prod1trans = prod1 -> Reshape(dimres);
+    auto prod1trans = MultTensorMatCF (diffc1 -> Reshape(Array<int>{h,inner_dim,dimvar}), c2 -> Reshape(inner_dim,1)) -> Reshape(dimres);
 
     auto diffc2_trans = diffc2 -> Reshape(inner_dim, dimvar);
     auto prod2 = c1 * diffc2_trans;
@@ -3682,22 +3687,13 @@ public:
     
         res = dcross1 + dcross2;
       }
-    else //second version, a little bit faster
+    else
       {
-        auto c11 = MakeComponentCoefficientFunction(c1,0);
-        auto c12 = MakeComponentCoefficientFunction(c1,1);
-        auto c13 = MakeComponentCoefficientFunction(c1,2);
-        auto c21 = MakeComponentCoefficientFunction(c2,0);
-        auto c22 = MakeComponentCoefficientFunction(c2,1);
-        auto c23 = MakeComponentCoefficientFunction(c2,2);
-
-        Array<shared_ptr<CoefficientFunction>> cross(3);
-        cross[0] = c12*c23 - c13*c22;
-        cross[1] = c13*c21 - c11*c23;
-        cross[2] = c11*c22 - c12*c21;
-
-        res = MakeVectorialCoefficientFunction(std::move(cross)) -> DiffJacobi (var, cache);
-        
+        // d(a x b) = a x db - b x da
+        auto diffc1 = c1 -> DiffJacobi (var, cache);
+        auto diffc2 = c2 -> DiffJacobi (var, cache);
+        res = CrossTensorCF (c1, diffc2->Reshape(3, dimvar)) - CrossTensorCF (c2, diffc1->Reshape(3, dimvar));
+        res = res->Reshape(dimres);
       }
     cache[thisptr] = res;
     return res;
@@ -3932,7 +3928,16 @@ cl_BinaryOpCF<GenericDiv>::DiffJacobi(const CoefficientFunction * var, T_DJC & c
   if (var == this)
     return make_shared<ConstantCoefficientFunction>(1);
   
-  auto res = (c2*c1->DiffJacobi (var, cache) - c1*c2->DiffJacobi (var, cache)) / (c2*c2);
+  // d(a/b) = (da - (a/b) db) / b
+  auto dc1 = c1->DiffJacobi (var, cache);
+  auto dc2 = c2->DiffJacobi (var, cache);
+  shared_ptr<CoefficientFunction> res;
+  if (dc2->IsZeroCF())
+    res = dc1->IsZeroCF() ? dc1 : (make_shared<ConstantCoefficientFunction>(1)/c2) * dc1;
+  else if (dc1->IsZeroCF())
+    res = (-1.0 * (thisptr/c2)) * dc2;
+  else
+    res = (make_shared<ConstantCoefficientFunction>(1)/c2) * (dc1 - thisptr*dc2);
   cache[thisptr] = res;
   return res;
 }
@@ -4023,6 +4028,13 @@ shared_ptr<CoefficientFunction> operator* (shared_ptr<CoefficientFunction> c1, s
             return make_shared<MultVecVecCoefficientFunction> (c1, c2);
           }
       }
+    auto isone = [] (const shared_ptr<CoefficientFunction> & c)
+    {
+      auto cc = dynamic_pointer_cast<ConstantCoefficientFunction>(c);
+      return cc && get<0>(cc->GetCArgs()) == 1.0;
+    };
+    if (isone(c1)) return c2;
+    if (isone(c2)) return c1;
     if (c1->Dimension() == 1 && c2->Dimension() > 1)
       {
         if (c1->Dimensions().Size())
@@ -4046,6 +4058,13 @@ shared_ptr<CoefficientFunction> operator* (shared_ptr<CoefficientFunction> c1, s
       return c2;
     else if (v1 == double(0))
       return ZeroCF(c2->Dimensions());
+    if (v1 == 1.0)
+      return c2;
+    if (auto sc = dynamic_pointer_cast<ScaleCoefficientFunction>(c2))
+      {
+        auto [s2, c] = sc->GetCArgs();
+        return v1*s2 == 1.0 ? c : make_shared<ScaleCoefficientFunction> (v1*s2, c);
+      }
 
     return make_shared<ScaleCoefficientFunction> (v1, c2); 
   }
@@ -4988,9 +5007,9 @@ public:
 
     for (int i = 0; i < imapping.Size(); i++)
       if (imapping[i] == -1)
-        code.body += Var(index, i, Dimensions()).Assign( string("0.0"));
+        code.body += code.AssignNew(index, i, Dimensions(), string("0.0"), IsComplex());
       else
-        code.body += Var(index, i, Dimensions()).Assign( Var(inputs[0], imapping[i], dims1));
+        code.body += code.AssignNew(index, i, Dimensions(), Var(inputs[0], imapping[i], dims1), IsComplex());
   }
 
   
@@ -5266,8 +5285,7 @@ public:
         // outer product v1 x ... x vk
         auto prod = vectors[0];
         for (int d = 1; d < k; d++)
-          prod = (prod->Reshape(prod->Dimension(), 1) * vectors[d]->Reshape(1, vectors[d]->Dimension()))
-            -> Reshape(prod->Dimension()*vectors[d]->Dimension());
+          prod = TensorProductCF (prod, vectors[d]) -> Reshape(prod->Dimension()*vectors[d]->Dimension());
         add (prod->Reshape(resdims));
       }
     else
@@ -5528,10 +5546,9 @@ public:
     code.body += "// DomainWiseCoefficientFunction:\n";
     string type = "decltype(0.0";
     for(int in : inputs)
-      type += "+decltype("+Var(in,0,Dimensions()).S()+")()";
+      type += "+std::decay_t<decltype("+Var(in,0,Dimensions()).S()+")>()";
     type += ")";
-    for (int i = 0; i < Dimension(); i++)
-      code.body += Var(index,i,this->Dimensions()).Declare(type);
+    code.Declare (type, index, Dimensions());
     code.body += "switch(domain_index) {\n";
     for(int domain : Range(inputs))
     {
@@ -6651,8 +6668,8 @@ class CompiledCoefficientFunction : public CompiledCoefficientFunctionInterface 
     {
       if (var == this) return Compile (dir, _real_compile, _maxderiv, _wait, _keep_files);
       auto diff_cf = cf->Diff(var, dir);
-      // return Compile (diff_cf, false, 0, 0);
-      return Compile (diff_cf, _real_compile, _maxderiv, _wait, _keep_files);
+      // a derivative needs one derivative order less
+      return Compile (diff_cf, _real_compile, max(_maxderiv-1, 0), _wait, _keep_files);
     }
 
     virtual shared_ptr<CoefficientFunction>
@@ -6664,8 +6681,7 @@ class CompiledCoefficientFunction : public CompiledCoefficientFunctionInterface 
 
       if (var == this) return Compile (IdentityCF(Dimensions()), _real_compile, _maxderiv, _wait);
       auto diff_cf = cf->DiffJacobi (var, cache);
-      // return Compile (diff_cf, false, 0, 0);
-      auto res = Compile (diff_cf, _real_compile, _maxderiv, _wait, _keep_files);
+      auto res = Compile (diff_cf, _real_compile, max(_maxderiv-1, 0), _wait, _keep_files);
       cache[thisptr] = res;
       return res;
     }
@@ -6674,7 +6690,7 @@ class CompiledCoefficientFunction : public CompiledCoefficientFunctionInterface 
     VJP (const CoefficientFunction * var, shared_ptr<CoefficientFunction> w, T_DJC & cache) const override
     {
       if (var == this) return CoefficientFunction::VJP(var, w, cache);
-      return Compile (cf->VJP (var, w, cache), _real_compile, _maxderiv, _wait, _keep_files);
+      return Compile (cf->VJP (var, w, cache), _real_compile, max(_maxderiv-1, 0), _wait, _keep_files);
     }
 
 
@@ -7081,7 +7097,7 @@ class CompiledCoefficientFunction : public CompiledCoefficientFunctionInterface 
     void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
     {
       for (int i = 0; i < cf->Dimension(); i++)
-        code.body += Var(index,i,cf->Dimensions()).Assign( Var(inputs[0], i, cf->Dimensions()) );
+        code.body += code.AssignNew(index, i, cf->Dimensions(), Var(inputs[0], i, cf->Dimensions()), IsComplex());
     }
 
     virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
@@ -7133,7 +7149,7 @@ class RealCF : public T_CoefficientFunction<RealCF>
     void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
     {
       for (int i = 0; i < Dimension(); i++)
-        code.body += Var(index,i,Dimensions()).Assign( string(Var(inputs[0],i,cf->Dimensions())) + (cf_is_complex ? ".real()" : ""));
+        code.body += code.AssignNew(index, i, Dimensions(), string(Var(inputs[0],i,cf->Dimensions())) + (cf_is_complex ? ".real()" : ""), false);
     }
     
     virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
@@ -7291,8 +7307,8 @@ class RealImagCF : public T_CoefficientFunction<RealImagCF>
     {
       for (int i = 0; i < Dimension(); i++)
         {
-          code.body += Var(index,2*i,Dimensions()).Assign( string(Var(inputs[0],i,cf->Dimensions())) + ".real()");
-          code.body += Var(index,2*i+1,Dimensions()).Assign( string(Var(inputs[0],i,cf->Dimensions())) + ".imag()");
+          code.body += code.AssignNew(index, 2*i, Dimensions(), string(Var(inputs[0],i,cf->Dimensions())) + ".real()", false);
+          code.body += code.AssignNew(index, 2*i+1, Dimensions(), string(Var(inputs[0],i,cf->Dimensions())) + ".imag()", false);
         }
     }
     

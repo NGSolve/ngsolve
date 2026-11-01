@@ -24,6 +24,662 @@ namespace ngfem
   TraceCoefficientFunction :: ~TraceCoefficientFunction() { }    
   IdentityCoefficientFunction :: ~IdentityCoefficientFunction () {  }
 
+  // c[i,j,r] = sum_k t[i,k,r] * m[k,j], t of dims (h, inner, rest...), m of dims (inner, w)
+  class MultTensorMatCoefficientFunction : public T_CoefficientFunction<MultTensorMatCoefficientFunction>
+  {
+    shared_ptr<CoefficientFunction> c1, c2;
+    int h, inner, w, rest;
+    using BASE = T_CoefficientFunction<MultTensorMatCoefficientFunction>;
+  public:
+    MultTensorMatCoefficientFunction (shared_ptr<CoefficientFunction> ac1,
+                                      shared_ptr<CoefficientFunction> ac2)
+      : BASE(1, ac1->IsComplex()||ac2->IsComplex()), c1(ac1), c2(ac2)
+    {
+      auto d1 = c1->Dimensions();
+      auto d2 = c2->Dimensions();
+      if (d1.Size() < 2 || d2.Size() != 2 || d1[1] != d2[0])
+        throw Exception("MultTensorMat: dimensions don't fit");
+      h = d1[0]; inner = d1[1]; w = d2[1];
+      rest = 1;
+      Array<int> dims { h, w };
+      for (int i = 2; i < d1.Size(); i++)
+        {
+          rest *= d1[i];
+          dims.Append (d1[i]);
+        }
+      SetDimensions (dims);
+    }
+
+    auto GetCArgs() const { return tuple { c1, c2 }; }
+
+    string GetDescription () const override
+    { return "tensor-matrix multiply"; }
+
+    void CalcEquivalenceKey() override
+    {
+      this->equivalence_key = "(" + c1->EquivalenceKey() + "@@" + c2->EquivalenceKey() + ")";
+    }
+
+    Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
+    { return { c1, c2 }; }
+
+    shared_ptr<CoefficientFunction>
+    Transform(CoefficientFunction::T_Transform& transformation) const override
+    {
+      auto thisptr = const_pointer_cast<CoefficientFunction>(this->shared_from_this());
+      if(transformation.cache.count(thisptr))
+        return transformation.cache[thisptr];
+      if(transformation.replace.count(thisptr))
+        return transformation.replace[thisptr];
+      auto newcf = make_shared<MultTensorMatCoefficientFunction>
+        (c1->Transform(transformation), c2->Transform(transformation));
+      transformation.cache[thisptr] = newcf;
+      return newcf;
+    }
+
+    void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
+    {
+      auto dims = Dimensions();
+      code.Declare (index, dims, IsComplex());
+      auto d1 = c1->Dimensions();
+      auto d2 = c2->Dimensions();
+      for (int i : Range(h))
+        for (int j : Range(w))
+          for (int r : Range(rest))
+            {
+              CodeExpr s;
+              for (int k : Range(inner))
+                s += Var(inputs[0], (i*inner+k)*rest+r, d1) * Var(inputs[1], k*w+j, d2);
+              code.body += Var(index, (i*w+j)*rest+r, dims).Assign(s, false);
+            }
+    }
+
+    void NonZeroPattern (const class ProxyUserData & ud,
+                         FlatArray<FlatVector<AutoDiffDiff<1,NonZero>>> input,
+                         FlatVector<AutoDiffDiff<1,NonZero>> values) const override
+    {
+      values = NonZero(false);
+      for (int i : Range(h))
+        for (int j : Range(w))
+          for (int r : Range(rest))
+            for (int k : Range(inner))
+              values((i*w+j)*rest+r) += input[0]((i*inner+k)*rest+r) * input[1](k*w+j);
+    }
+
+    using BASE::Evaluate;
+    double Evaluate (const BaseMappedIntegrationPoint & ip) const override
+    {
+      throw Exception ("MultTensorMatCF:: scalar evaluate for tensor called");
+    }
+
+    void Evaluate (const BaseMappedIntegrationPoint & ip, FlatVector<> result) const override
+    {
+      Vector<> va(c1->Dimension()), vb(c2->Dimension());
+      c1->Evaluate (ip, va);
+      c2->Evaluate (ip, vb);
+      result = 0.0;
+      for (int i : Range(h))
+        for (int j : Range(w))
+          for (int r : Range(rest))
+            for (int k : Range(inner))
+              result((i*w+j)*rest+r) += va((i*inner+k)*rest+r) * vb(k*w+j);
+    }
+
+    template <typename MIR, typename T, ORDERING ORD>
+    void T_Evaluate (const MIR & ir,
+                     FlatArray<BareSliceMatrix<T,ORD>> input,
+                     BareSliceMatrix<T,ORD> values) const
+    {
+      auto va = input[0];
+      auto vb = input[1];
+      size_t np = ir.Size();
+      values.AddSize(Dimension(),np) = T(0.0);
+      for (int i : Range(h))
+        for (int j : Range(w))
+          for (int r : Range(rest))
+            for (int k : Range(inner))
+              {
+                auto row_a = va.Row((i*inner+k)*rest+r);
+                auto row_b = vb.Row(k*w+j);
+                auto row_c = values.Row((i*w+j)*rest+r);
+                for (size_t ip = 0; ip < np; ip++)
+                  row_c(ip) += row_a(ip) * row_b(ip);
+              }
+    }
+
+    template <typename MIR, typename T, ORDERING ORD>
+    void T_Evaluate (const MIR & mir, BareSliceMatrix<T,ORD> values) const
+    {
+      auto & lh = TLHeap();
+      HeapReset hr(lh);
+      FlatMatrix<T,ORD> va(c1->Dimension(), mir.Size(), lh);
+      FlatMatrix<T,ORD> vb(c2->Dimension(), mir.Size(), lh);
+      c1->Evaluate (mir, va);
+      c2->Evaluate (mir, vb);
+      BareSliceMatrix<T,ORD> in[2] = { va, vb };
+      T_Evaluate (mir, FlatArray<BareSliceMatrix<T,ORD>>(2, in), values);
+    }
+
+    shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var,
+                                          shared_ptr<CoefficientFunction> dir) const override
+    {
+      if (var == this) return dir;
+      return MultTensorMatCF (c1->Diff(var,dir), c2) + MultTensorMatCF (c1, c2->Diff(var,dir));
+    }
+  };
+
+  shared_ptr<CoefficientFunction> MultTensorMatCF (shared_ptr<CoefficientFunction> t,
+                                                   shared_ptr<CoefficientFunction> m)
+  {
+    if (t->IsZeroCF() || m->IsZeroCF())
+      {
+        Array<int> dims { t->Dimensions()[0], m->Dimensions()[1] };
+        for (int i = 2; i < t->Dimensions().Size(); i++)
+          dims.Append (t->Dimensions()[i]);
+        return ZeroCF (dims);
+      }
+    return make_shared<MultTensorMatCoefficientFunction> (t, m);
+  }
+
+
+  // tensor cross product, r[i,I,...] = eps_ijk eps_IJK a[j,J,...] b[k,K],  Cof(F) = 1/2 F x F
+  class TensorCrossCoefficientFunction : public T_CoefficientFunction<TensorCrossCoefficientFunction>
+  {
+    shared_ptr<CoefficientFunction> c1, c2;
+    int rest;
+    using BASE = T_CoefficientFunction<TensorCrossCoefficientFunction>;
+    using typename BASE::T_DJC;
+
+    template <typename FUNC>
+    static void Terms (int i, int ii, FUNC f)
+    {
+      for (int s1 : { 1, 2 })
+        for (int s2 : { 1, 2 })
+          f ((i+s1)%3, (i+3-s1)%3, (ii+s2)%3, (ii+3-s2)%3, s1==s2);
+    }
+  public:
+    TensorCrossCoefficientFunction (shared_ptr<CoefficientFunction> ac1,
+                                    shared_ptr<CoefficientFunction> ac2)
+      : BASE(1, ac1->IsComplex()||ac2->IsComplex()), c1(ac1), c2(ac2)
+    {
+      auto d1 = c1->Dimensions();
+      auto d2 = c2->Dimensions();
+      if (d1.Size() < 2 || d1[0] != 3 || d1[1] != 3 || d2.Size() != 2 || d2[0] != 3 || d2[1] != 3)
+        throw Exception("TensorCross: dimensions don't fit");
+      rest = c1->Dimension() / 9;
+      SetDimensions (d1);
+    }
+
+    auto GetCArgs() const { return tuple { c1, c2 }; }
+
+    string GetDescription () const override
+    { return "tensor-cross"; }
+
+    void CalcEquivalenceKey() override
+    {
+      this->equivalence_key = "(" + c1->EquivalenceKey() + "#x#" + c2->EquivalenceKey() + ")";
+    }
+
+    Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
+    { return { c1, c2 }; }
+
+    shared_ptr<CoefficientFunction>
+    Transform(CoefficientFunction::T_Transform& transformation) const override
+    {
+      auto thisptr = const_pointer_cast<CoefficientFunction>(this->shared_from_this());
+      if(transformation.cache.count(thisptr))
+        return transformation.cache[thisptr];
+      if(transformation.replace.count(thisptr))
+        return transformation.replace[thisptr];
+      auto newcf = make_shared<TensorCrossCoefficientFunction>
+        (c1->Transform(transformation), c2->Transform(transformation));
+      transformation.cache[thisptr] = newcf;
+      return newcf;
+    }
+
+    void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
+    {
+      auto dims = Dimensions();
+      code.Declare (index, dims, IsComplex());
+      auto d1 = c1->Dimensions();
+      auto d2 = c2->Dimensions();
+      for (int i : Range(3))
+        for (int ii : Range(3))
+          for (int r : Range(rest))
+            {
+              CodeExpr s;
+              Terms (i, ii, [&] (int j, int k, int jj, int kk, bool plus)
+                     {
+                       auto t = Var(inputs[0], (3*j+jj)*rest+r, d1) * Var(inputs[1], 3*k+kk, d2);
+                       if (plus) s += t; else s -= t;
+                     });
+              code.body += Var(index, (3*i+ii)*rest+r, dims).Assign(s, false);
+            }
+    }
+
+    void NonZeroPattern (const class ProxyUserData & ud,
+                         FlatArray<FlatVector<AutoDiffDiff<1,NonZero>>> input,
+                         FlatVector<AutoDiffDiff<1,NonZero>> values) const override
+    {
+      values = NonZero(false);
+      for (int i : Range(3))
+        for (int ii : Range(3))
+          for (int r : Range(rest))
+            Terms (i, ii, [&] (int j, int k, int jj, int kk, bool plus)
+                   { values((3*i+ii)*rest+r) += input[0]((3*j+jj)*rest+r) * input[1](3*k+kk); });
+    }
+
+    using BASE::Evaluate;
+    double Evaluate (const BaseMappedIntegrationPoint & ip) const override
+    {
+      throw Exception ("TensorCrossCF:: scalar evaluate for tensor called");
+    }
+
+    void Evaluate (const BaseMappedIntegrationPoint & ip, FlatVector<> result) const override
+    {
+      Vector<> va(c1->Dimension()), vb(c2->Dimension());
+      c1->Evaluate (ip, va);
+      c2->Evaluate (ip, vb);
+      result = 0.0;
+      for (int i : Range(3))
+        for (int ii : Range(3))
+          for (int r : Range(rest))
+            Terms (i, ii, [&] (int j, int k, int jj, int kk, bool plus)
+                   {
+                     double t = va((3*j+jj)*rest+r) * vb(3*k+kk);
+                     result((3*i+ii)*rest+r) += plus ? t : -t;
+                   });
+    }
+
+    template <typename MIR, typename T, ORDERING ORD>
+    void T_Evaluate (const MIR & ir,
+                     FlatArray<BareSliceMatrix<T,ORD>> input,
+                     BareSliceMatrix<T,ORD> values) const
+    {
+      auto va = input[0];
+      auto vb = input[1];
+      size_t np = ir.Size();
+      values.AddSize(Dimension(),np) = T(0.0);
+      for (int i : Range(3))
+        for (int ii : Range(3))
+          for (int r : Range(rest))
+            Terms (i, ii, [&] (int j, int k, int jj, int kk, bool plus)
+                   {
+                     auto row_a = va.Row((3*j+jj)*rest+r);
+                     auto row_b = vb.Row(3*k+kk);
+                     auto row_c = values.Row((3*i+ii)*rest+r);
+                     if (plus)
+                       for (size_t ip = 0; ip < np; ip++)
+                         row_c(ip) += row_a(ip) * row_b(ip);
+                     else
+                       for (size_t ip = 0; ip < np; ip++)
+                         row_c(ip) -= row_a(ip) * row_b(ip);
+                   });
+    }
+
+    template <typename MIR, typename T, ORDERING ORD>
+    void T_Evaluate (const MIR & mir, BareSliceMatrix<T,ORD> values) const
+    {
+      auto & lh = TLHeap();
+      HeapReset hr(lh);
+      FlatMatrix<T,ORD> va(c1->Dimension(), mir.Size(), lh);
+      FlatMatrix<T,ORD> vb(c2->Dimension(), mir.Size(), lh);
+      c1->Evaluate (mir, va);
+      c2->Evaluate (mir, vb);
+      BareSliceMatrix<T,ORD> in[2] = { va, vb };
+      T_Evaluate (mir, FlatArray<BareSliceMatrix<T,ORD>>(2, in), values);
+    }
+
+    Array<shared_ptr<CoefficientFunction>> InputVJP (shared_ptr<CoefficientFunction> w) const override
+    {
+      if (rest != 1) return Array<shared_ptr<CoefficientFunction>>();
+      return { TensorCrossCF (w, c2), TensorCrossCF (w, c1) };
+    }
+
+    shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var,
+                                          shared_ptr<CoefficientFunction> dir) const override
+    {
+      if (var == this) return dir;
+      return TensorCrossCF (c1->Diff(var,dir), c2) + TensorCrossCF (c1, c2->Diff(var,dir));
+    }
+
+    shared_ptr<CoefficientFunction> DiffJacobi (const CoefficientFunction * var, T_DJC & cache) const override
+    {
+      auto thisptr = const_pointer_cast<CoefficientFunction>(this->shared_from_this());
+      if (cache.find(thisptr) != cache.end())
+        return cache[thisptr];
+      if (this == var)
+        return IdentityCF(this->Dimensions());
+      auto dc2 = c2->DiffJacobi(var, cache);
+      if (rest != 1 && !dc2->IsZeroCF())
+        return BASE::DiffJacobi(var, cache);
+      auto res = TensorCrossCF (c1->DiffJacobi(var, cache), c2);
+      if (!dc2->IsZeroCF())
+        res = res + TensorCrossCF (dc2, c1);
+      cache[thisptr] = res;
+      return res;
+    }
+  };
+
+  shared_ptr<CoefficientFunction> TensorCrossCF (shared_ptr<CoefficientFunction> a,
+                                                 shared_ptr<CoefficientFunction> b)
+  {
+    if (a->IsZeroCF() || b->IsZeroCF())
+      return ZeroCF (a->Dimensions());
+    return make_shared<TensorCrossCoefficientFunction> (a, b);
+  }
+
+
+  // r[i...,j...] = a[i...] b[j...]
+  class TensorProductCoefficientFunction : public T_CoefficientFunction<TensorProductCoefficientFunction>
+  {
+    shared_ptr<CoefficientFunction> c1, c2;
+    int n1, n2;
+    using BASE = T_CoefficientFunction<TensorProductCoefficientFunction>;
+    using typename BASE::T_DJC;
+  public:
+    TensorProductCoefficientFunction (shared_ptr<CoefficientFunction> ac1,
+                                      shared_ptr<CoefficientFunction> ac2)
+      : BASE(1, ac1->IsComplex()||ac2->IsComplex()), c1(ac1), c2(ac2)
+    {
+      n1 = c1->Dimension();
+      n2 = c2->Dimension();
+      Array<int> dims;
+      dims += c1->Dimensions();
+      dims += c2->Dimensions();
+      SetDimensions (dims);
+    }
+
+    auto GetCArgs() const { return tuple { c1, c2 }; }
+
+    string GetDescription () const override
+    { return "tensor-product"; }
+
+    void CalcEquivalenceKey() override
+    {
+      this->equivalence_key = "(" + c1->EquivalenceKey() + "(x)" + c2->EquivalenceKey() + ")";
+    }
+
+    Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
+    { return { c1, c2 }; }
+
+    shared_ptr<CoefficientFunction>
+    Transform(CoefficientFunction::T_Transform& transformation) const override
+    {
+      auto thisptr = const_pointer_cast<CoefficientFunction>(this->shared_from_this());
+      if(transformation.cache.count(thisptr))
+        return transformation.cache[thisptr];
+      if(transformation.replace.count(thisptr))
+        return transformation.replace[thisptr];
+      auto newcf = make_shared<TensorProductCoefficientFunction>
+        (c1->Transform(transformation), c2->Transform(transformation));
+      transformation.cache[thisptr] = newcf;
+      return newcf;
+    }
+
+    void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
+    {
+      auto dims = Dimensions();
+      code.Declare (index, dims, IsComplex());
+      auto d1 = c1->Dimensions();
+      auto d2 = c2->Dimensions();
+      for (int i : Range(n1))
+        for (int j : Range(n2))
+          code.body += Var(index, i*n2+j, dims).Assign(Var(inputs[0], i, d1) * Var(inputs[1], j, d2), false);
+    }
+
+    void NonZeroPattern (const class ProxyUserData & ud,
+                         FlatArray<FlatVector<AutoDiffDiff<1,NonZero>>> input,
+                         FlatVector<AutoDiffDiff<1,NonZero>> values) const override
+    {
+      for (int i : Range(n1))
+        for (int j : Range(n2))
+          values(i*n2+j) = input[0](i) * input[1](j);
+    }
+
+    using BASE::Evaluate;
+    double Evaluate (const BaseMappedIntegrationPoint & ip) const override
+    {
+      if (Dimension() != 1)
+        throw Exception ("TensorProductCF:: scalar evaluate for tensor called");
+      return c1->Evaluate(ip) * c2->Evaluate(ip);
+    }
+
+    void Evaluate (const BaseMappedIntegrationPoint & ip, FlatVector<> result) const override
+    {
+      Vector<> va(n1), vb(n2);
+      c1->Evaluate (ip, va);
+      c2->Evaluate (ip, vb);
+      for (int i : Range(n1))
+        for (int j : Range(n2))
+          result(i*n2+j) = va(i) * vb(j);
+    }
+
+    template <typename MIR, typename T, ORDERING ORD>
+    void T_Evaluate (const MIR & ir,
+                     FlatArray<BareSliceMatrix<T,ORD>> input,
+                     BareSliceMatrix<T,ORD> values) const
+    {
+      auto va = input[0];
+      auto vb = input[1];
+      size_t np = ir.Size();
+      for (int i : Range(n1))
+        for (int j : Range(n2))
+          {
+            auto row_a = va.Row(i);
+            auto row_b = vb.Row(j);
+            auto row_c = values.Row(i*n2+j);
+            for (size_t ip = 0; ip < np; ip++)
+              row_c(ip) = row_a(ip) * row_b(ip);
+          }
+    }
+
+    template <typename MIR, typename T, ORDERING ORD>
+    void T_Evaluate (const MIR & mir, BareSliceMatrix<T,ORD> values) const
+    {
+      auto & lh = TLHeap();
+      HeapReset hr(lh);
+      FlatMatrix<T,ORD> va(n1, mir.Size(), lh);
+      FlatMatrix<T,ORD> vb(n2, mir.Size(), lh);
+      c1->Evaluate (mir, va);
+      c2->Evaluate (mir, vb);
+      BareSliceMatrix<T,ORD> in[2] = { va, vb };
+      T_Evaluate (mir, FlatArray<BareSliceMatrix<T,ORD>>(2, in), values);
+    }
+
+    Array<shared_ptr<CoefficientFunction>> InputVJP (shared_ptr<CoefficientFunction> w) const override
+    {
+      auto wm = w->Reshape(n1, n2);
+      return { (wm * c2->Reshape(n2)) -> Reshape(c1->Dimensions()),
+               (c1->Reshape(1, n1) * wm) -> Reshape(c2->Dimensions()) };
+    }
+
+    shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var,
+                                          shared_ptr<CoefficientFunction> dir) const override
+    {
+      if (var == this) return dir;
+      return TensorProductCF (c1->Diff(var,dir), c2) + TensorProductCF (c1, c2->Diff(var,dir));
+    }
+
+    shared_ptr<CoefficientFunction> DiffJacobi (const CoefficientFunction * var, T_DJC & cache) const override
+    {
+      auto thisptr = const_pointer_cast<CoefficientFunction>(this->shared_from_this());
+      if (cache.find(thisptr) != cache.end())
+        return cache[thisptr];
+      if (this == var)
+        return IdentityCF(this->Dimensions());
+      Array<int> dimres;
+      dimres += Dimensions();
+      dimres += var->Dimensions();
+      int nv = var->Dimension();
+      auto dc1 = c1->DiffJacobi(var, cache);
+      auto dc2 = c2->DiffJacobi(var, cache);
+      shared_ptr<CoefficientFunction> res = ZeroCF(dimres);
+      if (!dc2->IsZeroCF())
+        res = TensorProductCF (c1, dc2) -> Reshape(dimres);
+      if (!dc1->IsZeroCF())
+        res = res + MultTensorMatCF (dc1->Reshape(Array<int>{n1, 1, nv}), c2->Reshape(1, n2)) -> Reshape(dimres);
+      cache[thisptr] = res;
+      return res;
+    }
+  };
+
+  shared_ptr<CoefficientFunction> TensorProductCF (shared_ptr<CoefficientFunction> a,
+                                                   shared_ptr<CoefficientFunction> b)
+  {
+    Array<int> dims;
+    dims += a->Dimensions();
+    dims += b->Dimensions();
+    if (a->IsZeroCF() || b->IsZeroCF())
+      return ZeroCF (dims);
+    if (a->Dimension() == 1 && a->Dimensions().Size() == 0)
+      return (a * b) -> Reshape(dims);
+    if (b->Dimension() == 1 && b->Dimensions().Size() == 0)
+      return (b * a) -> Reshape(dims);
+    return make_shared<TensorProductCoefficientFunction> (a, b);
+  }
+
+
+  // r[i,...] = eps_ijk a[j] b[k,...]
+  class CrossTensorCoefficientFunction : public T_CoefficientFunction<CrossTensorCoefficientFunction>
+  {
+    shared_ptr<CoefficientFunction> c1, c2;
+    int rest;
+    using BASE = T_CoefficientFunction<CrossTensorCoefficientFunction>;
+  public:
+    CrossTensorCoefficientFunction (shared_ptr<CoefficientFunction> ac1,
+                                    shared_ptr<CoefficientFunction> ac2)
+      : BASE(1, ac1->IsComplex()||ac2->IsComplex()), c1(ac1), c2(ac2)
+    {
+      if (c1->Dimension() != 3 || c2->Dimensions().Size() < 1 || c2->Dimensions()[0] != 3)
+        throw Exception("CrossTensor: dimensions don't fit");
+      rest = c2->Dimension() / 3;
+      SetDimensions (c2->Dimensions());
+    }
+
+    auto GetCArgs() const { return tuple { c1, c2 }; }
+
+    string GetDescription () const override
+    { return "cross-tensor"; }
+
+    void CalcEquivalenceKey() override
+    {
+      this->equivalence_key = "(" + c1->EquivalenceKey() + "Xt" + c2->EquivalenceKey() + ")";
+    }
+
+    Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
+    { return { c1, c2 }; }
+
+    shared_ptr<CoefficientFunction>
+    Transform(CoefficientFunction::T_Transform& transformation) const override
+    {
+      auto thisptr = const_pointer_cast<CoefficientFunction>(this->shared_from_this());
+      if(transformation.cache.count(thisptr))
+        return transformation.cache[thisptr];
+      if(transformation.replace.count(thisptr))
+        return transformation.replace[thisptr];
+      auto newcf = make_shared<CrossTensorCoefficientFunction>
+        (c1->Transform(transformation), c2->Transform(transformation));
+      transformation.cache[thisptr] = newcf;
+      return newcf;
+    }
+
+    void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
+    {
+      auto dims = Dimensions();
+      code.Declare (index, dims, IsComplex());
+      auto d1 = c1->Dimensions();
+      for (int i : Range(3))
+        for (int r : Range(rest))
+          {
+            int j = (i+1)%3, k = (i+2)%3;
+            code.body += Var(index, i*rest+r, dims).Assign
+              (Var(inputs[0], j, d1) * Var(inputs[1], k*rest+r, dims)
+               - Var(inputs[0], k, d1) * Var(inputs[1], j*rest+r, dims), false);
+          }
+    }
+
+    void NonZeroPattern (const class ProxyUserData & ud,
+                         FlatArray<FlatVector<AutoDiffDiff<1,NonZero>>> input,
+                         FlatVector<AutoDiffDiff<1,NonZero>> values) const override
+    {
+      for (int i : Range(3))
+        for (int r : Range(rest))
+          {
+            int j = (i+1)%3, k = (i+2)%3;
+            values(i*rest+r) = input[0](j) * input[1](k*rest+r) + input[0](k) * input[1](j*rest+r);
+          }
+    }
+
+    using BASE::Evaluate;
+    double Evaluate (const BaseMappedIntegrationPoint & ip) const override
+    {
+      throw Exception ("CrossTensorCF:: scalar evaluate for tensor called");
+    }
+
+    void Evaluate (const BaseMappedIntegrationPoint & ip, FlatVector<> result) const override
+    {
+      Vector<> va(3), vb(c2->Dimension());
+      c1->Evaluate (ip, va);
+      c2->Evaluate (ip, vb);
+      for (int i : Range(3))
+        for (int r : Range(rest))
+          {
+            int j = (i+1)%3, k = (i+2)%3;
+            result(i*rest+r) = va(j)*vb(k*rest+r) - va(k)*vb(j*rest+r);
+          }
+    }
+
+    template <typename MIR, typename T, ORDERING ORD>
+    void T_Evaluate (const MIR & ir,
+                     FlatArray<BareSliceMatrix<T,ORD>> input,
+                     BareSliceMatrix<T,ORD> values) const
+    {
+      auto va = input[0];
+      auto vb = input[1];
+      size_t np = ir.Size();
+      for (int i : Range(3))
+        for (int r : Range(rest))
+          {
+            int j = (i+1)%3, k = (i+2)%3;
+            for (size_t ip = 0; ip < np; ip++)
+              values(i*rest+r, ip) = va(j,ip)*vb(k*rest+r,ip) - va(k,ip)*vb(j*rest+r,ip);
+          }
+    }
+
+    template <typename MIR, typename T, ORDERING ORD>
+    void T_Evaluate (const MIR & mir, BareSliceMatrix<T,ORD> values) const
+    {
+      auto & lh = TLHeap();
+      HeapReset hr(lh);
+      FlatMatrix<T,ORD> va(3, mir.Size(), lh);
+      FlatMatrix<T,ORD> vb(c2->Dimension(), mir.Size(), lh);
+      c1->Evaluate (mir, va);
+      c2->Evaluate (mir, vb);
+      BareSliceMatrix<T,ORD> in[2] = { va, vb };
+      T_Evaluate (mir, FlatArray<BareSliceMatrix<T,ORD>>(2, in), values);
+    }
+
+    shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var,
+                                          shared_ptr<CoefficientFunction> dir) const override
+    {
+      if (var == this) return dir;
+      auto dc1 = c1->Diff(var,dir);
+      auto dc2 = c2->Diff(var,dir);
+      return CrossTensorCF (dc1->Reshape(3), c2) + CrossTensorCF (c1, dc2);
+    }
+  };
+
+  shared_ptr<CoefficientFunction> CrossTensorCF (shared_ptr<CoefficientFunction> a,
+                                                 shared_ptr<CoefficientFunction> b)
+  {
+    if (a->IsZeroCF() || b->IsZeroCF())
+      return ZeroCF (b->Dimensions());
+    if (b->Dimensions().Size() <= 1)
+      return CrossProduct (a, b);
+    return make_shared<CrossTensorCoefficientFunction> (a, b);
+  }
+
 
 
 
@@ -74,7 +730,7 @@ namespace ngfem
 
       for (int j = 0; j < D; j++)
         for (int k = 0; k < D; k++)
-          code.body += Var(index, j, k).Assign(inv_var(j,k));
+          code.body += code.AssignNew(index, j*D+k, this->Dimensions(), inv_var(j,k), this->IsComplex());
     }
 
     virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
@@ -183,10 +839,7 @@ namespace ngfem
       dimres += var->Dimensions();
     
       auto prod1 = -inv1 * diffc1->Reshape( D, -1 );
-      auto prod1r = prod1 -> Reshape( Array<int> (dimres) );
-      auto trans = prod1r -> TensorTranspose( 0, 1 );
-      auto prod2 = inv1->Transpose() * trans -> Reshape( D, -1 );
-      auto res = prod2 -> Reshape( Array<int> (dimres) ) -> TensorTranspose( 0, 1);
+      auto res = MultTensorMatCF (prod1 -> Reshape( Array<int>{D, D, int(var->Dimension())} ), inv1) -> Reshape( Array<int> (dimres) );
       cache[thisptr] = res;
       return res;
     }
@@ -391,7 +1044,7 @@ namespace ngfem
 
       for (auto j : Range(h))
         for (auto k : Range(h))
-          code.body += Var(index, j, k).Assign(inv_var(j, k));
+          code.body += code.AssignNew(index, j*h+k, this->Dimensions(), inv_var(j, k), this->IsComplex());
     }
 
     shared_ptr<CoefficientFunction>
@@ -423,10 +1076,7 @@ namespace ngfem
       dimres += var->Dimensions();
 
       auto prod1 = -inv1 * diffc1->Reshape( D, -1 );
-      auto prod1r = prod1 -> Reshape( Array<int> (dimres) );
-      auto trans = prod1r -> TensorTranspose( 0, 1 );
-      auto prod2 = inv1->Transpose() * trans -> Reshape( D, -1 );
-      auto res = prod2 -> Reshape( Array<int> (dimres) ) -> TensorTranspose( 0, 1);
+      auto res = MultTensorMatCF (prod1 -> Reshape( Array<int>{D, D, int(var->Dimension())} ), inv1) -> Reshape( Array<int> (dimres) );
       cache[thisptr] = res;
       return res;
     }
@@ -644,11 +1294,7 @@ namespace ngfem
         return { CofactorCF(w) };   // Cof is linear and self-adjoint in 2D
       else if constexpr (D == 3)
         {
-          // Cayley-Hamilton: Cof A = 1/2 (trA^2 - tr A^2) I - trA A^T + (A^T)^2
-          auto A = c1, AT = c1->Transpose(), WT = w->Transpose();
-          auto trA = TraceCF(A), trW = TraceCF(w);
-          auto I = IdentityCF(3);
-          return { trW * (trA * I - AT) - TraceCF(w * A) * I - trA * WT + WT * AT + AT * WT };
+          return { TensorCrossCF (w, c1) };
         }
       else
         return Array<shared_ptr<CoefficientFunction>>();
@@ -788,18 +1434,8 @@ namespace ngfem
         }
       else if (this->Dimensions()[0] == 3) //3d
         {
-          //formula follows from Cayley–Hamilton
-          //Cof(A) = 0.5*(tr(A)**2 - tr(A**2))I - tr(A)A^T +(AA)^T
-
-          //return (0.5*(TraceCF(c1)*TraceCF(c1) - TraceCF(c1*c1))*IdentityCF(3) - TraceCF(c1)*TransposeCF(c1) + TransposeCF(c1*c1))->Diff(var,dir);
-          auto trace_c1 = TraceCF(c1);
-          auto diff_c1 = c1->Diff(var,dir);
-          auto trace_diff_c1 = TraceCF(diff_c1);
-          auto diff_c1_x_c1 = diff_c1 * c1;
-          auto c1_x_diff_c1 = c1 * diff_c1;
-          return (trace_c1 * trace_diff_c1 - TraceCF(diff_c1_x_c1)) * IdentityCF(3)
-            - trace_diff_c1 * TransposeCF(c1)
-            - trace_c1 * TransposeCF(diff_c1) + TransposeCF(diff_c1_x_c1 + c1_x_diff_c1);
+          // Cof(A) = 1/2 A x A
+          return TensorCrossCF (c1->Diff(var,dir), c1);
         }
       else
         throw Exception("CofactorCF Diff only implemented for dim <=3");
@@ -820,9 +1456,7 @@ namespace ngfem
         res = (TraceCF(c1)*IdentityCF(2)-TransposeCF(c1)) -> DiffJacobi (var, cache);
       else if (this->Dimensions()[0] == 3)
         {
-          auto trcf = TraceCF(c1);
-          auto prodcf = c1*c1;
-          res = (0.5*(trcf*trcf - TraceCF(prodcf))*IdentityCF(3) - trcf*TransposeCF(c1) + TransposeCF(prodcf)) -> DiffJacobi (var, cache);
+          res = TensorCrossCF (c1->DiffJacobi (var, cache), c1);
         }
       else
         res = (DeterminantCF(c1) * InverseCF(c1)->Transpose() ) -> DiffJacobi (var, cache);
@@ -880,7 +1514,7 @@ namespace ngfem
       FlatArray<int> hdims = Dimensions();        
       for (int i : Range(hdims[0]))
         for (int j : Range(hdims[1]))
-          code.body += Var(index,i,j).Assign("0.5*("+Var(inputs[0],i,j).S()+"+"+Var(inputs[0],j,i).S()+")");
+          code.body += code.AssignNew(index, i*hdims[1]+j, hdims, "0.5*("+Var(inputs[0],i,j).S()+"+"+Var(inputs[0],j,i).S()+")", IsComplex());
     }
 
     virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
@@ -996,7 +1630,7 @@ namespace ngfem
       FlatArray<int> hdims = Dimensions();        
       for (int i : Range(hdims[0]))
         for (int j : Range(hdims[1]))
-          code.body += Var(index,i,j).Assign("0.5*("+Var(inputs[0],i,j).S()+"-"+Var(inputs[0],j,i).S()+")");
+          code.body += code.AssignNew(index, i*hdims[1]+j, hdims, "0.5*("+Var(inputs[0],i,j).S()+"-"+Var(inputs[0],j,i).S()+")", IsComplex());
     }
 
     virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
@@ -1260,6 +1894,10 @@ namespace ngfem
   
   static RegisterClassForArchive<MultMatMatCoefficientFunction, CoefficientFunction> regmultmatmatcf;
   static RegisterClassForArchive<MultDiagMatCoefficientFunction, CoefficientFunction> regmultdiagmatcf;  
+  static RegisterClassForArchive<MultTensorMatCoefficientFunction, CoefficientFunction> regmulttensormatcf;
+  static RegisterClassForArchive<TensorCrossCoefficientFunction, CoefficientFunction> regtensorcrosscf;
+  static RegisterClassForArchive<TensorProductCoefficientFunction, CoefficientFunction> regtensorproductcf;
+  static RegisterClassForArchive<CrossTensorCoefficientFunction, CoefficientFunction> regcrosstensorcf;
 
   static RegisterClassForArchive<InverseCoefficientFunction<1>, CoefficientFunction> reginversecf1;
   static RegisterClassForArchive<InverseCoefficientFunction<2>, CoefficientFunction> reginversecf2;

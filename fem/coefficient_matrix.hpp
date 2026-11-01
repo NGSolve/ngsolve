@@ -3,6 +3,18 @@
 
 namespace ngfem
 {
+  // c[i,j,...] = sum_k t[i,k,...] m[k,j]
+  shared_ptr<CoefficientFunction> MultTensorMatCF (shared_ptr<CoefficientFunction> t,
+                                                   shared_ptr<CoefficientFunction> m);
+  // r[i,I,...] = eps_ijk eps_IJK a[j,J,...] b[k,K]
+  shared_ptr<CoefficientFunction> TensorCrossCF (shared_ptr<CoefficientFunction> a,
+                                                 shared_ptr<CoefficientFunction> b);
+  // r[i...,j...] = a[i...] b[j...]
+  shared_ptr<CoefficientFunction> TensorProductCF (shared_ptr<CoefficientFunction> a,
+                                                   shared_ptr<CoefficientFunction> b);
+  // r[i,...] = eps_ijk a[j] b[k,...]
+  shared_ptr<CoefficientFunction> CrossTensorCF (shared_ptr<CoefficientFunction> a,
+                                                 shared_ptr<CoefficientFunction> b);
 
 
   class IdentityCoefficientFunction : public T_CoefficientFunction<IdentityCoefficientFunction, CoefficientFunctionNoDerivative>
@@ -352,17 +364,9 @@ namespace ngfem
       auto diffc1 = c1->DiffJacobi (var, cache);
       auto diffc2 = c2->DiffJacobi (var, cache);
     
-      auto diffc1_trans = diffc1 -> TensorTranspose( 0, 1 ) -> Reshape( inner_dim, h*dimvar );
-      auto prod1 = c2->Transpose() * diffc1_trans;
-      Array<int> dimtmp{w, h};
-      dimtmp += var->Dimensions();
-      auto prod1trans = prod1->Reshape(dimtmp) -> TensorTranspose( 0, 1 );
-    
-      auto diffc2_trans = diffc2 -> Reshape( Array<int>{inner_dim,w*dimvar} );
-      auto prod2 = c1 * diffc2_trans;
-      auto prod2trans = prod2->Reshape(dimres);
-
-      auto res = prod1trans + prod2trans;
+      auto prod1 = MultTensorMatCF (diffc1 -> Reshape( Array<int>{h,inner_dim,dimvar} ), c2) -> Reshape(dimres);
+      auto prod2 = (c1 * diffc2 -> Reshape( Array<int>{inner_dim,w*dimvar} )) -> Reshape(dimres);
+      auto res = prod1 + prod2;
       cache[thisptr] = res;
       return res;
     }
