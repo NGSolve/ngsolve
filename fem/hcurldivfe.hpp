@@ -832,7 +832,7 @@ namespace ngfem
         */
         //Vector<AutoDiffDiff<2, T> >  l2shape( (oi+1)*(oi+2) / 2 );
         
-        Vector<Tx>  l2shape( (oi+1)*(oi+2) / 2);
+        VectorMem<20,Tx>  l2shape( (oi+1)*(oi+2) / 2);
         DubinerBasis::Eval ( oi , ddlami[0], ddlami[1], l2shape);
 
         Vector<Tx>  S(oi+1);

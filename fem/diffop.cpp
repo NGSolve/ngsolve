@@ -118,7 +118,7 @@ namespace ngfem
         return;
       }
     size_t nd = fel.GetNDof(), np = mir.Size();
-    Matrix<SIMD<double>> full(nd*Dim(), np);
+    MatrixMem<512, SIMD<double>> full(nd*Dim(), np);
     CalcMatrix (fel, mir, full);
     for (size_t i = 0; i < nd; i++)
       for (int v = 0; v < vsdim; v++)

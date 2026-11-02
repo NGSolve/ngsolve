@@ -676,6 +676,43 @@ namespace ngbla
   };
 
 
+  /**
+     A Matrix class with memory allocation/deallocation, like VectorMem.
+     If h*w fits into the static size S, the matrix uses the static memory,
+     otherwise dynamic memory is allocated.
+  */
+  template <int S, typename T = double, ORDERING ORD = RowMajor>
+  class MatrixMem : public FlatMatrix<T,ORD>
+  {
+    T mem[S];
+  public:
+    typedef typename mat_traits<T>::TSCAL TSCAL;
+
+    INLINE MatrixMem (size_t ah, size_t aw) : FlatMatrix<T,ORD> (0, 0, nullptr)
+    { this->AssignMemory (ah, aw, (ah*aw <= S) ? &mem[0] : new T[ah*aw]); }
+
+    /// deallocates dynamic memory
+    INLINE ~MatrixMem() { if (this->Height()*this->Width() > S) delete [] this->Data(); }
+
+    // the data may live inside the object
+    MatrixMem (const MatrixMem &) = delete;
+    MatrixMem & operator= (const MatrixMem &) = delete;
+
+    INLINE MatrixMem & operator= (TSCAL s)
+    {
+      FlatMatrix<T,ORD>::operator= (s);
+      return *this;
+    }
+
+    template<typename TB>
+    INLINE MatrixMem & operator= (const Expr<TB> & m)
+    {
+      MatExpr<FlatMatrix<T,ORD> >::operator= (m);
+      return *this;
+    }
+  };
+
+
 
 
   /**

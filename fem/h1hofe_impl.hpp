@@ -1205,7 +1205,7 @@ namespace ngfem
           ii += p-1;
         }
 
-    Array<Tx> polx(order+3), poly(order+3), polz(order+3);
+    ArrayMem<Tx,20> polx(order+3), poly(order+3), polz(order+3);
     for (int i = 0; i < N_FACE; i++)
       {
         IVec<2> p = order_face[i];

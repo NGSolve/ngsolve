@@ -1983,16 +1983,14 @@ namespace ngfem
                   T xi = lam[fav[0]];
                   T eta = lam[fav[1]];
                   
-                  Matrix<T> Fface(3,2);
-                  Fface.Col(0) = adxi;
-                  Fface.Col(1) = adeta;
-		 
-                  Matrix<T> Ftmp(2,2);
-                  Ftmp = Trans(Fface)*Fface;
+                  Mat<3,2,T> Fface;
+                  for (int k = 0; k < 3; k++)
+                    { Fface(k,0) = adxi(k); Fface(k,1) = adeta(k); }
+                  Mat<2,2,T> Ftmp = Trans(Fface)*Fface;
                   auto det = sqrt(Ftmp(0,0)*Ftmp(1,1)-Ftmp(1,0)*Ftmp(0,1));
                   auto invDetJ = invJ/det;
-                  auto Fface_mapped = F*Fface;
-                  auto Fface_mapped_T = Trans(Fface_mapped);
+                  Mat<3,2,T> Fface_mapped = F*Fface;
+                  Mat<2,3,T> Fface_mapped_T = Trans(Fface_mapped);
                   Mat<3,3,T> A11 = Fface_mapped*E11_2*Fface_mapped_T;
                   Mat<3,3,T> A22 = Fface_mapped*E22_2*Fface_mapped_T;
                   Mat<3,3,T> A12 = Fface_mapped*E12_2*Fface_mapped_T;

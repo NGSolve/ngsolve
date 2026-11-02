@@ -1673,13 +1673,19 @@ namespace ngfem
 		 T xi = lam[fav[0]];
 		 T eta = lam[fav[1]];
 		 
-		 Matrix<> F(3,2);
-		 F.Col(0) = adxi;//Vec<3,T>(adxi.DValue(0),adxi.DValue(1),adxi.DValue(2));
-		 F.Col(1) = adeta;//Vec<3,T>(adeta.DValue(0),adeta.DValue(1),adeta.DValue(2));
-		 
-		 Matrix<> Ftmp(2,2);
-		 Ftmp = Trans(F)*F;
-		 auto det = sqrt(Ftmp(0,0)*Ftmp(1,1)-Ftmp(1,0)*Ftmp(0,1));
+		 Mat<3,2> F;
+		 for (int k = 0; k < 3; k++)
+		   { F(k,0) = adxi(k); F(k,1) = adeta(k); }
+		 Mat<2,2> Ftmp = Trans(F)*F;
+		 double det = sqrt(Ftmp(0,0)*Ftmp(1,1)-Ftmp(1,0)*Ftmp(0,1));
+
+		 // face map, once per point: 1/(det*measure) J F
+		 Mat<3,3,T> jac = mip.GetJacobian();
+		 T scal = 1/(det*mip.GetMeasure());
+		 Mat<3,2,T> ftrafo;
+		 for (int i = 0; i < 3; i++)
+		   for (int j = 0; j < 2; j++)
+		     ftrafo(i,j) = scal * (jac(i,0)*F(0,j) + jac(i,1)*F(1,j) + jac(i,2)*F(2,j));
 
 		 if (!usegrad_face[f])
 		   {
@@ -1689,7 +1695,7 @@ namespace ngfem
 					  SBLambda([&] (size_t nr, auto val)
 						   {
 						     if (nr == 0) return;
-						     shape[ii++] = 1/(det*mip.GetMeasure())*mip.GetJacobian()*(F*Vec<2,T> (val.DValue(1), -val.DValue(0)));
+						     shape[ii++] = ftrafo*Vec<2,T> (val.DValue(1), -val.DValue(0));
 						   }));
 		     continue;
 		   }
@@ -1697,17 +1703,17 @@ namespace ngfem
 		 DubinerBasis::Eval(order-2, xi, eta,
                                     SBLambda([&] (size_t nr, auto val)
                                              {						 
-                                               shape[ii++] = 1/(det*mip.GetMeasure())*mip.GetJacobian()*(F*Vec<2,T> (val, 0));
+                                               shape[ii++] = ftrafo*Vec<2,T> (val, 0);
 					       if (type1)
-						 shape[ii++] = 1/(det*mip.GetMeasure())*mip.GetJacobian()*(F*Vec<2,T>(0, val));
+						 shape[ii++] = ftrafo*Vec<2,T>(0, val);
 					       else
-						 shape[ii++] = 1/(det*mip.GetMeasure())*mip.GetJacobian()*(F*Vec<2,T> (val*xi, val*eta));		
+						 shape[ii++] = ftrafo*Vec<2,T> (val*xi, val*eta);
                                              }));
 		 if (!type1)
 		   LegendrePolynomial::Eval(order-2,xi,
 					  SBLambda([&] (size_t nr, auto val)
 						   {
-						     shape[ii++] = 1/(det*mip.GetMeasure())*mip.GetJacobian()*(F*Vec<2,T>(0, val));
+						     shape[ii++] = ftrafo*Vec<2,T>(0, val);
 						   }));
 	       }
 	     else
