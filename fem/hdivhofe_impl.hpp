@@ -1295,6 +1295,23 @@ template <typename MIP, typename TFA>
        });
   }
 
+  template <ELEMENT_TYPE ET>
+  void HDivHighOrderFE<ET> ::
+  AddDualTrans (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> values,
+                BareSliceVector<double> coefs) const
+  {
+    auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
+    for (size_t i = 0; i < mir.Size(); i++)
+      {
+        Vec<DIM,SIMD<double>> value = values.Col(i);
+        static_cast<const HDivHighOrderFE_Shape<ET>*> (this)
+          -> CalcDualShape2 (mir[i], SBLambda([value, coefs] (size_t j, auto val)
+                                              {
+                                                coefs(j) += HSum(InnerProduct(value, val));
+                                              }));
+      }
+  }
+
 
 
 }

@@ -465,51 +465,66 @@ namespace ngfem
     auto [nv,ne,nf,nc] = GetNDofVEFC();
     int nvefc[] = { nv, ne, nf, nc };
 
-    // facet and cell moments, and the duality matrix if needed
-    auto integrate = [&] (FlatMatrix<> * mat)
-    {
-      rhs = 0.0;
-      if (mat) *mat = 0.0;
-      for (int el_vb = 1; el_vb >= 0; el_vb--)
-        {
-          if (!nvefc[D-el_vb]) continue;
-          Facet2ElementTrafo f2el (ElementType(), VorB(el_vb));
-          for (int locfnr : Range(f2el.GetNFacets()))
-            {
-              HeapReset hr(lh);
-              IntegrationRule irfacet(f2el.FacetType(locfnr), 2*Order()+bonus_intorder);
-              auto & irvol = f2el(locfnr, irfacet, lh);
-              auto & mir = trafo(irvol, lh);
-
-              FlatMatrix<> fvals(mir.Size(), dimspace, lh);
-              func.Evaluate (mir, fvals);
-
-              FlatMatrix<> shape(nd, dimspace, lh), dual(nd, dimspace, lh);
-              for (size_t j : Range(mir))
-                {
-                  dual = 0.0;
-                  CalcDualShape (mir[j], dual);
-                  dual *= mir[j].GetWeight();
-                  rhs += dual * fvals.Row(j);
-                  if (mat)
-                    {
-                      CalcMappedShape (mir[j], shape);
-                      *mat += dual * Trans(shape);
-                    }
-                }
-            }
-        }
-    };
-
-    integrate (nullptr);
-    if (SolveDuality (rhs.AsColMatrix(), lh))
+    // facet and cell moments only, if the element has a stored D^-1
+    try
       {
-        coefs.Col(0) = rhs;
-        return;
-      }
+        rhs = 0.0;
+        for (int el_vb = 1; el_vb >= 0; el_vb--)
+          {
+            if (!nvefc[D-el_vb]) continue;
+            Facet2ElementTrafo f2el (ElementType(), VorB(el_vb));
+            for (int locfnr : Range(f2el.GetNFacets()))
+              {
+                HeapReset hr(lh);
+                SIMD_IntegrationRule irfacet(f2el.FacetType(locfnr), 2*Order()+bonus_intorder);
+                auto & irvol = f2el(locfnr, irfacet, lh);
+                auto & mir = trafo(irvol, lh);
 
+                FlatMatrix<SIMD<double>> fvals(dimspace, mir.Size(), lh);
+                func.Evaluate (mir, fvals);
+                for (size_t j : Range(mir))
+                  fvals.Col(j) *= mir[j].GetWeight();
+                AddDualTrans (mir, fvals, rhs);
+              }
+          }
+        if (SolveDuality (rhs.AsColMatrix(), lh))
+          {
+            coefs.Col(0) = rhs;
+            return;
+          }
+      }
+    catch (const ExceptionNOSIMD &) { ; }
+
+    // assemble the duality matrix
     FlatMatrix<> mat(nd, nd, lh);
-    integrate (&mat);
+    rhs = 0.0;
+    mat = 0.0;
+    for (int el_vb = 1; el_vb >= 0; el_vb--)
+      {
+        if (!nvefc[D-el_vb]) continue;
+        Facet2ElementTrafo f2el (ElementType(), VorB(el_vb));
+        for (int locfnr : Range(f2el.GetNFacets()))
+          {
+            HeapReset hr(lh);
+            IntegrationRule irfacet(f2el.FacetType(locfnr), 2*Order()+bonus_intorder);
+            auto & irvol = f2el(locfnr, irfacet, lh);
+            auto & mir = trafo(irvol, lh);
+
+            FlatMatrix<> fvals(mir.Size(), dimspace, lh);
+            func.Evaluate (mir, fvals);
+
+            FlatMatrix<> shape(nd, dimspace, lh), dual(nd, dimspace, lh);
+            for (size_t j : Range(mir))
+              {
+                dual = 0.0;
+                CalcDualShape (mir[j], dual);
+                dual *= mir[j].GetWeight();
+                rhs += dual * fvals.Row(j);
+                CalcMappedShape (mir[j], shape);
+                mat += dual * Trans(shape);
+              }
+          }
+      }
     if (L2Norm(mat) == 0)
       throw Exception(string("HDivFE::Interpolate: no dual shapes for ") + typeid(*this).name());
 

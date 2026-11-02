@@ -457,6 +457,8 @@ namespace ngfem
                                   BareSliceVector<> nshape) const override;
 
     virtual void CalcDualShape (const BaseMappedIntegrationPoint & bmip, BareSliceMatrix<> shape) const override;
+    virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> values,
+                               BareSliceVector<double> coefs) const override;
 
     virtual tuple<int,int,int,int> GetNDofVEFC () const override;
 
