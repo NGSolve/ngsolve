@@ -815,6 +815,7 @@ namespace ngla
                {
                  Array<size_t> dofs;
                  size_t myfound = 0;
+                 int mymaxcolor = 0;
                  
                  for (size_t nr : myrange)
                    {
@@ -843,7 +844,7 @@ namespace ngla
                            }
                          
                          col[nr] = color;
-                         if (color > maxcolor) maxcolor = color;
+                         mymaxcolor = max(mymaxcolor, color);
                          
                          for (auto d : dofs) 
                            mask[d] |= checkbit;
@@ -853,6 +854,7 @@ namespace ngla
                        locks[d].unlock();
                    }
                  found += myfound;
+                 AtomicMax (maxcolor, mymaxcolor);
                });
             
             basecol += 8*sizeof(unsigned int); // 32;
@@ -898,6 +900,7 @@ namespace ngla
                {
                  Array<size_t> dofs;
                  size_t myfound = 0;
+                 int mymaxcolor = 0;
                  
                  for (size_t nr : myrange)
                    {
@@ -926,7 +929,7 @@ namespace ngla
                            }
                          
                          col[nr] = color;
-                         if (color > maxcolor) maxcolor = color;
+                         mymaxcolor = max(mymaxcolor, color);
                          
                          for (auto d : dofs) 
                            mask[d] |= checkbit;
@@ -936,6 +939,7 @@ namespace ngla
                        locks[d].unlock();
                    }
                  found += myfound;
+                 AtomicMax (maxcolor, mymaxcolor);
                });
             
             basecol += 8*sizeof(unsigned int); // 32;
