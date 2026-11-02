@@ -23,7 +23,7 @@ namespace ngsbem
       fjs(n)   = j_n(z) / scale^n
       fjder(n) = d/dz fjs(n)        (only if fjder.Size() > 0)
 
-    z real or complex (double, float, Complex, Complex32), or SIMD<double,N> / SIMD<Complex,N>
+    z real or complex (double, float, Complex, Complex32), or SIMD<T,N> of these types
     for N arguments at once. Miller's algorithm: an upward recurrence finds the start order
     ntop where the minimal solution is negligible, the downward recurrence of the scaled
     g_n = j_n/scale^n runs from there, and j_0 or j_1 in closed form normalize the result.
@@ -261,46 +261,66 @@ namespace ngsbem
                         SliceVector<Tz> fjs, SliceVector<Tz> fjder)
   {
     constexpr int N = BesselSIMDInfo<Tz>::width;
-    constexpr bool cplx = std::is_same_v<typename BesselSIMDInfo<Tz>::scal,Complex>;
-    static_assert(cplx || std::is_same_v<typename BesselSIMDInfo<Tz>::scal,double>,
-                  "besseljs3d: SIMD<double,N> or SIMD<Complex,N>");
-    using TR = SIMD<double,N>;
+    using real_type = typename scal_traits<typename BesselSIMDInfo<Tz>::scal>::TSCAL_REAL;
+    constexpr bool cplx = !std::is_same_v<typename BesselSIMDInfo<Tz>::scal,real_type>;
+    constexpr bool fp32 = std::is_same_v<real_type,float>;
+    static_assert(fp32 || std::is_same_v<real_type,double>,
+                  "besseljs3d: SIMD<double,N>, SIMD<Complex,N>, SIMD<float,N> or SIMD<Complex32,N>");
+    using TR = SIMD<real_type,N>;
 
-    constexpr int EXPO = 128;
-    constexpr int maxe = std::numeric_limits<double>::max_exponent-3;
-    const double rscale = scale;
-    const double upper2 = 1e40;
-    const TR big2 = std::ldexp(1.0, 2*EXPO), small2 = std::ldexp(1.0, -2*EXPO);
-    const TR down = std::ldexp(1.0, -EXPO), up = std::ldexp(1.0, EXPO);
+    // float constants as in besseljs3d_scalar
+    constexpr int EXPO = fp32 ? 40 : 128;
+    constexpr int maxe = std::numeric_limits<real_type>::max_exponent-3;
+    const real_type rscale = scale;
+    const real_type upper2 = fp32 ? 1e20f : 1e40;
+    const TR big2 = std::ldexp(real_type(1), 2*EXPO), small2 = std::ldexp(real_type(1), -2*EXPO);
+    const TR down = std::ldexp(real_type(1), -EXPO), up = std::ldexp(real_type(1), EXPO);
 
     auto norm2 = [](Tz v) -> TR
     {
       if constexpr (cplx) return v.real()*v.real()+v.imag()*v.imag();
       else return v*v;
     };
-    auto sel = [](SIMD<mask64,N> m, Tz a, Tz b) -> Tz
+    // masks: SIMD<mask64,N> for double; ngcore has no compares for SIMD<float>,
+    // there masks are 0/1 lanes of TR, compared and selected lane by lane
+    auto cmp = [](TR a, auto op, TR b)
     {
-      if constexpr (cplx) return Tz(If(m, a.real(), b.real()), If(m, a.imag(), b.imag()));
+      if constexpr (fp32) return TR([&](int i) { return op(a[i], b[i]) ? 1.0f : 0.0f; });
+      else return op(a, b);
+    };
+    auto both = [](auto a, auto b)
+    {
+      if constexpr (fp32) return a*b;
+      else return a && b;
+    };
+    auto selr = [](auto m, TR a, TR b) -> TR
+    {
+      if constexpr (fp32) return TR([&](int i) { return m[i] != 0 ? a[i] : b[i]; });
       else return If(m, a, b);
     };
-    auto any = [](SIMD<mask64,N> m) { return HSum(If(m, TR(1.0), TR(0.0))) != 0; };
+    auto sel = [&](auto m, Tz a, Tz b) -> Tz
+    {
+      if constexpr (cplx) return Tz(selr(m, a.real(), b.real()), selr(m, a.imag(), b.imag()));
+      else return selr(m, a, b);
+    };
+    auto any = [&](auto m) { return HSum(selr(m, TR(1.0), TR(0.0))) != 0; };
 
     // v * 2^(-EXPO d) lane by lane; exact tells whether all factors are normal
     auto pow2 = [&](TR d, bool & exact) -> TR
     {
-      std::array<double,N> f;
+      std::array<real_type,N> f;
       exact = true;
       for (int l = 0; l < N; l++)
         {
           int e = -EXPO*int(d[l]);
           if (e < -maxe || e > maxe) exact = false;
-          f[l] = std::ldexp(1.0, e);
+          f[l] = std::ldexp(real_type(1), e);
         }
       return TR(f.data());
     };
     auto ldexp_lanes = [&](Tz v, TR d) -> Tz
     {
-      std::array<double,N> re, im;
+      std::array<real_type,N> re, im;
       for (int l = 0; l < N; l++)
         {
           int e = -EXPO*int(d[l]);
@@ -322,13 +342,64 @@ namespace ngsbem
       return exact ? v*fac : ldexp_lanes(v, d);
     };
 
-    // lanes with |z| < 1e-200 run with z = 1 and are overwritten at the end
+    // lanes with |z| < 1e-200 run with z = 1 and are overwritten at the end, or skip Miller if all
+    // lanes are tiny; float as in the scalar version: z = 0 and |z| < 1e-2 take the power series
     TR az2 = norm2(z);
     auto tiny = [&]
     {
-      if constexpr (cplx) return (fabs(z.real()) < TR(1e-200)) && (fabs(z.imag()) < TR(1e-200));
+      if constexpr (fp32) return cmp(sqrt(az2), std::less(), TR(1e-2f));
+      else if constexpr (cplx) return (fabs(z.real()) < TR(1e-200)) && (fabs(z.imag()) < TR(1e-200));
       else return fabs(z) < TR(1e-200);
     }();
+    real_type ntiny = HSum(selr(tiny, TR(1.0), TR(0.0)));
+    auto set_tiny = [&](bool all)
+    {
+      auto put = [&](Tz & f, Tz v) { f = all ? v : sel(tiny, v, f); };
+      if constexpr (fp32)
+        {
+          auto rdiv = [](Tz a, real_type b) -> Tz
+          {
+            if constexpr (cplx) return Tz(a.real()/b, a.imag()/b);
+            else return a/b;
+          };
+          Tz zt = sel(tiny, z, Tz(0.0));
+          Tz leading = 1.0, dleading = 0.0;
+          Tz zscaled = rdiv(zt, rscale);
+          for (int n = 0; n <= nterms; n++)
+            {
+              Tz term = 1.0, dterm = 0.0, sum = 1.0, dsum = 0.0;
+              for (int k = 0; k < 3; k++)
+                {
+                  real_type denom = 2*(k+1)*(2*n+2*k+3);
+                  Tz factor = rdiv(-zt*zt, denom);
+                  dterm = dterm*factor-rdiv(term*real_type(2)*zt, denom);
+                  term = term*factor;
+                  sum += term;
+                  dsum += dterm;
+                }
+              put(fjs(n), leading*sum);
+              if (fjder.Size())
+                put(fjder(n), dleading*sum+leading*dsum);
+              if (n == 0)
+                dleading = Tz(1/(3*rscale));
+              else
+                dleading = dleading*rdiv(real_type(n+1)*zscaled, real_type(n*(2*n+3)));
+              leading = leading*rdiv(zscaled, real_type(2*n+3));
+            }
+        }
+      else
+        for (int i = 0; i <= nterms; i++)
+          {
+            put(fjs(i), Tz(i == 0 ? 1.0 : 0.0));
+            if (fjder.Size())
+              put(fjder(i), Tz(i == 1 ? 1/(3*rscale) : 0.0));
+          }
+    };
+    if (ntiny == N)
+      {
+        set_tiny(true);
+        return;
+      }
     Tz zz = sel(tiny, Tz(1.0), z);
     Tz zinv = Tz(1.0)/zz;
 
@@ -339,15 +410,15 @@ namespace ngsbem
       TR done = 0.0;
       for (int i = nterms; ; i++)
         {
-          Tz fj1 = double(2*i+1)*zinv*fj0-fjm1;
-          done = If(norm2(fj1) > TR(upper2), TR(1.0), done);
+          Tz fj1 = real_type(2*i+1)*zinv*fj0-fjm1;
+          done = selr(cmp(norm2(fj1), std::greater(), TR(upper2)), TR(1.0), done);
           if (HSum(done) == N)
             {
               ntop = i+1;
               break;
             }
           // finished lanes stay put, no overflow
-          auto run = done == TR(0.0);
+          auto run = cmp(done, std::equal_to(), TR(0.0));
           fjm1 = sel(run, fj0, fjm1);
           fj0 = sel(run, fj1, fj0);
           if (i > nterms+100000)
@@ -361,7 +432,7 @@ namespace ngsbem
     FlatArray<TR> ex(nterms+2, lh);
 
     Tz sz = rscale*zinv;
-    double s2 = rscale*rscale;
+    real_type s2 = rscale*rscale;
     Tz tail = 0.0;
     auto store = [&](int k, Tz val, TR cnt)
     {
@@ -372,18 +443,19 @@ namespace ngsbem
 
     // Rescale checks every K steps only. Per step |g| grows at most by
     // G = (2 ntop+1) scale/|z|_min + scale^2 and shrinks at most by Q = |z|_max/scale,
-    // K is chosen such that K steps stay within the double range around 2^(-+EXPO).
+    // K is chosen such that K steps stay within the range around 2^(-+EXPO)
+    // (800 of the 896 bits above 2^EXPO for double, 64 of the 88 for float).
     int K;
     {
       double zmin = std::numeric_limits<double>::max(), zmax = 0;
       TR az = sqrt(norm2(zz));
       for (int l = 0; l < N; l++)
         {
-          zmin = std::min(zmin, az[l]);
-          zmax = std::max(zmax, az[l]);
+          zmin = std::min(zmin, double(az[l]));
+          zmax = std::max(zmax, double(az[l]));
         }
       double lg = std::max({ std::log2((2*ntop+1)*rscale/zmin + s2), std::log2(zmax/rscale), 1.0 });
-      K = std::clamp(int(800/lg), 1, 8);
+      K = std::clamp(int((fp32 ? 64 : 800)/lg), 1, 8);
     }
 
     Tz gp = 0.0, g = 1.0;
@@ -392,7 +464,7 @@ namespace ngsbem
     store(ntop-1, g, cnt);
     for (int i = ntop-1, k = 1; i >= 1; i--, k++)
       {
-        Tz gm = double(2*i+1)*sz*g - s2*gp;
+        Tz gm = real_type(2*i+1)*sz*g - s2*gp;
         gp = g;
         g = gm;
         if (k == K || i == 1)
@@ -402,14 +474,14 @@ namespace ngsbem
             for (bool more = true; more; )
               {
                 TR n2 = norm2(g);
-                auto mdown = n2 > big2;
-                auto mup = (n2 < small2) && (norm2(gp) < small2);
-                TR f = If(mdown, down, If(mup, up, TR(1.0)));
-                more = any(f != TR(1.0));
+                auto mdown = cmp(n2, std::greater(), big2);
+                auto mup = both(cmp(n2, std::less(), small2), cmp(norm2(gp), std::less(), small2));
+                TR f = selr(mdown, down, selr(mup, up, TR(1.0)));
+                more = any(cmp(f, std::not_equal_to(), TR(1.0)));
                 if (!more) break;
                 g = g*f;
                 gp = gp*f;
-                cnt = cnt + If(mdown, TR(1.0), If(mup, TR(-1.0), TR(0.0)));
+                cnt = cnt + selr(mdown, TR(1.0), selr(mup, TR(-1.0), TR(0.0)));
               }
             if (i <= nterms+1)
               store(i, gp, cnt);
@@ -437,9 +509,19 @@ namespace ngsbem
       }
     Tz fj0 = sn*zinv;
     Tz fj1 = fj0*zinv-cs*zinv;
-    Tz ser = (1.0/3.0)*zz - (1.0/30.0)*zz*zz*zz + (1.0/840.0)*zz*zz*zz*zz*zz;
-    fj1 = sel(az2 < TR(1e-4), ser, fj1);
-    Tz zscale = sel(norm2(fj1) > norm2(fj0), fj1/(consistent(1)*rscale), fj0/consistent(0));
+    Tz ser = real_type(1.0/3.0)*zz - real_type(1.0/30.0)*zz*zz*zz + real_type(1.0/840.0)*zz*zz*zz*zz*zz;
+    fj1 = sel(cmp(az2, std::less(), TR(1e-4)), ser, fj1);
+    // complex float: |b|^2 in a/b can leave the float range, divide a and b by |re b|+|im b| first
+    auto div = [](Tz a, Tz b) -> Tz
+    {
+      if constexpr (fp32 && cplx)
+        {
+          TR m = fabs(b.real())+fabs(b.imag());
+          return Tz(a.real()/m, a.imag()/m) / Tz(b.real()/m, b.imag()/m);
+        }
+      else return a/b;
+    };
+    Tz zscale = sel(cmp(norm2(fj1), std::greater(), norm2(fj0)), div(fj1, consistent(1)*rscale), div(fj0, consistent(0)));
 
     // one power-of-two factor per segment, recomputed where the counts change
     TR fac = 1.0;
@@ -456,24 +538,19 @@ namespace ngsbem
     if (fjder.Size())
       {
         Tz fnext = shift(tail*zscale, cnt-ex[nterms+1]);
-        double scalinv = 1/rscale;
+        real_type scalinv = 1/rscale;
         fjder(0) = -(nterms >= 1 ? fjs(1) : fnext)*rscale;
         for (int i = 1; i <= nterms; i++)
           {
-            double dc1 = double(i)/(2*i+1);
-            double dc2 = 1-dc1;
+            real_type dc1 = real_type(i)/(2*i+1);
+            real_type dc2 = 1-dc1;
             Tz fup = i < nterms ? fjs(i+1) : fnext;
             fjder(i) = (dc1*scalinv)*fjs(i-1) - (dc2*rscale)*fup;
           }
       }
 
-    if (any(tiny))
-      for (int i = 0; i <= nterms; i++)
-        {
-          fjs(i) = sel(tiny, Tz(i == 0 ? 1.0 : 0.0), fjs(i));
-          if (fjder.Size())
-            fjder(i) = sel(tiny, Tz(i == 1 ? 1/(3*rscale) : 0.0), fjder(i));
-        }
+    if (ntiny != 0)
+      set_tiny(false);
   }
 
   template <typename Tz>
