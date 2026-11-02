@@ -1,5 +1,5 @@
 if(NETGEN_USE_PYTHON)
-  add_test(NAME pytest COMMAND ${NETGEN_PYTHON_EXECUTABLE} -u -m pytest -v -o faulthandler_timeout=300 --durations=20 --ignore=mpi_only WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+  add_test(NAME pytest COMMAND ${NETGEN_PYTHON_EXECUTABLE} -u -X faulthandler -m pytest -v -o faulthandler_timeout=300 --durations=20 --ignore=mpi_only WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
   if(NETGEN_USE_MPI)
     add_test(NAME mpi_pytest COMMAND mpirun -np 5 --allow-run-as-root ${NETGEN_PYTHON_EXECUTABLE} -m pytest --durations=20 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/mpi_only )
     set_tests_properties ( mpi_pytest PROPERTIES TIMEOUT 60 )
