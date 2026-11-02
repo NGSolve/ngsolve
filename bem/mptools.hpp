@@ -133,6 +133,14 @@ namespace ngsbem
     return res;
   }
   
+  // double SIMD values rounded to the real type T (identity for double)
+  template <typename T, int N>
+  SIMD<T,N> RoundSIMD (SIMD<double,N> a)
+  {
+    if constexpr (std::is_same_v<T,double>) return a;
+    else return SIMD<T,N>([a](int i) { return T(a[i]); });
+  }
+
 
   class NGS_DLL_HEADER PrecomputedSqrts
   {
@@ -440,6 +448,21 @@ namespace ngsbem
   };
 
 
+  // SphericalHarmonics::DirectionalDiffAdd for FMM_SW, TSCAL = Complex or Complex32
+  template <typename TSCAL>
+  NGS_DLL_HEADER void DirectionalDiffAdd (int order, Vec<3,SIMD<double,FMM_SW>> d,
+                                          FlatVector<SIMD<TSCAL,FMM_SW>> coefs, FlatVector<SIMD<TSCAL,FMM_SW>> res,
+                                          typename SphericalHarmonics<TSCAL>::real_type scale,
+                                          typename SphericalHarmonics<TSCAL>::real_type invscale);
+
+  // the factors of the spherical harmonics shapes for FMM_SW directions x:
+  // shape(n,m) = exp_imphi(m) legfunc(n,m), shape(n,-m) = conj(shape(n,m)), 0 <= m <= n <= order
+  template <typename T>
+  NGS_DLL_HEADER void CalcSHFactors (int order, Vec<3,SIMD<double,FMM_SW>> x,
+                                     FlatMatrix<SIMD<double,FMM_SW>> legfunc,
+                                     FlatVector<SIMD<std::complex<T>,FMM_SW>> exp_imphi);
+
+
   // besseljs3d: bem/besseljs3d.hpp
 
   
@@ -656,6 +679,121 @@ namespace ngsbem
     entry_type EvalDirectionalDerivative (Vec<3> x, Vec<3> d) const;
 
     void AddCharge (Vec<3> x, entry_type c);
+
+    // FMM_SW sources at once: x relative to the center, c, c2 = MakeSimd of FMM_SW entries, added lane by lane
+    // to acc (of the type of the entries), AddLaneSums adds acc to the coefficients.
+    template <typename TSIMD_ENTRY, typename TACC>
+    void AddCharges (Vec<3,SIMD<double,FMM_SW>> x, TSIMD_ENTRY c, FlatVector<TACC> acc, LocalHeap & lh)
+    {
+      AddSIMDSources<true,false> (x, c, Vec<3,SIMD<double,FMM_SW>>(0.0), c, acc, lh);
+    }
+
+    template <typename TSIMD_ENTRY, typename TACC>
+    void AddDipoles (Vec<3,SIMD<double,FMM_SW>> x, Vec<3,SIMD<double,FMM_SW>> d, TSIMD_ENTRY c, FlatVector<TACC> acc,
+                     LocalHeap & lh)
+    {
+      AddSIMDSources<false,true> (x, c, d, c, acc, lh);
+    }
+
+    template <typename TSIMD_ENTRY, typename TACC>
+    void AddChargeDipoles (Vec<3,SIMD<double,FMM_SW>> x, TSIMD_ENTRY c, Vec<3,SIMD<double,FMM_SW>> d, TSIMD_ENTRY c2,
+                           FlatVector<TACC> acc, LocalHeap & lh)
+    {
+      AddSIMDSources<true,true> (x, c, d, c2, acc, lh);
+    }
+
+    template <bool CHARGE, bool DIPOLE, typename TSIMD_ENTRY, typename TACC>
+    void AddSIMDSources (Vec<3,SIMD<double,FMM_SW>> x, TSIMD_ENTRY c, Vec<3,SIMD<double,FMM_SW>> d, TSIMD_ENTRY c2,
+                         FlatVector<TACC> acc, LocalHeap & lh)
+    {
+      static_assert(std::is_same_v<RADIAL,Singular>, "AddSIMDSources: singular MP");
+      using TR = SIMD<double,FMM_SW>;
+      using TCE = SIMD<complex_type,FMM_SW>;
+      using radial_scal = std::conditional_t<IsComplex<T_Kappa>(),complex_type,real_type>;
+      using radial_type = SIMD<radial_scal,FMM_SW>;
+      int order = sh.Order();
+      HeapReset hr(lh);
+      FlatVector<radial_type> radial(order+1, lh);
+      FlatMatrix<TR> legfunc(order+1, order+1, lh);
+      FlatVector<TCE> exp_imphi(order+1, lh);
+      besseljs3d<radial_type>(order, radial_type(radial_scal(kappa))*RoundSIMD<real_type>(L2Norm(x)), Scale(), radial);
+      CalcSHFactors (order, x, legfunc, exp_imphi);
+
+      auto leg = [&] (int n, int m) { return RoundSIMD<real_type>(legfunc(n,m)); };
+      TCE ikappa = complex_type(kappa) * complex_type(0,1);
+
+      if constexpr (!DIPOLE)
+        {
+          // acc(n,m) += conj(shape(n,m)) i kappa radial(n) c, without storing the shapes
+          for (int n = 0; n <= order; n++)
+            {
+              size_t base = n*(n+1);
+              TSIMD_ENTRY radc = ikappa * radial(n) * c;
+              acc(base) += exp_imphi(0) * leg(n,0) * radc;
+              for (ptrdiff_t m = 1; m <= n; m++)
+                {
+                  TCE shape = exp_imphi(m) * leg(n,m);
+                  acc(base-m) += shape * radc;
+                  acc(base+m) += Conj(shape) * radc;
+                }
+            }
+        }
+      else
+        {
+          // the expansions of unit charges and their derivatives in direction d
+          FlatVector<TCE> shapes(sqr(order+1), lh);
+          FlatVector<TCE> dshapes(sqr(order+1), lh);
+          for (int n = 0; n <= order; n++)
+            {
+              size_t base = n*(n+1);
+              TCE radn = ikappa * radial(n);
+              shapes(base) = exp_imphi(0) * leg(n,0) * radn;
+              for (ptrdiff_t m = 1; m <= n; m++)
+                {
+                  TCE shape = exp_imphi(m) * leg(n,m);
+                  shapes(base-m) = shape * radn;
+                  shapes(base+m) = Conj(shape) * radn;
+                }
+            }
+
+          dshapes = TCE(0.0);
+          TCE kc;
+          if constexpr (std::is_same_v<real_type,float>)
+            {
+              // kappa^2 split as in the fp32 AddDipole
+              double k = abs(kappa), s = Scale();
+              kc = TCE(complex_type(kappa/k));
+              DirectionalDiffAdd (order, d, shapes, dshapes, real_type(k*s), real_type(k/s));
+            }
+          else
+            {
+              kc = TCE(complex_type(kappa));
+              DirectionalDiffAdd (order, d, shapes, dshapes, Scale(), 1.0/Scale());
+            }
+
+          TSIMD_ENTRY cd = kc * c2;
+          for (size_t j = 0; j < acc.Size(); j++)
+            {
+              if constexpr (CHARGE) acc(j) += shapes(j) * c;
+              acc(j) += dshapes(j) * cd;
+            }
+        }
+    }
+
+    template <typename TACC>
+    void AddLaneSums (FlatVector<TACC> acc)
+    {
+      for (size_t j = 0; j < acc.Size(); j++)
+        {
+          auto sum = HSum(acc(j));
+          if constexpr (std::is_same_v<entry_type,complex_type>)
+            sh.Coefs()(j) += complex_type(sum);
+          else
+            for (int k = 0; k < VecLength<entry_type>; k++)
+              sh.Coefs()(j)(k) += complex_type(sum(k));
+        }
+    }
+
     void AddDipole (Vec<3> x, Vec<3> dir, entry_type c);
     void AddChargeDipole (Vec<3> x, entry_type c, Vec<3> dir, entry_type c2)
     {
@@ -1433,7 +1571,7 @@ namespace ngsbem
                 return;
               }
 
-            // make simd charges, comment this block for testing ...
+            // make simd charges
             simd_charges.SetSize( (charges.Size()+FMM_SW-1)/FMM_SW);
             size_t i = 0, ii = 0;
             for ( ; i+FMM_SW <= charges.Size(); i+=FMM_SW, ii++)
@@ -1724,12 +1862,23 @@ namespace ngsbem
               auto node = nodes_to_process[i];
               node->device_p2m = FMMDeviceGlue<SingularMLExpansion>::P2MOnDevice(*this, *node);
               if (node->device_p2m) return;
-              for (auto [x,c]: node->charges)
-                node->mp.AddCharge(x-node->center, c);
-              for (auto [x,d,c]: node->dipoles)
-                node->mp.AddDipole(x-node->center, d, c);
-              for (auto [x,c,d,c2]: node->chargedipoles)
-                node->mp.AddChargeDipole(x-node->center, c, d, c2);
+              {
+                using simd_acc_type = typename Node::simd_entry_type;
+                size_t ncoefs = node->mp.SH().Coefs().Size(), order = node->mp.Order();
+                // acc and the scratch of one source block: legfunc, unit expansions and derivatives, O(order) factors
+                TempHeap lh(ncoefs * (sizeof(simd_acc_type) + sizeof(SIMD<double,FMM_SW>)
+                            + 2*sizeof(typename Node::simd_complex_type))
+                            + (order+2) * 4*sizeof(SIMD<Complex,FMM_SW>));
+                FlatVector<simd_acc_type> acc(ncoefs, lh);
+                acc = simd_acc_type{0.0};
+                for (auto [x,c]: node->simd_charges)
+                  node->mp.AddCharges(x-node->center, c, acc, lh);
+                for (auto [x,d,c]: node->simd_dipoles)
+                  node->mp.AddDipoles(x-node->center, d, c, acc, lh);
+                for (auto [x,c,d,c2]: node->simd_chargedipoles)
+                  node->mp.AddChargeDipoles(x-node->center, c, d, c2, acc, lh);
+                node->mp.AddLaneSums(acc);
+              }
               for (auto [sp,ep,j,num]: node->currents)
                 node->mp.AddCurrent(sp-node->center, ep-node->center, j, num);
             }, TasksPerThread(10));

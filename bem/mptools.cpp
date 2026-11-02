@@ -170,6 +170,38 @@ namespace ngsbem
       }
   }
 
+  template <typename T>
+  void CalcSHFactors (int order, Vec<3,SIMD<double,FMM_SW>> x,
+                      FlatMatrix<SIMD<double,FMM_SW>> legfunc, FlatVector<SIMD<std::complex<T>,FMM_SW>> exp_imphi)
+  {
+    using TR = SIMD<double,FMM_SW>;
+    using TC = SIMD<std::complex<T>,FMM_SW>;
+
+    // as Polar: on the z-axis (and at 0) phi = 0, theta = 0 for z > 0, pi otherwise
+    TR rho2 = x(0)*x(0)+x(1)*x(1);
+    auto axis = rho2 == TR(0.0);
+    TR invrho = 1.0/sqrt(If(axis, TR(1.0), rho2));
+    TR costheta = If(axis, If(x(2) > TR(0.0), TR(1.0), TR(-1.0)), x(2)/sqrt(If(axis, TR(1.0), rho2+x(2)*x(2))));
+    TC exp_iphi(RoundSIMD<T>(If(axis, TR(1.0), x(0)*invrho)), RoundSIMD<T>(If(axis, TR(0.0), x(1)*invrho)));
+
+    // costheta rounded to T as in Calc; EvalAll computes in double for a float costheta too
+    if constexpr (std::is_same_v<T,float>)
+      costheta = TR([costheta](int i) { return double(float(costheta[i])); });
+    NormalizedLegendreFunctions::EvalAll (order, costheta, legfunc);
+
+    TC prod = T(1.0/sqrt(4*M_PI));
+    for (int i = 0; i <= order; i++)
+      {
+        exp_imphi(i) = prod;
+        prod = prod * -exp_iphi;
+      }
+  }
+
+  template void CalcSHFactors<double> (int, Vec<3,SIMD<double,FMM_SW>>, FlatMatrix<SIMD<double,FMM_SW>>,
+                                       FlatVector<SIMD<Complex,FMM_SW>>);
+  template void CalcSHFactors<float> (int, Vec<3,SIMD<double,FMM_SW>>, FlatMatrix<SIMD<double,FMM_SW>>,
+                                      FlatVector<SIMD<Complex32,FMM_SW>>);
+
   
   
 
@@ -208,6 +240,47 @@ namespace ngsbem
           res.Coef(n, m) += scale * complex_type(-0.5*fx,-0.5*fy)*bmn1 * Coef(n+1,m+1);
         }
   }
+
+  template <typename TSCAL>
+  void DirectionalDiffAdd (int order, Vec<3,SIMD<double,FMM_SW>> d,
+                           FlatVector<SIMD<TSCAL,FMM_SW>> coefs, FlatVector<SIMD<TSCAL,FMM_SW>> res,
+                           typename SphericalHarmonics<TSCAL>::real_type scale,
+                           typename SphericalHarmonics<TSCAL>::real_type invscale)
+  {
+    using TC = SIMD<TSCAL,FMM_SW>;
+    using SH = SphericalHarmonics<TSCAL>;
+    using real_type = typename SH::real_type;
+    using TR = SIMD<real_type,FMM_SW>;
+    TR fx = RoundSIMD<real_type>(d(0)), fy = RoundSIMD<real_type>(d(1)), fz = RoundSIMD<real_type>(d(2));
+    real_type h = 0.5;
+    // the factors of the member function in front of amn, bmn
+    TC ifp = invscale * TC(h*fx, h*fy), ifm = invscale * TC(h*fx, -h*fy);
+    TC sfp = scale * TC(-h*fx, h*fy), sfm = scale * TC(-h*fx, -h*fy);
+    TR ifz = invscale * fz, sfz = scale * fz;
+
+    for (int n = 0; n < order; n++)
+      for (int m = -n; m <= n; m++)
+        {
+          real_type amn = SH::CalcAmn(m,n);
+          real_type bmn1 = SH::CalcBmn(-m-1, n+1);
+          real_type bmn2 = SH::CalcBmn(m-1,n+1);
+          size_t i = n*(n+1)+m, i1 = (n+1)*(n+2)+m;   // (n,m), (n+1,m)
+          TC c = coefs(i);
+
+          res(i1-1) += ifp*bmn2 * c;
+          res(i1) -= ifz*amn * c;
+          res(i1+1) += ifm*bmn1 * c;
+
+          res(i) += sfp*bmn2 * coefs(i1-1);
+          res(i) += sfz*amn * coefs(i1);
+          res(i) += sfm*bmn1 * coefs(i1+1);
+        }
+  }
+
+  template void DirectionalDiffAdd<Complex> (int, Vec<3,SIMD<double,FMM_SW>>, FlatVector<SIMD<Complex,FMM_SW>>,
+                                             FlatVector<SIMD<Complex,FMM_SW>>, double, double);
+  template void DirectionalDiffAdd<Complex32> (int, Vec<3,SIMD<double,FMM_SW>>, FlatVector<SIMD<Complex32,FMM_SW>>,
+                                               FlatVector<SIMD<Complex32,FMM_SW>>, float, float);
 
 
   template <typename entry_type>
