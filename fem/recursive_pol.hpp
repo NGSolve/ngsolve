@@ -252,7 +252,7 @@ namespace ngfem
         }
       else
         {
-          S pnew = (REC::A(i) * x + REC::B(i)) * p1 + REC::C(i) * p2;
+          S pnew = FMA(FMA(REC::A(i), x, S(REC::B(i))), p1, REC::C(i) * p2);
           p2 = p1;
           p1 = pnew;
         }
@@ -415,7 +415,7 @@ namespace ngfem
         }
       else
         {
-          S pnew = (REC::A(i) * x + REC::B(i) * y) * p1 + REC::C(i) * (y*y)*p2;
+          S pnew = FMA(FMA(REC::A(i), x, S(REC::B(i) * y)), p1, REC::C(i) * (y*y)*p2);
           p2 = p1;
           p1 = pnew;
         }
@@ -906,14 +906,14 @@ namespace ngfem
     {
       if (REC::ZERO_B)
         {
-          S pnew = Cast().A(i) * x * p1 + Cast().C(i) * (y*y)*p2;
+          S pnew = FMA(Cast().A(i) * x, p1, Cast().C(i) * (y*y)*p2);
           // pnew *= 1.0 / Cast().D(i);
           p2 = p1;
           p1 = pnew;
         }
       else
         {
-          S pnew = (Cast().A(i) * x + Cast().B(i) * y) * p1 + Cast().C(i) * (y*y)*p2;
+          S pnew = FMA(FMA(Cast().A(i), x, S(Cast().B(i) * y)), p1, Cast().C(i) * (y*y)*p2);
           // pnew *= 1.0 / static_cast<const REC&>(*this).D(i);
           p2 = p1;
           p1 = pnew;
@@ -1804,6 +1804,7 @@ namespace ngfem
     static INLINE double A (int i) { return CalcA (i); }
     static INLINE double B (int i) { return CalcB (i); }
     static INLINE double C (int i) { return CalcC (i); }
+    enum { ZERO_B = (al == be) };
   };
 
 
