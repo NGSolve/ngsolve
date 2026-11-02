@@ -152,36 +152,42 @@ namespace ngfem
     void SetDualInverse (std::atomic<double*> * slot) { dual_inverse = slot; }
 
     using BASE::SolveDuality;
-    bool SolveDuality (SliceVector<> rhs, SliceVector<> u, LocalHeap & lh) const override
+    bool SolveDuality (SliceMatrix<> x, LocalHeap & lh) const override
     {
       if (!dual_inverse)
-        return BASE::SolveDuality (rhs, u, lh);
+        return BASE::SolveDuality (x, lh);
 
       // D^-1 is lower triangular in V,E,F,C order
       FlatMatrix<> inv(ndof, ndof, GetDualInverse(lh));
+      HeapReset hr(lh);
+      FlatMatrix<> rhs(x.Height(), x.Width(), lh);
+      rhs = x;
       auto [nv, ne, nf, nc] = GetNDofVEFC();
       int ends[] = { nv, nv+ne, nv+ne+nf, ndof };
       int first = 0;
       for (int last : ends)
         {
           if (last > first)
-            u.Range(first, last) = inv.Rows(first, last).Cols(0, last) * rhs.Range(0, last);
+            x.Rows(first, last) = inv.Rows(first, last).Cols(0, last) * rhs.Rows(0, last);
           first = last;
         }
       return true;
     }
 
-    bool SolveDualityTrans (SliceVector<> rhs, SliceVector<> u, LocalHeap & lh) const override
+    bool SolveDualityTrans (SliceMatrix<> x, LocalHeap & lh) const override
     {
       if (!dual_inverse) return false;
       FlatMatrix<> inv(ndof, ndof, GetDualInverse(lh));
+      HeapReset hr(lh);
+      FlatMatrix<> rhs(x.Height(), x.Width(), lh);
+      rhs = x;
       auto [nv, ne, nf, nc] = GetNDofVEFC();
       int ends[] = { nv, nv+ne, nv+ne+nf, ndof };
       int first = 0;
       for (int last : ends)
         {
           if (last > first)
-            u.Range(first, last) = Trans(inv.Rows(first, ndof).Cols(first, last)) * rhs.Range(first, ndof);
+            x.Rows(first, last) = Trans(inv.Rows(first, ndof).Cols(first, last)) * rhs.Rows(first, ndof);
           first = last;
         }
       return true;
@@ -201,7 +207,7 @@ namespace ngfem
             {
               HeapReset hr(lh);
               ej = 0.0; ej(j) = 1.0;
-              BASE::SolveDuality (ej, inv.Col(j), lh);
+              this->SolveDuality1 (ej, inv.Col(j), lh);
             }
           double * expected = nullptr;
           if (!dual_inverse->compare_exchange_strong (expected, pinv, std::memory_order_acq_rel))

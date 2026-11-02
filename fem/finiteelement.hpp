@@ -85,10 +85,11 @@ namespace ngfem
                               const class CoefficientFunction & func, SliceMatrix<> coefs,
                               LocalHeap & lh, int bonus_intorder = 0) const;
       
-    virtual bool SolveDuality (SliceVector<> rhs, SliceVector<> u, LocalHeap & lh) const { return false; }
-    virtual bool SolveDuality (SliceVector<Complex> rhs, SliceVector<Complex> u, LocalHeap & lh) const { return false; }
-    // u = D^-T rhs
-    virtual bool SolveDualityTrans (SliceVector<> rhs, SliceVector<> u, LocalHeap & lh) const { return false; }
+    // x = D^-1 x columnwise; returns false and leaves x untouched if not available
+    // (vectors: x.AsColMatrix(), complex: x.AsRealMatrix(), D is real)
+    virtual bool SolveDuality (SliceMatrix<> x, LocalHeap & lh) const { return false; }
+    // x = D^-T x
+    virtual bool SolveDualityTrans (SliceMatrix<> x, LocalHeap & lh) const { return false; }
     
     virtual list<tuple<string,double>> Timing () const { return list<tuple<string,double>>(); }
   };

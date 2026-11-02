@@ -600,6 +600,12 @@ namespace ngbla
         return DoubleSliceMatrix<T> (h, w, w*Dist(), Dist(), Data());
     }
 
+    // as n x 1 matrix
+    INLINE auto AsColMatrix () const
+    {
+      return MatrixView<T,RowMajor,size_t,size_t,size_t> (Size(), 1, Dist(), Data());
+    }
+
     class Iterator
     {
       VectorView vec;

@@ -252,7 +252,11 @@ namespace ngfem
     
   public:
     NGS_DLL_HEADER virtual std::list<std::tuple<std::string,double>> Timing () const override;
-    NGS_DLL_HEADER virtual bool SolveDuality (SliceVector<> rhs, SliceVector<> u, LocalHeap & lhr) const override;
+    using FiniteElement::SolveDuality;
+    NGS_DLL_HEADER virtual bool SolveDuality (SliceMatrix<> x, LocalHeap & lh) const override;
+  protected:
+    // matrix-free, for one column
+    NGS_DLL_HEADER bool SolveDuality1 (SliceVector<> rhs, SliceVector<> u, LocalHeap & lh) const;
   };
 
 

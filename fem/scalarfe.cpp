@@ -475,9 +475,9 @@ namespace ngfem
       }
     }
 
-    for (int i = 0; i < coefs.Width(); i++)
-      if (!SolveDuality (elflux.Col(i), coefs.Col(i), lh))
-        throw Exception("scalar interpolate need solveduality");
+    coefs = elflux;
+    if (!SolveDuality (coefs, lh))
+      throw Exception("scalar interpolate need solveduality");
 
     /*
       ... otherwise 
@@ -504,8 +504,22 @@ namespace ngfem
   
 
   template <int D>
-  bool ScalarFiniteElement<D> :: SolveDuality (SliceVector<> rhs, SliceVector<> u,
-                                               LocalHeap & lh) const
+  bool ScalarFiniteElement<D> :: SolveDuality (SliceMatrix<> x, LocalHeap & lh) const
+  {
+    if (!DualityMassDiagonal()) return false;
+    HeapReset hr(lh);
+    FlatVector<> rhs(x.Height(), lh);
+    for (size_t j = 0; j < x.Width(); j++)
+      {
+        rhs = x.Col(j);
+        SolveDuality1 (rhs, x.Col(j), lh);
+      }
+    return true;
+  }
+
+  template <int D>
+  bool ScalarFiniteElement<D> :: SolveDuality1 (SliceVector<> rhs, SliceVector<> u,
+                                                LocalHeap & lh) const
   {
     if (!DualityMassDiagonal()) return false;
 

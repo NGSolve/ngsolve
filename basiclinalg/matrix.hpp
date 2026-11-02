@@ -1793,6 +1793,12 @@ namespace ngbla
       return FlatVector<T> (Height()*Width(), Data());
     }
 
+    // complex h x w as real h x 2w, real and imaginary parts interleaved
+    INLINE auto AsRealMatrix () const requires (std::is_same_v<T,Complex> && ORD==RowMajor)
+    {
+      return SliceMatrix<double> (Height(), 2*Width(), 2*Dist(), reinterpret_cast<double*>(Data()));
+    }
+
     auto Bare() const
     {
       return AsBareSliceMatrix(*this);

@@ -649,17 +649,25 @@ namespace ngfem
     void SetDualInverse (std::atomic<double*> * slot) { dual_inverse = slot; }
 
     using HCurlCurlFiniteElement<DIM>::SolveDuality;
-    bool SolveDuality (SliceVector<> rhs, SliceVector<> u, LocalHeap & lh) const override
+    bool SolveDuality (SliceMatrix<> x, LocalHeap & lh) const override
     {
       if (!dual_inverse) return false;
-      u = FlatMatrix<>(ndof, ndof, GetDualInverse<ET,DIM*DIM> (*this, *dual_inverse, lh)) * rhs;
+      FlatMatrix<> inv(ndof, ndof, GetDualInverse<ET,DIM*DIM> (*this, *dual_inverse, lh));
+      HeapReset hr(lh);
+      FlatMatrix<> tmp(x.Height(), x.Width(), lh);
+      tmp = x;
+      x = inv * tmp;
       return true;
     }
 
-    bool SolveDualityTrans (SliceVector<> rhs, SliceVector<> u, LocalHeap & lh) const override
+    bool SolveDualityTrans (SliceMatrix<> x, LocalHeap & lh) const override
     {
       if (!dual_inverse) return false;
-      u = Trans(FlatMatrix<>(ndof, ndof, GetDualInverse<ET,DIM*DIM> (*this, *dual_inverse, lh))) * rhs;
+      FlatMatrix<> inv(ndof, ndof, GetDualInverse<ET,DIM*DIM> (*this, *dual_inverse, lh));
+      HeapReset hr(lh);
+      FlatMatrix<> tmp(x.Height(), x.Width(), lh);
+      tmp = x;
+      x = Trans(inv) * tmp;
       return true;
     }
     

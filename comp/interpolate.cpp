@@ -52,21 +52,16 @@ namespace ngcomp
                              const Array<shared_ptr<BilinearFormIntegrator>> & bli,
                              SliceMatrix<T> x, LocalHeap & lh)
   {
+    if (x.Width() == 0) return;
+    bool done;
+    if constexpr (is_same_v<T,Complex>)
+      done = fel.SolveDuality (x.AsRealMatrix(), lh);
+    else
+      done = fel.SolveDuality (x, lh);
+    if (done) return;
+
     HeapReset hr(lh);
     size_t n = fel.GetNDof();
-    FlatVector<T> tmp(n, lh);
-    if (x.Width() == 0) return;
-    tmp = x.Col(0);
-    if (fel.SolveDuality (tmp, x.Col(0), lh))
-      {
-        for (size_t j = 1; j < x.Width(); j++)
-          {
-            tmp = x.Col(j);
-            fel.SolveDuality (tmp, x.Col(j), lh);
-          }
-        return;
-      }
-
     FlatMatrix<> elmat(n, n, lh);
     CalcDualMassInverse (fel, trafo, bli, elmat, lh);
     FlatMatrix<T> xc(n, x.Width(), lh);
@@ -87,14 +82,15 @@ namespace ngcomp
                                   const Array<shared_ptr<BilinearFormIntegrator>> & bli,
                                   FlatVector<> x, LocalHeap & lh)
   {
+    if (fel.SolveDualityTrans (x.AsColMatrix(), lh))
+      return;
+
     HeapReset hr(lh);
     size_t n = fel.GetNDof();
-    FlatVector<> tmp(n, lh);
-    tmp = x;
-    if (fel.SolveDualityTrans (tmp, x, lh))
-      return;
     FlatMatrix<> elmat(n, n, lh);
     CalcDualMassInverse (fel, trafo, bli, elmat, lh);
+    FlatVector<> tmp(n, lh);
+    tmp = x;
     x = Trans(elmat) * tmp;
   }
 

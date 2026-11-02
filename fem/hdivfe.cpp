@@ -502,8 +502,11 @@ namespace ngfem
     };
 
     integrate (nullptr);
-    if (SolveDuality (rhs, coefs.Col(0), lh))
-      return;
+    if (SolveDuality (rhs.AsColMatrix(), lh))
+      {
+        coefs.Col(0) = rhs;
+        return;
+      }
 
     FlatMatrix<> mat(nd, nd, lh);
     integrate (&mat);

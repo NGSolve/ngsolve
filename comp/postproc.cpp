@@ -557,9 +557,12 @@ namespace ngcomp
 			   }
 		       }
 
-                     bool result=true;
-                     for ( auto j : Range(dim) )
-                       result = fel.SolveDuality (elflux.Slice (j,dim), elfluxi.Slice (j,dim), lh);
+                     elfluxi = elflux;
+                     bool result;
+                     if constexpr (is_same_v<SCAL64,Complex>)
+                       result = fel.SolveDuality (elfluxi.AsMatrix(fel.GetNDof(), dim).AsRealMatrix(), lh);
+                     else
+                       result = fel.SolveDuality (elfluxi.AsMatrix(fel.GetNDof(), dim), lh);
                      
                      if (!result)
                        {
@@ -638,9 +641,12 @@ namespace ngcomp
                      elflux += elfluxadd;
                    }
                }
-             bool result=true;
-             for ( auto j : Range(dim) )
-               result = fel.SolveDuality (elflux.Slice (j,dim), elfluxi.Slice (j,dim), lh);
+             elfluxi = elflux;
+             bool result;
+             if constexpr (is_same_v<SCAL64,Complex>)
+               result = fel.SolveDuality (elfluxi.AsMatrix(fel.GetNDof(), dim).AsRealMatrix(), lh);
+             else
+               result = fel.SolveDuality (elfluxi.AsMatrix(fel.GetNDof(), dim), lh);
              
              if (!result)
                {

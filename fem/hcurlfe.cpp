@@ -682,8 +682,11 @@ namespace ngfem
                 rhs(i) += HSum(InnerProduct(fvals.AsVector(), dualsRS.Row(i)));
             }
         }
-      if (SolveDuality (rhs, coefs.Col(0), lh))
-        return;
+      if (SolveDuality (rhs.AsColMatrix(), lh))
+        {
+          coefs.Col(0) = rhs;
+          return;
+        }
     }
 
     FlatMatrix<> mat(nd, nd, lh);
