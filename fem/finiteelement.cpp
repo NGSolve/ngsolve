@@ -46,7 +46,7 @@ namespace ngfem
 
   void FiniteElement :: Interpolate (const ElementTransformation & trafo, 
                                      const class CoefficientFunction & func, SliceMatrix<> coefs,
-                                     LocalHeap & lh) const
+                                     LocalHeap & lh, int bonus_intorder) const
   {
     throw Exception(string("Element ") + typeid(*this).name() + " does not support interpolation");
   }
@@ -111,7 +111,7 @@ namespace ngfem
   
   void CompoundFiniteElement :: Interpolate (const ElementTransformation & trafo, 
                                              const CoefficientFunction & func, SliceMatrix<> coefs,
-                                             LocalHeap & lh) const
+                                             LocalHeap & lh, int bonus_intorder) const
   {
     if (all_the_same)
       {
@@ -128,7 +128,7 @@ namespace ngfem
 
         STACK_ARRAY(double, mem, ndof*dim);
         FlatMatrix<> temp(ndof, dim, &mem[0]);
-        fea[0] -> Interpolate (trafo, func, temp, lh);
+        fea[0] -> Interpolate (trafo, func, temp, lh, bonus_intorder);
 
         // now we need to transpose, not sure if we stay with that
         for (int i = 0, ii=0; i < temp.Width(); i++)
@@ -169,7 +169,7 @@ namespace ngfem
 
   void VectorFiniteElement :: Interpolate (const ElementTransformation & trafo,
                                              const CoefficientFunction & func, SliceMatrix<> coefs,
-                                             LocalHeap & lh) const
+                                             LocalHeap & lh, int bonus_intorder) const
   {
         // Boils down to restricting the present implementation to compounds of scalar elements only.
         if (dim != func.Dimension())
@@ -178,7 +178,7 @@ namespace ngfem
         size_t sndof = scalar_fe.GetNDof();
         STACK_ARRAY(double, mem, sndof * dim);
         FlatMatrix<> temp(sndof, static_cast<const size_t>(dim), &mem[0]);
-        scalar_fe.Interpolate (trafo, func, temp, lh);
+        scalar_fe.Interpolate (trafo, func, temp, lh, bonus_intorder);
 
         // now we need to transpose, not sure if we stay with that
         for (int i = 0, ii=0; i < temp.Width(); i++)
@@ -212,13 +212,13 @@ namespace ngfem
 
   void SymMatrixFiniteElement :: Interpolate (const ElementTransformation & trafo, 
                                               const CoefficientFunction & func, SliceMatrix<> coefs,
-                                              LocalHeap & lh) const
+                                              LocalHeap & lh, int bonus_intorder) const
   {
     size_t scalndof = scalfe.GetNDof();
     size_t fulldim = vdim*vdim;
     STACK_ARRAY(double, mem, ndof*fulldim); 
     FlatMatrix<> temp(scalndof, fulldim, &mem[0]);
-    scalfe.Interpolate (trafo, func, temp, lh);
+    scalfe.Interpolate (trafo, func, temp, lh, bonus_intorder);
     // cout << "interpol, temp = " << temp << endl;
 
     // now we need to transpose, not sure if we stay with that
@@ -251,13 +251,13 @@ namespace ngfem
 
   void SkewMatrixFiniteElement :: Interpolate (const ElementTransformation & trafo, 
                                                const CoefficientFunction & func, SliceMatrix<> coefs,
-                                               LocalHeap & lh) const
+                                               LocalHeap & lh, int bonus_intorder) const
   {
     size_t scalndof = scalfe.GetNDof();
     size_t fulldim = vdim*vdim;
     STACK_ARRAY(double, mem, ndof*fulldim); 
     FlatMatrix<> temp(scalndof, fulldim, &mem[0]);
-    scalfe.Interpolate (trafo, func, temp, lh);
+    scalfe.Interpolate (trafo, func, temp, lh, bonus_intorder);
     // cout << "interpol, temp = " << temp << endl;
 
     // now we need to transpose, not sure if we stay with that

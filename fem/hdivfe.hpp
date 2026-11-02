@@ -120,6 +120,10 @@ namespace ngfem
     virtual void GetFacetDofs(int i, Array<int> & dnums) const;
     virtual void CalcDualShape (const BaseMappedIntegrationPoint & bmip, BareSliceMatrix<> shape) const;
 
+    virtual void Interpolate (const ElementTransformation & trafo,
+                              const class CoefficientFunction & func, SliceMatrix<> coefs,
+                              LocalHeap & lh, int bonus_intorder = 0) const;
+
   protected:
 
     /// compute basis, will be orthogonalized
@@ -208,7 +212,7 @@ namespace ngfem
     
     virtual void Interpolate (const ElementTransformation & trafo, 
                               const class CoefficientFunction & func, SliceMatrix<> coefs,
-                              LocalHeap & lh) const override;    
+                              LocalHeap & lh, int bonus_intorder = 0) const override;    
   };
 
 

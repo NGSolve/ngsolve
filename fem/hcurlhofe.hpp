@@ -138,6 +138,27 @@ namespace ngfem
     
     void ComputeNDof();
 
+    // same counts as ComputeNDof
+    virtual tuple<int,int,int,int> GetNDofVEFC () const override
+    {
+      int ne = 0, nf = 0;
+      for (int i = 0; i < N_EDGE; i++)
+        ne += 1 + ((order_edge[i] > 0) ? usegrad_edge[i]*order_edge[i] : 0);
+      for (int i = 0; i < N_FACE; i++)
+        if (FaceType(i) == ET_TRIG)
+          {
+            int p = order_face[i][0];
+            if (p > 1)
+              {
+                int pg = p - (type1 ? 1 : 0);
+                nf += usegrad_face[i]*pg*(pg-1)/2 + (p+2)*(p-1)/2;
+              }
+          }
+        else if (order_face[i][0] >= 0 && order_face[i][1] >= 0)
+          nf += (usegrad_face[i]+1)*order_face[i][0]*order_face[i][1] + order_face[i][0] + order_face[i][1];
+      return { 0, ne, nf, ndof-ne-nf };
+    }
+
     virtual void CalcDualShape (const BaseMappedIntegrationPoint & bmip, BareSliceMatrix<> shape) const override;
     virtual void CalcDualShape (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> shape) const override;
     virtual void EvaluateDual (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const override;

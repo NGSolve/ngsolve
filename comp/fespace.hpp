@@ -744,7 +744,7 @@ ANY                  1 1 1 1 | 15
     
     
     virtual void Interpolate (const CoefficientFunction & cf, BaseVector & vec,
-                              const Region * reg, LocalHeap & lh);
+                              const Region * reg, LocalHeap & lh, int bonus_intorder = 0);
     
     
     virtual shared_ptr<BaseMatrix> GetMassOperator (shared_ptr<CoefficientFunction> rho,

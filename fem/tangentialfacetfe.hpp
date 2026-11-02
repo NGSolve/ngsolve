@@ -88,11 +88,11 @@ namespace ngfem
 
     virtual void Interpolate (const ElementTransformation & trafo, 
                               const class CoefficientFunction & func, SliceMatrix<> coefs,
-                              LocalHeap & lh) const override
+                              LocalHeap & lh, int bonus_intorder = 0) const override
     {
       HeapReset hr(lh);
 
-      SIMD_IntegrationRule ir(ET, 2 * order);
+      SIMD_IntegrationRule ir(ET, 2 * order + bonus_intorder);
       auto & mir = trafo(ir, lh);
 
       FlatMatrix<SIMD<double>> mfluxi(DIM+1, mir.IR().Size(), lh);
@@ -193,14 +193,14 @@ namespace ngfem
 
     virtual void Interpolate (const ElementTransformation & trafo, 
                               const class CoefficientFunction & func, SliceMatrix<> coefs,
-                              LocalHeap & lh) const override
+                              LocalHeap & lh, int bonus_intorder = 0) const override
     {
       HeapReset hr(lh);
 
       Facet2ElementTrafo f2el (ElementType(), BND);
       for (int locfnr : Range(f2el.GetNFacets()))
         {
-          SIMD_IntegrationRule irfacet(f2el.FacetType(locfnr), 2 * order);
+          SIMD_IntegrationRule irfacet(f2el.FacetType(locfnr), 2 * order + bonus_intorder);
           auto & irvol = f2el(locfnr, irfacet, lh);
           auto & mir = trafo(irvol, lh);
 

@@ -248,7 +248,7 @@ namespace ngfem
 
     NGS_DLL_HEADER virtual void Interpolate (const ElementTransformation & trafo, 
                                              const class CoefficientFunction & func, SliceMatrix<> coefs,
-                                             LocalHeap & lh) const override;
+                                             LocalHeap & lh, int bonus_intorder = 0) const override;
     
   public:
     NGS_DLL_HEADER virtual std::list<std::tuple<std::string,double>> Timing () const override;

@@ -449,6 +449,73 @@ namespace ngfem
     first = false;
   }
 
+  template <int D>
+  void HDivFiniteElement<D> ::
+  Interpolate (const ElementTransformation & trafo,
+               const CoefficientFunction & func, SliceMatrix<> coefs,
+               LocalHeap & lh, int bonus_intorder) const
+  {
+    HeapReset hr(lh);
+    size_t nd = GetNDof();
+    int dimspace = trafo.SpaceDim();
+    if (coefs.Width() != 1)
+      throw Exception("HDivFE::Interpolate: only scalar-valued spaces");
+
+    FlatVector<> rhs(nd, lh);
+    auto [nv,ne,nf,nc] = GetNDofVEFC();
+    int nvefc[] = { nv, ne, nf, nc };
+
+    // facet and cell moments, and the duality matrix if needed
+    auto integrate = [&] (FlatMatrix<> * mat)
+    {
+      rhs = 0.0;
+      if (mat) *mat = 0.0;
+      for (int el_vb = 1; el_vb >= 0; el_vb--)
+        {
+          if (!nvefc[D-el_vb]) continue;
+          Facet2ElementTrafo f2el (ElementType(), VorB(el_vb));
+          for (int locfnr : Range(f2el.GetNFacets()))
+            {
+              HeapReset hr(lh);
+              IntegrationRule irfacet(f2el.FacetType(locfnr), 2*Order()+bonus_intorder);
+              auto & irvol = f2el(locfnr, irfacet, lh);
+              auto & mir = trafo(irvol, lh);
+
+              FlatMatrix<> fvals(mir.Size(), dimspace, lh);
+              func.Evaluate (mir, fvals);
+
+              FlatMatrix<> shape(nd, dimspace, lh), dual(nd, dimspace, lh);
+              for (size_t j : Range(mir))
+                {
+                  dual = 0.0;
+                  CalcDualShape (mir[j], dual);
+                  dual *= mir[j].GetWeight();
+                  rhs += dual * fvals.Row(j);
+                  if (mat)
+                    {
+                      CalcMappedShape (mir[j], shape);
+                      *mat += dual * Trans(shape);
+                    }
+                }
+            }
+        }
+    };
+
+    integrate (nullptr);
+    if (SolveDuality (rhs, coefs.Col(0), lh))
+      return;
+
+    FlatMatrix<> mat(nd, nd, lh);
+    integrate (&mat);
+    if (L2Norm(mat) == 0)
+      throw Exception(string("HDivFE::Interpolate: no dual shapes for ") + typeid(*this).name());
+
+    FlatArray<int> piv(nd, lh);
+    CalcLU (mat, piv);
+    SolveFromLU (mat, piv, SliceMatrix<double,ColMajor>(nd, 1, nd, rhs.Data()));
+    coefs.Col(0) = rhs;
+  }
+
   template class HDivFiniteElement<0>;
   template class HDivFiniteElement<1>;
   template class HDivFiniteElement<2>;
@@ -614,11 +681,11 @@ namespace ngfem
   void HDivNormalFiniteElement<D> ::
   Interpolate (const ElementTransformation & trafo, 
                const class CoefficientFunction & func, SliceMatrix<> coefs,
-               LocalHeap & lh) const
+               LocalHeap & lh, int bonus_intorder) const
   {
     HeapReset hr(lh);
     
-    SIMD_IntegrationRule ir(ElementType(), 2 * order);
+    SIMD_IntegrationRule ir(ElementType(), 2 * order + bonus_intorder);
     auto & mir = trafo(ir, lh);
     
     FlatMatrix<SIMD<double>> mfluxi(DIM+1, mir.IR().Size(), lh);

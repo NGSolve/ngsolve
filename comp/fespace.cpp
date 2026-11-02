@@ -2348,7 +2348,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
   void FESpace :: Interpolate (const CoefficientFunction & cf, BaseVector & vec1,
-                               const Region * reg, LocalHeap & clh)
+                               const Region * reg, LocalHeap & clh, int bonus_intorder)
   {
     static Timer t("FESpace::Interpolate"); RegionTimer r(t);
 
@@ -2401,14 +2401,14 @@ lot of new non-zero entries in the matrix!\n" << endl;
            FlatVector<SCAL> elvec(ndof*fesdim, lh), elvec1(ndof*fesdim, lh);
 
            if constexpr (is_same_v<SCAL,double>)
-             fel.Interpolate (eltrans, cf, elvec.AsMatrix(ndof, fesdim), lh);
+             fel.Interpolate (eltrans, cf, elvec.AsMatrix(ndof, fesdim), lh, bonus_intorder);
            else
              {
                FlatVector<> re(ndof*fesdim, lh), im(ndof*fesdim, lh);
-               fel.Interpolate (eltrans, cfre ? *cfre : cf, re.AsMatrix(ndof, fesdim), lh);
+               fel.Interpolate (eltrans, cfre ? *cfre : cf, re.AsMatrix(ndof, fesdim), lh, bonus_intorder);
                im = 0.0;
                if (cfim)
-                 fel.Interpolate (eltrans, *cfim, im.AsMatrix(ndof, fesdim), lh);
+                 fel.Interpolate (eltrans, *cfim, im.AsMatrix(ndof, fesdim), lh, bonus_intorder);
                elvec = re + Complex(0,1) * im;
              }
 

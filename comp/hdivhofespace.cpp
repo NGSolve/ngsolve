@@ -306,9 +306,13 @@ namespace ngcomp
         prol = CreateVectorL2EmbeddedProlongation (this, "piola2");
   }
   
-  HDivHighOrderFESpace:: ~HDivHighOrderFESpace () 
+  HDivHighOrderFESpace:: ~HDivHighOrderFESpace () { ClearDualInverse(); }
+
+  void HDivHighOrderFESpace :: ClearDualInverse ()
   {
-    ;
+    for (auto & row : dual_inverse)
+      for (auto & slot : row)
+        delete [] slot.exchange(nullptr);
   }
 
   DocInfo HDivHighOrderFESpace :: GetDocu ()
@@ -351,6 +355,7 @@ namespace ngcomp
   void HDivHighOrderFESpace :: Update()
   {
     FESpace::Update();
+    ClearDualInverse();
     // In discontinuous spaces the order on edges and faces  
     // are also set to the maximal order of adjacent elements  
     // and not to the element order (Motivation: Equilibrated_EE) 
@@ -949,6 +954,24 @@ namespace ngcomp
         break;
       }
     hofe -> ComputeNDof();
+
+    if constexpr (ET == ET_TRIG || ET == ET_TET)
+      if (!ho_div_free && !onlyhdiv)
+        {
+          bool same = order_inner[elnr][0] == order;
+          if constexpr (ET == ET_TET)
+            for (auto f : ngel.Faces()) same &= order_facet[f][0] == order;
+          else
+            for (auto e : ngel.Edges()) same &= order_facet[e][0] == order;
+          if (same)
+            {
+              int cls = 0, bit = 0;
+              for (int i = 0; i < ngel.vertices.Size(); i++)
+                for (int j = i+1; j < ngel.vertices.Size(); j++, bit++)
+                  if (ngel.vertices[i] > ngel.vertices[j]) cls |= 1 << bit;
+              hofe -> SetDualInverse (&dual_inverse[ET == ET_TET][cls]);
+            }
+        }
     return *hofe;
   }
 

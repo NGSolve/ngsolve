@@ -2359,7 +2359,7 @@ bonus_intorder : int
 
     .def("Interpolate", 
          [](shared_ptr<GF> self, spCF cf,
-            py::object definedon, int mdcomp)
+            py::object definedon, int mdcomp, int bonus_intorder)
          {
            Region * reg = nullptr;
            if (py::extract<Region&> (definedon).check())
@@ -2367,11 +2367,12 @@ bonus_intorder : int
            
            py::gil_scoped_release release;
            // self->Interpolate (*cf, reg, mdcomp, lhp.GetLH());
-           self->GetFESpace()->Interpolate(*cf, self->GetVector(mdcomp), reg, lhp.GetLH());
+           self->GetFESpace()->Interpolate(*cf, self->GetVector(mdcomp), reg, lhp.GetLH(), bonus_intorder);
          },
          py::arg("coefficient"),
          py::arg("definedon")=DummyArgument(),
-         py::arg("mdcomp")=0)
+         py::arg("mdcomp")=0,
+         py::arg("bonus_intorder")=0)
 
     
     .def("__setitem__", [](shared_ptr<GF> self, RegionDescriptor namevb, spCF cf) {

@@ -418,21 +418,25 @@ namespace ngfem
   template<int D>
   void ScalarFiniteElement<D> :: Interpolate (const ElementTransformation & trafo, 
                                               const CoefficientFunction & func, SliceMatrix<> coefs,
-                                              LocalHeap & lh) const
+                                              LocalHeap & lh, int bonus_intorder) const
   {
     HeapReset hr(lh);
     
     FlatMatrix<> elflux(GetNDof(), coefs.Width(), lh);
     elflux = 0.0;
 
+    auto [nv,ne,nf,nc] = GetNDofVEFC();
+    int nvefc[] = { nv, ne, nf, nc };
+
     try
     {
       for (int el_vb = D; el_vb >= 0; el_vb--)
       {
+        if (!nvefc[D-el_vb]) continue;
         Facet2ElementTrafo f2el (ElementType(), VorB(el_vb));
         for (int locfnr : Range(f2el.GetNFacets()))
         {
-          SIMD_IntegrationRule irfacet(f2el.FacetType(locfnr), 2 * Order());
+          SIMD_IntegrationRule irfacet(f2el.FacetType(locfnr), 2 * Order() + bonus_intorder);
           auto & irvol = f2el(locfnr, irfacet, lh);
           auto & mir = trafo(irvol, lh);
 
@@ -451,10 +455,11 @@ namespace ngfem
     {
       for (int el_vb = D; el_vb >= 0; el_vb--)
       {
+        if (!nvefc[D-el_vb]) continue;
         Facet2ElementTrafo f2el (ElementType(), VorB(el_vb));
         for (int locfnr : Range(f2el.GetNFacets()))
         {
-          IntegrationRule irfacet(f2el.FacetType(locfnr), 2 * Order());
+          IntegrationRule irfacet(f2el.FacetType(locfnr), 2 * Order() + bonus_intorder);
           auto & irvol = f2el(locfnr, irfacet, lh);
           auto & mir = trafo(irvol, lh);
 

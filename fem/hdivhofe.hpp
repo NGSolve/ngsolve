@@ -12,6 +12,7 @@
 #include "recursive_pol.hpp"
 #include "recursive_pol_trig.hpp"
 #include "hdivfe_utils.hpp"
+#include "dualinverse.hpp"
 
 
 namespace ngfem
@@ -393,6 +394,7 @@ namespace ngfem
     bool ho_div_free;
     bool only_ho_div;
     bool RT = false;
+    std::atomic<double*> * dual_inverse = nullptr;
   public:
     using VertexOrientedFE<ET>::SetVertexNumbers;
     HDivHighOrderFE * SetVertexNumbers (FlatArray<int> vnums) override
@@ -458,6 +460,22 @@ namespace ngfem
 
     virtual tuple<int,int,int,int> GetNDofVEFC () const override;
 
+    void SetDualInverse (std::atomic<double*> * slot) { dual_inverse = slot; }
+
+    using BASE::SolveDuality;
+    bool SolveDuality (SliceVector<> rhs, SliceVector<> u, LocalHeap & lh) const override
+    {
+      if (!dual_inverse) return false;
+      u = FlatMatrix<>(ndof, ndof, GetDualInverse<ET,DIM> (*this, *dual_inverse, lh)) * rhs;
+      return true;
+    }
+
+    bool SolveDualityTrans (SliceVector<> rhs, SliceVector<> u, LocalHeap & lh) const override
+    {
+      if (!dual_inverse) return false;
+      u = Trans(FlatMatrix<>(ndof, ndof, GetDualInverse<ET,DIM> (*this, *dual_inverse, lh))) * rhs;
+      return true;
+    }
   };
 
 }

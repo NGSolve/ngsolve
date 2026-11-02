@@ -99,6 +99,17 @@ def test_SurfaceGetFE(quads=False):
                         assert space.GetFE(el).ndof == len(space.GetDofNrs(el)), [spacename,vb,order]
     return
 
+def test_hcurl_varorder():
+    from ngsolve.meshes import MakeStructured2DMesh, MakeStructured3DMesh
+    for mesh in [MakeStructured2DMesh(quads=False, nx=4), MakeStructured2DMesh(quads=True, nx=4),
+                 MakeStructured3DMesh(hexes=False, nx=2)]:
+        fes = HCurl(mesh, order=1)
+        for e in mesh.edges: fes.SetOrder(e, 2)
+        for f in mesh.faces: fes.SetOrder(f, 2)
+        fes.Update()
+        for el in fes.Elements(VOL):
+            assert fes.GetFE(el).ndof == len(el.dofs)
+
 if __name__ == "__main__":
     test_2DGetFE(quads=False)
     test_2DGetFE(quads=True)

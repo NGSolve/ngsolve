@@ -67,7 +67,7 @@ namespace ngfem
     
     virtual void Interpolate (const ElementTransformation & trafo, 
                               const class CoefficientFunction & func, SliceMatrix<> coefs,
-                              LocalHeap & lh) const override
+                              LocalHeap & lh, int bonus_intorder = 0) const override
     {
       if (auto ipts = GetNodalPoints(); ipts.Size())
         {
@@ -77,7 +77,7 @@ namespace ngfem
           func.Evaluate (mir, coefs);
         }
       else
-        BASE::Interpolate (trafo, func, coefs, lh);
+        BASE::Interpolate (trafo, func, coefs, lh, bonus_intorder);
     }
 
     

@@ -856,7 +856,9 @@ namespace ngcomp
 	  ctofdof[range.First()] = WIREBASKET_DOF;
       }
 
-    if (order_policy == VARIABLE_ORDER && ma->GetDimension() == 2)
+    // variable order tables disabled, see UpdateDofTables
+    // if (order_policy == VARIABLE_ORDER && ma->GetDimension() == 2)
+    if (false)
       { 
         for (auto face : Range(ma->GetNFaces()))
           ctofdof.Range(GetFaceDofs(face)) = LOCAL_DOF;
@@ -1621,7 +1623,8 @@ namespace ngcomp
 
   void HCurlHighOrderFESpace :: GetFaceDofNrs (int fanr, Array<int> & dnums) const
   {
-    if (order_policy == VARIABLE_ORDER)
+    // if (order_policy == VARIABLE_ORDER)
+    if (false)
       {
         dnums = GetFaceDofs(fanr);
         return;
@@ -1638,7 +1641,8 @@ namespace ngcomp
 
   void HCurlHighOrderFESpace :: GetInnerDofNrs (int elnr, Array<int> & dnums) const
   {
-    if (order_policy == VARIABLE_ORDER && ma->GetDimension() == 2)
+    // if (order_policy == VARIABLE_ORDER && ma->GetDimension() == 2)
+    if (false)
       {
         dnums.SetSize0();
         return;

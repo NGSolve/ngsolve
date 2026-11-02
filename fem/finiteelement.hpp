@@ -83,7 +83,7 @@ namespace ngfem
 
     virtual void Interpolate (const ElementTransformation & trafo, 
                               const class CoefficientFunction & func, SliceMatrix<> coefs,
-                              LocalHeap & lh) const;
+                              LocalHeap & lh, int bonus_intorder = 0) const;
       
     virtual bool SolveDuality (SliceVector<> rhs, SliceVector<> u, LocalHeap & lh) const { return false; }
     virtual bool SolveDuality (SliceVector<Complex> rhs, SliceVector<Complex> u, LocalHeap & lh) const { return false; }
@@ -142,7 +142,7 @@ namespace ngfem
 
     virtual void Interpolate (const ElementTransformation & trafo,
                               const class CoefficientFunction & func, SliceMatrix<> coefs,
-                              LocalHeap & lh) const override;
+                              LocalHeap & lh, int bonus_intorder = 0) const override;
 
     virtual void Print (ostream & ost) const override;
   };
@@ -182,7 +182,7 @@ namespace ngfem
 
     virtual void Interpolate (const ElementTransformation & trafo,
                               const class CoefficientFunction & func, SliceMatrix<> coefs,
-                              LocalHeap & lh) const override;
+                              LocalHeap & lh, int bonus_intorder = 0) const override;
   };
 
   // a pair of 2 elements
@@ -228,7 +228,7 @@ namespace ngfem
 
     virtual void Interpolate (const ElementTransformation & trafo, 
                               const class CoefficientFunction & func, SliceMatrix<> coefs,
-                              LocalHeap & lh) const override; 
+                              LocalHeap & lh, int bonus_intorder = 0) const override; 
   };
 
 
@@ -257,7 +257,7 @@ namespace ngfem
 
     virtual void Interpolate (const ElementTransformation & trafo, 
                               const class CoefficientFunction & func, SliceMatrix<> coefs,
-                              LocalHeap & lh) const override; 
+                              LocalHeap & lh, int bonus_intorder = 0) const override; 
   };
 
 

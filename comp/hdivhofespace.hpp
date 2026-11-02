@@ -61,6 +61,10 @@ namespace ngcomp
     bool hide_all_dofs;
     // discontinuous facet pairs:
     Array<IVec<2>> dc_pairs;
+
+    // D^-1 of full-order trigs, tets, per vertex-order class
+    mutable std::atomic<double*> dual_inverse[2][64] {};
+    void ClearDualInverse ();
   public:
     HDivHighOrderFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, 
                           bool parseflags=false);
