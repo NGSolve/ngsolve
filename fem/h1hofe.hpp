@@ -157,19 +157,31 @@ namespace ngfem
       if (!dual_inverse)
         return BASE::SolveDuality (x, lh);
 
-      // D^-1 is lower triangular in V,E,F,C order
+      // D^-1 is block lower triangular in V,E,F,C order, with diagonal diagonal blocks
       FlatMatrix<> inv(ndof, ndof, GetDualInverse(lh));
-      HeapReset hr(lh);
-      FlatMatrix<> rhs(x.Height(), x.Width(), lh);
-      rhs = x;
       auto [nv, ne, nf, nc] = GetNDofVEFC();
-      int ends[] = { nv, nv+ne, nv+ne+nf, ndof };
-      int first = 0;
-      for (int last : ends)
+      int st[] = { 0, nv, nv+ne, nv+ne+nf, int(ndof) };
+      if (x.Width() == 1)  // gemv instead of n x 1 gemm
         {
-          if (last > first)
-            x.Rows(first, last) = inv.Rows(first, last).Cols(0, last) * rhs.Rows(0, last);
-          first = last;
+          auto xv = x.Col(0);
+          for (int b = 3; b >= 0; b--)
+            {
+              int first = st[b], last = st[b+1];
+              for (int i = first; i < last; i++)
+                xv(i) *= inv(i,i);
+              if (first > 0 && last > first)
+                xv.Range(first, last) += inv.Rows(first, last).Cols(0, first) * xv.Range(0, first);
+            }
+          return true;
+        }
+
+      for (int b = 3; b >= 0; b--)
+        {
+          int first = st[b], last = st[b+1];
+          for (int i = first; i < last; i++)
+            x.Row(i) *= inv(i,i);
+          if (first > 0 && last > first)
+            x.Rows(first, last) += inv.Rows(first, last).Cols(0, first) * x.Rows(0, first);
         }
       return true;
     }
@@ -178,17 +190,29 @@ namespace ngfem
     {
       if (!dual_inverse) return false;
       FlatMatrix<> inv(ndof, ndof, GetDualInverse(lh));
-      HeapReset hr(lh);
-      FlatMatrix<> rhs(x.Height(), x.Width(), lh);
-      rhs = x;
       auto [nv, ne, nf, nc] = GetNDofVEFC();
-      int ends[] = { nv, nv+ne, nv+ne+nf, ndof };
-      int first = 0;
-      for (int last : ends)
+      int st[] = { 0, nv, nv+ne, nv+ne+nf, int(ndof) };
+      if (x.Width() == 1)
         {
-          if (last > first)
-            x.Rows(first, last) = Trans(inv.Rows(first, ndof).Cols(first, last)) * rhs.Rows(first, ndof);
-          first = last;
+          auto xv = x.Col(0);
+          for (int b = 0; b < 4; b++)
+            {
+              int first = st[b], last = st[b+1];
+              for (int i = first; i < last; i++)
+                xv(i) *= inv(i,i);
+              if (last < ndof && last > first)
+                xv.Range(first, last) += Trans(inv.Rows(last, ndof).Cols(first, last)) * xv.Range(last, ndof);
+            }
+          return true;
+        }
+
+      for (int b = 0; b < 4; b++)
+        {
+          int first = st[b], last = st[b+1];
+          for (int i = first; i < last; i++)
+            x.Row(i) *= inv(i,i);
+          if (last < ndof && last > first)
+            x.Rows(first, last) += Trans(inv.Rows(last, ndof).Cols(first, last)) * x.Rows(last, ndof);
         }
       return true;
     }

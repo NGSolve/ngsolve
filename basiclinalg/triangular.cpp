@@ -134,10 +134,173 @@ namespace ngbla
       TriangularMultLL3<NORM> (L, X.Cols(i,X.Width()));      
   }
 
-  template <TRIG_NORMAL NORM, ORDERING ORD>  
+  // rows i0..i0+H of T times x(c0:c1), T is RowMajor or ColMajor
+  template <size_t H, ORDERING ORD>
+  NGK_INLINE SIMD<double,H> KTrigRect (double * pt, size_t dist, double * px, size_t i0, size_t c0, size_t c1)
+  {
+    typedef SIMD<double,H> TV;
+    if constexpr (ORD == RowMajor)
+      return MatKernelScalAB<H,1> (c1-c0, pt+i0*dist+c0, dist, px+c0, 0);
+    else
+      {
+        constexpr size_t SW = SIMD<double>::Size();
+        double res[H];
+        MatKernelMultAB<1,H/SW,SET> (c1-c0, px+c0, 0, pt+c0*dist+i0, dist, res, 0);
+        return TV(res);
+      }
+  }
+
+  // sum + the lower (LL) or upper (UR) triangle of T(i0:i0+8, i0:i0+8) times x(i0:i0+8),
+  // in native SW x SW blocks: blocks outside the triangle are skipped, diagonal blocks masked;
+  // ColMajor by columns, RowMajor by rows
+  template <TRIG_SIDE SIDE, TRIG_NORMAL NORM, ORDERING ORD>
+  NGK_INLINE SIMD<double,8> KTrigBlock8 (double * pt, size_t dist, double * px, size_t i0, SIMD<double,8> sum)
+  {
+    constexpr int SW = SIMD<double>::Size();
+    constexpr int NB = 8 / SW;
+    typedef SIMD<double> TN;
+    TN lane ([] (int l) { return double(l); });
+    // entry (r,c) of the triangle, for lanes of one native vector
+    auto masked = [&lane] (TN v, auto r0, auto c0, auto colwise) NGK_LAMBDA_INLINE
+      {
+        // lanes run over rows (colwise) or columns
+        constexpr int r = decltype(r0)::value, c = decltype(c0)::value;
+        constexpr bool cw = decltype(colwise)::value;
+        TN k(double(cw ? c-r : r-c));   // lane index of the diagonal
+        constexpr bool keep_ge = (SIDE == LowerLeft) == cw;
+        v = If (keep_ge ? (lane >= k) : (lane <= k), v, TN(0.0));
+        if constexpr (NORM == Normalized) v = If (lane == k, TN(1.0), v);
+        return v;
+      };
+    double buf[8];
+    if constexpr (ORD == ColMajor)
+      {
+        Iterate<NB> ([&] (auto rb) NGK_LAMBDA_INLINE
+          {
+            constexpr int r0 = rb.value*SW;
+            TN acc(0.0);
+            Iterate<8> ([&] (auto c) NGK_LAMBDA_INLINE
+              {
+                constexpr bool needed = (SIDE == LowerLeft) ? (c.value < r0+SW) : (c.value >= r0);
+                constexpr bool diag = c.value >= r0 && c.value < r0+SW;
+                if constexpr (needed)
+                  {
+                    TN v(pt+i0+r0+(i0+c.value)*dist);
+                    if constexpr (diag) v = masked (v, IC<r0>(), c, IC<1>());
+                    acc = FMA (v, TN(px[i0+c.value]), acc);
+                  }
+              });
+            acc.Store (buf+r0);
+          });
+      }
+    else
+      {
+        Vec<NB,TN> xs;
+        Iterate<NB> ([&] (auto cb) NGK_LAMBDA_INLINE { xs(cb.value) = TN(px+i0+cb.value*SW); });
+        Vec<8,TN> rs;
+        Iterate<8> ([&] (auto r) NGK_LAMBDA_INLINE
+          {
+            TN acc(0.0);
+            Iterate<NB> ([&] (auto cb) NGK_LAMBDA_INLINE
+              {
+                constexpr int c0 = cb.value*SW;
+                constexpr bool needed = (SIDE == LowerLeft) ? (c0 <= r.value) : (c0+SW > r.value);
+                constexpr bool diag = r.value >= c0 && r.value < c0+SW;
+                if constexpr (needed)
+                  {
+                    TN v(pt+(i0+r.value)*dist+i0+c0);
+                    if constexpr (diag) v = masked (v, r, IC<c0>(), IC<0>());
+                    acc = FMA (v, xs(cb.value), acc);
+                  }
+              });
+            rs(r.value) = acc;
+          });
+        SIMD<double,4> lo = HSum(rs(0), rs(1), rs(2), rs(3)), hi = HSum(rs(4), rs(5), rs(6), rs(7));
+        lo.Store(buf); hi.Store(buf+4);
+      }
+    return sum + SIMD<double,8>(buf);
+  }
+
+  // x = L x for one contiguous vector, bottom up in strips of H rows
+  template <TRIG_NORMAL NORM, ORDERING ORD>
+  void TriangularMultVecLL (BareSliceMatrix<double,ORD> L, FlatVector<double> x)
+  {
+    constexpr size_t H = 8;
+    typedef SIMD<double,H> TV;
+    size_t n = x.Size(), nr = n % H;
+    double * px = x.Data();
+
+    for (size_t i1 = n; i1 >= nr+H; i1 -= H)
+      {
+        size_t i0 = i1-H;
+        TV sum = KTrigRect<H,ORD> (L.Data(), L.Dist(), px, i0, 0, i0);
+        sum = KTrigBlock8<LowerLeft,NORM,ORD> (L.Data(), L.Dist(), px, i0, sum);
+        sum.Store(px+i0);
+      }
+
+    for (size_t i = nr; i-- > 0; )
+      {
+        double sum = (NORM == Normalized) ? px[i] : L(i,i)*px[i];
+        for (size_t j = 0; j < i; j++) sum += L(i,j)*px[j];
+        px[i] = sum;
+      }
+  }
+
+  // x = U x for one contiguous vector, top down in strips of H rows
+  template <TRIG_NORMAL NORM, ORDERING ORD>
+  void TriangularMultVecUR (BareSliceMatrix<double,ORD> U, FlatVector<double> x)
+  {
+    constexpr size_t H = 8;
+    typedef SIMD<double,H> TV;
+    size_t n = x.Size(), i0 = 0;
+    double * px = x.Data();
+
+    for ( ; i0+H <= n; i0 += H)
+      {
+        TV sum = KTrigRect<H,ORD> (U.Data(), U.Dist(), px, i0, i0+H, n);
+        sum = KTrigBlock8<UpperRight,NORM,ORD> (U.Data(), U.Dist(), px, i0, sum);
+        sum.Store(px+i0);
+      }
+
+    for (size_t i = i0; i < n; i++)
+      {
+        double sum = (NORM == Normalized) ? px[i] : U(i,i)*px[i];
+        for (size_t j = i+1; j < n; j++) sum += U(i,j)*px[j];
+        px[i] = sum;
+      }
+  }
+
+  // strided vector: through a contiguous copy
+  template <TRIG_SIDE SIDE, TRIG_NORMAL NORM, ORDERING ORD>
+  void TriangularMultVec (BareSliceMatrix<double,ORD> T, SliceMatrix<double> X)
+  {
+    size_t n = X.Height();
+    auto mult = [T] (FlatVector<double> x)
+      {
+        if constexpr (SIDE == LowerLeft) TriangularMultVecLL<NORM> (T, x);
+        else TriangularMultVecUR<NORM> (T, x);
+      };
+    if (X.Dist() == 1)
+      {
+        mult (FlatVector<double>(n, X.Data()));
+        return;
+      }
+    ArrayMem<double,256> mem(n);
+    FlatVector<double> x(n, mem.Data());
+    x = X.Col(0);
+    mult (x);
+    X.Col(0) = x;
+  }
+
+  template <TRIG_NORMAL NORM, ORDERING ORD>
   void TriangularMultLL1 (BareSliceMatrix<double,ORD> T, SliceMatrix<double> X)
   {
     size_t n = X.Height();
+    if (X.Width() == 1)
+      {
+        TriangularMultVec<LowerLeft,NORM> (T, X);
+        return;
+      }
     if (n < 128)
       {
         TriangularMultLL2<NORM> (T,X);
@@ -223,6 +386,11 @@ namespace ngbla
   void TriangularMultUR1 (BareSliceMatrix<double,ORD> T, SliceMatrix<double> X)
   {
     size_t n = X.Height();
+    if (X.Width() == 1)
+      {
+        TriangularMultVec<UpperRight,NORM> (T, X);
+        return;
+      }
     if (n < 128)
       {
         TriangularMultUR2<NORM> (T,X);

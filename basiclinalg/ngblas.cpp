@@ -347,9 +347,9 @@ namespace ngbla
       }, acc, res);
   }
 
-  // y = A^T x  or  y += s A^T x
+  // y = A^T x  or  y += s A^T x, one panel of rows
   template <bool ADD>
-  void MatTransVec_intern (double s, BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y)
+  void MatTransVec_panel (double s, BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y)
   {
     constexpr int SW = SIMD<double>::Size();
     size_t h = x.Size(), w = y.Size(), dist = a.Dist();
@@ -398,6 +398,25 @@ namespace ngbla
                 else cols (IC<4>(), IC<false>());
               }
           });
+      }
+  }
+
+  // wide A: rows in panels of 16, the panel stays in cache for all column strips
+  template <bool ADD>
+  void MatTransVec_intern (double s, BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y)
+  {
+    constexpr size_t PH = 16;
+    size_t h = x.Size();
+    if (y.Size() <= 32 || h <= PH)
+      {
+        MatTransVec_panel<ADD> (s, a, x, y);
+        return;
+      }
+    MatTransVec_panel<ADD> (s, a, x.Range(0, PH), y);
+    for (size_t i0 = PH; i0 < h; i0 += PH)
+      {
+        size_t i1 = min(h, i0+PH);
+        MatTransVec_panel<true> (s, a.Rows(i0, i1), x.Range(i0, i1), y);
       }
   }
 
@@ -545,26 +564,20 @@ namespace ngbla
 
   
 
-  template <typename TM, typename FUNC>
-  void T_NgGEMV (double s, BareSliceMatrix<TM,RowMajor> a, FlatVector<const double> x, FlatVector<double> y, FUNC func) NETGEN_NOEXCEPT  
+  // y = s A x or y += s A x by the simd kernels
+  template <bool ADD, ORDERING ORD>
+  void NgGEMV_Kernel (double s, BareSliceMatrix<double,ORD> a, FlatVector<double> x, FlatVector<double> y) NETGEN_NOEXCEPT
   {
-    for (size_t i = 0; i < y.Size(); i++)
+    if constexpr (ADD)
       {
-        double sum = 0;
-        for (size_t j = 0; j < x.Size(); j++)
-          sum += a(i,j) * x(j);
-        func(y(i), s*sum);
+        if constexpr (ORD == RowMajor) MultAddMatVec (s, a, x, y);
+        else MultAddMatTransVec (s, Trans(a), x, y);
       }
-  }
-  template <typename TM, typename FUNC>
-  void T_NgGEMV (double s, BareSliceMatrix<TM,ColMajor> a, FlatVector<const double> x, FlatVector<double> y, FUNC func) NETGEN_NOEXCEPT  
-  {
-    for (size_t i = 0; i < y.Size(); i++)
+    else
       {
-        double sum = 0;
-        for (size_t j = 0; j < x.Size(); j++)
-          sum += a(i,j) * x(j);
-        func(y(i), s*sum);
+        if constexpr (ORD == RowMajor) MultMatVec (a, x, y);
+        else MultMatTransVec (Trans(a), x, y);
+        if (s != 1) y *= s;
       }
   }
 
@@ -572,55 +585,41 @@ namespace ngbla
   NGS_DLL_HEADER    
   void NgGEMV<false> (double s, BareSliceMatrix<double,RowMajor> a, FlatVector<const double> x, FlatVector<double> y) NETGEN_NOEXCEPT
   {
-    T_NgGEMV (s, a, x, y, [](double & y, double sum) { y=sum; });
+    NgGEMV_Kernel<false> (s, a, x.RemoveConst(), y);
   }
   template <>
   NGS_DLL_HEADER      
   void NgGEMV<true> (double s, BareSliceMatrix<double,RowMajor> a, FlatVector<const double> x, FlatVector<double> y) NETGEN_NOEXCEPT
   {
-    T_NgGEMV (s, a, x, y, [](double & y, double sum) { y+=sum; });
+    NgGEMV_Kernel<true> (s, a, x.RemoveConst(), y);
   }
   template <>
   NGS_DLL_HEADER      
   void NgGEMV<false> (double s, BareSliceMatrix<double,ColMajor> a, FlatVector<const double> x, FlatVector<double> y) NETGEN_NOEXCEPT
   {
-    T_NgGEMV (s, a, x, y, [](double & y, double sum) { y=sum; });
+    NgGEMV_Kernel<false> (s, a, x.RemoveConst(), y);
   }
   template <>
   NGS_DLL_HEADER      
   void NgGEMV<true> (double s, BareSliceMatrix<double,ColMajor> a, FlatVector<const double> x, FlatVector<double> y) NETGEN_NOEXCEPT
   {
-    T_NgGEMV (s, a, x, y, [](double & y, double sum) { y+=sum; });
+    NgGEMV_Kernel<true> (s, a, x.RemoveConst(), y);
   }
 
-
-
-
-
-
-  
-
-  template <typename TM, typename FUNC>
-  void T_NgGEMV (double s, BareSliceMatrix<TM,RowMajor> a, SliceVector<double> x, SliceVector<double> y, FUNC func) NETGEN_NOEXCEPT  
+  // strided vectors through contiguous copies
+  template <bool ADD, ORDERING ORD>
+  void NgGEMV_Slice (double s, BareSliceMatrix<double,ORD> a,
+                     BareSliceVector<double> x, size_t sx,
+                     BareSliceVector<double> y, size_t sy) NETGEN_NOEXCEPT
   {
-    for (size_t i = 0; i < y.Size(); i++)
-      {
-        double sum = 0;
-        for (size_t j = 0; j < x.Size(); j++)
-          sum += a(i,j) * x(j);
-        func(y(i), s*sum);
-      }
-  }
-  template <typename TM, typename FUNC>
-  void T_NgGEMV (double s, BareSliceMatrix<TM,ColMajor> a, SliceVector<double> x, SliceVector<double> y, FUNC func) NETGEN_NOEXCEPT  
-  {
-    for (size_t i = 0; i < y.Size(); i++)
-      {
-        double sum = 0;
-        for (size_t j = 0; j < x.Size(); j++)
-          sum += a(i,j) * x(j);
-        func(y(i), s*sum);
-      }
+    bool cx = x.Dist() != 1, cy = y.Dist() != 1;
+    ArrayMem<double,256> memx(cx ? sx : 0), memy(cy ? sy : 0);
+    FlatVector<double> fx(sx, cx ? memx.Data() : x.Data());
+    FlatVector<double> fy(sy, cy ? memy.Data() : y.Data());
+    if (cx) fx = x.Range(sx);
+    if (cy && ADD) fy = y.Range(sy);
+    NgGEMV_Kernel<ADD> (s, a, fx, fy);
+    if (cy) y.Range(sy) = fy;
   }
 
   template <>
@@ -629,7 +628,7 @@ namespace ngbla
                       BareSliceVector<double> x, size_t sx,
                       BareSliceVector<double> y, size_t sy) NETGEN_NOEXCEPT
   {
-    T_NgGEMV (s, a, x.Range(sx), y.Range(sy), [](double & y, double sum) { y=sum; });
+    NgGEMV_Slice<false> (s, a, x, sx, y, sy);
   }
   template <>
   NGS_DLL_HEADER      
@@ -637,7 +636,7 @@ namespace ngbla
                      BareSliceVector<double> x, size_t sx,
                      BareSliceVector<double> y, size_t sy) NETGEN_NOEXCEPT
   {
-    T_NgGEMV (s, a, x.Range(sx), y.Range(sy), [](double & y, double sum) { y+=sum; });
+    NgGEMV_Slice<true> (s, a, x, sx, y, sy);
   }
   template <>
   NGS_DLL_HEADER      
@@ -645,7 +644,7 @@ namespace ngbla
                       BareSliceVector<double> x, size_t sx,
                       BareSliceVector<double> y, size_t sy) NETGEN_NOEXCEPT
   {
-    T_NgGEMV (s, a, x.Range(sx), y.Range(sy), [](double & y, double sum) { y=sum; });
+    NgGEMV_Slice<false> (s, a, x, sx, y, sy);
   }
   template <>
   NGS_DLL_HEADER      
@@ -653,9 +652,8 @@ namespace ngbla
                      BareSliceVector<double> x, size_t sx,
                      BareSliceVector<double> y, size_t sy) NETGEN_NOEXCEPT
   {
-    T_NgGEMV (s, a, x.Range(sx), y.Range(sy), [](double & y, double sum) { y+=sum; });
+    NgGEMV_Slice<true> (s, a, x, sx, y, sy);
   }
-
 
 
 
