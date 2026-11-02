@@ -130,6 +130,13 @@ namespace ngcore
   template <int N> INLINE auto operator+ (SIMD<Complex32,N> a, SIMD<float,N> b)
   { return SIMD<Complex32,N> (a.real()+b, a.imag()); }
 
+  template <int N> INLINE auto operator- (SIMD<Complex32,N> a, SIMD<Complex32,N> b)
+  { return SIMD<Complex32,N> (a.real()-b.real(), a.imag()-b.imag()); }
+
+  template <int N>
+  INLINE auto operator- (SIMD<Complex32,N> a)
+  { return SIMD<Complex32,N>(-a.real(), -a.imag()); }
+
   template <int N> INLINE auto operator* (SIMD<Complex32,N> a, SIMD<Complex32,N> b)
   { return SIMD<Complex32,N> (a.real()*b.real()-a.imag()*b.imag(), a.real()*b.imag()+a.imag()*b.real()); }
   template <int N> INLINE auto operator* (SIMD<float,N> a, SIMD<Complex32,N> b)
@@ -144,6 +151,44 @@ namespace ngcore
   template <int N>
   INLINE SIMD<Complex32,N> & operator+= (SIMD<Complex32,N> & a, SIMD<Complex32,N> b)
   { a.real()+=b.real(); a.imag()+=b.imag(); return a; }
+  template <int N>
+  INLINE SIMD<Complex32,N> & operator-= (SIMD<Complex32,N> & a, SIMD<Complex32,N> b)
+  { a.real()-=b.real(); a.imag()-=b.imag(); return a; }
+
+  template <int N>
+  inline SIMD<Complex32,N> Conj (SIMD<Complex32,N> x)
+  { return SIMD<Complex32,N> (x.real(), -x.imag()); }
+
+  template <int N>
+  INLINE SIMD<Complex32,N> Inv (SIMD<Complex32,N> a)
+  {
+    SIMD<float,N> inv = 1.0f / (a.real()*a.real()+a.imag()*a.imag());
+    return SIMD<Complex32,N> (a.real()*inv, -a.imag()*inv);
+  }
+
+  template <int N> INLINE auto operator/ (SIMD<Complex32,N> a, SIMD<Complex32,N> b)
+  { return a * Inv(b); }
+
+  template <typename FUNC, int N>
+  SIMD<Complex32,N> SIMDComplexWrapper (SIMD<Complex32,N> x, FUNC f)
+  {
+    std::array<float,N> re, im;
+    for (int i = 0; i < N; i++)
+      {
+        Complex32 c = f(Complex32(x.real()[i], x.imag()[i]));
+        re[i] = c.real();
+        im[i] = c.imag();
+      }
+    return SIMD<Complex32,N> (SIMD<float,N>(re.data()), SIMD<float,N>(im.data()));
+  }
+
+  template <int N>
+  inline SIMD<Complex32,N> cos (SIMD<Complex32,N> x)
+  { return SIMDComplexWrapper (x, [](Complex32 c) { return cos(c); }); }
+
+  template <int N>
+  inline SIMD<Complex32,N> sin (SIMD<Complex32,N> x)
+  { return SIMDComplexWrapper (x, [](Complex32 c) { return sin(c); }); }
 
   template <int N>
   INLINE Complex32 HSum (SIMD<Complex32,N> sc)
