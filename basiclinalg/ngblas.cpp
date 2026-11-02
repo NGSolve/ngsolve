@@ -166,7 +166,7 @@ namespace ngbla
     size_t w = x.Size();
     size_t i = 0;
 
-    double * pa = &a(i,0);
+    double * pa = a.Data();
     for ( ; i+8 <= h; i+=8, pa += 8*a.Dist())
       {
         SIMD<double,8> sum = MatKernelScalAB<8,1> (w, pa, a.Dist(), x.Data(), 0);
@@ -283,60 +283,127 @@ namespace ngbla
   
 
 
-  NGS_DLL_HEADER void MultMatTransVec_intern (BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y) NETGEN_NOEXCEPT
+  // r(0:NV*SW) = A(0:h, 0:NV*SW)^T x, UJ*NV independent fma chains
+  template <int NV, int UJ, bool MASK>
+  NGK_INLINE void KMatTransVecCols (size_t h, double * pa, size_t dist, double * x, SIMD<mask64> mask,
+                                    Vec<NV,SIMD<double>> & res)
   {
     constexpr int SW = SIMD<double>::Size();
-    size_t h = x.Size();
-    size_t w = y.Size();
-    size_t dist = a.Dist();
+    typedef Vec<UJ*NV,SIMD<double>> TA;
+    TA acc;
+    KFor<0,UJ*NV> ([] (auto l, TA & acc) NGK_LAMBDA_INLINE { acc.template Set<l> (SIMD<double>(0.0)); }, acc);
+    auto upd = [] (auto u, auto v, TA & acc, double * p, double xj, SIMD<mask64> & mask) NGK_LAMBDA_INLINE
+      {
+        constexpr int l = decltype(u)::value*NV+decltype(v)::value;
+        if constexpr (MASK && decltype(v)::value == NV-1 && SW == 2)  // one lane
+          acc.template Set<l> (FMA(xj, SIMD<double>(p[decltype(v)::value*SW], 0.0), acc.template Get<l>()));
+        else if constexpr (MASK && decltype(v)::value == NV-1)
+          acc.template Set<l> (FMA(xj, SIMD<double>(p+decltype(v)::value*SW, mask), acc.template Get<l>()));
+        else
+          acc.template Set<l> (FMA(xj, SIMD<double>(p+decltype(v)::value*SW), acc.template Get<l>()));
+      };
+    // C rows j..j+C into accumulator rows OFF..OFF+C
+    auto rows = [] (auto C, auto OFF, TA & acc, double * pa, size_t dist, double * x, SIMD<mask64> & mask, decltype(upd) & upd) NGK_LAMBDA_INLINE
+      {
+        KFor<0,decltype(C)::value> ([] (auto u, auto OFF, TA & acc, double *& pa, size_t & dist, double *& x, SIMD<mask64> & mask, decltype(upd) & upd) NGK_LAMBDA_INLINE
+          {
+            double xj = x[decltype(u)::value];
+            double * p = pa+decltype(u)::value*dist;
+            IC<decltype(OFF)::value+decltype(u)::value> ul;
+            KFor<0,NV> ([] (auto v, auto ul, TA & acc, double * p, double & xj, SIMD<mask64> & mask, decltype(upd) & upd) NGK_LAMBDA_INLINE
+              { upd (ul, v, acc, p, xj, mask); }, ul, acc, p, xj, mask, upd);
+          }, OFF, acc, pa, dist, x, mask, upd);
+      };
+    size_t j = 0;
+    for ( ; j+UJ <= h; j += UJ, pa += UJ*dist)
+      rows (IC<UJ>(), IC<0>(), acc, pa, dist, x+j, mask, upd);
+    // remainder in chunks UJ/2, UJ/4, .., 1 into distinct accumulators
+    KFor<0,8> ([] (auto e, size_t & j, size_t & h, TA & acc, double *& pa, size_t & dist, double *& x, SIMD<mask64> & mask, decltype(upd) & upd, decltype(rows) & rows) NGK_LAMBDA_INLINE
+      {
+        constexpr int C = UJ >> (decltype(e)::value+1);
+        if constexpr (C >= 1)
+          if (j+C <= h)
+            {
+              rows (IC<C>(), IC<UJ-2*C>(), acc, pa, dist, x+j, mask, upd);
+              j += C; pa += C*dist;
+            }
+      }, j, h, acc, pa, dist, x, mask, upd, rows);
+    // tree reduction
+    KFor<0,NV> ([] (auto v, TA & acc, Vec<NV,SIMD<double>> & res) NGK_LAMBDA_INLINE
+      {
+        KFor<0,8> ([] (auto e, auto v, TA & acc) NGK_LAMBDA_INLINE
+          {
+            constexpr int st = 1 << decltype(e)::value;
+            if constexpr (st < UJ)
+              KFor<0,UJ/(2*st)> ([] (auto q, auto e, auto v, TA & acc) NGK_LAMBDA_INLINE
+                {
+                  constexpr int st = 1 << decltype(e)::value;
+                  constexpr int u0 = 2*st*decltype(q)::value;
+                  constexpr int l0 = u0*NV+decltype(v)::value, l1 = (u0+st)*NV+decltype(v)::value;
+                  acc.template Set<l0> (acc.template Get<l0>() + acc.template Get<l1>());
+                }, e, v, acc);
+          }, v, acc);
+        res.template Set<decltype(v)::value> (acc.template Get<decltype(v)::value>());
+      }, acc, res);
+  }
 
+  // y = A^T x  or  y += s A^T x
+  template <bool ADD>
+  void MatTransVec_intern (double s, BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y)
+  {
+    constexpr int SW = SIMD<double>::Size();
+    size_t h = x.Size(), w = y.Size(), dist = a.Dist();
+    auto store = [=] (double * py, SIMD<double> r, auto ... mask)
+      {
+        if constexpr (ADD) r = FMA(SIMD<double>(s), r, SIMD<double>(py, mask...));
+        r.Store(py, mask...);
+      };
     size_t i = 0;
-    for ( ; i+SW <= w; i+= SW)
+    for ( ; i+4*SW <= w; i += 4*SW)
       {
-        SIMD<double> s0(0), s1(0), s2(0), s3(0);
-        size_t j = 0;
-        double * pa = &a(0,i);
-        for ( ; j+4 <= h; j += 4, pa += 4*dist)
-          {
-            s0 += SIMD<double>(x(j)) * SIMD<double>(pa);
-            s1 += SIMD<double>(x(j+1)) * SIMD<double>(pa+dist);
-            s2 += SIMD<double>(x(j+2)) * SIMD<double>(pa+2*dist);
-            s3 += SIMD<double>(x(j+3)) * SIMD<double>(pa+3*dist);
-          }
-        for ( ; j+2 <= h; j += 2, pa += 2*dist)
-          {
-            s0 += SIMD<double>(x(j)) * SIMD<double>(pa);
-            s1 += SIMD<double>(x(j+1)) * SIMD<double>(pa+dist);
-          }
-        for ( ; j+1 <= h; j += 1, pa += dist)
-          s2 += SIMD<double>(x(j)) * SIMD<double>(pa);
-        SIMD<double> sum = (s0+s1)+(s2+s3);
-        sum.Store(&y(i));
+        Vec<4,SIMD<double>> r;
+        KMatTransVecCols<4,4,false> (h, a.Data()+i, dist, x.Data(), SIMD<mask64>(SW), r);
+        Iterate<4> ([&] (auto v) { store (&y(i+decltype(v)::value*SW), r.template Get<decltype(v)::value>()); });
       }
-    
-    if (i < w)
+    // rest: up to 4 vectors at once, last one masked
+    if (size_t r = w-i; r > 0)
       {
-        SIMD<mask64> mask(w % SW);
-        SIMD<double> s0(0), s1(0), s2(0), s3(0);
-        size_t j = 0;
-        double * pa = &a(0,i);
-        for ( ; j+4 <= h; j += 4, pa += 4*dist)
+        size_t nb = (r+SW-1)/SW;
+        SIMD<mask64> mask(r-(nb-1)*SW);
+        Switch<4> (nb-1, [&] (auto nbm1) NGK_LAMBDA_INLINE
           {
-            s0 += SIMD<double>(x(j)) * SIMD<double>(pa, mask);
-            s1 += SIMD<double>(x(j+1)) * SIMD<double>(pa+dist, mask);
-            s2 += SIMD<double>(x(j+2)) * SIMD<double>(pa+2*dist, mask);
-            s3 += SIMD<double>(x(j+3)) * SIMD<double>(pa+3*dist, mask);
-          }
-        for ( ; j+2 <= h; j += 2, pa += 2*dist)
-          {
-            s0 += SIMD<double>(x(j)) * SIMD<double>(pa, mask);
-            s1 += SIMD<double>(x(j+1)) * SIMD<double>(pa+dist, mask);
-          }
-        for ( ; j+1 <= h; j += 1, pa += dist)
-          s2 += SIMD<double>(x(j)) * SIMD<double>(pa, mask);
-        SIMD<double> sum = (s0+s1)+(s2+s3);
-        sum.Store(&y(i), mask);
+            constexpr int NV = nbm1.value+1;
+            auto cols = [&] (auto UJ, auto MASK) NGK_LAMBDA_INLINE
+              {
+                Vec<NV,SIMD<double>> res;
+                KMatTransVecCols<NV,decltype(UJ)::value,decltype(MASK)::value> (h, a.Data()+i, dist, x.Data(), mask, res);
+                Iterate<NV> ([&] (auto v) NGK_LAMBDA_INLINE
+                  {
+                    if constexpr (decltype(MASK)::value && v.value == NV-1)
+                      store (&y(i+v.value*SW), res.template Get<v.value>(), mask);
+                    else
+                      store (&y(i+v.value*SW), res.template Get<v.value>());
+                  });
+              };
+            bool masked = r % SW;
+            if constexpr (NV == 1)
+              {
+                if (h >= 32 && !masked) cols (IC<8>(), IC<false>());
+                else if (masked) cols (IC<4>(), IC<true>());
+                else cols (IC<4>(), IC<false>());
+              }
+            else
+              {
+                if (masked) cols (IC<4>(), IC<true>());
+                else cols (IC<4>(), IC<false>());
+              }
+          });
       }
+  }
+
+  NGS_DLL_HEADER void MultMatTransVec_intern (BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y) NETGEN_NOEXCEPT
+  {
+    MatTransVec_intern<false> (1, a, x, y);
   }
 
 
@@ -368,62 +435,7 @@ namespace ngbla
 
   NGS_DLL_HEADER void MultAddMatTransVec_intern (double s, BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y) NETGEN_NOEXCEPT
   {
-    constexpr int SW = SIMD<double>::Size();
-    size_t h = x.Size();
-    size_t w = y.Size();
-    size_t dist = a.Dist();
-
-    size_t i = 0;
-    for ( ; i+SW <= w; i+= SW)
-      {
-        SIMD<double> s0(0), s1(0), s2(0), s3(0);
-        size_t j = 0;
-        double * pa = &a(0,i);
-        for ( ; j+4 <= h; j += 4, pa += 4*dist)
-          {
-            s0 += SIMD<double>(x(j)) * SIMD<double>(pa);
-            s1 += SIMD<double>(x(j+1)) * SIMD<double>(pa+dist);
-            s2 += SIMD<double>(x(j+2)) * SIMD<double>(pa+2*dist);
-            s3 += SIMD<double>(x(j+3)) * SIMD<double>(pa+3*dist);
-          }
-        for ( ; j+2 <= h; j += 2, pa += 2*dist)
-          {
-            s0 += SIMD<double>(x(j)) * SIMD<double>(pa);
-            s1 += SIMD<double>(x(j+1)) * SIMD<double>(pa+dist);
-          }
-        for ( ; j+1 <= h; j += 1, pa += dist)
-          s2 += SIMD<double>(x(j)) * SIMD<double>(pa);
-        SIMD<double> sum = (s0+s1)+(s2+s3);
-        sum *= s;
-        sum += SIMD<double>(&y(i));
-        sum.Store(&y(i));
-      }
-    
-    if (i < w)
-      {
-        SIMD<mask64> mask(w % SW);
-        SIMD<double> s0(0), s1(0), s2(0), s3(0);
-        size_t j = 0;
-        double * pa = &a(0,i);
-        for ( ; j+4 <= h; j += 4, pa += 4*dist)
-          {
-            s0 += SIMD<double>(x(j)) * SIMD<double>(pa, mask);
-            s1 += SIMD<double>(x(j+1)) * SIMD<double>(pa+dist, mask);
-            s2 += SIMD<double>(x(j+2)) * SIMD<double>(pa+2*dist, mask);
-            s3 += SIMD<double>(x(j+3)) * SIMD<double>(pa+3*dist, mask);
-          }
-        for ( ; j+2 <= h; j += 2, pa += 2*dist)
-          {
-            s0 += SIMD<double>(x(j)) * SIMD<double>(pa, mask);
-            s1 += SIMD<double>(x(j+1)) * SIMD<double>(pa+dist, mask);
-          }
-        for ( ; j+1 <= h; j += 1, pa += dist)
-          s2 += SIMD<double>(x(j)) * SIMD<double>(pa, mask);
-        SIMD<double> sum = (s0+s1)+(s2+s3);
-        sum *= s;
-        sum += SIMD<double>(&y(i), mask);
-        sum.Store(&y(i), mask);
-      }
+    MatTransVec_intern<true> (s, a, x, y);
   }
 
   
@@ -683,7 +695,7 @@ namespace ngbla
   void MultAddMatTransVecShortI (double s, BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y,
                                  FlatArray<int> ind) NETGEN_NOEXCEPT
   {
-    KernelAddMatTransVecI<SX> (s, ind.Size(), &a(0,0), a.Dist(), x.Data(), y.Data(), &ind[0]);
+    KernelAddMatTransVecI<SX> (s, ind.Size(), a.Data(), a.Dist(), x.Data(), y.Data(), ind.Data());
   }
 
   NGS_DLL_HEADER void MultAddMatTransVecIndirect_intern (double s, BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y,
