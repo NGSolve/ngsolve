@@ -2436,6 +2436,15 @@ namespace ngfem
 
   extern NGS_DLL_HEADER const SIMD_IntegrationRule & SIMD_SelectIntegrationRule (ELEMENT_TYPE eltype, int order);
 
+  // points on the vertices, edges, faces and cell of the reference element as one rule, cached;
+  // mask bit k: include the entities of dimension k (as GetNDofVEFC)
+  // dual: true facet tags; map: all points tagged VOL, mapping without facet normals
+  struct InterpolationRule
+  {
+    SIMD_IntegrationRule dual, map;
+  };
+  NGS_DLL_HEADER const InterpolationRule & GetInterpolationRule (ELEMENT_TYPE et, int order, int mask, LocalHeap & lh);
+
   inline SIMD_IntegrationRule :: SIMD_IntegrationRule (ELEMENT_TYPE eltype, int order)
   { 
     const SIMD_IntegrationRule & ir = SIMD_SelectIntegrationRule (eltype, order);
@@ -2482,6 +2491,7 @@ namespace ngfem
     INLINE size_t Size() const { return ir.Size(); }
     INLINE const SIMD_IntegrationRule & IR() const { return ir; }
     INLINE const ElementTransformation & GetTransformation () const { return eltrans; }
+    virtual void ComputeNormalsAndMeasure (ELEMENT_TYPE et) { throw Exception ("SIMD ComputeNormalsAndMeasure(ET) not overloaded"); }
     virtual void ComputeNormalsAndMeasure (ELEMENT_TYPE et, int facetnr) = 0;    
     INLINE const SIMD<BaseMappedIntegrationPoint> & operator[] (size_t i) const
     { return *static_cast<const SIMD<BaseMappedIntegrationPoint>*> ((void*)(baseip+i*incr)); }
@@ -2549,6 +2559,8 @@ namespace ngfem
                                                       &mips[0].NV()(0));
       }
 
+    // facet type and number per point (per SIMD block), volume points are skipped
+    virtual void ComputeNormalsAndMeasure (ELEMENT_TYPE et) override;
     virtual void ComputeNormalsAndMeasure (ELEMENT_TYPE et, int facetnr) override;
     SIMD<MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE>> & operator[] (size_t i) const 
     { 

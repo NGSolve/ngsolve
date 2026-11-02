@@ -656,7 +656,10 @@ namespace ngfem
       HeapReset hr(lh);
       FlatMatrix<> tmp(x.Height(), x.Width(), lh);
       tmp = x;
-      x = inv * tmp;
+      if (x.Width() == 1)  // gemv instead of n x 1 gemm
+        x.Col(0) = inv * tmp.Col(0);
+      else
+        x = inv * tmp;
       return true;
     }
 
@@ -667,7 +670,10 @@ namespace ngfem
       HeapReset hr(lh);
       FlatMatrix<> tmp(x.Height(), x.Width(), lh);
       tmp = x;
-      x = Trans(inv) * tmp;
+      if (x.Width() == 1)
+        x.Col(0) = Trans(inv) * tmp.Col(0);
+      else
+        x = Trans(inv) * tmp;
       return true;
     }
     

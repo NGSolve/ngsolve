@@ -428,26 +428,23 @@ namespace ngfem
 
     try
     {
-      for (int el_vb = D; el_vb >= 0; el_vb--)
-      {
-        if (!nvefc[D-el_vb]) continue;
-        Facet2ElementTrafo f2el (ElementType(), VorB(el_vb));
-        for (int locfnr : Range(f2el.GetNFacets()))
-        {
-          SIMD_IntegrationRule irfacet(f2el.FacetType(locfnr), 2 * Order() + bonus_intorder);
-          auto & irvol = f2el(locfnr, irfacet, lh);
-          auto & mir = trafo(irvol, lh);
+      // all facet points in one rule: one mapping and one evaluation per element
+      int mask = 0;
+      for (int k = 0; k <= D; k++)
+        if (nvefc[k]) mask |= 1 << k;
+      auto & rule = GetInterpolationRule (ElementType(), 2 * Order() + bonus_intorder, mask, lh);
+      if (rule.dual.Size() == 0) return;
+      auto & mir = trafo(rule.map, lh);
 
-          FlatMatrix<SIMD<double>> mfluxi(coefs.Width(), mir.IR().Size(), lh);
-          func.Evaluate (mir, mfluxi);
+      FlatMatrix<SIMD<double>> mfluxi(coefs.Width(), mir.Size(), lh);
+      func.Evaluate (mir, mfluxi);
 
-          for (size_t j : Range(mir))
-            mfluxi.Col(j) *= mir[j].IP().Weight();
+      for (size_t j : Range(mir))
+        mfluxi.Col(j) *= mir[j].IP().Weight();
 
-          for (int i = 0; i < coefs.Width(); i++)
-            AddDualTrans (mir.IR(), mfluxi.Row(i), coefs.Col(i));
-        }
-      }
+      // facet number and vb are taken per point
+      for (int i = 0; i < coefs.Width(); i++)
+        AddDualTrans (rule.dual, mfluxi.Row(i), coefs.Col(i));
     }
     catch (const ExceptionNOSIMD& e)
     {

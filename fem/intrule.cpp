@@ -12,6 +12,7 @@
 
 #include "intrule.hpp"
 #include "elementtransformation.hpp"
+#include <optional>
 
 namespace ngfem
 {
@@ -482,9 +483,80 @@ namespace ngfem
 
     eltrans.CalcMultiPointJacobian (ir, *this);
 
+    // one facet for all points, or facet per point
     if (ir.Size())
-      if (ir[0].VB() != VOL)
-        ComputeNormalsAndMeasure (eltrans.GetElementType(), ir[0].FacetNr());
+      {
+        bool uniform = true, facets = false;
+        for (size_t i = 0; i < ir.Size(); i++)
+          {
+            if (ir[i].VB() != ir[0].VB() || ir[i].FacetNr() != ir[0].FacetNr()) uniform = false;
+            if (ir[i].VB() != VOL) facets = true;
+          }
+        if (uniform && facets)
+          ComputeNormalsAndMeasure (eltrans.GetElementType(), ir[0].FacetNr());
+        else if (facets)
+          ComputeNormalsAndMeasure (eltrans.GetElementType());
+      }
+  }
+
+  // normal, tangent and measure of one point of facet facetnr, the facet of type vb
+  template <int DIM_ELEMENT, int DIM_SPACE, typename SCAL>
+  static void ComputeNormalAndMeasure (MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE,SCAL> & mip,
+                                       ELEMENT_TYPE et, VorB vb, int facetnr)
+  {
+    if ((Dim(et) >= 2) && (Dim(et)-int(vb) == 0))
+      { // pnts in dim >= 2
+        mip.SetMeasure(1);
+        return;
+      }
+    if constexpr(DIM_ELEMENT == 3)
+      if (vb == BBND && Dim(et) == 3)
+        {
+          FlatVector<Vec<3>> points(99,(Vec<3>*)ElementTopology::GetVertices (et));
+          auto edges = ElementTopology::GetEdges (et);
+          Vec<3> tau_ref = points(edges[facetnr][1]) - points(edges[facetnr][0]);
+          Vec<3> tau = mip.GetJacobian() * tau_ref;
+          mip.SetMeasure(L2Norm(tau));
+          tau /= L2Norm(tau);
+          mip.SetTV(tau);
+          return;
+        }
+
+    Vec<DIM_ELEMENT> normal_ref = ElementTopology::GetNormals<DIM_ELEMENT>(et)[facetnr];
+    Vec<DIM_SPACE> normal = mip.GetJacobianCofactor() * normal_ref;
+    double sign = mip.GetJacobiDet() > 0 ? 1 : -1;
+    double len = L2Norm (normal);       // that's the surface measure
+    normal *= sign/len;                  // normal vector on physical element
+    mip.SetMeasure (len);
+
+    if constexpr (DIM_ELEMENT == DIM_SPACE)
+      {
+        mip.SetNV(normal);
+        if (DIM_SPACE == 2)
+          mip.SetTV(Vec<2>(-normal(1),normal(0)));
+      }
+    else
+      {
+        if constexpr (DIM_SPACE == 3 && DIM_ELEMENT == 1)
+          {
+            mip.SetTV(Vec<3>(normal));
+          }
+        else if constexpr ( DIM_SPACE == 3 && DIM_ELEMENT == 2)
+          {
+            Vec<3> tang = Cross(Vec<3> (normal), Vec<3> (mip.GetNV()));
+            mip.SetTV(tang);
+          }
+        else if constexpr ( DIM_SPACE == 2 && DIM_ELEMENT == 1)
+          {
+            mip.SetTV(Vec<2>(normal));
+          }
+        else if constexpr ( DIM_ELEMENT == 0 )
+          ;
+        else
+          {
+            throw Exception("In ComputeNormalsAndMeasure: not implemented yet!");
+          }
+      }
   }
 
   template <int DIM_ELEMENT, int DIM_SPACE, typename SCAL>
@@ -493,154 +565,18 @@ namespace ngfem
   {
     auto hmips = mips;
     if (hmips.Size() == 0) return;
-
-    if ((Dim(et) >= 2) && (Dim(et)-int(hmips[0].IP().VB()) == 0))
-      { // pnts in dim >= 2
-        for (size_t i = 0; i < hmips.Size(); i++)
-          hmips[i].SetMeasure(1);
-        return;
-      }
-    if constexpr(DIM_ELEMENT == 3)
-      if (hmips[0].IP().VB() == BBND && Dim(et) == 3)
-      {
-        // throw Exception ("ComputeNormalsAndMeasure not yet available for volume-edges");
-	FlatVector<Vec<3>> points(99,(Vec<3>*)ElementTopology::GetVertices (et));
-        auto edges = ElementTopology::GetEdges (et);
-        Vec<3> tau_ref = points(edges[facetnr][1]) - points(edges[facetnr][0]);
-        for (int i = 0; i < hmips.Size(); i++)
-          {
-            auto & mip = hmips[i];        
-            Vec<3> tau = mip.GetJacobian() * tau_ref;
-            mip.SetMeasure(L2Norm(tau));
-            tau /= L2Norm(tau);
-            mip.SetTV(tau);
-          }
-        return;
-      }
-      
-    
-    Vec<DIM_ELEMENT> normal_ref = ElementTopology::GetNormals<DIM_ELEMENT>(et)[facetnr];
-    for (int i = 0; i < hmips.Size(); i++)
-      {
-        auto & mip = hmips[i];
-        // Mat<DIM_ELEMENT,DIM_SPACE,SCAL> inv_jac = mip.GetJacobianInverse();
-        // double det = fabs (mip.GetJacobiDet()); // GetMeasure();
-        // Vec<DIM_SPACE> normal = det * Trans (inv_jac) * normal_ref;
-        Vec<DIM_SPACE> normal = mip.GetJacobianCofactor() * normal_ref;
-        double sign = mip.GetJacobiDet() > 0 ? 1 : -1;
-        double len = L2Norm (normal);       // that's the surface measure
-        normal *= sign/len;                  // normal vector on physical element
-        mip.SetMeasure (len);
-
-        if constexpr (DIM_ELEMENT == DIM_SPACE)
-          {
-            mip.SetNV(normal);
-            if (DIM_SPACE == 2)
-              mip.SetTV(Vec<2>(-normal(1),normal(0)));
-          }
-        else
-          {
-            if constexpr (DIM_SPACE == 3 && DIM_ELEMENT == 1)
-              {
-                mip.SetTV(Vec<3>(normal));
-              }
-            else if constexpr ( DIM_SPACE == 3 && DIM_ELEMENT == 2)
-              {
-                Vec<3> tang = Cross(Vec<3> (normal), Vec<3> (mip.GetNV()));
-                mip.SetTV(tang);
-              }
-            else if constexpr ( DIM_SPACE == 2 && DIM_ELEMENT == 1)
-              {
-                mip.SetTV(Vec<2>(normal));
-              }
-            else if constexpr ( DIM_ELEMENT == 0 )
-               ;                 
-            else
-              {
-                throw Exception("In ComputeNormalsAndMeasure: not implemented yet!");
-              }
-            
-          }
-      }
+    VorB vb = hmips[0].IP().VB();
+    for (auto & mip : hmips)
+      ComputeNormalAndMeasure (mip, et, vb, facetnr);
   }
 
-
   template <int DIM_ELEMENT, int DIM_SPACE, typename SCAL>
-  void MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE,SCAL> :: 
+  void MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE,SCAL> ::
   ComputeNormalsAndMeasure (ELEMENT_TYPE et)
   {
-    auto hmips = mips;
-    if (hmips.Size() == 0) return;
-
-    if ((Dim(et) >= 2) && (Dim(et)-int(hmips[0].IP().VB()) == 0))
-      { // pnts in dim >= 2
-        for (size_t i = 0; i < hmips.Size(); i++)
-          hmips[i].SetMeasure(1);
-        return;
-      }
-    if constexpr(DIM_ELEMENT == 3)
-      if (hmips[0].IP().VB() == BBND && Dim(et) == 3)
-      {
-        // throw Exception ("ComputeNormalsAndMeasure not yet available for volume-edges");
-	FlatVector<Vec<3>> points(99,(Vec<3>*)ElementTopology::GetVertices (et));
-        auto edges = ElementTopology::GetEdges (et);
-        for (int i = 0; i < hmips.Size(); i++)
-          {
-            auto & mip = hmips[i];        
-            int facetnr = mip.IP().FacetNr();
-            Vec<3> tau_ref = points(edges[facetnr][1]) - points(edges[facetnr][0]);
-            Vec<3> tau = mip.GetJacobian() * tau_ref;
-            mip.SetMeasure(L2Norm(tau));
-            tau /= L2Norm(tau);
-            mip.SetTV(tau);
-          }
-        return;
-      }
-      
-    
-    for (int i = 0; i < hmips.Size(); i++)
-      {
-        auto & mip = hmips[i];
-        int facetnr = mip.IP().FacetNr();
-        Vec<DIM_ELEMENT> normal_ref = ElementTopology::GetNormals<DIM_ELEMENT>(et)[facetnr];
-        
-        Mat<DIM_ELEMENT,DIM_SPACE,SCAL> inv_jac = mip.GetJacobianInverse();
-        double det = fabs (mip.GetJacobiDet()); // GetMeasure();
-        Vec<DIM_SPACE> normal = det * Trans (inv_jac) * normal_ref;
-        double len = L2Norm (normal);       // that's the surface measure
-        normal *= 1.0/len;                  // normal vector on physical element
-        mip.SetMeasure (len);
-
-        if constexpr (DIM_ELEMENT == DIM_SPACE)
-          {
-            mip.SetNV(normal);
-            if (DIM_SPACE == 2)
-              mip.SetTV(Vec<2>(-normal(1),normal(0)));
-          }
-        else
-          {
-            if constexpr (DIM_SPACE == 3 && DIM_ELEMENT == 1)
-              {
-                mip.SetTV(Vec<3>(normal));
-              }
-            else if constexpr ( DIM_SPACE == 3 && DIM_ELEMENT == 2)
-              {
-                Vec<3> tang = Cross(Vec<3> (normal), Vec<3> (mip.GetNV()));
-                mip.SetTV(tang);
-              }
-            else if constexpr ( DIM_SPACE == 2 && DIM_ELEMENT == 1)
-              {
-                mip.SetTV(Vec<2>(normal));
-              }
-            else if constexpr ( DIM_ELEMENT == 0 )
-               ;                 
-            else
-              {
-                throw Exception("In ComputeNormalsAndMeasure: not implemented yet!");
-              }
-            
-          }
-      }
+    for (auto & mip : mips)
+      if (mip.IP().VB() != VOL)
+        ComputeNormalAndMeasure (mip, et, mip.IP().VB(), mip.IP().FacetNr());
   }
 
 
@@ -4018,92 +3954,100 @@ namespace ngfem
     
     eltrans.CalcMultiPointJacobian (ir, *this);
 
+    // one facet for all points, or facet per point
     if (ir.Size())
-      if (ir[0].VB() != VOL)
-        ComputeNormalsAndMeasure (eltrans.GetElementType(), ir[0].FacetNr());
+      {
+        bool uniform = true, facets = false;
+        for (size_t i = 0; i < ir.Size(); i++)
+          {
+            if (ir[i].VB() != ir[0].VB() || ir[i].FacetNr() != ir[0].FacetNr()) uniform = false;
+            if (ir[i].VB() != VOL) facets = true;
+          }
+        if (uniform && facets)
+          ComputeNormalsAndMeasure (eltrans.GetElementType(), ir[0].FacetNr());
+        else if (facets)
+          ComputeNormalsAndMeasure (eltrans.GetElementType());
+      }
   }
 
+  // normal, tangent and measure of one SIMD point of facet facetnr, the facet of type vb
   template <int DIM_ELEMENT, int DIM_SPACE>
-  void SIMD_MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> :: 
-  ComputeNormalsAndMeasure (ELEMENT_TYPE et, int facetnr)
-  {   // 
-    auto hmips = mips;
-    if (hmips.Size() == 0) return;
-
+  static void ComputeNormalAndMeasure (SIMD<MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE>> & mip,
+                                       ELEMENT_TYPE et, VorB vb, int facetnr)
+  {
     // codimension == 0:
-    if ((Dim(et) >= 2) && (Dim(et)-int(hmips[0].IP().VB()) == 0))
+    if ((Dim(et) >= 2) && (Dim(et)-int(vb) == 0))
       {
-        for (size_t i = 0; i < hmips.Size(); i++)
-          hmips[i].SetMeasure(1);
+        mip.SetMeasure(1);
         return;
       }
     
     if constexpr(DIM_ELEMENT == 3)
-      if (hmips[0].IP().VB() == BBND && Dim(et) == 3)
-      {
-	FlatVector<Vec<3>> points(99,(Vec<3>*)ElementTopology::GetVertices (et));
-        auto edges = ElementTopology::GetEdges (et);
-        Vec<3> tau_ref = points(edges[facetnr][1]) - points(edges[facetnr][0]);
-        for (int i = 0; i < hmips.Size(); i++)
-          {
-            auto & mip = hmips[i];        
-            Vec<3,SIMD<double>> tau = mip.GetJacobian() * tau_ref;
-            mip.SetMeasure(L2Norm(tau));
-          }
-        return;
-      }
+      if (vb == BBND && Dim(et) == 3)
+        {
+          FlatVector<Vec<3>> points(99,(Vec<3>*)ElementTopology::GetVertices (et));
+          auto edges = ElementTopology::GetEdges (et);
+          Vec<3> tau_ref = points(edges[facetnr][1]) - points(edges[facetnr][0]);
+          Vec<3,SIMD<double>> tau = mip.GetJacobian() * tau_ref;
+          mip.SetMeasure(L2Norm(tau));
+          return;
+        }
     
     Vec<DIM_ELEMENT> normal_ref = ElementTopology::GetNormals<DIM_ELEMENT>(et)[facetnr];
-    for (int i = 0; i < hmips.Size(); i++)
+    Vec<DIM_SPACE,SIMD<double>> normal = mip.GetJacobianCofactor() * normal_ref;
+    SIMD<double> len = L2Norm (normal);
+    SIMD<double> sign = IfPos(mip.GetJacobiDet(), SIMD<double>(1), SIMD<double>(-1));
+    normal *= sign/len;
+    mip.SetMeasure (len);
+        
+    if constexpr (DIM_ELEMENT == DIM_SPACE)
       {
-        auto & mip = hmips[i];
-        /*
-        Mat<DIM_ELEMENT,DIM_SPACE,SIMD<double>> inv_jac = mip.GetJacobianInverse();
-        SIMD<double> det = mip.GetMeasure();
-        Vec<DIM_SPACE,SIMD<double>> normal = det * Trans (inv_jac) * normal_ref;
-        SIMD<double> len = L2Norm (normal);       // that's the surface measure
-        normal *= SIMD<double>(1.0)/len;                           // normal vector on physical element
-        */
-
-        Vec<DIM_SPACE,SIMD<double>> normal = mip.GetJacobianCofactor() * normal_ref;
-        SIMD<double> len = L2Norm (normal);
-        SIMD<double> sign = IfPos(mip.GetJacobiDet(), SIMD<double>(1), SIMD<double>(-1));
-        normal *= sign/len;    
-        
-        // SIMD<double> len = 1.0;
-        // mip.SetNV(normal);
-        mip.SetMeasure (len);
-        
-        if constexpr (DIM_ELEMENT == DIM_SPACE)
+        mip.SetNV(normal);
+        if (DIM_SPACE == 2)
+          mip.SetTV(Vec<2,SIMD<double>>(-normal(1),normal(0)));
+      }
+    else
+      {
+        if constexpr (DIM_SPACE == 3 && DIM_ELEMENT == 1)
           {
-            mip.SetNV(normal);
-            if (DIM_SPACE == 2)
-              mip.SetTV(Vec<2,SIMD<double>>(-normal(1),normal(0)));
+            mip.SetTV(Vec<3,SIMD<double>>(normal));
           }
+        else if constexpr ( DIM_SPACE == 3 && DIM_ELEMENT == 2)
+          {
+            Vec<3,SIMD<double>> tang = Cross(Vec<3,SIMD<double>> (normal), Vec<3,SIMD<double>> (mip.GetNV()));
+            mip.SetTV(tang);
+          }
+        else if constexpr ( DIM_SPACE == 2 && DIM_ELEMENT == 1)
+          {
+            mip.SetTV(Vec<2,SIMD<double>>(normal));
+          }
+        else if constexpr (DIM_ELEMENT == 0)
+          ;
         else
           {
-            if constexpr (DIM_SPACE == 3 && DIM_ELEMENT == 1)
-              {
-                mip.SetTV(Vec<3,SIMD<double>>(normal));
-              }
-            else if constexpr ( DIM_SPACE == 3 && DIM_ELEMENT == 2)
-              {
-                Vec<3,SIMD<double>> tang = Cross(Vec<3,SIMD<double>> (normal), Vec<3,SIMD<double>> (mip.GetNV()));
-                mip.SetTV(tang);
-              }
-            else if constexpr ( DIM_SPACE == 2 && DIM_ELEMENT == 1)
-              {
-                mip.SetTV(Vec<2,SIMD<double>>(normal));
-              }
-            else if constexpr (DIM_ELEMENT == 0)
-                                ; 
-            else
-              {
-                throw Exception("In ComputeNormalsAndMeasure SIMD: not implemented yet!");
-              }
+            throw Exception("In ComputeNormalsAndMeasure SIMD: not implemented yet!");
           }
-        
       }
+  }
+
+  template <int DIM_ELEMENT, int DIM_SPACE>
+  void SIMD_MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> ::
+  ComputeNormalsAndMeasure (ELEMENT_TYPE et, int facetnr)
+  {
+    auto hmips = mips;
+    if (hmips.Size() == 0) return;
+    VorB vb = hmips[0].IP().VB();
+    for (auto & mip : hmips)
+      ComputeNormalAndMeasure (mip, et, vb, facetnr);
+  }
+
+  template <int DIM_ELEMENT, int DIM_SPACE>
+  void SIMD_MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> ::
+  ComputeNormalsAndMeasure (ELEMENT_TYPE et)
+  {
+    for (auto & mip : mips)
+      if (mip.IP().VB() != VOL)
+        ComputeNormalAndMeasure (mip, et, mip.IP().VB(), mip.IP().FacetNr());
   }
 
 
@@ -4437,6 +4381,73 @@ namespace ngfem
     
     return irvol;
   }
+
+
+  static InterpolationRule * MakeInterpolationRule (ELEMENT_TYPE et, int order, int mask,
+                                                    LocalHeap & lh, bool on_heap)
+  {
+    int D = ElementTopology::GetSpaceDim(et);
+    std::optional<HeapReset> hr;   // the heap version lives on in the caller's heap
+    if (!on_heap) hr.emplace (lh);
+    // point data and size per facet; f2el may return irfacet itself
+    ArrayMem<const SIMD<IntegrationPoint>*, 32> facetpts;
+    ArrayMem<size_t, 32> facetsize;
+    size_t nblocks = 0;
+    for (int el_vb = D; el_vb >= 0; el_vb--)
+      {
+        if (!(mask & (1 << (D-el_vb)))) continue;
+        Facet2ElementTrafo f2el (et, VorB(el_vb));
+        for (int locfnr : Range(f2el.GetNFacets()))
+          {
+            SIMD_IntegrationRule irfacet(f2el.FacetType(locfnr), order);
+            auto & irvol = f2el(locfnr, irfacet, lh);
+            facetpts.Append (irvol.Data());
+            facetsize.Append (irvol.Size());
+            nblocks += irvol.Size();
+          }
+      }
+    SIMD<IntegrationPoint> * pdual, * pmap;
+    InterpolationRule * rule;
+    if (on_heap)
+      {
+        pdual = lh.Alloc<SIMD<IntegrationPoint>> (nblocks);
+        pmap = lh.Alloc<SIMD<IntegrationPoint>> (nblocks);
+        rule = new (lh) InterpolationRule { SIMD_IntegrationRule(nblocks, pdual), SIMD_IntegrationRule(nblocks, pmap) };
+      }
+    else
+      {
+        pdual = new SIMD<IntegrationPoint>[nblocks];
+        pmap = new SIMD<IntegrationPoint>[nblocks];
+        rule = new InterpolationRule { SIMD_IntegrationRule(nblocks, pdual), SIMD_IntegrationRule(nblocks, pmap) };
+      }
+    size_t first = 0;
+    for (size_t f = 0; f < facetpts.Size(); f++)
+      for (size_t k = 0; k < facetsize[f]; k++, first++)
+        pdual[first] = pmap[first] = facetpts[f][k];
+    for (size_t i = 0; i < nblocks; i++)
+      pmap[i].SetFacetNr (-1, VOL);
+    return rule;
+  }
+
+  // cached per element type, integration order and facet mask
+  const InterpolationRule & GetInterpolationRule (ELEMENT_TYPE et, int order, int mask, LocalHeap & lh)
+  {
+    constexpr int MAXORDER = 32;
+    static std::atomic<InterpolationRule*> cache[ET_HEX+1][MAXORDER][16];
+    if (et > ET_HEX || order < 0 || order >= MAXORDER)
+      return *MakeInterpolationRule (et, order, mask, lh, true);
+    auto & slot = cache[et][order][mask];
+    InterpolationRule * rule = slot.load (std::memory_order_acquire);
+    if (!rule)
+      {
+        rule = MakeInterpolationRule (et, order, mask, lh, false);
+        InterpolationRule * expected = nullptr;
+        if (!slot.compare_exchange_strong (expected, rule, std::memory_order_acq_rel))
+          rule = expected;   // another thread was first, ours leaks (tiny)
+      }
+    return *rule;
+  }
+
 
 
 

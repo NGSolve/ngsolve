@@ -658,23 +658,20 @@ namespace ngfem
       {
         FlatVector<> rhs(nd, lh);
         rhs = 0.0;
-        for (int el_vb = D-1; el_vb >= 0; el_vb--)
+        // edges, faces, cell in one rule: the mapping computes measures per facet,
+        // the duals take facet type and measure from the mapped points
+        int mask = 0;
+        for (int k = 1; k <= D; k++)
+          if (nvefc[k]) mask |= 1 << k;
+        auto & rule = GetInterpolationRule (ElementType(), 2*Order()+bonus_intorder, mask, lh);
+        if (rule.dual.Size())
           {
-            if (!nvefc[D-el_vb]) continue;
-            Facet2ElementTrafo f2el (ElementType(), VorB(el_vb));
-            for (int locfnr : Range(f2el.GetNFacets()))
-              {
-                HeapReset hr(lh);
-                SIMD_IntegrationRule irfacet(f2el.FacetType(locfnr), 2*Order()+bonus_intorder);
-                auto & irvol = f2el(locfnr, irfacet, lh);
-                auto & mir = trafo(irvol, lh);
-
-                FlatMatrix<SIMD<double>> fvals(dimspace, mir.Size(), lh);
-                func.Evaluate (mir, fvals);
-                for (size_t j : Range(mir))
-                  fvals.Col(j) *= mir[j].GetWeight();
-                AddDualTrans (mir, fvals, rhs);
-              }
+            auto & mir = trafo(rule.dual, lh);
+            FlatMatrix<SIMD<double>> fvals(dimspace, mir.Size(), lh);
+            func.Evaluate (mir, fvals);
+            for (size_t j : Range(mir))
+              fvals.Col(j) *= mir[j].GetWeight();
+            AddDualTrans (mir, fvals, rhs);
           }
         if (SolveDuality (rhs.AsColMatrix(), lh))
           {
