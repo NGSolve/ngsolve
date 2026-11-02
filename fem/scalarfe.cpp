@@ -421,9 +421,7 @@ namespace ngfem
                                               LocalHeap & lh, int bonus_intorder) const
   {
     HeapReset hr(lh);
-    
-    FlatMatrix<> elflux(GetNDof(), coefs.Width(), lh);
-    elflux = 0.0;
+    coefs = 0.0;
 
     auto [nv,ne,nf,nc] = GetNDofVEFC();
     int nvefc[] = { nv, ne, nf, nc };
@@ -447,12 +445,13 @@ namespace ngfem
             mfluxi.Col(j) *= mir[j].IP().Weight();
 
           for (int i = 0; i < coefs.Width(); i++)
-            AddDualTrans (mir.IR(), mfluxi.Row(i), elflux.Col(i));
+            AddDualTrans (mir.IR(), mfluxi.Row(i), coefs.Col(i));
         }
       }
     }
     catch (const ExceptionNOSIMD& e)
     {
+      coefs = 0.0;
       for (int el_vb = D; el_vb >= 0; el_vb--)
       {
         if (!nvefc[D-el_vb]) continue;
@@ -470,12 +469,11 @@ namespace ngfem
             mfluxi.Row(j) *= mir[j].IP().Weight();
 
           for (int i = 0; i < coefs.Width(); i++)
-            AddDualTrans (mir.IR(), mfluxi.Col(i), elflux.Col(i));
+            AddDualTrans (mir.IR(), mfluxi.Col(i), coefs.Col(i));
         }
       }
     }
 
-    coefs = elflux;
     if (!SolveDuality (coefs, lh))
       throw Exception("scalar interpolate need solveduality");
 
