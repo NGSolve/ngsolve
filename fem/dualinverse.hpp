@@ -7,6 +7,7 @@
   the space (one per vertex-order class)
 */
 
+#include "scalarfe.hpp"
 #include "elementtransformation.hpp"
 
 namespace ngfem
