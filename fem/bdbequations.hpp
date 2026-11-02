@@ -2657,6 +2657,40 @@ namespace ngfem
           }
     }
 
+    using DiffOp<DiffOpStrainVectorH1<DIM_SPC>>::ApplySIMDIR;
+    static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    {
+      auto & fel = static_cast<const VectorFiniteElement&> (bfel);
+      auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
+      size_t ndi = feli.GetNDof(), np = mir.Size();
+      STACK_ARRAY(SIMD<double>, mem, DIM_SPC*DIM_SPC*np);
+      // grad(c*DIM+k) = d_k u_c
+      FlatMatrix<SIMD<double>> grad(DIM_SPC*DIM_SPC, np, &mem[0]);
+      for (int c = 0; c < DIM_SPC; c++)
+        feli.EvaluateGrad (mir, x.Range(c*ndi, (c+1)*ndi), grad.Rows(c*DIM_SPC, (c+1)*DIM_SPC));
+      for (int i = 0; i < DIM_SPC; i++)
+        for (int j = 0; j < DIM_SPC; j++)
+          y.Row(i*DIM_SPC+j).Range(np) = 0.5 * (grad.Row(i*DIM_SPC+j) + grad.Row(j*DIM_SPC+i));
+    }
+
+    using DiffOp<DiffOpStrainVectorH1<DIM_SPC>>::AddTransSIMDIR;
+    static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
+                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
+    {
+      auto & fel = static_cast<const VectorFiniteElement&> (bfel);
+      auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
+      size_t ndi = feli.GetNDof(), np = mir.Size();
+      STACK_ARRAY(SIMD<double>, mem, DIM_SPC*np);
+      FlatMatrix<SIMD<double>> sym(DIM_SPC, np, &mem[0]);
+      for (int c = 0; c < DIM_SPC; c++)
+        {
+          for (int k = 0; k < DIM_SPC; k++)
+            sym.Row(k) = 0.5 * (y.Row(c*DIM_SPC+k).Range(np) + y.Row(k*DIM_SPC+c).Range(np));
+          feli.AddGradTrans (mir, sym, x.Range(c*ndi, (c+1)*ndi));
+        }
+    }
+
     static shared_ptr<CoefficientFunction>
     DiffShape (shared_ptr<CoefficientFunction> proxy,
                shared_ptr<CoefficientFunction> dir,
