@@ -260,22 +260,19 @@ namespace ngsbem
     {
       auto & mp = this->Cast(amp);
       Vec<3,coefficient_type> n_cross_m = val.Range(0, 3);
+      // grad G x v = sum_k (e_k . grad G) (e_k x v)
       for (int k = 0; k < 3; k++)
         {
-          using real_type = typename scal_traits<coefficient_type>::TSCAL_REAL;
           Vec<3> ek{0.0}; ek(k) = 1;
-          Vec<3,real_type> n_cross_m_real = Real(n_cross_m);
-          Vec<3,real_type> n_cross_m_imag = Imag(n_cross_m);
-          mp.AddDipole(pnt, Cross(n_cross_m_real, ek), ek);
-          mp.AddDipole(pnt, Cross(n_cross_m_imag, ek), Complex(0,1)*ek);
+          mp.AddDipole(pnt, ek, Cross(Vec<3,coefficient_type>(ek), n_cross_m));
         }
     }
 
     int DeviceSourceKind () const override { return 4; }
 
-    int DeviceSourceEntries () const override { return 6; }
+    int DeviceSourceEntries () const override { return 3; }
 
-    // component k: the dipole vector v x e_k of the six dipoles AddSource adds
+    // component k: the dipole vector v x e_k
     void DeviceSourceValues (BareSliceVector<Complex> val, Vec<3> p, FlatVector<Complex> charge,
                              FlatVector<Complex> dipole, FlatVector<Complex> dipvec) const override
     {
