@@ -240,6 +240,7 @@ namespace ngfem
     virtual bool SupportsVB (VorB checkvb) const override { return diffop->SupportsVB(checkvb); }
     
     virtual IntRange UsedDofs(const FiniteElement & fel) const override { return dim*diffop->UsedDofs(fel); }
+    virtual IntRange UsedDofs(const FiniteElement & fel, int facetnr) const override { return dim*diffop->UsedDofs(fel, facetnr); }
 
     shared_ptr<DifferentialOperator> GetTrace() const override
     {
@@ -352,6 +353,7 @@ namespace ngfem
     virtual bool SupportsVB (VorB checkvb) const override { return diffop->SupportsVB(checkvb); }
     
     virtual IntRange UsedDofs(const FiniteElement & fel) const override { return dim*diffop->UsedDofs(fel); }
+    virtual IntRange UsedDofs(const FiniteElement & fel, int facetnr) const override { return dim*diffop->UsedDofs(fel, facetnr); }
 
     shared_ptr<DifferentialOperator> GetTrace() const override
     {
@@ -455,6 +457,7 @@ namespace ngfem
     shared_ptr<DifferentialOperator> BaseDiffOp() const { return diffop; }
     virtual bool SupportsVB (VorB checkvb) const override { return diffop->SupportsVB(checkvb); }
     
+    using DifferentialOperator::UsedDofs;
     virtual IntRange UsedDofs(const FiniteElement & fel) const override { return IntRange(0, fel.GetNDof()); }
 
     shared_ptr<DifferentialOperator> GetTrace() const override
@@ -574,6 +577,7 @@ namespace ngfem
     shared_ptr<DifferentialOperator> BaseDiffOp() const { return diffop; }
     virtual bool SupportsVB (VorB checkvb) const override { return diffop->SupportsVB(checkvb); }
     
+    using DifferentialOperator::UsedDofs;
     virtual IntRange UsedDofs(const FiniteElement & fel) const override { return IntRange(0, fel.GetNDof()); }
 
     shared_ptr<DifferentialOperator> GetTrace() const override
@@ -632,6 +636,7 @@ namespace ngfem
     shared_ptr<DifferentialOperator> BaseDiffOp() const { return diffop; }
     virtual bool SupportsVB (VorB checkvb) const override { return diffop->SupportsVB(checkvb); }
     
+    using DifferentialOperator::UsedDofs;
     virtual IntRange UsedDofs(const FiniteElement & fel) const override
     { return IntRange(0, fel.GetNDof()); }
 
@@ -712,6 +717,7 @@ namespace ngfem
     shared_ptr<DifferentialOperator> BaseDiffOp() const { return diffop; }
     virtual bool SupportsVB (VorB checkvb) const override { return diffop->SupportsVB(checkvb); }
     
+    using DifferentialOperator::UsedDofs;
     virtual IntRange UsedDofs(const FiniteElement & fel) const override
     { return IntRange(0, fel.GetNDof()); }
 
@@ -803,6 +809,7 @@ namespace ngfem
     shared_ptr<DifferentialOperator> BaseDiffOp() const { return diffop; }
     virtual bool SupportsVB (VorB checkvb) const override { return diffop->SupportsVB(checkvb); }
     
+    using DifferentialOperator::UsedDofs;
     virtual IntRange UsedDofs(const FiniteElement & fel) const override
     { return IntRange(0, fel.GetNDof()); }
 
@@ -909,6 +916,13 @@ namespace ngfem
       size_t base = BlockDim() * fel.GetRange(comp).First();
       IntRange r1 = diffop->UsedDofs(fel[comp]);
       return r1+base;
+    }
+
+    virtual IntRange UsedDofs(const FiniteElement & bfel, int facetnr) const override
+    {
+      const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      size_t base = BlockDim() * fel.GetRange(comp).First();
+      return diffop->UsedDofs(fel[comp], facetnr)+base;
     }
   
     NGS_DLL_HEADER virtual void
@@ -1185,6 +1199,15 @@ namespace ngfem
     { return typeid(*this) == typeid(diffop2); }
 
     virtual bool SupportsVB (VorB checkvb) const override { return DIFFOP::SupportsVB(checkvb); }
+
+    using DifferentialOperator::UsedDofs;
+    virtual IntRange UsedDofs(const FiniteElement & fel, int facetnr) const override
+    {
+      if constexpr (requires { DIFFOP::UsedDofs(fel, facetnr); })
+        return DIFFOP::UsedDofs(fel, facetnr);
+      else
+        return UsedDofs(fel);
+    }
 
     virtual shared_ptr<DifferentialOperator> GetTrace() const override
     {

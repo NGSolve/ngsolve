@@ -23,6 +23,7 @@ namespace ngfem
     
 
     virtual IntRange UsedDofs(const FiniteElement & fel) const override { return IntRange(0, fel.GetNDof()); }
+    virtual IntRange UsedDofs(const FiniteElement & fel, int facetnr) const override { return IntRange(0, fel.GetNDof()); }
 
     virtual bool operator== (const TPDifferentialOperator & diffop2) const { return false; }
     virtual bool operator== (const DifferentialOperator & diffop2) const override { return false; }
@@ -173,6 +174,7 @@ namespace ngfem
     NGS_DLL_HEADER virtual ~TPBlockDifferentialOperator () {}
 
     virtual IntRange UsedDofs(const FiniteElement & fel) const override { return IntRange(0, fel.GetNDof()); }
+    virtual IntRange UsedDofs(const FiniteElement & fel, int facetnr) const override { return IntRange(0, fel.GetNDof()); }
 
     virtual bool operator== (const DifferentialOperator & diffop2) const override { return false; }
     
@@ -326,6 +328,7 @@ namespace ngfem
     NGS_DLL_HEADER virtual ~TPBlockDifferentialOperator2 () {}
 
     virtual IntRange UsedDofs(const FiniteElement & fel) const override { return IntRange(0, fel.GetNDof()); }
+    virtual IntRange UsedDofs(const FiniteElement & fel, int facetnr) const override { return IntRange(0, fel.GetNDof()); }
 
     virtual bool operator== (const DifferentialOperator & diffop2) const override { return false; }
     

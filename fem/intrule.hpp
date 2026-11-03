@@ -2428,6 +2428,20 @@ namespace ngfem
     void SetIRZ(const SIMD_IntegrationRule * ir) { irz = ir; }
   };
 
+  // calls func(facetnr, range) for each run of SIMD points on the same facet
+  template <typename FUNC>
+  INLINE void IterateFacetBlocks (const SIMD_IntegrationRule & ir, FUNC && func)
+  {
+    for (size_t first = 0; first < ir.Size(); )
+      {
+        int fnr = ir[first].FacetNr();
+        size_t next = first+1;
+        while (next < ir.Size() && ir[next].FacetNr() == fnr) next++;
+        func (fnr, IntRange(first, next));
+        first = next;
+      }
+  }
+
   extern NGS_DLL_HEADER const SIMD_IntegrationRule & SIMD_SelectIntegrationRule (ELEMENT_TYPE eltype, int order);
 
   // points on the vertices, edges, faces and cell of the reference element as one rule, cached;

@@ -23,6 +23,9 @@ namespace ngcomp
     static IVec<0> GetDimensions() { return IVec<0>(); };
     
     static bool SupportsVB (VorB checkvb) { return (checkvb==VOL) || (checkvb==BND); }
+
+    static IntRange UsedDofs (const FiniteElement & fel, int facetnr)
+    { return static_cast<const FacetVolumeFiniteElement<D>&> (fel).GetFacetDofs(facetnr); }
     
     typedef DiffOpIdBoundary<D> DIFFOP_TRACE;
 
@@ -66,22 +69,19 @@ namespace ngcomp
           return;
         }
 
-      int facetnr = mir.IR()[0].FacetNr();
-      if (facetnr >= 0)
+      mat.AddSize(fel.GetNDof(), mir.Size()) = 0.0;
+      const FacetVolumeFiniteElement<D> & fel_facet = static_cast<const FacetVolumeFiniteElement<D>&> (fel);
+      IterateFacetBlocks (mir.IR(), [&] (int facetnr, IntRange r)
         {
-          mat.AddSize(fel.GetNDof(), mir.Size()) = 0.0;
-          const FacetVolumeFiniteElement<D> & fel_facet = static_cast<const FacetVolumeFiniteElement<D>&> (fel);
-          fel_facet.Facet(facetnr).CalcShape(mir.IR(), 
-                                             mat.Rows(fel_facet.GetFacetDofs(facetnr)));
-        }
-      else
-        {
-          throw ExceptionNOSIMD("facet-simd-bnd not ready");
-        }
+          if (facetnr < 0)
+            throw ExceptionNOSIMD("facet-simd-bnd not ready");
+          fel_facet.Facet(facetnr).CalcShape(mir.IR().Range(r.First(), r.Next()),
+                                             mat.Rows(fel_facet.GetFacetDofs(facetnr)).Cols(r));
+        });
     }
 
-    
-    using DiffOp<DiffOpIdFacet<D>>::ApplySIMDIR;          
+
+    using DiffOp<DiffOpIdFacet<D>>::ApplySIMDIR;
     static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
@@ -93,13 +93,14 @@ namespace ngcomp
 
       const FacetVolumeFiniteElement<D> & fel_facet = static_cast<const FacetVolumeFiniteElement<D>&> (bfel);
 
-      int facetnr = mir.IR()[0].FacetNr();
-      if (facetnr < 0)
-        throw Exception("cannot evaluate facet-fe inside element, apply simd");
-      else
-        fel_facet.Facet(facetnr).Evaluate(mir.IR(),
-                                          x.Range(fel_facet.GetFacetDofs(facetnr)),
-                                          y.Row(0));
+      IterateFacetBlocks (mir.IR(), [&] (int facetnr, IntRange r)
+        {
+          if (facetnr < 0)
+            throw Exception("cannot evaluate facet-fe inside element, apply simd");
+          fel_facet.Facet(facetnr).Evaluate(mir.IR().Range(r.First(), r.Next()),
+                                            x.Range(fel_facet.GetFacetDofs(facetnr)),
+                                            y.Row(0).Range(r));
+        });
     }
 
     using DiffOp<DiffOpIdFacet<D>>::AddTransSIMDIR;          
@@ -114,13 +115,14 @@ namespace ngcomp
 
       const FacetVolumeFiniteElement<D> & fel_facet = static_cast<const FacetVolumeFiniteElement<D>&> (bfel);
 
-      int facetnr = mir.IR()[0].FacetNr();
-      if (facetnr < 0)
-        throw Exception("cannot evaluate facet-fe inside element, add trans simd");
-      else
-        fel_facet.Facet(facetnr).AddTrans(mir.IR(),
-                                          y.Row(0),
-                                          x.Range(fel_facet.GetFacetDofs(facetnr)));
+      IterateFacetBlocks (mir.IR(), [&] (int facetnr, IntRange r)
+        {
+          if (facetnr < 0)
+            throw Exception("cannot evaluate facet-fe inside element, add trans simd");
+          fel_facet.Facet(facetnr).AddTrans(mir.IR().Range(r.First(), r.Next()),
+                                            y.Row(0).Range(r),
+                                            x.Range(fel_facet.GetFacetDofs(facetnr)));
+        });
     }
 
 
@@ -179,6 +181,9 @@ namespace ngcomp
     
     static IVec<0> GetDimensions() { return IVec<0>(); };
     static bool SupportsVB (VorB checkvb) { return (checkvb==VOL) || (checkvb==BND); }
+
+    static IntRange UsedDofs (const FiniteElement & fel, int facetnr)
+    { return static_cast<const FacetVolumeFiniteElement<D>&> (fel).GetFacetDofs(facetnr); }
     
     using FiniteElementType = FacetVolumeFiniteElement<D>;
     typedef DiffOpIdDual<D-1,D> DIFFOP_TRACE;
@@ -228,20 +233,17 @@ namespace ngcomp
           return;
         }
 
-      int facetnr = mir.IR()[0].FacetNr();
-      if (facetnr >= 0)
+      mat.AddSize(fel.GetNDof(), mir.Size()) = 0.0;
+      const FacetVolumeFiniteElement<D> & fel_facet = static_cast<const FacetVolumeFiniteElement<D>&> (fel);
+      IterateFacetBlocks (mir.IR(), [&] (int facetnr, IntRange r)
         {
-          mat.AddSize(fel.GetNDof(), mir.Size()) = 0.0;
-          const FacetVolumeFiniteElement<D> & fel_facet = static_cast<const FacetVolumeFiniteElement<D>&> (fel);
-          fel_facet.Facet(facetnr).CalcShape(mir.IR(), 
-                                             mat.Rows(fel_facet.GetFacetDofs(facetnr)));
-          for (int j = 0; j < mir.Size(); j++)
-            mat.Rows(fel_facet.GetFacetDofs(facetnr)).Col(j) /= mir[j].GetMeasure();
-        }
-      else
-        {
-          throw ExceptionNOSIMD("facet-simd-bnd not ready");
-        }
+          if (facetnr < 0)
+            throw ExceptionNOSIMD("facet-simd-bnd not ready");
+          auto matf = mat.Rows(fel_facet.GetFacetDofs(facetnr));
+          fel_facet.Facet(facetnr).CalcShape(mir.IR().Range(r.First(), r.Next()), matf.Cols(r));
+          for (size_t j : r)
+            matf.Col(j) /= mir[j].GetMeasure();
+        });
     }
 
     
@@ -259,17 +261,16 @@ namespace ngcomp
 
       const FacetVolumeFiniteElement<D> & fel_facet = static_cast<const FacetVolumeFiniteElement<D>&> (bfel);
 
-      int facetnr = mir.IR()[0].FacetNr();
-      if (facetnr < 0)
-        throw Exception("cannot evaluate facet-fe inside element, apply simd");
-      else
+      IterateFacetBlocks (mir.IR(), [&] (int facetnr, IntRange r)
         {
-          fel_facet.Facet(facetnr).Evaluate(mir.IR(),
+          if (facetnr < 0)
+            throw Exception("cannot evaluate facet-fe inside element, apply simd");
+          fel_facet.Facet(facetnr).Evaluate(mir.IR().Range(r.First(), r.Next()),
                                             x.Range(fel_facet.GetFacetDofs(facetnr)),
-                                            y.Row(0));
-          for (int j = 0; j < mir.Size(); j++)
-            y(j) /= mir[j].GetMeasure();
-        }
+                                            y.Row(0).Range(r));
+        });
+      for (int j = 0; j < mir.Size(); j++)
+        y(j) /= mir[j].GetMeasure();
     }
 
     using DiffOp<DiffOpIdFacetDual<D>>::AddTransSIMDIR;          
@@ -288,19 +289,18 @@ namespace ngcomp
 
       const FacetVolumeFiniteElement<D> & fel_facet = static_cast<const FacetVolumeFiniteElement<D>&> (bfel);
 
-      int facetnr = mir.IR()[0].FacetNr();
-      if (facetnr < 0)
-        throw Exception("cannot evaluate facet-fe inside element, add trans simd");
-      else
+      VectorMem<40, SIMD<double>> hy(mir.Size());
+      hy = y.Row(0);
+      for (int j = 0; j < mir.Size(); j++)
+        hy(j) /= mir[j].GetMeasure();
+      IterateFacetBlocks (mir.IR(), [&] (int facetnr, IntRange r)
         {
-          VectorMem<40, SIMD<double>> hy(mir.Size());
-          hy = y.Row(0);
-          for (int j = 0; j < mir.Size(); j++)
-            hy(j) /= mir[j].GetMeasure();          
-          fel_facet.Facet(facetnr).AddTrans(mir.IR(),
-                                            hy,
+          if (facetnr < 0)
+            throw Exception("cannot evaluate facet-fe inside element, add trans simd");
+          fel_facet.Facet(facetnr).AddTrans(mir.IR().Range(r.First(), r.Next()),
+                                            hy.Range(r),
                                             x.Range(fel_facet.GetFacetDofs(facetnr)));
-        }
+        });
     }
 
 

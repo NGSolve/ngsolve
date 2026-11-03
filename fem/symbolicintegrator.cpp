@@ -2216,6 +2216,27 @@ namespace ngfem
 
   
 
+
+  // all facets of the element in one SIMD rule, SIMD blocks never mix facets
+  static SIMD_IntegrationRule & AllFacetsSIMDRule (const Integrator & integ, Facet2ElementTrafo & transform,
+                                                   int order, LocalHeap & lh)
+  {
+    int nfacet = transform.GetNFacets();
+    FlatArray<const SIMD_IntegrationRule*> facet_irs(nfacet, lh);
+    size_t nsimd = 0;
+    for (int k = 0; k < nfacet; k++)
+      {
+        facet_irs[k] = &transform(k, integ.GetSIMDIntegrationRule(transform.FacetType(k), order), lh);
+        nsimd += facet_irs[k]->Size();
+      }
+    SIMD_IntegrationRule & ir_vol = *new (lh) SIMD_IntegrationRule (nsimd*SIMD<IntegrationPoint>::Size(), lh);
+    size_t ii = 0;
+    for (auto ir : facet_irs)
+      for (auto & ip : *ir)
+        ir_vol[ii++] = ip;
+    return ir_vol;
+  }
+
   template <typename SCAL, typename SCAL_SHAPES, typename SCAL_RES>
   void SymbolicBilinearFormIntegrator ::
   T_CalcElementMatrixEBAdd (const FiniteElement & fel,
@@ -2250,36 +2271,32 @@ namespace ngfem
         {
           try
             {
-              for (int k = 0; k < nfacet; k++)
-                {
-                  HeapReset hr(lh);
-                  ngfem::ELEMENT_TYPE etfacet = transform.FacetType (k);
-                  SIMD_IntegrationRule ir_facet1(etfacet, fel_trial.Order()+fel_test.Order()+bonus_intorder);
-                  SIMD_IntegrationRule & ir_facet(userdefined_simd_intrules[etfacet] ?
-                                                  *userdefined_simd_intrules[etfacet]
-                                                  : ir_facet1);
-                  auto & ir_facet_vol = transform(k, ir_facet, lh);
-                  
-                  auto & mir = trafo(ir_facet_vol, lh);
-          
+              HeapReset hr(lh);
+
+              auto & ir_vol = AllFacetsSIMDRule (*this, transform, fel_trial.Order()+fel_test.Order()+bonus_intorder, lh);
+
+              {
+                  auto & mir = trafo(ir_vol, lh);
+
                   ProxyUserData ud;
                   const_cast<ElementTransformation&>(trafo).userdata = &ud;
 
                   PrecomputeCacheCF(cache_cfs, mir, lh);
 
-                  // mir.ComputeNormalsAndMeasure(eltype, k);
-                  
+                  ArrayMem<tuple<int,IntRange>,8> facet_blocks;
+                  IterateFacetBlocks (ir_vol, [&] (int fnr, IntRange r) { facet_blocks.Append (tuple(fnr, r)); });
+
                   for (int k1 : Range(trial_proxies))
                     for (int l1 : Range(test_proxies))
                       {
                         if (!nonzeros_proxies(l1, k1)) continue;
-                        
+
                         auto proxy1 = trial_proxies[k1];
                         auto proxy2 = test_proxies[l1];
                         size_t dim_proxy1 = proxy1->Dimension();
                         size_t dim_proxy2 = proxy2->Dimension();
                         HeapReset hr(lh);
-                        FlatMatrix<SIMD<SCAL>> proxyvalues(dim_proxy1*dim_proxy2, ir_facet.Size(), lh);
+                        FlatMatrix<SIMD<SCAL>> proxyvalues(dim_proxy1*dim_proxy2, mir.Size(), lh);
                 
                         if (ddcf_dtest_dtrial.Height() > l1 && ddcf_dtest_dtrial(l1, k1))
                           {
@@ -2325,8 +2342,46 @@ namespace ngfem
                             proxy2->Evaluator()->CalcMatrix(fel_test, mir, bbmat2);
                         }
 
-                        
+                        // per facet GEMMs if they halve the work and are not too small (work in SIMD units, tuned on M4)
+                        constexpr size_t eb_min_work = 1000;
+                        size_t work_merged = r1.Size()*r2.Size()*dim_proxy2*mir.Size();
+                        size_t work_facets = 0;
+                        for (auto [fnr, cols] : facet_blocks)
+                          work_facets += proxy1->Evaluator()->UsedDofs(fel_trial, fnr).Size()
+                            * proxy2->Evaluator()->UsedDofs(fel_test, fnr).Size() * dim_proxy2 * cols.Size();
+                        bool facet_restricted = 2*work_facets <= work_merged
+                          && work_facets >= eb_min_work * facet_blocks.Size();
 
+                        if (facet_restricted)
+                          {
+                            for (auto [fnr, cols] : facet_blocks)
+                              {
+                                HeapReset hr(lh);
+                                IntRange r1k = proxy1->Evaluator()->UsedDofs(fel_trial, fnr);
+                                IntRange r2k = proxy2->Evaluator()->UsedDofs(fel_test, fnr);
+                                size_t nk = cols.Size();
+                                FlatMatrix<SIMD<SCAL>> bdb(r1k.Size()*dim_proxy2, nk, lh);
+                                FlatMatrix<SIMD<SCAL_SHAPES>> bb2(r2k.Size()*dim_proxy2, nk, lh);
+                                bdb = 0.0;
+                                for (size_t j = 0; j < dim_proxy2; j++)
+                                  {
+                                    auto bb2_j = bb2.RowSlice(j, dim_proxy2);
+                                    bb2_j = bbmat2.RowSlice(j, dim_proxy2).Rows(r2k).Cols(cols);
+                                    auto bdb_j = bdb.RowSlice(j, dim_proxy2);
+                                    for (size_t k = 0; k < dim_proxy1; k++)
+                                      {
+                                        auto pv = proxyvalues.Row(k*dim_proxy2+j).Range(cols);
+                                        auto b1 = bbmat1.RowSlice(k, dim_proxy1).Rows(r1k).Cols(cols);
+                                        for (size_t i = 0; i < nk; i++)
+                                          bdb_j.Col(i) += pv(i)*b1.Col(i);
+                                      }
+                                  }
+                                AddABt (FlatMatrix<SIMD<SCAL_SHAPES>>(r2k.Size(), dim_proxy2*nk, bb2.Data()),
+                                        FlatMatrix<SIMD<SCAL>>(r1k.Size(), dim_proxy2*nk, bdb.Data()),
+                                        elmat.Rows(r2k).Cols(r1k));
+                              }
+                            continue;
+                          }
 
                         if (dim_proxy2 < dim_proxy1)
                           {
@@ -3382,15 +3437,10 @@ namespace ngfem
     if (simd_evaluate)
       try
         {
-          for (int k = 0; k < nfacet; k++)
-            {
+          {
               HeapReset hr(lh);
-              // NgProfiler::StartThreadTimer(tir, tid);                              
-              ngfem::ELEMENT_TYPE etfacet = transform.FacetType (k);
-              const SIMD_IntegrationRule & ir_facet =
-                GetSIMDIntegrationRule(etfacet,fel_trial.Order()+fel_test.Order()+bonus_intorder);
-              auto & ir_facet_vol = transform(k, ir_facet, lh);
-              auto & mir = trafo(ir_facet_vol, lh);
+              auto & ir_vol = AllFacetsSIMDRule (*this, transform, fel_trial.Order()+fel_test.Order()+bonus_intorder, lh);
+              auto & mir = trafo(ir_vol, lh);
               // mir.ComputeNormalsAndMeasure (eltype, k);
               // NgProfiler::StopThreadTimer(tir, tid);
 
@@ -3402,9 +3452,9 @@ namespace ngfem
               PrecomputeCacheCF(cache_cfs, mir, lh);
           
               for (ProxyFunction * proxy : trial_proxies)
-                ud.AssignMemory (proxy, ir_facet.GetNIP(), proxy->Dimension(), lh, proxy->IsComplex());
+                ud.AssignMemory (proxy, ir_vol.GetNIP(), proxy->Dimension(), lh, proxy->IsComplex());
               for (CoefficientFunction * cf : gridfunction_cfs)
-                ud.AssignMemory (cf, ir_facet.GetNIP(), cf->Dimension(), lh,
+                ud.AssignMemory (cf, ir_vol.GetNIP(), cf->Dimension(), lh,
                                  cf->IsComplex());
           
               for (ProxyFunction * proxy : trial_proxies)
@@ -3422,7 +3472,7 @@ namespace ngfem
                   auto proxy = test_proxies[i];
                   HeapReset hr(lh);
                   // NgProfiler::StartThreadTimer(td, tid);
-                  FlatMatrix<SIMD<SCAL>> simd_proxyvalues(proxy->Dimension(), ir_facet.Size(), lh);
+                  FlatMatrix<SIMD<SCAL>> simd_proxyvalues(proxy->Dimension(), mir.Size(), lh);
                   for (int k = 0; k < proxy->Dimension(); k++)
                     {
                       ud.testfunction = proxy;

@@ -27,6 +27,7 @@ namespace ngsbem
     virtual bool SupportsVB (VorB checkvb) const override { return diffop->SupportsVB(checkvb); }
 
     virtual IntRange UsedDofs(const FiniteElement & fel) const override { return diffop->UsedDofs(fel); }
+    virtual IntRange UsedDofs(const FiniteElement & fel, int facetnr) const override { return diffop->UsedDofs(fel, facetnr); }
 
     auto BaseDiffOp() const { return diffop; }
 

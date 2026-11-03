@@ -87,6 +87,8 @@ namespace ngfem
     int DiffOrder() const { return difforder; } 
 
     virtual IntRange UsedDofs(const FiniteElement & fel) const { return IntRange(0, fel.GetNDof()); }
+    // dofs used on facet facetnr of the element
+    virtual IntRange UsedDofs(const FiniteElement & fel, int facetnr) const { return UsedDofs(fel); }
 
     virtual bool operator== (const DifferentialOperator & diffop2) const { return false; }
 
