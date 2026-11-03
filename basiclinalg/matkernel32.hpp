@@ -1,14 +1,16 @@
 #ifndef FILE_MATKERNEL32
 #define FILE_MATKERNEL32
 
-#if NETGEN_DEFAULT_SIMD_SIZE==1
-#include "matkernel32_1.hpp"
-#elif NETGEN_DEFAULT_SIMD_SIZE==2
-#include "matkernel32_2.hpp"
-#elif NETGEN_DEFAULT_SIMD_SIZE==4
-#include "matkernel32_4.hpp"
-#elif NETGEN_DEFAULT_SIMD_SIZE==8
-#include "matkernel32_8.hpp"
+#if defined(__AVX512F__) || defined(__arm64__) || defined(__aarch64__)
+constexpr size_t NGBLAS32_FLOAT_MAX_NR = 8*SIMD<double>::Size();
+constexpr size_t NGBLAS32_FLOAT_INNER_MAX_MR = 4;
+constexpr size_t NGBLAS32_FLOAT_INNER_MAX_NR = 4;
+constexpr size_t NGBLAS32_COMPLEX_MAX_NR = 4*SIMD<double>::Size();
+#else
+constexpr size_t NGBLAS32_FLOAT_MAX_NR = 4*SIMD<double>::Size();
+constexpr size_t NGBLAS32_FLOAT_INNER_MAX_MR = 2;
+constexpr size_t NGBLAS32_FLOAT_INNER_MAX_NR = 2;
+constexpr size_t NGBLAS32_COMPLEX_MAX_NR = 2*SIMD<double>::Size();
 #endif
 
 

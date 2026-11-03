@@ -5,25 +5,6 @@ namespace ngbla
 
   namespace
   {
-    template <bool ADD, bool POS, typename T>
-    INLINE void Func (T & value, const T & sum)
-    {
-      if constexpr (ADD)
-        {
-          if constexpr (POS)
-            value += sum;
-          else
-            value -= sum;
-        }
-      else
-        {
-          if constexpr (POS)
-            value = sum;
-          else
-            value = -sum;
-        }
-    }
-
     INLINE void CopyMatrix32(size_t height, size_t width,
                              BareSliceMatrix<float,ColMajor> src,
                              BareSliceMatrix<float,RowMajor> dest)
