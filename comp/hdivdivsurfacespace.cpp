@@ -106,7 +106,7 @@ namespace ngcomp
       SliceMatrix<double,ColMajor> mat,LocalHeap & lh)
     {
       const HDivDivFiniteElement<D> & fel =
-        dynamic_cast<const HDivDivFiniteElement<D>&> (bfel);
+        static_cast<const HDivDivFiniteElement<D>&> (bfel);
       fel.CalcMappedShape_Matrix (mip,Trans(mat));
     }
 
@@ -115,7 +115,7 @@ namespace ngcomp
                                MAT && mat,LocalHeap & lh)
     {
       const HDivDivFiniteElement<D> & fel =
-        dynamic_cast<const HDivDivFiniteElement<D>&> (bfel);
+        static_cast<const HDivDivFiniteElement<D>&> (bfel);
       int nd = fel.GetNDof();
       FlatMatrix<> shape(nd,DIM_DMAT,lh);
       fel.CalcMappedShape_Matrix(sip,shape);
@@ -144,7 +144,7 @@ namespace ngcomp
                                MAT && mat,LocalHeap & lh)
     {
       HeapReset hr(lh);
-      const HDivDivFiniteElement<D> & fel = dynamic_cast<const HDivDivFiniteElement<D>&> (bfel);
+      const HDivDivFiniteElement<D> & fel = static_cast<const HDivDivFiniteElement<D>&> (bfel);
       int nd = fel.GetNDof();
       FlatMatrix<> divshape(nd, D, lh);
       fel.CalcMappedDivShape (sip, divshape);
@@ -179,7 +179,7 @@ namespace ngcomp
     {
       HeapReset hr(lh);
       const HDivDivFiniteElement<2> & fel = 
-        dynamic_cast<const HDivDivFiniteElement<2>&> (bfel);
+        static_cast<const HDivDivFiniteElement<2>&> (bfel);
       
       int nd = fel.GetNDof();
       
@@ -268,7 +268,7 @@ namespace ngcomp
                                 MAT && mat, LocalHeap & lh)
     {
       const HDivDivFiniteElement<2> & fel = 
-        dynamic_cast<const HDivDivFiniteElement<2>&> (bfel);
+        static_cast<const HDivDivFiniteElement<2>&> (bfel);
     
       int nd = fel.GetNDof();
 

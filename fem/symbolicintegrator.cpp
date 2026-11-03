@@ -386,14 +386,14 @@ namespace ngfem
     // for shape-wise evaluate
     if (ud->trial_elvec && !testfunction)
       {
-        const MixedFiniteElement * mixedfe = dynamic_cast<const MixedFiniteElement*> (ud->fel);
+        const MixedFiniteElement * mixedfe = AsMixedFE(*ud->fel);
         const FiniteElement & fel_trial = mixedfe ? mixedfe->FETrial() : *ud->fel;
         evaluator->Apply (fel_trial, mir, *ud->trial_elvec, result, *ud->lh);
         return;
       }
     if (ud->test_elvec && testfunction)
       {
-        const MixedFiniteElement * mixedfe = dynamic_cast<const MixedFiniteElement*> (ud->fel);
+        const MixedFiniteElement * mixedfe = AsMixedFE(*ud->fel);
         const FiniteElement & fel_test = mixedfe ? mixedfe->FETest() : *ud->fel;        
         evaluator->Apply (fel_test, mir, *ud->test_elvec, result, *ud->lh);
         return;
@@ -1435,7 +1435,7 @@ namespace ngfem
   GetIntegrationRule (const FiniteElement & fel, LocalHeap & /* lh */) const
   {
     if (userdefined_intrules[fel.ElementType()]) return *userdefined_intrules[fel.ElementType()];
-    const MixedFiniteElement * mixedfe = dynamic_cast<const MixedFiniteElement*> (&fel);
+    const MixedFiniteElement * mixedfe = AsMixedFE(fel);
     const FiniteElement & fel_trial = mixedfe ? mixedfe->FETrial() : fel;
     const FiniteElement & fel_test = mixedfe ? mixedfe->FETest() : fel;
 
@@ -1460,8 +1460,8 @@ namespace ngfem
   {
     if (userdefined_simd_intrules[fel.ElementType()] ) return *userdefined_simd_intrules[fel.ElementType()];
 
-    bool is_mixed = typeid(fel) == typeid(const MixedFiniteElement&);
-    const MixedFiniteElement * mixedfe = static_cast<const MixedFiniteElement*> (&fel);    
+    const MixedFiniteElement * mixedfe = AsMixedFE(fel);
+    bool is_mixed = mixedfe != nullptr;
     const FiniteElement & fel_trial = is_mixed ? mixedfe->FETrial() : fel;
     const FiniteElement & fel_test = is_mixed ? mixedfe->FETest() : fel;
 
@@ -1581,8 +1581,8 @@ namespace ngfem
       }
     
 
-    bool is_mixedfe = typeid(fel) == typeid(const MixedFiniteElement&);
-    const MixedFiniteElement * mixedfe = static_cast<const MixedFiniteElement*> (&fel);
+    const MixedFiniteElement * mixedfe = AsMixedFE(fel);
+    bool is_mixedfe = mixedfe != nullptr;
     const FiniteElement & fel_trial = is_mixedfe ? mixedfe->FETrial() : fel;
     const FiniteElement & fel_test = is_mixedfe ? mixedfe->FETest() : fel;
     // size_t first_std_eval = 0;
@@ -2257,7 +2257,7 @@ namespace ngfem
 
       // elmat = 0;
 
-      const MixedFiniteElement * mixedfe = dynamic_cast<const MixedFiniteElement*> (&fel);
+      const MixedFiniteElement * mixedfe = AsMixedFE(fel);
       const FiniteElement & fel_trial = mixedfe ? mixedfe->FETrial() : fel;
       const FiniteElement & fel_test = mixedfe ? mixedfe->FETest() : fel;
       
@@ -2576,7 +2576,7 @@ namespace ngfem
                                    FlatMatrix<SCAL_RES> elmat,
                                    LocalHeap & lh) const
   {
-    const MixedFiniteElement * mixedfe = dynamic_cast<const MixedFiniteElement*> (&fel);
+    const MixedFiniteElement * mixedfe = AsMixedFE(fel);
     const FiniteElement & fel_trial = mixedfe ? mixedfe->FETrial() : fel;
     const FiniteElement & fel_test = mixedfe ? mixedfe->FETest() : fel;
 
@@ -2722,7 +2722,7 @@ namespace ngfem
       // if (false)
       try
         {
-          const MixedFiniteElement * mixedfe = dynamic_cast<const MixedFiniteElement*> (&fel);
+          const MixedFiniteElement * mixedfe = AsMixedFE(fel);
           const FiniteElement & fel_trial = mixedfe ? mixedfe->FETrial() : fel;
           const FiniteElement & fel_test = mixedfe ? mixedfe->FETest() : fel;
 
@@ -2820,7 +2820,7 @@ namespace ngfem
           return;
         }
     
-    const MixedFiniteElement * mixedfe = dynamic_cast<const MixedFiniteElement*> (&fel);
+    const MixedFiniteElement * mixedfe = AsMixedFE(fel);
     const FiniteElement & fel_trial = mixedfe ? mixedfe->FETrial() : fel;
     const FiniteElement & fel_test = mixedfe ? mixedfe->FETest() : fel;
 
@@ -2926,7 +2926,7 @@ namespace ngfem
     
     elmat = 0;
     
-    const MixedFiniteElement * mixedfe = dynamic_cast<const MixedFiniteElement*> (&fel1);
+    const MixedFiniteElement * mixedfe = AsMixedFE(fel1);
     const FiniteElement & fel_trial = mixedfe ? mixedfe->FETrial() : fel1;
     const FiniteElement & fel_test = mixedfe ? mixedfe->FETest() : fel1;
 
@@ -3145,8 +3145,8 @@ namespace ngfem
           static Timer taddBt("SymbolicBFI::Apply - addBt SIMD");          
           // RegionTimer rall(tall);
  
-          bool is_mixed = typeid(fel) == typeid(const MixedFiniteElement&);
-          const MixedFiniteElement * mixedfe = static_cast<const MixedFiniteElement*> (&fel);    
+          const MixedFiniteElement * mixedfe = AsMixedFE(fel);
+          bool is_mixed = mixedfe != nullptr;
           const FiniteElement & fel_trial = is_mixed ? mixedfe->FETrial() : fel;
           const FiniteElement & fel_test = is_mixed ? mixedfe->FETest() : fel;
 
@@ -3221,7 +3221,7 @@ namespace ngfem
     
     // no simd
     HeapReset hr(lh);
-    const MixedFiniteElement * mixedfe = dynamic_cast<const MixedFiniteElement*> (&fel);
+    const MixedFiniteElement * mixedfe = AsMixedFE(fel);
     const FiniteElement & fel_trial = mixedfe ? mixedfe->FETrial() : fel;
     const FiniteElement & fel_test = mixedfe ? mixedfe->FETest() : fel;
  
@@ -3290,8 +3290,8 @@ namespace ngfem
           static Timer teval("SymbolicBFI::Apply - evaluate SIMD complex");
           static Timer taddBt("SymbolicBFI::Apply - addBt SIMD complex");
 
-          bool is_mixed = typeid(fel) == typeid(const MixedFiniteElement&);
-          const MixedFiniteElement * mixedfe = static_cast<const MixedFiniteElement*> (&fel);
+          const MixedFiniteElement * mixedfe = AsMixedFE(fel);
+          bool is_mixed = mixedfe != nullptr;
           const FiniteElement & fel_trial = is_mixed ? mixedfe->FETrial() : fel;
           const FiniteElement & fel_test = is_mixed ? mixedfe->FETest() : fel;
 
@@ -3361,7 +3361,7 @@ namespace ngfem
 
     // no simd
     HeapReset hr(lh);
-    const MixedFiniteElement * mixedfe = dynamic_cast<const MixedFiniteElement*> (&fel);
+    const MixedFiniteElement * mixedfe = AsMixedFE(fel);
     const FiniteElement & fel_trial = mixedfe ? mixedfe->FETrial() : fel;
     const FiniteElement & fel_test = mixedfe ? mixedfe->FETest() : fel;
 
@@ -3430,7 +3430,7 @@ namespace ngfem
     Facet2ElementTrafo transform(eltype, element_vb); 
     int nfacet = transform.GetNFacets();
 
-    const MixedFiniteElement * mixedfe = dynamic_cast<const MixedFiniteElement*> (&fel);
+    const MixedFiniteElement * mixedfe = AsMixedFE(fel);
     const FiniteElement & fel_trial = mixedfe ? mixedfe->FETrial() : fel;
     const FiniteElement & fel_test = mixedfe ? mixedfe->FETest() : fel;
     
@@ -3583,8 +3583,8 @@ namespace ngfem
         {
           // static Timer tall("SymbolicBFI::Apply - all", NoTracing, NoTiming); RegionTimer rall(tall);
 
-          bool is_mixed = typeid(fel) == typeid(const MixedFiniteElement&);
-          const MixedFiniteElement * mixedfe = static_cast<const MixedFiniteElement*> (&fel);    
+          const MixedFiniteElement * mixedfe = AsMixedFE(fel);
+          bool is_mixed = mixedfe != nullptr;
           const FiniteElement & fel_trial = is_mixed ? mixedfe->FETrial() : fel;
           const FiniteElement & fel_test = is_mixed ? mixedfe->FETest() : fel;
 
@@ -3643,7 +3643,7 @@ namespace ngfem
         }
 
     HeapReset hr(lh);
-    const MixedFiniteElement * mixedfe = dynamic_cast<const MixedFiniteElement*> (&fel);
+    const MixedFiniteElement * mixedfe = AsMixedFE(fel);
     const FiniteElement & fel_trial = mixedfe ? mixedfe->FETrial() : fel;
     const FiniteElement & fel_test = mixedfe ? mixedfe->FETest() : fel;
  
@@ -3715,7 +3715,7 @@ namespace ngfem
     Facet2ElementTrafo transform(eltype, element_vb); 
     int nfacet = transform.GetNFacets();
 
-    const MixedFiniteElement * mixedfe = dynamic_cast<const MixedFiniteElement*> (&fel);
+    const MixedFiniteElement * mixedfe = AsMixedFE(fel);
     const FiniteElement & fel_trial = mixedfe ? mixedfe->FETrial() : fel;
     const FiniteElement & fel_test = mixedfe ? mixedfe->FETest() : fel;
     
@@ -4221,12 +4221,12 @@ namespace ngfem
 
     if (LocalFacetNr2==-1) throw Exception ("SymbolicFacetBFI: LocalFacetNr2==-1");
 
-    bool is_mixedfe1 = typeid(fel1) == typeid(const MixedFiniteElement&);
-    const MixedFiniteElement * mixedfe1 = static_cast<const MixedFiniteElement*> (&fel1);
+    const MixedFiniteElement * mixedfe1 = AsMixedFE(fel1);
+    bool is_mixedfe1 = mixedfe1 != nullptr;
     const FiniteElement & fel1_trial = is_mixedfe1 ? mixedfe1->FETrial() : fel1;
     const FiniteElement & fel1_test = is_mixedfe1 ? mixedfe1->FETest() : fel1;
-    bool is_mixedfe2 = typeid(fel2) == typeid(const MixedFiniteElement&);
-    const MixedFiniteElement * mixedfe2 = static_cast<const MixedFiniteElement*> (&fel2);
+    const MixedFiniteElement * mixedfe2 = AsMixedFE(fel2);
+    bool is_mixedfe2 = mixedfe2 != nullptr;
     const FiniteElement & fel2_trial = is_mixedfe2 ? mixedfe2->FETrial() : fel2;
     const FiniteElement & fel2_test = is_mixedfe2 ? mixedfe2->FETest() : fel2;
 
@@ -4350,8 +4350,8 @@ namespace ngfem
                     FlatMatrix<TSCAL> elmat,
                     LocalHeap & lh) const
   {
-    bool is_mixedfe1 = typeid(fel1) == typeid(const MixedFiniteElement&);
-    const MixedFiniteElement * mixedfe1 = static_cast<const MixedFiniteElement*> (&fel1);
+    const MixedFiniteElement * mixedfe1 = AsMixedFE(fel1);
+    bool is_mixedfe1 = mixedfe1 != nullptr;
     const FiniteElement & fel1_trial = is_mixedfe1 ? mixedfe1->FETrial() : fel1;
     const FiniteElement & fel1_test = is_mixedfe1 ? mixedfe1->FETest() : fel1;
 
@@ -4442,7 +4442,7 @@ namespace ngfem
                              LocalHeap & lh) const
   {
 
-    const MixedFiniteElement * mixedfe1 = dynamic_cast<const MixedFiniteElement*> (&fel1);
+    const MixedFiniteElement * mixedfe1 = AsMixedFE(fel1);
     const FiniteElement & fel1_trial = mixedfe1 ? mixedfe1->FETrial() : fel1;
     const FiniteElement & fel1_test = mixedfe1 ? mixedfe1->FETest() : fel1;
 
@@ -4553,12 +4553,12 @@ namespace ngfem
                     FlatVector<double> elx, FlatVector<double> ely,
                     LocalHeap & lh) const
   {
-    bool is_mixedfe1 = typeid(fel1) == typeid(const MixedFiniteElement&);
-    const MixedFiniteElement * mixedfe1 = static_cast<const MixedFiniteElement*> (&fel1);
+    const MixedFiniteElement * mixedfe1 = AsMixedFE(fel1);
+    bool is_mixedfe1 = mixedfe1 != nullptr;
     const FiniteElement & fel1_trial = is_mixedfe1 ? mixedfe1->FETrial() : fel1;
     const FiniteElement & fel1_test = is_mixedfe1 ? mixedfe1->FETest() : fel1;
-    bool is_mixedfe2 = typeid(fel2) == typeid(const MixedFiniteElement&);
-    const MixedFiniteElement * mixedfe2 = static_cast<const MixedFiniteElement*> (&fel2);
+    const MixedFiniteElement * mixedfe2 = AsMixedFE(fel2);
+    bool is_mixedfe2 = mixedfe2 != nullptr;
     const FiniteElement & fel2_trial = is_mixedfe2 ? mixedfe2->FETrial() : fel2;
     const FiniteElement & fel2_test = is_mixedfe2 ? mixedfe2->FETest() : fel2;
 
@@ -5071,8 +5071,8 @@ namespace ngfem
                     FlatVector<double> elx, FlatVector<double> ely,
                     LocalHeap & lh) const
   {
-    bool is_mixedfe1 = typeid(fel1) == typeid(const MixedFiniteElement&);
-    const MixedFiniteElement * mixedfe1 = static_cast<const MixedFiniteElement*> (&fel1);
+    const MixedFiniteElement * mixedfe1 = AsMixedFE(fel1);
+    bool is_mixedfe1 = mixedfe1 != nullptr;
     const FiniteElement & fel1_trial = is_mixedfe1 ? mixedfe1->FETrial() : fel1;
     const FiniteElement & fel1_test = is_mixedfe1 ? mixedfe1->FETest() : fel1;
     if (simd_evaluate)

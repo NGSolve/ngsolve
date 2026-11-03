@@ -264,7 +264,7 @@ namespace ngcomp
     {
       HeapReset hr(lh);
       const HDivDivFiniteElement<D> & fel =
-        dynamic_cast<const HDivDivFiniteElement<D>&> (bfel);
+        static_cast<const HDivDivFiniteElement<D>&> (bfel);
       int nd = fel.GetNDof();
       FlatMatrix<> shape(nd,D*D,lh);
       Vec<D> n = sip.GetNV();
@@ -440,7 +440,7 @@ namespace ngcomp
                                MAT && mat, LocalHeap & lh)
     {
       const HDivDivFiniteElement<D> & fel =
-        dynamic_cast<const HDivDivFiniteElement<D>&> (bfel);
+        static_cast<const HDivDivFiniteElement<D>&> (bfel);
       
       int nd = fel.GetNDof();
       
@@ -501,7 +501,7 @@ namespace ngcomp
                                MAT && mat, LocalHeap & lh)
     {
       const HDivDivFiniteElement<D> & fel =
-        dynamic_cast<const HDivDivFiniteElement<D>&> (bfel);
+        static_cast<const HDivDivFiniteElement<D>&> (bfel);
       
       int nd = fel.GetNDof();
       
@@ -582,7 +582,7 @@ namespace ngcomp
       RegionTimer reg (timer);
 
       const HDivDivFiniteElement<D> & fel = 
-        dynamic_cast<const HDivDivFiniteElement<D>&> (bfel);
+        static_cast<const HDivDivFiniteElement<D>&> (bfel);
       
       int nd = fel.GetNDof();
       

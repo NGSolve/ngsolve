@@ -11,7 +11,7 @@ namespace ngcomp
      LocalHeap & lh) const
   {
     auto & ip = mip.IP();
-    auto & fel = dynamic_cast<const VOLFE&> (bfel);
+    auto & fel = static_cast<const VOLFE&> (bfel);
     mat.AddSize(Dim(), bfel.GetNDof()) = 0;
 
     int fnr = ip.FacetNr();
@@ -35,7 +35,7 @@ namespace ngcomp
      LocalHeap & lh) const
   {
     auto & ip = mip.IP();
-    auto & fel = dynamic_cast<const VOLFE&> (bfel);
+    auto & fel = static_cast<const VOLFE&> (bfel);
     mat.AddSize(Dim(), bfel.GetNDof()) = 0;
 
     int fnr = ip.FacetNr();
@@ -59,7 +59,7 @@ namespace ngcomp
      LocalHeap & lh) const
   {
     if (fel.GetNDof() > 0)
-      dynamic_cast<const INTERFACEFE&> (fel).CalcShape(mip, mat.Row(0));
+      static_cast<const INTERFACEFE&> (fel).CalcShape(mip, mat.Row(0));
   }
 
   GlobalInterfaceSpace::GlobalInterfaceSpace(shared_ptr<MeshAccess> ama,

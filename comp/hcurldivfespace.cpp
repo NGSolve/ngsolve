@@ -144,7 +144,7 @@ namespace ngcomp
                                    BareSliceMatrix<double,ColMajor> mat,LocalHeap & lh)
 	{
 	   const HCurlDivSurfaceFiniteElement<D> & fel =
-	    dynamic_cast<const HCurlDivSurfaceFiniteElement<D>&> (bfel);
+	    static_cast<const HCurlDivSurfaceFiniteElement<D>&> (bfel);
 	   if(D==1)	     	     
 	     fel.CalcMappedShape (sip,Trans(mat));	   
 	   else //this is for 3d elements as they are not implemented with sigma operators!
@@ -193,7 +193,7 @@ namespace ngcomp
                                BareSliceMatrix<double,ColMajor> mat,LocalHeap & lh)
     {
       const HCurlDivFiniteElement<D> & fel =
-        dynamic_cast<const HCurlDivFiniteElement<D>&> (bfel);
+        static_cast<const HCurlDivFiniteElement<D>&> (bfel);
       fel.CalcMappedShape (mip,Trans(mat));
       }
 
@@ -202,21 +202,21 @@ namespace ngcomp
                                       const SIMD_BaseMappedIntegrationRule & mir,
                                       BareSliceMatrix<SIMD<double>> mat)
     {
-      dynamic_cast<const HCurlDivFiniteElement<D>&>(fel).CalcMappedShape (mir, mat);      
+      static_cast<const HCurlDivFiniteElement<D>&>(fel).CalcMappedShape (mir, mat);      
       }
     
     using DiffOp<DiffOpIdHCurlDiv<D>>::ApplySIMDIR; 
     static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
-      dynamic_cast<const HCurlDivFiniteElement<D>&>(fel).Evaluate (mir, x, y);
+      static_cast<const HCurlDivFiniteElement<D>&>(fel).Evaluate (mir, x, y);
     }
 
     using DiffOp<DiffOpIdHCurlDiv<D>>::AddTransSIMDIR;        
     static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
                                 BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
     {
-      dynamic_cast<const HCurlDivFiniteElement<D>&>(fel).AddTrans (mir, y, x);
+      static_cast<const HCurlDivFiniteElement<D>&>(fel).AddTrans (mir, y, x);
     } 
     
 
@@ -241,7 +241,7 @@ namespace ngcomp
 			       MAT & mat, LocalHeap & lh)
     {
       const HCurlDivFiniteElement<D> & fel =
-	dynamic_cast<const HCurlDivFiniteElement<D>&> (bfel);
+	static_cast<const HCurlDivFiniteElement<D>&> (bfel);
       
       int nd = fel.GetNDof();     
       Mat<D> jac = sip.GetJacobian();
@@ -309,7 +309,7 @@ namespace ngcomp
                                BareSliceMatrix<double,ColMajor> mat,LocalHeap & lh)
     {
       const HCurlDivFiniteElement<D> & fel =
-        dynamic_cast<const HCurlDivFiniteElement<D>&> (bfel);      
+        static_cast<const HCurlDivFiniteElement<D>&> (bfel);      
       fel.CalcMappedDivShape (sip, Trans(mat));
     }
     
@@ -318,7 +318,7 @@ namespace ngcomp
                                       const SIMD_BaseMappedIntegrationRule & mir,
                                       BareSliceMatrix<SIMD<double>> mat)
     {      
-      dynamic_cast<const HCurlDivFiniteElement<D>&> (bfel).CalcMappedDivShape (mir, mat);      
+      static_cast<const HCurlDivFiniteElement<D>&> (bfel).CalcMappedDivShape (mir, mat);      
     }
     
     /*
@@ -381,7 +381,7 @@ namespace ngcomp
       RegionTimer reg (timer);
 
       const HCurlDivFiniteElement<D> & fel = 
-        dynamic_cast<const HCurlDivFiniteElement<D>&> (bfel);
+        static_cast<const HCurlDivFiniteElement<D>&> (bfel);
       
       int nd = fel.GetNDof();
       
@@ -435,7 +435,7 @@ namespace ngcomp
     {
       HeapReset hr(lh);
       const HCurlDivFiniteElement<3> & fel = 
-        dynamic_cast<const HCurlDivFiniteElement<3>&> (bfel);
+        static_cast<const HCurlDivFiniteElement<3>&> (bfel);
       
       size_t nd = fel.GetNDof();
       

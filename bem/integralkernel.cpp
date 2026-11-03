@@ -139,12 +139,12 @@ namespace ngsbem
                       FlatMatrix<SIMD<value_type>> values,
                       FlatVector<SIMD<value_type>> result, VorB source_vb) const override
     {
+      Vec<3,SIMD<double>> x = mip.GetPoint();
+      Vec<3,SIMD<double>> nx{0.0};
+      if constexpr (KERNEL::target_type::needs_normal)
+        nx = static_cast<const MappedIntegrationPoint<2,3>&>(mip).GetNV();
       for (int iy = 0; iy < miry.Size(); iy++)
         {
-          Vec<3,SIMD<double>> x = mip.GetPoint();
-          Vec<3,SIMD<double>> nx{0.0};
-          if constexpr (KERNEL::target_type::needs_normal)
-            nx = dynamic_cast<const MappedIntegrationPoint<2,3>&>(mip).GetNV();
 
           Vec<3,SIMD<double>> y = miry[iy].GetPoint();
           Vec<3,SIMD<double>> ny{0.0};

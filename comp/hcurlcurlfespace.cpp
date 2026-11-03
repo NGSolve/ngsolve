@@ -173,21 +173,21 @@ namespace ngcomp
                                       const SIMD_BaseMappedIntegrationRule & mir,
                                       BareSliceMatrix<SIMD<double>> mat)
     {
-      dynamic_cast<const HCurlCurlFiniteElement<D>&> (bfel).CalcMappedShape (mir, mat);
+      static_cast<const HCurlCurlFiniteElement<D>&> (bfel).CalcMappedShape (mir, mat);
     }
 
     using DiffOp<DiffOpIdHCurlCurl<D> >::ApplySIMDIR;    
     static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
-      dynamic_cast<const HCurlCurlFiniteElement<D>&> (bfel).Evaluate (mir, x, y);
+      static_cast<const HCurlCurlFiniteElement<D>&> (bfel).Evaluate (mir, x, y);
     }
 
     using DiffOp<DiffOpIdHCurlCurl<D> >::AddTransSIMDIR;        
     static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
                                 BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
     {
-      dynamic_cast<const HCurlCurlFiniteElement<D>&> (bfel).AddTrans (mir, y, x);
+      static_cast<const HCurlCurlFiniteElement<D>&> (bfel).AddTrans (mir, y, x);
     }
   };
 
@@ -214,7 +214,7 @@ namespace ngcomp
                                BareSliceMatrix<double,ColMajor> mat,LocalHeap & lh)
     {
       const HCurlCurlFiniteElement<2> & fel =
-        dynamic_cast<const HCurlCurlFiniteElement<2>&> (bfel);
+        static_cast<const HCurlCurlFiniteElement<2>&> (bfel);
 
       fel.CalcMappedCurlShape (sip, Trans(mat));
     }
@@ -225,7 +225,7 @@ namespace ngcomp
     {
       HeapReset hr(lh);
       const HCurlCurlFiniteElement<2> & fel =
-        dynamic_cast<const HCurlCurlFiniteElement<2>&> (bfel);
+        static_cast<const HCurlCurlFiniteElement<2>&> (bfel);
 
       int nd = fel.GetNDof();
       FlatMatrix<> curlshape(nd, 2, lh);
@@ -255,7 +255,7 @@ namespace ngcomp
                                BareSliceMatrix<double,ColMajor> mat,LocalHeap & lh)
     {
       const HCurlCurlFiniteElement<3> & fel =
-        dynamic_cast<const HCurlCurlFiniteElement<3>&> (bfel);
+        static_cast<const HCurlCurlFiniteElement<3>&> (bfel);
 
       fel.CalcMappedCurlShape (sip, Trans(mat));
     }
@@ -266,7 +266,7 @@ namespace ngcomp
     {
       HeapReset hr(lh);
       const HCurlCurlFiniteElement<3> & fel =
-        dynamic_cast<const HCurlCurlFiniteElement<3>&> (bfel);
+        static_cast<const HCurlCurlFiniteElement<3>&> (bfel);
 
       int nd = fel.GetNDof();
       FlatMatrix<> curlshape(nd, 9, lh);
@@ -335,14 +335,14 @@ namespace ngcomp
     static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
-      dynamic_cast<const HCurlCurlFiniteElement<2>&> (bfel).EvaluateIncShape (mir, x, y);
+      static_cast<const HCurlCurlFiniteElement<2>&> (bfel).EvaluateIncShape (mir, x, y);
     }
 
     using DiffOp<DiffOpIncHCurlCurl<2> >::AddTransSIMDIR;        
     static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
                                 BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
     {
-      dynamic_cast<const HCurlCurlFiniteElement<2>&> (bfel).AddTransIncShape (mir, y, x);
+      static_cast<const HCurlCurlFiniteElement<2>&> (bfel).AddTransIncShape (mir, y, x);
     }
   };
 
@@ -395,14 +395,14 @@ namespace ngcomp
     static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
-      dynamic_cast<const HCurlCurlFiniteElement<3>&> (bfel).EvaluateIncShape (mir, x, y);
+      static_cast<const HCurlCurlFiniteElement<3>&> (bfel).EvaluateIncShape (mir, x, y);
     }
 
     using DiffOp<DiffOpIncHCurlCurl<3> >::AddTransSIMDIR;        
     static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
                                 BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
     {
-      dynamic_cast<const HCurlCurlFiniteElement<3>&> (bfel).AddTransIncShape (mir, y, x);
+      static_cast<const HCurlCurlFiniteElement<3>&> (bfel).AddTransIncShape (mir, y, x);
     }
 
   };
@@ -910,7 +910,7 @@ namespace ngcomp
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
       
-      const HCurlCurlFiniteElement<D> & bfel = dynamic_cast<const HCurlCurlFiniteElement<D>&> (fel);
+      const HCurlCurlFiniteElement<D> & bfel = static_cast<const HCurlCurlFiniteElement<D>&> (fel);
        
       size_t size = bmir.Size()*D*D*D;
       STACK_ARRAY(SIMD<double>, mem, size);
@@ -1242,7 +1242,7 @@ namespace ngcomp
     static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
-      const HCurlCurlFiniteElement<D> & bfel = dynamic_cast<const HCurlCurlFiniteElement<D>&> (fel);
+      const HCurlCurlFiniteElement<D> & bfel = static_cast<const HCurlCurlFiniteElement<D>&> (fel);
 
 
       size_t size = bmir.Size()*D*(D-1)/2*D*(D-1)/2;
@@ -1352,7 +1352,7 @@ namespace ngcomp
     static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
-      const HCurlCurlFiniteElement<D> & bfel = dynamic_cast<const HCurlCurlFiniteElement<D>&> (fel);
+      const HCurlCurlFiniteElement<D> & bfel = static_cast<const HCurlCurlFiniteElement<D>&> (fel);
 
       size_t size = bmir.Size()*D*(D-1)/2*D*(D-1)/2;
       STACK_ARRAY(SIMD<double>, mem, size);
@@ -1465,7 +1465,7 @@ namespace ngcomp
     static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
-      const HCurlCurlFiniteElement<D> & bfel = dynamic_cast<const HCurlCurlFiniteElement<D>&> (fel);
+      const HCurlCurlFiniteElement<D> & bfel = static_cast<const HCurlCurlFiniteElement<D>&> (fel);
 
       if constexpr (D==2)
       {

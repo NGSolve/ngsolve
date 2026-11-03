@@ -187,7 +187,7 @@ namespace ngfem
   };
 
   // a pair of 2 elements
-  class MixedFiniteElement : public FiniteElement
+  class MixedFiniteElement final : public FiniteElement
   {
     const FiniteElement & fe_trial;
     const FiniteElement & fe_test;
@@ -201,6 +201,13 @@ namespace ngfem
     virtual ELEMENT_TYPE ElementType() const { return fe_trial.ElementType(); }    
     virtual bool ComplexShapes() const { return fe_trial.ComplexShapes() && fe_test.ComplexShapes(); }
   };
+
+  // cheap test, valid since MixedFiniteElement is final
+  inline const MixedFiniteElement * AsMixedFE (const FiniteElement & fel)
+  {
+    return typeid(fel) == typeid(const MixedFiniteElement&)
+      ? static_cast<const MixedFiniteElement*> (&fel) : nullptr;
+  }
 
 
   class NGS_DLL_HEADER SymMatrixFiniteElement : public FiniteElement

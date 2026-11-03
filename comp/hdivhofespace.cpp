@@ -61,7 +61,7 @@ namespace ngcomp
       MAT && mat,LocalHeap & lh)
     {
       HeapReset hr(lh);
-      auto & fel = dynamic_cast<const HDivFiniteElement<D>&> (bfel);
+      auto & fel = static_cast<const HDivFiniteElement<D>&> (bfel);
 
       int nd = fel.GetNDof();
       FlatMatrix<> shape(nd,D,lh);

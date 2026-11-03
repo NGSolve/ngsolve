@@ -2422,7 +2422,7 @@ intrule : ngsolve.fem.Integrationrule
                      }
                    else
                      {
-                       const MixedFiniteElement * mixedfe = dynamic_cast<const MixedFiniteElement*> (&fe);
+                       const MixedFiniteElement * mixedfe = AsMixedFE(fe);
                        const FiniteElement & fe_trial = mixedfe ? mixedfe->FETrial() : fe;
                        const FiniteElement & fe_test = mixedfe ? mixedfe->FETest() : fe;
                        
@@ -2467,7 +2467,7 @@ complex : bool
                LocalHeap lh(heapsize);
                try
                  {
-                   const MixedFiniteElement * mixedfe = dynamic_cast<const MixedFiniteElement*> (&fe);
+                   const MixedFiniteElement * mixedfe = AsMixedFE(fe);
                    const FiniteElement & fe_trial = mixedfe ? mixedfe->FETrial() : fe;
                    const FiniteElement & fe_test = mixedfe ? mixedfe->FETest() : fe;
                    
@@ -2510,7 +2510,7 @@ heapsize : int
                LocalHeap lh(heapsize);
                try
                  {
-                   const MixedFiniteElement * mixedfe = dynamic_cast<const MixedFiniteElement*> (&fe);
+                   const MixedFiniteElement * mixedfe = AsMixedFE(fe);
                    const FiniteElement & fe_test = mixedfe ? mixedfe->FETest() : fe;
                    Vector<> vecy(fe_test.GetNDof() * self->GetDimension());
                    self->ApplyElementMatrix (fe, trafo, vec, vecy, 0, lh);
