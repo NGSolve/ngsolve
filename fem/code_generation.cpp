@@ -357,6 +357,8 @@ namespace ngfem
         CCode operator *(int val, const CCode &c) { return CCode(1.0*val)*c; }
         CCode operator -(double val, const CCode &c) { return CCode(val)-c; }
         CCode operator *(double val, const CCode &c) { return CCode(val)*c; }
+        // GLSL float version of ngcore::ClampPyramidApex
+        CCode ClampPyramidApex (const CCode &z) { return CCode("min("+z.s+",0.999999)"); }
 
         ostream &operator <<(ostream & s, const CCode &c) {
             s << c.s;

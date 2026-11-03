@@ -487,8 +487,7 @@ namespace ngfem
     Tx y = ip.y;
     Tx z = ip.z;
 
-    // if (z == 1) z -= 1e-8;
-    z *= (1-1e-12);
+    z = ClampPyramidApex (z);   // keeps 1-z > 0 at the apex, exact elsewhere
     Tx xt = 2 * (x / (1-z)) - 1;
     Tx yt = 2 * (y / (1-z)) - 1;
 

@@ -1193,12 +1193,10 @@ namespace ngfem
 
     // Tx x = hx[0], y = hx[1], z = hx[2];
     Tx x = ip.x, y = ip.y, z = ip.z;
-    
-    //if(z.Value()==1.) z.Value() -=1.e-8; 
-    z.Value() = z.Value()*(1-1e-12);
 
-    Tx xt = x/(1-z); 
-    Tx yt = y/(1-z); 
+    z = ClampPyramidApex (z);   // keeps 1-z > 0 at the apex, exact elsewhere
+    Tx xt = x/(1-z);
+    Tx yt = y/(1-z);
     Tx sigma[5] = {(1-xt)+(1-yt)+(1-z),xt+(1-yt)+(1-z), xt + yt + (1-z), 
 			    (1-xt)+yt+(1-z),z}; 
 

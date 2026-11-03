@@ -862,8 +862,8 @@ template <typename MIP, typename TFA>
   void HDivHighOrderFE_Shape<ET_PYRAMID> :: T_CalcShape (TIP<3,Tx> ip, TFA & shape) const
   {
     Tx x = ip.x, y = ip.y, z = ip.z;
-    z.Value() = z.Value()*(1-1e-12);
 
+    z = ClampPyramidApex (z);   // keeps 1-z > 0 at the apex, exact elsewhere
     Tx lam = 1-z;
     Tx xt = x/lam;
     Tx yt = y/lam;

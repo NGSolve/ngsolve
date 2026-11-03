@@ -965,9 +965,7 @@ namespace ngfem
     Tx x = ip.x;
     Tx y = ip.y;
     Tx z = ip.z;
-    
-    // if (z == 1) z -= 1e-10;
-    z -= Tx(1e-10);
+    z = ClampPyramidApex (z);   // keeps 1-z > 0 at the apex, exact elsewhere
     
     shape[0] = (1-z-x)*(1-z-y) / (1-z);
     shape[1] = x*(1-z-y) / (1-z);

@@ -680,7 +680,7 @@ namespace ngfem
 
     for (int i = 0; i < N_FACE; i++)
       {
-        IVec<2> p = order_face[0];
+        IVec<2> p = order_face[i];
         if (p[0] >= 2 && p[1] >= 2)
           {
             if (ip.vb == BND && ip.facetnr == i)
@@ -730,8 +730,7 @@ namespace ngfem
   {
     Tx x = ip.x, y = ip.y, z = ip.z;
 
-    z *= (1-1e-10);
-
+    z = ClampPyramidApex (z);   // keeps 1-z > 0 at the apex, exact elsewhere
     Tx xt = x / (1-z);
     Tx yt = y / (1-z);
     
@@ -863,7 +862,7 @@ namespace ngfem
       }
 
     Tx x = ip.x, y = ip.y, z = ip.z;
-    z *= (1-1e-10);
+    z = ClampPyramidApex (z);
     Tx xt = x / (1-z);
     Tx yt = y / (1-z);
 
