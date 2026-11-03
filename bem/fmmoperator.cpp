@@ -170,17 +170,19 @@ namespace ngsbem
     for (size_t i = 0; i < ypts.Size(); i++)
       regmp->AddTarget(ypts[i]);
 
+    FMMOperatorInfo info;
+    // before CollectM2LStatistics drops the expansions of empty source leaves, whose pool rows stay allocated
+    singmp->CollectStatistics(info.source_tree);
+
     // S2R walk: allocates target multipoles and counts translations + direct-evaluation pairs.
     auto counts = regmp->CollectM2LStatistics(singmp);
 
-    FMMOperatorInfo info;
     info.kernel_name = kernel_name;
     info.source_size = xpts.Size();
     info.target_size = ypts.Size();
     info.kappa = singmp->GetKappa();
     info.parameters = fmm_params;
 
-    singmp->CollectStatistics(info.source_tree);
     regmp->CollectStatistics(info.target_tree);
 
     info.total_num_nodes  = info.source_tree.num_nodes  + info.target_tree.num_nodes;
