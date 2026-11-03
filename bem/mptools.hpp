@@ -1549,6 +1549,14 @@ namespace ngsbem
             }
       }
       
+      bool ClearIfEmptyLeaf()
+      {
+        if (childs[0] || charges.Size()+dipoles.Size()+chargedipoles.Size()+currents.Size() > 0)
+          return false;
+        mp = SphericalExpansion<Singular,entry_type,T_Kappa> (-1, mp.Kappa(), 1.);
+        return true;
+      }
+
       void CalcMP(Array<RecordingSS> & recording, Array<Node*> & nodes_to_process)
       {
         // mp.SH().Coefs() = 0.0;
@@ -1565,11 +1573,8 @@ namespace ngsbem
           }
         else
           {
-            if (charges.Size()+dipoles.Size()+chargedipoles.Size()+currents.Size() == 0)
-              {
-                mp = SphericalExpansion<Singular,entry_type,T_Kappa> (-1, mp.Kappa(), 1.);
-                return;
-              }
+            if (ClearIfEmptyLeaf())
+              return;
 
             // make simd charges
             simd_charges.SetSize( (charges.Size()+FMM_SW-1)/FMM_SW);
@@ -2902,6 +2907,8 @@ namespace ngsbem
       if (!typed) throw Exception("FMM source and target expansion types do not match");
       singmp = std::move(typed);
       singmp->root.CalcTotalSources();
+      // the empty leaves as after the singular CalcMP, AddSingularNode tests their order
+      singmp->root.TraverseTree([](auto & node) { node.ClearIfEmptyLeaf(); });
       root.CalcTotalTargets();
       root.AllocateMemory();
       Array<RecordingSR> recording;
