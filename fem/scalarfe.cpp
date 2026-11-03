@@ -433,7 +433,7 @@ namespace ngfem
       for (int k = 0; k <= D; k++)
         if (nvefc[k]) mask |= 1 << k;
       auto & rule = GetInterpolationRule (ElementType(), 2 * Order() + bonus_intorder, mask, lh);
-      auto & mir = trafo(rule.map, lh);
+      auto & mir = trafo(rule, lh);
 
       FlatMatrix<SIMD<double>> mfluxi(coefs.Width(), mir.Size(), lh);
       func.Evaluate (mir, mfluxi);
@@ -443,7 +443,7 @@ namespace ngfem
 
       // facet number and vb are taken per point
       for (int i = 0; i < coefs.Width(); i++)
-        AddDualTrans (rule.dual, mfluxi.Row(i), coefs.Col(i));
+        AddDualTrans (rule, mfluxi.Row(i), coefs.Col(i));
     }
     catch (const ExceptionNOSIMD& e)
     {

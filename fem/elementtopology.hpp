@@ -11,6 +11,7 @@
 
 #include <ngstd.hpp>
 #include <bla.hpp>
+#include <bit>
 
 namespace ngfem
 {
@@ -443,6 +444,10 @@ namespace ngfem
     // this is property is preserved by piola transformation: n = det(F) * F^(-T) n_ref
     template <int D>
     static FlatVector<Vec<D> > GetNormals(ELEMENT_TYPE et);
+
+    /// Cof(J) * reference normal of facet facetnr, not normalized
+    template <int D, typename T>
+    static Vec<D,T> GetPhysicalNormal (ELEMENT_TYPE et, int facetnr, const Mat<D,D,T> & J);
 
   
     /// returns number of edge from vertex v1 to vertex v2
@@ -1780,6 +1785,131 @@ namespace ngfem
       });
     if (!found) ThrowIllegalElementType ("GetNormals", et);
     return FlatVector<Vec<D>> (n, const_cast<Vec<D>*>(p));
+  }
+
+
+  // compile-time vertex coordinates of the reference element
+  template <ELEMENT_TYPE ET, int V>
+  constexpr auto RefVertexCoords ()
+  {
+    constexpr int D = ET_trait<ET>::DIM;
+    return std::bit_cast<std::array<double,D>> (ET_trait<ET>::vertices[V].HTData());
+  }
+
+  // J * (p_V1 - p_V0), as combination of columns of J
+  template <ELEMENT_TYPE ET, int V0, int V1, int D, typename T>
+  INLINE Vec<D,T> MapRefTangent (const Mat<D,D,T> & J)
+  {
+    constexpr auto p0 = RefVertexCoords<ET,V0>();
+    constexpr auto p1 = RefVertexCoords<ET,V1>();
+    Vec<D,T> res;
+    bool first = true;
+    Iterate<D> ([&] (auto j)
+      {
+        constexpr int jj = decltype(j)::value;
+        constexpr double t = p1[jj]-p0[jj];
+        if constexpr (t != 0)
+          {
+            Vec<D,T> col = J.Col(jj);
+            Vec<D,T> term;
+            if constexpr (t == 1) term = col;
+            else if constexpr (t == -1) term = -col;
+            else term = t * col;
+            if (first) res = term; else res += term;
+            first = false;
+          }
+      });
+    return res;
+  }
+
+  // sigma with tangents = sigma * n_ref, exactly; 0 if not exact
+  // 3D: (p1-p0) x (p2-p0) of face F,  2D: rotated tangent (t1,-t0) of edge F
+  template <ELEMENT_TYPE ET, int F>
+  constexpr int RefFacetSign ()
+  {
+    constexpr int D = ET_trait<ET>::DIM;
+    if constexpr (D == 3)
+      {
+        constexpr auto f = ET_trait<ET>::faces[F];
+        constexpr auto p0 = RefVertexCoords<ET,f[0]>(), p1 = RefVertexCoords<ET,f[1]>(), p2 = RefVertexCoords<ET,f[2]>();
+        constexpr auto n = std::bit_cast<std::array<double,3>> (ET_trait<ET>::normals[F].HTData());
+        double a[3] = { p1[0]-p0[0], p1[1]-p0[1], p1[2]-p0[2] };
+        double b[3] = { p2[0]-p0[0], p2[1]-p0[1], p2[2]-p0[2] };
+        double c[3] = { a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0] };
+        if (c[0] == n[0] && c[1] == n[1] && c[2] == n[2]) return 1;
+        if (c[0] == -n[0] && c[1] == -n[1] && c[2] == -n[2]) return -1;
+      }
+    if constexpr (D == 2)
+      {
+        constexpr auto e = ET_trait<ET>::edges[F];
+        constexpr auto p0 = RefVertexCoords<ET,e[0]>(), p1 = RefVertexCoords<ET,e[1]>();
+        constexpr auto n = std::bit_cast<std::array<double,2>> (ET_trait<ET>::normals[F].HTData());
+        double c[2] = { p1[1]-p0[1], -(p1[0]-p0[0]) };
+        if (c[0] == n[0] && c[1] == n[1]) return 1;
+        if (c[0] == -n[0] && c[1] == -n[1]) return -1;
+      }
+    return 0;
+  }
+
+  /// J * reference tangent of edge edgenr
+  template <ELEMENT_TYPE ET, int D, typename T>
+  INLINE Vec<D,T> MappedEdgeTangent (int edgenr, const Mat<D,D,T> & J)
+  {
+    Vec<D,T> tau;
+    Iterate<ET_trait<ET>::N_EDGE> ([&] (auto e)
+      {
+        constexpr int E = decltype(e)::value;
+        constexpr auto edge = ET_trait<ET>::edges[E];
+        if (edgenr == E)
+          tau = MapRefTangent<ET,edge[0],edge[1]> (J);
+      });
+    return tau;
+  }
+
+  /// Cof(J) * reference normal of facet facetnr, not normalized
+  template <ELEMENT_TYPE ET, int D, typename T>
+  INLINE Vec<D,T> MappedFacetNormal (int facetnr, const Mat<D,D,T> & J)
+  {
+    Vec<D,T> n;
+    Iterate<ET_trait<ET>::N_FACET> ([&] (auto f)
+      {
+        constexpr int F = decltype(f)::value;
+        constexpr int sigma = RefFacetSign<ET,F>();
+        if (facetnr == F)
+          {
+            if constexpr (sigma == 0)
+              n = Cof(J) * ET_trait<ET>::normals[F];
+            else if constexpr (D == 3)
+              {
+                constexpr auto face = ET_trait<ET>::faces[F];
+                n = Cross (MapRefTangent<ET,face[0],face[1]> (J),
+                           MapRefTangent<ET,face[0],face[2]> (J));
+              }
+            else
+              {
+                constexpr auto edge = ET_trait<ET>::edges[F];
+                Vec<2,T> t = MapRefTangent<ET,edge[0],edge[1]> (J);
+                n = Vec<2,T> (t(1), -t(0));
+              }
+            if constexpr (sigma < 0) n = -n;
+          }
+      });
+    return n;
+  }
+
+  template <int D, typename T>
+  inline Vec<D,T> ElementTopology :: GetPhysicalNormal (ELEMENT_TYPE et, int facetnr, const Mat<D,D,T> & J)
+  {
+    Vec<D,T> n;
+    bool found = false;
+    ETTableSwitch (et, [&] (auto trait)
+      {
+        using TR = decltype(trait);
+        if constexpr (TR::DIM == D && D >= 2 && requires { TR::normals; })
+          { n = MappedFacetNormal<TR::ElementType()> (facetnr, J); found = true; }
+      });
+    if (!found) ThrowIllegalElementType ("GetPhysicalNormal", et);
+    return n;
   }
 
 }

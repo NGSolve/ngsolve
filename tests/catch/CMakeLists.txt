@@ -26,6 +26,7 @@ macro(add_unit_test name sources)
 endmacro()
 
 add_unit_test(finiteelement finiteelement.cpp)
+add_unit_test(elementtopology elementtopology.cpp)
 add_unit_test(ngblas ngblas.cpp)
 if($ENV{RUN_SLOW_TESTS})
   add_unit_test(coefficientfunction coefficientfunction.cpp)

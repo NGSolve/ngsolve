@@ -664,7 +664,7 @@ namespace ngfem
         for (int k = 1; k <= D; k++)
           if (nvefc[k]) mask |= 1 << k;
         auto & rule = GetInterpolationRule (ElementType(), 2*Order()+bonus_intorder, mask, lh);
-        auto & mir = trafo(rule.dual, lh);
+        auto & mir = trafo(rule, lh);
         FlatMatrix<SIMD<double>> fvals(dimspace, mir.Size(), lh);
         func.Evaluate (mir, fvals);
         for (size_t j : Range(mir))

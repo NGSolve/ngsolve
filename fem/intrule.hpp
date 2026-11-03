@@ -2431,13 +2431,8 @@ namespace ngfem
   extern NGS_DLL_HEADER const SIMD_IntegrationRule & SIMD_SelectIntegrationRule (ELEMENT_TYPE eltype, int order);
 
   // points on the vertices, edges, faces and cell of the reference element as one rule, cached;
-  // mask bit k: include the entities of dimension k (as GetNDofVEFC)
-  // dual: true facet tags; map: all points tagged VOL, mapping without facet normals
-  struct InterpolationRule
-  {
-    SIMD_IntegrationRule dual, map;
-  };
-  NGS_DLL_HEADER const InterpolationRule & GetInterpolationRule (ELEMENT_TYPE et, int order, int mask, LocalHeap & lh);
+  // mask bit k: include the entities of dimension k (as GetNDofVEFC), points carry their facet tags
+  NGS_DLL_HEADER const SIMD_IntegrationRule & GetInterpolationRule (ELEMENT_TYPE et, int order, int mask, LocalHeap & lh);
 
   inline SIMD_IntegrationRule :: SIMD_IntegrationRule (ELEMENT_TYPE eltype, int order)
   { 
