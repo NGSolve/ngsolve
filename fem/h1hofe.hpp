@@ -146,7 +146,7 @@ namespace ngfem
     virtual bool DualityMassDiagonal () const override
     {
       return (ET == ET_SEGM) || (ET == ET_TRIG) || (ET == ET_QUAD)
-        || (ET == ET_HEX) || (ET == ET_TET) || (ET == ET_POINT);
+        || (ET == ET_HEX) || (ET == ET_TET) || (ET == ET_PYRAMID) || (ET == ET_PRISM) || (ET == ET_POINT);
     }
 
     void SetDualInverse (std::atomic<double*> * slot) { dual_inverse = slot; }

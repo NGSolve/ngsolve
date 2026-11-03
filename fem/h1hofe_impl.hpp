@@ -31,14 +31,10 @@ namespace ngfem
 
     static constexpr int DIM = ngfem::Dim(ET);
 
-    // typedef LegendrePolynomial EdgeOrthoPol;
     typedef IntLegNoBubble EdgeOrthoPol;  // Integrated Legendre divided by bubble
-    // typedef ChebyPolynomial EdgeOrthoPol;
     
-    // typedef ChebyPolynomial QuadOrthoPol;
     typedef IntLegNoBubble QuadOrthoPol;
 
-    // typedef DubinerBasis TrigOrthoPol;
     typedef DubinerBasisOrthoBub TrigOrthoPol;   // for bi-orthogonal dual shapes
 
   public:
@@ -49,19 +45,9 @@ namespace ngfem
     INLINE void T_CalcDualShape (const TIP<DIM,Tx> ip, TFA & shape) const
     { throw Exception ("T_dual shape not implemented, H1Ho"+ToString(ET)); }      
 
-    /*
-    void CalcDualShape2 (const BaseMappedIntegrationPoint & mip, SliceVector<> shape) const
-    {
-      double imeas = 1.0/mip.GetMeasure();
-      shape = 0.0;
-      T_CalcDualShape (GetTIP<DIM>(mip.IP()), SBLambda ( [&](int j, double val) { shape(j) = imeas * val; }));
-      // throw Exception ("dual shape not implemented, H1Ho");
-    }
-    */
     
-    bool GetDiagDualityMassInverse2 (FlatVector<> diag) const; //  { return false; }
+    bool GetDiagDualityMassInverse2 (FlatVector<> diag) const;
   };
-
 
 
   /* *********************** Point  **********************/
@@ -77,13 +63,6 @@ namespace ngfem
   {
     shape[0] = Tx(1.0);
   }
-  /*
-  template<>
-  inline void H1HighOrderFE_Shape<ET_POINT> ::CalcDualShape2 (const BaseMappedIntegrationPoint & mip, SliceVector<> shape) const
-  {
-    shape[0] = 1.0;
-  }
-  */
   
   /* *********************** Segment  **********************/  
 
@@ -123,31 +102,6 @@ namespace ngfem
       }
   }
 
-#ifdef NONE
-  template<>
-  inline void H1HighOrderFE_Shape<ET_SEGM> ::CalcDualShape2 (const BaseMappedIntegrationPoint & mip, SliceVector<> shape) const
-  {
-    auto & ip = mip.IP();
-    shape = 0.0;
-    double lam[2] = { ip(0), 1 - ip(0) };
-
-    if (ip.VB() == BND)
-      {
-	for (size_t i = 0; i < 2; i++)
-	  shape[i] = (i == ip.FacetNr()) ? 1 : 0;
-      }
-
-    // edge-based shapes
-    if ( (ip.VB() == VOL) && (order_edge[0] >= 2) )
-      {
-	IVec<2> e = GetVertexOrientedEdge(0);
-	EdgeOrthoPol::
-	  EvalScaledMult (order_edge[0]-2, 
-			  lam[e[1]]-lam[e[0]], lam[e[0]]+lam[e[1]], 
-			  1.0/mip.GetMeasure() /* *lam[e[0]]*lam[e[1]]*/, shape+2);
-      }
-  }
-#endif
 
   /* *********************** Triangle  **********************/
 
@@ -175,7 +129,6 @@ namespace ngfem
     // inner shapes
     if (order_face[0][0] >= 3)
       {
-        // IVec<4> f = GetFaceSort (0, vnums);
         IVec<4> f = GetVertexOrientedFace (0);
 	TrigOrthoPol::EvalMult (order_face[0][0]-3, 
                                 lam[f[0]], lam[f[1]], 
@@ -218,46 +171,6 @@ namespace ngfem
       }
   }
 
-#ifdef NONE
-  template<>
-  inline void H1HighOrderFE_Shape<ET_TRIG> ::CalcDualShape2 (const BaseMappedIntegrationPoint & mip, SliceVector<> shape) const
-  {
-    auto & ip = mip.IP();
-    shape = 0.0;
-    double lam[3] = { ip(0), ip(1), 1-ip(0)-ip(1) };
-    size_t ii = 3;
-
-    if (ip.VB() == BBND)
-      {
-	for (size_t i = 0; i < 3; i++)
-	  shape[i] = (i == ip.FacetNr()) ? 1 : 0;
-      }
-    
-
-    // edge-based shapes
-    for (int i = 0; i < N_EDGE; i++)
-      if (order_edge[i] >= 2)
-	{
-          if (ip.VB() == BND && ip.FacetNr() == i)
-            {
-              IVec<2> e = GetVertexOrientedEdge(i);
-              EdgeOrthoPol::
-                EvalScaledMult (order_edge[i]-2, 
-                                lam[e[1]]-lam[e[0]], lam[e[0]]+lam[e[1]], 
-                                1.0/mip.GetMeasure() /* *lam[e[0]]*lam[e[1]]*/, shape+ii);
-            }
-          ii += order_edge[i]-1;
-	}
-
-    // inner shapes
-    if (ip.VB() == VOL && order_face[0][0] >= 3)
-      {
-	IVec<4> f = GetVertexOrientedFace (0);
-	TrigOrthoPol::EvalMult(order_face[0][0]-3, 
-                               lam[f[0]], lam[f[1]],1.0/mip.GetMeasure(), shape+ii);
-      }
-  }
-#endif
 
   /* *********************** Quadrilateral  **********************/
 
@@ -294,16 +207,6 @@ namespace ngfem
 
 	Tx bub = 1.0/16 * (1-xi(0)*xi(0))*(1-xi(1)*xi(1));
         
-        /*
-	ArrayMem<Tx,20> polxi(order+1), poleta(order+1);
-        
-	LegendrePolynomial::EvalMult(p[0]-2, xi(0), bub, polxi);
-	LegendrePolynomial::Eval(p[1]-2, xi(1), poleta);
-	
-	for (int k = 0; k <= p[0]-2; k++)
-	  for (int j = 0; j <= p[1]-2; j++)
-	    shape[ii++] = polxi[k] * poleta[j];
-        */
 
         QuadOrthoPol::EvalMult1Assign(p[0]-2, xi(0), bub,
           SBLambda ([&](int i, Tx val) LAMBDA_INLINE 
@@ -320,11 +223,6 @@ namespace ngfem
     Tx x = ip.x, y = ip.y;
     Tx hx[2] = { x, y };
     size_t ii = 4;
-    /*
-    auto & ip = mip.IP();
-    shape = 0.0;
-    double hx[2] = { ip(0), ip(1) };
-    */
     
     if (ip.vb == BBND)
       {
@@ -359,13 +257,6 @@ namespace ngfem
   }
 
 #ifdef FILE_H1HOFE_CPP
-  /*
-  template <ELEMENT_TYPE ET>
-  bool H1HighOrderFE_Shape<ET> :: GetDiagDualityMassInverse2 (FlatVector<> diag) const
-  {
-    return false;
-  }
-  */
 
   template <>
   bool H1HighOrderFE_Shape<ET_POINT> :: GetDiagDualityMassInverse2 (FlatVector<> diag) const 
@@ -378,132 +269,6 @@ namespace ngfem
 #endif
   
   
-  /*
-  template <>
-  bool H1HighOrderFE_Shape<ET_TRIG> :: GetDiagDualityMassInverse2 (FlatVector<> diag) const 
-  {
-    diag.Range(0,3) = 1.0;
-    int ii = 3;
-    for (int i = 0; i < N_EDGE; i++)
-      for (int j = 2; j <= order_edge[i]; j++)
-        diag(ii++) = (2*j-1)*(2*j)*(2*j-2);
-    IVec<2> p = order_face[0];
-    for (int i = 0; i <= p[0]-3; i++)
-      for (int j = 0; j <= p[0]-i-3; j++)
-        diag(ii++) = 0.5*(5+2*i+2*j)*(4+2*i+j)*(j+1) * (2*i+3)*(2*i+4) / (i+1);
-    // cout << "trig duality diag = " << diag << endl;
-    return true;
-  }
-
-
-  
-  
-  template <>
-  bool H1HighOrderFE_Shape<ET_QUAD> :: GetDiagDualityMassInverse2 (FlatVector<> diag) const 
-  {
-    diag.Range(0,4) = 1.0;
-    int ii = 4;
-    for (int i = 0; i < N_EDGE; i++)
-      for (int j = 2; j <= order_edge[i]; j++)
-        diag(ii++) = (2*j-1)*(2*j)*(2*j-2);
-    IVec<2> p = order_face[0];
-    for (int i = 2; i <= p[0]; i++)
-      for (int j = 2; j <= p[1]; j++)
-        diag(ii++) = 1.0*(2*j-1)*(2*j)*(2*j-2) * (2*i-1)*(2*i)*(2*i-2);
-
-    // cout << "quad duality diag = " << diag << endl;
-    return true;
-  }
-
-
-  template <>
-  bool H1HighOrderFE_Shape<ET_TET> :: GetDiagDualityMassInverse2 (FlatVector<> diag) const 
-  {
-    diag.Range(0,4) = 1.0;
-    int ii = 4;
-    for (int i = 0; i < N_EDGE; i++)
-      for (int j = 2; j <= order_edge[i]; j++)
-        diag(ii++) = (2*j-1)*(2*j)*(2*j-2);
-    for (int f = 0; f < N_FACE; f++)
-      if (int p = order_face[f][0]; p >= 3)
-	ii += DubinerBasisOrthoBub::CalcNormInv (p-3, diag+ii);
-    if (int p = order_cell[0][0]; p >= 4)
-      DubinerBasis3DOrthoBub::CalcNormInv(p-4, diag+ii);
-    return true;
-  }
-  
-  template <>
-  bool H1HighOrderFE_Shape<ET_HEX> :: GetDiagDualityMassInverse2 (FlatVector<> diag) const 
-  {
-    diag.Range(0,8) = 1.0;
-    int ii = 8;
-    for (int i = 0; i < N_EDGE; i++)
-      for (int j = 2; j <= order_edge[i]; j++)
-        diag(ii++) = (2*j-1)*(2*j)*(2*j-2);
-    for (int f = 0; f < N_FACE; f++)
-      {
-        IVec<2> p = order_face[f];
-        for (int i = 2; i <= p[0]; i++)
-          for (int j = 2; j <= p[1]; j++)
-            diag(ii++) = 1.0*(2*j-1)*(2*j)*(2*j-2) * (2*i-1)*(2*i)*(2*i-2);
-      }
-    IVec<3> p = order_cell[0];    
-    for (int i = 2; i <= p[0]; i++)
-      for (int j = 2; j <= p[1]; j++)
-        for (int k = 2; k <= p[2]; k++)
-          diag(ii++) = 1.0*(2*j-1)*(2*j)*(2*j-2) * (2*i-1)*(2*i)*(2*i-2) * (2*k-1)*(2*k)*(2*k-2);
-    
-    return true;
-  }
-*/
-
-  
-
-#ifdef NONE
-  template<>
-  inline void H1HighOrderFE_Shape<ET_QUAD> ::CalcDualShape2 (const BaseMappedIntegrationPoint & mip, SliceVector<> shape) const
-  {
-    auto & ip = mip.IP();
-    shape = 0.0;
-    size_t ii = 4;
-    double hx[2] = { ip(0), ip(1) };
-
-    if (ip.VB() == BBND)
-      {
-	for (size_t i = 0; i < 4; i++)
-	  shape[i] = (i == ip.FacetNr()) ? 1 : 0;
-      }
-    
-
-    // edge-based shapes
-    for (int i = 0; i < N_EDGE; i++)
-      if (order_edge[i] >= 2)
-	{
-          if (ip.VB() == BND && ip.FacetNr() == i)
-            {
-              auto xi = ET_trait<ET_QUAD>::XiEdge(i, hx, this->vnums);
-          
-              EdgeOrthoPol::EvalMult (order_edge[i]-2, xi, 1.0/mip.GetMeasure(), shape+ii);
-            }
-          ii += order_edge[i]-1;
-	}
-
-    IVec<2> p = order_face[0];
-    if (ip.VB() == VOL && p[0] >= 2 && p[1] >= 2)
-      {
-        Vec<2,double> xi = ET_trait<ET_QUAD>::XiFace(0, hx, this->vnums);
-
-        QuadOrthoPol::EvalMult1Assign(p[0]-2, xi(0), 1.0/mip.GetMeasure(),
-          SBLambda ([&](int i, auto val) LAMBDA_INLINE 
-                    {  
-                      QuadOrthoPol::EvalMult (p[1]-2, xi(1), val, shape+ii);
-                      ii += p[1]-1;
-                    }));
-      }
-  }
-#endif
-  
-
   /* *********************** Tetrahedron  **********************/
 
   template<> template<typename Tx, typename TFA>  
@@ -512,7 +277,6 @@ namespace ngfem
     Tx lam[4] = { ip.x, ip.y, ip.z, 1-ip.x-ip.y-ip.z };
 
     // vertex shapes
-    //for (int i = 0; i < 4; i++) shape[i] = lam[i];
     if (!nodalp2)
       for (int i = 0; i < 4; i++)
 	shape[i] = lam[i];
@@ -527,7 +291,6 @@ namespace ngfem
       for (int i = 0; i < N_EDGE; i++)
 	if (order_edge[i] >= 2)
 	  {
-	    // IVec<2> e = GetEdgeSort (i, vnums);
 	    IVec<2> e = GetVertexOrientedEdge (i);
 	    EdgeOrthoPol::EvalScaledMult (order_edge[i]-2, 
 					  lam[e[1]]-lam[e[0]], lam[e[0]]+lam[e[1]], 
@@ -539,7 +302,6 @@ namespace ngfem
       for (int i = 0; i < N_EDGE; i++)
 	if (order_edge[i] >= 2)
 	  {
-	    // IVec<2> e = GetEdgeSort (i, vnums);
 	    IVec<2> e = GetVertexOrientedEdge (i);
 	    LegendrePolynomial::EvalScaledMult (order_edge[i]-2, 
 						lam[e[1]]-lam[e[0]], lam[e[0]]+lam[e[1]], 
@@ -552,7 +314,6 @@ namespace ngfem
     for (int i = 0; i < N_FACE; i++)
       if (order_face[i][0] >= 3)
 	{
-          // IVec<4> f = GetFaceSort (i, vnums);
           IVec<4> f = GetVertexOrientedFace (i);
 	  int vop = 6 - f[0] - f[1] - f[2];  	
           
@@ -569,60 +330,9 @@ namespace ngfem
 	(order_cell[0][0]-4, lam[0], lam[1], lam[2],
 	 lam[0]*lam[1]*lam[2]*lam[3], shape+ii);
 	 
-    // if (order_cell[0][0] >= 4)
-    //   ii += TetShapesInnerLegendre::
-    // 	Calc (order_cell[0][0], 
-    // 	      lam[0]-lam[3], lam[1], lam[2], 
-    // 	      shape+ii);
   }
 
-#ifdef NONE
-  template<>
-  inline void H1HighOrderFE_Shape<ET_TET> ::
-  CalcDualShape2 (const BaseMappedIntegrationPoint & mip, SliceVector<> shape) const
-  {
-    auto & ip = mip.IP();
-    shape = 0.0;
-    double lam[4] = { ip(0), ip(1), ip(2), 1-ip(0)-ip(1)-ip(2) };
-    size_t ii = 4;
-
-    if (ip.VB() == BBBND)
-      {
-	for (size_t i = 0; i < 4; i++)
-	  shape[i] = (i == ip.FacetNr()) ? 1 : 0;
-      }
-    // edge-based shapes
-    for (int i = 0; i < N_EDGE; i++)
-      {
-	if (order_edge[i] >= 2 && ip.FacetNr() == i && ip.VB() == BBND)
-	  {
-	    IVec<2> e = GetVertexOrientedEdge(i);
-	    EdgeOrthoPol::
-	      EvalScaledMult (order_edge[i]-2, 
-			      lam[e[1]]-lam[e[0]], lam[e[0]]+lam[e[1]], 
-			      1.0/mip.GetMeasure() /* *lam[e[0]]*lam[e[1]] */, shape+ii);
-	  }
-	
-	ii += order_edge[i]-1;
-      }
-    // face shapes
-    for (int i = 0; i < N_FACE; i++)
-      {
-	if (order_face[i][0] >= 3 && ip.FacetNr() == i && ip.VB() == BND)
-	  {
-	    IVec<4> f = GetVertexOrientedFace (i);
-	    TrigOrthoPol::EvalMult (order_face[i][0]-3, 
-                                    lam[f[0]], lam[f[1]], 1.0/mip.GetMeasure(), shape+ii);
-	  }
-	ii += (order_face[i][0]-2)*(order_face[i][0]-1)/2;
-      }
-    //inner shapes
-    if (ip.VB() == VOL && order_cell[0][0] >= 4)
-      DubinerBasis3DOrthoBub::EvalMult (order_cell[0][0]-4, lam[0], lam[1], lam[2], 1.0/mip.GetMeasure(), shape+ii);
-  }
-#endif
   
-
   template<> template<typename Tx, typename TFA>  
   void H1HighOrderFE_Shape<ET_TET> :: T_CalcDualShape (TIP<3,Tx> ip, TFA & shape) const
   {
@@ -670,8 +380,6 @@ namespace ngfem
   }
 
   
-
-
   /* *********************** Prism  **********************/
 
   template<> template<typename Tx, typename TFA>  
@@ -693,7 +401,6 @@ namespace ngfem
     for (int i = 0; i < 6; i++)
       if (order_edge[i] >= 2)
 	{
-          // IVec<2> e = GetEdgeSort (i, vnums);
           IVec<2> e = GetVertexOrientedEdge (i);
 
 	  Tx xi = lam[e[1]]-lam[e[0]]; 
@@ -709,7 +416,6 @@ namespace ngfem
     for (int i = 6; i < 9; i++)
       if (order_edge[i] >= 2)
 	{
-          // IVec<2> e = GetEdgeSort (i, vnums);
           IVec<2> e = GetVertexOrientedEdge (i);
 
 	  EdgeOrthoPol::
@@ -727,7 +433,6 @@ namespace ngfem
     for (int i = 0; i < 2; i++)
       if (order_face[i][0] >= 3)
 	{
-          // IVec<4> f = GetFaceSort (i, vnums);
           IVec<4> f = GetVertexOrientedFace (i);
 	  int p = order_face[i][0];
 	  
@@ -744,7 +449,6 @@ namespace ngfem
       if (order_face[i][0] >= 2 && order_face[i][1] >= 2)
 	{
 	  IVec<2> p = order_face[i];
-          // IVec<4> f = GetFaceSort (i, vnums);
           IVec<4> f = GetVertexOrientedFace (i);          
 
 	  Tx xi  = sigma[f[0]] - sigma[f[1]]; 
@@ -772,8 +476,8 @@ namespace ngfem
 	int nf = (p[0]-1)*(p[0]-2)/2;
 	ArrayMem<Tx,20> pol_trig(nf);
 
-	DubinerBasis::EvalMult (p[0]-3, x, y, x*y*(1-x-y),pol_trig);
-	LegendrePolynomial::EvalMult (p[2]-2, 2*z-1, z*(1-z), polz);
+	TrigOrthoPol::EvalMult (p[0]-3, x, y, x*y*(1-x-y), pol_trig);
+	QuadOrthoPol::EvalMult (p[2]-2, 2*z-1, z*(1-z), polz);
 
 	for (int i = 0; i < nf; i++)
 	  for (int k = 0; k < p[2]-1; k++)
@@ -784,38 +488,91 @@ namespace ngfem
   template<> template<typename Tx, typename TFA>  
   void H1HighOrderFE_Shape<ET_PRISM> :: T_CalcDualShape (TIP<3,Tx> ip, TFA & shape) const
   {
-    // auto & ip = mip.IP();
-    // shape = 0.0;
-
-    if(order > 1)
-      throw Exception("H1Ho prism dual shapes only implemented for order==1!");
-
-    if(ip.vb == BBBND)
+    if (ip.vb == BBBND)
       {
 	shape[ip.facetnr] = 1;
 	return;
       }
+
+    Tx x = ip.x, y = ip.y, z = ip.z;
+    Tx lam[6] = { x, y, 1-x-y, x, y, 1-x-y };
+    Tx muz[6]  = { 1-z, 1-z, 1-z, z, z, z };
+    int ii = 6;
+
+    // horizontal edges
+    for (int i = 0; i < 6; i++)
+      if (int p = order_edge[i]; p >= 2)
+	{
+	  if (ip.vb == BBND && ip.facetnr == i)
+	    {
+	      IVec<2> e = GetVertexOrientedEdge (i);
+	      EdgeOrthoPol::Eval (p-2, lam[e[1]]-lam[e[0]], shape+ii);
+	      return;
+	    }
+	  ii += p-1;
+	}
+
+    // vertical edges
+    for (int i = 6; i < 9; i++)
+      if (int p = order_edge[i]; p >= 2)
+	{
+	  if (ip.vb == BBND && ip.facetnr == i)
+	    {
+	      IVec<2> e = GetVertexOrientedEdge (i);
+	      EdgeOrthoPol::Eval (p-2, muz[e[1]]-muz[e[0]], shape+ii);
+	      return;
+	    }
+	  ii += p-1;
+	}
+
+    // trig faces
+    for (int i = 0; i < 2; i++)
+      if (int p = order_face[i][0]; p >= 3)
+	{
+	  if (ip.vb == BND && ip.facetnr == i)
+	    {
+	      IVec<4> f = GetVertexOrientedFace (i);
+	      TrigOrthoPol::Eval (p-3, lam[f[0]], lam[f[1]], shape+ii);
+	      return;
+	    }
+	  ii += (p-2)*(p-1)/2;
+	}
+
+    ArrayMem<Tx,20> polx(order+1), poly(order+1), polz(order+1);
+
+    // quad faces
+    for (int i = 2; i < 5; i++)
+      if (IVec<2> p = order_face[i]; p[0] >= 2 && p[1] >= 2)
+	{
+	  if (ip.vb == BND && ip.facetnr == i)
+	    {
+	      IVec<4> f = GetVertexOrientedFace (i);
+	      Tx sigma[4];
+	      for (int j = 0; j < 4; j++) sigma[j] = lam[f[j]] + muz[f[j]];
+	      QuadOrthoPol::Eval (p[0]-2, sigma[0]-sigma[1], polx);
+	      QuadOrthoPol::Eval (p[1]-2, sigma[0]-sigma[3], poly);
+	      for (int k = 0; k < p[0]-1; k++) 
+		for (int j = 0; j < p[1]-1; j++) 
+		  shape[ii++] = polx[k] * poly[j];
+	      return;
+	    }
+	  ii += (p[0]-1)*(p[1]-1);
+	}
+
+    IVec<3> p = order_cell[0];
+    if (ip.vb == VOL && p[0] > 2 && p[2] > 1)
+      {
+	int nf = (p[0]-1)*(p[0]-2)/2;
+	ArrayMem<Tx,20> pol_trig(nf);
+	TrigOrthoPol::Eval (p[0]-3, x, y, pol_trig);
+	QuadOrthoPol::Eval (p[2]-2, 2*z-1, polz);
+	for (int i = 0; i < nf; i++)
+	  for (int k = 0; k < p[2]-1; k++)
+	    shape[ii++] = pol_trig[i] * polz[k];
+      }
   }
   
-#ifdef NONE
-  template<>
-  inline void H1HighOrderFE_Shape<ET_PRISM> ::
-  CalcDualShape2 (const BaseMappedIntegrationPoint & mip, SliceVector<> shape) const
-  {
-    auto & ip = mip.IP();
-    shape = 0.0;
-
-    if(order > 1)
-      throw Exception("H1Ho prism dual shapes only implemented for order==1!");
-
-    if(ip.VB() == BBBND)
-      for(auto i : Range(6))
-        shape[i] = (i == ip.FacetNr()) ? 1 : 0;
-
-  }
-#endif
  
-
   /* *********************** Hex  **********************/
 
   template<> template<typename Tx, typename TFA>  
@@ -840,7 +597,6 @@ namespace ngfem
 	{
 	  int p = order_edge[i];
 
-          // IVec<2> e = GetEdgeSort (i, vnums);
           IVec<2> e = GetVertexOrientedEdge (i);          
           Tx xi = sigma[e[1]]-sigma[e[0]]; 
           Tx lam_e = lam[e[0]]+lam[e[1]];
@@ -854,7 +610,6 @@ namespace ngfem
       if (order_face[i][0] >= 2 && order_face[i][1] >= 2)
 	{
 	  IVec<2> p = order_face[i];
-          // IVec<4> f = GetFaceSort (i, vnums);	  
           IVec<4> f = GetVertexOrientedFace (i);
 	  Tx lam_f(0.0);
 	  for (int j = 0; j < 4; j++) lam_f += lam[f[j]];
@@ -912,7 +667,6 @@ namespace ngfem
 	{
           if (ip.vb == BBND && ip.facetnr == i)
             {
-              // auto xi = ET_trait<ET_HEX>::XiEdge(i, hx, this->vnums);
               IVec<2> e = GetVertexOrientedEdge (i);          
               Tx xi = sigma[e[1]]-sigma[e[0]]; 
               
@@ -931,7 +685,6 @@ namespace ngfem
           {
             if (ip.vb == BND && ip.facetnr == i)
               {
-                // auto xi = ET_trait<ET_HEX>::XiFace(0, hx, this->vnums);
                 IVec<4> f = GetVertexOrientedFace (i);
                 Tx xi  = sigma[f[0]] - sigma[f[1]]; 
                 Tx eta = sigma[f[0]] - sigma[f[3]];
@@ -946,7 +699,6 @@ namespace ngfem
               ii += (p[0]-1)*(p[1]-1);
           }
       }
-
 
 
     // volume dofs:
@@ -971,7 +723,6 @@ namespace ngfem
   }
 
 
-  
   /* ******************************** Pyramid  ************************************ */
 
   template<> template<typename Tx, typename TFA>  
@@ -979,7 +730,6 @@ namespace ngfem
   {
     Tx x = ip.x, y = ip.y, z = ip.z;
 
-    // if (z == 1.) z -= 1e-10;
     z *= (1-1e-10);
 
     Tx xt = x / (1-z);
@@ -1005,7 +755,6 @@ namespace ngfem
       if (order_edge[i] >= 2)
 	{
 	  int p = order_edge[i];
-	  // IVec<2> e = GetEdgeSort (i, vnums);	  
           IVec<2> e = GetVertexOrientedEdge (i);
           
 	  Tx xi = sigma[e[1]]-sigma[e[0]]; 
@@ -1022,7 +771,6 @@ namespace ngfem
       if (order_edge[i] >= 2)
 	{
 	  int p = order_edge[i];
-	  // IVec<2> e = GetEdgeSort (i, vnums);	  
           IVec<2> e = GetVertexOrientedEdge (i);
           
 	  Tx xi = lambda3d[e[1]]-lambda3d[e[0]]; 
@@ -1049,7 +797,6 @@ namespace ngfem
 	    {(sigma[0]-lam_face)*(1-z), (sigma[1]-lam_face)*(1-z), 
 	     (sigma[2]-lam_face)*(1-z), (sigma[3]-lam_face)*(1-z), z };
 	  
-	  // IVec<4> f = GetFaceSort (i, vnums);
           IVec<4> f = GetVertexOrientedFace (i);
           
 	  Tx bub = lam_face * bary[f[0]]*bary[f[1]]*bary[f[2]];
@@ -1069,7 +816,6 @@ namespace ngfem
 	for (int k = 1; k <= pmax; k++)
 	  fac *= (1-z);
 
-	// IVec<4> f = GetFaceSort (4, vnums);	  
         IVec<4> f = GetVertexOrientedFace (4);
         
 	Tx xi  = sigma[f[0]] - sigma[f[1]]; 
@@ -1083,26 +829,110 @@ namespace ngfem
       }
 
     
-    if (order_cell[0][0] >= 3)
+    // cell: span xt^i yt^j z(1-z)^(k+2), i,j<=k<=p-3, ordered by m = max(i,j),
+    // z-part Jacobi P^(m+4,1) for bi-orthogonal dual shapes
+    if (int p = order_cell[0][0]; p >= 3)
       {
-	LegendrePolynomial::EvalMult (order_cell[0][0]-2, 2*xt-1, xt*(1-xt), polx);
-        LegendrePolynomial::EvalMult (order_cell[0][0]-2, 2*yt-1, yt*(1-yt), poly);
+        QuadOrthoPol::EvalMult (p-3, 2*xt-1, xt*(1-xt), polx);
+        QuadOrthoPol::EvalMult (p-3, 2*yt-1, yt*(1-yt), poly);
 
-	Tx pz = z*(1-z)*(1-z);
-	
-	for(int k = 0; k <= order_cell[0][0]-3; k++)
-	  {
-	    for(int i = 0; i <= k; i++)
-	      { 
-		Tx bubpik = pz * polx[i];
-		for (int j = 0; j <= k; j++)
-		  shape[ii++] = bubpik * poly[j];
-	      }
-	    pz *= 1-z;  
-	  }
+        Tx bubz = z*(1-z);
+        for (int m = 0; m <= p-3; m++)
+          {
+            bubz *= 1-z;
+            JacobiPolynomial2(m+4, 1).EvalMult (p-3-m, 2*z-1, bubz, polz);
+            for (int i = 0; i <= m; i++)
+              for (int j = 0; j <= m; j++)
+                if (i == m || j == m)
+                  {
+                    Tx pxy = polx[i] * poly[j];
+                    for (int n = 0; n <= p-3-m; n++)
+                      shape[ii++] = pxy * polz[n];
+                  }
+          }
       }
   }
 
+  template<> template<typename Tx, typename TFA>
+  void H1HighOrderFE_Shape<ET_PYRAMID> :: T_CalcDualShape (TIP<3,Tx> ip, TFA & shape) const
+  {
+    if (ip.vb == BBBND)
+      {
+        shape[ip.facetnr] = 1;
+        return;
+      }
+
+    Tx x = ip.x, y = ip.y, z = ip.z;
+    z *= (1-1e-10);
+    Tx xt = x / (1-z);
+    Tx yt = y / (1-z);
+
+    Tx sigma[4] = { (1-xt)+(1-yt), xt+(1-yt), xt+yt, (1-xt)+yt };
+    Tx lambda3d[5] = { (1-xt)*(1-yt)*(1-z), xt*(1-yt)*(1-z), xt*yt*(1-z), (1-xt)*yt*(1-z), z };
+
+    int ii = 5;
+
+    for (int i = 0; i < N_EDGE; i++)
+      if (int p = order_edge[i]; p >= 2)
+        {
+          if (ip.vb == BBND && ip.facetnr == i)
+            {
+              IVec<2> e = GetVertexOrientedEdge (i);
+              EdgeOrthoPol::Eval (p-2, lambda3d[e[1]]-lambda3d[e[0]], shape+ii);
+              return;
+            }
+          ii += p-1;
+        }
+
+    for (int i = 0; i < 4; i++)
+      if (int p = order_face[i][0]; p >= 3)
+        {
+          if (ip.vb == BND && ip.facetnr == i)
+            {
+              IVec<4> f = GetVertexOrientedFace (i);
+              TrigOrthoPol::Eval (p-3, lambda3d[f[0]], lambda3d[f[1]], shape+ii);
+              return;
+            }
+          ii += (p-2)*(p-1)/2;
+        }
+
+    ArrayMem<Tx,20> polx(order+1), poly(order+1), polz(order+1);
+
+    if (IVec<2> p = order_face[4]; p[0] >= 2 && p[1] >= 2)
+      {
+        if (ip.vb == BND && ip.facetnr == 4)
+          {
+            IVec<4> f = GetVertexOrientedFace (4);
+            Tx xi  = sigma[f[0]] - sigma[f[1]];
+            Tx eta = sigma[f[0]] - sigma[f[3]];
+            QuadOrthoPol::Eval (p[0]-2, xi, polx);
+            QuadOrthoPol::Eval (p[1]-2, eta, poly);
+            for (int k = 0; k < p[0]-1; k++)
+              for (int j = 0; j < p[1]-1; j++)
+                shape[ii++] = polx[k] * poly[j];
+            return;
+          }
+        ii += (p[0]-1)*(p[1]-1);
+      }
+
+    if (int p = order_cell[0][0]; ip.vb == VOL && p >= 3)
+      {
+        QuadOrthoPol::Eval (p-3, 2*xt-1, polx);
+        QuadOrthoPol::Eval (p-3, 2*yt-1, poly);
+        for (int m = 0; m <= p-3; m++)
+          {
+            JacobiPolynomial2(m+4, 1).Eval (p-3-m, 2*z-1, polz);
+            for (int i = 0; i <= m; i++)
+              for (int j = 0; j <= m; j++)
+                if (i == m || j == m)
+                  {
+                    Tx pxy = polx[i] * poly[j];
+                    for (int n = 0; n <= p-3-m; n++)
+                      shape[ii++] = pxy * polz[n];
+                  }
+          }
+      }
+  }
 
 
   /* ******************************** Hexamid  ************************************ */
@@ -1112,7 +942,6 @@ namespace ngfem
   {
     Tx y = ip.y;
     Tx z = ip.z;
-    // Tx den = (1-y)*(1-z);
     Tx den = (1-y*z);
     den += Tx(1e-12);
     Tx x = ip.x / den;    
@@ -1165,13 +994,6 @@ namespace ngfem
       true, false, false
     };
 
-    /*
-    Tx lam_etrig[11] = {
-      Tx(0), 1-z, Tx(0), Tx(0),
-      1-y, 1-x, x, Tx(0),
-      Tx(0), x, 1-x
-    };
-    */
     
     Tx lam_equad[11] = {
       Tx(0), y, Tx(0), Tx(0),
@@ -1180,7 +1002,6 @@ namespace ngfem
     };
     
 
-    
     int ii = 7;
 
     for (int i = 0; i < N_EDGE; i++)
@@ -1225,12 +1046,6 @@ namespace ngfem
                     xi  = sigma[f[0]] - sigma[f[1]]; 
                     eta = sigma[f[0]] - sigma[f[3]];
                   }
-                /*
-                Tx l0 = lam[f[0]], l1 = lam[f[1]], l3 = lam[f[3]];
-                Tx xi = (l0-l1)/(l0+l1+Tx(1e-12));
-                Tx eta = (l0-l3)/(l0+l3+Tx(1e-12));
-                */
-                // Tx lamface = lam[f[0]]+lam[f[1]]+lam[f[2]]+lam[f[3]];
                 Tx lamface = lamf[i];
                 QuadOrthoPol::EvalMult (p[0]-2, xi,  0.25*(1-xi*xi), polx);
                 QuadOrthoPol::EvalMult (p[1]-2, eta, 0.25*(1-eta*eta), poly);
@@ -1249,11 +1064,6 @@ namespace ngfem
                     Tx eta = lam[f[1]]/lamface;
                     Tx zeta = lam[f[2]]/lamface;
                     TrigOrthoPol::EvalMult (p-3, xi, eta, xi*eta*zeta*lamface, shape+ii);
-                    /*
-                      int vop = 6 - f[0] - f[1] - f[2];  	
-                      TrigOrthoPol::EvalScaledMult (p-3, lam[f[0]], lam[f[1]], 1-lam[vop], 
-                      lam[f[0]]*lam[f[1]]*lam[f[2]], shape+ii);
-                    */
                     ii += (p-2)*(p-1)/2;
                   }
               }
@@ -1277,7 +1087,6 @@ namespace ngfem
 	    }
       }
     
-    // cout << "ii = " << ii << " =?= " << ndof << endl;
   }
   
 }
