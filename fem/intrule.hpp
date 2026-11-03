@@ -1537,7 +1537,7 @@ namespace ngfem
                                   Allocator & lh)
       : BaseMappedIntegrationRule (ir, eltrans), mips(ir.Size(), lh)
     {
-      baseip = (char*)(void*)(BaseMappedIntegrationPoint*)(&mips[0]);
+      baseip = (char*)(void*)(BaseMappedIntegrationPoint*)(mips.Data());
       incr = sizeof (MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE,SCAL>);
     }
 
@@ -1546,11 +1546,8 @@ namespace ngfem
                                   FlatArray< MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE,SCAL> > amips)
       : BaseMappedIntegrationRule (air, aeltrans), mips(amips)
     {
-      baseip = (char*)(void*)(BaseMappedIntegrationPoint*)(&mips[0]);
-      if (mips.Size() > 1)
-        incr = (char*)(void*)(&mips[1]) - (char*)(void*)(&mips[0]);
-      else
-        incr = 0;
+      baseip = (char*)(void*)(BaseMappedIntegrationPoint*)(mips.Data());
+      incr = sizeof (MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE,SCAL>);
     }
 
     virtual ~MappedIntegrationRule() { }
@@ -1577,14 +1574,14 @@ namespace ngfem
     {
       return SliceMatrix<> (mips.Size(), DIM_SPACE*sizeof(SCAL)/sizeof(double),
                             sizeof(MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE, SCAL>) / sizeof(double),
-                            const_cast<double*> (&mips[0].GetPoint()(0)));
+                            const_cast<double*> (mips.Size() ? &mips[0].GetPoint()(0) : nullptr));
     }
 
     virtual SliceMatrix<> GetNormals() const
     {
       return SliceMatrix<> (mips.Size(), DIM_SPACE*sizeof(SCAL)/sizeof(double),
                             sizeof(MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE, SCAL>) / sizeof(double),
-                            const_cast<double*> (&mips[0].GetNV()(0)));
+                            const_cast<double*> (mips.Size() ? &mips[0].GetNV()(0) : nullptr));
     }
 
     virtual void ComputeNormalsAndMeasure (ELEMENT_TYPE et);
@@ -1608,7 +1605,7 @@ namespace ngfem
                                   Allocator & lh)
       : BaseMappedIntegrationRule (ir, eltrans), mips(ir.Size(), lh)
     {
-      baseip = (char*)(void*)(BaseMappedIntegrationPoint*)(&mips[0]);
+      baseip = (char*)(void*)(BaseMappedIntegrationPoint*)(mips.Data());
       incr = sizeof (MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE,SCAL>);
     }
 
@@ -1617,11 +1614,8 @@ namespace ngfem
                                   FlatArray< MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE,SCAL> > amips)
       : BaseMappedIntegrationRule (air, aeltrans), mips(amips)
     {
-      baseip = (char*)(void*)(BaseMappedIntegrationPoint*)(&mips[0]);
-      if (mips.Size() > 1)
-        incr = (char*)(void*)(&mips[1]) - (char*)(void*)(&mips[0]);
-      else
-        incr = 0;
+      baseip = (char*)(void*)(BaseMappedIntegrationPoint*)(mips.Data());
+      incr = sizeof (MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE,SCAL>);
     }
     
     INLINE MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE,SCAL> & operator[] (int i) const
@@ -1649,7 +1643,7 @@ namespace ngfem
       return SliceMatrix<Complex> (mips.Size(), DIM_SPACE,
                                    //&mips[1].GetPoint()(0) - &mips[0].GetPoint()(0),
                                    sizeof(MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE, SCAL>) / sizeof(Complex),
-                                   const_cast<Complex*> (&mips[0].GetPointComplex()(0)));
+                                   const_cast<Complex*> (mips.Size() ? &mips[0].GetPointComplex()(0) : nullptr));
     }
 
     virtual SliceMatrix<> GetNormals() const
@@ -2535,7 +2529,7 @@ namespace ngfem
       {
         dim_element = DIM_ELEMENT;
         dim_space = DIM_SPACE;
-        baseip = (char*)(void*)(SIMD<BaseMappedIntegrationPoint>*)(&mips[0]);
+        baseip = (char*)(void*)(SIMD<BaseMappedIntegrationPoint>*)(mips.Data());
         incr = sizeof (SIMD<MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE>>);
 
         for (size_t i = 0; i < ir.Size(); i++)
@@ -2552,11 +2546,11 @@ namespace ngfem
         */
         new (&points) BareSliceMatrix<SIMD<double>> (mips.Size(), DIM_SPACE,
                                                      sizeof(SIMD<MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE>>)/sizeof(SIMD<double>),
-                                                     &mips[0].Point()(0));
+                                                     mips.Size() ? &mips[0].Point()(0) : nullptr);
         
         new (&normals) BareSliceMatrix<SIMD<double>> (mips.Size(), DIM_SPACE,
                                                       sizeof(SIMD<MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE>>)/sizeof(SIMD<double>),
-                                                      &mips[0].NV()(0));
+                                                      mips.Size() ? &mips[0].NV()(0) : nullptr);
       }
 
     // facet type and number per point (per SIMD block), volume points are skipped

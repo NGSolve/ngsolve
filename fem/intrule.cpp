@@ -475,7 +475,7 @@ namespace ngfem
 			 Allocator & lh)
     : BaseMappedIntegrationRule (ir, aeltrans), mips(ir.GetNIP(), lh)
   {
-    baseip = (char*)(void*)(BaseMappedIntegrationPoint*)(&mips[0]);
+    baseip = (char*)(void*)(BaseMappedIntegrationPoint*)(mips.Data());
     incr = sizeof (MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE, SCAL>);
 
     for (int i = 0; i < ir.GetNIP(); i++)
@@ -588,7 +588,7 @@ namespace ngfem
 			 Allocator & lh)
     : BaseMappedIntegrationRule (ir, aeltrans), mips(ir.GetNIP(), lh)
   {
-    baseip = (char*)(void*)(BaseMappedIntegrationPoint*)(&mips[0]);
+    baseip = (char*)(void*)(BaseMappedIntegrationPoint*)(mips.Data());
     incr = sizeof (MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE, SCAL>);
 
     for (int i = 0; i < ir.GetNIP(); i++)
@@ -3927,7 +3927,7 @@ namespace ngfem
   {
     dim_element = DIM_ELEMENT;
     dim_space = DIM_SPACE;
-    baseip = (char*)(void*)(SIMD<BaseMappedIntegrationPoint>*)(&mips[0]);
+    baseip = (char*)(void*)(SIMD<BaseMappedIntegrationPoint>*)(mips.Data());
     incr = sizeof (SIMD<MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE>>);
     
     FlatArray<SIMD<IntegrationPoint>> hir = ir;
@@ -3946,11 +3946,11 @@ namespace ngfem
     */
     new (&points) BareSliceMatrix<SIMD<double>> (mips.Size(), DIM_SPACE,
                                                  sizeof(SIMD<MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE>>)/sizeof(SIMD<double>),
-                                                 &mips[0].Point()(0));
+                                                 mips.Size() ? &mips[0].Point()(0) : nullptr);
     
     new (&normals) BareSliceMatrix<SIMD<double>> (mips.Size(), DIM_SPACE,
                                                   sizeof(SIMD<MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE>>)/sizeof(SIMD<double>),
-                                                  &mips[0].NV()(0));
+                                                  mips.Size() ? &mips[0].NV()(0) : nullptr);
     
     eltrans.CalcMultiPointJacobian (ir, *this);
 

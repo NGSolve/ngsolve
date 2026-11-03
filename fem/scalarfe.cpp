@@ -433,7 +433,6 @@ namespace ngfem
       for (int k = 0; k <= D; k++)
         if (nvefc[k]) mask |= 1 << k;
       auto & rule = GetInterpolationRule (ElementType(), 2 * Order() + bonus_intorder, mask, lh);
-      if (rule.dual.Size() == 0) return;
       auto & mir = trafo(rule.map, lh);
 
       FlatMatrix<SIMD<double>> mfluxi(coefs.Width(), mir.Size(), lh);

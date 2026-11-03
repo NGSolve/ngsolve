@@ -664,15 +664,12 @@ namespace ngfem
         for (int k = 1; k <= D; k++)
           if (nvefc[k]) mask |= 1 << k;
         auto & rule = GetInterpolationRule (ElementType(), 2*Order()+bonus_intorder, mask, lh);
-        if (rule.dual.Size())
-          {
-            auto & mir = trafo(rule.dual, lh);
-            FlatMatrix<SIMD<double>> fvals(dimspace, mir.Size(), lh);
-            func.Evaluate (mir, fvals);
-            for (size_t j : Range(mir))
-              fvals.Col(j) *= mir[j].GetWeight();
-            AddDualTrans (mir, fvals, rhs);
-          }
+        auto & mir = trafo(rule.dual, lh);
+        FlatMatrix<SIMD<double>> fvals(dimspace, mir.Size(), lh);
+        func.Evaluate (mir, fvals);
+        for (size_t j : Range(mir))
+          fvals.Col(j) *= mir[j].GetWeight();
+        AddDualTrans (mir, fvals, rhs);
         if (SolveDuality (rhs.AsColMatrix(), lh))
           {
             coefs.Col(0) = rhs;
