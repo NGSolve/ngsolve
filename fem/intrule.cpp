@@ -13,6 +13,7 @@
 #include "intrule.hpp"
 #include "elementtransformation.hpp"
 #include <optional>
+#include <bit>
 
 namespace ngfem
 {
@@ -483,25 +484,13 @@ namespace ngfem
 
     eltrans.CalcMultiPointJacobian (ir, *this);
 
-    // one facet for all points, or facet per point
-    if (ir.Size())
-      {
-        bool uniform = true, facets = false;
-        for (size_t i = 0; i < ir.Size(); i++)
-          {
-            if (ir[i].VB() != ir[0].VB() || ir[i].FacetNr() != ir[0].FacetNr()) uniform = false;
-            if (ir[i].VB() != VOL) facets = true;
-          }
-        if (uniform && facets)
-          ComputeNormalsAndMeasure (eltrans.GetElementType(), ir[0].FacetNr());
-        else if (facets)
-          ComputeNormalsAndMeasure (eltrans.GetElementType());
-      }
+    // facet type per point, VOL points are skipped
+    ComputeNormalsAndMeasure (eltrans.GetElementType());
   }
 
   // normal, tangent and measure of one point of facet facetnr, the facet of type vb
   template <int DIM_ELEMENT, int DIM_SPACE, typename SCAL>
-  static void ComputeNormalAndMeasure (MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE,SCAL> & mip,
+  static INLINE void ComputeNormalAndMeasure (MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE,SCAL> & mip,
                                        ELEMENT_TYPE et, VorB vb, int facetnr)
   {
     if ((Dim(et) >= 2) && (Dim(et)-int(vb) == 0))
@@ -3954,25 +3943,13 @@ namespace ngfem
     
     eltrans.CalcMultiPointJacobian (ir, *this);
 
-    // one facet for all points, or facet per point
-    if (ir.Size())
-      {
-        bool uniform = true, facets = false;
-        for (size_t i = 0; i < ir.Size(); i++)
-          {
-            if (ir[i].VB() != ir[0].VB() || ir[i].FacetNr() != ir[0].FacetNr()) uniform = false;
-            if (ir[i].VB() != VOL) facets = true;
-          }
-        if (uniform && facets)
-          ComputeNormalsAndMeasure (eltrans.GetElementType(), ir[0].FacetNr());
-        else if (facets)
-          ComputeNormalsAndMeasure (eltrans.GetElementType());
-      }
+    // facet type per point, VOL points are skipped
+    ComputeNormalsAndMeasure (eltrans.GetElementType());
   }
 
   // normal, tangent and measure of one SIMD point of facet facetnr, the facet of type vb
   template <int DIM_ELEMENT, int DIM_SPACE>
-  static void ComputeNormalAndMeasure (SIMD<MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE>> & mip,
+  static INLINE void ComputeNormalAndMeasure (SIMD<MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE>> & mip,
                                        ELEMENT_TYPE et, VorB vb, int facetnr)
   {
     // codimension == 0:
@@ -4030,6 +4007,108 @@ namespace ngfem
       }
   }
 
+  // compile-time reference vertex V of ET
+  template <ELEMENT_TYPE ET, int V>
+  constexpr auto RefVertex ()
+  { return std::bit_cast<std::array<double,3>> (ET_trait<ET>::vertices[V].HTData()); }
+
+  // J * (p_V1 - p_V0), reference tangents known at compile time
+  template <ELEMENT_TYPE ET, int V0, int V1>
+  INLINE Vec<3,SIMD<double>> MapRefTangent (const Mat<3,3,SIMD<double>> & J)
+  {
+    constexpr auto p0 = RefVertex<ET,V0>();
+    constexpr auto p1 = RefVertex<ET,V1>();
+    Vec<3,SIMD<double>> res;
+    bool first = true;
+    Iterate<3> ([&] (auto j)
+      {
+        constexpr int jj = decltype(j)::value;
+        constexpr double t = p1[jj]-p0[jj];
+        if constexpr (t != 0)
+          {
+            Vec<3,SIMD<double>> col = J.Col(jj);
+            Vec<3,SIMD<double>> term;
+            if constexpr (t == 1) term = col;
+            else if constexpr (t == -1) term = -col;
+            else term = t * col;
+            if (first) res = term; else res += term;
+            first = false;
+          }
+      });
+    return res;
+  }
+
+  // orientation of (p1-p0) x (p2-p0) relative to the reference normal of face F
+  template <ELEMENT_TYPE ET, int F>
+  constexpr double RefFaceSign ()
+  {
+    constexpr auto f = ET_trait<ET>::faces[F];
+    constexpr auto p0 = RefVertex<ET,f[0]>(), p1 = RefVertex<ET,f[1]>(), p2 = RefVertex<ET,f[2]>();
+    constexpr auto n = std::bit_cast<std::array<double,3>> (ET_trait<ET>::normals[F].HTData());
+    double a[3] = { p1[0]-p0[0], p1[1]-p0[1], p1[2]-p0[2] };
+    double b[3] = { p2[0]-p0[0], p2[1]-p0[1], p2[2]-p0[2] };
+    double c[3] = { a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0] };
+    if (c[0] == n[0] && c[1] == n[1] && c[2] == n[2]) return 1;
+    if (c[0] == -n[0] && c[1] == -n[1] && c[2] == -n[2]) return -1;
+    return 0;
+  }
+
+  // facet normal and measure for 3D volume elements, tangents from compile-time tables
+  template <ELEMENT_TYPE ET>
+  INLINE void ComputeNormalAndMeasureET (SIMD<MappedIntegrationPoint<3,3>> & mip, VorB vb, int facetnr)
+  {
+    auto & J = mip.GetJacobian();
+    if (vb == BBBND)
+      {
+        mip.SetMeasure(1);
+        return;
+      }
+    if (vb == BBND)
+      {
+        Vec<3,SIMD<double>> tau;
+        Iterate<ET_trait<ET>::N_EDGE> ([&] (auto e)
+          {
+            constexpr int E = decltype(e)::value;
+            constexpr auto edge = ET_trait<ET>::edges[E];
+            if (facetnr == E)
+              tau = MapRefTangent<ET,edge[0],edge[1]> (J);
+          });
+        mip.SetMeasure(L2Norm(tau));
+        return;
+      }
+    Vec<3,SIMD<double>> normal;
+    Iterate<ET_trait<ET>::N_FACE> ([&] (auto f)
+      {
+        constexpr int F = decltype(f)::value;
+        constexpr auto face = ET_trait<ET>::faces[F];
+        constexpr double sigma = RefFaceSign<ET,F>();
+        static_assert (sigma != 0, "face tangents do not match reference normal");
+        if (facetnr == F)
+          {
+            normal = Cross (MapRefTangent<ET,face[0],face[1]> (J),
+                            MapRefTangent<ET,face[0],face[2]> (J));
+            if constexpr (sigma < 0) normal = -normal;
+          }
+      });
+    SIMD<double> len = L2Norm (normal);
+    SIMD<double> sign = IfPos(mip.GetJacobiDet(), SIMD<double>(1), SIMD<double>(-1));
+    mip.SetMeasure (len);
+    mip.SetNV ((sign/len) * normal);
+  }
+
+  // calls f(ET_trait<et>) for the 3D types with compile-time facet tangents
+  template <typename FUNC>
+  INLINE bool SwitchTangentET (ELEMENT_TYPE et, FUNC f)
+  {
+    switch (et)
+      {
+      case ET_TET:   f(ET_trait<ET_TET>()); return true;
+      case ET_PRISM: f(ET_trait<ET_PRISM>()); return true;
+      case ET_HEX:   f(ET_trait<ET_HEX>()); return true;
+      default: return false;
+      }
+  }
+
   template <int DIM_ELEMENT, int DIM_SPACE>
   void SIMD_MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> ::
   ComputeNormalsAndMeasure (ELEMENT_TYPE et, int facetnr)
@@ -4037,6 +4116,14 @@ namespace ngfem
     auto hmips = mips;
     if (hmips.Size() == 0) return;
     VorB vb = hmips[0].IP().VB();
+    if constexpr (DIM_ELEMENT == 3 && DIM_SPACE == 3)
+      if (vb != VOL &&
+          SwitchTangentET (et, [&] (auto trait)
+            {
+              for (auto & mip : hmips)
+                ComputeNormalAndMeasureET<trait.ElementType()> (mip, vb, facetnr);
+            }))
+        return;
     for (auto & mip : hmips)
       ComputeNormalAndMeasure (mip, et, vb, facetnr);
   }
@@ -4045,6 +4132,14 @@ namespace ngfem
   void SIMD_MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> ::
   ComputeNormalsAndMeasure (ELEMENT_TYPE et)
   {
+    if constexpr (DIM_ELEMENT == 3 && DIM_SPACE == 3)
+      if (SwitchTangentET (et, [&] (auto trait)
+            {
+              for (auto & mip : mips)
+                if (mip.IP().VB() != VOL)
+                  ComputeNormalAndMeasureET<trait.ElementType()> (mip, mip.IP().VB(), mip.IP().FacetNr());
+            }))
+        return;
     for (auto & mip : mips)
       if (mip.IP().VB() != VOL)
         ComputeNormalAndMeasure (mip, et, mip.IP().VB(), mip.IP().FacetNr());

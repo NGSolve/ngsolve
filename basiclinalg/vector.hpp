@@ -950,7 +950,7 @@ namespace ngbla
     
     Vec (const Vec &) = default;
     auto & HTData() { return data; }
-    const auto & HTData() const { return data; }                                        
+    constexpr const auto & HTData() const { return data; }                                        
     template <typename T2>
     Vec (const Vec<S,T2> & v2) : data(v2.HTData()) { ; }
 
