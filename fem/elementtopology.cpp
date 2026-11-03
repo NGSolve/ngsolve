@@ -37,6 +37,11 @@ namespace ngfem
   }
 
 
+  void ElementTopology :: ThrowIllegalElementType (const char * func, ELEMENT_TYPE et)
+  {
+    throw Exception (string(func) + ", illegal element type " + ToString(et));
+  }
+
   const char * ElementTopology :: GetElementName (ELEMENT_TYPE et)
   {
     switch (et)
@@ -54,96 +59,6 @@ namespace ngfem
     throw Exception("illegal element type");
   }
 
-  const POINT3D * ElementTopology :: GetVertices (ELEMENT_TYPE et)
-  {
-    static double segm_points [][3] = 
-      { { 1 },
-	{ 0 } };
-    
-    static double trig_points [][3] = 
-      { { 1, 0 },
-	{ 0, 1 },
-	{ 0, 0 } };
-
-    static double quad_points [][3] = 
-      { { 0, 0 },
-	{ 1, 0 },
-	{ 1, 1 },
-	{ 0, 1 } };
-
-    static double tet_points [][3] = 
-      { { 1, 0, 0 },
-	{ 0, 1, 0 },
-	{ 0, 0, 1 },
-	{ 0, 0, 0 } };
-
-    static double pyramid_points [][3] =
-      {
-	{ 0, 0, 0 },
-	{ 1, 0, 0 },
-	{ 1, 1, 0 },
-	{ 0, 1, 0 },
-	{ 0, 0, 1-1e-12 },
-      };    
-  
-    static double prism_points[][3] = 
-      {
-	{ 1, 0, 0 },
-	{ 0, 1, 0 },
-	{ 0, 0, 0 },
-	{ 1, 0, 1 },
-	{ 0, 1, 1 },
-	{ 0, 0, 1 }
-      };
-
-    static double hexamid_points[][3] = 
-      { 
-	{ 0, 0, 0 },
-	{ 1, 0, 0 },
-	{ 1, 1, 0 },
-	{ 0, 1, 0 },
-	{ 0, 0, 1 },
-	{ 1, 0, 1 },
-	{ 0, 1, 1 }
-      };
-
-    static double hex_points[][3] = 
-      { 
-	{ 0, 0, 0 },
-	{ 1, 0, 0 },
-	{ 1, 1, 0 },
-	{ 0, 1, 0 },
-	{ 0, 0, 1 },
-	{ 1, 0, 1 },
-	{ 1, 1, 1 },
-	{ 0, 1, 1 }
-      };
-
-    static double point_points[][3] = 
-      { 
-	{ 0, 0, 0 },
-      };
-
-    
-    switch (et)
-      {
-      case ET_POINT: return point_points;
-      case ET_SEGM: return segm_points;
-      case ET_TRIG: return trig_points;
-      case ET_QUAD: return quad_points;
-      case ET_TET:  return tet_points;
-      case ET_PYRAMID: return pyramid_points;
-      case ET_PRISM: return prism_points;
-      case ET_HEXAMID: return hexamid_points;
-      case ET_HEX: return hex_points;        
-      default:
-        break;
-      }
-
-    stringstream str;
-    str << "Ng_GetVertices, illegal element type " << et << "\n";
-    throw Exception (str.str());
-  }
 
 
 
@@ -395,109 +310,6 @@ namespace ngfem
     throw Exception (str.str());
   }
 
-  template <int D>
-  FlatVector< Vec<D> > ElementTopology::GetNormals(ELEMENT_TYPE et)
-  {
-    // length of normal: 
-    //  in 2d:  length of edge (sum of intweights = 1)
-    //  in 3d:  area of parallelogramm (sum of intweights = 1(quad), 1/2 trig)
-    // this is property is preserved by piola transformation: n = det(F) * F^(-T) n_ref
-
-    static Vec<0> point_normals [] = 
-      { { } };  // only to avoid 0-size array
-    
-    static Vec<1> segm_normals [] = 
-    { { 1 },
-      { -1 } };
-    
-    static Vec<2> trig_normals [] = 
-    { { 0, -1 },
-    { -1, 0 },
-    { 1, 1 } };
-
-    static Vec<2> quad_normals [] = 
-    { { 0, -1 },
-    { 0, 1 },
-    { -1, 0 },
-    { 1, 0 } };
-
-    static Vec<3> tet_normals [] = 
-    { { -1, 0, 0 },
-    { 0, -1, 0 },
-    { 0, 0, -1 },
-    { 1, 1, 1 } };
-
-    static Vec<3> pyramid_normals []=
-    {
-      { 0, -1, 0 },
-      { 1, 0, 1 },
-      { 0, 1, 1 },
-      { -1, 0, 0 },
-      { 0, 0, -1 }, 
-    };    
-  
-    static Vec<3> prism_normals[] = 
-    {
-      { 0, 0, -1 },
-      { 0, 0, 1 },
-      { 0, -1, 0 },
-      { 1, 1, 0 },
-      { -1, 0, 0 },
-    };
-
-    static Vec<3> hex_normals[] = 
-    { 
-      { 0, 0, -1 },
-      { 0, 0, 1 },
-      { 0, -1, 0 },
-      { 1, 0, 0 },
-      { 0, 1, 0 },
-      { -1, 0, 0 },
-    };
-
-
-    if constexpr (D==0)
-      switch (et)
-        {
-        case ET_POINT: return FlatVector< Vec<D> > (0, point_normals);
-        default: ;
-        }
-        
-    if constexpr (D==1)
-      switch (et)
-        {
-        case ET_SEGM: return FlatVector< Vec<D> > (2, segm_normals);
-        default: ;
-        }
-    
-    if constexpr (D==2)
-      switch (et)
-        {
-        case ET_TRIG: return FlatVector< Vec<D> > (3, trig_normals);
-        case ET_QUAD: return FlatVector< Vec<D> > (4, quad_normals);
-        default: ;
-        }
-    
-    if constexpr (D==3)
-      switch (et)
-        {
-        case ET_TET:  return FlatVector< Vec<D> > (4, tet_normals);
-        case ET_PYRAMID: return FlatVector< Vec<D> > (5, pyramid_normals);
-        case ET_PRISM: return FlatVector< Vec<D> > (5, prism_normals);
-        case ET_HEX: return FlatVector< Vec<D> > (6, hex_normals);
-        default: ;
-        }
-
-    stringstream str;
-    str << "Ng_GetNormals, illegal element type " << et << "\n";
-    throw Exception (str.str());
-  }
-  
-
-  template NGS_DLL_HEADER FlatVector< Vec<0> > ElementTopology::GetNormals<0> (ELEMENT_TYPE et);  
-  template NGS_DLL_HEADER FlatVector< Vec<1> > ElementTopology::GetNormals<1> (ELEMENT_TYPE et);
-  template NGS_DLL_HEADER FlatVector< Vec<2> > ElementTopology::GetNormals<2> (ELEMENT_TYPE et);
-  template NGS_DLL_HEADER FlatVector< Vec<3> > ElementTopology::GetNormals<3> (ELEMENT_TYPE et);
 
   
   int ElementTopology :: GetEdgeNr (ELEMENT_TYPE et, int v1, int v2)

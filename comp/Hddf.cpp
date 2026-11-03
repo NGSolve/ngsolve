@@ -14,7 +14,7 @@ namespace ngcomp
 
   inline FlatVector<Vec<3>> GetTangents()
   {
-    static Vec<3> tet_tangents[] =
+    static constexpr Vec<3> tet_tangents[] =
       {
         {1, 0, 0},
         {0, 1, 0},
@@ -24,19 +24,19 @@ namespace ngcomp
         {0, -1, 1},
       };
     
-    return FlatVector<Vec<3>>(6, tet_tangents);
+    return FlatVector<Vec<3>>(6, const_cast<Vec<3>*>(tet_tangents));
   };
 
   inline FlatVector<Vec<2>> GetTangentsTrig()
   {
-    static Vec<2> trig_tangents[] =
+    static constexpr Vec<2> trig_tangents[] =
       {
         {1, 0},
         {0, -1},
           {-1, 1}
       };
     
-    return FlatVector<Vec<2>>(3, trig_tangents);
+    return FlatVector<Vec<2>>(3, const_cast<Vec<2>*>(trig_tangents));
   };
 
   
@@ -437,10 +437,8 @@ void HDivDivFacetHOElement<ET_TET> :: CalcShape(const IntegrationPoint &ip, Slic
     
         // auto n = ElementTopology::GetNormals<2>(ET_TRIG)[enr];
         // Vec<2> tau(-n(1),n(0));
-        auto p1 = ElementTopology::GetVertices(ET_TET)[vertices[1]];
-        auto p0 = ElementTopology::GetVertices(ET_TET)[vertices[0]];
-        Vec<3> tau;
-        for (int j = 0; j < 3; j++) tau(j) = p1[j]-p0[j];
+        auto pnts = ElementTopology::GetVertices<3>(ET_TET);
+        Vec<3> tau = pnts[vertices[1]] - pnts[vertices[0]];
           
         LegendrePolynomial::EvalMult(order-1, lam[vs]-lam[ve], lam[vs]*lam[ve], values);
     
@@ -508,10 +506,8 @@ void HDivDivFacetHOElement<ET_TET> :: CalcShape(const IntegrationPoint &ip, Slic
     
         // auto n = ElementTopology::GetNormals<2>(ET_TRIG)[enr];
         // Vec<2> tau(-n(1),n(0));
-        auto p1 = ElementTopology::GetVertices(ET_TET)[vertices[1]];
-        auto p0 = ElementTopology::GetVertices(ET_TET)[vertices[0]];
-        Vec<3> tau;
-        for (int j = 0; j < 3; j++) tau(j) = p1[j]-p0[j];
+        auto pnts = ElementTopology::GetVertices<3>(ET_TET);
+        Vec<3> tau = pnts[vertices[1]] - pnts[vertices[0]];
           
         LegendrePolynomial::EvalMult(order-1, lam[vs]-lam[ve], lam[vs]*lam[ve], values);
     
@@ -1058,16 +1054,9 @@ void HDivDivFacetHOElement<ET_TET> :: CalcShape(const IntegrationPoint &ip, Slic
           IVec<4> fav = ET_trait<ET_TET>::GetFaceSort (fanr, vnums);
 
           Vector dubiner((order+1)*(order+2)/2);
-          auto p0 = ElementTopology::GetVertices(ET_TET)[fav[0]];
-          auto p1 = ElementTopology::GetVertices(ET_TET)[fav[1]];
-          auto p2 = ElementTopology::GetVertices(ET_TET)[fav[2]];
-
-          Vec<3> t1, t2;
-          for (int j = 0; j < 3; j++)
-            {
-              t1(j) = p1[j]-p0[j];
-              t2(j) = p2[j]-p0[j];
-            }
+          auto pnts = ElementTopology::GetVertices<3>(ET_TET);
+          Vec<3> t1 = pnts[fav[1]] - pnts[fav[0]];
+          Vec<3> t2 = pnts[fav[2]] - pnts[fav[0]];
           
           DubinerBasis::Eval(order, lami[fav[0]], lami[fav[1]], dubiner);
           int ii = fanr*2*(order+1);
@@ -1085,10 +1074,8 @@ void HDivDivFacetHOElement<ET_TET> :: CalcShape(const IntegrationPoint &ip, Slic
           double lami[4] = { ip(0), ip(1), ip(2), 1-ip(0)-ip(1)-ip(2) };
           IVec<2> edv = ET_trait<ET_TET>::GetEdgeSort (ednr, vnums);
 
-          auto p0 = ElementTopology::GetVertices(ET_TET)[edv[0]];
-          auto p1 = ElementTopology::GetVertices(ET_TET)[edv[1]];
-          Vec<3> t;
-          for (int j = 0; j < 3; j++) t(j) = p1[j]-p0[j];
+          auto pnts = ElementTopology::GetVertices<3>(ET_TET);
+          Vec<3> t = pnts[edv[1]] - pnts[edv[0]];
           
           Vector leg(order+2);
           LegendrePolynomial::Eval(order+1, lami[edv[1]]-lami[edv[0]], leg);

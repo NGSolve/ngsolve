@@ -929,7 +929,7 @@ namespace ngfem
   public:
     Facet2ElementTrafo(ELEMENT_TYPE aeltype, VorB _vb = BND) 
       : eltype(aeltype),
-	points(99,(Vec<3>*)ElementTopology::GetVertices (aeltype)),
+	points(ElementTopology::GetNVertices(aeltype), (Vec<3>*)ElementTopology::GetVertices (aeltype)),
         vb(_vb)
     {
       // points = ElementTopology::GetVertices (eltype);
@@ -942,7 +942,7 @@ namespace ngfem
     template <typename T>
     Facet2ElementTrafo(ELEMENT_TYPE aeltype, const BaseArrayObject<T> & vnums) 
       : eltype(aeltype),
-	points(99,(Vec<3>*)ElementTopology::GetVertices (aeltype))
+	points(ElementTopology::GetNVertices(aeltype), (Vec<3>*)ElementTopology::GetVertices (aeltype))
     {
       // points = ElementTopology::GetVertices (eltype);
       edges = ElementTopology::GetEdges (eltype).Data();
@@ -1276,7 +1276,7 @@ namespace ngfem
   public:
     Facet2SurfaceElementTrafo(ELEMENT_TYPE aeltype) :
       eltype(aeltype),
-      points(99,(Vec<3>*)ElementTopology::GetVertices (aeltype))
+      points(ElementTopology::GetNVertices(aeltype), (Vec<3>*)ElementTopology::GetVertices (aeltype))
     {
       // points = ElementTopology::GetVertices (eltype);
       edges = ElementTopology::GetEdges (eltype).Data();
@@ -1285,7 +1285,7 @@ namespace ngfem
     
     Facet2SurfaceElementTrafo(ELEMENT_TYPE aeltype, FlatArray<int> & vnums)
       : eltype(aeltype),
-        points(99,(Vec<3>*)ElementTopology::GetVertices (aeltype))
+        points(ElementTopology::GetNVertices(aeltype), (Vec<3>*)ElementTopology::GetVertices (aeltype))
     {
       // points = ElementTopology::GetVertices (eltype);
       edges = ElementTopology::GetEdges (eltype).Data();

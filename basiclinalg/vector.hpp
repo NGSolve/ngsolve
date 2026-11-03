@@ -956,11 +956,8 @@ namespace ngbla
 
     
     /// initialize with values
-    INLINE Vec (const TELEM & scal)
-    {
-      for (size_t i = 0; i < S; i++)
-	data[i] = scal;
-    }
+    INLINE constexpr Vec (const TELEM & scal)
+      : data(scal) { }
 
     /// initialize with expression
     template<typename TB>
@@ -1007,7 +1004,7 @@ namespace ngbla
     // template <class... T2,
     // enable_if_t<S==1+sizeof...(T2),bool> = true>
     template <class... T2> requires(S==1+sizeof...(T2))
-    Vec(const TELEM &v, T2... rest)
+    constexpr Vec(const TELEM &v, T2... rest)
       : data(v, rest...) { }
     /*
     {
@@ -1125,9 +1122,9 @@ namespace ngbla
   {
   public:
     static constexpr bool IsLinear() { return true; }     
-    INLINE Vec () { }
-    INLINE Vec (const Vec &d) { }
-    INLINE Vec (T d) { }
+    INLINE constexpr Vec () { }
+    INLINE constexpr Vec (const Vec &d) { }
+    INLINE constexpr Vec (T d) { }
     template<typename TB>
     INLINE Vec (const Expr<TB> & v) {;}
     INLINE auto View() const { return Vec(*this); }

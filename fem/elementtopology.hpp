@@ -92,10 +92,10 @@ namespace ngfem
   typedef double POINT3D[3];  
 
   /// initial point, end point
-  typedef int EDGE[2];      
+  typedef IVec<2,int> EDGE;      
 
   /// points, last one is -1 for trig
-  typedef int FACE[4];      
+  typedef IVec<4,int> FACE;      
 
   /// normal vector
   typedef double NORMAL[3];
@@ -198,6 +198,9 @@ namespace ngfem
     /// returns name of element type
     static const char * GetElementName (ELEMENT_TYPE et);
     const char * GetElementName () { return GetElementName(myet); }
+
+    // out of line, keeps the inline table lookups small
+    [[noreturn]] static void ThrowIllegalElementType (const char * func, ELEMENT_TYPE et);
 
     /// returns space dimension of element type
     static INLINE int GetSpaceDim (ELEMENT_TYPE et)
@@ -314,15 +317,15 @@ namespace ngfem
     /// returns number of nodes of type nt
     static int GetNNodes (ELEMENT_TYPE et, NODE_TYPE nt)
     {
-      static const int nn_point[] = { 1, 0, 0, 0 };
-      static const int nn_segm[] = { 2, 1, 0, 0 };
-      static const int nn_trig[] = { 3, 3, 1, 0 };
-      static const int nn_quad[] = { 4, 4, 1, 0 };
-      static const int nn_tet[] = { 4, 6, 4, 1 };
-      static const int nn_pyramid[] = { 5, 8, 5, 1 };
-      static const int nn_prism[] = { 6, 9, 5, 1 };
-      static const int nn_hexamid[] = { 7, 11, 6, 1 };
-      static const int nn_hex[] = { 8, 12, 6, 1 };
+      static constexpr int nn_point[] = { 1, 0, 0, 0 };
+      static constexpr int nn_segm[] = { 2, 1, 0, 0 };
+      static constexpr int nn_trig[] = { 3, 3, 1, 0 };
+      static constexpr int nn_quad[] = { 4, 4, 1, 0 };
+      static constexpr int nn_tet[] = { 4, 6, 4, 1 };
+      static constexpr int nn_pyramid[] = { 5, 8, 5, 1 };
+      static constexpr int nn_prism[] = { 6, 9, 5, 1 };
+      static constexpr int nn_hexamid[] = { 7, 11, 6, 1 };
+      static constexpr int nn_hex[] = { 8, 12, 6, 1 };
       switch (et)
 	{
 	case ET_POINT: return nn_point[nt];
@@ -384,7 +387,136 @@ namespace ngfem
     }
 
     /// returns vertex coordinates (as 3D points)
-    static  const POINT3D * GetVertices (ELEMENT_TYPE et);
+    static const POINT3D * GetVertices (ELEMENT_TYPE et)
+    {
+      static constexpr double point_points[][3] =
+        { { 0, 0, 0 } };
+
+      static constexpr double segm_points [][3] =
+        { { 1 },
+          { 0 } };
+
+      static constexpr double trig_points [][3] =
+        { { 1, 0 },
+          { 0, 1 },
+          { 0, 0 } };
+
+      static constexpr double quad_points [][3] =
+        { { 0, 0 },
+          { 1, 0 },
+          { 1, 1 },
+          { 0, 1 } };
+
+      switch (et)
+        {
+        case ET_POINT: return point_points;
+        case ET_SEGM: return segm_points;
+        case ET_TRIG: return trig_points;
+        case ET_QUAD: return quad_points;
+        case ET_TET: case ET_PYRAMID: case ET_PRISM: case ET_HEXAMID: case ET_HEX:
+          static_assert (sizeof(Vec<3>) == sizeof(POINT3D));
+          return reinterpret_cast<const POINT3D*> (GetVertices<3>(et).Data());
+        default:
+          ThrowIllegalElementType ("GetVertices", et);
+        }
+    }
+
+    /// returns vertex coordinates as Vec<D>, D = Dim(et)
+    template <int D>
+    static FlatVector<Vec<D>> GetVertices (ELEMENT_TYPE et)
+    {
+      auto view = [] (size_t n, const Vec<D> * p)
+        { return FlatVector<Vec<D>> (n, const_cast<Vec<D>*>(p)); };
+
+      if constexpr (D==0)
+        {
+          static constexpr Vec<0> point_points[] = { Vec<0>() };
+          if (et == ET_POINT) return view (1, point_points);
+        }
+
+      if constexpr (D==1)
+        {
+          static constexpr Vec<1> segm_points[] = { { 1 }, { 0 } };
+          if (et == ET_SEGM) return view (2, segm_points);
+        }
+
+      if constexpr (D==2)
+        {
+          static constexpr Vec<2> trig_points[] =
+            { { 1, 0 },
+              { 0, 1 },
+              { 0, 0 } };
+          static constexpr Vec<2> quad_points[] =
+            { { 0, 0 },
+              { 1, 0 },
+              { 1, 1 },
+              { 0, 1 } };
+          switch (et)
+            {
+            case ET_TRIG: return view (3, trig_points);
+            case ET_QUAD: return view (4, quad_points);
+            default: ;
+            }
+        }
+
+      if constexpr (D==3)
+        {
+          static constexpr Vec<3> tet_points[] =
+            { { 1, 0, 0 },
+              { 0, 1, 0 },
+              { 0, 0, 1 },
+              { 0, 0, 0 } };
+          static constexpr Vec<3> pyramid_points[] =
+            {
+              { 0, 0, 0 },
+              { 1, 0, 0 },
+              { 1, 1, 0 },
+              { 0, 1, 0 },
+              { 0, 0, 1-1e-12 },
+            };
+          static constexpr Vec<3> prism_points[] =
+            {
+              { 1, 0, 0 },
+              { 0, 1, 0 },
+              { 0, 0, 0 },
+              { 1, 0, 1 },
+              { 0, 1, 1 },
+              { 0, 0, 1 }
+            };
+          static constexpr Vec<3> hexamid_points[] =
+            {
+              { 0, 0, 0 },
+              { 1, 0, 0 },
+              { 1, 1, 0 },
+              { 0, 1, 0 },
+              { 0, 0, 1 },
+              { 1, 0, 1 },
+              { 0, 1, 1 }
+            };
+          static constexpr Vec<3> hex_points[] =
+            {
+              { 0, 0, 0 },
+              { 1, 0, 0 },
+              { 1, 1, 0 },
+              { 0, 1, 0 },
+              { 0, 0, 1 },
+              { 1, 0, 1 },
+              { 1, 1, 1 },
+              { 0, 1, 1 }
+            };
+          switch (et)
+            {
+            case ET_TET:  return view (4, tet_points);
+            case ET_PYRAMID: return view (5, pyramid_points);
+            case ET_PRISM: return view (6, prism_points);
+            case ET_HEXAMID: return view (7, hexamid_points);
+            case ET_HEX: return view (8, hex_points);
+            default: ;
+            }
+        }
+      ThrowIllegalElementType ("GetVertices", et);
+    }
+
     INLINE const POINT3D * GetVertices () const
     { return GetVertices(myet); }
 
@@ -392,22 +524,22 @@ namespace ngfem
     // static const EDGE * GetEdges (ELEMENT_TYPE et)
     static FlatArray<const EDGE> GetEdges (ELEMENT_TYPE et)
     {
-      static const int segm_edges[1][2] =
+      static constexpr EDGE segm_edges[1] =
 	{ { 0, 1 }};
     
 
-      static const int trig_edges[3][2] =
+      static constexpr EDGE trig_edges[3] =
 	{ { 2, 0 },
 	  { 1, 2 },
 	  { 0, 1 }};
 
-      static const int quad_edges[4][2] =
+      static constexpr EDGE quad_edges[4] =
 	{ { 0, 1 },
 	  { 2, 3 },
 	  { 3, 0 },
 	  { 1, 2 }};
     
-      static const int tet_edges[6][2] =
+      static constexpr EDGE tet_edges[6] =
 	{ { 3, 0 },
 	  { 3, 1 },
 	  { 3, 2 }, 
@@ -415,7 +547,7 @@ namespace ngfem
 	  { 0, 2 },
 	  { 1, 2 }};
     
-      static const int prism_edges[9][2] =
+      static constexpr EDGE prism_edges[9] =
 	{ { 2, 0 },
 	  { 0, 1 },
 	  { 2, 1 },
@@ -426,7 +558,7 @@ namespace ngfem
 	  { 0, 3 },
 	  { 1, 4 }};
 
-      static const int pyramid_edges[8][2] =
+      static constexpr EDGE pyramid_edges[8] =
 	{ { 0, 1 },
 	  { 1, 2 },
 	  { 0, 3 },
@@ -436,7 +568,7 @@ namespace ngfem
 	  { 2, 4 },
 	  { 3, 4 }};
 
-      static const int hexamid_edges[11][2] =
+      static constexpr EDGE hexamid_edges[11] =
         {
           { 0, 1 },
           { 2, 3 },
@@ -452,7 +584,7 @@ namespace ngfem
         };
 
       
-      static const int hex_edges[12][2] =
+      static constexpr EDGE hex_edges[12] =
 	{
 	  { 0, 1 },
 	  { 2, 3 },
@@ -482,20 +614,19 @@ namespace ngfem
 	default:
 	  break;
 	}
-      cerr << "Ng_GetEdges, illegal element type " << et << endl;
-      return { 0, nullptr };  
+      ThrowIllegalElementType ("GetEdges", et);
     }
 
     /// returns faces of elements. zero-based array of 4 integers, last one is -1 for triangles
     static FlatArray<const FACE> GetFaces (ELEMENT_TYPE et)
     {
-      static int tet_faces[4][4] =
+      static constexpr FACE tet_faces[4] =
 	{ { 3, 1, 2, -1 },
 	  { 3, 2, 0, -1 },
 	  { 3, 0, 1, -1 },
 	  { 0, 2, 1, -1 } }; // all faces point into interior!
   
-      static int prism_faces[5][4] =
+      static constexpr FACE prism_faces[5] =
 	{
 	  { 0, 2, 1, -1 },
 	  { 3, 4, 5, -1 },
@@ -504,7 +635,7 @@ namespace ngfem
 	  { 1, 2, 5, 4 } 
 	};
 
-      static int pyramid_faces[5][4] =
+      static constexpr FACE pyramid_faces[5] =
 	{
 	  { 0, 1, 4, -1 },
 	  { 1, 2, 4, -1 },
@@ -513,7 +644,7 @@ namespace ngfem
 	  { 0, 1, 2, 3 } // points into interior!
 	};
   
-      static int hexamid_faces[6][4] =
+      static constexpr FACE hexamid_faces[6] =
 	{
           { 0, 3, 2, 1 },
           { 4, 5, 6, -1},
@@ -523,7 +654,7 @@ namespace ngfem
           { 3, 0, 4, 6 }
 	};
     
-      static int hex_faces[6][4] =
+      static constexpr FACE hex_faces[6] =
 	{
 	  { 0, 3, 2, 1 },
 	  { 4, 5, 6, 7 },
@@ -532,12 +663,12 @@ namespace ngfem
 	  { 2, 3, 7, 6 },
 	  { 3, 0, 4, 7 }
 	};
-      static int trig_faces[1][4] = 
+      static constexpr FACE trig_faces[1] = 
 	{
 	  { 0, 1, 2, -1 },
 	};
       
-      static int quad_faces[1][4] = 
+      static constexpr FACE quad_faces[1] = 
 	{
 	  { 0, 1, 2, 3 },
 	};
@@ -559,15 +690,97 @@ namespace ngfem
 	  break;
 	}
     
-      cerr << "Ng_GetFaces, illegal element type " << et << endl;
-      return { 0, nullptr };
+      ThrowIllegalElementType ("GetFaces", et);
     }
 
     /// return normals on facets (old style)
     static NORMAL * GetNormals(ELEMENT_TYPE et);
 
+    // length of normal:
+    //  in 2d:  length of edge (sum of intweights = 1)
+    //  in 3d:  area of parallelogramm (sum of intweights = 1(quad), 1/2 trig)
+    // this is property is preserved by piola transformation: n = det(F) * F^(-T) n_ref
     template <int D>
-    static FlatVector<Vec<D> > GetNormals(ELEMENT_TYPE et);
+    static FlatVector<Vec<D> > GetNormals(ELEMENT_TYPE et)
+    {
+      // views of constexpr tables, the data is never written
+      auto view = [] (size_t n, const Vec<D> * p)
+        { return FlatVector<Vec<D>> (n, const_cast<Vec<D>*>(p)); };
+
+      if constexpr (D==0)
+        {
+          static constexpr Vec<0> point_normals[] = { Vec<0>() };   // only to avoid 0-size array
+          if (et == ET_POINT) return view (0, point_normals);
+        }
+
+      if constexpr (D==1)
+        {
+          static constexpr Vec<1> segm_normals[] = { { 1 }, { -1 } };
+          if (et == ET_SEGM) return view (2, segm_normals);
+        }
+
+      if constexpr (D==2)
+        {
+          static constexpr Vec<2> trig_normals[] =
+            { { 0, -1 },
+              { -1, 0 },
+              { 1, 1 } };
+          static constexpr Vec<2> quad_normals[] =
+            { { 0, -1 },
+              { 0, 1 },
+              { -1, 0 },
+              { 1, 0 } };
+          switch (et)
+            {
+            case ET_TRIG: return view (3, trig_normals);
+            case ET_QUAD: return view (4, quad_normals);
+            default: ;
+            }
+        }
+
+      if constexpr (D==3)
+        {
+          static constexpr Vec<3> tet_normals[] =
+            { { -1, 0, 0 },
+              { 0, -1, 0 },
+              { 0, 0, -1 },
+              { 1, 1, 1 } };
+          static constexpr Vec<3> pyramid_normals[] =
+            {
+              { 0, -1, 0 },
+              { 1, 0, 1 },
+              { 0, 1, 1 },
+              { -1, 0, 0 },
+              { 0, 0, -1 },
+            };
+          static constexpr Vec<3> prism_normals[] =
+            {
+              { 0, 0, -1 },
+              { 0, 0, 1 },
+              { 0, -1, 0 },
+              { 1, 1, 0 },
+              { -1, 0, 0 },
+            };
+          static constexpr Vec<3> hex_normals[] =
+            {
+              { 0, 0, -1 },
+              { 0, 0, 1 },
+              { 0, -1, 0 },
+              { 1, 0, 0 },
+              { 0, 1, 0 },
+              { -1, 0, 0 },
+            };
+          switch (et)
+            {
+            case ET_TET:  return view (4, tet_normals);
+            case ET_PYRAMID: return view (5, pyramid_normals);
+            case ET_PRISM: return view (5, prism_normals);
+            case ET_HEX: return view (6, hex_normals);
+            default: ;
+            }
+        }
+      ThrowIllegalElementType ("GetNormals", et);
+    }
 
   
     /// returns number of edge from vertex v1 to vertex v2
@@ -656,13 +869,13 @@ namespace ngfem
       {
       case ET_TRIG: 
 	{
-	  static const int nodebase[] = { 0, 3, 6 };
+	  static constexpr int nodebase[] = { 0, 3, 6 };
 	  return nodebase[node.GetType()] + node.GetNr();
 	}
 
       case ET_TET: 
 	{
-	  static const int nodebase[] = { 0, 4, 10, 14 };
+	  static constexpr int nodebase[] = { 0, 4, 10, 14 };
 	  return nodebase[node.GetType()] + node.GetNr();
 	}
       default:
@@ -677,14 +890,14 @@ namespace ngfem
       {
       case ET_TRIG: 
 	{
-	  static const int nodetypes[] = { 0, 0, 0, 1, 1, 1, 2 };
-	  static const int nodenrs[]   = { 0, 1, 2, 0, 1, 2, 0 };
+	  static constexpr int nodetypes[] = { 0, 0, 0, 1, 1, 1, 2 };
+	  static constexpr int nodenrs[]   = { 0, 1, 2, 0, 1, 2, 0 };
 	  return NodeId (NODE_TYPE(nodetypes[nodeid]), nodenrs[nodeid]);
 	}
       case ET_TET: 
 	{
-	  static const int nodetypes[] = { 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 3 };
-	  static const int nodenrs[]   = { 0, 1, 2, 3, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 0 };
+	  static constexpr int nodetypes[] = { 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 3 };
+	  static constexpr int nodenrs[]   = { 0, 1, 2, 3, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 0 };
 	  return NodeId (NODE_TYPE(nodetypes[nodeid]), nodenrs[nodeid]);
 	}
 
@@ -827,7 +1040,7 @@ namespace ngfem
     static INLINE IVec<2> GetEdge (int /* i */);
     /*
     {
-      static const int edges[][2] = 
+      static constexpr int edges[][2] = 
 	{ { 0, 1 } };
       return IVec<2> (edges[0][0], edges[0][1]);
     }
@@ -900,9 +1113,9 @@ namespace ngfem
 
     static INLINE IVec<2> GetEdge (int /* i */)
     {
-      const int edges[][2] = 
+      static constexpr EDGE edges[] = 
 	{ { 0, 1 } };
-      return IVec<2> (edges[0][0], edges[0][1]);
+      return edges[0];
     }
 
     template <typename TVN>
@@ -988,8 +1201,8 @@ namespace ngfem
 
     static INLINE IVec<4> GetFace (int /* i */ )
     {
-      static const int face[] = { 0, 1, 2, -1 };
-      return IVec<4> (face[0], face[1], face[2], -1);
+      static constexpr FACE face = { 0, 1, 2, -1 };
+      return face;
     }
 
     template <typename TVN>
@@ -1062,12 +1275,12 @@ namespace ngfem
 
     static INLINE IVec<2> GetEdge (int i)
     {
-      static const int edges[][2] = 
+      static constexpr EDGE edges[] = 
 	{ { 0, 1 },
 	  { 2, 3 },
 	  { 3, 0 },
 	  { 1, 2 }};
-      return IVec<2> (edges[i][0], edges[i][1]);
+      return edges[i];
     }
 
     template <typename TVN>
@@ -1083,7 +1296,7 @@ namespace ngfem
     static INLINE Tx XiEdge (int i, Tx hx[], const TVN & vnums)
     {
       IVec<2> e = GetEdgeSort (i, vnums);
-      static const int vi[4][2] = { { 0, 0 }, { 1, 0 }, { 1, 1 }, { 0, 1 } };
+      static constexpr int vi[4][2] = { { 0, 0 }, { 1, 0 }, { 1, 1 }, { 0, 1 } };
       Tx xi(0.0);
       for (int j = 0; j < 2; j++)
         {
@@ -1109,10 +1322,10 @@ namespace ngfem
 
     static INLINE IVec<4> GetFace (int /* i */ )
     {
-      static const int face[] = 
+      static constexpr FACE face = 
         { 0, 1, 2, 3 };
 
-      return IVec<4> (face[0], face[1], face[2], face[3]);
+      return face;
     }
 
     template <typename TVN>
@@ -1142,7 +1355,7 @@ namespace ngfem
     static INLINE Vec<2,Tx> XiFace (int /* i */, Tx hx[], const TVN & vnums)
     {
       IVec<4> f = GetFaceSort (0, vnums); 
-      static const int vi[4][2] = { { 0, 0 }, { 1, 0 }, { 1, 1 }, { 0, 1 } };
+      static constexpr int vi[4][2] = { { 0, 0 }, { 1, 0 }, { 1, 1 }, { 0, 1 } };
       Tx xi(0), eta(0);
       for (int j = 0; j < 2; j++)
         {
@@ -1205,14 +1418,14 @@ namespace ngfem
 
     static INLINE IVec<2> GetEdge (int i)
     {
-      static const int edges[6][2] = 
+      static constexpr EDGE edges[] = 
 	{ { 3, 0 },
 	  { 3, 1 },
 	  { 3, 2 }, 
 	  { 0, 1 }, 
 	  { 0, 2 },
 	  { 1, 2 }};
-      return IVec<2> (edges[i][0], edges[i][1]);
+      return edges[i];
     }
 
     template <typename TVN>
@@ -1226,13 +1439,13 @@ namespace ngfem
 
     static INLINE IVec<4> GetFace (int i )
     {
-      static const int faces[][4]  =
+      static constexpr FACE faces[]  =
 	{ { 3, 1, 2, -1 },
 	  { 3, 2, 0, -1 },
 	  { 3, 0, 1, -1 },
 	  { 0, 2, 1, -1 } }; 
 
-      return IVec<4> (faces[i][0], faces[i][1], faces[i][2], -1);
+      return faces[i];
     }
 
     template <typename TVN>
@@ -1309,7 +1522,7 @@ namespace ngfem
 #ifndef __CUDA_ARCH__
       static 
 #endif
-	const int edges[][2] = 
+	constexpr EDGE edges[] = 
 	{ { 2, 0 },
 	  { 0, 1 },
 	  { 2, 1 },
@@ -1319,7 +1532,7 @@ namespace ngfem
 	  { 2, 5 },
 	  { 0, 3 },
 	  { 1, 4 }};
-      return IVec<2> (edges[i][0], edges[i][1]);
+      return edges[i];
     }
 
     template <typename TVN>
@@ -1336,7 +1549,7 @@ namespace ngfem
 #ifndef __CUDA_ARCH__
       static 
 #endif
-	const int faces[][4]  =
+	constexpr FACE faces[]  =
 	{
 	  { 0, 2, 1, -1 },
 	  { 3, 4, 5, -1 },
@@ -1345,7 +1558,7 @@ namespace ngfem
 	  { 1, 2, 5, 4 } 
 	};
 
-      return IVec<4> (faces[i][0], faces[i][1], faces[i][2], faces[i][3]);
+      return faces[i];
     }
 
     template <typename TVN>
@@ -1419,7 +1632,7 @@ namespace ngfem
 #ifndef __CUDA_ARCH__
       static 
 #endif
-	const int edges[][2] = 
+	constexpr EDGE edges[] = 
 	{ { 0, 1 },
 	  { 1, 2 },
 	  { 0, 3 },
@@ -1429,7 +1642,7 @@ namespace ngfem
 	  { 2, 4 },
 	  { 3, 4 }};
 
-      return IVec<2> (edges[i][0], edges[i][1]);
+      return edges[i];
     }
 
     template <typename TVN>
@@ -1447,7 +1660,7 @@ namespace ngfem
 #ifndef __CUDA_ARCH__
       static 
 #endif
-	const int faces[][4]  =
+	constexpr FACE faces[]  =
 	{
 	  { 0, 1, 4, -1 },
 	  { 1, 2, 4, -1 },
@@ -1456,7 +1669,7 @@ namespace ngfem
 	  { 0, 3, 2, 1 } 
 	};
 
-      return IVec<4> (faces[i][0], faces[i][1], faces[i][2], faces[i][3]);
+      return faces[i];
     }
 
     template <typename TVN>
@@ -1532,7 +1745,7 @@ namespace ngfem
 #ifndef __CUDA_ARCH__
       static 
 #endif
-	const int edges[][2] = 
+	constexpr EDGE edges[] = 
 	{
           { 0, 1 },
           { 2, 3 },
@@ -1546,7 +1759,7 @@ namespace ngfem
           { 2, 6 },
           { 3, 6 },
         };
-      return IVec<2> (edges[i][0], edges[i][1]);
+      return edges[i];
     }
 
     template <typename TVN>
@@ -1564,7 +1777,7 @@ namespace ngfem
 #ifndef __CUDA_ARCH__
       static 
 #endif
-	const int faces[][4]  =
+	constexpr FACE faces[]  =
 	{
           { 0, 3, 2, 1 },
           { 4, 5, 6, -1},
@@ -1574,7 +1787,7 @@ namespace ngfem
           { 3, 0, 4, 6 }
 	};
 
-      return IVec<4> (faces[i][0], faces[i][1], faces[i][2], faces[i][3]);
+      return faces[i];
     }
 
     // TODO
@@ -1645,7 +1858,7 @@ namespace ngfem
 
     static IVec<2> GetEdge (int i)
     {
-      static const int edges[][2] = 
+      static constexpr EDGE edges[] = 
 	{
 	  { 0, 1 },
 	  { 2, 3 },
@@ -1660,7 +1873,7 @@ namespace ngfem
 	  { 2, 6 },
 	  { 3, 7 },
 	};
-      return IVec<2> (edges[i][0], edges[i][1]);
+      return edges[i];
     }
 
     template <typename TVN>
@@ -1674,7 +1887,7 @@ namespace ngfem
 
     static IVec<4> GetFace (int i )
     {
-      static const int faces[][4]  =
+      static constexpr FACE faces[]  =
 	{
 	  { 0, 3, 2, 1 },
 	  { 4, 5, 6, 7 },
@@ -1684,7 +1897,7 @@ namespace ngfem
 	  { 3, 0, 4, 7 }
 	};
 
-      return IVec<4> (faces[i][0], faces[i][1], faces[i][2], faces[i][3]);
+      return faces[i];
     }
 
 

@@ -958,10 +958,8 @@ namespace ngfem
           ELEMENT_TYPE et = trafo.GetElementType();
           auto edge = ElementTopology::GetEdges(et)[edgenr];
                     
-          auto [v1x, v1y, v1z] = ElementTopology::GetVertices(ET_TET)[edge[0]];
-          Vec<3> v1(v1x, v1y, v1z);
-          auto [v2x, v2y, v2z] = ElementTopology::GetVertices(ET_TET)[edge[1]];
-          Vec<3> v2(v2x, v2y, v2z);
+          Vec<3> v1 = ElementTopology::GetVertices<3>(ET_TET)[edge[0]];
+          Vec<3> v2 = ElementTopology::GetVertices<3>(ET_TET)[edge[1]];
           
           Vec<3> nref1 = normals[edge2face[edgenr][0]];
           Vec<3> nref2 = normals[edge2face[edgenr][1]];

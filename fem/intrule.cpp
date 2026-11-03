@@ -512,7 +512,7 @@ namespace ngfem
     if constexpr(DIM_ELEMENT == 3)
       if (vb == BBND && Dim(et) == 3)
         {
-          FlatVector<Vec<3>> points(99,(Vec<3>*)ElementTopology::GetVertices (et));
+          auto points = ElementTopology::GetVertices<3> (et);
           auto edges = ElementTopology::GetEdges (et);
           Vec<3> tau_ref = points(edges[facetnr][1]) - points(edges[facetnr][0]);
           Vec<3> tau = mip.GetJacobian() * tau_ref;
@@ -3985,7 +3985,7 @@ namespace ngfem
     if constexpr(DIM_ELEMENT == 3)
       if (vb == BBND && Dim(et) == 3)
         {
-          FlatVector<Vec<3>> points(99,(Vec<3>*)ElementTopology::GetVertices (et));
+          auto points = ElementTopology::GetVertices<3> (et);
           auto edges = ElementTopology::GetEdges (et);
           Vec<3> tau_ref = points(edges[facetnr][1]) - points(edges[facetnr][0]);
           Vec<3,SIMD<double>> tau = mip.GetJacobian() * tau_ref;
