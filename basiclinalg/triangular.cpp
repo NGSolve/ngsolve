@@ -6,7 +6,6 @@ namespace ngbla
 #include "matkernel.hpp"
 
 
-  // these kernels should go into generate_mat_kernels ...
   // T * X      T .. triangular, X rowwise
   // L/R, Norm/NonNorm,  Solve + Mult
   //
