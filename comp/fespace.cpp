@@ -381,6 +381,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
       "  FESpace is only defined on specific Region, created with mesh.Materials('regexpr')\n"
       "  or mesh.Boundaries('regexpr'). If given a regexpr, the region is assumed to be\n"
       "  mesh.Materials('regexpr').";
+    docu.Arg("definedonbound") = "list of int or list of str\n"
+      "  Additional boundaries the FESpace is defined on, besides the boundaries\n"
+      "  adjacent to the definedon domains. Given as 1-based boundary numbers or\n"
+      "  wildcard patterns ('*', '?') of boundary names. Region is not supported,\n"
+      "  use definedon = {VOL: mats, BND: bnds} instead.";
     docu.Arg("dim") = "int = 1\n"
       "  Create multi dimensional FESpace (i.e. [H1]^3)";
     docu.Arg("dgjumps") = "bool = False\n"
