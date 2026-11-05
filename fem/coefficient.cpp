@@ -5546,7 +5546,7 @@ public:
     code.body += "// DomainWiseCoefficientFunction:\n";
     string type = "decltype(0.0";
     for(int in : inputs)
-      type += "+std::decay_t<decltype("+Var(in,0,Dimensions()).S()+")>()";
+      type += "+"+Var(in,0,Dimensions()).S();
     type += ")";
     code.Declare (type, index, Dimensions());
     code.body += "switch(domain_index) {\n";
