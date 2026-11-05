@@ -78,6 +78,29 @@ namespace ngfem
 
 
 
+  // u grad w - w grad v
+  template <int DIM, typename SCAL>
+  class uDw_minus_wDv
+  {
+  public:
+    const AutoDiff<DIM, SCAL> u, w, v;
+
+    uDw_minus_wDv (const AutoDiff<DIM,SCAL> au, const AutoDiff<DIM,SCAL> aw,
+                   const AutoDiff<DIM,SCAL> av)
+      : u(au), w(aw), v(av) { }
+
+    auto Value () const
+    {
+      return u.Value()*GetGradient(w)-w.Value()*GetGradient(v);
+    }
+
+    auto CurlValue () const
+    {
+      return Cross (GetGradient(u)+GetGradient(v), GetGradient(w));
+    }
+  };
+
+
   template <int DIM, typename SCAL>
   class wuDv_minus_wvDu
   {

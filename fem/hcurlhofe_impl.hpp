@@ -16,6 +16,18 @@
 
 namespace ngfem
 {
+  // 1/k, sqrt(k), 1/sqrt(k) for biorth trig coefficients
+  struct BiorthTabs
+  {
+    std::array<double,1024> inv{}, sq{}, isq{};
+    BiorthTabs ()
+    {
+      for (size_t k = 1; k < inv.size(); k++)
+        { inv[k] = 1.0/k; sq[k] = sqrt(double(k)); isq[k] = 1.0/sq[k]; }
+    }
+  };
+  inline const BiorthTabs biorth_tabs;
+
 
   // declaration of the shapes ...
 
@@ -240,8 +252,41 @@ namespace ngfem
 		shape[ii++] = Du (val);
 	      }));
 
+        if (biorth)
+          {
+            // C = fav[0] (collapse), B = fav[1], A = fav[2]
+            // f_i ~ lamA lamB P^(1,1)_{i-2}, g_ij ~ lamC IntJac^(2i)_{j-1}
+            // w_ij = j g grad f - i f grad g,  i+j <= p+1
+            // combine w_n, w_{n-1}: curl ~ Dubiner L_{i-1}(xi) P^(2i-1,0)_n(eta)
+            Tx lc = lam[fav[0]], lb = lam[fav[1]], la = lam[fav[2]];
+            ArrayMem<Tx,20> fpol(p-1);
+            JacobiPolynomialFix<1,1>::EvalScaledMult (p-2, lb-la, la+lb, la*lb, fpol);
+            ArrayMem<Tx,20> gpol(p-1);
+            for (int m = 0; m <= p-2; m++)
+              {
+                int i = m+2;
+                IntegratedJacobiPolynomialAlpha jac(2*i);
+                jac.EvalMult (p-2-m, 2*lc-1, lc, gpol);
+                Tx gm1(0.0);
+                for (int n = 0; n <= p-2-m; n++)
+                  {
+                    // |curl w~|_ref = 1
+                    auto & tb = biorth_tabs;
+                    double t = tb.sq[2*i-1]*tb.isq[2*n+2*i]*tb.inv[i-1];
+                    double al = t*(n+2*i)*tb.inv[n+i+1], be = t*n*tb.inv[n+i];
+                    shape[ii++] = uDw_minus_wDv ((al*(n+1))*gpol[n] - (be*n)*gm1, fpol[m],
+                                                 (al*i)*gpol[n] - (be*i)*gm1);
+                    gm1 = gpol[n];
+                  }
+              }
+            // Whitney(A,B) * lamC P^(2,1)_{j-1}, |curl|_ref = 1
+            IntegratedJacobiPolynomialAlpha jac3(3);
+            jac3.EvalMult (p-2, 2*lc-1, lc, gpol);
+            for (int j = 0; j <= p-2; j++)
+              shape[ii++] = wuDv_minus_wvDu (la, lb, biorth_tabs.sq[2*j+4]*gpol[j]);
+          }
 	// now ready: compatibility with tets/prisms ! non-gradient inner shapes, same for type 1 and 2
-        if (true) // if (type1)
+        else if (true) // if (type1)
           {
             DubinerBasis::EvalMult
               (p-2, lam[fav[0]], lam[fav[1]], 
@@ -1506,6 +1551,74 @@ namespace ngfem
 
 
         auto trafo = 1/mip.GetMeasure()*mip.GetJacobian();
+
+        if (biorth)
+          {
+            // duals B_kl, C_kl of Haubold-Beuchler-Schoeberl (SINUM 2024), (4.12),
+            // in collapsed coords xi = (lb-la)/(la+lb), yc = 2lc-1 on (-1,1)^2
+            int p = order_face[0][0];
+            if (p < 2) return;
+            IVec<4> fav = GetFaceSort (0, vnums);
+            T lc = lam[fav[0]], lb = lam[fav[1]], la = lam[fav[2]];
+            T xs = lb-la, s = la+lb, yc = 2*lc-1;
+            Vec<2,T> tex = trafo * Vec<2,T>(0.5 * (pnts[fav[1]]-pnts[fav[2]]));
+            Vec<2,T> tey = trafo * Vec<2,T>(0.5 * (pnts[fav[0]]-0.5*(pnts[fav[1]]+pnts[fav[2]])));
+
+            // scaled L_k, P^(1,1)_k in xi
+            ArrayMem<T,20> leg(p), p11(p), R(p);
+            LegendrePolynomial::EvalScaled (p-1, xs, s, leg);
+            JacobiPolynomialFix<1,1>::EvalScaled (p-1, xs, s, p11);
+
+            auto & invtab = biorth_tabs.inv;
+
+            // one pass over i = m+2, writing grad duals and w duals at their own offsets
+            int pg = (usegrad_face[0]) ? p-2-(type1 ? 1 : 0) : -1;
+            int ig = ii, iw = ii + (pg+1)*(pg+2)/2;
+            for (int m = 0; m <= p-2; m++)
+              {
+                // B = q1 b, C = q2 c
+                int i = m+2;
+                Vec<2,T> b = leg[i-1] * tex;
+                Vec<2,T> c = ((i+1)*p11[i-1]) * tex - ((2*i)*s*p11[i-2]) * tey;
+                Vec<2,T> bg = double(i) * b;
+
+                // q1 = P^(2i-1,1)_n, q2 = r P^(2i,0)_n, r = 1/(2(j+2i-1)), from R_n = P^(2i,1)_n
+                // w duals: ~ rot (Ls_{i-1}(xi) Q(eta)), Q = P^(2i-1,0)_n
+                Vec<2,T> dq = (-2.0*i*p11[m]) * tey + (m > 0 ? (i-1)*s*p11[m-1] : T(0.0)) * tex;
+                Vec<2,T> dqp = (4.0*leg[i-1]) * tex;
+
+                IntegratedJacobiPolynomialAlpha jac(2*i+1);
+                jac.Eval (p-2-m, yc, R);
+                T Rm1(0.0), q1m1(0.0);
+                for (int n = 0; n <= p-2-m; n++)
+                  {
+                    T Rn = (n+1)*R[n];
+                    double inv = invtab[2*n+2*i+1];
+                    double rinv = 0.5*invtab[n+2*i] * inv;
+                    T q1 = ((n+2*i+1)*inv) * Rn - ((n+1)*inv) * Rm1;
+                    if (n <= pg-m)
+                      {
+                        T q2 = ((n+2*i+1)*rinv) * Rn + ((n+2*i)*rinv) * Rm1;
+                        T a2 = double(n+1)*q2;
+                        shape[ig++] = Vec<2,T>(q1*bg(0)+a2*c(0), q1*bg(1)+a2*c(1));
+                      }
+                    double h = 0.5*invtab[n+i];
+                    double nrm = biorth_tabs.sq[2*i-1]*biorth_tabs.sq[2*n+2*i];
+                    T Q = (nrm*h*(n+2*i)) * q1 + (nrm*h*(n+2*i-1)) * q1m1;
+                    T Qp = (0.5*nrm*(n+2*i)) * Rm1;
+                    shape[iw++] = Vec<2,T>(Q*dq(0)+Qp*dqp(0), Q*dq(1)+Qp*dqp(1));
+                    Rm1 = Rn;
+                    q1m1 = q1;
+                  }
+              }
+            ii = iw;
+
+            IntegratedJacobiPolynomialAlpha jac3(3);
+            jac3.Eval (p-2, yc, leg);
+            for (int j = 0; j <= p-2; j++)
+              shape[ii++] = ((j+1)*biorth_tabs.isq[2*j+4]*leg[j]) * tex;
+            return;
+          }
 
         if (!usegrad_face[0])
           {

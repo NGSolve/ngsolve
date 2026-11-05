@@ -56,7 +56,8 @@ namespace ngfem
     IVec<N_EDGE, bool> usegrad_edge;
     IVec<N_FACE, bool> usegrad_face;
     bool usegrad_cell;
-    bool type1;   
+    bool type1;
+    bool biorth = false;  // trig cell: biorthogonal basis (Haubold-Beuchler-Schoeberl 2024)
 
     // lazily filled D^-1 for full-order elements, owned by the space
     std::atomic<double*> * dual_inverse = nullptr;
@@ -135,7 +136,9 @@ namespace ngfem
 
     INLINE void SetType1 (bool t1)
     { type1 = t1; }
-    
+    INLINE void SetBiorth (bool b)
+    { biorth = b; }
+
     void ComputeNDof();
 
     // same counts as ComputeNDof

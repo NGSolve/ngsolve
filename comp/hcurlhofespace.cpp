@@ -45,10 +45,12 @@ namespace ngcomp
     DefineDefineFlag ("discontinuous");
     DefineDefineFlag ("type1");
     DefineDefineFlag ("hoprolongation");
-    
+    DefineDefineFlag ("biorth");
+
     if(parseflags) CheckFlags(flags);
 
     type1 = flags.GetDefineFlag("type1");
+    biorth = flags.GetDefineFlag("biorth");
     // Variable order space: 
     //      in case of (var_order && order) or (relorder) 
     var_order = flags.GetDefineFlag("variableorder");  
@@ -219,6 +221,9 @@ namespace ngcomp
       "  Remove higher order gradients of H1 basis functions from HCurl FESpace";
     docu.Arg("type1") = "bool = False\n"
       "  Use type 1 Nedelec elements";
+    docu.Arg("biorth") = "bool = False\n"
+      "  Triangles: interior basis and dual shapes biorthogonal\n"
+      "  (Haubold, Beuchler, Schoeberl, SINUM 2024)";
     docu.Arg("discontinuous") = "bool = False\n"
       "  Create discontinuous HCurl space";
     docu.Arg("gradientdomains") = "List[int] = None\n"
@@ -1146,13 +1151,15 @@ namespace ngcomp
                 break;
               }
             }
-          hofe -> SetType1 (type1);          
+          hofe -> SetType1 (type1);
+          if constexpr (ET == ET_TRIG)
+            hofe -> SetBiorth (biorth);
           hofe -> ComputeNDof();
           // hofe -> SetDiscontinuous(discontinuous);
 
           // full order, and gradients on all or on no nodes of the element
           if constexpr (ET == ET_TRIG || ET == ET_QUAD || ET == ET_TET)
-            if (!type1)
+            if (!type1 || (ET == ET_TRIG && biorth))
               {
                 bool grad = usegrad_cell[ei.Nr()];
                 bool same = true;
@@ -1160,14 +1167,20 @@ namespace ngcomp
                 if constexpr (ET_trait<ET>::DIM == 3)
                   for (auto f : ngel.Faces()) same &= usegrad_face[f] == grad;
                 HCurlHighOrderFE<ET> full(order);
+                if (type1)
+                  {
+                    full.SetType1 (true);
+                    for (int i = 0; i < ET_trait<ET>::N_EDGE; i++)
+                      full.SetOrderEdge (i, max(0, order-1));
+                  }
                 if (!grad)
                   {
                     bool nog[12] = { };
                     full.SetUseGradEdge (nog);
                     full.SetUseGradFace (nog);
                     full.SetUseGradCell (false);
-                    full.ComputeNDof();
                   }
+                full.ComputeNDof();
                 if (same && hofe->GetNDof() == full.GetNDof() && hofe->Order() == full.Order())
                   {
                     int cls = 0, bit = 0;
