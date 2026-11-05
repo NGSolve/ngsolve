@@ -169,6 +169,9 @@ namespace ngcomp
       return Range (first_inner_dof[nr], first_inner_dof[nr+1]);
     }
 
+    // L2 space of matching order, containing div of this space
+    shared_ptr<FESpace> CreateDivergenceSpace() const;
+
   };
 
 }

@@ -1633,6 +1633,10 @@ component : int
   ExportFESpace<HDivHighOrderFESpace> (m, "HDiv")
     .def("Average", &HDivHighOrderFESpace::Average,
          py::arg("vector"))
+    .def("CreateDivergenceSpace", [](shared_ptr<HDivHighOrderFESpace> self)
+         { return self->CreateDivergenceSpace(); },
+         "L2 space of matching order, containing div of this space.\n"
+         "B = BilinearForm(div(u)*q*dx) on (HDiv, L2) is geometry-independent.")
     ;
   
   ExportFESpace<H1HighOrderFESpace> (m, "H1");

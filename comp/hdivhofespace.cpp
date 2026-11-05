@@ -334,6 +334,55 @@ namespace ngcomp
   }
   
 
+  shared_ptr<FESpace> HDivHighOrderFESpace :: CreateDivergenceSpace() const
+  {
+    auto divorder = [&](ElementId ei)
+    {
+      if (ho_div_free) return 0;
+      int p = order_inner[ei.Nr()][0];
+      switch (ma->GetElType(ei))
+        {
+        case ET_QUAD: case ET_PRISM: case ET_HEX:
+          return p;
+        default:
+          return RT ? p : max(p-1, 0);
+        }
+    };
+
+    Flags l2flags;
+    if (iscomplex) l2flags.SetFlag("complex");
+    int minorder = std::numeric_limits<int>::max(), maxorder = 0;
+    for (auto ei : ma->Elements(VOL))
+      if (DefinedOn(ei))
+        {
+          minorder = min(minorder, divorder(ei));
+          maxorder = max(maxorder, divorder(ei));
+        }
+    l2flags.SetFlag("order", maxorder);
+    auto l2 = make_shared<L2HighOrderFESpace>(ma, l2flags);
+
+    if (definedon[VOL].Size())
+      {
+        BitArray defon(ma->GetNDomains());
+        defon.Clear();
+        for (auto i : Range(definedon[VOL]))
+          if (definedon[VOL][i]) defon.SetBit(i);
+        l2->SetDefinedOn(VOL, defon);
+      }
+
+    l2->Update();
+    if (minorder < maxorder)
+      {
+        for (auto ei : ma->Elements(VOL))
+          if (DefinedOn(ei))
+            l2->SetOrder(NodeId(NT_ELEMENT, ei.Nr()), divorder(ei));
+        l2->UpdateDofTables();
+        l2->UpdateCouplingDofArray();
+      }
+    l2->FinalizeUpdate();
+    return l2;
+  }
+
   void HDivHighOrderFESpace :: Average (BaseVector & vec) const
   {
     // auto & pairs = GetDCPairs();
