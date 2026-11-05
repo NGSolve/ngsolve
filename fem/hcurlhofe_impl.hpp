@@ -129,6 +129,7 @@ namespace ngfem
     using ET_trait<ET>::FaceType;
     using Base = HCurlHighOrderFE<ET>;
     using Base::type1;
+    using Base::biorth;
     using Base::order;
     using Base::order_edge;
     using Base::order_face;
