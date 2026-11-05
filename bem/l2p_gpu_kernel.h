@@ -224,7 +224,7 @@ GPU_FUNC REAL P2PDiff (REAL p, REAL q, REAL x, REAL xlo)
 
 #define P2P_INV4PI REAL(0.07957747154594767)
 
-// the charge kernel of the host's SingularMLExpansion::Node::Evaluate, branch 0: kappa < 1e-12, 1: kappa < 1e-8, 2: else
+// the charge kernel, branch 0: kappa < 1e-12 (Laplace), 1: kappa < 1e-8 (first order), 2: else
 GPU_FUNC Complex<REAL> P2PCharge (int branch, REAL invr, REAL rho, KAPPA_T kappa)
 {
   return branch == 0 ? Complex<REAL>(P2P_INV4PI*invr, 0)
@@ -292,7 +292,7 @@ KERNEL(fmm_p2p, GLOBAL_IN(int,etarget), GLOBAL_IN(int,elist), GLOBAL_IN(int,elco
     }
 }
 
-// the gradient near field as the host's SingularMLExpansion::Node::EvaluateDeriv (its SIMD branch): charges only, at
+// the gradient near field from the charges as the host's SingularMLExpansion::Node::EvaluateDeriv, at
 // out + goff of the targets (entries as fmm_p2p)
 KERNEL(fmm_p2p_grad, GLOBAL_IN(int,etarget), GLOBAL_IN(int,elist), GLOBAL_IN(int,elcount), GLOBAL_IN(int,llist),
        GLOBAL_IN(REAL,txyz), GLOBAL_IN(REAL,sxyz), GLOBAL_IN(Complex<REAL>,charge), GLOBAL(Complex<REAL>,out),

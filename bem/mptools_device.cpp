@@ -1650,7 +1650,7 @@ namespace ngsbem
     std::vector<NearField> p2p;
 
     // launches only (recordable): L2P writes every target, then M2P adds, a pool after the other, then P2P (the
-    // gradient near field from the charges, as the host's EvaluateDeriv)
+    // gradient near field only from the charges, for Lame; L2POnDevice leaves the gradients from dipoles to the host)
     void Enqueue (ngs_gpu::Queue & queue) const
     {
       using ngs_gpu::Dim3;
@@ -1748,7 +1748,7 @@ namespace ngsbem
         || src.kappa.complex_kappa != im.kappa.complex_kappa || entries == 0 || entries > size_t(INT_MAX)
         || list.Size() != entries || lcount.Size() != entries || ranges.Size() % 2 || ranges.Size() > size_t(INT_MAX))
       throw Exception("FMMDeviceL2P::AddP2P: invalid entries");
-    // the host's EvaluateDeriv adds only charges (dipoles add nothing)
+    // the gradient near field only from charges (Lame); L2POnDevice leaves the gradients from dipoles to the host
     if (!(im.mode & 1) && !(src.kind & 1))
       return;
     for (size_t r = 0; r < nranges; r++)
@@ -1764,7 +1764,7 @@ namespace ngsbem
           throw Exception("FMMDeviceL2P::AddP2P: two entries share a target");
       }
     double ak = std::abs(src.kappa.kappa);
-    int branch = ak < 1e-12 ? 0 : ak < 1e-8 ? 1 : 2;      // SingularMLExpansion::Node::Evaluate for charges
+    int branch = ak < 1e-12 ? 0 : ak < 1e-8 ? 1 : 2;      // the branch of P2PCharge
     im.p2p.push_back ({ int(entries), src.kind, branch, src.kappa.Arg (src.kappa.kappa, im.fp64),
                         UploadBuffer (im.device, target), UploadBuffer (im.device, list), UploadBuffer (im.device, lcount),
                         UploadBuffer (im.device, ranges), src.xyz, src.dir, src.charge, src.dipole, src.dipvec });
