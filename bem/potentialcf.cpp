@@ -930,7 +930,8 @@ namespace ngsbem
                                          FlatVector<T> result) const
   {
     static Timer t("ngbem evaluate potential (ip)"); RegionTimer reg(t);
-    LocalHeapMem<1000000> lh("Potential::Eval");
+    LocalHeap & lh = TLHeap();
+    HeapReset hr(lh);
     auto space = this->gf->GetFESpace();
     auto mesh = space->GetMeshAccess();
     auto formula = kernel->GetAnalyticTriangleFormula();
