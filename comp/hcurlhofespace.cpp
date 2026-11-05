@@ -1153,44 +1153,54 @@ namespace ngcomp
             }
           hofe -> SetType1 (type1);
           if constexpr (ET == ET_TRIG)
-            hofe -> SetBiorth (biorth);
+            {
+              if (biorth && order_inner[ei.Nr()][0] >= 64)
+                throw Exception ("HCurl biorth: order must be < 64");
+              hofe -> SetBiorth (biorth);
+            }
           hofe -> ComputeNDof();
           // hofe -> SetDiscontinuous(discontinuous);
 
           // full order, and gradients on all or on no nodes of the element
           if constexpr (ET == ET_TRIG || ET == ET_QUAD || ET == ET_TET)
-            if (!type1 || (ET == ET_TRIG && biorth))
-              {
-                bool grad = usegrad_cell[ei.Nr()];
-                bool same = true;
-                for (auto e : ngel.Edges()) same &= usegrad_edge[e] == grad;
-                if constexpr (ET_trait<ET>::DIM == 3)
-                  for (auto f : ngel.Faces()) same &= usegrad_face[f] == grad;
-                HCurlHighOrderFE<ET> full(order);
-                if (type1)
-                  {
-                    full.SetType1 (true);
-                    for (int i = 0; i < ET_trait<ET>::N_EDGE; i++)
-                      full.SetOrderEdge (i, max(0, order-1));
-                  }
-                if (!grad)
-                  {
-                    bool nog[12] = { };
-                    full.SetUseGradEdge (nog);
-                    full.SetUseGradFace (nog);
-                    full.SetUseGradCell (false);
-                  }
-                full.ComputeNDof();
-                if (same && hofe->GetNDof() == full.GetNDof() && hofe->Order() == full.Order())
-                  {
-                    int cls = 0, bit = 0;
-                    for (int i = 0; i < ngel.vertices.Size(); i++)
-                      for (int j = i+1; j < ngel.vertices.Size(); j++, bit++)
-                        if (ngel.vertices[i] > ngel.vertices[j]) cls |= 1 << bit;
-                    int row = (ET == ET_TRIG) ? 0 : (ET == ET_QUAD) ? 1 : 2;
-                    hofe -> SetDualInverse (&dual_inverse[grad][row][cls]);
-                  }
-              }
+            {
+              bool grad = usegrad_cell[ei.Nr()];
+              bool same = true;
+              for (auto e : ngel.Edges()) same &= usegrad_edge[e] == grad;
+              if constexpr (ET_trait<ET>::DIM == 3)
+                for (auto f : ngel.Faces()) same &= usegrad_face[f] == grad;
+              HCurlHighOrderFE<ET> full(order);
+              if (type1)
+                {
+                  full.SetType1 (true);
+                  for (int i = 0; i < ET_trait<ET>::N_EDGE; i++)
+                    full.SetOrderEdge (i, max(0, order-1));
+                  if constexpr (ET == ET_QUAD)
+                    {   // as in Update
+                      int pi = max(0, order-1);
+                      full.SetOrderCell (IVec<3>(pi,pi,pi));
+                      IVec<2,TORDER> pf(pi,pi);
+                      full.SetOrderFace (FlatArray<IVec<2,TORDER>>(1, &pf));
+                    }
+                }
+              if (!grad)
+                {
+                  bool nog[12] = { };
+                  full.SetUseGradEdge (nog);
+                  full.SetUseGradFace (nog);
+                  full.SetUseGradCell (false);
+                }
+              full.ComputeNDof();
+              if (same && hofe->GetNDof() == full.GetNDof() && hofe->Order() == full.Order())
+                {
+                  int cls = 0, bit = 0;
+                  for (int i = 0; i < ngel.vertices.Size(); i++)
+                    for (int j = i+1; j < ngel.vertices.Size(); j++, bit++)
+                      if (ngel.vertices[i] > ngel.vertices[j]) cls |= 1 << bit;
+                  int row = (ET == ET_TRIG) ? 0 : (ET == ET_QUAD) ? 1 : 2;
+                  hofe -> SetDualInverse (&dual_inverse[grad][row][cls]);
+                }
+            }
           return *hofe;
         }
       case BND:
