@@ -257,6 +257,21 @@ template <typename MIP, typename TFA>
 	for (int i = 0; i < 3; i++)
           ii += order_facet[i][0];
       }
+    if (ip.VB() == VOL && ho_div_free)
+      {
+        auto jacinv = mip.GetJacobianInverse();
+        auto det = mip.GetJacobiDet();
+        size_t first = ii;
+        this->T_CalcShape (GetTIPHDiv(mip), SBLambda([&] (size_t nr, auto val)
+                                                      {
+                                                        if (nr < first) return;
+                                                        auto piola = HDiv2ShapeNew(val);
+                                                        Vec<2,T> ref = jacinv * piola;
+                                                        decltype(piola) dual = det * (Trans(jacinv) * ref);
+                                                        shape[nr] = dual;
+                                                      }));
+        return;
+      }
     if (ip.VB() == VOL)
       {
 	DubinerBasis::Eval(order_inner[0]-2+RT, x, y,
@@ -595,6 +610,21 @@ template <typename MIP, typename TFA>
           ii += (order_facet[i][0]+1)*(order_facet[i][0]+2)/2-1;
       }
 
+    if (ip.VB() == VOL && ho_div_free)
+      {
+        auto jacinv = mip.GetJacobianInverse();
+        auto det = mip.GetJacobiDet();
+        size_t first = ii;
+        this->T_CalcShape (GetTIPHDiv(mip), SBLambda([&] (size_t nr, auto val)
+                                                      {
+                                                        if (nr < first) return;
+                                                        auto piola = HDiv2ShapeNew(val);
+                                                        Vec<3,T> ref = jacinv * piola;
+                                                        decltype(piola) dual = det * (Trans(jacinv) * ref);
+                                                        shape[nr] = dual;
+                                                      }));
+        return;
+      }
     if (ip.VB() == VOL && order > 1)
       {
 	DubinerBasis3D::Eval (order-2, lam[0], lam[1], lam[2],
