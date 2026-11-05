@@ -374,7 +374,8 @@ namespace ngsbem
       for (int k = 0; k < 3; k++)
         {
           auto ek = UnitVec<3>(k);
-          jacobi.Col(k) = Real(mp.EvaluateDirectionalDerivative(pnt, ek).Range(0,3));
+          // the dipoles (LameSource) feed only comps 3..5
+          jacobi.Col(k) = Real(mp.EvaluateDirectionalDerivative(pnt, ek, false).Range(0,3));
         }
 
       val.Range(0,3) = 0;

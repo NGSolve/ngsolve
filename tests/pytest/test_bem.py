@@ -381,6 +381,37 @@ def test_potential_operator_local_expansion_matches_direct_potential(operator_na
     assert abs(error) < 1e-12
 
 
+@pytest.mark.parametrize(
+    "operator_name, kappa, tol",
+    [
+        ("HelmholtzDL", 1.5, 2e-6),
+        ("HelmholtzDL", 1e-14, 2e-6),
+        ("LaplaceSL", None, 1e-7),
+    ],
+)
+def test_dl_grad_potential_local_expansion_matches_direct_potential(operator_name, kappa, tol):
+    mesh = _sphere_mesh()
+    fes = H1(mesh, order=1, complex=operator_name == "HelmholtzDL")
+    u = fes.TrialFunction()
+    gfu = GridFunction(fes)
+    gfu.Set(x + 0.5 * y * z + 0.3)
+    if operator_name == "HelmholtzDL":
+        potop = grad(HelmholtzDL(u * ds, kappa=kappa))
+    else:
+        potop = grad(LaplaceSL(u * ds))
+
+    target_mesh = Mesh(OCCGeometry(Sphere((0, 0, 0), 1.25)).GenerateMesh(maxh=0.35)).Curve(1)
+    target_boundary = target_mesh.Boundaries(".*")
+
+    with TaskManager():
+        direct = potop(gfu)
+        local = potop(gfu, target_boundary)
+        diff = local - direct
+        err2 = Integrate(InnerProduct(diff, diff), target_mesh, definedon=target_boundary).real
+        ref2 = Integrate(InnerProduct(direct, direct), target_mesh, definedon=target_boundary).real
+    assert np.sqrt(err2 / ref2) < tol
+
+
 # Same setup as:
 # https://github.com/Weggler/docu-ngsbem/blob/main/convergence_timing/Laplace_DtN_Convergence.py
 def test_laplace_dtn_cg_solve_converges_to_docu_fundamental_solution():

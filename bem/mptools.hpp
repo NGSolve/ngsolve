@@ -1266,143 +1266,54 @@ namespace ngsbem
         const complex_type kappa(mp.Kappa());
         const simd_complex_type ikappa = complex_type(0,1)*kappa;
 
-        if (simd_charges.Size())
+        simd_entry_type vsum{0.0};
+        if (abs(mp.Kappa()) < 1e-12)
           {
-            // static Timer t("mptool singmp, evaluate, simd charges"); RegionTimer r(t);
-            // t.AddFlops (charges.Size());
-            
-            simd_entry_type vsum{0.0};
-            if (abs(mp.Kappa()) < 1e-12)
+            for (auto [x,c] : simd_charges)
               {
-                for (auto [x,c] : simd_charges)
-                  {
-                    auto rho = ToFMMReal(L2Norm(p-x));
-                    auto kernel = inv4pi*IfPos(rho, 1/rho, simd_real_type(0.0));
-                    vsum += simd_complex_type(kernel) * c;
-
-                    /*
-                    auto rho2 = L2Norm2(p-x);
-                    auto kernel = (1/(4*M_PI)) * rsqrt(rho2);
-                    kernel = If(rho2 > 0.0, kernel, SIMD<double,FMM_SW>(0.0));
-                    vsum += kernel * c;
-                    */
-                  }
+                auto rho = ToFMMReal(L2Norm(p-x));
+                auto kernel = inv4pi*IfPos(rho, 1/rho, simd_real_type(0.0));
+                vsum += simd_complex_type(kernel) * c;
               }
-            else if (abs(mp.Kappa()) < 1e-8)
-              for (auto [x,c] : simd_charges)
-                {
-                  auto rho = ToFMMReal(L2Norm(p-x));
-                  auto invrho = IfPos(rho, 1/rho, simd_real_type(0.0));
-                  auto kernel = inv4pi*(simd_complex_type(1.0)+rho*ikappa)*invrho;
-                  vsum += kernel * c;
-                }
-            else
+            for (auto [x,d,c] : simd_dipoles)
               {
-                for (auto [x,c] : simd_charges)
-                  {
-                    auto rho = ToFMMReal(L2Norm(p-x));
-                    auto invrho = IfPos(rho, 1/rho, simd_real_type(0.0));
-                    auto phase_factor = PhaseFactor(kappa, rho);
-                    vsum += inv4pi*invrho*phase_factor * c;
-                  }
+                auto delta = p-x;
+                auto rho = ToFMMReal(L2Norm(delta));
+                auto invrho = IfPos(rho, 1/rho, simd_real_type(0.0));
+                auto kernel = -inv4pi*invrho*invrho*invrho*ToFMMReal(InnerProduct(delta, d));
+                vsum += simd_complex_type(kernel) * c;
               }
-            
-            sum += HSum(vsum);
-          }
-        else
-          {
-            if (abs(mp.Kappa()) < 1e-8)
-              {
-                for (auto [x,c] : charges)
-                  if (double rho = L2Norm(p-x); rho > 0)
-                    {
-                      real_type frho = rho;
-                      sum += inv4pi*(complex_type(1,0) + frho*kappa*complex_type(0,1)) / frho * c;
-                    }
-              }
-            else
-              for (auto [x,c] : charges)
-                if (double rho = L2Norm(p-x); rho > 0)
-                  {
-                    real_type frho = rho;
-                    sum += inv4pi*exp(kappa*complex_type(0,frho))/frho*c;
-                  }
-          }
-
-        if (simd_dipoles.Size())
-          {
-            // static Timer t("mptool singmp, evaluate, simd dipoles"); RegionTimer r(t);
-            
-            simd_entry_type vsum{0.0};
-            if (abs(mp.Kappa()) < 1e-12)
-              for (auto [x,d,c] : simd_dipoles)
-                {
-                  auto delta = p-x;
-                  auto rho = ToFMMReal(L2Norm(delta));
-                  auto invrho = IfPos(rho, 1/rho, simd_real_type(0.0));
-                  auto phase = Real(kappa) * rho;
-                  auto decay = exp(-Imag(kappa)*rho);
-                  auto [si,co] = sincos(phase);
-                  auto dGdrho = inv4pi*simd_complex_type(co*decay,si*decay) *
-                    (ikappa*invrho + (-invrho*invrho));
-                  auto direction = invrho*ToFMMReal(InnerProduct(delta,d));
-                  vsum += dGdrho * direction * c;
-                }
-            else
-              for (auto [x,d,c] : simd_dipoles)
-                {
-                  auto delta = p-x;
-                  auto rho = ToFMMReal(L2Norm(delta));
-                  auto invrho = IfPos(rho, 1/rho, simd_real_type(0.0));
-                  auto phase_factor = PhaseFactor(kappa, rho);
-                  auto dGdrho = inv4pi*phase_factor *
-                    (ikappa*invrho + (-invrho*invrho));
-                  auto direction = invrho*ToFMMReal(InnerProduct(delta,d));
-                  vsum += dGdrho * direction * c;
-                }
-            sum += HSum(vsum);
-          }
-        else
-          {
-            for (auto [x,d,c] : dipoles)
-              if (double rho = L2Norm(p-x); rho > 0)
-                {
-                  Vec<3> drhodp = 1.0/rho * (p-x);
-                  real_type frho = rho;
-                  complex_type dGdrho = inv4pi*exp(kappa*complex_type(0,frho)) *
-                    (kappa*complex_type(0,1)/frho-1/sqr(frho));
-                  sum += dGdrho*real_type(InnerProduct(drhodp,d))*c;
-                }
-          }
-      
-      
-      
-      if (simd_chargedipoles.Size())
-        {
-          // static Timer t("mptool singmp, evaluate, simd chargedipoles"); RegionTimer r(t);
-          // t.AddFlops (simd_chargedipoles.Size()*FMM_SW);
-          
-          simd_entry_type vsum{0.0};
-          if (abs(mp.Kappa()) < 1e-12)
             for (auto [x,c,d,c2] : simd_chargedipoles)
               {
                 auto delta = p-x;
                 auto rho = ToFMMReal(L2Norm(delta));
                 auto invrho = IfPos(rho, 1/rho, simd_real_type(0.0));
-                auto phase = Real(kappa) * rho;
-                auto decay = exp(-Imag(kappa)*rho);
-                auto [si,co] = sincos(phase);
-                auto kernelc = inv4pi*invrho*simd_complex_type(co*decay,si*decay);
-                auto rhokappa = rho*simd_complex_type(kappa);
-
-                vsum += kernelc * c;
-                auto kernel =
-                  invrho*invrho * ToFMMReal(InnerProduct(delta, d)) *
-                  kernelc * (simd_complex_type(-1.0,0) + rhokappa * simd_complex_type(0,1));
-
-                vsum += kernel * c2;
+                auto kernelc = inv4pi*invrho;
+                auto kernel = -kernelc*invrho*invrho*ToFMMReal(InnerProduct(delta, d));
+                vsum += simd_complex_type(kernelc) * c;
+                vsum += simd_complex_type(kernel) * c2;
               }
-          else
+          }
+        else
+          {
+            for (auto [x,c] : simd_charges)
+              {
+                auto rho = ToFMMReal(L2Norm(p-x));
+                auto invrho = IfPos(rho, 1/rho, simd_real_type(0.0));
+                auto phase_factor = PhaseFactor(kappa, rho);
+                vsum += inv4pi*invrho*phase_factor * c;
+              }
+            for (auto [x,d,c] : simd_dipoles)
+              {
+                auto delta = p-x;
+                auto rho = ToFMMReal(L2Norm(delta));
+                auto invrho = IfPos(rho, 1/rho, simd_real_type(0.0));
+                auto phase_factor = PhaseFactor(kappa, rho);
+                auto dGdrho = inv4pi*phase_factor *
+                  (ikappa*invrho + (-invrho*invrho));
+                auto direction = invrho*ToFMMReal(InnerProduct(delta,d));
+                vsum += dGdrho * direction * c;
+              }
             for (auto [x,c,d,c2] : simd_chargedipoles)
               {
                 auto delta = p-x;
@@ -1419,31 +1330,40 @@ namespace ngsbem
 
                 vsum += kernel * c2;
               }
-          sum += HSum(vsum);
-        }
-      else
-        {
-          // static Timer t("mptool singmp, evaluate, chargedipoles"); RegionTimer r(t);
-          // t.AddFlops (chargedipoles.Size());
-          
+          }
+        sum += HSum(vsum);
+
+        // before CalcMP, which makes the SIMD sources
+        if (!simd_charges.Size())
+          for (auto [x,c] : charges)
+            if (double rho = L2Norm(p-x); rho > 0)
+              {
+                real_type frho = rho;
+                sum += inv4pi*exp(kappa*complex_type(0,frho))/frho*c;
+              }
+        if (!simd_dipoles.Size())
+          for (auto [x,d,c] : dipoles)
+            if (double rho = L2Norm(p-x); rho > 0)
+              {
+                Vec<3> drhodp = 1.0/rho * (p-x);
+                real_type frho = rho;
+                complex_type dGdrho = inv4pi*exp(kappa*complex_type(0,frho)) *
+                  (kappa*complex_type(0,1)/frho-1/sqr(frho));
+                sum += dGdrho*real_type(InnerProduct(drhodp,d))*c;
+              }
+        if (!simd_chargedipoles.Size())
           for (auto [x,c,d,c2] : chargedipoles)
             if (double rho = L2Norm(p-x); rho > 0)
               {
                 real_type frho = rho;
                 sum += inv4pi*exp(kappa*complex_type(0,frho))/frho*c;
-                
+
                 Vec<3> drhodp = 1.0/rho * (p-x);
                 complex_type dGdrho = inv4pi*exp(kappa*complex_type(0,frho)) *
-                  kappa*(complex_type(0,1)/frho-1/sqr(frho));
-                
+                  (kappa*complex_type(0,1)/frho-1/sqr(frho));
                 sum += dGdrho*real_type(InnerProduct(drhodp,d))*c2;
               }
-        }
 
-
-
-
-        
         for (auto [sp,ep,j,num] : currents)
           {
             // should use explizit formula instead ...
@@ -1470,47 +1390,54 @@ namespace ngsbem
         return sum;
       }
 
-      entry_type EvaluateDeriv(Vec<3> p, Vec<3> d) const
+      entry_type EvaluateDeriv(Vec<3> p, Vec<3> d, bool with_dipoles = true) const
       {
         entry_type sum{0.0};
         if (childs[0])
         {
             for (auto & child : childs)
-              sum += child->EvaluateDeriv(p, d);
+              sum += child->EvaluateDeriv(p, d, with_dipoles);
             return sum;
         }
 
-        if (dipoles.Size())
-          {
-            static int cnt = 0;
-            cnt++;
-            if (cnt < 3)
-              cout << "we know what we do - evaluateDeriv not implemented for dipoles in SingularMLExpansion" << endl;
-            // return sum;
-            // throw Exception("EvaluateDeriv not implemented for dipoles in SingularMLExpansion");
-          }
         if (chargedipoles.Size())
             throw Exception("EvaluateDeriv not implemented for dipoles in SingularMLExpansion");
 
         const real_type inv4pi = 1.0/(4*M_PI);
         const complex_type kappa(mp.Kappa());
+        const simd_complex_type ikappa = complex_type(0,1)*kappa;
 
+        // only called after CalcMP, which makes the SIMD sources
+        /* the derivative along d of a dipole with direction n and strength c at x reads
+            $$ c\,\langle d,\nabla_p\rangle \langle n,\nabla_p\rangle G_\kappa(p-x)
+            = c\,\frac{e^{i\kappa\rho}}{4\pi\rho^3} \left[ \left(3-3i\kappa\rho-\kappa^2\rho^2\right) \frac{\langle\delta,n\rangle\langle\delta,d\rangle}{\rho^2} + (i\kappa\rho-1)\langle n,d\rangle \right],
+            \qquad \delta=p-x,\quad \rho=|\delta|. $$
+        */
+        simd_entry_type vsum{0.0};
         if (abs(mp.Kappa()) < 1e-12)
           {
-            for (auto [x,c] : charges)
-              if (double rho = L2Norm(p-x); rho > 0)
+            for (auto [x,c] : simd_charges)
+              {
+                auto delta = p-x;
+                auto rho = ToFMMReal(L2Norm(delta));
+                auto invrho = IfPos(rho, 1/rho, simd_real_type(0.0));
+                auto kernel = -inv4pi*invrho*invrho*invrho*ToFMMReal(InnerProduct(delta, d));
+                vsum += simd_complex_type(kernel) * c;
+              }
+            if (with_dipoles)
+              for (auto [x,n,c] : simd_dipoles)
                 {
-                  Vec<3> drhodp = 1.0/rho * (p-x);
-                  real_type frho = rho;
-                  complex_type dGdrho = inv4pi*exp(kappa*complex_type(0,frho)) *
-                    (kappa*complex_type(0,1)/frho-1/sqr(frho));
-                  sum += dGdrho*real_type(InnerProduct(drhodp,d))*c;
+                  auto delta = p-x;
+                  auto rho = ToFMMReal(L2Norm(delta));
+                  auto invrho = IfPos(rho, 1/rho, simd_real_type(0.0));
+                  auto kernel = inv4pi*invrho*invrho*invrho *
+                    (real_type(3)*invrho*invrho*ToFMMReal(InnerProduct(delta, n)*InnerProduct(delta, d))
+                     - ToFMMReal(InnerProduct(n, d)));
+                  vsum += simd_complex_type(kernel) * c;
                 }
           }
-        else if (simd_charges.Size())
+        else
           {
-            simd_entry_type vsum{0.0};
-            const simd_complex_type ikappa = complex_type(0,1)*kappa;
             for (auto [x,c] : simd_charges)
               {
                 auto delta = p-x;
@@ -1521,20 +1448,20 @@ namespace ngsbem
                   (ikappa*invrho*invrho + simd_complex_type(-invrho*invrho*invrho, 0.0));
                 vsum += radial * ToFMMReal(InnerProduct(delta, d)) * c;
               }
-            sum += HSum(vsum);
-          }
-        else
-          {
-            for (auto [x,c] : charges)
-              if (double rho = L2Norm(p-x); rho > 0)
+            if (with_dipoles)
+              for (auto [x,n,c] : simd_dipoles)
                 {
-                  Vec<3> drhodp = 1.0/rho * (p-x);
-                  real_type frho = rho;
-                  complex_type dGdrho = inv4pi*exp(kappa*complex_type(0,frho)) *
-                    (kappa*complex_type(0,1)/frho-1/sqr(frho));
-                  sum += dGdrho*real_type(InnerProduct(drhodp,d))*c;
+                  auto delta = p-x;
+                  auto rho = ToFMMReal(L2Norm(delta));
+                  auto invrho = IfPos(rho, 1/rho, simd_real_type(0.0));
+                  auto ikr = rho*ikappa;
+                  auto factor = inv4pi*invrho*invrho*invrho*PhaseFactor(kappa, rho);
+                  auto radial = (ikr*(ikr+simd_complex_type(-3.0)) + simd_complex_type(3.0)) *
+                    (invrho*invrho*ToFMMReal(InnerProduct(delta, n)*InnerProduct(delta, d)));
+                  vsum += factor * (radial + (ikr+simd_complex_type(-1.0)) * ToFMMReal(InnerProduct(n, d))) * c;
                 }
           }
+        sum += HSum(vsum);
         return sum;
       }
 
@@ -1667,17 +1594,17 @@ namespace ngsbem
       }
 
       // device_order as EvaluateMP
-      entry_type EvaluateMPDeriv(Vec<3> p, Vec<3> d, int device_order = -1) const
+      entry_type EvaluateMPDeriv(Vec<3> p, Vec<3> d, int device_order = -1, bool with_dipoles = true) const
       {
         if (charges.Size() || dipoles.Size() || chargedipoles.Size() || !childs[0])
-          return device_order >= 0 && device_p2m ? entry_type{0.0} : EvaluateDeriv(p, d);
+          return device_order >= 0 && device_p2m ? entry_type{0.0} : EvaluateDeriv(p, d, with_dipoles);
 
         if (L2Norm(p-center) > fmm_params.eval_separation*r)
           return mp.Order() > device_order ? mp.EvalDirectionalDerivative(p-center, d) : entry_type{0.0};
 
         entry_type sum{0.0};
         for (auto & child : childs)
-          sum += child->EvaluateMPDeriv(p, d, device_order);
+          sum += child->EvaluateMPDeriv(p, d, device_order, with_dipoles);
         return sum;
       }
 
@@ -2394,7 +2321,7 @@ namespace ngsbem
       }
 
       // device_order as Evaluate
-      elem_type EvaluateDirectionalDerivative (Vec<3> p, Vec<3> d, int & device_order) const
+      elem_type EvaluateDirectionalDerivative (Vec<3> p, Vec<3> d, int & device_order, bool with_dipoles = true) const
       {
         elem_type sum{0.0};
         // cout << "EvaluateDirectionalDerivative RegularMLMP, r = " << r << ", level = " << level << ", center = " << center << endl;
@@ -2405,13 +2332,13 @@ namespace ngsbem
         if (p(1) > center(1)) childnum += 2;
         if (p(2) > center(2)) childnum += 4;
         if (childs[childnum])
-          sum = childs[childnum]->EvaluateDirectionalDerivative(p, d, device_order);
+          sum = childs[childnum]->EvaluateDirectionalDerivative(p, d, device_order, with_dipoles);
         else if ((device_order = this->device_order) < 0)
           sum = mp.EvalDirectionalDerivative(p-center, d);
 
         // static Timer t("mptool direct evaluate deriv"); RegionTimer r(t);
         for (auto sn : singnodes)
-          sum += sn->EvaluateMPDeriv(p, d, device_order);
+          sum += sn->EvaluateMPDeriv(p, d, device_order, with_dipoles);
 
         return sum;
       }
@@ -2955,11 +2882,12 @@ namespace ngsbem
       return root.Evaluate(p, device_order);
     }
 
-    elem_type EvaluateDirectionalDerivative (Vec<3> p, Vec<3> d) const
+    // with_dipoles = false: without the near field of the dipoles
+    elem_type EvaluateDirectionalDerivative (Vec<3> p, Vec<3> d, bool with_dipoles = true) const
     {
         if (L2Norm(p-root.center) > root.r) return elem_type{0.0};
         int device_order = -1;
-        return root.EvaluateDirectionalDerivative(p, d, device_order);
+        return root.EvaluateDirectionalDerivative(p, d, device_order, with_dipoles);
     }
 
   };

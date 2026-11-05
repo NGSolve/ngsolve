@@ -90,8 +90,8 @@ namespace ngsbem
     void AddM2P (const FMMDeviceTree & tree, int pool, double scale, FlatArray<int> target, FlatArray<int> first,
                  FlatArray<int> count, FlatArray<int> slot, FlatArray<double> geo);
     // the near field from the sources of p2m: entry e adds to target[e] the source ranges [list[e], list[e]+lcount[e])
-    // of ranges (first source, count pairs); no two entries of a call share a target; the gradient only from charges,
-    // as EvaluateDeriv
+    // of ranges (first source, count pairs); no two entries of a call share a target; the gradient only from charges
+    // (Lame; L2POnDevice leaves the gradients from dipoles to the host's EvaluateDeriv)
     void AddP2P (const FMMDeviceP2M & p2m, FlatArray<int> target, FlatArray<int> list, FlatArray<int> lcount,
                  FlatArray<int> ranges);
     // per matvec: the values into targets.values (point order)
@@ -707,13 +707,14 @@ namespace ngsbem
 
     // the leaves whose L2P and M2P (up to FMMDeviceL2P::max_order) run on the device, so the host skips them: device
     // targets (FMMDeviceTargets), and the order within the kernel's bound (the same for a whole level); not gradients
-    // from charge-dipoles, which the host's EvaluateDeriv rejects
+    // from charge-dipoles, which the host's EvaluateDeriv rejects, nor from dipoles, whose gradient near field only the
+    // host has (the device's is from the charges, for Lame)
     static bool L2POnDevice (const ML & ml, const Node & node)
     {
       auto * tg = ml.fmm_params.device_targets;
       auto * src = ml.fmm_params.device_sources;
       return tg && ml.fmm_params.device_cache && tg->comps == VecLength<entry_type>
-        && !((tg->mode & 2) && src && src->kind == 3)
+        && !((tg->mode & 2) && src && (src->kind == 2 || src->kind == 3))
         && !node.childs[0] && node.mp.Order() >= 0 && node.mp.Order() <= FMMDeviceL2P::max_order;
     }
 
