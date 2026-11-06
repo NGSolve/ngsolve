@@ -842,7 +842,7 @@ R"(
     {
       // element-boundary integrals: weight * |Cof(F) nref_ip| instead of weight * det
       bool eb = pmat->facetnr.Size() > 0;
-      string table, measure = "Real meas = J;";
+      string table, measure = "Real meas = (J > 0) ? J : -J;";
       if (eb)
         {
           // reference normal per facet, facet of each integration point
