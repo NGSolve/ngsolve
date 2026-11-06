@@ -31,7 +31,7 @@ spaces = {
 def test_multiplier_exact(meshname, spacename, order):
     mesh = meshes[meshname]()
     create, trace, mname = spaces[spacename]
-    Xdc = create(mesh, order, discontinuous=True)
+    Xdc = Discontinuous(create(mesh, order))
     M = Xdc.CreateMultiplierSpace()
     assert type(M).__name__ == mname
     s, mu = Xdc.TrialFunction(), M.TestFunction()
@@ -45,20 +45,38 @@ def test_multiplier_exact(meshname, spacename, order):
     Xc = create(mesh, order, dirichlet=".*")
     assert Xdc.ndof - rank == sum(Xc.FreeDofs())
 
-def test_multiplier_discontinuous_wrapper():
+@pytest.mark.parametrize("quad", [False, True])
+@pytest.mark.parametrize("order", [0, 1, 2])
+def test_multiplier_exact_surface(quad, order):
+    from netgen.occ import Box, OCCGeometry
+    from netgen.meshing import MeshingStep
+    mesh = Mesh(OCCGeometry(Box((0,0,0), (1,1,1))).GenerateMesh(maxh=0.5, quad_dominated=quad,
+                                                               perfstepsend=MeshingStep.MESHSURFACE))
+    Xdc = Discontinuous(HDivSurface(mesh, order=order), BND=True)
+    M = Xdc.CreateMultiplierSpace()
+    assert type(M).__name__ == "FacetSurface"
+    s, mu = Xdc.TrialFunction(), M.TestFunction()
+    nu = Cross(specialcf.tangential(3), specialcf.normal(3))
+    b = BilinearForm(trialspace=Xdc, testspace=M)
+    b += (s.Trace()*nu)*mu*ds(element_boundary=True)
+    b.Assemble()
+    sv = np.linalg.svd(b.mat.ToDense().NumPy(), compute_uv=False)
+    rank = np.sum(sv > 1e-10*sv[0])
+    assert rank == M.ndof
+    assert Xdc.ndof - rank == HDivSurface(mesh, order=order).ndof
+
+def test_multiplier_only_on_discontinuous():
     mesh = meshes["trig"]()
-    M1 = HDiv(mesh, order=2).CreateMultiplierSpace()
-    M2 = Discontinuous(HDiv(mesh, order=2)).CreateMultiplierSpace()
-    assert type(M2).__name__ == "FacetFESpace" and M1.ndof == M2.ndof
+    assert not hasattr(HDiv(mesh, order=2), "CreateMultiplierSpace")
 
 def test_multiplier_flags():
     mesh = meshes["trig"]()
-    M = HDiv(mesh, order=2, complex=True).CreateMultiplierSpace(dirichlet="left|right")
+    M = Discontinuous(HDiv(mesh, order=2, complex=True)).CreateMultiplierSpace(dirichlet="left|right")
     assert M.is_complex
     assert sum(M.FreeDofs()) < M.ndof
     assert M.globalorder == 2
     with pytest.raises(Exception):
-        H1(mesh, order=2).CreateMultiplierSpace()
+        Discontinuous(H1(mesh, order=2)).CreateMultiplierSpace()
 
 # hybrid mixed Poisson reproduces the conforming mixed solution
 def test_hybrid_mixed_poisson():

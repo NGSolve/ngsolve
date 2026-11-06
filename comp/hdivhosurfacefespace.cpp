@@ -910,5 +910,12 @@ void HDivHighOrderSurfaceFESpace :: Average (BaseVector & vec) const
   }
 
 
+  shared_ptr<FESpace> HDivHighOrderSurfaceFESpace :: CreateMultiplierSpace (Flags flags) const
+  {
+    if (!flags.NumFlagDefined("order"))
+      flags.SetFlag("order", uniform_order_facet > -1 ? uniform_order_facet : order);
+    return CreateCompanionSpace(*this, "facetsurface", flags);
+  }
+
   static RegisterFESpace<HDivHighOrderSurfaceFESpace> init ("hdivhosurface");
 }

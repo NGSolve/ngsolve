@@ -1299,28 +1299,6 @@ rho : ngsolve.fem.CoefficientFunction
           {
             return self->ConvertL2Operator(l2space);
           }, py::arg("l2space"))
-    .def ("CreateMultiplierSpace", [fes_class] (shared_ptr<FESpace> self, py::kwargs kwargs)
-          {
-            // check kwargs against the class of the created space, not FESpace
-            auto keys = [kwargs] () { py::dict d; for (auto item : kwargs) d[item.first] = py::none(); return d; };
-            auto proxy = py::module::import("types").attr("SimpleNamespace")
-              (py::arg("__flags_doc__") = py::cpp_function(keys),
-               py::arg("__special_treated_flags__") = fes_class.attr("__special_treated_flags__"));
-            py::list info;
-            info.append(self->GetMeshAccess());
-            auto fes = self->CreateMultiplierSpace(CreateFlagsFromKwArgs(kwargs, proxy, info));
-            connect_auto_update(fes.get());
-            auto pyfes = py::cast(fes);
-            auto doc = py::type::of(pyfes).attr("__flags_doc__")();
-            for (auto item : kwargs)
-              if (!doc.contains(item.first))
-                GetLogger("Flags")->warn("WARNING: kwarg '{}' is an undocumented flags option for class {}, maybe there is a typo?",
-                                         item.first.cast<string>(), string(py::str(py::type::of(pyfes))));
-            return fes;
-          },
-          "Facet space for hybridization, matching the normal (HDiv), normal-normal (HDivDiv)\n"
-          "or normal-tangential (HCurlDiv) traces exactly.\n"
-          "kwargs (dirichlet, ...) are passed to the new space.")
     .def ("GetTrace", [] (shared_ptr<FESpace> self, const FESpace & tracespace,
                           BaseVector & in, BaseVector & out, bool avg)
           {
@@ -1859,6 +1837,30 @@ BND : boolean or None
                     connect_auto_update(dcfes.get());
                     return dcfes;
                   }), py::arg("fespace"))
+    .def ("CreateMultiplierSpace", [fes_class] (shared_ptr<DiscontinuousFESpace> self, py::kwargs kwargs)
+          {
+            // check kwargs against the class of the created space, not FESpace
+            auto keys = [kwargs] () { py::dict d; for (auto item : kwargs) d[item.first] = py::none(); return d; };
+            auto proxy = py::module::import("types").attr("SimpleNamespace")
+              (py::arg("__flags_doc__") = py::cpp_function(keys),
+               py::arg("__special_treated_flags__") = fes_class.attr("__special_treated_flags__"));
+            py::list info;
+            info.append(self->GetMeshAccess());
+            auto fes = self->CreateMultiplierSpace(CreateFlagsFromKwArgs(kwargs, proxy, info));
+            connect_auto_update(fes.get());
+            auto pyfes = py::cast(fes);
+            auto doc = py::type::of(pyfes).attr("__flags_doc__")();
+            for (auto item : kwargs)
+              if (!doc.contains(item.first))
+                GetLogger("Flags")->warn("WARNING: kwarg '{}' is an undocumented flags option for class {}, maybe there is a typo?",
+                                         item.first.cast<string>(), string(py::str(py::type::of(pyfes))));
+            return fes;
+          },
+          "Lagrange multiplier space re-enforcing the continuity broken by Discontinuous:\n"
+          "FacetFESpace for HDiv (u.n), NormalFacetFESpace for HDivDiv (sigma_nn),\n"
+          "TangentialFacetFESpace for HCurlDiv (sigma_nt), FacetSurface for HDivSurface\n"
+          "(u.nu on surface edges, use Discontinuous(..., BND=True)). It matches these traces exactly.\n"
+          "kwargs (dirichlet, ...) are passed to the new space.")
     .def(py::pickle([](const DiscontinuousFESpace* disc_fes)
                     {
                       return py::make_tuple(disc_fes->GetBaseSpace(),disc_fes->GetFlags());

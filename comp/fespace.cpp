@@ -4556,14 +4556,16 @@ lot of new non-zero entries in the matrix!\n" << endl;
     if (base.IsComplex()) flags.SetFlag("complex");
     if (base.DoesAutoUpdate()) flags.SetFlag("autoupdate");
     auto fes = CreateFESpace (type, base.GetMeshAccess(), flags);
-    if (!flags.AnyFlagDefined("definedon") && base.DefinedOn(VOL).Size())
-      {
-        BitArray defon(base.GetMeshAccess()->GetNDomains());
-        defon.Clear();
-        for (auto i : Range(base.DefinedOn(VOL)))
-          if (base.DefinedOn(VOL)[i]) defon.SetBit(i);
-        fes->SetDefinedOn(VOL, defon);
-      }
+    if (!flags.AnyFlagDefined("definedon"))
+      for (VorB vb : { VOL, BND })
+        if (auto & bdef = base.DefinedOn(vb); bdef.Size())
+          {
+            BitArray defon(bdef.Size());
+            defon.Clear();
+            for (auto i : Range(bdef))
+              if (bdef[i]) defon.SetBit(i);
+            fes->SetDefinedOn(vb, defon);
+          }
     fes->Update();
     fes->FinalizeUpdate();
     return fes;

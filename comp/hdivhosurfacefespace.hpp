@@ -80,6 +80,9 @@ namespace ngcomp
     }
     
     void Average (BaseVector & vec) const;
+
+    // FacetSurface for u.nu on surface edges
+    shared_ptr<FESpace> CreateMultiplierSpace (Flags flags = Flags()) const override;
     
     void Update() override;
 
