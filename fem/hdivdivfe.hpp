@@ -139,6 +139,19 @@ namespace ngfem
       break;
     }
   }
+
+  // symmetric matrix -> Voigt vector (xx,yy,xy) / (xx,yy,zz,yz,xz,xy), for the Voigt interfaces
+  template <int D, typename T>
+  INLINE Vec<D*(D+1)/2,T> SymMatToVoigt (const Mat<D,D,T> & m)
+  {
+    Vec<D*(D+1)/2,T> v;
+    if constexpr (D == 2)
+      { v(0) = m(0,0); v(1) = m(1,1); v(2) = m(0,1); }
+    else
+      { v(0) = m(0,0); v(1) = m(1,1); v(2) = m(2,2); v(3) = m(1,2); v(4) = m(0,2); v(5) = m(0,1); }
+    return v;
+  }
+
   
   template <typename T>
   auto SymMatToVecDual (const Mat<2,2,T> & mat) 
@@ -252,7 +265,7 @@ namespace ngfem
       /* Cast() -> */ T_CalcShape (GetTIPGrad<DIM>(ip), 
                                    SBLambda([&] (int nr, auto val)
                                             {
-                                              shape.Row(nr).Range(0,DIM_STRESS) = val.Shape();
+                                              shape.Row(nr).Range(0,DIM_STRESS) = SymMatToVoigt<DIM>(val.Shape());
                                             }));
     }
 
@@ -364,7 +377,7 @@ namespace ngfem
       /* Cast() -> */ T_CalcShape (TIP<DIM, AutoDiff<DIM>> (adp, mip.IP().FacetNr(), mip.IP().VB()),
                              SBLambda([&] (int nr, auto val)
                                       {
-                                        shape.Row(nr).Range(0,DIM_STRESS) = val.Shape();
+                                        shape.Row(nr).Range(0,DIM_STRESS) = SymMatToVoigt<DIM>(val.Shape());
                                       }));
     }
 
@@ -377,20 +390,20 @@ namespace ngfem
       T_CalcShape (tip, 
                    SBLambda([&](int nr,auto val)
                             {
-                              VecToSymMat<DIM> (val.Shape(), shape.Row(nr));
+                              shape.Row(nr).Range(0,DIM*DIM) = val.Shape().AsVector();
                             }));
       */
       if (this->algebraic_mapping)
         T_CalcShape (GetTIP(mip), 
                      SBLambda([&](int nr,auto val)
                               {
-                                VecToSymMat<DIM> (val.Shape(), shape.Row(nr));
+                                shape.Row(nr).Range(0,DIM*DIM) = val.Shape().AsVector();
                               }));
       else
         T_CalcShape (GetTIPHesse(mip), 
                      SBLambda([&](int nr,auto val)
                               {
-                                VecToSymMat<DIM> (val.Shape(), shape.Row(nr));
+                                shape.Row(nr).Range(0,DIM*DIM) = val.Shape().AsVector();
                               }));
     }
 
@@ -401,7 +414,7 @@ namespace ngfem
       T_CalcShape (GetTIPHesse(mip), 
                    SBLambda([&](int nr,auto val)
                             {
-                              VecToSymMat<DIM> (val.Shape(), shape.Row(nr));
+                              shape.Row(nr).Range(0,DIM*DIM) = val.Shape().AsVector();
                             }));
     }
     */
@@ -484,14 +497,14 @@ namespace ngfem
           for (int k = 0; k < DIM; k++)
             hesse_inv(k) = Trans(inv) * hesse_inv1(k);
 
-          Mat<DIM,DIM_STRESS> hesse_inv_vec;
-          for (int k = 0; k < DIM; k++)
-            hesse_inv_vec.Row(k) = SymMatToVecDual(hesse_inv(k));
-
           T_CalcShape (GetTIP(mip),  
                        SBLambda([&] (int nr,auto val)
                                 {
-                                  shape.Row(nr).Range(0,DIM) = val.DivShape() + hesse_inv_vec * val.Shape();
+                                  Mat<DIM,DIM> sigma = val.Shape();
+                                  Vec<DIM> divsigma = val.DivShape();
+                                  for (int k = 0; k < DIM; k++)
+                                    divsigma(k) += InnerProduct(hesse_inv(k), sigma);
+                                  shape.Row(nr).Range(0,DIM) = divsigma;
                                 }));
           return;
         }
@@ -516,15 +529,18 @@ namespace ngfem
             for (int j = 0; j < DIM; j++)
               hesse(i).Col(j) -= jac(i,j) * gradJ_xi;
           
-          Mat<DIM,DIM_STRESS> hesse_inv_vec;
           for (int k = 0; k < DIM; k++)
-            hesse_inv_vec.Row(k) = 1/(det*det) * SymMatToVecDual(hesse(k));            
+            hesse(k) *= 1/(det*det);
           Mat<DIM> trans_div = 1/(det*det) * jac;
           
           T_CalcShape (GetTIPGrad<DIM>(mip.IP()),  
                        SBLambda([&] (int nr,auto val) LAMBDA_INLINE
                                 {
-                                  shape.Row(nr).Range(0,DIM) = trans_div * val.DivShape() + hesse_inv_vec * val.Shape();
+                                  Mat<DIM,DIM> sigma = val.Shape();
+                                  Vec<DIM> divsigma = trans_div * val.DivShape();
+                                  for (int k = 0; k < DIM; k++)
+                                    divsigma(k) += InnerProduct(hesse(k), sigma);
+                                  shape.Row(nr).Range(0,DIM) = divsigma;
                                 }));
           return;
         }
@@ -568,9 +584,7 @@ namespace ngfem
                                   {
                                     shape.Row(nr).Range(0,DIM) = val.DivShape();
                                     BareVector<double> divshape = shape.Row(nr);
-                                    Vec<DIM_STRESS> vecshape = val.Shape();
-                                    Vec<DIM*DIM> matshape;
-                                    VecToSymMat<DIM> (vecshape, matshape);
+                                    Mat<DIM,DIM> matshape = val.Shape();
 
                                     for(int k=0; k<DIM; k++)
                                     {
@@ -601,44 +615,25 @@ namespace ngfem
               auto & mir2 = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&>(bmir);
               // Vec<DIM,AutoDiff<DIM,SIMD<double>>> adp = mir2[i];
               auto shapesi = shapes.Col(i);
-              /* this->Cast() -> */ T_CalcShape (GetTIP(mir2[i]), // TIP<DIM,AutoDiff<DIM,SIMD<double>>>(adp),
-                                           SBLambda ([shapesi] (size_t j, auto val) 
-                                                     {
-                                                       auto shapeij = shapesi.Range(j*sqr(DIMSPACE),(j+1)*sqr(DIMSPACE));
-                                                       // VecToSymMat<DIM> (val.Shape(), shapeij);
-                                                       Mat<DIM,DIM,SIMD<double>> shapemat;
-                                                       VecToSymMat<DIM> (val.Shape(), shapemat);
-                                                       for (size_t i = 0; i < DIMSPACE*DIMSPACE; i++)
-                                                         shapeij(i) = shapemat(i);
-                                                     }));
+              auto setshape = [shapesi] (size_t j, auto val)
+                {
+                  shapesi.Range(j*sqr(DIMSPACE),(j+1)*sqr(DIMSPACE)) = val.Shape().AsVector();
+                };
+              if (this->algebraic_mapping)
+                T_CalcShape (GetTIP(mir2[i]), SBLambda(setshape));
+              else
+                T_CalcShape (GetTIPHesse(mir2[i]), SBLambda(setshape));
             }
           else
             {
               auto jac = mir[i].GetJacobian();
               auto d2 = sqr(mir[i].GetJacobiDet());
-              Vec<DIM_STRESS,SIMD<double>> hv;
-              Mat<DIM,DIM,SIMD<double>> mat;
-              SIMD<double> mem[DIMSPACE*DIMSPACE*DIM_STRESS];
-              // FlatMatrix<SIMD<double>> trans(DIMSPACE*DIMSPACE,DIM_STRESS,&mem[0]);
-              FlatMatrixFixWidth<DIM_STRESS, SIMD<double>> trans(DIMSPACE*DIMSPACE,&mem[0]);
-              for (int k = 0; k < DIM_STRESS; k++)
-                {
-                  hv = SIMD<double>(0.0);
-                  hv(k) = SIMD<double>(1.0);
-                  VecToSymMat<DIM> (hv, mat);
-                  Mat<DIMSPACE,DIMSPACE,SIMD<double>> physmat = 1/d2*(jac * mat * Trans(jac));
-                  trans.Col(k) = physmat.AsVector();
-                }
-              
-              
-              // Vec<DIM,AutoDiff<DIM,SIMD<double>>> adp = mir.IR()[i];
-              // TIP<DIM,AutoDiffDiff<DIM,SIMD<double>>> addp(adp);
-              
-              /* this->Cast() -> */ T_CalcShape (GetTIPGrad<DIM> (mir.IR()[i]), // TIP<DIM,AutoDiff<DIM,SIMD<double>>>(adp),
-                                           SBLambda ([i,shapes,trans] (size_t j, auto val) 
-                                                     {
-                                                       shapes.Rows(j*sqr(DIMSPACE),(j+1)*sqr(DIMSPACE)).Col(i).Range(0,sqr(DIMSPACE)) = trans * val.Shape();
-                                                     }));
+              T_CalcShape (GetTIPGrad<DIM> (mir.IR()[i]),
+                           SBLambda ([i,shapes,jac,d2] (size_t j, auto val) 
+                                     {
+                                       Mat<DIMSPACE,DIMSPACE,SIMD<double>> physmat = 1/d2*(jac * val.Shape() * Trans(jac));
+                                       shapes.Rows(j*sqr(DIMSPACE),(j+1)*sqr(DIMSPACE)).Col(i) = physmat.AsVector();
+                                     }));
             }
         }
     }
@@ -653,16 +648,14 @@ namespace ngfem
           // Vec<DIM,AutoDiff<DIM,SIMD<double>>> adp = mir[i];
           Vec<DIM,SIMD<double>> nv = mir[i].GetNV();
           auto shapesi = shapes.Col(i);
-          /* this->Cast() -> */ T_CalcShape (GetTIP(mir[i]),   // TIP<DIM,AutoDiff<DIM,SIMD<double>>>(adp),
-                                       SBLambda ([shapesi, nv] (size_t j, auto val) 
-                                                 {
-                                                   auto shapeij = shapesi.Range(j*DIM,(j+1)*DIM);
-                                                   Mat<DIM,DIM,SIMD<double>> shapemat;
-                                                   VecToSymMat<DIM> (val.Shape(), shapemat);
-                                                   Vec<DIM,SIMD<double>> mnv = shapemat * nv;
-                                                   for (size_t i = 0; i < DIM; i++)
-                                                     shapeij(i) = mnv(i);
-                                                 }));
+          auto setshape = [shapesi, nv] (size_t j, auto val)
+            {
+              shapesi.Range(j*DIM,(j+1)*DIM) = val.Shape() * nv;
+            };
+          if (this->algebraic_mapping)
+            T_CalcShape (GetTIP(mir[i]), SBLambda(setshape));
+          else
+            T_CalcShape (GetTIPHesse(mir[i]), SBLambda(setshape));
         }
     }
     
@@ -742,15 +735,14 @@ namespace ngfem
               double *pcoefs = &coefs(0);
               const size_t dist = coefs.Dist();
               
-              Vec<DIM_STRESS,SIMD<double>> sum(0.0);
+              Mat<DIM,DIM,SIMD<double>> sum = SIMD<double>(0.0);
               T_CalcShape (GetTIPHesse(mir[i]), 
                            SBLambda ([&sum,&pcoefs,dist] (size_t j, auto val)
                                      {
                                        sum += (*pcoefs)*val.Shape();
                                        pcoefs += dist;
                                      }));
-              for (size_t k = 0; k < DIM_STRESS; k++)
-                values(k,i) = sum(k);
+              values.Col(i).Range(0,DIM*DIM) = sum.AsVector();
             }
           return;
         }
@@ -760,19 +752,13 @@ namespace ngfem
           double *pcoefs = &coefs(0);
           const size_t dist = coefs.Dist();
           
-          Vec<DIM_STRESS,SIMD<double>> sum(0.0);
-          // Vec<DIM,AutoDiff<DIM,SIMD<double>>> adp = bmir.IR()[i];
-          // TIP<DIM,AutoDiffDiff<DIM,SIMD<double>>> addp(adp);
-          
-          /* Cast() -> */ T_CalcShape (GetTIPGrad<DIM>(bmir.IR()[i]), // TIP<DIM,AutoDiff<DIM,SIMD<double>>>(adp),
-                                 SBLambda ([&sum,&pcoefs,dist] (size_t j, auto val)
-                                           {
-                                             sum += (*pcoefs)*val.Shape();
-                                             pcoefs += dist;
-                                           }));
-
-          Mat<DIM,DIM,SIMD<double>> summat;
-          VecToSymMat<DIM> (sum, summat);
+          Mat<DIM,DIM,SIMD<double>> summat = SIMD<double>(0.0);
+          T_CalcShape (GetTIPGrad<DIM>(bmir.IR()[i]),
+                       SBLambda ([&summat,&pcoefs,dist] (size_t j, auto val)
+                                 {
+                                   summat += (*pcoefs)*val.Shape();
+                                   pcoefs += dist;
+                                 }));
           
           Iterate<4-DIM>
             ([values,&bmir,i,summat](auto CODIM)
@@ -795,6 +781,28 @@ namespace ngfem
                                   BareSliceMatrix<SIMD<double>> values,
                                   BareSliceVector<> coefs) const override
     {
+      if (this->algebraic_mapping == false)
+        {
+          if (bmir.DimSpace() != DIM)
+            throw Exception ("sequential mapping only for volume space");
+          auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
+          for (size_t i = 0; i < bmir.Size(); i++)
+            {
+              Mat<DIM,DIM,SIMD<double>> mat;
+              mat.AsVector() = values.Col(i);
+              double *pcoefs = &coefs(0);
+              const size_t dist = coefs.Dist();
+              T_CalcShape (GetTIPHesse(mir[i]),
+                           SBLambda ([mat,&pcoefs,dist] (size_t j, auto val)
+                                     {
+                                       Mat<DIM,DIM,SIMD<double>> mat2 = val.Shape();
+                                       *pcoefs += HSum(InnerProduct(mat,mat2));
+                                       pcoefs += dist;
+                                     }));
+            }
+          return;
+        }
+
        for (size_t i = 0; i < bmir.Size(); i++)
         {
           Mat<DIM,DIM,SIMD<double>> mat;
@@ -825,8 +833,7 @@ namespace ngfem
           /* Cast() -> */ T_CalcShape (GetTIPGrad<DIM>(bmir.IR()[i]), // TIP<DIM,AutoDiff<DIM,SIMD<double>>>  (adp),
                                  SBLambda ([mat,&pcoefs,dist] (size_t j, auto val)
                                            {
-                                             Mat<DIM,DIM,SIMD<double>> mat2;
-                                             VecToSymMat<DIM> (val.Shape(), mat2);
+                                             Mat<DIM,DIM,SIMD<double>> mat2 = val.Shape();
                                              
                                              *pcoefs += HSum(InnerProduct(mat,mat2));
                                              pcoefs += dist;
@@ -840,6 +847,16 @@ namespace ngfem
     {
       auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
 
+      if (this->algebraic_mapping == false)
+        {
+          for (size_t i = 0; i < mir.Size(); i++)
+            T_CalcShape (GetTIPHesse(mir[i]),
+                         SBLambda([divshapes,i](int j,auto val)
+                                  {
+                                    divshapes.Rows(j*DIM,(j+1)*DIM).Col(i).Range(0,DIM) = val.DivShape();
+                                  }));
+          return;
+        }
 
       if(!mir.GetTransformation().IsCurvedElement()) // non-curved element
       {
@@ -926,9 +943,7 @@ namespace ngfem
                                 BareSliceVector<SIMD<double>> divshape = divshapes.Rows(nr*DIM,(nr+1)*DIM).Col(i);
 
                                 Vec<DIM,SIMD<double>> div1 = val.DivShape();
-                                Vec<DIM_STRESS,SIMD<double>> vecshape = val.Shape();
-                                Vec<DIM*DIM,SIMD<double>> matshape;
-                                VecToSymMat<DIM> (vecshape, matshape);
+                                Mat<DIM,DIM,SIMD<double>> matshape = val.Shape();
                                 
                                 for(size_t k = 0; k < DIM; k++)
                                   {
@@ -946,6 +961,24 @@ namespace ngfem
 			      BareSliceMatrix<SIMD<double>> values) const override
     {
       auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
+      if (this->algebraic_mapping == false)
+        {
+          for (size_t i = 0; i < bmir.Size(); i++)
+            {
+              double *pcoefs = &coefs(0);
+              const size_t dist = coefs.Dist();
+              Vec<DIM,SIMD<double>> sum(0.0);
+              T_CalcShape (GetTIPHesse(mir[i]),
+                           SBLambda ([&sum,&pcoefs,dist] (size_t j, auto val)
+                                     {
+                                       sum += (*pcoefs)*val.DivShape();
+                                       pcoefs += dist;
+                                     }));
+              for (size_t k = 0; k < DIM; k++)
+                values(k,i) = sum(k);
+            }
+          return;
+        }
       if(!mir.GetTransformation().IsCurvedElement()) // non-curved element
       {
       for (size_t i = 0; i < bmir.Size(); i++)
@@ -990,6 +1023,24 @@ namespace ngfem
 			      BareSliceVector<> coefs) const override
     {
       auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
+      if (this->algebraic_mapping == false)
+        {
+          for (size_t i = 0; i < bmir.Size(); i++)
+            {
+              Vec<DIM,SIMD<double>> vec;
+              for (size_t k = 0; k < DIM; k++)
+                vec(k) = values(k,i);
+              double *pcoefs = &coefs(0);
+              const size_t dist = coefs.Dist();
+              T_CalcShape (GetTIPHesse(mir[i]),
+                           SBLambda ([vec,&pcoefs,dist] (size_t j, auto val)
+                                     {
+                                       *pcoefs += HSum(InnerProduct(vec,val.DivShape()));
+                                       pcoefs += dist;
+                                     }));
+            }
+          return;
+        }
       if(!mir.GetTransformation().IsCurvedElement()) // non-curved element
       {
       for (size_t i = 0; i < bmir.Size(); i++)
@@ -1057,7 +1108,14 @@ namespace ngfem
     AutoDiffDiff<2,T> u;
   public:
     T_SigmaGrad  (AutoDiffDiff<2,T> au) : u(au) { ; }
-    Vec<3,T> Shape() { return Vec<3,T> (u.DDValue(1,1), u.DDValue(0,0), -u.DDValue(1,0)); }
+    Mat<2,2,T> Shape()
+    {
+      Mat<2,2,T> sigma;
+      sigma(0,0) = u.DDValue(1,1);
+      sigma(1,1) = u.DDValue(0,0);
+      sigma(0,1) = sigma(1,0) = -u.DDValue(1,0);
+      return sigma;
+    }
     Vec<2,T> DivShape() { return Vec<2,T> (0.0, 0.0); }
   };
   
@@ -1074,9 +1132,14 @@ namespace ngfem
     AutoDiffDiff<2,T> u, v;
   public:
     T_Sigma_u_Gradv  (AutoDiffDiff<2,T> au, AutoDiffDiff<2,T> av) : u(au), v(av) { ; }
-    Vec<3,T> Shape() { return Vec<3,T> ((u.Value()*v.DDValue(1,1) + u.DValue(1)*v.DValue(1)),
-                                        (u.Value()*v.DDValue(0,0) + u.DValue(0)*v.DValue(0)),
-                                        -u.Value()*v.DDValue(1,0) - 0.5 * (u.DValue(0)*v.DValue(1)+u.DValue(1)*v.DValue(0))); }
+    Mat<2,2,T> Shape()
+    {
+      Mat<2,2,T> sigma;
+      sigma(0,0) = u.Value()*v.DDValue(1,1) + u.DValue(1)*v.DValue(1);
+      sigma(1,1) = u.Value()*v.DDValue(0,0) + u.DValue(0)*v.DValue(0);
+      sigma(0,1) = sigma(1,0) = -u.Value()*v.DDValue(1,0) - 0.5 * (u.DValue(0)*v.DValue(1)+u.DValue(1)*v.DValue(0));
+      return sigma;
+    }
     Vec<2,T> DivShape()
     {
       T uxx = u.DDValue(0,0), uyy = u.DDValue(1,1), uxy = u.DDValue(0,1);
@@ -1101,10 +1164,14 @@ namespace ngfem
     AutoDiffDiff<2,T> u,v;
   public:
     T_Type2  (AutoDiffDiff<2,T> au, AutoDiffDiff<2,T> av) : u(au), v(av) { ; }
-    Vec<3,T> Shape() { return Vec<3,T> (u.DDValue(1,1)*v.Value() - 2*u.DValue(1)*v.DValue(1) + u.Value()*v.DDValue(1,1),
-                                        u.DDValue(0,0)*v.Value() - 2*u.DValue(0)*v.DValue(0) + u.Value()*v.DDValue(0,0),
-                                        -(u.DDValue(0,1)*v.Value() - u.DValue(0)*v.DValue(1) -
-                                          u.DValue(1)*v.DValue(0) + u.Value()*v.DDValue(1,0))); }
+    Mat<2,2,T> Shape()
+    {
+      Mat<2,2,T> sigma;
+      sigma(0,0) = u.DDValue(1,1)*v.Value() - 2*u.DValue(1)*v.DValue(1) + u.Value()*v.DDValue(1,1);
+      sigma(1,1) = u.DDValue(0,0)*v.Value() - 2*u.DValue(0)*v.DValue(0) + u.Value()*v.DDValue(0,0);
+      sigma(0,1) = sigma(1,0) = -(u.DDValue(0,1)*v.Value() - u.DValue(0)*v.DValue(1) - u.DValue(1)*v.DValue(0) + u.Value()*v.DDValue(1,0));
+      return sigma;
+    }
 
     Vec<2,T> DivShape()
     {
@@ -1129,9 +1196,14 @@ namespace ngfem
     AutoDiffDiff<2,T> u,v;
   public:
     T_Type3  (AutoDiffDiff<2,T> au, AutoDiffDiff<2,T> av) : u(au), v(av) { ; }
-    Vec<3,T> Shape() { return Vec<3,T> (u.DDValue(1,1)*v.Value() - u.Value()*v.DDValue(1,1),
-                                    u.DDValue(0,0)*v.Value() - u.Value()*v.DDValue(0,0),
-                                    -(u.DDValue(0,1)*v.Value() - u.Value()*v.DDValue(1,0))); }
+    Mat<2,2,T> Shape()
+    {
+      Mat<2,2,T> sigma;
+      sigma(0,0) = u.DDValue(1,1)*v.Value() - u.Value()*v.DDValue(1,1);
+      sigma(1,1) = u.DDValue(0,0)*v.Value() - u.Value()*v.DDValue(0,0);
+      sigma(0,1) = sigma(1,0) = -(u.DDValue(0,1)*v.Value() - u.Value()*v.DDValue(1,0));
+      return sigma;
+    }
     Vec<2,T> DivShape()
     {
       T uxx = u.DDValue(0,0), uyy = u.DDValue(1,1), uxy = u.DDValue(0,1);
@@ -1153,8 +1225,14 @@ namespace ngfem
     AutoDiffDiff<2,T> u,v;
   public:
     T_vSigmaGradu  (AutoDiffDiff<2,T> au, AutoDiffDiff<2,T> av) : u(au), v(av) { ; }
-    Vec<3,T> Shape() { return Vec<3,T> (u.DDValue(1,1)*v.Value(),
-                                      u.DDValue(0,0)*v.Value(),  -(u.DDValue(0,1)*v.Value()));}
+    Mat<2,2,T> Shape()
+    {
+      Mat<2,2,T> sigma;
+      sigma(0,0) = u.DDValue(1,1)*v.Value();
+      sigma(1,1) = u.DDValue(0,0)*v.Value();
+      sigma(0,1) = sigma(1,0) = -(u.DDValue(0,1)*v.Value());
+      return sigma;
+    }
     Vec<2,T> DivShape()
     {
       T uxx = u.DDValue(0,0), uyy = u.DDValue(1,1), uxy = u.DDValue(0,1);
@@ -1177,11 +1255,14 @@ namespace ngfem
     AutoDiffDiff<2,T> u,v,w;
   public:
     T_Sigma_Duv_minus_uDv_w  (AutoDiffDiff<2,T> au, AutoDiffDiff<2,T> av, AutoDiffDiff<2,T> aw) : u(au), v(av), w(aw) { ; }
-    Vec<3,T> Shape() { return Vec<3,T> (w.DValue(1)*(v.DValue(1)*u.Value()-u.DValue(1)*v.Value()), 
-      w.DValue(0)*(v.DValue(0)*u.Value()-u.DValue(0)*v.Value()),
-      -0.5*( w.DValue(0)*(v.DValue(1)*u.Value()-u.DValue(1)*v.Value()) +
-        w.DValue(1)*(v.DValue(0)*u.Value()-u.DValue(0)*v.Value()) )
-      ); }
+    Mat<2,2,T> Shape()
+    {
+      Mat<2,2,T> sigma;
+      sigma(0,0) = w.DValue(1)*(v.DValue(1)*u.Value()-u.DValue(1)*v.Value());
+      sigma(1,1) = w.DValue(0)*(v.DValue(0)*u.Value()-u.DValue(0)*v.Value());
+      sigma(0,1) = sigma(1,0) = -0.5*( w.DValue(0)*(v.DValue(1)*u.Value()-u.DValue(1)*v.Value()) + w.DValue(1)*(v.DValue(0)*u.Value()-u.DValue(0)*v.Value()) );
+      return sigma;
+    }
 
     Vec<2,T> DivShape()
     {
@@ -1213,10 +1294,14 @@ namespace ngfem
     AutoDiff<2,T> l1,l2,v;
   public:
     T_SymRotRot_Dl2xDl1_v  (AutoDiff<2,T> lam1, AutoDiff<2,T> lam2, AutoDiff<2,T> av) : l1(lam1), l2(lam2), v(av) { ; }
-    Vec<3,T> Shape() { return Vec<3,T> (v.Value()*(l1.DValue(1)*l2.DValue(1)),
-                                        v.Value()*(l1.DValue(0)*l2.DValue(0)),
-                                        -0.5*v.Value()*(l1.DValue(1)*l2.DValue(0) + l1.DValue(0)*l2.DValue(1))
-                                        ); }
+    Mat<2,2,T> Shape()
+    {
+      Mat<2,2,T> sigma;
+      sigma(0,0) = v.Value()*(l1.DValue(1)*l2.DValue(1));
+      sigma(1,1) = v.Value()*(l1.DValue(0)*l2.DValue(0));
+      sigma(0,1) = sigma(1,0) = -0.5*v.Value()*(l1.DValue(1)*l2.DValue(0) + l1.DValue(0)*l2.DValue(1));
+      return sigma;
+    }
     
     Vec<2,T> DivShape()
     {
@@ -1534,7 +1619,8 @@ namespace ngfem
         shape[ii++] = Sigma_u_Gradv(u[i], ly[0]);
         shape[ii++] = Sigma_u_Gradv(v[i], lx[0]); //
       }
-      
+
+
       return;
 
 
@@ -1710,10 +1796,10 @@ namespace ngfem
     AutoDiff<1> w;
   public:
     T_S_zz ( AutoDiff<2> au, AutoDiff<2> av, AutoDiff<1> aw) : u(au), v(av), w(aw) { ; }
-    Vec<6> Shape() 
+    Mat<3,3> Shape() 
     { 
-      Vec<6> sigma(0.);
-      sigma[2] = u.Value()*v.Value()*w.Value();
+      Mat<3,3> sigma = 0.;
+      sigma(2,2) = u.Value()*v.Value()*w.Value();
       return sigma;
     }
 
@@ -1738,14 +1824,13 @@ namespace ngfem
     int comp;
   public:
     T_S_xz ( int acomp, AutoDiff<2,T> auv, AutoDiff<1,T> aw) : uv(auv), w(aw), comp(acomp) { ; }
-    Vec<6,T> Shape() 
+    Mat<3,3,T> Shape() 
     { 
-      Vec<6,T> sigma;
-      sigma = 0.;
+      Mat<3,3,T> sigma = T(0.);
       if (comp==0)
-        sigma[4] = uv.Value()*w.Value();
+        sigma(0,2) = sigma(2,0) = uv.Value()*w.Value();
       else
-        sigma[3] = uv.Value()*w.Value();
+        sigma(1,2) = sigma(2,1) = uv.Value()*w.Value();
       return sigma;
     }
 
@@ -1772,13 +1857,13 @@ namespace ngfem
     AutoDiff<1,T> w;
   public:
     T_Prism_wSigmaGradu ( AutoDiffDiff<2,T> au, AutoDiff<1,T> aw) : u(au), w(aw) { ; }
-    Vec<6,T> Shape() 
+    Mat<3,3,T> Shape() 
     { 
-      Vec<3,T> sigma2d = T_SigmaGrad<2,T>(u).Shape();
-      Vec<6,T> sigma(0.);
-      sigma[0] = w.Value()*sigma2d[0];
-      sigma[1] = w.Value()*sigma2d[1];
-      sigma[5] = w.Value()*sigma2d[2];
+      Mat<2,2,T> sigma2d = T_SigmaGrad<2,T>(u).Shape();
+      Mat<3,3,T> sigma = T(0.);
+      for (int i = 0; i < 2; i++)
+        for (int j = 0; j < 2; j++)
+          sigma(i,j) = w.Value()*sigma2d(i,j);
       return sigma;
     }
 
@@ -1801,13 +1886,13 @@ namespace ngfem
     AutoDiff<1,T> w;
   public:
     T_Prism_wType2 ( AutoDiffDiff<2,T> au, AutoDiffDiff<2,T> av, AutoDiff<1,T> aw) : u(au), v(av),  w(aw) { ; }
-    Vec<6,T> Shape() 
+    Mat<3,3,T> Shape() 
     { 
-      Vec<3,T> sigma2d = T_Type2<2,T>(u,v).Shape();
-      Vec<6,T> sigma(0.);
-      sigma[0] = w.Value()*sigma2d[0];
-      sigma[1] = w.Value()*sigma2d[1];
-      sigma[5] = w.Value()*sigma2d[2];
+      Mat<2,2,T> sigma2d = T_Type2<2,T>(u,v).Shape();
+      Mat<3,3,T> sigma = T(0.);
+      for (int i = 0; i < 2; i++)
+        for (int j = 0; j < 2; j++)
+          sigma(i,j) = w.Value()*sigma2d(i,j);
       return sigma;
     }
 
@@ -1831,13 +1916,13 @@ namespace ngfem
     AutoDiff<1,T> w;
   public:
     T_Prism_wType3 ( AutoDiffDiff<2,T> au, AutoDiffDiff<2,T> av, AutoDiff<1,T> aw) : u(au), v(av),  w(aw) { ; }
-    Vec<6> Shape() 
+    Mat<3,3,T> Shape() 
     { 
-      Vec<3,T> sigma2d = T_Type3<2,T>(u,v).Shape();
-      Vec<6,T> sigma(0.);
-      sigma[0] = w.Value()*sigma2d[0];
-      sigma[1] = w.Value()*sigma2d[1];
-      sigma[5] = w.Value()*sigma2d[2];
+      Mat<2,2,T> sigma2d = T_Type3<2,T>(u,v).Shape();
+      Mat<3,3,T> sigma = T(0.);
+      for (int i = 0; i < 2; i++)
+        for (int j = 0; j < 2; j++)
+          sigma(i,j) = w.Value()*sigma2d(i,j);
       return sigma;
     }
 
@@ -1860,13 +1945,13 @@ namespace ngfem
     AutoDiff<1,T> wz;
   public:
     T_Prism_wType4 ( AutoDiffDiff<2,T> au, AutoDiffDiff<2,T> av, AutoDiffDiff<2,T> aw, AutoDiff<1,T> awz) : u(au), v(av),  w(aw), wz(awz) { ; }
-    Vec<6,T> Shape() 
+    Mat<3,3,T> Shape() 
     { 
-      Vec<3,T> sigma2d = wz.Value()*T_Sigma_Duv_minus_uDv_w<2,T>(u,v,w).Shape();
-      Vec<6,T> sigma(0.);
-      sigma[0] = sigma2d[0];
-      sigma[1] = sigma2d[1];
-      sigma[5] = sigma2d[2];
+      Mat<2,2,T> sigma2d = wz.Value()*T_Sigma_Duv_minus_uDv_w<2,T>(u,v,w).Shape();
+      Mat<3,3,T> sigma = T(0.);
+      for (int i = 0; i < 2; i++)
+        for (int j = 0; j < 2; j++)
+          sigma(i,j) = sigma2d(i,j);
       return sigma;
     }
 
@@ -1890,13 +1975,13 @@ namespace ngfem
     AutoDiff<1> wz;
   public:
     Prism_SymRotRot_Dl2xDl1_vw ( AutoDiff<2> lam1, AutoDiff<2> lam2, AutoDiff<2> av, AutoDiff<1> awz) : l1(lam1), l2(lam2), v(av), wz(awz) { ; }
-    Vec<6> Shape() 
+    Mat<3,3> Shape() 
     { 
-      Vec<3> sigma2d = wz.Value()*T_SymRotRot_Dl2xDl1_v(l1,l2,v).Shape();
-      Vec<6> sigma(0.);
-      sigma[0] = sigma2d[0];
-      sigma[1] = sigma2d[1];
-      sigma[5] = sigma2d[2];
+      Mat<2,2> sigma2d = wz.Value()*T_SymRotRot_Dl2xDl1_v<double>(l1,l2,v).Shape();
+      Mat<3,3> sigma = 0.;
+      for (int i = 0; i < 2; i++)
+        for (int j = 0; j < 2; j++)
+          sigma(i,j) = sigma2d(i,j);
       return sigma;
     }
 
@@ -1916,18 +2001,16 @@ namespace ngfem
   public:
     Prism_Dl1xDl3_symtensor_Dl2xDl4_u ( AutoDiff<3,T> lam1, AutoDiff<3,T> lam2, AutoDiff<3,T> alz1, AutoDiff<3,T> alz2, AutoDiff<3,T> av) 
       : l1(lam1), l2(lam2), l3(alz1), l4(alz2), u(av) { ; }
-    INLINE Vec<6,T> Shape() 
+    INLINE Mat<3,3,T> Shape() 
     { 
       auto rotlam1 = Cross(l1, l3);
       auto rotlam2 = Cross(l2, l4);
 
-      Vec<6,T> sigma(0.);
-      sigma[0] = u.Value()*rotlam1.DValue(0)*rotlam2.DValue(0);
-      sigma[1] = u.Value()*rotlam1.DValue(1)*rotlam2.DValue(1);
-      sigma[2] = u.Value()*rotlam1.DValue(2)*rotlam2.DValue(2);
-      sigma[3] = 0.5*u.Value()*(rotlam1.DValue(2)*rotlam2.DValue(1) + rotlam2.DValue(2)*rotlam1.DValue(1));
-      sigma[4] = 0.5*u.Value()*(rotlam1.DValue(2)*rotlam2.DValue(0) + rotlam2.DValue(2)*rotlam1.DValue(0));
-      sigma[5] = 0.5*u.Value()*(rotlam1.DValue(0)*rotlam2.DValue(1) + rotlam2.DValue(0)*rotlam1.DValue(1));
+      // u sym(rotlam1 x rotlam2)
+      Mat<3,3,T> sigma;
+      for (int i = 0; i < 3; i++)
+        for (int j = 0; j < 3; j++)
+          sigma(i,j) = 0.5*u.Value()*(rotlam1.DValue(i)*rotlam2.DValue(j) + rotlam2.DValue(i)*rotlam1.DValue(j));
       return sigma;
     }
 
@@ -1964,19 +2047,14 @@ namespace ngfem
   public:
     t1_symtensor_t2_u (AutoDiff<3,T> at1, AutoDiff<3,T> at2, AutoDiff<3,T> au) 
       : t1(at1), t2(at2), u(au) { ; } 
-    INLINE Vec<6,T> Shape() 
+    INLINE Mat<3,3,T> Shape() 
     { 
-      //auto rotlam1 = t1;
-      //auto rotlam2 = t2;
-
-      Vec<6,T> sigma(0.);
-      sigma[0] = t1.DValue(0)*t2.DValue(0);
-      sigma[1] = t1.DValue(1)*t2.DValue(1);
-      sigma[2] = t1.DValue(2)*t2.DValue(2);
-      sigma[3] = 0.5*(t1.DValue(2)*t2.DValue(1) + t2.DValue(2)*t1.DValue(1));
-      sigma[4] = 0.5*(t1.DValue(2)*t2.DValue(0) + t2.DValue(2)*t1.DValue(0));
-      sigma[5] = 0.5*(t1.DValue(0)*t2.DValue(1) + t2.DValue(0)*t1.DValue(1));
-      return u.Value()*sigma;
+      // u sym(t1 x t2)
+      Mat<3,3,T> sigma;
+      for (int i = 0; i < 3; i++)
+        for (int j = 0; j < 3; j++)
+          sigma(i,j) = 0.5*u.Value()*(t1.DValue(i)*t2.DValue(j) + t2.DValue(i)*t1.DValue(j));
+      return sigma;
     }
 
     Vec<3,T> DivShape()
@@ -2836,7 +2914,7 @@ namespace ngfem
    
       Cast() -> T_CalcShape (addp, SBLambda([&] (int nr, auto val)
                                           {
-                                            shape.Row(nr).Range(0,DIM_STRESS) = val.Shape();
+                                            shape.Row(nr).Range(0,DIM_STRESS) = SymMatToVoigt<DIM+1>(val.Shape());
                                           }));
     }
 
@@ -2849,9 +2927,7 @@ namespace ngfem
       
       Cast() -> T_CalcShape (addp, SBLambda([&](int nr,auto val)
       {
-        Vec<DIM_STRESS> vecshape = val.Shape();
-        BareVector<double> matshape = shape.Row(nr);
-        VecToSymMat<DIM+1> (vecshape, matshape);
+        shape.Row(nr).Range(0,(DIM+1)*(DIM+1)) = val.Shape().AsVector();
       }));
     }
 

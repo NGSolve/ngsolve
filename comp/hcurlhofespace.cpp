@@ -3552,6 +3552,72 @@ namespace ngcomp
       return &ba;
       }*/
 
+  shared_ptr<FESpace> HCurlHighOrderFESpace::CreateStressSpace (Flags flags) const
+  {
+    // stable TDNNS pairings for HCurl(m):
+    //   type1:   trig HDivDiv(m-1, plus), quad HDivDiv(m-1)
+    //   default: trig HDivDiv(m), quad HDivDiv(m-1, quadfullpol);
+    //            mixed meshes: nn-traces P_{m-1}, trig interior m, quad interior m-1
+    //   tets:    type1 HDivDiv(m-1), default HDivDiv(m-1, plus)
+    // stress orders are at least 1: sigma_nn in P0 cannot fix the rigid body modes
+    if (var_order)
+      throw Exception("HCurl::CreateStressSpace: only uniform order is supported");
+    if (ma->GetDimension() == 3)
+      {
+        for (auto el : ma->Elements(VOL))
+          if (DefinedOn(el) && el.GetType() != ET_TET)
+            throw Exception("HCurl::CreateStressSpace: in 3D only tetrahedral meshes are supported");
+        if (!flags.NumFlagDefined("order"))
+          {
+            flags.SetFlag("order", max(order-1, 1));
+            if (!type1 && !flags.GetDefineFlagX("plus").IsFalse()) flags.SetFlag("plus");
+          }
+        return CreateCompanionSpace(*this, "hdivdiv", flags);
+      }
+    if (ma->GetDimension() != 2)
+      throw Exception("HCurl::CreateStressSpace: only 2D and 3D tets are supported");
+    bool hastrig = false, hasquad = false;
+    for (auto el : ma->Elements(VOL))
+      {
+        if (!DefinedOn(el)) continue;
+        if (el.GetType() == ET_TRIG) hastrig = true;
+        if (el.GetType() == ET_QUAD) hasquad = true;
+      }
+    bool mixed = false;
+    if (!flags.NumFlagDefined("order"))
+      {
+        int m = order;
+        if (type1)
+          {
+            flags.SetFlag("order", max(m-1, 1));
+            if (hastrig && !flags.GetDefineFlagX("plus").IsFalse()) flags.SetFlag("plus");
+          }
+        else if (!hasquad)
+          flags.SetFlag("order", max(m, 1));
+        else
+          {
+            flags.SetFlag("order", hastrig ? max(m, 1) : max(m-1, 1));
+            if (!flags.GetDefineFlagX("quadfullpol").IsFalse()) flags.SetFlag("quadfullpol");
+            if (hastrig)
+              {
+                flags.SetFlag("orderfacet", max(m-1, 1));
+                mixed = true;
+              }
+          }
+      }
+    auto fes = CreateCompanionSpace(*this, "hdivdiv", flags);
+    if (mixed)
+      {
+        int oi = max(order-1, 1);
+        for (auto el : ma->Elements(VOL))
+          if (el.GetType() == ET_QUAD)
+            fes->SetOrder(NodeId(NT_ELEMENT, el.Nr()), oi);
+        fes->Update();
+        fes->FinalizeUpdate();
+      }
+    return fes;
+  }
+
   shared_ptr<H1HighOrderFESpace> HCurlHighOrderFESpace::CreateGradientSpace() const
   {
     Flags flags2(flags);

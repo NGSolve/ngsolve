@@ -748,6 +748,11 @@ namespace ngcomp
       "  Add additional internal element bubble";
     docu.Arg("orderinner") = "int = order\n"
       "  Modify order of internal basis functions";
+    docu.Arg("orderfacet") = "int = order\n"
+      "  Modify order of facet basis functions (normal-normal trace)";
+    docu.Arg("algebraicmapping") = "bool = True\n"
+      "  Map shapes by the double Piola transform (nn-continuous).\n"
+      "  False: evaluate with physical second derivatives of the mapping (2D volume only, not nn-continuous on non-affine elements)";
     return docu;
   }
 
