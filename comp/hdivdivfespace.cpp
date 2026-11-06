@@ -1158,5 +1158,12 @@ namespace ngcomp
   }  
 
 
+  shared_ptr<FESpace> HDivDivFESpace :: CreateMultiplierSpace (Flags flags) const
+  {
+    if (!flags.NumFlagDefined("order"))
+      flags.SetFlag("order", uniform_order_facet);
+    return CreateCompanionSpace(*this, "normalfacet", flags);
+  }
+
   static RegisterFESpace<HDivDivFESpace> init ("hdivdiv");
 }

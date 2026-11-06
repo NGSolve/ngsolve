@@ -383,6 +383,13 @@ namespace ngcomp
     return l2;
   }
 
+  shared_ptr<FESpace> HDivHighOrderFESpace :: CreateMultiplierSpace(Flags flags) const
+  {
+    if (!flags.NumFlagDefined("order"))
+      flags.SetFlag("order", uniform_order_facet > -1 ? uniform_order_facet : order);
+    return CreateCompanionSpace(*this, "facet", flags);
+  }
+
   void HDivHighOrderFESpace :: Average (BaseVector & vec) const
   {
     // auto & pairs = GetDCPairs();

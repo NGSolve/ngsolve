@@ -172,6 +172,9 @@ namespace ngcomp
     // L2 space of matching order, containing div of this space
     shared_ptr<FESpace> CreateDivergenceSpace() const;
 
+    // FacetFESpace for u.n
+    shared_ptr<FESpace> CreateMultiplierSpace (Flags flags = Flags()) const override;
+
   };
 
 }

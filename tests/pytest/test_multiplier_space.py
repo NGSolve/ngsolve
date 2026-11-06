@@ -1,0 +1,84 @@
+import pytest
+import numpy as np
+from ngsolve import *
+from netgen.geom2d import unit_square
+from netgen.csg import unit_cube
+from ngsolve.meshes import MakeStructured2DMesh, MakeStructured3DMesh
+
+meshes = {
+    "trig": lambda: Mesh(unit_square.GenerateMesh(maxh=0.4)),
+    "quad": lambda: MakeStructured2DMesh(quads=True, nx=3, ny=3),
+    "tet": lambda: Mesh(unit_cube.GenerateMesh(maxh=0.6)),
+    "hex": lambda: MakeStructured3DMesh(hexes=True, nx=2, ny=2, nz=2),
+}
+
+def tang(v, n):
+    return v - (v*n)*n
+
+spaces = {
+    "HDiv": (lambda mesh, k, **kw: HDiv(mesh, order=k, **kw),
+             lambda s, mu, n: (s*n)*mu, "FacetFESpace"),
+    "HDivDiv": (lambda mesh, k, **kw: HDivDiv(mesh, order=k, **kw),
+                lambda s, mu, n: ((s*n)*n)*(mu*n), "NormalFacetFESpace"),
+    "HCurlDiv": (lambda mesh, k, **kw: HCurlDiv(mesh, order=k, **kw),
+                 lambda s, mu, n: tang(s*n, n)*tang(mu, n), "TangentialFacetFESpace"),
+}
+
+# multiplier is exact: trace map onto it is surjective, and its kernel is the conforming space
+@pytest.mark.parametrize("meshname", meshes)
+@pytest.mark.parametrize("spacename", spaces)
+@pytest.mark.parametrize("order", [0, 1, 2])
+def test_multiplier_exact(meshname, spacename, order):
+    mesh = meshes[meshname]()
+    create, trace, mname = spaces[spacename]
+    Xdc = create(mesh, order, discontinuous=True)
+    M = Xdc.CreateMultiplierSpace()
+    assert type(M).__name__ == mname
+    s, mu = Xdc.TrialFunction(), M.TestFunction()
+    n = specialcf.normal(mesh.dim)
+    b = BilinearForm(trialspace=Xdc, testspace=M)
+    b += trace(s, mu, n)*dx(element_boundary=True)
+    b.Assemble()
+    sv = np.linalg.svd(b.mat.ToDense().NumPy(), compute_uv=False)
+    rank = np.sum(sv > 1e-10*sv[0])
+    assert rank == M.ndof
+    Xc = create(mesh, order, dirichlet=".*")
+    assert Xdc.ndof - rank == sum(Xc.FreeDofs())
+
+def test_multiplier_discontinuous_wrapper():
+    mesh = meshes["trig"]()
+    M1 = HDiv(mesh, order=2).CreateMultiplierSpace()
+    M2 = Discontinuous(HDiv(mesh, order=2)).CreateMultiplierSpace()
+    assert type(M2).__name__ == "FacetFESpace" and M1.ndof == M2.ndof
+
+def test_multiplier_flags():
+    mesh = meshes["trig"]()
+    M = HDiv(mesh, order=2, complex=True).CreateMultiplierSpace(dirichlet="left|right")
+    assert M.is_complex
+    assert sum(M.FreeDofs()) < M.ndof
+    assert M.globalorder == 2
+    with pytest.raises(Exception):
+        H1(mesh, order=2).CreateMultiplierSpace()
+
+# hybrid mixed Poisson reproduces the conforming mixed solution
+def test_hybrid_mixed_poisson():
+    mesh = Mesh(unit_square.GenerateMesh(maxh=0.2))
+    V = Discontinuous(HDiv(mesh, order=2))
+    Q = L2(mesh, order=1)
+    M = V.CreateMultiplierSpace(dirichlet=".*")
+    X = V*Q*M
+    (s, p, l), (ts, q, tl) = X.TnT()
+    n = specialcf.normal(2)
+    a = BilinearForm((s*ts + div(s)*q + div(ts)*p)*dx
+                     - ((s*n)*tl + (ts*n)*l)*dx(element_boundary=True)).Assemble()
+    f = LinearForm(-q*dx).Assemble()
+    gf = GridFunction(X)
+    gf.vec.data = a.mat.Inverse(X.FreeDofs(), inverse="umfpack") * f.vec
+
+    X2 = HDiv(mesh, order=2)*Q
+    (s, p), (ts, q) = X2.TnT()
+    a2 = BilinearForm((s*ts + div(s)*q + div(ts)*p)*dx).Assemble()
+    f2 = LinearForm(-q*dx).Assemble()
+    gf2 = GridFunction(X2)
+    gf2.vec.data = a2.mat.Inverse(inverse="umfpack") * f2.vec
+    assert sqrt(Integrate((gf.components[1]-gf2.components[1])**2, mesh)) < 1e-10

@@ -2504,6 +2504,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
   }
 
 
+  shared_ptr<FESpace> FESpace :: CreateMultiplierSpace (Flags flags) const
+  {
+    throw Exception("CreateMultiplierSpace not available for "+GetClassName());
+  }
+
   shared_ptr<BaseMatrix> FESpace :: GetTraceOperator (shared_ptr<FESpace> tracespace, bool avg) const
   {
     throw Exception("GetTraceOperator not overloaded");
@@ -4544,6 +4549,24 @@ lot of new non-zero entries in the matrix!\n" << endl;
     if (!space)
       throw Exception (string ("undefined fespace '") + type + '\'');
     return space;
+  }
+
+  shared_ptr<FESpace> CreateCompanionSpace (const FESpace & base, const string & type, Flags flags)
+  {
+    if (base.IsComplex()) flags.SetFlag("complex");
+    if (base.DoesAutoUpdate()) flags.SetFlag("autoupdate");
+    auto fes = CreateFESpace (type, base.GetMeshAccess(), flags);
+    if (!flags.AnyFlagDefined("definedon") && base.DefinedOn(VOL).Size())
+      {
+        BitArray defon(base.GetMeshAccess()->GetNDomains());
+        defon.Clear();
+        for (auto i : Range(base.DefinedOn(VOL)))
+          if (base.DefinedOn(VOL)[i]) defon.SetBit(i);
+        fes->SetDefinedOn(VOL, defon);
+      }
+    fes->Update();
+    fes->FinalizeUpdate();
+    return fes;
   }
 
 
