@@ -1696,6 +1696,9 @@ component : int
   ExportFESpace<HDivHighOrderSurfaceFESpace> (m, "HDivSurface")
     .def("Average", &HDivHighOrderSurfaceFESpace::Average,
          py::arg("vector"))
+    .def("CreateDivergenceSpace", [](shared_ptr<HDivHighOrderSurfaceFESpace> self)
+         { return self->CreateDivergenceSpace(); },
+         "SurfaceL2 space of matching order, containing the surface div of this space.")
     ;
 
   ExportFESpace<VectorFESpace<L2SurfaceHighOrderFESpace>> (m, "VectorSurfaceL2");

@@ -65,6 +65,30 @@ def test_multiplier_exact_surface(quad, order):
     assert rank == M.ndof
     assert Xdc.ndof - rank == HDivSurface(mesh, order=order).ndof
 
+# SurfaceL2 from HDivSurface.CreateDivergenceSpace contains div and is onto
+@pytest.mark.parametrize("quad", [False, True])
+@pytest.mark.parametrize("RT", [False, True])
+@pytest.mark.parametrize("hodivfree", [False, True])
+@pytest.mark.parametrize("order", [0, 1, 2, 3])
+def test_surface_divergence_space(quad, RT, hodivfree, order):
+    from netgen.occ import Box, OCCGeometry
+    from netgen.meshing import MeshingStep
+    mesh = Mesh(OCCGeometry(Box((0,0,0), (1,1,1))).GenerateMesh(maxh=0.5, quad_dominated=quad,
+                                                               perfstepsend=MeshingStep.MESHSURFACE))
+    fes = HDivSurface(mesh, order=order, RT=RT, hodivfree=hodivfree)
+    Q = fes.CreateDivergenceSpace()
+    X = Discontinuous(fes, BND=True)
+    u, v = X.TnT()
+    p, q = Q.TnT()
+    D = BilinearForm(div(u.Trace())*div(v.Trace())*ds).Assemble().mat.ToDense().NumPy()
+    M = BilinearForm(p*q*ds).Assemble().mat.ToDense().NumPy()
+    B = BilinearForm(trialspace=X, testspace=Q)
+    B += div(u.Trace())*q*ds
+    B = B.Assemble().mat.ToDense().NumPy()
+    assert np.linalg.norm(D - B.T @ np.linalg.solve(M, B)) < 1e-8*np.linalg.norm(D)
+    sv = np.linalg.svd(B, compute_uv=False)
+    assert np.sum(sv > 1e-10*sv[0]) == Q.ndof
+
 def test_multiplier_only_on_discontinuous():
     mesh = meshes["trig"]()
     assert not hasattr(HDiv(mesh, order=2), "CreateMultiplierSpace")
