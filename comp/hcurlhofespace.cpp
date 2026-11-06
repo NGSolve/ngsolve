@@ -2,6 +2,7 @@
    High Order Finite Element Space for H(Curl) 
 */
 #include "hcurlhofespace.hpp"
+#include <set>
 #include "hcurlfes.hpp"
 #include <../fem/hcurlhofe.hpp> 
 #include <../fem/hcurllofe.hpp>
@@ -3554,64 +3555,75 @@ namespace ngcomp
 
   shared_ptr<FESpace> HCurlHighOrderFESpace::CreateStressSpace (Flags flags) const
   {
-    // stable TDNNS pairings for HCurl(m):
-    //   type1:   trig HDivDiv(m-1, plus), quad HDivDiv(m-1)
-    //   default: trig HDivDiv(m), quad HDivDiv(m-1, quadfullpol);
-    //            mixed meshes: nn-traces P_{m-1}, trig interior m, quad interior m-1
-    //   tets:    type1 HDivDiv(m-1), default HDivDiv(m-1, plus)
-    // stress orders are at least 1: sigma_nn in P0 cannot fix the rigid body modes
+    // TDNNS stress space (HDivDiv) for HCurl(m), as (facet order, interior order):
+    //   single element type:
+    //     type1:   all types (m-1, m-1), plus on trigs
+    //     default: trig (m, m), quad (m-1, m-1) quadfullpol, tet (m-1, m-1) plus,
+    //              prism (m, m), hex (m-1, m)
+    //   mixed meshes: common facet order m-1, interior orders as above
+    //     (default: trig, prism, hex m; quad, tet m-1)
+    // orders are at least 1 (sigma_nn in P0 cannot fix rigid modes), except for type1 m=1
+    // on meshes without simplices: there HCurl(1,type1) is not piecewise rigid and order 0 converges
     if (var_order)
       throw Exception("HCurl::CreateStressSpace: only uniform order is supported");
-    if (ma->GetDimension() == 3)
-      {
-        for (auto el : ma->Elements(VOL))
-          if (DefinedOn(el) && el.GetType() != ET_TET)
-            throw Exception("HCurl::CreateStressSpace: in 3D only tetrahedral meshes are supported");
-        if (!flags.NumFlagDefined("order"))
-          {
-            flags.SetFlag("order", max(order-1, 1));
-            if (!type1 && !flags.GetDefineFlagX("plus").IsFalse()) flags.SetFlag("plus");
-          }
-        return CreateCompanionSpace(*this, "hdivdiv", flags);
-      }
-    if (ma->GetDimension() != 2)
-      throw Exception("HCurl::CreateStressSpace: only 2D and 3D tets are supported");
-    bool hastrig = false, hasquad = false;
+    if (ma->GetDimension() != 2 && ma->GetDimension() != 3)
+      throw Exception("HCurl::CreateStressSpace: only 2D and 3D meshes are supported");
+
+    std::set<ELEMENT_TYPE> types;
     for (auto el : ma->Elements(VOL))
+      if (DefinedOn(el)) types.insert(el.GetType());
+    for (auto et : types)
+      if (et != ET_TRIG && et != ET_QUAD && et != ET_TET && et != ET_PRISM && et != ET_HEX)
+        throw Exception(string("HCurl::CreateStressSpace: element type ")+ToString(et)+" is not supported");
+    if (flags.NumFlagDefined("order"))
+      return CreateCompanionSpace(*this, "hdivdiv", flags);
+
+    int m = order;
+    bool simplices = types.count(ET_TRIG) || types.count(ET_TET);
+    int lo = (type1 && !simplices) ? 0 : 1;
+    auto clamp = [lo] (int o) { return max(o, lo); };
+    bool mixed = types.size() > 1;
+
+    // interior order per element type, and facet order
+    auto inner = [&] (ELEMENT_TYPE et)
+    {
+      if (type1) return clamp(m-1);
+      switch (et)
+        {
+        case ET_TRIG: case ET_PRISM: case ET_HEX: return clamp(m);
+        default: return clamp(m-1);
+        }
+    };
+    int facet;
+    if (type1 || mixed)
+      facet = clamp(m-1);
+    else
       {
-        if (!DefinedOn(el)) continue;
-        if (el.GetType() == ET_TRIG) hastrig = true;
-        if (el.GetType() == ET_QUAD) hasquad = true;
+        ELEMENT_TYPE et = *types.begin();
+        facet = (et == ET_TRIG || et == ET_PRISM) ? clamp(m) : clamp(m-1);
       }
-    bool mixed = false;
-    if (!flags.NumFlagDefined("order"))
-      {
-        int m = order;
-        if (type1)
-          {
-            flags.SetFlag("order", max(m-1, 1));
-            if (hastrig && !flags.GetDefineFlagX("plus").IsFalse()) flags.SetFlag("plus");
-          }
-        else if (!hasquad)
-          flags.SetFlag("order", max(m, 1));
-        else
-          {
-            flags.SetFlag("order", hastrig ? max(m, 1) : max(m-1, 1));
-            if (!flags.GetDefineFlagX("quadfullpol").IsFalse()) flags.SetFlag("quadfullpol");
-            if (hastrig)
-              {
-                flags.SetFlag("orderfacet", max(m-1, 1));
-                mixed = true;
-              }
-          }
-      }
+
+    int maxinner = facet;
+    for (auto et : types) maxinner = max(maxinner, inner(et));
+    flags.SetFlag("order", maxinner);
+    if (facet != maxinner)
+      flags.SetFlag("orderfacet", facet);
+    if (!flags.GetDefineFlagX("plus").IsFalse() &&
+        ((type1 && types.count(ET_TRIG)) || (!type1 && types.count(ET_TET))))
+      flags.SetFlag("plus");
+    if (!type1 && types.count(ET_QUAD) && !flags.GetDefineFlagX("quadfullpol").IsFalse())
+      flags.SetFlag("quadfullpol");
+
     auto fes = CreateCompanionSpace(*this, "hdivdiv", flags);
-    if (mixed)
+    bool modified = false;
+    for (auto el : ma->Elements(VOL))
+      if (DefinedOn(el) && inner(el.GetType()) != maxinner)
+        {
+          fes->SetOrder(NodeId(NT_ELEMENT, el.Nr()), inner(el.GetType()));
+          modified = true;
+        }
+    if (modified)
       {
-        int oi = max(order-1, 1);
-        for (auto el : ma->Elements(VOL))
-          if (el.GetType() == ET_QUAD)
-            fes->SetOrder(NodeId(NT_ELEMENT, el.Nr()), oi);
         fes->Update();
         fes->FinalizeUpdate();
       }

@@ -1647,11 +1647,13 @@ component : int
                                         item.first.cast<string>(), string(py::str(py::type::of(pyfes))));
            return fes;
          },
-         "HDivDiv stress space for TDNNS elasticity with this space as displacement (2D, 3D tets):\n"
-         "type1=True: trigs HDivDiv(order-1, plus=True), quads and tets HDivDiv(order-1);\n"
-         "type1=False: trigs HDivDiv(order), quads HDivDiv(order-1, quadfullpol=True),\n"
-         "tets HDivDiv(order-1, plus=True); on mixed 2D meshes nn-traces of order-1.\n"
-         "Stress orders are at least 1.\n"
+         "HDivDiv stress space for TDNNS elasticity with this space as displacement\n"
+         "(trigs, quads, tets, prisms, hexes, also mixed; pyramids raise an exception):\n"
+         "type1=True: HDivDiv(order-1), plus=True on trigs;\n"
+         "type1=False: trigs/prisms HDivDiv(order), quads HDivDiv(order-1, quadfullpol=True),\n"
+         "tets HDivDiv(order-1, plus=True), hexes HDivDiv(order, orderfacet=order-1);\n"
+         "mixed meshes use the common facet order order-1 with these interior orders.\n"
+         "Orders are at least 1, except type1=True, order=1 on meshes without simplices.\n"
          "kwargs (dirichlet for the nn-essential boundary, discontinuous, ...) are passed to HDivDiv,\n"
          "an explicit order disables the automatic choice.")
     ;
