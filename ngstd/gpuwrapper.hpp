@@ -286,6 +286,7 @@ namespace ngs_gpu
     virtual string Name() const = 0;
     const shared_ptr<Library> & GetLibrary() const { return library; }
     virtual KernelInfo Info (size_t groupsize = 0) const { return {}; }
+    virtual void SetMaxDynamicGroupMemory (size_t bytes) { }
     // nullptr if the source had no KERNEL(...) declaration for it
     const KernelSignature * Signature() const;
   };
@@ -415,6 +416,7 @@ namespace ngs_gpu
     // memory usable by kernels (cuda: device memory, metal: recommended
     // working set, cpu: physical memory)
     virtual size_t MemoryBytes() const = 0;
+    virtual size_t MaxGroupMemoryOptIn() const { return 0; }
 
     // raw bytes
     shared_ptr<Buffer> NewBuffer (size_t bytes, MemType mt = MemType::Device)
