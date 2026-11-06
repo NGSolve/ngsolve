@@ -383,6 +383,13 @@ namespace ngcomp
     return l2;
   }
 
+  shared_ptr<FESpace> HDivHighOrderFESpace :: CreateMultiplierSpace(Flags flags) const
+  {
+    if (!flags.NumFlagDefined("order"))
+      flags.SetFlag("order", uniform_order_facet > -1 ? uniform_order_facet : order);
+    return CreateCompanionSpace(*this, "facet", flags);
+  }
+
   void HDivHighOrderFESpace :: Average (BaseVector & vec) const
   {
     // auto & pairs = GetDCPairs();
@@ -642,7 +649,7 @@ namespace ngcomp
                   inci = pc[0]*(pc[0]-1)/2 + p[0]*(p[0]-1)/2 + p[0]-1;
                 else
                   inci = pc[0]*(pc[0]-1)/2;
-                if (RT)
+                if (RT && !ho_div_free)
                   inci += pc[0] + 1;
                 break;
               case ET_QUAD:
@@ -757,7 +764,7 @@ namespace ngcomp
                     for (auto f : ma->GetElFacets(i))
                       if (!boundary_facet[f]) inci += order_facet[f][0]+1;
 		  }
-		if (RT)
+		if (RT && !ho_div_free)
                   {
                     if (p[0] > 0)
                       inci += (p[0]+1) * (p[0]+2)/2;

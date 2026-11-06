@@ -483,7 +483,7 @@ namespace ngfem
 		    else
 		      ndof += order_inner[0]*order_inner[0]-1;
 		  }
-                if (RT && order_inner[0] > 0)
+                if (RT && !ho_div_free && order_inner[0] > 0)
 		  ndof += order_inner[0] + 1;
 	      }
 	    else
@@ -567,7 +567,7 @@ namespace ngfem
                 ndof += pc*(pc+1)*(pc-1)/3 + pc*(pc-1)/2;
               if(p > 1 && !ho_div_free) 
                 ndof += p*(p+1)*(p-1)/6 + p*(p-1)/2 + p-1;
-	      if(RT && p >= 1)
+	      if(RT && !ho_div_free && p >= 1)
 		ndof += (p+1)*(p+2)/2;
               break;
 
@@ -658,7 +658,7 @@ namespace ngfem
 		    else
 		      nf += order_inner[0]*order_inner[0]-1;
 		  }
-                if (RT && order_inner[0] > 0)
+                if (RT && !ho_div_free && order_inner[0] > 0)
 		  nf += order_inner[0] + 1;
 	      }
 	    else
@@ -726,7 +726,7 @@ namespace ngfem
                 nc += pc*(pc+1)*(pc-1)/3 + pc*(pc-1)/2;
               if(p > 1 && !ho_div_free) 
                 nc += p*(p+1)*(p-1)/6 + p*(p-1)/2 + p-1;
-	      if(RT && p >= 1)
+	      if(RT && !ho_div_free && p >= 1)
 		nc += (p+1)*(p+2)/2;
               break;
               

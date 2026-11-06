@@ -79,6 +79,12 @@ namespace ngs_cuda
     string Name() const override { return name; }
     CUfunction Get() const { return func; }
 
+    void SetMaxDynamicGroupMemory (size_t bytes) override
+    {
+      Check (cuFuncSetAttribute (func, CU_FUNC_ATTRIBUTE_MAX_DYNAMIC_SHARED_SIZE_BYTES, int(bytes)),
+             "cuFuncSetAttribute");
+    }
+
     KernelInfo Info (size_t groupsize) const override
     {
       KernelInfo ki;
@@ -625,6 +631,8 @@ namespace ngs_cuda
     { return Attr (CU_DEVICE_ATTRIBUTE_WARP_SIZE); }
     size_t ComputeUnits() const override
     { return Attr (CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT); }
+    size_t MaxGroupMemoryOptIn() const override
+    { return Attr (CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK_OPTIN); }
     size_t MemoryBytes() const override
     {
       size_t bytes = 0;

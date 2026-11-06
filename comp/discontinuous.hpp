@@ -53,6 +53,9 @@ namespace ngcomp
     virtual SymbolTable<shared_ptr<DifferentialOperator>> GetAdditionalEvaluators () const override
     { return space->GetAdditionalEvaluators (); }
 
+    shared_ptr<FESpace> CreateMultiplierSpace (Flags flags) const override
+    { return space->CreateMultiplierSpace (flags); }
+
     [[deprecated("Use GetDofNrs(NODE_TYPE(NT_VERTEX,nr) instead")]]    
     virtual void GetVertexDofNrs (int vnr,  Array<DofId> & dnums) const override;
 

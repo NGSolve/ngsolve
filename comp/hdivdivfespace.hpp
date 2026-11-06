@@ -62,6 +62,8 @@ namespace ngcomp
     
     virtual void UpdateCouplingDofArray() override;
 
+    // NormalFacetFESpace for sigma_nn
+    shared_ptr<FESpace> CreateMultiplierSpace (Flags flags = Flags()) const override;
   };
 
 }

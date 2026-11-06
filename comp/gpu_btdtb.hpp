@@ -43,6 +43,7 @@ namespace ngcomp
     int h, w;
     int ne, warps;
     int ngroups;
+    size_t dyn_group_bytes = 0;
 
     shared_ptr<ngs_gpu::Library> library;
     shared_ptr<ngs_gpu::Kernel> kernel;
@@ -341,9 +342,16 @@ namespace ngcomp
         of the second stage read 4 rows x 64 bytes, which a power-of-two row length
         would put on the same banks. Measured Sept 2026 on 5090 / H100.
       */
+#if ($DYN_SMEM==1)
+      extern __shared__ __align__(16) unsigned char ngs_dyn_smem[];
+      Real * elvecx_raw = reinterpret_cast<Real*> (ngs_dyn_smem);
+      Real * elvecy_raw = elvecx_raw + RoundUp<8> ($BS_ELS*locdofsx_roundup);
+      Real * pointvalsref_raw = elvecy_raw + RoundUp<8> ($BS_ELS*locdofsy_roundup);
+#else
       SHARED(Real, elvecx_raw, $BS_ELS*locdofsx_roundup);
       SHARED(Real, elvecy_raw, $BS_ELS*locdofsy_roundup);
       SHARED(Real, pointvalsref_raw, MAXDIMREF*$BS_IPTS*$BS_ELS);
+#endif
       auto mat_elvecx = MakeElvecView<Real, $BS_ELS, locdofsx_roundup>(elvecx_raw);
       auto mat_elvecy = MakeElvecView<Real, $BS_ELS, locdofsy_roundup>(elvecy_raw);
       auto mat_pointvalsref = MakeRotMatrix<$BS_ELS,2,1,true>(pointvalsref_raw);
@@ -359,7 +367,11 @@ namespace ngcomp
 
       // geometry coefficients of the batch [element][coordinate][node], and for
       // straight elements (constant gradients) F per element [element][coord][refdir]
+#if ($DYN_SMEM==1)
+      Real * elgeo = pointvalsref_raw + RoundUp<8> (MAXDIMREF*$BS_IPTS*$BS_ELS);
+#else
       SHARED(Real, elgeo, $BS_ELS*dimr*geo_roundup);
+#endif
       auto mat_bgeo = MakeBareMatrix<RowMajor>(bgeo, geo_roundup);
 #if ($GEO_STAGED==1)
       // F at the points of the current ip block [coordinate*dims+refdir][ip][element]
@@ -790,6 +802,17 @@ R"(
                       ? "GLOBAL_ATOMIC(Real, y)" : "GLOBAL(Real, y)");
     
     code = Substitute(code, "$NIP", ToString(nip)+" /*nip*/ ");
+    {
+      auto r8 = [] (size_t n) { return RoundUp<8>(n); };
+      size_t bs = pmat->opts.BS_els;
+      dyn_group_bytes = sizeof(REAL) * (r8(bs*r8(locdofsx)) + r8(bs*r8(locdofsy))
+                                        + r8(size_t(max(dimxref,dimyref))*pmat->opts.BS_ipts*bs)
+                                        + bs*dimr*geo_stride);
+      size_t fvals_bytes = geo_staged ? sizeof(REAL)*dimr*dims*pmat->opts.BS_ipts*bs : 0;
+      if (dyn_group_bytes + fvals_bytes <= 48*1024 || !device->MaxGroupMemoryOptIn())
+        dyn_group_bytes = 0;
+    }
+    code = Substitute(code, "$DYN_SMEM", dyn_group_bytes ? "1" : "0");
     code = Substitute(code, "$BS_ELS", ToString(pmat->opts.BS_els)+" /*BS_ELS*/ ");
     code = Substitute(code, "$BS_IPTS", ToString(pmat->opts.BS_ipts)+" /*BS_IPTS*/ ");
     code = Substitute(code, "$DIMR", ToString(dimr)+" /*dimr*/ ");
@@ -819,7 +842,7 @@ R"(
     {
       // element-boundary integrals: weight * |Cof(F) nref_ip| instead of weight * det
       bool eb = pmat->facetnr.Size() > 0;
-      string table, measure = "Real meas = J;";
+      string table, measure = "Real meas = (J > 0) ? J : -J;";
       if (eb)
         {
           // reference normal per facet, facet of each integration point
@@ -934,6 +957,15 @@ R"(
       library = entry;
     }
     kernel = library->GetKernel ("apply_btdtb");
+    if (dyn_group_bytes)
+      {
+        size_t total = dyn_group_bytes + kernel->Info().shared_bytes;
+        if (total > device->MaxGroupMemoryOptIn())
+          throw std::runtime_error("GPU_BTDTBMatrix: kernel uses too much shared data: "
+                          + ToString(total) + " bytes, device allows "
+                          + ToString(device->MaxGroupMemoryOptIn()) + " (reduce BS_els)");
+        kernel->SetMaxDynamicGroupMemory (dyn_group_bytes);
+      }
 
     /*
       one group per element batch: no grid-stride loop in the kernel, so no
@@ -946,7 +978,8 @@ R"(
     if (getenv("NGS_BTDTB_INFO"))
       cout << "apply_btdtb: " << (cached ? "cached " : "compiled ") << kernel->Info(warps*32) << " groups=" << ngroups
            << " groupsize=" << warps*32 << " intervals x/y=" << nrunsx << "/" << nrunsy
-           << " locdofs x/y=" << locdofsx << "/" << locdofsy << endl;
+           << " locdofs x/y=" << locdofsx << "/" << locdofsy
+           << " dynamic shared=" << dyn_group_bytes << "B" << endl;
   }
 
 
@@ -965,7 +998,7 @@ R"(
                      buffer_dofx, buffer_dofy,
                      buffer_bmatx, buffer_bmaty,
                      buffer_weights, buffer_geocoefs, buffer_bgeo, buffer_sgeo, buffer_ddgeo,
-                     buffer_domain, REAL(s), int(ne) });
+                     buffer_domain, REAL(s), int(ne) }, dyn_group_bytes);
   }
 }
 

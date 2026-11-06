@@ -588,7 +588,7 @@ void HDivHighOrderSurfaceFESpace :: Average (BaseVector & vec) const
                 else
 		  inci = p[0]*(p[0]-1)/2;
 		    //inci = pc[0]*(pc[0]-1)/2;
-                if (RT)
+                if (RT && !ho_div_free)
                   inci += p[0] + 1;
                 break;
               case ET_QUAD:
@@ -909,6 +909,24 @@ void HDivHighOrderSurfaceFESpace :: Average (BaseVector & vec) const
     dnums = GetElementDofs (elnr);
   }
 
+
+  shared_ptr<FESpace> HDivHighOrderSurfaceFESpace :: CreateMultiplierSpace (Flags flags) const
+  {
+    if (!flags.NumFlagDefined("order"))
+      flags.SetFlag("order", uniform_order_facet > -1 ? uniform_order_facet : order);
+    return CreateCompanionSpace(*this, "facetsurface", flags);
+  }
+
+  shared_ptr<FESpace> HDivHighOrderSurfaceFESpace :: CreateDivergenceSpace () const
+  {
+    // div onto P_{k-1} on trigs (P_k with RT), Q_k on quads; hodivfree: P_0, RT ignored
+    int trigorder = ho_div_free ? 0 : (RT ? order : max(order-1, 0));
+    int quadorder = ho_div_free ? 0 : order;
+    Flags flags;
+    flags.SetFlag("order", trigorder);
+    flags.SetFlag("quadbonus", quadorder-trigorder);
+    return CreateCompanionSpace(*this, "l2surf", flags);
+  }
 
   static RegisterFESpace<HDivHighOrderSurfaceFESpace> init ("hdivhosurface");
 }

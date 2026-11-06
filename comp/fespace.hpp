@@ -764,6 +764,9 @@ ANY                  1 1 1 1 | 15
 
     virtual shared_ptr<BaseMatrix> GetTraceOperator (shared_ptr<FESpace> tracespace, bool avg) const;
 
+    // facet space for hybridization, exact for the broken space; flags override defaults
+    virtual shared_ptr<FESpace> CreateMultiplierSpace (Flags flags = Flags()) const;
+
     virtual shared_ptr<BaseMatrix> ConvertL2Operator (shared_ptr<FESpace> l2space) const;
     
     virtual void GetTrace (const FESpace & tracespace, const BaseVector & in, BaseVector & out, bool avg,
@@ -1465,6 +1468,11 @@ ANY                  1 1 1 1 | 15
   extern NGS_DLL_HEADER shared_ptr<FESpace> CreateFESpace (const string & type,
                                                            shared_ptr<MeshAccess> ma,
                                                            const Flags & flags);
+
+  /// space of given type on the same mesh, inherits complex, autoupdate and definedon of base
+  extern NGS_DLL_HEADER shared_ptr<FESpace> CreateCompanionSpace (const FESpace & base,
+                                                                  const string & type,
+                                                                  Flags flags);
 
 
   /**

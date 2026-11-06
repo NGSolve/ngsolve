@@ -1013,5 +1013,12 @@ namespace ngcomp
   }
 
 
+  shared_ptr<FESpace> HCurlDivFESpace :: CreateMultiplierSpace (Flags flags) const
+  {
+    if (!flags.NumFlagDefined("order"))
+      flags.SetFlag("order", uniform_order_facet);
+    return CreateCompanionSpace(*this, "tangentialfacet", flags);
+  }
+
   static RegisterFESpace<HCurlDivFESpace> init ("hcurldiv");
 }
