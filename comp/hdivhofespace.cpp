@@ -168,6 +168,8 @@ namespace ngcomp
     DefineDefineFlag("hodivfree"); 
 
     DefineDefineFlag("RT");
+    for (auto et : { ET_TRIG, ET_QUAD, ET_TET, ET_PRISM, ET_PYRAMID, ET_HEX })
+      DefineDefineFlag(hdiv_ndof::RTFlagName(et).c_str());
     
     if(parseflags) CheckFlags(flags);
 
@@ -241,8 +243,7 @@ namespace ngcomp
 
     ho_div_free = flags.GetDefineFlag("hodivfree"); 
     fixed_order = flags.GetDefineFlag ("fixedorder");
-    RT = flags.GetDefineFlag ("RT");
-    if (order==0) RT = true;
+    hdiv_ndof::SetupRT (flags, order, et_RT);
     
     uniform_order_inner = int (flags.GetNumFlag ("orderinner", -1));
     
@@ -318,9 +319,13 @@ namespace ngcomp
   DocInfo HDivHighOrderFESpace :: GetDocu ()
   {
     auto docu = FESpace::GetDocu();
-    docu.Arg("RT") = "bool = False\n"
-      "  Raviart-Thomas type: div maps onto L2(order) instead of L2(order-1),\n"
-      "  on all element types. order = degree of the normal trace";
+    docu.Arg("RT") = "bool = unset\n"
+      "  Raviart-Thomas type: div maps onto L2(order) instead of L2(order-1).\n"
+      "  order = degree of the normal trace. Unset: RT on quads, prisms and hexes,\n"
+      "  BDM type on trigs, tets and pyramids. True/False: on all element types";
+    for (auto et : { ET_TRIG, ET_QUAD, ET_TET, ET_PRISM, ET_PYRAMID, ET_HEX })
+      docu.Arg(hdiv_ndof::RTFlagName(et)) = "bool = unset\n"
+        "  RT for this element type, overrides 'RT'";
     docu.Arg("discontinuous") = "bool = False\n"
       "  Create discontinuous HDiv space";
     docu.Arg("hodivfree") = "bool = False\n"
@@ -341,7 +346,7 @@ namespace ngcomp
     {
       if (ho_div_free) return 0;
       int p = order_inner[ei.Nr()][0];
-      return RT ? p : max(p-1, 0);
+      return et_RT[ma->GetElType(ei)] ? p : max(p-1, 0);
     };
 
     Flags l2flags;
@@ -634,7 +639,7 @@ namespace ngcomp
         for (size_t i = 0; i < nel; i++)
           {
             ElementId ei(VOL, i);
-            int inci = hdiv_ndof::Inner (ma->GetElType(ei), order_inner[i], RT, ho_div_free);
+            int inci = hdiv_ndof::Inner (ma->GetElType(ei), order_inner[i], et_RT[ma->GetElType(ei)], ho_div_free);
 
 	    if (highest_order_dc)
 	      {
@@ -715,7 +720,7 @@ namespace ngcomp
           {
             IVec<3> p = order_inner[i];
             auto et = ma->GetElType(ElementId(VOL,i));
-            int inci = hdiv_ndof::Inner (et, p, RT, ho_div_free);
+            int inci = hdiv_ndof::Inner (et, p, et_RT[et], ho_div_free);
             if (highest_order_dc)
               switch (et)
                 {
@@ -924,7 +929,7 @@ namespace ngcomp
     hofe -> SetVertexNumbers (ngel.Vertices());
     hofe -> SetHODivFree (ho_div_free);
     hofe -> SetOnlyHODiv (onlyhdiv);
-    hofe -> SetRT(RT);
+    hofe -> SetRT(et_RT[ET]);
     hofe -> SetOrderInner (order_inner[elnr]);
         
     switch (int(ET_trait<ET>::DIM))

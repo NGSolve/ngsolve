@@ -35,7 +35,7 @@ namespace ngcomp
     bool ho_div_free;       
     bool highest_order_dc;
 
-    bool RT = false; 
+    bool et_RT[30] = { false };   // RT per element type, see hdiv_ndof::SetupRT
 
     Array<IVec<2>> dc_pairs;
     

@@ -70,6 +70,29 @@ namespace ngfem
     {
       return DivFree(et, p) + (hodivfree ? 0 : Div(et, p, RT));
     }
+
+    // per element type flag, e.g. "hexRT"
+    inline string RTFlagName (ELEMENT_TYPE et)
+    {
+      string name = ElementTopology::GetElementName(et);
+      std::transform(name.begin(), name.end(), name.begin(), ::tolower);
+      return name + "RT";
+    }
+
+    // RT per element type: "<et>RT" flag, else "RT" flag,
+    // else RT on tensor product elements (quad, prism, hex) only
+    inline void SetupRT (const Flags & flags, int order, bool * et_RT)
+    {
+      xbool rt = flags.GetDefineFlagX("RT");
+      for (auto et : { ET_SEGM, ET_TRIG, ET_QUAD, ET_TET, ET_PYRAMID, ET_PRISM, ET_HEX })
+        {
+          xbool etrt = flags.GetDefineFlagX(RTFlagName(et));
+          bool tensor = et == ET_QUAD || et == ET_PRISM || et == ET_HEX;
+          et_RT[et] = !etrt.IsMaybe() ? etrt.IsTrue()
+            : !rt.IsMaybe() ? rt.IsTrue() : tensor;
+          if (order == 0) et_RT[et] = true;
+        }
+    }
   }
 
   template <int D>

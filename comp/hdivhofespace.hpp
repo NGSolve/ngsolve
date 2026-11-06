@@ -53,7 +53,7 @@ namespace ngcomp
     ///
     bool fixed_order;
 
-    bool RT = false; 
+    bool et_RT[30] = { false };   // RT per element type, see hdiv_ndof::SetupRT
 
     // highest-order facet dofs discontinuous ?
     bool highest_order_dc;
