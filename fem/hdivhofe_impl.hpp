@@ -302,7 +302,7 @@ template <typename MIP, typename TFA>
   void  HDivHighOrderFE_Shape<ET_QUAD> :: T_CalcShape (TIP<2,Tx> ip, TFA & shape) const
   {
 
-    if (only_ho_div && (order_inner[0]<=1 && order_inner[1]<=1)) return;
+    if (only_ho_div && ndof == 0) return;
     Tx x = ip.x, y = ip.y;
 
     Tx lami[4] = {(1-x)*(1-y),x*(1-y),x*y,(1-x)*y};  
@@ -378,16 +378,18 @@ template <typename MIP, typename TFA>
 
     if (!ho_div_free)
       {
+        // div onto Q_{p-1}, with RT onto Q_p
+        IVec<2> q (p[0]-1+RT, p[1]-1+RT);
         //Rotation of Gradient fields 
-        for (int k = 0; k < p[0]; k++)
-          for (int j= 0; j < p[1]; j++)
+        for (int k = 0; k < q[0]; k++)
+          for (int j= 0; j < q[1]; j++)
             shape[ii++] = uDv_minus_vDu (pol_eta[j], pol_xi[k]);
 
         //Missing ones 
-        for(int j = 0; j< p[0]; j++)
+        for(int j = 0; j< q[0]; j++)
           shape[ii++] = uDv (0.5*pol_xi[j], eta);
         
-        for(int j = 0; j < p[1]; j++)
+        for(int j = 0; j < q[1]; j++)
           shape[ii++] = uDv (0.5*pol_eta[j], xi); 
       }
   }
@@ -731,8 +733,15 @@ template <typename MIP, typename TFA>
             IntegratedJacobiPolynomialAlpha jac(2*k+3);
             // jac.EvalScaledMult(p-1, eta-sum, 1-zeta, eta, adpol2);
             jac.EvalMult(p-1, eta-sum, eta, adpol2);
+            // curl (mu T), T = (a A grad B - b B grad A)/(a+b), a,b = deg A,B:
+            // x.T = 0 for the top degree, so T in Ned1_{p+1} and the shape in tensor RT
             for (int l = 0; l <= p-1-k; l++)
-              shape[ii++] = Du_Cross_Dv (adpol2[l]*muz[fav[2]], adpol1[k]);
+              {
+                double a = l+1, b = k+2;
+                Tx mu = muz[fav[2]];
+                shape[ii++] = Du_Cross_Dv_Sum (a/(a+b)*mu*adpol2[l], adpol1[k],
+                                               b/(a+b)*adpol2[l], mu*adpol1[k]);
+              }
           }
         
         IntegratedJacobiPolynomialAlpha jac(3);
@@ -807,64 +816,55 @@ template <typename MIP, typename TFA>
           }   
       }    
 
+    // cell: tensor RT, horizontal RT_trig(p) x P_pz, vertical P_p x P_{pz+1}
     int p = order_inner[0];
     int pz = order_inner[2];
-    if(p >= 1 && pz >= 1)
+    if (p >= 1 && pz >= 1)
       {
-	T_TRIGFACESHAPES::CalcSplitted(p+2,x-y,1-x-y,adpolxy1,adpolxy2);
-	T_ORTHOPOL::Calc(pz+2,2*z-1,adpolz); 
-	
+        Tx l2 = 1-x-y;
+        ArrayMem<Tx,20> legz(pz+1), bubz(pz+2);
+        LegendrePolynomial::Eval (pz, 2*z-1, legz);
+        IntegratedLegendrePolynomial::Eval (pz+1, 2*z-1, bubz);  // bubz[m+1], m>=1: z-bubbles
 
-	for(int i=0;i<=p-1;i++)
-	  for(int j=0;j<=p-1-i;j++)
-	    for(int k=0;k<=pz-1;k++)
-	      shape[ii++] = Du_Cross_Dv (adpolxy1[i],adpolxy2[j]*adpolz[k]);
+        // trig interior w (u grad v - v grad u), rotated: div spans P_qq / R, as in the trig
+        auto trig_div = [&] (int qq, auto f)
+          {
+            if (qq < 1) return;
+            DubinerBasis::EvalMult (qq-1, x, y, x,
+                                    SBLambda([&] (int nr, Tx val) { f(val, y, l2); }));
+            LegendrePolynomial::EvalScaledMult (qq-1, l2-y, y+l2, l2,
+                                                SBLambda([&] (int j, Tx val) { f(val, y, x); }));
+          };
 
-	for(int i=0;i<=p-1;i++)
-	  for(int j=0;j<=p-1-i;j++)
-	    for(int k=0;k<=pz-1;k++)
-	      shape[ii++] = curl_uDvw_minus_Duvw (adpolxy1[i],adpolxy2[j],adpolz[k]);
+        // div-free: rot(trig bubble) x P_pz
+        if (p >= 2)
+          DubinerBasis::EvalMult (p-2, x, y, x*y*l2,
+                                  SBLambda([&] (int nr, Tx b)
+                                           {
+                                             for (int j = 0; j <= pz; j++)
+                                               shape[ii++] = wDu_Cross_Dv (b, z, legz[j]);
+                                           }));
 
-	for(int j=0;j<=p-1;j++) 
-	  for (int k=0;k<=pz-1;k++) 
-            shape[ii++] = curl_uDvw_minus_Duvw (x,y, adpolxy2[j]*adpolz[k]);
-
-    	for(int i = 0; i <= p-1; i++) 
-	  for(int j = 0; j <= p-1-i; j++) 
-            shape[ii++] = curl_uDvw_minus_Duvw (z,1-z, adpolxy1[i]*adpolxy2[j]);
+        // div-free: curl (z-bubble * trig interior Nedelec)
+        trig_div (p, [&] (Tx w, Tx u, Tx v)
+                  {
+                    for (int m = 1; m <= pz; m++)
+                      shape[ii++] = curl_uDvw_minus_Duvw (u, v, w*bubz[m+1]);
+                  });
 
         if (!ho_div_free)
-          {  // not yet verified
-            ScaledLegendrePolynomial (p, x-y, x+y, adpolxy1);
-            LegendrePolynomial (p, 1-2*x, adpolxy2);
-            LegendrePolynomial (pz, 1-2*z, adpolz);
-
-            /*
-            for (int i = 0; i <= p; i++)
-              for (int j = 0; j <= p-i; j++)
-                for (int k = 0; k <= pz; k++)
-                  if (i+j+k > 0)
-                    shape[ii++] = wDu_Cross_Dv<3> ((x-y)*adpolxy1[i], x*adpolxy2[j], z*(1-z)*adpolz[k]);
-            */
-
-            for (int i = 0; i <= p; i++)
-              for (int j = 0; j <= p-i; j++)
-                for (int k = 0; k < pz; k++)
-                  shape[ii++] = wDu_Cross_Dv ((x-y)*adpolxy1[i], x*adpolxy2[j], z*(1-z)*adpolz[k]);
-
-            for (int i = 0; i < p; i++)
-              for (int j = 0; j < p-i; j++)
-                shape[ii++] = wDu_Cross_Dv (z, x*y*adpolxy1[i], (1-x-y)*adpolxy2[j]);
-
-            for (int i = 0; i < p; i++)
-              shape[ii++] = wDu_Cross_Dv (z, x, y*(1-x-y)*adpolxy1[i]);
-
-
-            /*
-            for (int i = 0; i <= p-1; i++)
-              for (int k = 0; k <= pz; k++)
-                shape[ii++] = wDu_Cross_Dv<3> (x*y*adpolxy1[i], z*adpolz[k],  1-x-y);
-            */
+          {  // div onto P_q x P_qz
+            int q = RT ? p : p-1, qz = RT ? pz : pz-1;
+            trig_div (q, [&] (Tx w, Tx u, Tx v)
+                      {
+                        for (int j = 0; j <= qz; j++)
+                          {
+                            Tx wl = w*legz[j];
+                            shape[ii++] = aDvDw_bDwDu_cDuDv (wl*u, wl*v, Tx(0), u, v, z);
+                          }
+                      });
+            for (int m = 1; m <= qz; m++)
+              shape[ii++] = wDu_Cross_Dv (x, y, bubz[m+1]);
           }
       }
 
@@ -1153,32 +1153,34 @@ template <typename MIP, typename TFA>
     if (!ho_div_free)
     // ----------------------- remaining-SZ-basis -----------------------
     {
+      // div onto Q_{p-1}, with RT onto Q_p
+      IVec<3> q (p[0]-1+RT, p[1]-1+RT, p[2]-1+RT);
       // Type 2:
-      for (int i = 0; i < p[0]; i++)
-        for (int j = 0; j < p[1]; j++)
-          for (int k = 0; k < p[2]; k++)
+      for (int i = 0; i < q[0]; i++)
+        for (int j = 0; j < q[1]; j++)
+          for (int k = 0; k < q[2]; k++)
             shape[ii++] = uDvDw_minus_DuvDw (L_xi[i+2], L_eta[j+2], L_zeta[k+2]);                                 
 
-      for (int j = 0; j < p[1]; j++)
-        for (int k = 0; k < p[2]; k++)
+      for (int j = 0; j < q[1]; j++)
+        for (int k = 0; k < q[2]; k++)
           shape[ii++] = uDvDw_minus_DuvDw (L_eta[j+2], L_zeta[k+2], x);     
 
-      for (int i = 0; i < p[0]; i++)
-        for (int k = 0; k < p[2]; k++)
+      for (int i = 0; i < q[0]; i++)
+        for (int k = 0; k < q[2]; k++)
           shape[ii++] = uDvDw_minus_DuvDw (L_zeta[k+2], L_xi[i+2], y);          
 
-      for (int i = 0; i < p[0]; i++)
-        for (int j = 0; j < p[1]; j++)
+      for (int i = 0; i < q[0]; i++)
+        for (int j = 0; j < q[1]; j++)
           shape[ii++] = uDvDw_minus_DuvDw (L_xi[i+2], L_eta[j+2], z);  
 
       // Type 3:
-      for (int i = 0; i < p[0]; i++)
+      for (int i = 0; i < q[0]; i++)
         shape[ii++] = wDu_Cross_Dv (y, z, L_xi[i+2]);
 
-      for (int j = 0; j < p[1]; j++)
+      for (int j = 0; j < q[1]; j++)
         shape[ii++] = wDu_Cross_Dv (x, -z, L_eta[j+2]); 
         
-      for (int k = 0; k < p[2]; k++)
+      for (int k = 0; k < q[2]; k++)
         shape[ii++] = wDu_Cross_Dv (x, y, L_zeta[k+2]);        
     }
 

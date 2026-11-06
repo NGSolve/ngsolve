@@ -270,7 +270,8 @@ public:
     docu.Arg("hodivfree") = "bool = False\n"
       "  Remove high order element bubbles with non zero divergence";
     docu.Arg("RT") = "bool = False\n"
-      "  RT elements for simplicial elements: P^k subset RT_k subset P^{k+1}";
+      "  Raviart-Thomas type: div maps onto L2(order) instead of L2(order-1),\n"
+      "  on all element types. order = degree of the normal trace";
     docu.Arg("orderinner") = "optional<int> = undefined\n"
       "  order for inner space if defined, otherwise use order for orderinner";
     return docu;
@@ -578,28 +579,7 @@ void HDivHighOrderSurfaceFESpace :: Average (BaseVector & vec) const
             ElementId ei(BND, i);
             //IVec<3> pc = order_inner_curl[i];
             IVec<3> p = order_inner[i];
-            int inci = 0;
-            switch(ma->GetElType(ei))
-              {
-              case ET_TRIG:
-                if (!ho_div_free)
-		  inci = p[0]*(p[0]-1)/2+p[0]*(p[0]-1)/2+p[0]-1;
-		//inci = pc[0]*(pc[0]-1)/2 + p[0]*(p[0]-1)/2 + p[0]-1;
-                else
-		  inci = p[0]*(p[0]-1)/2;
-		    //inci = pc[0]*(pc[0]-1)/2;
-                if (RT && !ho_div_free)
-                  inci += p[0] + 1;
-                break;
-              case ET_QUAD:
-		if (!ho_div_free)
-                  inci = p[0]*p[1] + p[0]*p[1]+p[0]+p[1];
-                else
-                  inci = p[0]*p[1];
-                break;
-              default: // for the compiler
-                break;  
-              }
+            int inci = hdiv_ndof::Inner (ma->GetElType(ei), p, RT, ho_div_free);
 
 	    if (highest_order_dc)
 	      {
@@ -919,12 +899,10 @@ void HDivHighOrderSurfaceFESpace :: Average (BaseVector & vec) const
 
   shared_ptr<FESpace> HDivHighOrderSurfaceFESpace :: CreateDivergenceSpace () const
   {
-    // div onto P_{k-1} on trigs (P_k with RT), Q_k on quads; hodivfree: P_0, RT ignored
-    int trigorder = ho_div_free ? 0 : (RT ? order : max(order-1, 0));
-    int quadorder = ho_div_free ? 0 : order;
+    // div onto P_{k-1} / Q_{k-1} (P_k / Q_k with RT); hodivfree: P_0
+    int divorder = ho_div_free ? 0 : (RT ? order : max(order-1, 0));
     Flags flags;
-    flags.SetFlag("order", trigorder);
-    flags.SetFlag("quadbonus", quadorder-trigorder);
+    flags.SetFlag("order", divorder);
     return CreateCompanionSpace(*this, "l2surf", flags);
   }
 

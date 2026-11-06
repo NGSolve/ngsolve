@@ -435,189 +435,27 @@ namespace ngfem
 
 
 
-  // inner dofs of HDiv pyramid: (div-free, non-div-free)
-  inline IVec<2> HDivPyramidInnerDofs (int p, bool RT)
-  {
-    int ndivfree = 0, nnondivfree = 0;
-    if (p >= 1)
-      ndivfree = p*p + 2*( (p-1)*p*(p+1)/3 + p );
-    int pd = RT ? p : p-1;
-    if (pd >= 1)
-      nnondivfree = (pd+1)*(pd+2)*(2*pd+3)/6 - 1;
-    return IVec<2> (ndivfree, nnondivfree);
-  }
-
   template <ELEMENT_TYPE ET>
   void HDivHighOrderFE<ET> :: 
   ComputeNDof()
   {
-    if (DIM == 2)
-      {
-        if (only_ho_div)
-	  {
-	    if (ET == ET_TRIG)
-              {
-                ndof = order_inner[0]*(order_inner[0]+1)/2 - 1;
-                order = order_inner[0];
-              }
-	    else
-              {
-                ndof = order_inner[0]*order_inner[1] + order_inner[0] + order_inner[1];
-                order = max2(order_inner[0], order_inner[1])+1;
-              }
-	    return;
-	  }
-        else
-	  {
-	    ndof = ET_trait<ET>::N_EDGE;
-	    
-	    for(int i = 0; i < ET_trait<ET>::N_EDGE; i++)
-	      ndof += order_facet[i][0];
-	    
-	    if (ET == ET_TRIG)
-	      {
-		if (order_inner[0] > 1)
-		  { 
-		    if (ho_div_free)
-		      ndof += order_inner[0]*(order_inner[0]-1)/2;
-		    else
-		      ndof += order_inner[0]*order_inner[0]-1;
-		  }
-                if (RT && !ho_div_free && order_inner[0] > 0)
-		  ndof += order_inner[0] + 1;
-	      }
-	    else
-	      {  // quad
-		IVec<2> p(order_inner[0], order_inner[1]);
-		
-		int ni = ho_div_free
-		  ? p[0]*p[1] 
-		  : 2*p[0]*p[1] + p[0] + p[1];
-		
-		ndof += ni; 
-	      }
-	  }
-
-        order = 0; 
-        for (int i = 0; i < ET_trait<ET>::N_EDGE; i++)
-          if (order_facet[i][0] > order)
-            order = order_facet[i][0];
-        
-        for (int j = 0; j < 2; j++)
-          if (order_inner[j] > order) 
-            order = order_inner[0];
-
-        if (ET != ET_TRIG) order++;
-        if(RT) order ++;
-      }
+    if (only_ho_div)
+      ndof = hdiv_ndof::Div (ET, order_inner, RT);
     else
       {
-
-        int p = order_inner[0];
-        int pc = order_inner[0]; // should be order_inner_curl!!!  
-        int pz = p; // order_inner[2];
-
-        if (only_ho_div){
-          switch (ET)
-            {   
-            case ET_TRIG: case ET_QUAD: // for the compiler
-              break;
-            case ET_TET: 
-                ndof = p*(p+1)*(p-1)/6 + p*(p-1)/2 + p-1;
-              break;
-            case ET_PYRAMID:
-              ndof = HDivPyramidInnerDofs(p, RT)[1];
-              break;
-            case ET_PRISM:
-              if (order_inner[0]>0 )
-                ndof = (p+1)*(p+2)*(pz+1)/2 - 1;
-              /*
-                  // inner_dof horizontal
-                  ndof += (order_inner[0]+1)*(3*(order_inner[0]-1)+(order_inner[0]-2)*(order_inner[0]-1));
-                  // inner dof vertical
-                  ndof += (order_inner[0]-1)*(order_inner[0]+1)*(order_inner[0]+2)/2;
-              */
-              break;
-            case ET_HEX:
-              ndof = 3*(p+1)*(p+1)*p;
-              break; 
-            }
-        }
-        else
-        {
-          ndof = ET_trait<ET>::N_FACE;
-
-          for(int i = 0; i < ET_trait<ET>::N_FACE; i++)
-            {
-              IVec<2> p = order_facet[i];
-              if (ET_trait<ET>::FaceType(i) == ET_TRIG)
-                ndof += (p[0]*p[0]+3*p[0])/2;
-              else
-                ndof +=  p[0]*p[1] + p[0] + p[1];
-            }
-          
-        // cout << "ndof, bound = " << ndof << endl;
-          switch (ET)
-            {   
-            case ET_TRIG: case ET_QUAD: // for the compiler
-              break;
-
-            case ET_TET: 
-              if(pc > 1) 
-                ndof += pc*(pc+1)*(pc-1)/3 + pc*(pc-1)/2;
-              if(p > 1 && !ho_div_free) 
-                ndof += p*(p+1)*(p-1)/6 + p*(p-1)/2 + p-1;
-	      if(RT && !ho_div_free && p >= 1)
-		ndof += (p+1)*(p+2)/2;
-              break;
-
-            case ET_PYRAMID:
-              {
-                IVec<2> ni = HDivPyramidInnerDofs(p, RT);
-                ndof += ni[0];
-                if (!ho_div_free) ndof += ni[1];
-                break;
-              }
-
-            case ET_PRISM:
-              // SZ: ATTENTION PRISM up to now only using for order_inner[0] !!  
-              if (order_inner[0]>0 )
-                {
-              ndof += (p+2)*p*(pz+1) + (p+1)*(p+2)*pz/2;
-              if (ho_div_free)
-                ndof -= (p+1)*(p+2)*(pz+1)/2 - 1;
-              /*
-                  // inner_dof horizontal
-                  ndof += (order_inner[0]+1)*(3*(order_inner[0]-1)+(order_inner[0]-2)*(order_inner[0]-1));
-                  // inner dof vertical
-                  ndof += (order_inner[0]-1)*(order_inner[0]+1)*(order_inner[0]+2)/2;
-              */
-                }
-              break;
-            case ET_HEX:
-              ndof += 3*(p+1)*(p+1)*p;       
-              if (ho_div_free)     
-                ndof -= p*p*p+3*p*p+3*p;
-              break; 
-            }
-        }
-	// cout << "ndof, tot = " << ndof << endl;
-
-        order = 0; 
-        for (int i = 0; i < ET_trait<ET>::N_FACE; i++)
-          {
-            int p = max2(order_facet[i][0], order_facet[i][1]);
-            if (p > order) order = p;
-          }
-
-        int pi = max3(order_inner[0], order_inner[1], order_inner[2]);
-        if (pi > order) order = pi;
-
-	if (ET != ET_TET) order++;
-        if (ET == ET_PYRAMID) order++;
-	
-	if(RT) order ++;
+        auto [nv, ne, nf, nc] = GetNDofVEFC();
+        ndof = nv+ne+nf+nc;
       }
+
+    order = 0; 
+    for (int i = 0; i < N_FACET; i++)
+      order = max(order, int(max2(order_facet[i][0], order_facet[i][DIM-2])));
+    for (int j = 0; j < DIM; j++)
+      order = max(order, int(order_inner[j]));
+
+    if (ET != ET_TRIG && ET != ET_TET) order++;
+    if (ET == ET_PYRAMID) order++;
+    if (RT) order++;
   }
 
 
@@ -625,138 +463,20 @@ namespace ngfem
   tuple<int,int,int,int> HDivHighOrderFE<ET> :: 
   GetNDofVEFC() const
   {
-    int nv=0, ne = 0, nf = 0, nc = 0;
-    if (DIM == 2)
+    int nfacet = N_FACET;
+    for (int i = 0; i < N_FACET; i++)
       {
-        // if (only_ho_div)
-	//   {
-	//     if (ET == ET_TRIG)
-        //       {
-        //         ndof = order_inner[0]*(order_inner[0]+1)/2 - 1;
-        //         order = order_inner[0];
-        //       }
-	//     else
-        //       {
-        //         ndof = order_inner[0]*order_inner[1] + order_inner[0] + order_inner[1];
-        //         order = max2(order_inner[0], order_inner[1])+1;
-        //       }
-	//     return;
-	//   }
-        // else
-	  {
-	    ne = ET_trait<ET>::N_EDGE;
-	    
-	    for(int i = 0; i < ET_trait<ET>::N_EDGE; i++)
-	      ne += order_facet[i][0];
-	    
-	    if (ET == ET_TRIG)
-	      {
-		if (order_inner[0] > 1)
-		  { 
-		    if (ho_div_free)
-		      nf += order_inner[0]*(order_inner[0]-1)/2;
-		    else
-		      nf += order_inner[0]*order_inner[0]-1;
-		  }
-                if (RT && !ho_div_free && order_inner[0] > 0)
-		  nf += order_inner[0] + 1;
-	      }
-	    else
-	      {  // quad
-		IVec<2> p(order_inner[0], order_inner[1]);
-		
-		int ni = ho_div_free
-		  ? p[0]*p[1] 
-		  : 2*p[0]*p[1] + p[0] + p[1];
-		
-		nf += ni; 
-	      }
-	  }
+        auto p = order_facet[i];
+        switch (ElementTopology::GetFacetType(ET, i))
+          {
+          case ET_SEGM: nfacet += p[0]; break;
+          case ET_TRIG: nfacet += (p[0]*p[0]+3*p[0])/2; break;
+          default: nfacet += p[0]*p[1] + p[0] + p[1]; break;
+          }
       }
-    else
-      {
-
-        int p = order_inner[0];
-        int pc = order_inner[0]; // should be order_inner_curl!!!  
-        int pz = p; // order_inner[2];
-
-        // if (only_ho_div){
-        //   switch (ET)
-        //     {   
-        //     case ET_TRIG: case ET_QUAD: // for the compiler
-        //       break;
-        //     case ET_TET: 
-        //         ndof = p*(p+1)*(p-1)/6 + p*(p-1)/2 + p-1;
-        //       break;
-        //     case ET_PRISM:
-        //       if (order_inner[0]>0 )
-        //         ndof = (p+1)*(p+2)*(pz+1)/2 - 1;
-        //       /*
-        //           // inner_dof horizontal
-        //           ndof += (order_inner[0]+1)*(3*(order_inner[0]-1)+(order_inner[0]-2)*(order_inner[0]-1));
-        //           // inner dof vertical
-        //           ndof += (order_inner[0]-1)*(order_inner[0]+1)*(order_inner[0]+2)/2;
-        //       */
-        //       break;
-        //     case ET_HEX:
-        //       ndof = 3*(p+1)*(p+1)*p;
-        //       break; 
-        //     }
-        // }
-        // else
-        {
-          nf = ET_trait<ET>::N_FACE;
-
-          for(int i = 0; i < ET_trait<ET>::N_FACE; i++)
-            {
-              IVec<2> p = order_facet[i];
-              if (ET_trait<ET>::FaceType(i) == ET_TRIG)
-                nf += (p[0]*p[0]+3*p[0])/2;
-              else
-                nf +=  p[0]*p[1] + p[0] + p[1];
-            }
-
-          switch (ET)
-            {   
-            case ET_TRIG: case ET_QUAD: // for the compiler
-              break;
-
-            case ET_TET: 
-              if(pc > 1) 
-                nc += pc*(pc+1)*(pc-1)/3 + pc*(pc-1)/2;
-              if(p > 1 && !ho_div_free) 
-                nc += p*(p+1)*(p-1)/6 + p*(p-1)/2 + p-1;
-	      if(RT && !ho_div_free && p >= 1)
-		nc += (p+1)*(p+2)/2;
-              break;
-              
-            case ET_PYRAMID:
-              {
-                IVec<2> ni = HDivPyramidInnerDofs(p, RT);
-                nc += ni[0];
-                if (!ho_div_free) nc += ni[1];
-                break;
-              }
-
-            case ET_PRISM:
-              // SZ: ATTENTION PRISM up to now only using for order_inner[0] !!  
-              if (order_inner[0]>0 )
-                {
-                  nc += (p+2)*p*(pz+1) + (p+1)*(p+2)*pz/2;
-                  if (ho_div_free)
-                    nc -= (p+1)*(p+2)*(pz+1)/2 - 1;
-                }
-              break;
-            case ET_HEX:
-              nc += 3*(p+1)*(p+1)*p;       
-              if (ho_div_free)     
-                nc -= p*p*p+3*p*p+3*p;
-              break; 
-            }
-        }
-      }
-
-    return { nv, ne, nf, nc };
+    int ninner = hdiv_ndof::Inner (ET, order_inner, RT, ho_div_free);
+    if (DIM == 2) return { 0, nfacet, ninner, 0 };
+    return { 0, 0, nfacet, ninner };
   }
 
 

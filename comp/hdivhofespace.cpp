@@ -319,7 +319,8 @@ namespace ngcomp
   {
     auto docu = FESpace::GetDocu();
     docu.Arg("RT") = "bool = False\n"
-      "  RT elements for simplicial elements: P^k subset RT_k subset P^{k+1}";
+      "  Raviart-Thomas type: div maps onto L2(order) instead of L2(order-1),\n"
+      "  on all element types. order = degree of the normal trace";
     docu.Arg("discontinuous") = "bool = False\n"
       "  Create discontinuous HDiv space";
     docu.Arg("hodivfree") = "bool = False\n"
@@ -340,13 +341,7 @@ namespace ngcomp
     {
       if (ho_div_free) return 0;
       int p = order_inner[ei.Nr()][0];
-      switch (ma->GetElType(ei))
-        {
-        case ET_QUAD: case ET_PRISM: case ET_HEX:
-          return p;
-        default:
-          return RT ? p : max(p-1, 0);
-        }
+      return RT ? p : max(p-1, 0);
     };
 
     Flags l2flags;
@@ -639,28 +634,7 @@ namespace ngcomp
         for (size_t i = 0; i < nel; i++)
           {
             ElementId ei(VOL, i);
-            IVec<3> pc = order_inner_curl[i];
-            IVec<3> p = order_inner[i];
-            int inci = 0;
-            switch(ma->GetElType(ei))
-              {
-              case ET_TRIG:
-                if (!ho_div_free)
-                  inci = pc[0]*(pc[0]-1)/2 + p[0]*(p[0]-1)/2 + p[0]-1;
-                else
-                  inci = pc[0]*(pc[0]-1)/2;
-                if (RT && !ho_div_free)
-                  inci += pc[0] + 1;
-                break;
-              case ET_QUAD:
-                if (!ho_div_free)
-                  inci = pc[0]*pc[1] + p[0]*p[1]+p[0]+p[1];
-                else
-                  inci = pc[0]*pc[1];
-                break;
-              default: // for the compiler
-                break;  
-              }
+            int inci = hdiv_ndof::Inner (ma->GetElType(ei), order_inner[i], RT, ho_div_free);
 
 	    if (highest_order_dc)
 	      {
@@ -740,69 +714,22 @@ namespace ngcomp
         for (size_t i = 0; i < nel; i++)
           {
             IVec<3> p = order_inner[i];
-            IVec<3> pc = order_inner_curl[i];
-            int inci = 0;
-	     
-            switch(ma->GetElType(ElementId(VOL,i)))
-              {
-              case ET_TET:
-                if(p[0]>1 && !ho_div_free)
-                  inci = p[0]*(p[0]+1)*(p[0]-1)/6 + p[0]*(p[0]-1)/2 + p[0]-1;
-                if(pc[0]>1)
-                  inci += pc[0]*(pc[0]+1)*(pc[0]-1)/3 + pc[0]*(pc[0]-1)/2; ;
-                if (highest_order_dc) 
-		  {
-		    // ma->GetElFacets (i, fnums);
-                    /*
-                    auto fnums = ma->GetElFacets(i);
-		    for (int j = 0; j < fnums.Size(); j++)
-                      {
-                        IVec<2> pf = order_facet[fnums[j]]; 
-                        if (!boundary_facet[fnums[j]]) inci += pf[0]+1;
-                      }
-                    */
-                    for (auto f : ma->GetElFacets(i))
-                      if (!boundary_facet[f]) inci += order_facet[f][0]+1;
-		  }
-		if (RT && !ho_div_free)
-                  {
-                    if (p[0] > 0)
-                      inci += (p[0]+1) * (p[0]+2)/2;
-                  }
-		// inci += 4*(p[0]+1);
-                break;
-              case ET_PRISM:
-                // inci = (p[0]+1)*(3*(p[0]-1)+(p[0]-1)*(p[0]-2))+ (p[0]-1)*(p[0]+1)*(p[0]+2)/2;
-		inci = (p[0]+2)*p[0]*(p[2]+1) + (p[0]+1)*(p[0]+2)*p[2]/2;
-		if (ho_div_free)
-		  inci -= (p[0]+1)*(p[0]+2)*(p[2]+1)/2 - 1;
-
-                if (highest_order_dc) inci += 2*(p[0]+1)+3*(p[0]+p[2]+1);
-                break;
-              case ET_HEX:
-                inci =  2*pc[0]*pc[1]*pc[2] + pc[0]*pc[1] + pc[1]*pc[2] + pc[0]* pc[2]
-                        + p[0]*(p[1]*p[2] + p[1] + p[2] + 1)  + p[1]*p[2] + p[1] + p[2]; 
-                if (ho_div_free)
-                  inci -= p[0]*(p[1]*p[2] + p[1] + p[2] + 1)  + p[1]*p[2] + p[1] + p[2]; 
-                break; 
-              case ET_PYRAMID: 
+            auto et = ma->GetElType(ElementId(VOL,i));
+            int inci = hdiv_ndof::Inner (et, p, RT, ho_div_free);
+            if (highest_order_dc)
+              switch (et)
                 {
-                  int pp = p[0];
-                  if (pp >= 1)
-                    inci = pp*pp + 2*( (pp-1)*pp*(pp+1)/3 + pp );
-                  int pd = RT ? pp : pp-1;
-                  if (pd >= 1 && !ho_div_free)
-                    inci += (pd+1)*(pd+2)*(2*pd+3)/6 - 1;
-                  if (highest_order_dc)
-                    for (auto f : ma->GetElFacets(i))
-                      if (!boundary_facet[f])
-                        inci += (ma->GetFacePNums(f).Size()==3) ? order_facet[f][0]+1 : order_facet[f][0]+order_facet[f][1]+1;
-                  break; 
+                case ET_TET: case ET_PYRAMID:
+                  for (auto f : ma->GetElFacets(i))
+                    if (!boundary_facet[f])
+                      inci += (ma->GetFacePNums(f).Size()==3) ? order_facet[f][0]+1 : order_facet[f][0]+order_facet[f][1]+1;
+                  break;
+                case ET_PRISM:
+                  inci += 2*(p[0]+1)+3*(p[0]+p[2]+1);
+                  break;
+                default:
+                  break;
                 }
-              default:
-                inci = 0;
-                break;
-              }
             if (inci < 0) inci = 0;
             first_inner_dof[i] = ndof;
             ndof+= inci;
