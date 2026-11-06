@@ -10,6 +10,7 @@ meshes = {
     "quad": lambda: MakeStructured2DMesh(quads=True, nx=3, ny=3),
     "tet": lambda: Mesh(unit_cube.GenerateMesh(maxh=0.6)),
     "hex": lambda: MakeStructured3DMesh(hexes=True, nx=2, ny=2, nz=2),
+    "prism": lambda: MakeStructured3DMesh(hexes=False, prism=True, nx=2, ny=2, nz=2),
 }
 
 def tang(v, n):
@@ -29,6 +30,8 @@ spaces = {
 @pytest.mark.parametrize("spacename", spaces)
 @pytest.mark.parametrize("order", [0, 1, 2])
 def test_multiplier_exact(meshname, spacename, order):
+    if meshname == "prism" and spacename == "HCurlDiv":
+        pytest.skip("HCurlDiv has no prism element")
     mesh = meshes[meshname]()
     create, trace, mname = spaces[spacename]
     Xdc = Discontinuous(create(mesh, order))
@@ -124,3 +127,37 @@ def test_hybrid_mixed_poisson():
     gf2 = GridFunction(X2)
     gf2.vec.data = a2.mat.Inverse(inverse="umfpack") * f2.vec
     assert sqrt(Integrate((gf.components[1]-gf2.components[1])**2, mesh)) < 1e-10
+
+# NormalFacet boundary data: Interpolate == Set (facet-wise L2 projection of u.n), exact for polynomial u.n
+@pytest.mark.parametrize("meshname", meshes)
+@pytest.mark.parametrize("order", [0, 1, 2])
+def test_normalfacet_boundary_interpolate(meshname, order):
+    mesh = meshes[meshname]()
+    d = mesh.dim
+    n = specialcf.normal(d)
+    bnd = mesh.Boundaries(".*")
+    cf = CF((x**order+2*y, x-y**order) if d == 2 else (x**order+2*y, x-y**order, z**order*x+1))
+    H = NormalFacetFESpace(mesh, order=order)
+    a, b = GridFunction(H), GridFunction(H)
+    a.Set(cf, definedon=bnd)
+    b.Interpolate(cf, definedon=bnd)
+    assert Norm(a.vec - b.vec) < 1e-12
+    if order > 0:
+        assert sqrt(Integrate((b*n - cf*n)**2, mesh, BND, order=2*order+4)) < 1e-12
+
+# dual-moment interpolation reproduces boundary FE functions, also on non-affine (mapped) facets
+@pytest.mark.parametrize("meshname", ["quad", "hex", "prism"])
+@pytest.mark.parametrize("order", [1, 3])
+def test_normalfacet_interpolate_reproduces(meshname, order):
+    warp = {"quad": lambda x, y: (x+0.1*x*y, y+0.05*x*x),
+            "hex": lambda x, y, z: (x+0.1*y*z, y+0.05*x*x, z+0.1*x*y),
+            "prism": lambda x, y, z: (x+0.1*y*z, y, z+0.1*x*y)}[meshname]
+    mesh = (MakeStructured2DMesh(quads=True, nx=3, ny=3, mapping=warp) if meshname == "quad" else
+            MakeStructured3DMesh(hexes=(meshname == "hex"), prism=(meshname == "prism"), nx=2, ny=2, nz=2, mapping=warp))
+    bnd = mesh.Boundaries(".*")
+    H = NormalFacetFESpace(mesh, order=order)
+    gf, gi = GridFunction(H), GridFunction(H)
+    mask = H.GetDofs(bnd)
+    gf.vec.FV().NumPy()[:] = np.random.RandomState(1).uniform(-1, 1, H.ndof) * np.array(mask)
+    gi.Interpolate(gf, definedon=bnd)
+    assert np.abs((gi.vec.FV().NumPy() - gf.vec.FV().NumPy())[np.array(mask)]).max() < 1e-12

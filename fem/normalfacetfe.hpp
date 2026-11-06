@@ -68,7 +68,12 @@ namespace ngfem
     virtual void CalcShape(const IntegrationPoint & ip,
          		    FlatVector<> shape) const override;
 
-    template<typename Tx, typename TFA>  
+    // facet-wise L2 projection of func.n
+    virtual void Interpolate (const ElementTransformation & trafo,
+                              const class CoefficientFunction & func, SliceMatrix<> coefs,
+                              LocalHeap & lh, int bonus_intorder = 0) const override;
+
+    template<typename Tx, typename TFA>
     void T_CalcShape (TIP<DIM,Tx> tip, TFA & shape) const;
   };
 
