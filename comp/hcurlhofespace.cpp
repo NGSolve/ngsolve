@@ -220,7 +220,8 @@ namespace ngcomp
     docu.Arg ("nograds") = "bool = False\n"
       "  Remove higher order gradients of H1 basis functions from HCurl FESpace";
     docu.Arg("type1") = "bool = False\n"
-      "  Use type 1 Nedelec elements";
+      "  Use type 1 Nedelec elements: gradients from H1(order) instead of H1(order+1).\n"
+      "  The non-gradient part is the same, its curl lies in HDiv(order-1)";
     docu.Arg("biorth") = "bool = False\n"
       "  Triangles: interior basis and dual shapes biorthogonal\n"
       "  (Haubold, Beuchler, Schoeberl, SINUM 2024)";
@@ -389,7 +390,6 @@ namespace ngcomp
             auto et = ma->GetElType(ei);
             if (!DefinedOn (VOL, index)) continue;
             auto pi = p + et_bonus_order[et];
-            if (type1 && et==ET_QUAD && pi >= 1) pi--;
             order_inner[i] = IVec<3> (pi,pi,pi);
             IVec<3,TORDER> el_orders = ma->GetElOrders(i);
             
@@ -674,30 +674,9 @@ namespace ngcomp
     for (int i = 0; i < nfa; i++) 
       { 
 	first_face_dof[i] = ndof; 
-	auto pnums = ma->GetFacePNums (i);  
-	IVec<2> p = order_face[i]; 
-	switch(pnums.Size())
-	  {
-	  case 3: //Triangle   
-	    if (p[0]>1)
-	      {
-                /*
-		ndof += ((usegrad_face[i]+1)*p[0] + 2)*(p[0]-1)/2;
-		face_ngrad[i] = usegrad_face[i]*p[0]*(p[0]-1)/2;
-                */
-                int pg = p[0] - (type1 ? 1 : 0);
-		face_ngrad[i] = usegrad_face[i]*pg*(pg-1)/2;
-                ndof += face_ngrad[i] + (p[0] + 2)*(p[0]-1)/2;
-	      }
-	    break; 
-	  case 4: //Quad 
-	    //if(p[0]>0 && p[1]>0)
-	    {
-	      ndof += (usegrad_face[i]+1)*p[0]*p[1] + p[0] + p[1]; 
-	      face_ngrad[i] = usegrad_face[i]*p[0]*p[1];; 
-	      break; 
-	    }
-	  }
+        auto ft = ma->GetFaceType (i);
+	face_ngrad[i] = hcurl_ndof::FaceGrad (ft, order_face[i], usegrad_face[i], type1);
+	ndof += hcurl_ndof::Face (ft, order_face[i], usegrad_face[i], type1);
       } 
     first_face_dof[nfa] = ndof;   
     
@@ -708,68 +687,10 @@ namespace ngcomp
       {
         ElementId ei(VOL, i);
 	first_inner_dof[i] = ndof;
-	IVec<3> p = order_inner[i];
-	switch(ma->GetElType(ei)) 
-	  {
-	  case ET_TRIG:
-	    if(p[0]>1)
-	      {
-                int pg = p[0] - (type1 ? 1 : 0);
-		cell_ngrad[i] = usegrad_cell[i]*pg*(pg-1)/2;
-                ndof += cell_ngrad[i] + (p[0] + 2)*(p[0]-1)/2;
-                /*
-		ndof += ((usegrad_cell[i]+1)*p[0] + 2) * (p[0]-1) /2;
-		cell_ngrad[i] = ((usegrad_cell[i])*p[0]) * (p[0]-1) /2;
-                */
-	      }
-	    break; 
-	  case ET_QUAD: 
-	    if(p[0]>=0 && p[1]>=0) 
-	      {
-		ndof += (usegrad_cell[i]+1) * p[0] * p[1] + p[0] + p[1]; 
-		cell_ngrad[i] = (usegrad_cell[i]) * p[0] * p[1];
-	      }
-	    break; 
-	  case ET_TET: 
-	    if(p[0]>2)
-	      {
-		if (type1) {
-		  cell_ngrad[i] = usegrad_cell[i] * (p[0]-3)*(p[0]-2)*(p[0]-1)/6;
-		  ndof += (p[0]-2)*(p[0]-1)*(2*p[0]+3)/6 + cell_ngrad[i];
-				  
-		}
-		else {
-		  ndof += ((usegrad_cell[i] + 2) *  p[0] + 3) * (p[0]-2) * (p[0]-1) / 6; 
-		  cell_ngrad[i] = ((usegrad_cell[i] ) *  p[0]) * (p[0]-2) * (p[0]-1) / 6;
-		}
-	      }
-	    break; 
-	  case ET_PRISM:
-	    if(p[0]>1 && p[2]>=0) 
-	      {
-		ndof += (usegrad_cell[i]+2)*p[2] * p[0]*(p[0]-1)/2
-		  + (p[0]-1)*p[2] + p[0]*(p[0]-1)/2; 
-		cell_ngrad[i] = (usegrad_cell[i])*p[2] * p[0]*(p[0]-1)/2;
-	      } 
-	    break; 
-	  case ET_HEX:
-	    if(p[0]>=0 && p[1]>=0 && p[2] >=0)
-	      {
-		ndof += (usegrad_cell[i] + 2)* p[0]*p[1]*p[2] +  p[0]*p[1] 
-		  + p[0]*p[2] + p[1]*p[2];
-		cell_ngrad[i] = (usegrad_cell[i])* p[0]*p[1]*p[2]; 
-	      }
-	    break;  
-	  case ET_PYRAMID:
-	    if (p[0] > 1)
-	      {
-		ndof += usegrad_cell[i]*(p[0]-1)*p[0]*(2*p[0]-1)/6 + p[0]*(2*p[0]*p[0]+3*p[0]-2)/3; 
-		cell_ngrad[i] = usegrad_cell[i]*(p[0]-1)*p[0]*(2*p[0]-1)/6; 
-	      }
-	    break; 
-          default:  // for the compiler
-            break; 
-	  }
+        auto et = ma->GetElType(ei);
+        IVec<3> p = order_inner[i];
+        cell_ngrad[i] = hcurl_ndof::CellGrad (et, p, usegrad_cell[i], type1);
+        ndof += hcurl_ndof::Cell (et, p, usegrad_cell[i], type1);
         if (highest_order_dc)
           ndof += ElementTopology::GetNEdges(ma->GetElType(ei));
       }
@@ -1175,13 +1096,6 @@ namespace ngcomp
                   full.SetType1 (true);
                   for (int i = 0; i < ET_trait<ET>::N_EDGE; i++)
                     full.SetOrderEdge (i, max(0, order-1));
-                  if constexpr (ET == ET_QUAD)
-                    {   // as in Update
-                      int pi = max(0, order-1);
-                      full.SetOrderCell (IVec<3>(pi,pi,pi));
-                      IVec<2,TORDER> pf(pi,pi);
-                      full.SetOrderFace (FlatArray<IVec<2,TORDER>>(1, &pf));
-                    }
                 }
               if (!grad)
                 {
