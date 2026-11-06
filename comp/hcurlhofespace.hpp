@@ -136,6 +136,8 @@ namespace ngcomp
     virtual shared_ptr<Array<int>> CreateDirectSolverClusters (const Flags & precflags) const override;
     ///
     shared_ptr<H1HighOrderFESpace> CreateGradientSpace() const;
+    // TDNNS stress space (HDivDiv) paired with this displacement space, 2D only
+    shared_ptr<FESpace> CreateStressSpace (Flags flags = Flags()) const;
     shared_ptr<SparseMatrix<double>> CreateGradient() const {
       return CreateGradient(*CreateGradientSpace()); }
     shared_ptr<SparseMatrix<double>> CreateGradient(const H1HighOrderFESpace & fesh1) const;

@@ -43,6 +43,122 @@ namespace ngfem
   };
   inline const BiorthCoefs biorth_coefs;
 
+  // dual shape helpers
+
+  // (a,b) with X - P0 = a (P1-P0) + b (P2-P0), X in the plane of the reference face
+  template <typename T>
+  INLINE void HCurlFaceCoords (const Vec<3,T> & X, Vec<3> P0, Vec<3> P1, Vec<3> P2, T & a, T & b)
+  {
+    Vec<3> d1 = P1-P0, d2 = P2-P0;
+    double g11 = InnerProduct(d1,d1), g12 = InnerProduct(d1,d2), g22 = InnerProduct(d2,d2);
+    double idet = 1/(g11*g22-g12*g12);
+    T r1(0.0), r2(0.0);
+    for (int k = 0; k < 3; k++)
+      {
+        T rk = X(k)-P0(k);
+        r1 += d1(k)*rk;
+        r2 += d2(k)*rk;
+      }
+    a = idet * (g22*r1 - g12*r2);
+    b = idet * (g11*r2 - g12*r1);
+  }
+
+  // face map 1/(det*measure) J F, F = (t0,t1) reference face tangents
+  template <typename T, typename MIP>
+  INLINE Mat<3,2,T> HCurlFaceTrafo (const MIP & mip, Vec<3> t0, Vec<3> t1)
+  {
+    double g11 = InnerProduct(t0,t0), g12 = InnerProduct(t0,t1), g22 = InnerProduct(t1,t1);
+    double det = sqrt(g11*g22-g12*g12);
+    Mat<3,3,T> jac = mip.GetJacobian();
+    T scal = 1/(det*mip.GetMeasure());
+    Mat<3,2,T> ftrafo;
+    for (int i = 0; i < 3; i++)
+      {
+        ftrafo(i,0) = scal * (jac(i,0)*t0(0) + jac(i,1)*t0(1) + jac(i,2)*t0(2));
+        ftrafo(i,1) = scal * (jac(i,0)*t1(0) + jac(i,1)*t1(1) + jac(i,2)*t1(2));
+      }
+    return ftrafo;
+  }
+
+  // trig face duals, as for the tet; xi, eta = barycentrics of the sorted vertices fav[0], fav[1]
+  template <typename T, typename TFA>
+  INLINE void HCurlTrigFaceDual (const Mat<3,2,T> & ftrafo, T xi, T eta, int p,
+                                 bool usegrad, bool type1, int & ii, TFA & shape)
+  {
+    if (p < 2) return;
+    if (!usegrad)
+      {
+        // surface rot of P_{p-1}, annihilates the face gradients
+        DubinerBasis::Eval(p-1, AutoDiff<2,T>(xi, 0), AutoDiff<2,T>(eta, 1),
+                           SBLambda([&] (size_t nr, auto val)
+                                    {
+                                      if (nr == 0) return;
+                                      shape[ii++] = ftrafo*Vec<2,T> (val.DValue(1), -val.DValue(0));
+                                    }));
+        return;
+      }
+    DubinerBasis::Eval(p-2, xi, eta,
+                       SBLambda([&] (size_t nr, auto val)
+                                {
+                                  shape[ii++] = ftrafo*Vec<2,T> (val, 0);
+                                  if (type1)
+                                    shape[ii++] = ftrafo*Vec<2,T>(0, val);
+                                  else
+                                    shape[ii++] = ftrafo*Vec<2,T> (val*xi, val*eta);
+                                }));
+    if (!type1)   // P^(1,0)(2xi-1), orthogonal on the face
+      JacobiPolynomialFix<1,0>::Eval(p-2, 2*xi-1,
+                                     SBLambda([&] (size_t nr, auto val)
+                                              {
+                                                shape[ii++] = ftrafo*Vec<2,T>(0, val);
+                                              }));
+  }
+
+  // Legendre L_i(x) with dL_i/dx, x = 2s-1
+  template <typename T>
+  INLINE void HCurlLegendreAD (int n, T s, FlatArray<AutoDiff<1,T>> l)
+  {
+    LegendrePolynomial::Eval (n, AutoDiff<1,T>(2*s-1, 0), l);
+  }
+  // F_i = int_{-1}^x L_i: F_0 = x+1, F_i = (L_{i+1}-L_{i-1})/(2i+1), F_i' = L_i
+  template <typename T>
+  INLINE T HCurlIntLeg (FlatArray<AutoDiff<1,T>> l, int i)
+  {
+    if (i == 0) return l[1].Value()+1;
+    return (1.0/(2*i+1)) * (l[i+1].Value()-l[i-1].Value());
+  }
+
+  /*
+    quad duals in coordinates (s,t) in [0,1]^2, x = 2s-1, y = 2t-1
+    gradients of H1(p+1-type1): (F_i(x) L_j(y), 0), div onto Q_{p-1-type1}
+    curl part of N_[p-1]: rot (L_i(x) L_j(y)), (i,j) != (0,0), div-free
+   */
+  template <typename T, typename TRAFO, typename TFA>
+  INLINE void HCurlQuadDual (const TRAFO & trafo, T s, T t, IVec<2> p,
+                             bool usegrad, bool type1, int & ii, TFA & shape)
+  {
+    int n = max(p[0], p[1]) + 1;
+    ArrayMem<AutoDiff<1,T>,20> ls(n+1), lt(n+1);
+    HCurlLegendreAD (n, s, ls);
+    HCurlLegendreAD (n, t, lt);
+
+    int pg0 = p[0]-type1, pg1 = p[1]-type1;
+    if (usegrad && pg0 >= 1 && pg1 >= 1)
+      for (int i = 0; i < pg0; i++)
+        {
+          T fi = HCurlIntLeg<T> (ls, i);
+          for (int j = 0; j < pg1; j++)
+            shape[ii++] = trafo * Vec<2,T>(fi*lt[j].Value(), 0);
+        }
+
+    if (p[0] < 1 || p[1] < 1) return;
+    for (int i = 0; i < p[0]; i++)
+      for (int j = 0; j < p[1]; j++)
+        if (i || j)
+          shape[ii++] = trafo * Vec<2,T>(ls[i].Value()*lt[j].DValue(0),
+                                         -ls[i].DValue(0)*lt[j].Value());
+  }
+
 
 
   // declaration of the shapes ...
@@ -58,57 +174,11 @@ namespace ngfem
       if(order_edge[i] > 0)
         ndof += usegrad_edge[i]*order_edge[i];
     
-    for(int i = 0; i < N_FACE; i++)
-      if (FaceType(i) == ET_TRIG)
-        {
-          if (order_face[i][0] > 1)
-            {
-              int p = order_face[i][0];
-              int pg = p - (type1 ? 1 : 0);
-              ndof += usegrad_face[i]*pg*(pg-1)/2;
-              ndof += (p+2)*(p-1)/2;
-                // ndof += ((usegrad_face[i]+1)*order_face[i][0]+2)*(order_face[i][0]-1)/2;
-            }
-        }
-      else
-        {
-          if(order_face[i][0]>=0 && order_face[i][1]>=0)
-            ndof +=  (usegrad_face[i]+1)*order_face[i][0]*order_face[i][1] 
-              + order_face[i][0] + order_face[i][1]; 
-        }
+    for (int i = 0; i < N_FACE; i++)
+      ndof += hcurl_ndof::Face (FaceType(i), order_face[i], usegrad_face[i], type1);
 
-    switch (ET)
-      {
-      case ET_TET: 
-        if(order_cell[0] > 2) {
-	  if (type1)	    
-	    ndof += usegrad_cell*(order_cell[0]-3)*(order_cell[0]-2)*(order_cell[0]-1)/6  + (order_cell[0]-2)*(order_cell[0]-1)*(2*order_cell[0]+3)/6 ;
-	  else 
-	    ndof += ((usegrad_cell + 2) * order_cell[0] + 3) 
-	      * (order_cell[0]-2) * (order_cell[0]-1) / 6;
-	}
-        break;
-      case ET_PRISM:
-        if(order_cell[2] > 0 && order_cell[0] > 1)
-          ndof += ((usegrad_cell+2)*order_cell[2] + 1) * order_cell[0]*(order_cell[0]-1)/2
-            + (order_cell[0]-1)*order_cell[2]; 
-        break;
-      case ET_PYRAMID:
-        {
-          int pc = order_cell[0]; //SZ: no problem to do anisotropic, but for the moment 
-          // is it worth getting crazy :-) 
-          if(order_cell[0]>1)
-            ndof += usegrad_cell*(pc-1)*pc*(2*pc-1)/6 + pc*(2*pc*pc+3*pc-2)/3; 
-          break;
-        }
-      case ET_HEX:
-        if(order_cell[0] >= 0 && order_cell[1]>= 0 && order_cell[2]>=0)
-          ndof += (usegrad_cell + 2)* order_cell[0] * order_cell[1] * order_cell[2]
-            + order_cell[1]*order_cell[2]  + order_cell[0]*(order_cell[1] + order_cell[2]);  
-        break;
-      default:
-        ;
-      }
+    if (DIM == 3)
+      ndof += hcurl_ndof::Cell (ET, order_cell, usegrad_cell, type1);
     
     TORDER horder = 0; 
     for (int i = 0; i < N_EDGE; i++)
@@ -393,17 +463,17 @@ namespace ngfem
 
      
     IVec<2> p = order_face[0]; // (order_cell[0],order_cell[1]);
+    IVec<2> pg (p[0]-type1, p[1]-type1);
 
-
-    if (usegrad_face[0] && p[0] >= 1 && p[1] >= 1)
+    if (usegrad_face[0] && pg[0] >= 1 && pg[1] >= 1)
       {
         Vec<2,Tx> xi = ET_trait<ET_QUAD>::XiFace(0, hx, vnums);
 	Tx bub = 1.0/16 * (1-xi(0)*xi(0))*(1-xi(1)*xi(1));
-        
-        QuadOrthoPol::EvalMult1Assign(p[0]-1, xi(0), bub,
-              SBLambda ([&](int i, Tx val) LAMBDA_INLINE 
-                    {  
-                      QuadOrthoPol::EvalMult (p[1]-1, xi(1), val, 
+
+        QuadOrthoPol::EvalMult1Assign(pg[0]-1, xi(0), bub,
+              SBLambda ([&](int i, Tx val) LAMBDA_INLINE
+                    {
+                      QuadOrthoPol::EvalMult (pg[1]-1, xi(1), val,
                                                     SBLambda([&](int i2, Tx v2)
                                                              {
                                                                shape[ii++] = Du (v2);
@@ -415,40 +485,36 @@ namespace ngfem
 
 
 
-    int fmax = 0; 
+    // curl part: the one of N_[p-1], curl onto Q_{p-1}
+    if (p[0] < 1 || p[1] < 1) return;
+    IVec<2> q (p[0]-1, p[1]-1);
+
+    int fmax = 0;
     for (int j = 1; j < 4; j++)
       if (vnums[j] > vnums[fmax])
 	fmax = j;
-    
-    int f1 = (fmax+3)%4; 
-    int f2 = (fmax+1)%4; 
-    if(vnums[f2] > vnums[f1]) swap(f1,f2);  // fmax > f2 > f1; 
+
+    int f1 = (fmax+3)%4;
+    int f2 = (fmax+1)%4;
+    if(vnums[f2] > vnums[f1]) swap(f1,f2);  // fmax > f2 > f1;
 
     Tx xi = sigma[fmax]-sigma[f1];  // in [-1,1]
     Tx eta = sigma[fmax]-sigma[f2]; // in [-1,1]
-    
-    T_ORTHOPOL::Calc(p[0]+1, xi,pol_xi);
-    T_ORTHOPOL::Calc(p[1]+1,eta,pol_eta);
 
-    /*
-    //Gradient fields 
-    if(usegrad_face[0])
-      for (int k = 0; k < p[0]; k++)
-	for (int j= 0; j < p[1]; j++)
-          shape[ii++] = Du<2> (pol_xi[k]*pol_eta[j]);
-    */
+    T_ORTHOPOL::Calc(q[0]+1, xi,pol_xi);
+    T_ORTHOPOL::Calc(q[1]+1,eta,pol_eta);
 
-    //Rotation of Gradient fields 
-    for (int k = 0; k < p[0]; k++)
-      for (int j= 0; j < p[1]; j++)
+    //Rotation of Gradient fields
+    for (int k = 0; k < q[0]; k++)
+      for (int j= 0; j < q[1]; j++)
         shape[ii++] = uDv_minus_vDu (pol_eta[j], pol_xi[k]);
 
-    //Missing ones 
-    for(int j = 0; j< p[0]; j++)
+    //Missing ones
+    for(int j = 0; j< q[0]; j++)
       shape[ii++] = uDv (0.5*pol_xi[j], eta);
 
-    for(int j = 0; j < p[1]; j++)
-      shape[ii++] = uDv (0.5*pol_eta[j], xi); 
+    for(int j = 0; j < q[1]; j++)
+      shape[ii++] = uDv (0.5*pol_eta[j], xi);
   }
 
 
@@ -690,10 +756,11 @@ namespace ngfem
 	IVec<4> fav = GetFaceSort (i, vnums);
 
         {
-          // gradients 
-          if (usegrad_face[i])
+          // gradients
+          int pg = p - type1;
+          if (usegrad_face[i] && pg >= 2)
             {
-              TrigOrthoPolGrad::EvalMult (p-2, lam[fav[0]], lam[fav[1]], 
+              TrigOrthoPolGrad::EvalMult (pg-2, lam[fav[0]], lam[fav[1]],
                                        lam[fav[0]]*lam[fav[1]]*lam[fav[2]]*muz[fav[2]], 
                                        SBLambda ([&](int nr, Tx val)
                                                  {
@@ -752,36 +819,35 @@ namespace ngfem
       }
     
 
-    // quad faces
+    // quad faces: gradients of H1(p+1-type1), curl part of N_[p-1]
     for (int i = 2; i < 5; i++)
       {
 	IVec<2> p = order_face[i];
+        IVec<2> pg (p[0]-type1, p[1]-type1);
         IVec<4> f = GetFaceSort (i, vnums);	  
 
-        {
-          Tx xi  = sigma[f[0]] - sigma[f[1]]; 
-          Tx eta = sigma[f[0]] - sigma[f[3]];
+        if (usegrad_face[i] && pg[0] >= 1 && pg[1] >= 1)
+          {
+            Tx xi  = sigma[f[0]] - sigma[f[1]]; 
+            Tx eta = sigma[f[0]] - sigma[f[3]];
         
-          Tx scalexi(1.0), scaleeta(1.0);
-          if (f[0] / 3 == f[1] / 3)  
-            scalexi = lam[f[0]]+lam[f[1]];  // xi is horizontal
-          else
-            scaleeta = lam[f[0]]+lam[f[3]];
+            Tx scalexi(1.0), scaleeta(1.0);
+            if (f[0] / 3 == f[1] / 3)  
+              scalexi = lam[f[0]]+lam[f[1]];  // xi is horizontal
+            else
+              scaleeta = lam[f[0]]+lam[f[3]];
           
-          Tx bub = (1.0/16)*(scaleeta*scaleeta-eta*eta)*(scalexi*scalexi-xi*xi);
-          QuadOrthoPol::EvalScaled     (p[0]-1, xi, scalexi, adpolxy1);
-          QuadOrthoPol::EvalScaledMult (p[1]-1, eta, scaleeta, bub, adpolz);
+            Tx bub = (1.0/16)*(scaleeta*scaleeta-eta*eta)*(scalexi*scalexi-xi*xi);
+            QuadOrthoPol::EvalScaled     (pg[0]-1, xi, scalexi, adpolxy1);
+            QuadOrthoPol::EvalScaledMult (pg[1]-1, eta, scaleeta, bub, adpolz);
 
-          
-          if(usegrad_face[i])
-            {
-              // Gradientfields nabla(polxy*polz) 
-              for (int k = 0; k <= p[0]-1; k++)
-                for (int j = 0; j <= p[1]-1; j++)
-                  shape[ii++] = Du (adpolxy1[k] * adpolz[j]);
-            }
-        }
-        
+            for (int k = 0; k <= pg[0]-1; k++)
+              for (int j = 0; j <= pg[1]-1; j++)
+                shape[ii++] = Du (adpolxy1[k] * adpolz[j]);
+          }
+
+        if (p[0] < 1 || p[1] < 1) continue;
+        IVec<2> q (p[0]-1, p[1]-1);
 
 	int fmax = 0;
 	for (int j = 1; j < 4; j++)
@@ -793,106 +859,89 @@ namespace ngfem
 	Tx eta = 1-lam[faces[i][fmax]]-lam[faces[i][ftrig]]; 
 	Tx zeta = muz[faces[i][fmax]]-muz[faces[i][fz]]; 
 	
-	int pp = int(max2(p[0],p[1]))+1;
+	int pp = int(max2(q[0],q[1]))+1;
 	T_ORTHOPOL::CalcTrigExt(pp,xi,eta,adpolxy1); 
 	T_ORTHOPOL::Calc(pp,zeta,adpolz); 
-        
-        
-        /*
-	if(usegrad_face[i])
-	  {
-	    // Gradientfields nabla(polxy*polz) 
-	    if (vnums[faces[i][ftrig]] > vnums[faces[i][fz]]) 
-	      for (int k = 0; k <= p[0]-1; k++)
-		for (int j = 0; j <= p[1]-1; j++)
-                  shape[ii++] = Du<3> (adpolxy1[k] * adpolz[j]);
-	    else
-	      for (int j = 0; j <= p[0]-1; j++)
-		for (int k = 0; k <= p[1]-1; k++)
-                  shape[ii++] = Du<3> (adpolxy1[k] * adpolz[j]);
-	  }
-        */
 
 	// Rotations of GradFields => nabla(polxy)*polz - polxy*nabla(polz)
 	if (vnums[faces[i][ftrig]] > vnums[faces[i][fz]]) 
-	  for (int k = 0; k <= p[0]-1; k++)
-	    for (int j = 0; j <= p[1]-1; j++)
+	  for (int k = 0; k <= q[0]-1; k++)
+	    for (int j = 0; j <= q[1]-1; j++)
               shape[ii++] = uDv_minus_vDu (adpolz[j], adpolxy1[k]);
 	else
-	  for (int j = 0; j <= p[0]-1; j++)
-	    for (int k = 0; k <= p[1]-1; k++)
+	  for (int j = 0; j <= q[0]-1; j++)
+	    for (int k = 0; k <= q[1]-1; k++)
               shape[ii++] = uDv_minus_vDu (adpolxy1[k], adpolz[j]);
 	
-	// Type 3 
 	// (ned0_trig)*polz, (ned0_quad)* polxy 
-
 	if(vnums[faces[i][ftrig]] > vnums[faces[i][fz]]) // p = (p_trig,p_z) 
 	  {
-	    for(int j=0;j<=p[0]-1;j++) 
+	    for(int j=0;j<=q[0]-1;j++) 
               shape[ii++] = wuDv_minus_wvDu (muz[faces[i][fz]], muz[faces[i][fmax]], adpolxy1[j]);
-	    for(int j=0;j<=p[1]-1;j++) 
+	    for(int j=0;j<=q[1]-1;j++) 
               shape[ii++] = wuDv_minus_wvDu (lam[faces[i][ftrig]], lam[faces[i][fmax]], adpolz[j]);
 	  }
 	else 
 	  {
-	    for(int j=0;j<=p[0]-1;j++) 
+	    for(int j=0;j<=q[0]-1;j++) 
               shape[ii++] = wuDv_minus_wvDu (lam[faces[i][ftrig]], lam[faces[i][fmax]], adpolz[j]);
-	    for(int j=0;j<=p[1]-1;j++) 
+	    for(int j=0;j<=q[1]-1;j++) 
               shape[ii++] = wuDv_minus_wvDu (muz[faces[i][fz]], muz[faces[i][fmax]], adpolxy1[j]);
 	  }
       }
-    
-    if(order_cell[0] > 1 && order_cell[2] > 0) 
+
+    // cell: gradients of H1(p+1-type1) bubbles, curl part of
+    // Ned1_p(trig) x P_pz  +  P_p(trig) x P_{pz-1} e_z
+    int p = order_cell[0], pz = order_cell[2];
+    int pg = p-type1, pgz = pz-type1;
+    if (usegrad_cell && pg >= 2 && pgz >= 1)
       {
-        IVec<3> p (order_cell[0]);
-        if (usegrad_cell && p[0] > 1 && p[2] > 0)
-          {
-            // gradientfields
-            int nf = (p[0]-0)*(p[0]-1)/2;
-            ArrayMem<Tx,20> pol_trig(nf);
-            
-            DubinerBasis::EvalMult (p[0]-2, x, y, x*y*(1-x-y),pol_trig);
-            LegendrePolynomial::EvalMult (p[2]-1, 2*z-1, z*(1-z), adpolz);
-            
-            for (int i = 0; i < nf; i++)
-              for (int k = 0; k <= p[2]-1; k++)
-                shape[ii++] = Du (pol_trig[i] * adpolz[k]);
-          }
-
-
-	T_TRIGFACESHAPES::CalcSplitted(order_cell[0]+1,x-y,1-x-y,adpolxy1,adpolxy2);
-	T_ORTHOPOL::Calc(order_cell[2]+1,2*z-1,adpolz); 
-	
-        /*
-	// gradientfields
-	if(usegrad_cell)
-	  for(int i=0;i<=order_cell[0]-2;i++)
-	    for(int j=0;j<=order_cell[0]-2-i;j++)
-	      for(int k=0;k<=order_cell[2]-1;k++)
-                shape[ii++] = Du<3> (adpolxy1[i]*adpolxy2[j]*adpolz[k]);
-        */
-
-	// Rotations of gradientfields
-	for(int i=0;i<=order_cell[0]-2;i++)
-	  for(int j=0;j<=order_cell[0]-2-i;j++)
-	    for(int k=0;k<=order_cell[2]-1;k++)
-	      {
-                shape[ii++] = wuDv_minus_wvDu (adpolxy1[i],adpolxy2[j],adpolz[k]);
-                shape[ii++] = uDv_minus_vDu (adpolxy1[i],adpolxy2[j]*adpolz[k]);
-	      }
-
-	// Type 3 
-	// ned0(trig) * polxy2[j]*polz 
-	// z.DValue(0) * polxy1[i] * polxy2[j] 
-	// double ned_trig[2] = {y.Value(),-x.Value()};  
-	for(int j=0;j<=order_cell[0]-2;j++) 
-	  for (int k=0;k<=order_cell[2]-1;k++) 
-            shape[ii++] = wuDv_minus_wvDu (x,y, adpolxy2[j]*adpolz[k]);
-
-    	for(int i = 0; i <= order_cell[0]-2; i++) 
-	  for(int j = 0; j <= order_cell[0]-2-i; j++) 
-            shape[ii++] = wuDv_minus_wvDu (z,1-z, adpolxy1[i]*adpolxy2[j]);
+        // same basis as H1HighOrderFE
+        QuadOrthoPol::EvalMult (pgz-1, 2*z-1, z*(1-z), adpolz);
+        TrigOrthoPolGrad::EvalMult (pg-2, x, y, x*y*(1-x-y),
+                                SBLambda ([&](int nr, Tx val)
+                                          {
+                                            for (int k = 0; k < pgz; k++)
+                                              shape[ii++] = Du (val * adpolz[k]);
+                                          }));
       }
+
+    if (p < 2 || pz < 1) return;
+    Tx l2 = 1-x-y;
+    // z-bubbles of P_pz
+    if (pz >= 2)
+      LegendrePolynomial::EvalMult (pz-2, 2*z-1, z*(1-z), adpolz);
+
+    // trig curl bubbles x z-bubbles
+    for (int k = 0; k < pz-1; k++)
+      {
+        Tx w = adpolz[k];
+        DubinerBasis::EvalMult (p-2, x, y, x*w,
+                                SBLambda ([&](int nr, Tx val)
+                                          {
+                                            shape[ii++] = wuDv_minus_wvDu (y, l2, val);
+                                          }));
+        LegendrePolynomial::EvalMult (p-2, l2-y, l2*w,
+                                      SBLambda ([&](int j, Tx val)
+                                                {
+                                                  shape[ii++] = wuDv_minus_wvDu (y, x, val);
+                                                }));
+      }
+
+    if (p < 3) return;
+    // w grad u - u grad w, u trig bubbles of P_p
+    DubinerBasis::EvalMult (p-3, x, y, x*y*l2,
+                            SBLambda ([&](int nr, Tx u)
+                                      {
+                                        for (int k = 0; k < pz-1; k++)
+                                          shape[ii++] = uDv_minus_vDu (adpolz[k], u);
+                                      }));
+    // u e_z
+    DubinerBasis::EvalMult (p-3, x, y, x*y*l2,
+                            SBLambda ([&](int nr, Tx u)
+                                      {
+                                        shape[ii++] = wuDv_minus_wvDu (z, 1-z, u);
+                                      }));
   }
 
 
@@ -947,30 +996,30 @@ namespace ngfem
     for (int i = 0; i<6; i++)
       {
 	IVec<2> p = order_face[i];
+        IVec<2> pg (p[0]-type1, p[1]-type1);
 
 	Tx lam_f(0);
 	for (int j = 0; j < 4; j++)
 	  lam_f += lami[faces[i][j]];
 
-        {
-          IVec<4> f = GetFaceSort (i, vnums);	  
-          Tx xi  = sigma[f[0]] - sigma[f[1]]; 
-          Tx eta = sigma[f[0]] - sigma[f[3]];
+        if (usegrad_face[i] && pg[0] >= 1 && pg[1] >= 1)
+          {
+            IVec<4> f = GetFaceSort (i, vnums);	  
+            Tx xi  = sigma[f[0]] - sigma[f[1]]; 
+            Tx eta = sigma[f[0]] - sigma[f[3]];
         
-          Tx bub = lam_f*(1.0/16)*(1.0-eta*eta)*(1.0-xi*xi);
-          QuadOrthoPol::Eval     (p[0]-1, xi, pol_xi);
-          QuadOrthoPol::EvalMult (p[1]-1, eta, bub, pol_eta);
+            Tx bub = lam_f*(1.0/16)*(1.0-eta*eta)*(1.0-xi*xi);
+            QuadOrthoPol::Eval     (pg[0]-1, xi, pol_xi);
+            QuadOrthoPol::EvalMult (pg[1]-1, eta, bub, pol_eta);
           
-          if(usegrad_face[i])
-            {
-              // Gradientfields nabla(polxy*polz) 
-              for (int k = 0; k <= p[0]-1; k++)
-                for (int j = 0; j <= p[1]-1; j++)
-                  shape[ii++] = Du (pol_xi[k] * pol_eta[j]);
-            }
-        }
+            for (int k = 0; k <= pg[0]-1; k++)
+              for (int j = 0; j <= pg[1]-1; j++)
+                shape[ii++] = Du (pol_xi[k] * pol_eta[j]);
+          }
 
-	
+        // curl part of N_[p-1]
+        if (p[0] < 1 || p[1] < 1) continue;
+        IVec<2> q (p[0]-1, p[1]-1);
 	
 	int qmax = 0;
 	for (int j = 1; j < 4; j++)
@@ -990,85 +1039,67 @@ namespace ngfem
 	Tx xi = sigma[fmax]-sigma[f1]; 
 	Tx eta = sigma[fmax]-sigma[f2]; 
     
-	T_ORTHOPOL::Calc(p[0]+1, xi,pol_xi);
-	T_ORTHOPOL::Calc(p[1]+1,eta,pol_eta);
-
-        /*
-	//Gradient fields 
-	if(usegrad_face[i])
-	  for (int k = 0; k < p[0]; k++)
-	    for (int j= 0; j < p[1]; j++)
-              shape[ii++] = Du<3> (lam_f * pol_xi[k] * pol_eta[j]);
-        */
+	T_ORTHOPOL::Calc(q[0]+1, xi,pol_xi);
+	T_ORTHOPOL::Calc(q[1]+1,eta,pol_eta);
 
 	//Rotation of Gradient fields 
-	for (int k = 0; k < p[0]; k++)
-	  for (int j= 0; j < p[1]; j++)
+	for (int k = 0; k < q[0]; k++)
+	  for (int j= 0; j < q[1]; j++)
             shape[ii++] = uDv_minus_vDu (pol_eta[j], lam_f * pol_xi[k]);
 
 	// Missing ones 
-	for(int j = 0; j < p[0];j++) 
+	for(int j = 0; j < q[0];j++) 
           shape[ii++] = wuDv_minus_wvDu (Tx(0.5), eta, pol_xi[j]*lam_f); 
 
-	for(int j = 0; j < p[1];j++) 
+	for(int j = 0; j < q[1];j++) 
           shape[ii++] = wuDv_minus_wvDu (Tx(0.5), xi, pol_eta[j]*lam_f); 
       }
 
 
     
-    {
-    IVec<3> p (order_cell[0]);
-    if(usegrad_cell)
-      if (p[0] >= 1 && p[1] >= 1 && p[2] >= 1)
-        {
-          QuadOrthoPol::EvalMult (p[0]-1, 2*x-1, x*(1-x), pol_xi);
-          QuadOrthoPol::EvalMult (p[1]-1, 2*y-1, y*(1-y), pol_eta);
-          QuadOrthoPol::EvalMult (p[2]-1, 2*z-1, z*(1-z), pol_zeta);
+    IVec<3> p (order_cell[0], order_cell[1], order_cell[2]);
+    IVec<3> pg (p[0]-type1, p[1]-type1, p[2]-type1);
+    if (usegrad_cell && pg[0] >= 1 && pg[1] >= 1 && pg[2] >= 1)
+      {
+        QuadOrthoPol::EvalMult (pg[0]-1, 2*x-1, x*(1-x), pol_xi);
+        QuadOrthoPol::EvalMult (pg[1]-1, 2*y-1, y*(1-y), pol_eta);
+        QuadOrthoPol::EvalMult (pg[2]-1, 2*z-1, z*(1-z), pol_zeta);
           
-          for (int i = 0; i < p[0]; i++)
-            for (int j = 0; j < p[1]; j++)
-              {
-                Tx pxy = pol_xi[i] * pol_eta[j];
-                for (int k = 0; k < p[2]; k++)
-                  shape[ii++] = Du (pxy * pol_zeta[k]);
-              }
-        }
-    }
+        for (int i = 0; i < pg[0]; i++)
+          for (int j = 0; j < pg[1]; j++)
+            {
+              Tx pxy = pol_xi[i] * pol_eta[j];
+              for (int k = 0; k < pg[2]; k++)
+                shape[ii++] = Du (pxy * pol_zeta[k]);
+            }
+      }
 
+    // curl part of N_[p-1]
+    if (p[0] < 1 || p[1] < 1 || p[2] < 1) return;
+    IVec<3> q (p[0]-1, p[1]-1, p[2]-1);
+    T_ORTHOPOL::Calc(q[0]+1,2*x-1,pol_xi);
+    T_ORTHOPOL::Calc(q[1]+1,2*y-1,pol_eta);
+    T_ORTHOPOL::Calc(q[2]+1,2*z-1,pol_zeta); 
     
-    // Element-based shapes
-    T_ORTHOPOL::Calc(order_cell[0]+1,2*x-1,pol_xi);
-    T_ORTHOPOL::Calc(order_cell[1]+1,2*y-1,pol_eta);
-    T_ORTHOPOL::Calc(order_cell[2]+1,2*z-1,pol_zeta); 
-    
-    /*
-    //Gradient fields
-    if(usegrad_cell)
-      for (int i=0; i<order_cell[0]; i++)
-	for(int j=0; j<order_cell[1]; j++) 
-	  for(int k=0; k<order_cell[2]; k++)
-            shape[ii++] = Du<3> (pol_xi[i] * pol_eta[j] * pol_zeta[k]);
-    */
-
     //Rotations of gradient fields
-    for (int i=0; i<order_cell[0]; i++)
-      for(int j=0; j<order_cell[1]; j++) 
-	for(int k=0; k<order_cell[2]; k++)
+    for (int i=0; i<q[0]; i++)
+      for(int j=0; j<q[1]; j++) 
+	for(int k=0; k<q[2]; k++)
 	  {
             shape[ii++] = uDv_minus_vDu (pol_xi[i] * pol_eta[j], pol_zeta[k]);
             shape[ii++] = uDv_minus_vDu (pol_xi[i], pol_eta[j] * pol_zeta[k]);
 	  } 
     
-    for(int i = 0; i < order_cell[0]; i++) 
-      for(int j = 0; j < order_cell[1]; j++)
+    for(int i = 0; i < q[0]; i++) 
+      for(int j = 0; j < q[1]; j++)
         shape[ii++] = wuDv_minus_wvDu (z,1-z,pol_xi[i] * pol_eta[j]);
 
-    for(int i = 0; i < order_cell[0]; i++) 
-      for(int k = 0; k < order_cell[2]; k++)
+    for(int i = 0; i < q[0]; i++) 
+      for(int k = 0; k < q[2]; k++)
         shape[ii++] = wuDv_minus_wvDu (y,1-y,pol_xi[i] * pol_zeta[k]);
 
-    for(int j = 0; j < order_cell[1]; j++)
-      for(int k = 0; k < order_cell[2]; k++)
+    for(int j = 0; j < q[1]; j++)
+      for(int k = 0; k < q[2]; k++)
         shape[ii++] = wuDv_minus_wvDu (x,1-x,pol_eta[j] * pol_zeta[k]);
   }
 
@@ -1081,10 +1112,6 @@ namespace ngfem
     typedef typename std::remove_const<typename std::remove_reference<decltype(mip.IP()(0))>::type>::type T;        
     auto & ip = mip.IP();
     T x = ip(0), y = ip(1), z = ip(2);
-    // T lam[4] = { x, y, z, 1-x-y-z };
-    // Vec<3> pnts[4] = { { 1, 0, 0 }, { 0, 1, 0 } , { 0, 0, 1 }, { 0, 0, 0 } };
-    // T lam[8]={(1-x)*(1-y)*(1-z),x*(1-y)*(1-z),x*y*(1-z),(1-x)*y*(1-z),
-    // (1-x)*(1-y)*z,x*(1-y)*z,x*y*z,(1-x)*y*z}; 
     T sigma[8]={(1-x)+(1-y)+(1-z),x+(1-y)+(1-z),x+y+(1-z),(1-x)+y+(1-z),
                 (1-x)+(1-y)+z,x+(1-y)+z,x+y+z,(1-x)+y+z};
     Vec<3> pnts[8] = 
@@ -1099,7 +1126,6 @@ namespace ngfem
 	{ 0, 1, 1 }
       };
     
-    
     int facetnr = ip.FacetNr();
     int ii = 12;
 
@@ -1107,7 +1133,7 @@ namespace ngfem
       { // edge shapes
         for (int i = 0; i < 12; i++)
           {
-            int p = order_edge[i];
+            int p = order_edge[i] * usegrad_edge[i];
             if (i == facetnr)
               {
                 IVec<2> e = GetEdgeSort (i, vnums);
@@ -1128,106 +1154,82 @@ namespace ngfem
               }
             ii += p;
           }
-      }
-    else
-      {
-        throw Exception ("H(curl)-hex: dual shapes supported only on edges");
-        for (int i = 0; i < 12; i++)
-          ii += order_edge[i];
+        return;
       }
 
-    /*
-      // just copied from tet, needs adaption ...
+    for (int i = 0; i < 12; i++)
+      ii += order_edge[i] * usegrad_edge[i];
+
     if (ip.VB() == BND)
       {
-	//AutoDiff<3,T> xa(ip(0), 0), ya(ip(1),1), za(ip(2),2);
-	//AutoDiff<3,T> lami[4] = { xa, ya, za, (T)(1.0) };
+        Vec<3,T> X(x, y, z);
+        for (int i = 0; i < 6; i++)
+          {
+            if (i == facetnr)
+              {
+                IVec<4> f = GetFaceSort (i, vnums);
+                T s, t;
+                HCurlFaceCoords (X, pnts[f[0]], pnts[f[1]], pnts[f[3]], s, t);
+                auto ftrafo = HCurlFaceTrafo<T> (mip, pnts[f[1]]-pnts[f[0]], pnts[f[3]]-pnts[f[0]]);
+                HCurlQuadDual (ftrafo, s, t, IVec<2>(order_face[i]), usegrad_face[i], type1, ii, shape);
+                return;
+              }
+            ii += hcurl_ndof::Face (ET_QUAD, order_face[i], usegrad_face[i], type1);
+          }
+        return;
+      }
 
-	for (int f = 0; f < 4; f++)
-	  {
-	    int p = order_face[f][0];
-	     if (f == facetnr)
-	       {
-		 IVec<4> fav = GetFaceSort (facetnr, vnums);
-		 //AutoDiff<3,T> adxi = lami[fav[0]]-lami[fav[2]];
-		 //AutoDiff<3,T> adeta = lami[fav[1]]-lami[fav[2]];
-		 Vec<3> adxi = pnts[fav[0]] - pnts[fav[2]];
-		 Vec<3> adeta = pnts[fav[1]] - pnts[fav[2]];
-		 T xi = lam[fav[0]];
-		 T eta = lam[fav[1]];
-		 
-		 Matrix<> F(3,2);
-		 F.Cols(0,1) = adxi;//Vec<3,T>(adxi.DValue(0),adxi.DValue(1),adxi.DValue(2));
-		 F.Cols(1,2) = adeta;//Vec<3,T>(adeta.DValue(0),adeta.DValue(1),adeta.DValue(2));
-		 
-		 Matrix<> Ftmp(2,2);
-		 Ftmp = Trans(F)*F;
-		 auto det = sqrt(Ftmp(0,0)*Ftmp(1,1)-Ftmp(1,0)*Ftmp(0,1));
-		 
-		 DubinerBasis::Eval(order-2, xi, eta,
-                                    SBLambda([&] (size_t nr, auto val)
-                                             {
-                                               shape[ii++] = 1/(det*mip.GetMeasure())*mip.GetJacobian()*(F*Vec<2,T> (val, 0));
-                                               shape[ii++] = 1/(det*mip.GetMeasure())*mip.GetJacobian()*(F*Vec<2,T> (val*xi, val*eta));		
-                                             }));
-		 LegendrePolynomial::Eval(order-2,xi,
-					  SBLambda([&] (size_t nr, auto val)
-						   {
-						     shape[ii++] = 1/(det*mip.GetMeasure())*mip.GetJacobian()*(F*Vec<2,T>(0, val));
-						   }));
-	       }
-	     else
-	      ii += (p+1)*(p-1);
-	  }
-      }
-    else
-      {
-        for (int i = 0; i < 4; i++)
-	  {
-	    int p = order_face[i][0];
-	    ii += (p+1)*(p-1);
-	  }
-      }
+    for (int i = 0; i < 6; i++)
+      ii += hcurl_ndof::Face (ET_QUAD, order_face[i], usegrad_face[i], type1);
+
     if (ip.VB() == VOL)
       {
-	// auto xphys = mip.GetPoint()(0);
-        // auto yphys = mip.GetPoint()(1);
-	// auto zphys = mip.GetPoint()(2);
-	
-	LegendrePolynomial leg;
-	JacobiPolynomialAlpha jac1(1);    
-	leg.EvalScaled1Assign 
-	  (order-3, lam[2]-lam[3], lam[2]+lam[3],
-	   SBLambda ([&](size_t k, T polz) LAMBDA_INLINE
-		     {
-		       // JacobiPolynomialAlpha jac(2*k+1);
-		       JacobiPolynomialAlpha jac2(2*k+2);
-		       
-		       jac1.EvalScaledMult1Assign
-			 (order-3-k, lam[1]-lam[2]-lam[3], 1-lam[0], polz, 
-			  SBLambda ([&] (size_t j, T polsy) LAMBDA_INLINE
-				    {
-				      // JacobiPolynomialAlpha jac(2*(j+k)+2);
-				      jac2.EvalMult(order-3 - k - j, 2 * lam[0] - 1, polsy, 
-						    SBLambda([&](size_t j, T val) LAMBDA_INLINE
-							     {
-							       shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<3,T>(val*x, val*y, val*z);
-							       shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<3,T>(val, 0, 0);
-							       shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<3,T>(0, val, 0);
-							     }));
-				      jac2.IncAlpha2();
-				    }));
-		       jac1.IncAlpha2();
-		     }));
+        auto trafo = 1/mip.GetMeasure()*mip.GetJacobian();
+        IVec<3> p (order_cell[0], order_cell[1], order_cell[2]);
+        int n = max(p[0], max(p[1], p[2])) + 1;
+        ArrayMem<AutoDiff<1,T>,20> lx(n+1), ly(n+1), lz(n+1);
+        HCurlLegendreAD (n, x, lx);
+        HCurlLegendreAD (n, y, ly);
+        HCurlLegendreAD (n, z, lz);
 
+        // gradients: (F_i L_j L_k, 0, 0), div onto Q_{p-1-type1}
+        IVec<3> pg (p[0]-type1, p[1]-type1, p[2]-type1);
+        if (usegrad_cell && pg[0] >= 1 && pg[1] >= 1 && pg[2] >= 1)
+          for (int i = 0; i < pg[0]; i++)
+            {
+              T fi = HCurlIntLeg<T> (lx, i);
+              for (int j = 0; j < pg[1]; j++)
+                for (int k = 0; k < pg[2]; k++)
+                  shape[ii++] = trafo * Vec<3,T>(fi*ly[j].Value()*lz[k].Value(), 0, 0);
+            }
 
-        DubinerBasis::Eval(order-3, x, y,
-                           SBLambda([&] (size_t nr, auto val)
-                                    {
-                                      shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<3,T> (0, 0, val);
-                                    }));
+        // curl part of N_[q], q = p-1: div-free subspace of RT_[q-1]
+        if (p[0] < 1 || p[1] < 1 || p[2] < 1) return;
+        IVec<3> q (p[0]-1, p[1]-1, p[2]-1);
+        // M_0 = 1, M_a = F_{a-1}, M_a' = L_{a-1}
+        auto M = [&] (FlatArray<AutoDiff<1,T>> l, int a) -> T
+          { return a == 0 ? T(1.0) : HCurlIntLeg<T> (l, a-1); };
+        auto dM = [&] (FlatArray<AutoDiff<1,T>> l, int a) -> T
+          { return a == 0 ? T(0.0) : l[a-1].Value(); };
+
+        // curl (phi e_z), phi = M_a(x) M_b(y) L_c(z), (a,b) != 0
+        for (int a = 0; a <= q[0]; a++)
+          for (int b = 0; b <= q[1]; b++)
+            if (a || b)
+              {
+                T mxy = M(lx,a)*dM(ly,b), dmxy = dM(lx,a)*M(ly,b);
+                for (int c = 0; c < q[2]; c++)
+                  shape[ii++] = trafo * Vec<3,T>(mxy*lz[c].Value(), -dmxy*lz[c].Value(), 0);
+              }
+        // curl (psi e_x), psi = L_i(x) M_j(y) M_l(z), j >= 1
+        for (int i = 0; i < q[0]; i++)
+          for (int j = 1; j <= q[1]; j++)
+            for (int l = 0; l <= q[2]; l++)
+              {
+                T li = lx[i].Value();
+                shape[ii++] = trafo * Vec<3,T>(0, li*M(ly,j)*dM(lz,l), -li*dM(ly,j)*M(lz,l));
+              }
       }
-    */
   }
 
 
@@ -1336,11 +1338,12 @@ namespace ngfem
 	  if(vnums[faces[i][fav[1]]] > vnums[faces[i][fav[2]]]) swap(fav[1],fav[2]);
 	  if(vnums[faces[i][fav[0]]] > vnums[faces[i][fav[1]]]) swap(fav[0],fav[1]); 	
 
-	  if(usegrad_face[i])
+	  int pg = p - type1;
+	  if (usegrad_face[i] && pg >= 2)
             {
               Tx bub = lam_face * bary[fav[0]]*bary[fav[1]]*bary[fav[2]];
               TrigOrthoPolGrad::
-                EvalMult (p-2, bary[fav[0]], bary[fav[1]], bub, 
+                EvalMult (pg-2, bary[fav[0]], bary[fav[1]], bub, 
                           SBLambda ([&](int nr, Tx val)
                                     {
                                       shape[ii++] = Du (val);
@@ -1398,30 +1401,31 @@ namespace ngfem
     // quad face 
     if (order_face[4][0] >= 1)
       {
-	int px = order_face[4][0];
-	int py = order_face[4][0]; // SZ-Attentione 
-	int p = max2(px, py);
-
-	Tx fac(1.0);
-	for (int k = 1; k <= p+1; k++) fac *= (1-z);
-
 	IVec<4> f = GetFaceSort (4, vnums);	  
 	Tx xi  = sigma[f[0]] - sigma[f[1]]; 
 	Tx eta = sigma[f[0]] - sigma[f[3]];
 
-        if (usegrad_face[4])
+        int pg = order_face[4][0] - type1;
+        if (usegrad_face[4] && pg >= 1)
           {
-            // Type 1: Gradient-fields 
-            
+            // gradients of H1(pg+1)
+            Tx fac(1.0);
+            for (int k = 1; k <= pg+1; k++) fac *= (1-z);
             QuadOrthoPol::
-              EvalMult (px-1, xi, fac*0.25*(1-xi*xi), pol_xi);
+              EvalMult (pg-1, xi, fac*0.25*(1-xi*xi), pol_xi);
             QuadOrthoPol::
-              EvalMult (py-1, eta, 0.25*(1-eta*eta), pol_eta);
+              EvalMult (pg-1, eta, 0.25*(1-eta*eta), pol_eta);
 
-            for (int k = 0; k <= px-1; k++) 
-              for (int j = 0; j <= py-1; j++, ii++) 
+            for (int k = 0; k <= pg-1; k++) 
+              for (int j = 0; j <= pg-1; j++, ii++) 
                 shape[ii] = Du (pol_xi[k] * pol_eta[j]);
           }
+
+        // curl part of N_[p-1]
+	int px = order_face[4][0]-1;
+	int py = order_face[4][0]-1;
+	Tx fac(1.0);
+	for (int k = 1; k <= px+1; k++) fac *= (1-z);
         
 	int fmax = 0;
 	for (int l=1; l<4; l++) 
@@ -1452,6 +1456,29 @@ namespace ngfem
           shape[ii++] = uDv (0.5*pol_eta[k] /* *fac */, xi); 
       }
 
+    // gradients of the H1(pg+1) cell bubbles, same basis as H1HighOrderFE
+    if (int pg = order_cell[0]-type1; usegrad_cell && pg >= 2)
+      {
+        int ph = pg+1;
+        QuadOrthoPol::EvalMult (ph-3, 2*xt-1, xt*(1-xt), pol_xi);
+        QuadOrthoPol::EvalMult (ph-3, 2*yt-1, yt*(1-yt), pol_eta);
+
+        Tx bubz = z*(1-z);
+        for (int m = 0; m <= ph-3; m++)
+          {
+            bubz *= 1-z;
+            JacobiPolynomial2(m+4, 1).EvalMult (ph-3-m, 2*z-1, bubz, pol_zeta);
+            for (int i = 0; i <= m; i++)
+              for (int j = 0; j <= m; j++)
+                if (i == m || j == m)
+                  {
+                    Tx pxy = pol_xi[i] * pol_eta[j];
+                    for (int n = 0; n <= ph-3-m; n++)
+                      shape[ii++] = Du (pxy * pol_zeta[n]);
+                  }
+          }
+      }
+
     if (order_cell[0] >= 2)
       {
 	int pp = order_cell[0];
@@ -1469,16 +1496,6 @@ namespace ngfem
 	for (int k=1;k<=pp-2;k++) 
 	  pol_zeta[k] = (1-z)*pol_zeta[k-1];
 
-	if(usegrad_cell)
-	  {
-	    for(int k=0;k<= pp-2;k++)
-              {
-                for(int i=0;i<=k;i++)
-                  for(int j=0;j<=k;j++)
-                    shape[ii++] = Du (pol_xi[i]*pol_eta[j]*pol_zeta[k]);
-              }
-	  }
-	
 	// Type 2a: l.i. combinations of grad-terms   
 	// shape = u_i \nabla(v_j) w_k 
 	// shape = u_i v_j \nabla(w_k) 
@@ -1687,7 +1704,7 @@ namespace ngfem
         int ii = 4;
         for (int i = 0; i < 4; i++)
           {
-            int p = order_edge[i];
+            int p = order_edge[i] * usegrad_edge[i];
             if (i == facetnr)
               {
                 IVec<2> e = GetEdgeSort (i, vnums);
@@ -1714,26 +1731,10 @@ namespace ngfem
       { // inner shapes
         int ii = 4;
         for (int i = 0; i < 4; i++)
-          ii += order_edge[i];
+          ii += order_edge[i] * usegrad_edge[i];
 
-        //do not sort face!
-        //IVec<4> f = GetFaceSort (0, vnums);  
-        //T xi = sigma[f[0]]-sigma[f[1]]; 
-        //T eta = sigma[f[0]]-sigma[f[3]]; 
-        T xi = sigma[0]-sigma[1]; 
-        T eta = sigma[0]-sigma[3]; 
-        ArrayMem<T, 20> polx(order+2), poly(order+2);
-        LegendrePolynomial (order, xi, polx);
-        LegendrePolynomial (order, eta, poly);
-
-        int p = order_face[0][0];
-        
-        for (int i = 0; i < p+1; i++)
-          for (int j = 0; j < p; j++)
-            {
-              shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<2,T>(polx[i] * poly[j],0);
-              shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<2,T>(0,polx[j] * poly[i]);
-            }	
+        auto trafo = 1/mip.GetMeasure()*mip.GetJacobian();
+        HCurlQuadDual (trafo, x, y, order_face[0], usegrad_face[0], type1, ii, shape);
       }
   }
 
@@ -1912,7 +1913,6 @@ namespace ngfem
   inline void HCurlHighOrderFE_Shape<ET_PRISM> ::
   CalcDualShape2 (const MIP & mip, TFA & shape) const
   {
-    // shape = 0;
     typedef typename std::remove_const<typename std::remove_reference<decltype(mip.IP()(0))>::type>::type T;
     auto & ip = mip.IP();
     T x = ip(0), y = ip(1), z = ip(2);
@@ -1931,7 +1931,6 @@ namespace ngfem
       {
         for (int i = 0; i < 9; i++)
           {
-            if(order_edge[i] > 1) throw Exception("Dual shapes for prisms for order > 1 not implemented!");
             int p = order_edge[i] * usegrad_edge[i];
             if (i == facetnr)
               {
@@ -1953,27 +1952,186 @@ namespace ngfem
               }
             ii += p;
           }
+        return;
       }
-    else
-      {
-        for (int i = 0; i < 9; i++)
-          ii += order_edge[i] * usegrad_edge[i];
-      }
+
+    for (int i = 0; i < 9; i++)
+      ii += order_edge[i] * usegrad_edge[i];
+
     if (ip.VB() == BND)
       {
-        // TODO
+        Vec<3,T> X(x, y, z);
+        for (int i = 0; i < 5; i++)
+          {
+            if (i == facetnr)
+              {
+                IVec<4> f = GetFaceSort (i, vnums);
+                if (i < 2)
+                  {
+                    T xi, eta;
+                    HCurlFaceCoords (X, pnts[f[2]], pnts[f[0]], pnts[f[1]], xi, eta);
+                    auto ftrafo = HCurlFaceTrafo<T> (mip, pnts[f[0]]-pnts[f[2]], pnts[f[1]]-pnts[f[2]]);
+                    HCurlTrigFaceDual (ftrafo, xi, eta, int(order_face[i][0]), usegrad_face[i], type1, ii, shape);
+                  }
+                else
+                  {
+                    T s, t;
+                    HCurlFaceCoords (X, pnts[f[0]], pnts[f[1]], pnts[f[3]], s, t);
+                    auto ftrafo = HCurlFaceTrafo<T> (mip, pnts[f[1]]-pnts[f[0]], pnts[f[3]]-pnts[f[0]]);
+                    HCurlQuadDual (ftrafo, s, t, IVec<2>(order_face[i]), usegrad_face[i], type1, ii, shape);
+                  }
+                return;
+              }
+            ii += hcurl_ndof::Face (FaceType(i), order_face[i], usegrad_face[i], type1);
+          }
+        return;
       }
-    else
-      {
-        for (int i = 0; i < 4; i++)
-	  {
-	    int p = order_face[i][0];
-	    ii += (p+1)*(p-1);
-	  }
-      }
+
+    for (int i = 0; i < 5; i++)
+      ii += hcurl_ndof::Face (FaceType(i), order_face[i], usegrad_face[i], type1);
+
     if (ip.VB() == VOL)
       {
-        // TODO
+        auto trafo = 1/mip.GetMeasure()*mip.GetJacobian();
+        int p = order_cell[0], pz = order_cell[2];
+        int pg = p-type1, pgz = pz-type1;
+        int n = max(pz, 1) + 1;
+        ArrayMem<AutoDiff<1,T>,20> lz(n+1);
+        HCurlLegendreAD (n, z, lz);
+        // M_{l+1}(z) = int_0^z L_l, d/dz M_{l+1} = L_l(2z-1)
+        auto M = [&] (int l) -> T { return (0.5/(2*l+1)) * ((l == 0) ? lz[1].Value()+1 : lz[l+1].Value()-lz[l-1].Value()); };
+
+        // gradients: (0, 0, a(x,y) M_{j+1}(z)), div = a L_j
+        if (usegrad_cell && pg >= 2 && pgz >= 1)
+          DubinerBasis::Eval (pg-2, x, y,
+                              SBLambda([&] (size_t nr, T a)
+                                       {
+                                         for (int j = 0; j < pgz; j++)
+                                           shape[ii++] = trafo * Vec<3,T>(0, 0, a*M(j));
+                                       }));
+
+        // curl part: div-free fields
+        if (p < 2 || pz < 1) return;
+        AutoDiff<2,T> adx(x, 0), ady(y, 1);
+        // rot_xy q * L_l(z), q in P_{p-1} without constants
+        DubinerBasis::Eval (p-1, adx, ady,
+                            SBLambda([&] (size_t nr, auto q)
+                                     {
+                                       if (nr == 0) return;
+                                       for (int l = 0; l < pz-1; l++)
+                                         {
+                                           T ll = lz[l].Value();
+                                           shape[ii++] = trafo * Vec<3,T>(q.DValue(1)*ll, -q.DValue(0)*ll, 0);
+                                         }
+                                     }));
+        if (p < 3) return;
+        // (a x L_l, a y L_l, -div_xy(a (x,y)) M_{l+1}), a in P_{p-3}
+        DubinerBasis::Eval (p-3, adx, ady,
+                            SBLambda([&] (size_t nr, auto a)
+                                     {
+                                       T av = a.Value();
+                                       T dv = 2*av + x*a.DValue(0) + y*a.DValue(1);
+                                       for (int l = 0; l < pz-1; l++)
+                                         {
+                                           T ll = lz[l].Value();
+                                           shape[ii++] = trafo * Vec<3,T>(av*x*ll, av*y*ll, -dv*M(l));
+                                         }
+                                     }));
+        // (0, 0, g), g in P_{p-3}
+        DubinerBasis::Eval (p-3, x, y,
+                            SBLambda([&] (size_t nr, T g)
+                                     {
+                                       shape[ii++] = trafo * Vec<3,T>(0, 0, g);
+                                     }));
+      }
+  }
+
+  template<> template <typename MIP, typename TFA>
+  inline void HCurlHighOrderFE_Shape<ET_PYRAMID> ::
+  CalcDualShape2 (const MIP & mip, TFA & shape) const
+  {
+    typedef typename std::remove_const<typename std::remove_reference<decltype(mip.IP()(0))>::type>::type T;
+    auto & ip = mip.IP();
+    T x = ip(0), y = ip(1), z = ip(2);
+    Vec<3,T> X(x, y, z);
+    Vec<3> pnts[5] = { { 0, 0, 0 }, { 1, 0, 0 }, { 1, 1, 0 }, { 0, 1, 0 }, { 0, 0, 1 } };
+    int facetnr = ip.FacetNr();
+    int ii = 8;
+
+    if (ip.VB() == BBND)
+      {
+        for (int i = 0; i < 8; i++)
+          {
+            int p = order_edge[i] * usegrad_edge[i];
+            if (i == facetnr)
+              {
+                IVec<2> e = GetEdgeSort (i, vnums);
+                Vec<3> tauref = pnts[e[1]] - pnts[e[0]];
+                T t(0.0);
+                for (int k = 0; k < 3; k++)
+                  t += (X(k)-pnts[e[0]](k)) * tauref(k);
+                T xi = 2*t/InnerProduct(tauref,tauref) - 1;
+                Vec<3,T> tau = mip.GetJacobian()*tauref;
+                tau /= mip.GetMeasure();
+                LegendrePolynomial::Eval
+                  (p, xi,
+                   SBLambda([&] (size_t nr, T val)
+                            {
+                              Vec<3,T> vshape = val * tau;
+                              if (nr==0)
+                                shape[i] = vshape;
+                              else
+                                shape[ii+nr-1] = vshape;
+                            }));
+              }
+            ii += p;
+          }
+        return;
+      }
+
+    for (int i = 0; i < 8; i++)
+      ii += order_edge[i] * usegrad_edge[i];
+
+    if (ip.VB() == BND)
+      {
+        for (int i = 0; i < 5; i++)
+          {
+            if (i == facetnr)
+              {
+                IVec<4> f = GetFaceSort (i, vnums);
+                if (i < 4)
+                  {
+                    T xi, eta;
+                    HCurlFaceCoords (X, pnts[f[2]], pnts[f[0]], pnts[f[1]], xi, eta);
+                    auto ftrafo = HCurlFaceTrafo<T> (mip, pnts[f[0]]-pnts[f[2]], pnts[f[1]]-pnts[f[2]]);
+                    HCurlTrigFaceDual (ftrafo, xi, eta, int(order_face[i][0]), usegrad_face[i], type1, ii, shape);
+                  }
+                else
+                  {
+                    T s, t;
+                    HCurlFaceCoords (X, pnts[f[0]], pnts[f[1]], pnts[f[3]], s, t);
+                    auto ftrafo = HCurlFaceTrafo<T> (mip, pnts[f[1]]-pnts[f[0]], pnts[f[3]]-pnts[f[0]]);
+                    HCurlQuadDual (ftrafo, s, t, IVec<2>(order_face[i]), usegrad_face[i], type1, ii, shape);
+                  }
+                return;
+              }
+            ii += hcurl_ndof::Face (FaceType(i), order_face[i], usegrad_face[i], type1);
+          }
+        return;
+      }
+
+    if (ip.VB() == VOL)
+      {
+        // cell: the reference cell shapes themselves, Gram matrix is spd
+        int first = this->ndof - hcurl_ndof::Cell (ET_PYRAMID, order_cell, usegrad_cell, type1);
+        auto trafo = 1/mip.GetMeasure()*mip.GetJacobian();
+        auto cellshapes = SBLambda ([&](size_t i, auto s)
+                                    {
+                                      if (int(i) < first) return;
+                                      Vec<3,T> v = trafo * s.Value();
+                                      shape[i] = v;
+                                    });
+        this->T_CalcShape (GetTIPGrad<3>(ip), cellshapes);
       }
   }
   

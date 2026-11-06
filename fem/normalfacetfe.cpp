@@ -7,6 +7,7 @@
 
 #include <thdivfe_impl.hpp>
 #include "normalfacetfe.hpp"
+#include "coefficient.hpp"
 #include <cassert>
 
 namespace ngfem
@@ -202,12 +203,9 @@ namespace ngfem
     
     Tx x = ip.x, y = ip.y, z = ip.z;
 
-    Tx lami[8]={(1-x)*(1-y)*(1-z),x*(1-y)*(1-z),x*y*(1-z),(1-x)*y*(1-z),
-                  (1-x)*(1-y)*z,x*(1-y)*z,x*y*z,(1-x)*y*z}; 
     Tx sigma[8]={(1-x)+(1-y)+(1-z),x+(1-y)+(1-z),x+y+(1-z),(1-x)+y+(1-z),
                    (1-x)+(1-y)+z,x+(1-y)+z,x+y+z,(1-x)+y+z};
 
-    const FACE * faces = ElementTopology::GetFaces (ET_HEX).Data();
     for (int i = 0; i < 6; i++)
       {
         if (ip.facetnr != i)
@@ -217,49 +215,20 @@ namespace ngfem
             continue;
           }
           
+        // Legendre tensor product times the face normal, orthogonal on the face
         int first = first_facet_dof[i];
-        int p = facet_order[i][0];
-        
-
-	Tx lam_f(0);
-	for (int j = 0; j < 4; j++)
-	  lam_f += lami[faces[i][j]];
-
-
-        IVec<4> f = ET_trait<ET_HEX>::GetFaceSort (i, vnums);	  
+        int px = facet_order[i][0], py = facet_order[i][1];
+        IVec<4> f = ET_trait<ET_HEX>::GetFaceSort (i, vnums);
         Tx xi  = sigma[f[0]]-sigma[f[1]];
         Tx eta = sigma[f[0]]-sigma[f[3]];
-
-        shape[first] = wDu_Cross_Dv(eta, xi, -0.25*lam_f);
-
-
-        ArrayMem<Tx, 20> L_xi(order+2),L_eta(order+2);
-
-        IntegratedLegendrePolynomial::Eval(p+1,xi,L_xi);
-        IntegratedLegendrePolynomial::Eval(p+1,eta,L_eta);
-        
-        /*for(int j = 0; j <= p; j++)
-          for(int k = 0; k <= p; k++)
-          shape[first + ii++] = L_xi[j]*L_eta[k]*lam_f;
-
-        for (int k = 0; k < p; k++)
-          for (int l = 0; l < p; l++, ii++)
-            shape[first + ii] = curl_uDvw_minus_Duvw(L_xi[k+2],L_eta[l+2],-lam_f); //divfree
-        */
-
-          // could be simpler, but leads to bug in XCode 11.6 (and certainly other):
-        for (size_t l = 0; l < p; l++)
-          for (size_t k = 0; k < p; k++)
-            shape[first + k*p+l+1] = curl_uDvw_minus_Duvw(L_xi[k+2],L_eta[l+2],-lam_f); //divfree
-        size_t ii = p*p+1;
-        
-        for (int k = 0; k < p; k++)
-          shape[first + ii++] = Du_Cross_Dv(L_xi[k+2]*lam_f,eta); //divfree
-
-        for (int k = 0; k < p; k++)
-          shape[first + ii++] = Du_Cross_Dv(L_eta[k+2]*lam_f,xi); //divfree
+        ArrayMem<Tx,20> polx(px+1), poly(py+1);
+        LegendrePolynomial (px, xi, polx);
+        LegendrePolynomial (py, eta, poly);
+        int ii = first;
+        for (int k = 0; k <= px; k++)
+          for (int l = 0; l <= py; l++)
+            shape[ii++] = wDu_Cross_Dv (xi, eta, polx[k]*poly[l]);
       }
-
   }
     
     
@@ -267,7 +236,55 @@ namespace ngfem
 
 
   
-  template <ELEMENT_TYPE ET> template<typename Tx, typename TFA>  
+  template <> template<typename Tx, typename TFA>
+  void NormalFacetVolumeFE_Shape<ET_PRISM>::
+  T_CalcShape (TIP<DIM,Tx> ip, TFA & shape) const
+  {
+    if (ip.vb != BND) throw Exception("normal-facet element evaluated not at BND");
+    Tx x = ip.x, y = ip.y, z = ip.z;
+    Tx lam[6] = { x, y, 1-x-y, x, y, 1-x-y };
+    Tx sigma[6] = { x+(1-z), y+(1-z), (1-x-y)+(1-z), x+z, y+z, (1-x-y)+z };
+
+    for (int i = 0; i < 5; i++)
+      {
+        if (ip.facetnr != i)
+          {
+            for (int j : Range(first_facet_dof[i], first_facet_dof[i+1]))
+              shape[j] = Du_Cross_Dv (Tx(0.0), Tx(0.0));
+            continue;
+          }
+        int first = first_facet_dof[i];
+        IVec<4> f = GetVertexOrientedFace (i);
+        if (i < 2)
+          {
+            // trig face: Dubiner basis times the face normal
+            int p = facet_order[i][0];
+            Tx xi = lam[f[0]]-lam[f[2]];
+            Tx eta = lam[f[1]]-lam[f[2]];
+            DubinerBasis::Eval (p, lam[f[0]], lam[f[1]],
+                                SBLambda([&](int nr, auto val)
+                                         {
+                                           shape[first+nr] = wDu_Cross_Dv (xi, eta, val);
+                                         }));
+          }
+        else
+          {
+            // quad face: Legendre tensor product times the face normal
+            int px = facet_order[i][0], py = facet_order[i][1];
+            Tx xi = sigma[f[0]]-sigma[f[1]];
+            Tx eta = sigma[f[0]]-sigma[f[3]];
+            ArrayMem<Tx,20> polx(px+1), poly(py+1);
+            LegendrePolynomial (px, xi, polx);
+            LegendrePolynomial (py, eta, poly);
+            int ii = first;
+            for (int k = 0; k <= px; k++)
+              for (int l = 0; l <= py; l++)
+                shape[ii++] = wDu_Cross_Dv (xi, eta, polx[k]*poly[l]);
+          }
+      }
+  }
+
+  template <ELEMENT_TYPE ET> template<typename Tx, typename TFA>
   void NormalFacetVolumeFE<ET>::
   T_CalcShape (Tx hx[DIM], int fnr, TFA & shape) const
   {
@@ -457,6 +474,34 @@ namespace ngfem
                             shape(i) = vshape(DIM);
                           }));
   }
+
+  template<ELEMENT_TYPE ET>
+  void NormalFacetFacetFE<ET>::Interpolate (const ElementTransformation & trafo,
+                                            const CoefficientFunction & func, SliceMatrix<> coefs,
+                                            LocalHeap & lh, int bonus_intorder) const
+  {
+    // boundary value u_h.n = sum c_j shape_j / J; dual functionals int_F (u.n) shape_i ds.
+    // ds = J ds_ref, so the duality matrix is int shape_i shape_j ds_ref: diagonal
+    // (Legendre / Dubiner / Legendre tensor bases), for any facet geometry
+    HeapReset hr(lh);
+    constexpr int DIMS = DIM+1;
+    int nd = this->GetNDof();
+    IntegrationRule ir(ET, 2*order+2+bonus_intorder);
+    FlatVector<> rhs(nd, lh), diag(nd, lh), shape(nd, lh), val(DIMS, lh);
+    rhs = 0.0; diag = 0.0;
+    for (auto & ip : ir)
+      {
+        auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIMS>&> (trafo(ip, lh));
+        CalcShape (ip, shape);
+        func.Evaluate (mip, val);
+        double un = InnerProduct (val, mip.GetNV());
+        rhs += (ip.Weight() * mip.GetJacobiDet() * un) * shape;
+        for (int i = 0; i < nd; i++)
+          diag(i) += ip.Weight() * sqr(shape(i));
+      }
+    for (int i = 0; i < nd; i++)
+      coefs(i,0) = rhs(i) / diag(i);
+  }
   
   template<> template <typename Tx, typename TFA>
   void NormalFacetFacetFE<ET_SEGM>::T_CalcShape(TIP<DIM,Tx> tip,
@@ -535,41 +580,20 @@ namespace ngfem
   void NormalFacetFacetFE<ET_QUAD>::T_CalcShape(TIP<DIM,Tx> tip, 
                                                 TFA &  shape) const
   {
-    // Tx lam[4] = {(1-tip.x)*(1-tip.y),tip.x*(1-tip.y),tip.x*tip.y,(1-tip.x)*tip.y};  
+    // Legendre tensor product times the face normal, orthogonal on the face
+    // (same basis as the quad faces of NormalFacetVolumeFE<ET_HEX/ET_PRISM>)
     Tx sigma[4] = {(1-tip.x)+(1-tip.y),tip.x+(1-tip.y),tip.x+tip.y,(1-tip.x)+tip.y};
-
-
-    Tx lam_f(0);
-    int p = order;
-    int ii = 0;
-    
-    IVec<4> f = ET_trait<ET_QUAD>::GetFaceSort (0, vnums);	  
+    IVec<4> f = ET_trait<ET_QUAD>::GetFaceSort (0, vnums);
     Tx xi  = sigma[f[0]]-sigma[f[1]];
     Tx eta = sigma[f[0]]-sigma[f[3]];
-    lam_f = Cross(xi,eta);
-    lam_f.Value() = 1;
-    shape[ii++] = wDu_Cross_Dv(eta, xi, -0.25*lam_f);
-
-
-    ArrayMem<Tx, 20> L_xi(p+2),L_eta(p+2);
-    
-    IntegratedLegendrePolynomial::Eval(p+1,xi,L_xi);
-    IntegratedLegendrePolynomial::Eval(p+1,eta,L_eta);
-    
-    /*for(int j = 0; j <= p; j++)
-      for(int k = 0; k <= p; k++)
-      shape[ii++] = L_xi[j]*L_eta[k]*lam_f;*/
-
-    for (int k = 0; k < p; k++)
-      for (int l = 0; l < p; l++, ii++)
-        shape[ii] = curl_uDvw_minus_Duvw(L_xi[k+2],L_eta[l+2],-lam_f); //divfree
-    
-    for (int k = 0; k < p; k++)
-      shape[ii++] = Du_Cross_Dv(L_xi[k+2]*lam_f,eta); //divfree
-    
-    for (int k = 0; k < p; k++)
-      shape[ii++] = Du_Cross_Dv(L_eta[k+2]*lam_f,xi); //divfree
-
+    int px = order_inner[0], py = order_inner[1];
+    ArrayMem<Tx,20> polx(px+1), poly(py+1);
+    LegendrePolynomial (px, xi, polx);
+    LegendrePolynomial (py, eta, poly);
+    int ii = 0;
+    for (int k = 0; k <= px; k++)
+      for (int l = 0; l <= py; l++)
+        shape[ii++] = wDu_Cross_Dv (xi, eta, polx[k]*poly[l]);
   }
 
   template<>
@@ -1025,15 +1049,15 @@ namespace ngfem
     for (int i=0; i<2; i++)
       {
 	first_facet_dof[i] = ndof;
-	ndof += ( (facet_order[i][0]+1) * (facet_order[i][0]+2) );
+	ndof += (facet_order[i][0]+1) * (facet_order[i][0]+2) / 2;
       }
     //quads
     for (int i=2; i<5; i++)
       {
 	first_facet_dof[i] = ndof;
-	ndof += 2 * (facet_order[i][0]+1) * (facet_order[i][1]+1);
+	ndof += (facet_order[i][0]+1) * (facet_order[i][1]+1);
       }
-  
+
     first_facet_dof[5] = ndof;
   }
 

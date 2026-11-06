@@ -205,6 +205,8 @@ public:
     DefineDefineFlag("hodivfree");
     DefineNumFlag("orderinner");
     DefineDefineFlag("RT");
+    for (auto et : { ET_TRIG, ET_QUAD, ET_TET, ET_PRISM, ET_PYRAMID, ET_HEX })
+      DefineDefineFlag(hdiv_ndof::RTFlagName(et).c_str());
 
     
     if(parseflags) CheckFlags(flags);
@@ -228,7 +230,7 @@ public:
     *testout << "uniform_order_inner = " << uniform_order_inner << endl;
 
     ho_div_free = flags.GetDefineFlag("hodivfree");
-    RT = flags.GetDefineFlag ("RT");
+    hdiv_ndof::SetupRT (flags, order, et_RT);
 
            
     auto one = make_shared<ConstantCoefficientFunction> (1);
@@ -269,8 +271,13 @@ public:
       "  Create discontinuous HDivSurface space";
     docu.Arg("hodivfree") = "bool = False\n"
       "  Remove high order element bubbles with non zero divergence";
-    docu.Arg("RT") = "bool = False\n"
-      "  RT elements for simplicial elements: P^k subset RT_k subset P^{k+1}";
+    docu.Arg("RT") = "bool = unset\n"
+      "  Raviart-Thomas type: div maps onto L2(order) instead of L2(order-1).\n"
+      "  order = degree of the normal trace. Unset: RT on quads, prisms and hexes,\n"
+      "  BDM type on trigs, tets and pyramids. True/False: on all element types";
+    for (auto et : { ET_TRIG, ET_QUAD, ET_TET, ET_PRISM, ET_PYRAMID, ET_HEX })
+      docu.Arg(hdiv_ndof::RTFlagName(et)) = "bool = unset\n"
+        "  RT for this element type, overrides 'RT'";
     docu.Arg("orderinner") = "optional<int> = undefined\n"
       "  order for inner space if defined, otherwise use order for orderinner";
     return docu;
@@ -578,28 +585,7 @@ void HDivHighOrderSurfaceFESpace :: Average (BaseVector & vec) const
             ElementId ei(BND, i);
             //IVec<3> pc = order_inner_curl[i];
             IVec<3> p = order_inner[i];
-            int inci = 0;
-            switch(ma->GetElType(ei))
-              {
-              case ET_TRIG:
-                if (!ho_div_free)
-		  inci = p[0]*(p[0]-1)/2+p[0]*(p[0]-1)/2+p[0]-1;
-		//inci = pc[0]*(pc[0]-1)/2 + p[0]*(p[0]-1)/2 + p[0]-1;
-                else
-		  inci = p[0]*(p[0]-1)/2;
-		    //inci = pc[0]*(pc[0]-1)/2;
-                if (RT && !ho_div_free)
-                  inci += p[0] + 1;
-                break;
-              case ET_QUAD:
-		if (!ho_div_free)
-                  inci = p[0]*p[1] + p[0]*p[1]+p[0]+p[1];
-                else
-                  inci = p[0]*p[1];
-                break;
-              default: // for the compiler
-                break;  
-              }
+            int inci = hdiv_ndof::Inner (ma->GetElType(ei), p, et_RT[ma->GetElType(ei)], ho_div_free);
 
 	    if (highest_order_dc)
 	      {
@@ -775,7 +761,7 @@ void HDivHighOrderSurfaceFESpace :: Average (BaseVector & vec) const
     hofe->SetOrderInner(IVec<ET_trait<ET>::DIM>(order_inner[ei.Nr()][0]));
     hofe->SetHODivFree (ho_div_free);
     hofe->SetVertexNumbers(ngel.Vertices());
-    hofe->SetRT(RT);
+    hofe->SetRT(et_RT[ET]);
 
 
     Array<int> facet_order(ngel.Edges());
@@ -919,12 +905,11 @@ void HDivHighOrderSurfaceFESpace :: Average (BaseVector & vec) const
 
   shared_ptr<FESpace> HDivHighOrderSurfaceFESpace :: CreateDivergenceSpace () const
   {
-    // div onto P_{k-1} on trigs (P_k with RT), Q_k on quads; hodivfree: P_0, RT ignored
-    int trigorder = ho_div_free ? 0 : (RT ? order : max(order-1, 0));
-    int quadorder = ho_div_free ? 0 : order;
+    // div onto P_{k-1} / Q_{k-1} (P_k / Q_k with RT); hodivfree: P_0
+    auto divorder = [&](ELEMENT_TYPE et) { return ho_div_free ? 0 : (et_RT[et] ? order : max(order-1, 0)); };
     Flags flags;
-    flags.SetFlag("order", trigorder);
-    flags.SetFlag("quadbonus", quadorder-trigorder);
+    flags.SetFlag("order", divorder(ET_TRIG));
+    flags.SetFlag("quadbonus", divorder(ET_QUAD)-divorder(ET_TRIG));
     return CreateCompanionSpace(*this, "l2surf", flags);
   }
 

@@ -23,6 +23,79 @@ namespace ngfem
   */
   template <ELEMENT_TYPE ET> class HCurlHighOrderFE_Shape;
 
+  /*
+    HCurl dofs per node, nominal order p on every node.
+    Gradients come from H1(p+1-type1), the rest (curl part) is the
+    same for type1 and default, and its curl lies in HDiv(p-1).
+    Within each node the gradients come first.
+   */
+  namespace hcurl_ndof
+  {
+    inline int TrigGrad (int p, bool t1) { int g = p-t1; return g > 1 ? g*(g-1)/2 : 0; }
+    inline int TrigCurl (int p) { return p > 1 ? (p+2)*(p-1)/2 : 0; }
+    inline int QuadGrad (int p0, int p1, bool t1) { return max(p0-t1,0) * max(p1-t1,0); }
+    inline int QuadCurl (int p0, int p1) { return (p0 > 0 && p1 > 0) ? p0*p1-1 : 0; }
+    inline int TetGrad (int p, bool t1) { int g = p-t1; return g > 2 ? (g-2)*(g-1)*g/6 : 0; }
+    inline int TetCurl (int p) { return p > 2 ? (p-2)*(p-1)*(2*p+3)/6 : 0; }
+    inline int PrismGrad (int p, int pz, bool t1)
+    { int g = p-t1, gz = pz-t1; return (g > 1 && gz > 0) ? g*(g-1)/2*gz : 0; }
+    inline int PrismCurl (int p, int pz)
+    { return (p > 1 && pz > 0) ? (pz-1)*(p-1)*p + (p-1)*(p-2)/2 : 0; }
+    inline int HexGrad (int p0, int p1, int p2, bool t1)
+    { return max(p0-t1,0) * max(p1-t1,0) * max(p2-t1,0); }
+    inline int HexCurl (int p0, int p1, int p2)
+    {
+      if (p0 < 1 || p1 < 1 || p2 < 1) return 0;
+      int q0 = p0-1, q1 = p1-1, q2 = p2-1;
+      return 2*q0*q1*q2 + q0*q1 + q0*q2 + q1*q2;
+    }
+    inline int PyramidGrad (int p, bool t1) { int g = p-t1; return g > 1 ? (g-1)*g*(2*g-1)/6 : 0; }
+    inline int PyramidCurl (int p) { return p > 1 ? p*(2*p*p+3*p-2)/3 : 0; }
+
+    template <typename TP>
+    inline int Face (ELEMENT_TYPE ft, TP p, bool grad, bool t1)
+    {
+      if (ft == ET_TRIG) return grad*TrigGrad(p[0], t1) + TrigCurl(p[0]);
+      return grad*QuadGrad(p[0], p[1], t1) + QuadCurl(p[0], p[1]);
+    }
+    template <typename TP>
+    inline int FaceGrad (ELEMENT_TYPE ft, TP p, bool grad, bool t1)
+    {
+      if (!grad) return 0;
+      return (ft == ET_TRIG) ? TrigGrad(p[0], t1) : QuadGrad(p[0], p[1], t1);
+    }
+    // cell dofs, (p0,p1,p2) = order_cell; trig/quad: the 2D cell
+    template <typename TP>
+    inline int Cell (ELEMENT_TYPE et, TP p, bool grad, bool t1)
+    {
+      switch (et)
+        {
+        case ET_TRIG: return grad*TrigGrad(p[0], t1) + TrigCurl(p[0]);
+        case ET_QUAD: return grad*QuadGrad(p[0], p[1], t1) + QuadCurl(p[0], p[1]);
+        case ET_TET: return grad*TetGrad(p[0], t1) + TetCurl(p[0]);
+        case ET_PRISM: return grad*PrismGrad(p[0], p[2], t1) + PrismCurl(p[0], p[2]);
+        case ET_HEX: return grad*HexGrad(p[0], p[1], p[2], t1) + HexCurl(p[0], p[1], p[2]);
+        case ET_PYRAMID: return grad*PyramidGrad(p[0], t1) + PyramidCurl(p[0]);
+        default: return 0;
+        }
+    }
+    template <typename TP>
+    inline int CellGrad (ELEMENT_TYPE et, TP p, bool grad, bool t1)
+    {
+      if (!grad) return 0;
+      switch (et)
+        {
+        case ET_TRIG: return TrigGrad(p[0], t1);
+        case ET_QUAD: return QuadGrad(p[0], p[1], t1);
+        case ET_TET: return TetGrad(p[0], t1);
+        case ET_PRISM: return PrismGrad(p[0], p[2], t1);
+        case ET_HEX: return HexGrad(p[0], p[1], p[2], t1);
+        case ET_PYRAMID: return PyramidGrad(p[0], t1);
+        default: return 0;
+        }
+    }
+  }
+
 
   /**
      High order finite elements for H(curl).  
@@ -148,17 +221,7 @@ namespace ngfem
       for (int i = 0; i < N_EDGE; i++)
         ne += 1 + ((order_edge[i] > 0) ? usegrad_edge[i]*order_edge[i] : 0);
       for (int i = 0; i < N_FACE; i++)
-        if (FaceType(i) == ET_TRIG)
-          {
-            int p = order_face[i][0];
-            if (p > 1)
-              {
-                int pg = p - (type1 ? 1 : 0);
-                nf += usegrad_face[i]*pg*(pg-1)/2 + (p+2)*(p-1)/2;
-              }
-          }
-        else if (order_face[i][0] >= 0 && order_face[i][1] >= 0)
-          nf += (usegrad_face[i]+1)*order_face[i][0]*order_face[i][1] + order_face[i][0] + order_face[i][1];
+        nf += hcurl_ndof::Face (FaceType(i), order_face[i], usegrad_face[i], type1);
       return { 0, ne, nf, ndof-ne-nf };
     }
 

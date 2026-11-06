@@ -1628,6 +1628,34 @@ component : int
         shared_ptr<BaseMatrix> grad = self->CreateGradient(*fesh1);
         return py::make_tuple(grad, shared_ptr<FESpace>(fesh1));
       })
+    .def("CreateStressSpace", [fes_class] (shared_ptr<HCurlHighOrderFESpace> self, py::kwargs kwargs)
+         {
+           // check kwargs against the class of the created space, not HCurl
+           auto keys = [kwargs] () { py::dict d; for (auto item : kwargs) d[item.first] = py::none(); return d; };
+           auto proxy = py::module::import("types").attr("SimpleNamespace")
+             (py::arg("__flags_doc__") = py::cpp_function(keys),
+              py::arg("__special_treated_flags__") = fes_class.attr("__special_treated_flags__"));
+           py::list info;
+           info.append(self->GetMeshAccess());
+           auto fes = self->CreateStressSpace(CreateFlagsFromKwArgs(kwargs, proxy, info));
+           connect_auto_update(fes.get());
+           auto pyfes = py::cast(fes);
+           auto doc = py::type::of(pyfes).attr("__flags_doc__")();
+           for (auto item : kwargs)
+             if (!doc.contains(item.first))
+               GetLogger("Flags")->warn("WARNING: kwarg '{}' is an undocumented flags option for class {}, maybe there is a typo?",
+                                        item.first.cast<string>(), string(py::str(py::type::of(pyfes))));
+           return fes;
+         },
+         "HDivDiv stress space for TDNNS elasticity with this space as displacement\n"
+         "(trigs, quads, tets, prisms, hexes, also mixed; pyramids raise an exception):\n"
+         "type1=True: HDivDiv(order-1), plus=True on trigs;\n"
+         "type1=False: trigs/prisms HDivDiv(order), quads HDivDiv(order-1, quadfullpol=True),\n"
+         "tets HDivDiv(order-1, plus=True), hexes HDivDiv(order, orderfacet=order-1);\n"
+         "mixed meshes use the common facet order order-1 with these interior orders.\n"
+         "Orders are at least 1, except type1=True, order=1 on meshes without simplices.\n"
+         "kwargs (dirichlet for the nn-essential boundary, discontinuous, ...) are passed to HDivDiv,\n"
+         "an explicit order disables the automatic choice.")
     ;
   
   ExportFESpace<HDivHighOrderFESpace> (m, "HDiv")
