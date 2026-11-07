@@ -419,6 +419,35 @@ namespace ngcomp
       for (int i = 0; i < ir.Size(); i++)
         mir[i].Compute();
     }
+
+    virtual void VCalcHesse (const SIMD<ngfem::IntegrationPoint> & ip, SIMD<double> * hesse) const override
+    {
+      BASE::VCalcHesse (ip, hesse);
+      if constexpr (DIMS == 0) return;
+
+      // add Hessian of deformation: central differences of its gradient
+      double eps = 1e-4;
+      std::array<SIMD<IntegrationPoint>, 4*DIMS> pnts;
+      std::array<double, 4> shift = { eps, -eps, 2*eps, -2*eps };
+      for (int j = 0; j < DIMS; j++)
+        for (int s = 0; s < 4; s++)
+          {
+            pnts[4*j+s] = ip;
+            pnts[4*j+s](j) += shift[s];
+          }
+      SIMD_IntegrationRule ir(pnts.size(), pnts.data());
+
+      std::array<SIMD<double>, DIMS*4*DIMS> mem;
+      FlatMatrix<SIMD<double>> grad(DIMS, 4*DIMS, mem.data());
+      for (int i = 0; i < DIMR; i++)
+        {
+          fel->EvaluateGrad (ir, elvecs.Row(i), grad);
+          for (int j = 0; j < DIMS; j++)
+            for (int k = 0; k < DIMS; k++)
+              hesse[i*DIMS*DIMS + j*DIMS + k] +=
+                (8.0*grad(k,4*j) - 8.0*grad(k,4*j+1) - grad(k,4*j+2) + grad(k,4*j+3)) / (12.0*eps);
+        }
+    }
   };
 
 
