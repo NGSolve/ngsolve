@@ -182,3 +182,23 @@ def test_stress_space_mixed3d_conforming(meshmaker, type1, k):
     assert r == M.ndof
     assert Xdc.ndof - r == V.ndof - nb
 
+
+# Solve with a scalar Dirichlet value on a vector component of a product space
+# (the value used to be interpolated with the wrong dimension); same result as dirichlet flags
+def test_solve_component_dirichlet():
+    mesh = MakeStructured2DMesh(quads=True, nx=4, ny=2)
+    C = lambda s: 1/(2*mu)*(s - lam/(2*mu+2*lam)*Trace(s)*Id(2))
+    n = specialcf.normal(2)
+    tang = lambda w: w - (w*n)*n
+    res = []
+    for flags in (False, True):
+        Q = HCurl(mesh, order=2, dirichlet="left" if flags else "")
+        S = Q.CreateStressSpace(dirichlet="top|bottom|right")
+        (s, u), (t, v) = (S*Q).TnT()
+        a = (InnerProduct(C(s), t) + div(s)*v + div(t)*u)*dx - ((s*n)*tang(v) + (t*n)*tang(u))*dx(element_boundary=True)
+        rhs = -CF((0, -1))*v*dx
+        gf = Solve(a == rhs) if flags else Solve(a == rhs, u[BND("left")] == 0)
+        res.append(gf.components[1](mesh(1, 0.5)))
+    assert abs(res[0][1]-res[1][1]) < 1e-10*abs(res[1][1])
+    with pytest.raises(Exception):
+        u[BND("left")] == CF((1, 2, 3))

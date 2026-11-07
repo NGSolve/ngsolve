@@ -2386,6 +2386,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
 
     auto vb = reg ? reg->VB() : VOL;
+    if (auto eval = GetEvaluator(vb))
+      if (cf.Dimension() != eval->Dim())
+        throw Exception ("Interpolate: coefficient function has dimension "+ToString(cf.Dimension())
+                         +", the space "+GetClassName()+" expects "+ToString(eval->Dim()));
     auto iterate = [&] (auto tscal)
     {
       using SCAL = decltype(tscal);

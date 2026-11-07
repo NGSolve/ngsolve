@@ -572,6 +572,19 @@ when building the system matrices.
 
   py::class_<DirichletBoundary> (m, "DirichletBoundary")
     .def("__eq__", [](DirichletBoundary dir, shared_ptr<CoefficientFunction> cf) {
+      // a scalar value (e.g. u[BND("left")] == 0) applies to all components
+      int pdim = dir.proxy->Dimension();
+      if (cf->Dimension() == 1 && pdim > 1)
+        {
+          Array<shared_ptr<CoefficientFunction>> comps(pdim);
+          comps = cf;
+          cf = MakeVectorialCoefficientFunction (std::move(comps));
+          if (dir.proxy->Dimensions().Size() > 1)
+            cf = cf->Reshape (dir.proxy->Dimensions());
+        }
+      else if (cf->Dimension() != pdim)
+        throw Exception ("Dirichlet value has dimension "+ToString(cf->Dimension())
+                         +", but the trial function has dimension "+ToString(pdim));
       return DirichletBC { DirichletBoundary { dir.proxy, dir.vbn }, cf };
     })
     ;

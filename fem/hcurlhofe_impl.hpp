@@ -280,6 +280,31 @@ namespace ngfem
 
 
   
+  template<> template <typename MIP, typename TFA>
+  inline void HCurlHighOrderFE_Shape<ET_SEGM> ::
+  CalcDualShape2 (const MIP & mip, TFA & shape) const
+  {
+    // tangential moments along the segment, as the edge duals of the trig/quad elements
+    auto & ip = mip.IP();
+    typedef typename std::remove_const<typename std::remove_reference<decltype(mip.IP()(0))>::type>::type T;
+    if (ip.VB() != VOL) return;
+    T x = ip(0);
+    T lam[2] = { x, 1-x };
+    double pnts[2] = { 1, 0 };
+    IVec<2> e = GetEdgeSort (0, vnums);
+    T xi = lam[e[1]]-lam[e[0]];
+    auto tau = mip.GetJacobian() * Vec<1,T>(pnts[e[1]]-pnts[e[0]]);
+    tau /= mip.GetMeasure();
+    int p = usegrad_cell ? order_edge[0] : 0;
+    LegendrePolynomial::Eval
+      (p, xi,
+       SBLambda([&] (size_t nr, T val)
+                {
+                  auto vshape = val * tau;
+                  shape[nr] = vshape;
+                }));
+  }
+
   //------------------------------------------------------------------------
   // HCurlHighOrderTrig
   //------------------------------------------------------------------------
