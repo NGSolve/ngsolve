@@ -85,7 +85,7 @@ namespace ngcomp
       wbdcnt = 0;
       ifcnt = 0;
 
-      LocalHeap lh(10000, "BDDC-constr, dummy heap");
+      LocalHeap lh(100000, "BDDC-constr, dummy heap", true);  // per thread
       
       for (auto vb : { VOL, BND, BBND })
         IterateElements 
