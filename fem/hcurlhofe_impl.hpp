@@ -143,7 +143,16 @@ namespace ngfem
     HCurlLegendreAD (n, t, lt);
 
     int pg0 = p[0]-type1, pg1 = p[1]-type1;
-    if (usegrad && pg0 >= 1 && pg1 >= 1)
+    if (usegrad && pg0 >= 1 && pg1 >= 1 && !type1)
+      // grad of Q_{p+1} bubbles F_{i+1}(x) F_{j+1}(y): blind to div-free fields
+      for (int i = 0; i < pg0; i++)
+        {
+          T bi = HCurlIntLeg<T> (ls, i+1);
+          for (int j = 0; j < pg1; j++)
+            shape[ii++] = trafo * Vec<2,T>(ls[i+1].Value()*HCurlIntLeg<T> (lt, j+1),
+                                           bi*lt[j+1].Value());
+        }
+    else if (usegrad && pg0 >= 1 && pg1 >= 1)
       for (int i = 0; i < pg0; i++)
         {
           T fi = HCurlIntLeg<T> (ls, i);
@@ -1219,7 +1228,22 @@ namespace ngfem
 
         // gradients: (F_i L_j L_k, 0, 0), div onto Q_{p-1-type1}
         IVec<3> pg (p[0]-type1, p[1]-type1, p[2]-type1);
-        if (usegrad_cell && pg[0] >= 1 && pg[1] >= 1 && pg[2] >= 1)
+        if (usegrad_cell && pg[0] >= 1 && pg[1] >= 1 && pg[2] >= 1 && !type1)
+          // grad of Q_{p+1} bubbles: blind to div-free fields
+          for (int i = 0; i < pg[0]; i++)
+            {
+              T bi = HCurlIntLeg<T> (lx, i+1), di = lx[i+1].Value();
+              for (int j = 0; j < pg[1]; j++)
+                {
+                  T bj = HCurlIntLeg<T> (ly, j+1), dj = ly[j+1].Value();
+                  for (int k = 0; k < pg[2]; k++)
+                    {
+                      T bk = HCurlIntLeg<T> (lz, k+1), dk = lz[k+1].Value();
+                      shape[ii++] = trafo * Vec<3,T>(di*bj*bk, bi*dj*bk, bi*bj*dk);
+                    }
+                }
+            }
+        else if (usegrad_cell && pg[0] >= 1 && pg[1] >= 1 && pg[2] >= 1)
           for (int i = 0; i < pg[0]; i++)
             {
               T fi = HCurlIntLeg<T> (lx, i);
@@ -2027,7 +2051,23 @@ namespace ngfem
         auto M = [&] (int l) -> T { return (0.5/(2*l+1)) * ((l == 0) ? lz[1].Value()+1 : lz[l+1].Value()-lz[l-1].Value()); };
 
         // gradients: (0, 0, a(x,y) M_{j+1}(z)), div = a L_j
-        if (usegrad_cell && pg >= 2 && pgz >= 1)
+        if (usegrad_cell && pg >= 2 && pgz >= 1 && !type1)
+          {
+            // grad of bubbles x y (1-x-y) a(x,y) M_{j+2}(z): blind to div-free fields
+            AutoDiff<2,T> adx(x, 0), ady(y, 1);
+            AutoDiff<2,T> bub = adx*ady*(1-adx-ady);
+            DubinerBasis::Eval (pg-2, adx, ady,
+                                SBLambda([&] (size_t nr, auto a)
+                                         {
+                                           auto ba = bub*a;
+                                           for (int j = 0; j < pgz; j++)
+                                             {
+                                               T mj = M(j+1), dmj = lz[j+1].Value();
+                                               shape[ii++] = trafo * Vec<3,T>(ba.DValue(0)*mj, ba.DValue(1)*mj, ba.Value()*dmj);
+                                             }
+                                         }));
+          }
+        else if (usegrad_cell && pg >= 2 && pgz >= 1)
           DubinerBasis::Eval (pg-2, x, y,
                               SBLambda([&] (size_t nr, T a)
                                        {
