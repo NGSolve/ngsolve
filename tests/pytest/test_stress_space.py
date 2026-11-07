@@ -202,3 +202,25 @@ def test_solve_component_dirichlet():
     assert abs(res[0][1]-res[1][1]) < 1e-10*abs(res[1][1])
     with pytest.raises(Exception):
         u[BND("left")] == CF((1, 2, 3))
+
+# Solve with automatic static condensation (Discontinuous stress) and Dirichlet data on the
+# tangential (HCurl) and normal (NormalFacet multiplier) displacement = the uncondensed solve
+@pytest.mark.parametrize("kind", ["trig", "quad", "mixed"])
+def test_solve_hybrid_condensed(kind):
+    mesh = square(kind, 4)
+    C = lambda s: 1/(2*mu)*(s - lam/(2*mu+2*lam)*Trace(s)*Id(2))
+    n = specialcf.normal(2)
+    tang = lambda w: w - (w*n)*n
+    nn = lambda q: (q*n)*n
+    uex = CF((sin(x)*y, cos(y)+x))
+    f = CF((1, -1))
+    Q = HCurl(mesh, order=2)
+    S = Discontinuous(Q.CreateStressSpace())
+    M = S.CreateMultiplierSpace()
+    (s, u, un), (t, v, vn) = (S*Q*M).TnT()
+    a = (InnerProduct(C(s), t) + div(s)*v + div(t)*u)*dx \
+        - ((s*n)*tang(v) + (t*n)*tang(u) + nn(s)*(vn*n) + nn(t)*(un*n))*dx(element_boundary=True)
+    bcs = (u[BND(".*")] == uex, un[BND(".*")] == uex)
+    gc = Solve(a == -f*v*dx, *bcs)
+    gf = Solve(a == -f*v*dx, *bcs, condense=False)
+    assert Norm(gc.vec - gf.vec) < 1e-8 * Norm(gf.vec)

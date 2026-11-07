@@ -9,8 +9,13 @@ from ngsolve.krylovspace import LinearSolverCreator
 
 
 class VariationalEquationSolver:
-    def __init__(self, equation, *args : DirichletBC | Preconditioner, verbose=0, **kwargs):
-        self.bf = BilinearForm(equation.igls)
+    def __init__(self, equation, *args : DirichletBC | Preconditioner, verbose=0, condense=None, **kwargs):
+        # condense: static condensation of LOCAL_DOFs; None = automatic, if the space has local dofs
+        fes = BilinearForm(equation.igls).space
+        if condense is None:
+            condense = fes.FreeDofs(True).NumSet() < fes.FreeDofs().NumSet()
+        self.condense = condense
+        self.bf = BilinearForm(equation.igls, condense=condense)
 
         self.dirichlet = [a for a in args if isinstance(a, DirichletBC)]
         self.fes = self.bf.space
@@ -50,7 +55,7 @@ class VariationalEquationSolver:
             if hasattr(self, 'linear_solver_creator'):        
                 inv = self.linear_solver_creator(self.bf.mat, self.pre)
             else:
-                freedofs = self.fes.FreeDofs()
+                freedofs = self.fes.FreeDofs(self.condense)
                 for dbc in self.dirichlet:
                     reg = self.mesh[dbc.vbn]
                     freedofs =  freedofs & ~dbc.proxy.GetDofs(reg)
@@ -59,8 +64,19 @@ class VariationalEquationSolver:
                     inv = self.sparse_factorization_creator(self.bf.mat, freedofs)
                 else:
                     inv = self.bf.mat.Inverse(freedofs)
-            
-            gf.vec.data -= inv * self.bf.Apply(gf.vec)
+
+            res = gf.vec.CreateVector()
+            res.data = self.bf.Apply(gf.vec)
+            if not self.condense:
+                gf.vec.data -= inv * res
+                return gf
+            # static condensation: eliminate local dofs, solve for the coupling dofs, recover local dofs
+            res.data += self.bf.harmonic_extension_trans * res
+            du = gf.vec.CreateVector()
+            du.data = inv * res
+            du.data += self.bf.harmonic_extension * du
+            du.data += self.bf.inner_solve * res
+            gf.vec.data -= du
             return gf
         
 
