@@ -1020,5 +1020,22 @@ namespace ngcomp
     return CreateCompanionSpace(*this, "tangentialfacet", flags);
   }
 
+  shared_ptr<FESpace> HCurlDivFESpace :: CreateSymmetryMultiplierSpace (Flags flags) const
+  {
+    if (!flags.NumFlagDefined("order"))
+      flags.SetFlag("order", uniform_order_facet);
+    auto l2 = CreateCompanionSpace(*this, "L2", flags);
+    Flags mflags;
+    mflags.SetFlag("skewsymmetric");
+    mflags.SetFlag("autoupdate", l2->DoesAutoUpdate());
+    auto fes = make_shared<MatrixFESpace> (l2, ma->GetDimension(), mflags);
+    fes->SetDoSubspaceUpdate(false);
+    fes->Update();
+    fes->FinalizeUpdate();
+    if (!l2->DoesAutoUpdate())
+      fes->SetDoSubspaceUpdate(true);
+    return fes;
+  }
+
   static RegisterFESpace<HCurlDivFESpace> init ("hcurldiv");
 }

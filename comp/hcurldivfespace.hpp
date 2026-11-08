@@ -83,6 +83,8 @@ namespace ngcomp
     
     // TangentialFacetFESpace for sigma_nt
     shared_ptr<FESpace> CreateMultiplierSpace (Flags flags = Flags()) const override;
+    // skew-symmetric matrix-valued L2 multiplier for weak stress symmetry
+    shared_ptr<FESpace> CreateSymmetryMultiplierSpace (Flags flags = Flags()) const;
   };
 
 }

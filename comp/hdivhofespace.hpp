@@ -175,6 +175,9 @@ namespace ngcomp
     // FacetFESpace for u.n
     shared_ptr<FESpace> CreateMultiplierSpace (Flags flags = Flags()) const override;
 
+    // MCS stress space (HCurlDiv) paired with this velocity space
+    shared_ptr<FESpace> CreateStressSpace (Flags flags = Flags(), bool weaksym = false) const;
+
   };
 
 }

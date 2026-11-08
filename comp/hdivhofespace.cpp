@@ -25,6 +25,7 @@
 #include <prolongation.hpp> 
 #include <fesconvert.hpp>
 #include "l2hofespace.hpp"
+#include <set>
 
 namespace ngcomp
 {
@@ -388,6 +389,47 @@ namespace ngcomp
     if (!flags.NumFlagDefined("order"))
       flags.SetFlag("order", uniform_order_facet > -1 ? uniform_order_facet : order);
     return CreateCompanionSpace(*this, "facet", flags);
+  }
+
+  shared_ptr<FESpace> HDivHighOrderFESpace :: CreateStressSpace (Flags flags, bool weaksym) const
+  {
+    // MCS stress space HCurlDiv(orderfacet k-1, orderinner k) for HDiv(k), BDM or RT;
+    // RT1 on trigs needs orderinner 2; weaksym adds GG bubbles on simplices
+    // (trig RT2 locks without)
+    if (var_order)
+      throw Exception("HDiv::CreateStressSpace: only uniform order is supported");
+    if (ma->GetDimension() != 2 && ma->GetDimension() != 3)
+      throw Exception("HDiv::CreateStressSpace: only 2D and 3D meshes are supported");
+
+    std::set<ELEMENT_TYPE> types;
+    for (auto el : ma->Elements(VOL))
+      if (DefinedOn(el)) types.insert(el.GetType());
+    if (types.empty())
+      throw Exception("HDiv::CreateStressSpace: no elements");
+    for (auto et : types)
+      if (et != ET_TRIG && et != ET_QUAD && et != ET_TET && et != ET_HEX)
+        throw Exception(string("HDiv::CreateStressSpace: element type ")+ToString(et)+" is not supported");
+
+    bool simplices = types.count(ET_TRIG) || types.count(ET_TET);
+    if (weaksym && simplices && !flags.GetDefineFlagX("GGbubbles").IsFalse())
+      {
+        if (types.count(ET_HEX))
+          throw Exception("HDiv::CreateStressSpace: weaksym needs GGbubbles on tets, not available on hexes");
+        flags.SetFlag("GGbubbles");
+      }
+    if (flags.NumFlagDefined("order"))
+      return CreateCompanionSpace(*this, "hcurldiv", flags);
+
+    int k = order;
+    if (k < 1)
+      throw Exception("HDiv::CreateStressSpace: needs order >= 1");
+    int inner = k;
+    if (k == 1 && types.count(ET_TRIG) && et_RT[ET_TRIG] && !flags.GetDefineFlag("GGbubbles"))
+      inner = 2;
+    flags.SetFlag("order", k-1);
+    if (!flags.NumFlagDefined("orderinner"))
+      flags.SetFlag("orderinner", inner);
+    return CreateCompanionSpace(*this, "hcurldiv", flags);
   }
 
   void HDivHighOrderFESpace :: Average (BaseVector & vec) const

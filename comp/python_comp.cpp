@@ -166,6 +166,28 @@ public:
 static GlobalDummyVariables globvar;
 
 
+// create a companion space, kwargs are checked against the class of the created space
+template <typename F>
+static shared_ptr<FESpace> CreateWithClassFlags (py::object fes_class, shared_ptr<MeshAccess> ma,
+                                                 py::kwargs kwargs, F create)
+{
+  auto keys = [kwargs] () { py::dict d; for (auto item : kwargs) d[item.first] = py::none(); return d; };
+  auto proxy = py::module::import("types").attr("SimpleNamespace")
+    (py::arg("__flags_doc__") = py::cpp_function(keys),
+     py::arg("__special_treated_flags__") = fes_class.attr("__special_treated_flags__"));
+  py::list info;
+  info.append(ma);
+  shared_ptr<FESpace> fes = create(CreateFlagsFromKwArgs(kwargs, proxy, info));
+  connect_auto_update(fes.get());
+  auto pyfes = py::cast(fes);
+  auto doc = py::type::of(pyfes).attr("__flags_doc__")();
+  for (auto item : kwargs)
+    if (!doc.contains(item.first))
+      GetLogger("Flags")->warn("WARNING: kwarg '{}' is an undocumented flags option for class {}, maybe there is a typo?",
+                               item.first.cast<string>(), string(py::str(py::type::of(pyfes))));
+  return fes;
+}
+
 void ExportNgcompMesh (py::module &m);
 void ExportReadAnsys (py::module &m);
 
@@ -1643,22 +1665,8 @@ component : int
       })
     .def("CreateStressSpace", [fes_class] (shared_ptr<HCurlHighOrderFESpace> self, py::kwargs kwargs)
          {
-           // check kwargs against the class of the created space, not HCurl
-           auto keys = [kwargs] () { py::dict d; for (auto item : kwargs) d[item.first] = py::none(); return d; };
-           auto proxy = py::module::import("types").attr("SimpleNamespace")
-             (py::arg("__flags_doc__") = py::cpp_function(keys),
-              py::arg("__special_treated_flags__") = fes_class.attr("__special_treated_flags__"));
-           py::list info;
-           info.append(self->GetMeshAccess());
-           auto fes = self->CreateStressSpace(CreateFlagsFromKwArgs(kwargs, proxy, info));
-           connect_auto_update(fes.get());
-           auto pyfes = py::cast(fes);
-           auto doc = py::type::of(pyfes).attr("__flags_doc__")();
-           for (auto item : kwargs)
-             if (!doc.contains(item.first))
-               GetLogger("Flags")->warn("WARNING: kwarg '{}' is an undocumented flags option for class {}, maybe there is a typo?",
-                                        item.first.cast<string>(), string(py::str(py::type::of(pyfes))));
-           return fes;
+           return CreateWithClassFlags(fes_class, self->GetMeshAccess(), kwargs,
+                                       [&] (Flags flags) { return self->CreateStressSpace(flags); });
          },
          "HDivDiv stress space for TDNNS elasticity with this space as displacement\n"
          "(trigs, quads, tets, prisms, hexes, also mixed; pyramids raise an exception):\n"
@@ -1681,6 +1689,19 @@ component : int
          { return self->CreateDivergenceSpace(); },
          "L2 space of matching order, containing div of this space.\n"
          "B = BilinearForm(div(u)*q*dx) on (HDiv, L2) is geometry-independent.")
+    .def("CreateStressSpace", [fes_class] (shared_ptr<HDivHighOrderFESpace> self, bool weaksym, py::kwargs kwargs)
+         {
+           return CreateWithClassFlags(fes_class, self->GetMeshAccess(), kwargs,
+                                       [&] (Flags flags) { return self->CreateStressSpace(flags, weaksym); });
+         }, py::arg("weaksym")=false,
+         "HCurlDiv stress space for MCS (mass conserving mixed stress) with this space as velocity\n"
+         "(trigs, quads, tets, hexes): HCurlDiv(order-1, orderinner=order), for BDM and RT;\n"
+         "RT order 1 on trigs uses orderinner=2.\n"
+         "weaksym=True: for the weakly symmetric version with HCurlDiv.CreateSymmetryMultiplierSpace(),\n"
+         "adds GGbubbles on trigs and tets (not available on hexes).\n"
+         "Discontinuous(S).CreateMultiplierSpace() gives the tangential velocity uhat.\n"
+         "The pressure space is CreateDivergenceSpace() of this space (L2(order-1), RT: L2(order)).\n"
+         "kwargs (discontinuous, ...) are passed to HCurlDiv, an explicit order disables the automatic choice.")
     ;
   
   ExportFESpace<H1HighOrderFESpace> (m, "H1");
@@ -1718,7 +1739,16 @@ component : int
 
   ExportFESpace<HDivDivFESpace> (m, "HDivDiv");
   
-  ExportFESpace<HCurlDivFESpace> (m, "HCurlDiv");
+  ExportFESpace<HCurlDivFESpace> (m, "HCurlDiv")
+    .def("CreateSymmetryMultiplierSpace", [fes_class] (shared_ptr<HCurlDivFESpace> self, py::kwargs kwargs)
+         {
+           return CreateWithClassFlags(fes_class, self->GetMeshAccess(), kwargs,
+                                       [&] (Flags flags) { return self->CreateSymmetryMultiplierSpace(flags); });
+         },
+         "Lagrange multiplier for weak stress symmetry, int sigma : eta:\n"
+         "MatrixValued(L2, skewsymmetric=True) of the facet order.\n"
+         "kwargs are passed to the new space.")
+    ;
 
   ExportFESpace<HCurlCurlFESpace> (m, "HCurlCurl");
   
@@ -1892,24 +1922,12 @@ BND : boolean or None
                     connect_auto_update(dcfes.get());
                     return dcfes;
                   }), py::arg("fespace"))
+    .def_property_readonly("base_space", [](DiscontinuousFESpace & self) { return self.GetBaseSpace(); },
+                           "the wrapped (conforming) space")
     .def ("CreateMultiplierSpace", [fes_class] (shared_ptr<DiscontinuousFESpace> self, py::kwargs kwargs)
           {
-            // check kwargs against the class of the created space, not FESpace
-            auto keys = [kwargs] () { py::dict d; for (auto item : kwargs) d[item.first] = py::none(); return d; };
-            auto proxy = py::module::import("types").attr("SimpleNamespace")
-              (py::arg("__flags_doc__") = py::cpp_function(keys),
-               py::arg("__special_treated_flags__") = fes_class.attr("__special_treated_flags__"));
-            py::list info;
-            info.append(self->GetMeshAccess());
-            auto fes = self->CreateMultiplierSpace(CreateFlagsFromKwArgs(kwargs, proxy, info));
-            connect_auto_update(fes.get());
-            auto pyfes = py::cast(fes);
-            auto doc = py::type::of(pyfes).attr("__flags_doc__")();
-            for (auto item : kwargs)
-              if (!doc.contains(item.first))
-                GetLogger("Flags")->warn("WARNING: kwarg '{}' is an undocumented flags option for class {}, maybe there is a typo?",
-                                         item.first.cast<string>(), string(py::str(py::type::of(pyfes))));
-            return fes;
+            return CreateWithClassFlags(fes_class, self->GetMeshAccess(), kwargs,
+                                        [&] (Flags flags) { return self->CreateMultiplierSpace(flags); });
           },
           "Lagrange multiplier space re-enforcing the continuity broken by Discontinuous:\n"
           "FacetFESpace for HDiv (u.n), NormalFacetFESpace for HDivDiv (sigma_nn),\n"
