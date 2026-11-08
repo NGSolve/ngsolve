@@ -1588,11 +1588,24 @@ namespace ngcomp
     Array<int> idofs1(dnums.Size(), lh), odofs1(dnums.Size(), lh);
     idofs1.SetSize0(); odofs1.SetSize0();
 
+    int dimc = fespace->GetDimension();
+    auto decoupled = [&] (int i)
+    {
+      auto rows = elmat.Rows(dimc*i, dimc*(i+1));
+      auto cols = elmat.Cols(dimc*i, dimc*(i+1));
+      for (size_t r = 0; r < rows.Height(); r++)
+        for (size_t c = 0; c < rows.Width(); c++)
+          if (rows(r,c) != SCAL(0.0) || cols(c,r) != SCAL(0.0)) return false;
+      return true;
+    };
+
     auto ctype = elim_only_hidden ? HIDDEN_DOF : CONDENSABLE_DOF;
     for (auto i : Range(dnums))
       {
         auto ct = fespace->GetDofCouplingType(dnums[i]);
-        if (ct & ctype)
+        if ((ct & ctype) && decoupled(i))
+          dnums[i] = NO_DOF_NR;  // form does not touch it: drop
+        else if (ct & ctype)
           idofs1.AppendHaveMem(i);
         else
           if (ct != UNUSED_DOF)
