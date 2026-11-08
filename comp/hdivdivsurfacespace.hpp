@@ -28,6 +28,13 @@ namespace ngcomp
     Array<bool> fine_face; 
 
     int noncontinuous;
+    bool plus = false;
+    bool quadfullpol = false;
+    bool algebraic_mapping = true;
+    int uniform_order_facet, uniform_order_inner;
+    Array<int> order_facet;   // per edge
+    Array<int> order_inner;   // per surface element
+    Array<int> face2sel;
   public:
 
     HDivDivSurfaceSpace(shared_ptr<MeshAccess> ama, const Flags & aflags, bool parseflags = false);
@@ -42,6 +49,10 @@ namespace ngcomp
     }
 
     void Update() override;
+
+    void SetOrder (NodeId ni, int order) override;
+    int GetOrder (NodeId ni) const override;
+    shared_ptr<FESpace> CreateMultiplierSpace (Flags flags = Flags()) const override;
 
     void UpdateCouplingDofArray() override;
   

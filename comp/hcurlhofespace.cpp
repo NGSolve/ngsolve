@@ -3569,14 +3569,37 @@ namespace ngcomp
     if (ma->GetDimension() != 2 && ma->GetDimension() != 3)
       throw Exception("HCurl::CreateStressSpace: only 2D and 3D meshes are supported");
 
+    // definedon = boundary region (or HCurl on a surface mesh): HDivDivSurface on the surface
+    optional<Region> reg;
+    if (flags.AnyFlagDefined("definedon"))
+      if (auto * r = std::any_cast<Region>(&flags.GetAnyFlag("definedon")))
+        reg = *r;
+    VorB vb = reg ? reg->VB() : VOL;
+    if (!reg && ma->GetDimension() == 3)
+      {
+        bool hasvol = false;
+        for (auto el : ma->Elements(VOL))
+          if (DefinedOn(el)) { hasvol = true; break; }
+        if (!hasvol) vb = BND;
+      }
+    if (vb != VOL && vb != BND)
+      throw Exception("HCurl::CreateStressSpace: definedon must be a volume or boundary region");
+    if (vb == BND && ma->GetDimension() != 3)
+      throw Exception("HCurl::CreateStressSpace: surface stress spaces need a 3D mesh");
+    auto inside = [&] (Ngs_Element el)
+    { return DefinedOn(ElementId(vb, el.Nr())) && (!reg || reg->Mask()[el.GetIndex()]); };
+
     std::set<ELEMENT_TYPE> types;
-    for (auto el : ma->Elements(VOL))
-      if (DefinedOn(el)) types.insert(el.GetType());
+    for (auto el : ma->Elements(vb))
+      if (inside(el)) types.insert(el.GetType());
+    if (types.empty())
+      throw Exception("HCurl::CreateStressSpace: no elements");
+    string stype = vb == BND ? "hdivdivsurf" : "hdivdiv";
     for (auto et : types)
       if (et != ET_TRIG && et != ET_QUAD && et != ET_TET && et != ET_PRISM && et != ET_HEX)
         throw Exception(string("HCurl::CreateStressSpace: element type ")+ToString(et)+" is not supported");
     if (flags.NumFlagDefined("order"))
-      return CreateCompanionSpace(*this, "hdivdiv", flags);
+      return CreateCompanionSpace(*this, stype, flags);
 
     int m = order;
     bool simplices = types.count(ET_TRIG) || types.count(ET_TET);
@@ -3614,12 +3637,15 @@ namespace ngcomp
     if (!type1 && types.count(ET_QUAD) && !flags.GetDefineFlagX("quadfullpol").IsFalse())
       flags.SetFlag("quadfullpol");
 
-    auto fes = CreateCompanionSpace(*this, "hdivdiv", flags);
+    auto fes = CreateCompanionSpace(*this, stype, flags);
     bool modified = false;
-    for (auto el : ma->Elements(VOL))
-      if (DefinedOn(el) && inner(el.GetType()) != maxinner)
+    for (auto el : ma->Elements(vb))
+      if (inside(el) && inner(el.GetType()) != maxinner)
         {
-          fes->SetOrder(NodeId(NT_ELEMENT, el.Nr()), inner(el.GetType()));
+          if (vb == BND)
+            fes->SetOrder(NodeId(NT_FACE, el.Faces()[0]), inner(el.GetType()));
+          else
+            fes->SetOrder(NodeId(NT_ELEMENT, el.Nr()), inner(el.GetType()));
           modified = true;
         }
     if (modified)

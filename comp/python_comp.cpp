@@ -1668,7 +1668,10 @@ component : int
          "mixed meshes use the common facet order order-1 with these interior orders.\n"
          "Orders are at least 1, except type1=True, order=1 on meshes without simplices.\n"
          "kwargs (dirichlet for the nn-essential boundary, discontinuous, ...) are passed to HDivDiv,\n"
-         "an explicit order disables the automatic choice.")
+         "an explicit order disables the automatic choice.\n"
+         "definedon=mesh.Boundaries(...) (or HCurl living on a surface mesh) creates an\n"
+         "HDivDivSurface with the trig/quad rules, nn-essential boundary via dirichlet_bbnd;\n"
+         "use Discontinuous(..., BND=True) for the hybrid version.")
     ;
   
   ExportFESpace<HDivHighOrderFESpace> (m, "HDiv")
@@ -1870,6 +1873,14 @@ BND : boolean or None
     separate across surface elements instead of volume elements (for surface FESpaces)
 )delimiter"), py::dynamic_attr());
   disc_class
+    .def_static("__flags_doc__", [] ()
+         {
+           py::dict flags_doc;
+           for (auto & flagdoc : FESpace::GetDocu().arguments)
+             flags_doc[get<0> (flagdoc).c_str()] = get<1> (flagdoc);
+           flags_doc["BND"] = "bool = False\n  separate across surface elements instead of volume elements";
+           return flags_doc;
+         })
     .def(py::init([disc_class] (shared_ptr<FESpace> & fes, py::kwargs kwargs)
                   {
                     auto flags = CreateFlagsFromKwArgs(kwargs, disc_class);

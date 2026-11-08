@@ -246,7 +246,63 @@ namespace ngcomp
       if (Eulerian) throw Exception("DiffShape Eulerian not implemented for DiffOpIdHDivSurface");      
       return -2*TraceCF(dir->Operator("Gradboundary"))*proxy + 2*SymmetricCF(dir->Operator("Gradboundary") * proxy);
     }
-    
+
+  };
+
+  // scalar mu^T sigma mu, mu = n x t the co-normal on element edges
+  template <int D, typename FEL = HDivDivFiniteElement<D-1> >
+  class DiffOpNNComponentHDivDivSurface : public DiffOp<DiffOpNNComponentHDivDivSurface<D, FEL> >
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D-1 };
+    enum { DIM_DMAT = 1 };
+    enum { DIFFORDER = 0 };
+
+    static Array<int> GetDimensions() { return Array<int> (); }
+
+    template <typename AFEL, typename MIP, typename MAT>
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+                                MAT && mat, LocalHeap & lh)
+    {
+      HeapReset hr(lh);
+      int nd = fel.GetNDof();
+      FlatMatrix<> full(D*D, nd, lh);
+      DiffOpIdHDivDivSurface<D,FEL>::GenerateMatrix (fel, mip, full, lh);
+      Vec<D> cn = Cross (mip.GetNV(), mip.GetTV());
+      for (int i = 0; i < nd; i++)
+        {
+          double sum = 0;
+          for (int j = 0; j < D; j++)
+            for (int k = 0; k < D; k++)
+              sum += cn(j) * full(j*D+k, i) * cn(k);
+          mat(0,i) = sum;
+        }
+    }
+
+    static void GenerateMatrixSIMDIR (const FiniteElement & fel,
+                                      const SIMD_BaseMappedIntegrationRule & bmir,
+                                      BareSliceMatrix<SIMD<double>> mat)
+    {
+      auto & mir = static_cast<const SIMD_MappedIntegrationRule<D-1,D>&> (bmir);
+      size_t nd = fel.GetNDof(), np = mir.Size();
+      STACK_ARRAY(SIMD<double>, mem, D*D*nd*np);
+      FlatMatrix<SIMD<double>> shapes(D*D*nd, np, mem);
+      static_cast<const FEL&>(fel).CalcMappedShape_Matrix (mir, shapes);
+      for (size_t ip = 0; ip < np; ip++)
+        {
+          Vec<D,SIMD<double>> cn = Cross (mir[ip].GetNV(), mir[ip].GetTV());
+          for (size_t i = 0; i < nd; i++)
+            {
+              SIMD<double> sum = 0;
+              for (int j = 0; j < D; j++)
+                for (int k = 0; k < D; k++)
+                  sum += cn(j) * shapes(i*D*D+j*D+k, ip) * cn(k);
+              mat(i, ip) = sum;
+            }
+        }
+    }
   };
 
   template <int D, typename FEL = HDivDivFiniteElement<D-1> >
@@ -362,8 +418,19 @@ namespace ngcomp
     type = "hdivdivsurf";
     order = aflags.GetNumFlag("order", 0);
     DefineNumFlag("discontinuous");
+    DefineNumFlag("orderfacet");
+    DefineNumFlag("orderinner");
+    DefineDefineFlag("plus");
+    DefineDefineFlag("quadfullpol");
+    DefineDefineFlag("algebraicmapping");
 		
     noncontinuous = int(aflags.GetDefineFlag("discontinuous"));
+    plus = aflags.GetDefineFlag("plus");
+    quadfullpol = aflags.GetDefineFlag("quadfullpol");
+    algebraic_mapping = !aflags.GetDefineFlagX("algebraicmapping").IsFalse();
+    uniform_order_facet = int(aflags.GetNumFlag("orderfacet", order));
+    uniform_order_inner = int(aflags.GetNumFlag("orderinner", order));
+    order = max(order, max(uniform_order_facet, uniform_order_inner));
 
     if (ma->GetDimension() != 3)
       throw Exception("HDivDivSurface only supports 2D manifolds");
@@ -377,6 +444,7 @@ namespace ngcomp
     flux_evaluator[BND] =  make_shared<T_DifferentialOperator<DiffOpDivHDivDivSurface<3>>>();
 
     additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHDivDivDual<3>>> ());
+    additional_evaluators.Set ("nncomponent", make_shared<T_DifferentialOperator<DiffOpNNComponentHDivDivSurface<3>>> ());
     
   }
 
@@ -389,6 +457,16 @@ namespace ngcomp
     auto docu = FESpace::GetDocu();
     docu.Arg("discontinuous") = "bool = False\n"
       "  Create discontinuous HDivDiv space";
+    docu.Arg("orderfacet") = "int = order\n"
+      "  polynomial order of the edge (nn) dofs";
+    docu.Arg("orderinner") = "int = order\n"
+      "  polynomial order of the inner dofs";
+    docu.Arg("plus") = "bool = False\n"
+      "  add bubbles of order k+1 (trigs)";
+    docu.Arg("quadfullpol") = "bool = False\n"
+      "  full polynomial space on quads";
+    docu.Arg("algebraicmapping") = "bool = True\n"
+      "  use algebraic double-Piola mapping";
     return docu;
   }
 
@@ -398,110 +476,115 @@ namespace ngcomp
     FESpace::Update();
 
     nel = ma->GetNSE();
-    ndof = 0;
-
-    Array<int> elfacets;
     nfa = ma->GetNEdges();
 
-    first_face_dof.SetSize(nfa + 1);
-    Array<int> pnums;
+    if (order_facet.Size() != nfa || order_inner.Size() != nel)
+      {
+        order_facet.SetSize(nfa);
+        order_facet = uniform_order_facet;
+        order_inner.SetSize(nel);
+        order_inner = uniform_order_inner;
+      }
 
+    fine_face.SetSize(nfa);
+    fine_face = false;
+    face2sel.SetSize(ma->GetNFaces());
+    face2sel = -1;
+    for (size_t i = 0; i < nel; i++)
+      {
+        ElementId ei(BND, i);
+        Ngs_Element ngel = ma->GetElement(ei);
+        face2sel[ngel.Faces()[0]] = i;
+        if (DefinedOn(ei))
+          fine_face[ngel.Edges()] = true;
+      }
+
+    ndof = 0;
+    first_face_dof.SetSize(nfa + 1);
     for (int i = 0; i < nfa; i++)
       {
         first_face_dof[i] = ndof;
-
-        pnums = ma->GetEdgePNums(i);
-
-        switch (pnums.Size())
-          {
-          case 2: // ET_SEGM
-            ndof += order + 1; break;
-          case 3: // ET_TRIG
-            ndof += (order + 1)*(order + 2) / 2; break;
-          case 4: // ET_QUAD
-            ndof += (order + 1)*(order + 1); break;
-          }
+        if (fine_face[i])
+          ndof += order_facet[i] + 1;
       }
     first_face_dof[nfa] = ndof;
+    if (noncontinuous) ndof = 0;
 
     first_element_dof.SetSize(nel + 1);
-    for(auto i : Range(ma->GetNSE()))
+    for (size_t i = 0; i < nel; i++)
       {
         ElementId ei(BND, i);
         first_element_dof[i] = ndof;
-
+        if (!DefinedOn(ei)) continue;
+        int oi = order_inner[i];
         switch (ma->GetElType(ei))
           {
           case ET_TRIG:
-            ndof += 3 * order*(order + 1) / 2;
+            ndof += 3*(oi+1)*(oi+2)/2 - 3*(oi+1);
+            if (plus) ndof += 2*oi;
             break;
           case ET_QUAD:
-            ndof += 3 * (order + 1) * (order + 1) - 2;
+            if (quadfullpol)
+              {
+                ndof += 1+2*(oi+1)*(oi+2) + sqr(oi+1);
+                if (plus) ndof += 4*oi+4;
+              }
+            else
+              ndof += (oi+1+HDivDivFE<ET_QUAD>::incsg)*(oi+1+HDivDivFE<ET_QUAD>::incsg)
+                + (oi+2)*oi*2 + 2*(oi+1+HDivDivFE<ET_QUAD>::incsugv) + 1;
             break;
           default:
-            break;
+            throw Exception(string("HDivDivSurface: illegal element type ")+ToString(ma->GetElType(ei)));
           }
+        if (noncontinuous)
+          for (auto e : ma->GetElEdges(ei))
+            ndof += first_face_dof[e+1] - first_face_dof[e];
       }
     first_element_dof[nel] = ndof;
-
-    Array<int> isDirEdge;
-    isDirEdge.SetSize(nfa);
-    isDirEdge = 0;        
-
-    for (size_t i = 0; i < nel; i++)
-      {
-        Ngs_Element ngel = ma->GetElement ({ BND, i});
-        for (auto e : ngel.Edges())
-          isDirEdge[e]++;
-      }
-
-    if (noncontinuous)
-      {
-        ndof = 0;
-	
-        for(auto i : Range(ma->GetNSE()))
-          {
-            ElementId ei(BND, i);
-            first_element_dof[i] = ndof;
-
-            // add facet dofs
-            for (auto facets : ma->GetElEdges(ei))
-              ndof += first_face_dof[facets + 1] - first_face_dof[facets];
-
-            // add inner dofs
-            switch (ma->GetElType(ei))
-              {
-              case ET_TRIG:
-                ndof += 3 * order*(order + 1) / 2;
-                break;
-              case ET_QUAD:
-                ndof += 3 * (order + 1) * (order + 1) - 2;
-                break;
-              default:
-                break;
-              }
-				
-          }
-        first_element_dof[nel] = ndof;
-        first_face_dof = 0;
-        //cout << "fed" << first_element_dof << endl;
-        //cout << "ffd" << first_face_dof << endl;
-
-      }
-
-
-
-    //cout << "isDirFaces: " << endl << isDirEdge << endl;
-    //cout << "dirichlet_edge before" << endl << dirichlet_edge << endl;
-    for(int i = 0; i < isDirEdge.Size(); i++)
-      {
-        //            if(isDirEdge[i] == 1)
-        //                dirichlet_edge[i] = true;
-      }
-    //cout << "dirichlet_edge after" << endl << dirichlet_edge << endl;
-
+    if (noncontinuous) first_face_dof = 0;
 
     UpdateCouplingDofArray();
+  }
+
+  void HDivDivSurfaceSpace :: SetOrder (NodeId ni, int aorder)
+  {
+    if (aorder < 0) aorder = 0;
+    switch (ni.GetType())
+      {
+      case NT_EDGE:
+        if (ni.GetNr() < order_facet.Size()) order_facet[ni.GetNr()] = aorder;
+        break;
+      case NT_FACE:
+        if (ni.GetNr() < face2sel.Size() && face2sel[ni.GetNr()] >= 0)
+          order_inner[face2sel[ni.GetNr()]] = aorder;
+        break;
+      default:
+        break;
+      }
+  }
+
+  int HDivDivSurfaceSpace :: GetOrder (NodeId ni) const
+  {
+    switch (ni.GetType())
+      {
+      case NT_EDGE:
+        if (ni.GetNr() < order_facet.Size()) return order_facet[ni.GetNr()];
+        break;
+      case NT_FACE:
+        if (ni.GetNr() < face2sel.Size() && face2sel[ni.GetNr()] >= 0)
+          return order_inner[face2sel[ni.GetNr()]];
+        break;
+      default:
+        break;
+      }
+    return 0;
+  }
+
+  shared_ptr<FESpace> HDivDivSurfaceSpace :: CreateMultiplierSpace (Flags flags) const
+  {
+    if (!flags.NumFlagDefined("order"))
+      flags.SetFlag("order", uniform_order_facet);
+    return CreateCompanionSpace(*this, "normalfacetsurface", flags);
   }
 
 
@@ -547,45 +630,32 @@ namespace ngcomp
 
       case BND:
         {
-          HDivDivFiniteElement<2> * fe = nullptr;
-
-          auto vnums = ma->GetElVertices(ei);
+          auto ngel = ma->GetElement(ei);
+          int oi = order_inner[ei.Nr()];
+          int omax = oi;
+          for (auto e : ngel.Edges()) omax = max(omax, order_facet[e]);
+          auto setup = [&] (auto * fe) -> FiniteElement&
+            {
+              fe->SetAlgebraicMapping (algebraic_mapping);
+              fe->SetVertexNumbers (ngel.Vertices());
+              int ii = 0;
+              for (auto e : ngel.Edges())
+                fe->SetOrderFacet(ii++, IVec<1>(order_facet[e]));
+              fe->SetOrderInner(IVec<2>(oi,oi));
+              fe->ComputeNDof();
+              return *fe;
+            };
           switch (ma->GetElType(ei))
             {
             case ET_TRIG:
-              {
-                auto * trigfe = new (lh) HDivDivFE<ET_TRIG> (order, false /* plus */);
-                trigfe->SetVertexNumbers(vnums);
-                trigfe->ComputeNDof();
-                fe = trigfe;
-                break;
-              }
+              return setup (new (lh) HDivDivFE<ET_TRIG> (omax, plus));
             case ET_QUAD:
-	      {
-		auto * quadfe = new (lh) HDivDivFE<ET_QUAD> (order, false /* plus */);
-                quadfe->SetVertexNumbers(vnums);
-                quadfe->ComputeNDof();
-                fe = quadfe;
-		break;
-	      }
-	    default:
-              cerr << "element type " << int(ma->GetElType(ei)) << " not there in hdivdivsurf" << endl;
+              if (quadfullpol)
+                return setup (new (lh) HDivDivFE_QuadFullPol (omax, plus));
+              return setup (new (lh) HDivDivFE<ET_QUAD> (omax, plus));
+            default:
+              throw Exception(string("HDivDivSurface: illegal element type ")+ToString(ma->GetElType(ei)));
             }
-          
-          ArrayMem<IVec<2>,4> order_ed;
-          
-          // fe->Noncontinuous() = noncontinuous;
-          
-          auto ednums = ma->GetElEdges(ei);
-          
-          order_ed.SetSize(ednums.Size());
-          for (int j = 0; j < ednums.Size(); j++)
-            order_ed[j] = order;
-          
-          // fe->SetOrderFacet(order_ed);
-          // fe->SetOrderInner(order);
-          return *fe;
-          // return GetSFE_old(ei.Nr(), dynamic_cast<LocalHeap&> (lh));
         }
 
       case BBND:
@@ -593,7 +663,7 @@ namespace ngcomp
           if(!noncontinuous)
             {
               auto vnums = ma->GetElVertices(ei);
-              auto feseg = new (lh) HDivDivSurfaceFE<ET_SEGM> (order);
+              auto feseg = new (lh) HDivDivSurfaceFE<ET_SEGM> (order_facet[ma->GetElEdges(ei)[0]]);
               feseg->SetVertexNumbers (vnums);
               feseg->ComputeNDof();
               return *feseg;

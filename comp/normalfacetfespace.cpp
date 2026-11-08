@@ -136,7 +136,58 @@ namespace ngcomp
 
 
   
-  NormalFacetFESpace :: NormalFacetFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, 
+  // scalar u.n
+  template <int D, typename FEL = HDivFiniteElement<D> >
+  class DiffOpNormalComponentNormalFacet : public DiffOp<DiffOpNormalComponentNormalFacet<D> >
+  {
+  public:
+    static constexpr int DIM = 1;
+    static constexpr int DIM_SPACE = D;
+    static constexpr int DIM_ELEMENT = D;
+    static constexpr int DIM_DMAT = 1;
+    static constexpr int DIFFORDER = 0;
+    using FiniteElementType = FEL;
+
+    static Array<int> GetDimensions() { return Array<int> (); }
+
+    template <typename AFEL, typename MIP, typename MAT>
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+                                MAT && mat, LocalHeap & lh)
+    {
+      HeapReset hr(lh);
+      auto & hfel = static_cast<const FEL&>(fel);
+      FlatMatrix<> shape(hfel.GetNDof(), D, lh);
+      hfel.CalcMappedShape (mip, shape);
+      Vec<D> n = mip.GetNV();
+      for (int i = 0; i < hfel.GetNDof(); i++)
+        mat(0,i) = InnerProduct (shape.Row(i), n);
+    }
+
+    static void GenerateMatrixSIMDIR (const FiniteElement & fel,
+                                      const SIMD_BaseMappedIntegrationRule & bmir,
+                                      BareSliceMatrix<SIMD<double>> mat)
+    {
+      auto & mir = static_cast<const SIMD_MappedIntegrationRule<D,D>&> (bmir);
+      size_t nd = fel.GetNDof(), np = mir.Size();
+      STACK_ARRAY(SIMD<double>, mem, D*nd*np);
+      FlatMatrix<SIMD<double>> shapes(D*nd, np, mem);
+      static_cast<const FEL&>(fel).CalcMappedShape (mir, shapes);
+      for (size_t k = 0; k < np; k++)
+        {
+          Vec<D,SIMD<double>> n = mir[k].GetNV();
+          for (size_t i = 0; i < nd; i++)
+            {
+              SIMD<double> sum = 0;
+              for (int j = 0; j < D; j++)
+                sum += shapes(i*D+j, k) * n(j);
+              mat(i, k) = sum;
+            }
+        }
+    }
+  };
+
+
+  NormalFacetFESpace :: NormalFacetFESpace (shared_ptr<MeshAccess> ama, const Flags & flags,
 					    bool parseflags )
     : FESpace(ama, flags )
   {
@@ -233,10 +284,12 @@ namespace ngcomp
         break;
       case 2:
         additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHDivDual<2>>> ());
+        additional_evaluators.Set ("normalcomponent", make_shared<T_DifferentialOperator<DiffOpNormalComponentNormalFacet<2>>> ());
 	break;
       case 3:
         additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHDivDual<3>>> ());
         additional_evaluators.Set ("curl", make_shared<T_DifferentialOperator<DiffOpCurlNormalFacet<3>>> ());
+        additional_evaluators.Set ("normalcomponent", make_shared<T_DifferentialOperator<DiffOpNormalComponentNormalFacet<3>>> ());
 	break;
       default:
         break;

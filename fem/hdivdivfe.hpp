@@ -98,6 +98,9 @@ namespace ngfem
 
     virtual void CalcShape_NormalComponent (const SIMD_BaseMappedIntegrationRule & mir, 
                                             BareSliceMatrix<SIMD<double>> shapes) const = 0;
+    // n^T sigma n
+    virtual void CalcShape_NNComponent (const SIMD_BaseMappedIntegrationRule & mir, 
+                                        BareSliceMatrix<SIMD<double>> shapes) const = 0;
     
     virtual list<tuple<string,double>> Timing () const;
   };
@@ -659,6 +662,26 @@ namespace ngfem
         }
     }
     
+    virtual void CalcShape_NNComponent (const SIMD_BaseMappedIntegrationRule & bmir,
+                                        BareSliceMatrix<SIMD<double>> shapes) const override
+    {
+      auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
+
+      for (size_t i = 0; i < mir.Size(); i++)
+        {
+          Vec<DIM,SIMD<double>> nv = mir[i].GetNV();
+          auto shapesi = shapes.Col(i);
+          auto setshape = [shapesi, nv] (size_t j, auto val)
+            {
+              shapesi(j) = InnerProduct (nv, val.Shape() * nv);
+            };
+          if (this->algebraic_mapping)
+            T_CalcShape (GetTIP(mir[i]), SBLambda(setshape));
+          else
+            T_CalcShape (GetTIPHesse(mir[i]), SBLambda(setshape));
+        }
+    }
+
     virtual void CalcMappedShape_Matrix (const SIMD_BaseMappedIntegrationRule & bmir, 
                                          BareSliceMatrix<SIMD<double>> shapes) const override
     {
