@@ -977,58 +977,17 @@ namespace ngsbem
       {
       case 4: //identical panel quad
         {
-          constexpr int BS = 128;
-          for (int k = 0; k < identic_panel_quad_weight.Size(); k+=BS)
-            {
-              int num = std::min(size_t(BS), identic_panel_quad_weight.Size()-k);
-
-              HeapReset hr(lh);
-
-              IntegrationRule irx(num, lh);
-              IntegrationRule iry(num, lh);
-
-              for (int k2 = 0; k2 < num; k2++)
-                {
-                  Vec<2> xk = identic_panel_quad_x[k+k2];
-                  Vec<2> yk = identic_panel_quad_y[k+k2];
-
-                  irx[k2] = IntegrationPoint(xk(0), xk(1), 0,
-                                             identic_panel_quad_weight[k+k2]);
-                  iry[k2] = IntegrationPoint(yk(0), yk(1), 0, 0);
-                }
-
-              Integrate4D (irx, iry, feli, felj, trafoi, trafoj, matrix, lh);
-            }
-
-
+          Integrate4DMapped (identic_panel_quad_x, identic_panel_quad_y, identic_panel_quad_weight,
+                             Vec<2>(0.0, 0.0), Id<2>(), Vec<2>(0.0, 0.0), Id<2>(),
+                             feli, felj, trafoi, trafoj, matrix, lh);
           break;
         }
 
       case 3: //identical panel trig
         {
-          constexpr int BS = 128;
-          for (int k = 0; k < identic_panel_weight.Size(); k+=BS)
-            {
-              int num = std::min(size_t(BS), identic_panel_weight.Size()-k);
-
-              HeapReset hr(lh);
-
-              IntegrationRule irx(num, lh);
-              IntegrationRule iry(num, lh);
-
-              for (int k2 = 0; k2 < num; k2++)
-                {
-                  Vec<2> xk = identic_panel_x[k+k2];
-                  Vec<2> yk = identic_panel_y[k+k2];
-
-                  irx[k2] = IntegrationPoint(xk(0), xk(1), 0,
-                                             identic_panel_weight[k+k2]);
-                  iry[k2] = IntegrationPoint(yk(0), yk(1), 0, 0);
-                }
-
-              Integrate4D (irx, iry, feli, felj, trafoi, trafoj, matrix, lh);
-            }
-
+          Integrate4DMapped (identic_panel_x, identic_panel_y, identic_panel_weight,
+                             Vec<2>(0.0, 0.0), Id<2>(), Vec<2>(0.0, 0.0), Id<2>(),
+                             feli, felj, trafoi, trafoj, matrix, lh);
           break;
         }
 
@@ -1118,79 +1077,18 @@ namespace ngsbem
             {
               Integrate4DMapped (common_edge_x, common_edge_y, common_edge_weight,
                                  p0x, Tx, p0y, Ty, feli, felj, trafoi, trafoj, matrix, lh);
-              /*
-              constexpr int BS = 128;
-              for (int k = 0; k < common_edge_weight.Size(); k+=BS)
-                {
-                  int num = std::min(size_t(BS), common_edge_weight.Size()-k);
-
-                  HeapReset hr(lh);
-
-                  IntegrationRule irx(num, lh);
-                  IntegrationRule iry(num, lh);
-
-                  for (int k2 = 0; k2 < num; k2++)
-                    {
-                      Vec<2> px = p0x + Tx * common_edge_x[k+k2];
-                      Vec<2> py = p0y + Ty * common_edge_y[k+k2];
-
-                      irx[k2] = IntegrationPoint(px(0), px(1), 0, common_edge_weight[k+k2]);
-                      iry[k2] = IntegrationPoint(py(0), py(1), 0, 0);
-                    }
-
-                  Integrate4D (irx, iry, feli, felj, trafoi, trafoj, matrix, lh);
-                }
-              */
             }
 
           else if (edgesx.Size()==4 && edgesy.Size()==3)
             {
-              constexpr int BS = 128;
-              for (int k = 0; k < common_edge_quadtrig_weight.Size(); k+=BS)
-                {
-                  int num = std::min(size_t(BS), common_edge_quadtrig_weight.Size()-k);
-
-                  HeapReset hr(lh);
-
-                  IntegrationRule irx(num, lh);
-                  IntegrationRule iry(num, lh);
-
-                  for (int k2 = 0; k2 < num; k2++)
-                    {
-                      Vec<2> px = p0x + Tx * common_edge_quadtrig_x[k+k2];
-                      Vec<2> py = p0y + Ty * common_edge_quadtrig_y[k+k2];
-
-                      irx[k2] = IntegrationPoint(px(0), px(1), 0, common_edge_quadtrig_weight[k+k2]);
-                      iry[k2] = IntegrationPoint(py(0), py(1), 0, 0);
-                    }
-
-                  Integrate4D (irx, iry, feli, felj, trafoi, trafoj, matrix, lh);
-                }
+              Integrate4DMapped (common_edge_quadtrig_x, common_edge_quadtrig_y, common_edge_quadtrig_weight,
+                                 p0x, Tx, p0y, Ty, feli, felj, trafoi, trafoj, matrix, lh);
             }
 
           else if (edgesx.Size()==3 && edgesy.Size()==4)
             {
-              constexpr int BS = 128;
-              for (int k = 0; k < common_edge_quadtrig_weight.Size(); k+=BS)
-                {
-                  int num = std::min(size_t(BS), common_edge_quadtrig_weight.Size()-k);
-
-                  HeapReset hr(lh);
-
-                  IntegrationRule irx(num, lh);
-                  IntegrationRule iry(num, lh);
-
-                  for (int k2 = 0; k2 < num; k2++)
-                    {
-                      Vec<2> px = p0x + Tx * common_edge_quadtrig_y[k+k2];
-                      Vec<2> py = p0y + Ty * common_edge_quadtrig_x[k+k2];
-
-                      irx[k2] = IntegrationPoint(px(0), px(1), 0, common_edge_quadtrig_weight[k+k2]);
-                      iry[k2] = IntegrationPoint(py(0), py(1), 0, 0);
-                    }
-
-                  Integrate4D (irx, iry, feli, felj, trafoi, trafoj, matrix, lh);
-                }
+              Integrate4DMapped (common_edge_quadtrig_y, common_edge_quadtrig_x, common_edge_quadtrig_weight,
+                                 p0x, Tx, p0y, Ty, feli, felj, trafoi, trafoj, matrix, lh);
             }
 
 
@@ -1199,29 +1097,6 @@ namespace ngsbem
             {
               Integrate4DMapped (common_edge_quad_x, common_edge_quad_y, common_edge_quad_weight,
                                  p0x, Tx, p0y, Ty, feli, felj, trafoi, trafoj, matrix, lh);
-              /*
-              constexpr int BS = 128;
-              for (int k = 0; k < common_edge_quad_weight.Size(); k+=BS)
-                {
-                  int num = std::min(size_t(BS), common_edge_quad_weight.Size()-k);
-
-                  HeapReset hr(lh);
-
-                  IntegrationRule irx(num, lh);
-                  IntegrationRule iry(num, lh);
-
-                  for (int k2 = 0; k2 < num; k2++)
-                    {
-                      Vec<2> px = p0x + Tx * common_edge_quad_x[k+k2];
-                      Vec<2> py = p0y + Ty * common_edge_quad_y[k+k2];
-
-                      irx[k2] = IntegrationPoint(px(0), px(1), 0, common_edge_quad_weight[k+k2]);
-                      iry[k2] = IntegrationPoint(py(0), py(1), 0, 0);
-                    }
-
-                  Integrate4D (irx, iry, feli, felj, trafoi, trafoj, matrix, lh);
-                }
-              */
             }
 
           break;
@@ -1464,14 +1339,6 @@ namespace ngsbem
 
     return mat;
   }
-
-  template <typename TSCAL>
-  PotentialOperator<TSCAL> ::
-  PotentialOperator (shared_ptr<ProxyFunction> _proxy, VorB _source_vb, optional<Region> _definedon,
-                     shared_ptr<DifferentialOperator> _evaluator,
-                     shared_ptr<const BaseIntegralKernel<TSCAL>> _kernel, int _intorder)
-    : PotentialOperator(_proxy, _source_vb, _definedon, _evaluator, std::move(_kernel), IntOp_Parameters(), _intorder)
-  { ; }
 
   template <typename TSCAL>
   PotentialOperator<TSCAL> ::

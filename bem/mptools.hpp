@@ -1100,92 +1100,37 @@ namespace ngsbem
       }
 
       
+      template <typename TSRC>
+      bool StoreSource (Array<TSRC> & sources, const TSRC & src)
+      {
+        lock_guard<mutex> guard(node_mutex);
+        if (have_childs) return false;
+        sources.Append (src);
+        if (level > fmm_params.maxlevel) return true;
+        if (sources.Size() < fmm_params.maxdirect && r*abs(mp.Kappa()) < fmm_params.split_kr)
+          return true;
+        SendSourcesToChilds();
+        return true;
+      }
+
       void AddCharge (Vec<3> x, entry_type c)
       {
-        if (have_childs) // quick check without locking 
-          {
-            // directly send to childs:
-            int childnum = GetChildNum(x);
-            childs[childnum] -> AddCharge(x, c);
-            return;
-          }
-
-        lock_guard<mutex> guard(node_mutex);
-
-        if (have_childs) // test again after locking 
-          {
-            int childnum  = GetChildNum(x);
-            childs[childnum] -> AddCharge(x, c);
-            return;
-          }
-
-        charges.Append( tuple{x,c} );
-
-        if (level > fmm_params.maxlevel) return;
-        if (charges.Size() < fmm_params.maxdirect && r*abs(mp.Kappa()) < fmm_params.split_kr)
-          return;
-        
-        SendSourcesToChilds();
+        if (have_childs || !StoreSource (charges, tuple{x,c}))
+          childs[GetChildNum(x)] -> AddCharge(x, c);
       }
 
 
       void AddDipole (Vec<3> x, Vec<3> d, entry_type c)
       {
-        if (have_childs)
-          {
-            // directly send to childs:
-            int childnum = GetChildNum(x);
-            childs[childnum] -> AddDipole(x, d, c);
-            return;
-          }
-
-        lock_guard<mutex> guard(node_mutex);
-
-        if (have_childs)
-          {
-            // directly send to childs:
-            int childnum = GetChildNum(x);
-            childs[childnum] -> AddDipole(x, d, c);
-            return;
-          }
-        
-        dipoles.Append (tuple{x,d,c});
-        
-        if (level > fmm_params.maxlevel) return;
-        if (dipoles.Size() < fmm_params.maxdirect && r*abs(mp.Kappa()) < fmm_params.split_kr)
-          return;
-
-        SendSourcesToChilds();
+        if (have_childs || !StoreSource (dipoles, tuple{x,d,c}))
+          childs[GetChildNum(x)] -> AddDipole(x, d, c);
       }
 
 
       void AddChargeDipole (Vec<3> x, entry_type c, Vec<3> dir, entry_type c2)
       {
-        if (have_childs)
-          {
-            // directly send to childs:
-            int childnum = GetChildNum(x);
-            childs[childnum] -> AddChargeDipole(x, c, dir, c2);
-            return;
-          }
-
-        lock_guard<mutex> guard(node_mutex);
-
-        if (have_childs)
-          {
-            // directly send to childs:
-            int childnum = GetChildNum(x);
-            childs[childnum] -> AddChargeDipole(x, c, dir, c2);
-            return;
-          }
-        
-        chargedipoles.Append (tuple{x,c,dir,c2});
-
-        if (level > fmm_params.maxlevel) return;
-        if (chargedipoles.Size() < fmm_params.maxdirect && r*abs(mp.Kappa()) < fmm_params.split_kr)
-          return;
-
-        SendSourcesToChilds();
+        if (have_childs || !StoreSource (chargedipoles, tuple{x,c,dir,c2}))
+          childs[GetChildNum(x)] -> AddChargeDipole(x, c, dir, c2);
       }
 
       
@@ -2378,34 +2323,8 @@ namespace ngsbem
         return childnum;
       }
 
-      void AddTarget (Vec<3> x)
+      void SendTargetsToChilds()
       {
-        // if (childs[0])
-        if (have_childs) // quick check without locking
-          {
-            // directly send to childs:
-            int childnum  = GetChildNum(x);
-            childs[childnum] -> AddTarget( x );
-            return;
-          }
-
-        lock_guard<mutex> guard(node_mutex);
-
-        if (have_childs) // test again after locking
-        {
-          // directly send to childs:
-          int childnum  = GetChildNum(x);
-          childs[childnum] -> AddTarget(x);
-          return;
-        }
-
-        targets.Append( x );
-
-        // if (r*mp.Kappa() < 1e-8) return;
-        if (level > params.maxlevel) return;        
-        if (targets.Size() < params.maxdirect && r*abs(mp.Kappa()) < params.split_kr)
-          return;
-
         CreateChilds();
 
         for (auto t : targets)
@@ -2417,44 +2336,32 @@ namespace ngsbem
         vol_targets.SetSize0();
       }
 
+      template <typename TTRG>
+      bool StoreTarget (Array<TTRG> & trgs, const TTRG & trg)
+      {
+        lock_guard<mutex> guard(node_mutex);
+        if (have_childs) return false;
+        trgs.Append (trg);
+        if (level > params.maxlevel) return true;
+        if (trgs.Size() < params.maxdirect && r*abs(mp.Kappa()) < params.split_kr)
+          return true;
+        SendTargetsToChilds();
+        return true;
+      }
+
+      void AddTarget (Vec<3> x)
+      {
+        if (have_childs || !StoreTarget (targets, x))
+          childs[GetChildNum(x)] -> AddTarget(x);
+      }
+
 
       void AddVolumeTarget (Vec<3> x, double tr)
       {
         if (MaxNorm(x-center) > r+tr) return;
-
-        if (have_childs)
-          {
-            for (auto & child : childs)
-              child->AddVolumeTarget(x, tr);
-            return;
-          }
-
-        
-        lock_guard<mutex> guard(node_mutex);
-        
-        if (have_childs)
-          {
-            for (auto & child : childs)
-              child->AddVolumeTarget(x, tr);
-            return;
-          }
-
-        
-        vol_targets.Append (tuple(x,tr));
-
-        if (level > params.maxlevel) return;
-        if (vol_targets.Size() < params.maxdirect && (r*abs(mp.Kappa()) < params.split_kr))
-          return;
-
-        CreateChilds();
-
-        for (auto t : targets)
-          AddTarget (t);
-        for (auto [x,r] : vol_targets)
-          AddVolumeTarget (x,r);
-
-        targets.SetSize0();
-        vol_targets.SetSize0();
+        if (have_childs || !StoreTarget (vol_targets, tuple{x,tr}))
+          for (auto & child : childs)
+            child->AddVolumeTarget(x, tr);
       }
 
       
