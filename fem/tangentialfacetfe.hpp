@@ -28,6 +28,7 @@ namespace ngfem
     IVec<2> order_inner;
     using VertexOrientedFE<ET>::vnums;
     using ET_trait<ET>::DIM;
+    using ET_trait<ET>::GetFaceSort;
     using HCurlFiniteElement<ET_trait<ET>::DIM>::order;
  
   public:
