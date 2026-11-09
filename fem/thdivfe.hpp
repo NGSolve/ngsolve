@@ -69,6 +69,15 @@ namespace ngfem
     
     virtual void AddDivTrans (const SIMD_BaseMappedIntegrationRule & ir, BareVector<SIMD<double>> values,
                               BareSliceVector<> coefs) const override;
+
+    virtual void CalcDShape (const IntegrationPoint & ip,
+                             BareSliceMatrix<> dshape) const override;
+    virtual void CalcDShape (const SIMD<IntegrationPoint> & ip,
+                             BareSliceVector<SIMD<double>> dshape) const override;
+    virtual void EvaluateGradRef (const SIMD_IntegrationRule & ir, BareSliceVector<> coefs,
+                                  BareSliceMatrix<SIMD<double>> values) const override;
+    virtual void AddGradRefTrans (const SIMD_IntegrationRule & ir, BareSliceMatrix<SIMD<double>> values,
+                                  BareSliceVector<> coefs) const override;
     
     
 #endif

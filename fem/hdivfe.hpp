@@ -83,6 +83,20 @@ namespace ngfem
     virtual void CalcMappedDivShape (const SIMD_BaseMappedIntegrationRule & mir, 
                                      BareSliceMatrix<SIMD<double>> divshapes) const;
 
+    /// reference gradient, dshape(i, j*D+k) = d shape_ij / d xi_k
+    virtual void CalcDShape (const IntegrationPoint & ip,
+                             BareSliceMatrix<> dshape) const;
+
+    /// per shape: D*D gradient entries (as above), then D values
+    virtual void CalcDShape (const SIMD<IntegrationPoint> & ip,
+                             BareSliceVector<SIMD<double>> dshape) const;
+
+    /// rows: D*D reference gradient, then D values
+    virtual void EvaluateGradRef (const SIMD_IntegrationRule & ir, BareSliceVector<> coefs,
+                                  BareSliceMatrix<SIMD<double>> values) const;
+    virtual void AddGradRefTrans (const SIMD_IntegrationRule & ir, BareSliceMatrix<SIMD<double>> values,
+                                  BareSliceVector<> coefs) const;
+
 
     INLINE const FlatMatrixFixWidth<DIM> GetShape (const IntegrationPoint & ip,
                                                    LocalHeap & lh) const
