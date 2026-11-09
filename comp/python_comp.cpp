@@ -1689,16 +1689,15 @@ component : int
          { return self->CreateDivergenceSpace(); },
          "L2 space of matching order, containing div of this space.\n"
          "B = BilinearForm(div(u)*q*dx) on (HDiv, L2) is geometry-independent.")
-    .def("CreateStressSpace", [fes_class] (shared_ptr<HDivHighOrderFESpace> self, bool weaksym, py::kwargs kwargs)
+    .def("CreateStressSpace", [fes_class] (shared_ptr<HDivHighOrderFESpace> self, py::kwargs kwargs)
          {
            return CreateWithClassFlags(fes_class, self->GetMeshAccess(), kwargs,
-                                       [&] (Flags flags) { return self->CreateStressSpace(flags, weaksym); });
-         }, py::arg("weaksym")=false,
+                                       [&] (Flags flags) { return self->CreateStressSpace(flags); });
+         },
          "HCurlDiv stress space for MCS (mass conserving mixed stress) with this space as velocity\n"
-         "(trigs, quads, tets, prisms, hexes, also mixed): HCurlDiv(order-1, orderinner=order), for BDM and RT;\n"
-         "RT order 1 on trigs uses orderinner=2.\n"
-         "weaksym=True: for the weakly symmetric version with HCurlDiv.CreateSymmetryMultiplierSpace(),\n"
-         "adds GGbubbles on trigs and tets (prisms need none; not available on hexes).\n"
+         "(trigs, quads, tets, prisms, hexes, also mixed): HCurlDiv(order-1, orderinner=order), for BDM and RT,\n"
+         "also for weak symmetry with HCurlDiv.CreateSymmetryMultiplierSpace() (no GG bubbles needed);\n"
+         "RT order 1 on trigs uses GGbubbles instead of orderinner=2.\n"
          "Discontinuous(S).CreateMultiplierSpace() gives the tangential velocity uhat.\n"
          "The pressure space is CreateDivergenceSpace() of this space (L2(order-1), RT: L2(order)).\n"
          "kwargs (discontinuous, ...) are passed to HCurlDiv, an explicit order disables the automatic choice.")

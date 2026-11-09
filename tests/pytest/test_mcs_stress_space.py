@@ -24,7 +24,7 @@ def stokes_errors(mesh, k, rt, ws):
     f = CF(tuple(-sum(sex[i, j].Diff(c) for j, c in enumerate(X)) + pex.Diff(X[i]) for i in range(dim)))
 
     V = HDiv(mesh, order=k, RT=rt, dirichlet=".*")
-    S = V.CreateStressSpace(weaksym=ws)
+    S = V.CreateStressSpace()
     sp = [V, S, V.CreateDivergenceSpace()] + ([S.CreateSymmetryMultiplierSpace()] if ws else [])
     fes = FESpace(sp)
     (u, s, p, *e), (v, t, q, *xi) = fes.TnT()
@@ -53,12 +53,10 @@ def test_orders(kind, k, rt):
     V = HDiv(mesh, order=k, RT=rt)
     S = V.CreateStressSpace()
     assert type(S) is HCurlDiv
-    oi = 2 if (kind == "trig" and rt and k == 1) else k
-    assert S.ndof == HCurlDiv(mesh, order=k-1, orderinner=oi).ndof
-    if kind != "hex":
-        # GG bubbles on simplices replace the RT1 trig orderinner=2
-        gg = kind in ("trig", "tet")
-        assert V.CreateStressSpace(weaksym=True).ndof == HCurlDiv(mesh, order=k-1, orderinner=k if gg else oi, GGbubbles=gg).ndof
+    gg = kind == "trig" and rt and k == 1  # RT1 on trigs: GG bubbles instead of orderinner 2
+    assert S.ndof == HCurlDiv(mesh, order=k-1, orderinner=k, GGbubbles=gg).ndof
+    if gg:
+        assert V.CreateStressSpace(GGbubbles=False).ndof == HCurlDiv(mesh, order=0, orderinner=2).ndof
     assert Discontinuous(S).CreateMultiplierSpace().ndof == TangentialFacetFESpace(mesh, order=k-1).ndof
     Sdc = Discontinuous(V.CreateStressSpace())
     assert Sdc.base_space.ndof == S.ndof
