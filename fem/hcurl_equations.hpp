@@ -1278,109 +1278,250 @@ public:
   template <int D, typename FEL = HCurlFiniteElement<D-1> >
   class DiffOpGradientBoundaryHCurl;
   
-  /// Gradient operator for HCurl
+  /// Gradient operator for HCurl, grad(u)(j,i) = d u_i / d x_j
   template <int D, typename FEL = HCurlFiniteElement<D> >
-  // class DiffOpGradientHCurl : public DiffOp<DiffOpGradientHCurl<D> >
-  class DiffOpGradientHCurl : public NumDiffGradient<DiffOpGradientHCurl<D>,  DiffOpIdEdge<D>, FEL>
+  class DiffOpGradientHCurl : public DiffOp<DiffOpGradientHCurl<D,FEL> >
   {
-    typedef NumDiffGradient<DiffOpGradientHCurl<D>,  DiffOpIdEdge<D>, FEL> BASE;
   public:
-    using BASE::eps;
-    using BASE::DIM_ELEMENT;
-    using BASE::DIM_SPACE;
-    
-    // enum { DIM = 1 };
-    // enum { DIM_SPACE = D };
-    // enum { DIM_ELEMENT = D };
-    // enum { DIM_DMAT = D*D };
-    // enum { DIFFORDER = 1 };
+    static constexpr int DIM = 1;
+    static constexpr int DIM_SPACE = D;
+    static constexpr int DIM_ELEMENT = D;
+    static constexpr int DIM_DMAT = D*D;
+    static constexpr int DIFFORDER = 1;
+    using FiniteElementType = FEL;
 
     static string Name() { return "grad"; }
 
     static Array<int> GetDimensions() { return Array<int> ( { DIM_SPACE, DIM_SPACE } ); }
-    
-    // static constexpr double eps() { return 1e-4; }
 
     typedef DiffOpGradientBoundaryHCurl<D> DIFFOP_TRACE;
-    ///
+
+    // u = Finv^T uhat, G = reference gradient:
+    //   Du = Finv^T G Finv + sum_a d(Finv(a,.)) uhat(a),   d_b Finv = -Finv (d_b F) Finv
+    // returns w with  Du(i,j) = (Finv^T G Finv)(i,j) + sum_a w(i)(j,a) uhat(a)
+    template <typename MIP>
+    static auto CurvedTrafo (const MIP & mip, bool curved)
+    {
+      typedef std::decay_t<decltype(mip.GetJacobiDet())> T;
+      Vec<D, Mat<D,D,T>> w;
+      for (int i = 0; i < D; i++)
+        w(i) = T(0.0);
+
+      if constexpr (D > 1)
+        if (curved)
+          {
+            Mat<D,D,T> inv = mip.GetJacobianInverse();
+            Vec<D, Mat<D,D,T>> hesse;
+            mip.CalcHesse(hesse);
+
+            Vec<D, Mat<D,D,T>> phys_hesse;
+            for (int m = 0; m < D; m++)
+              phys_hesse(m) = Trans(inv) * hesse(m) * inv;
+
+            for (int i = 0; i < D; i++)
+              for (int j = 0; j < D; j++)
+                for (int a = 0; a < D; a++)
+                  {
+                    T sum(0.0);
+                    for (int m = 0; m < D; m++)
+                      sum += inv(a,m) * phys_hesse(m)(i,j);
+                    w(i)(j,a) = -sum;
+                  }
+          }
+      return w;
+    }
+
+    // reference: rows k*D+a = d uhat_a / d xi_k, then D rows uhat
+    static int DimRef() { return DIM_DMAT + D; }
+
+    template <typename IP, typename MAT>
+    static void GenerateMatrixRef (const FiniteElement & bfel, const IP & ip,
+                                   MAT && mat, LocalHeap & lh)
+    {
+      auto & fel = static_cast<const FEL&> (bfel);
+      HeapReset hr(lh);
+      int nd = fel.GetNDof();
+      FlatMatrix<> dshape(nd, D*D, lh);
+      FlatMatrixFixWidth<D> shape(nd, lh);
+      fel.CalcDShape (ip, dshape);
+      fel.CalcShape (ip, shape);
+      for (int n = 0; n < nd; n++)
+        for (int a = 0; a < D; a++)
+          {
+            for (int k = 0; k < D; k++)
+              mat(k*D+a, n) = dshape(n, a*D+k);
+            mat(D*D+a, n) = shape(n, a);
+          }
+    }
+
+    template <typename MIP, typename MAT>
+    static void CalcTransformationMatrix (const MIP & mip,
+                                          MAT & mat, LocalHeap & lh)
+    {
+      Mat<D,D> inv = mip.GetJacobianInverse();
+      auto w = CurvedTrafo (mip, mip.GetTransformation().IsCurvedElement());
+
+      for (int i = 0; i < D; i++)
+        for (int j = 0; j < D; j++)
+          for (int a = 0; a < D; a++)
+            {
+              for (int k = 0; k < D; k++)
+                mat(j*D+i, k*D+a) = inv(a,i) * inv(k,j);
+              mat(j*D+i, D*D+a) = w(i)(j,a);
+            }
+    }
 
     static string GenerateTransformationCode (string invar, string outvar, bool trans)
     {
+      string d = ToString(D), dmat = ToString(DIM_DMAT);
+      string mat = "ToMat<"+d+","+d+">";
       // grad gives transpose jacobi matrix
       if (!trans)
-        return outvar+ "= ToVec(Trans(Inv(F)) * (ToMat<3,3>("+invar+".Range<0,9>()) * Inv(F)));\n";
+        return outvar+ "= ToVec(Trans(Inv(F)) * ("+mat+"("+invar+".Range<0,"+dmat+">()) * Inv(F)));\n";
       else
-        return outvar+ "= 0.0; "+outvar+".SetRange<0,9>(ToVec(Inv(F) * (ToMat<3,3>("+invar+") * Trans(Inv(F)))));\n";
+        return outvar+ "= 0.0; "+outvar+".SetRange<0,"+dmat+">(ToVec(Inv(F) * ("+mat+"("+invar+") * Trans(Inv(F)))));\n";
     }
 
-    /*
-    template <typename AFEL, typename SIP, typename MAT,
-              typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
-      static void GenerateMatrix (const AFEL & fel, const SIP & sip,
-                                  MAT & mat, LocalHeap & lh)
+    template <typename AFEL, typename MIP, typename MAT>
+    static void GenerateMatrix (const AFEL & bfel, const MIP & mip,
+                                MAT && mat, LocalHeap & lh)
     {
-      cout << "nicht gut" << endl;
-      cout << "type(fel) = " << typeid(fel).name() << ", sip = " << typeid(sip).name()
-           << ", mat = " << typeid(mat).name() << endl;
-    }
-    
-    // template <typename AFEL, typename SIP>
-    // static void GenerateMatrix (const AFEL & fel, const SIP & sip,
-    // SliceMatrix<double,ColMajor> mat, LocalHeap & lh)
-    template <typename AFEL, typename MIP, typename MAT,
-              typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
-    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
-                                MAT mat, LocalHeap & lh)
-    {
-      // cout << "gen matrix" << endl;
-      CalcDShapeFE<FEL,D,D,D>(static_cast<const FEL&>(fel), mip, Trans(mat), lh, eps());
-    }
-
-    
-    template <typename AFEL, typename MIP, class TVX, class TVY>
-    static void Apply (const AFEL & fel, const MIP & mip,
-                       const TVX & x, TVY && y,
-                       LocalHeap & lh) 
-    {
-      // cout << "apply matrix" << endl;      
-      // typedef typename TVX::TSCAL TSCAL;
+      auto & fel = static_cast<const FEL&> (bfel);
       HeapReset hr(lh);
-      FlatMatrixFixWidth<D*D> hm(fel.GetNDof(),lh);
-      CalcDShapeFE<FEL,D,D,D>(static_cast<const FEL&>(fel), mip, hm, lh, eps());
-      y = Trans(hm)*x;
-    }
+      int nd = fel.GetNDof();
+      FlatMatrix<> dshape(nd, D*D, lh);
+      FlatMatrixFixWidth<D> shape(nd, lh);
+      fel.CalcDShape (mip.IP(), dshape);
+      fel.CalcShape (mip.IP(), shape);
 
-    template <typename AFEL, typename MIP, class TVX, class TVY>
-    static void ApplyTrans (const AFEL & fel, const MIP & mip,
-			    const TVX & x, TVY & by,
-			    LocalHeap & lh) 
-    {
-      ApplyTransDShapeFE<FEL,D,D,D>(static_cast<const FEL&>(fel), mip, x, by, lh, eps());
+      Mat<D,D> inv = mip.GetJacobianInverse();
+      auto w = CurvedTrafo (mip, mip.GetTransformation().IsCurvedElement());
+
+      for (int n = 0; n < nd; n++)
+        {
+          Mat<D,D> G;
+          for (int a = 0; a < D; a++)
+            for (int k = 0; k < D; k++)
+              G(a,k) = dshape(n, a*D+k);
+          Mat<D,D> Du = Trans(inv) * G * inv;
+          for (int i = 0; i < D; i++)
+            for (int j = 0; j < D; j++)
+              {
+                double val = Du(i,j);
+                for (int a = 0; a < D; a++)
+                  val += w(i)(j,a) * shape(n,a);
+                mat(j*D+i, n) = val;
+              }
+        }
     }
 
     static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
-                                      const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> mat)
+                                      const SIMD_BaseMappedIntegrationRule & bmir,
+                                      BareSliceMatrix<SIMD<double>> mat)
     {
-      // cout << "gen matrix simd" << endl;
-      CalcSIMDDShapeFE<FEL,D,D,D>(static_cast<const FEL&>(bfel), static_cast<const SIMD_MappedIntegrationRule<D,D> &>(bmir), mat, eps());
+      auto & fel = static_cast<const FEL&> (bfel);
+      auto & mir = static_cast<const SIMD_MappedIntegrationRule<D,D>&> (bmir);
+      bool curved = mir.GetTransformation().IsCurvedElement();
+      size_t nd = fel.GetNDof();
+      constexpr int DR = D*D+D;
+      STACK_ARRAY(SIMD<double>, mem, nd*DR);
+      FlatVector<SIMD<double>> ds(nd*DR, &mem[0]);
+
+      for (size_t ip = 0; ip < mir.Size(); ip++)
+        {
+          fel.CalcDShape (mir.IR()[ip], ds);
+          Mat<D,D,SIMD<double>> inv = mir[ip].GetJacobianInverse();
+          auto w = CurvedTrafo (mir[ip], curved);
+          for (size_t n = 0; n < nd; n++)
+            {
+              Mat<D,D,SIMD<double>> G;
+              for (int a = 0; a < D; a++)
+                for (int k = 0; k < D; k++)
+                  G(a,k) = ds(n*DR+a*D+k);
+              Mat<D,D,SIMD<double>> Du = Trans(inv) * G * inv;
+              for (int i = 0; i < D; i++)
+                for (int j = 0; j < D; j++)
+                  {
+                    SIMD<double> val = Du(i,j);
+                    for (int a = 0; a < D; a++)
+                      val += w(i)(j,a) * ds(n*DR+D*D+a);
+                    mat(n*D*D+j*D+i, ip) = val;
+                  }
+            }
+        }
     }
 
-    using BASE::ApplySIMDIR;
-    static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
+    using DiffOp<DiffOpGradientHCurl<D,FEL>>::ApplySIMDIR;
+    static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & bmir,
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
-      cout << "apply simd" << endl;      
-      ApplySIMDDShapeFE<FEL,D,D,D>(static_cast<const FEL&>(fel), bmir, x, y, eps());
+      auto & fel = static_cast<const FEL&> (bfel);
+      auto & mir = static_cast<const SIMD_MappedIntegrationRule<D,D>&> (bmir);
+      bool curved = mir.GetTransformation().IsCurvedElement();
+      constexpr int DR = D*D+D;
+      STACK_ARRAY(SIMD<double>, mem, DR*mir.Size());
+      FlatMatrix<SIMD<double>> ref(DR, mir.Size(), &mem[0]);
+      fel.EvaluateGradRef (mir.IR(), x, ref);
+
+      for (size_t ip = 0; ip < mir.Size(); ip++)
+        {
+          Mat<D,D,SIMD<double>> inv = mir[ip].GetJacobianInverse();
+          Mat<D,D,SIMD<double>> G;
+          for (int a = 0; a < D; a++)
+            for (int k = 0; k < D; k++)
+              G(a,k) = ref(a*D+k, ip);
+          Mat<D,D,SIMD<double>> Du = Trans(inv) * G * inv;
+          if (curved)
+            {
+              auto w = CurvedTrafo (mir[ip], true);
+              for (int i = 0; i < D; i++)
+                for (int j = 0; j < D; j++)
+                  for (int a = 0; a < D; a++)
+                    Du(i,j) += w(i)(j,a) * ref(D*D+a, ip);
+            }
+          for (int i = 0; i < D; i++)
+            for (int j = 0; j < D; j++)
+              y(j*D+i, ip) = Du(i,j);
+        }
     }
 
-    using DiffOp<DiffOpGradientHCurl<D>>::AddTransSIMDIR;    
-    static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
-                                BareSliceMatrix<SIMD<double>> x, BareSliceVector<double> y)
+    using DiffOp<DiffOpGradientHCurl<D,FEL>>::AddTransSIMDIR;
+    static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & bmir,
+                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
     {
-      AddTransSIMDDShapeFE<FEL,D,D,D>(static_cast<const FEL&>(fel), bmir, x, y, eps());
+      auto & fel = static_cast<const FEL&> (bfel);
+      auto & mir = static_cast<const SIMD_MappedIntegrationRule<D,D>&> (bmir);
+      bool curved = mir.GetTransformation().IsCurvedElement();
+      constexpr int DR = D*D+D;
+      STACK_ARRAY(SIMD<double>, mem, DR*mir.Size());
+      FlatMatrix<SIMD<double>> ref(DR, mir.Size(), &mem[0]);
+
+      for (size_t ip = 0; ip < mir.Size(); ip++)
+        {
+          Mat<D,D,SIMD<double>> inv = mir[ip].GetJacobianInverse();
+          Mat<D,D,SIMD<double>> Y;
+          for (int i = 0; i < D; i++)
+            for (int j = 0; j < D; j++)
+              Y(i,j) = y(j*D+i, ip);
+          Mat<D,D,SIMD<double>> G = inv * Y * Trans(inv);
+          for (int a = 0; a < D; a++)
+            for (int k = 0; k < D; k++)
+              ref(a*D+k, ip) = G(a,k);
+
+          Vec<D,SIMD<double>> val = SIMD<double>(0.0);
+          if (curved)
+            {
+              auto w = CurvedTrafo (mir[ip], true);
+              for (int i = 0; i < D; i++)
+                for (int j = 0; j < D; j++)
+                  for (int a = 0; a < D; a++)
+                    val(a) += w(i)(j,a) * Y(i,j);
+            }
+          for (int a = 0; a < D; a++)
+            ref(D*D+a, ip) = val(a);
+        }
+      fel.AddGradRefTrans (mir.IR(), ref, x);
     }
-    */
-    
   };
 
   /// Boundary Gradient operator for HCurl

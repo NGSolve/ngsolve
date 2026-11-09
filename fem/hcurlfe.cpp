@@ -68,6 +68,63 @@ namespace ngfem
   }
 
 
+  // fallback: numerical differentiation
+  template <int D>
+  void HCurlFiniteElement<D> ::
+  CalcDShape (const IntegrationPoint & ip, BareSliceMatrix<> dshape) const
+  {
+    double eps = 1e-4;
+    ArrayMem<double, 800> mem(4*DIM*ndof);
+    FlatMatrixFixWidth<DIM> shape1(ndof, &mem[0]);
+    FlatMatrixFixWidth<DIM> shape2(ndof, &mem[DIM*ndof]);
+    FlatMatrixFixWidth<DIM> shape3(ndof, &mem[2*DIM*ndof]);
+    FlatMatrixFixWidth<DIM> shape4(ndof, &mem[3*DIM*ndof]);
+
+    for (int k = 0; k < D; k++)
+      {
+	IntegrationPoint ip1 = ip;
+	IntegrationPoint ip2 = ip;
+	ip1(k) -= eps;
+	ip2(k) += eps;
+	CalcShape (ip1, shape1);
+	CalcShape (ip2, shape2);
+	ip1(k) -= eps;
+	ip2(k) += eps;
+	CalcShape (ip1, shape3);
+	CalcShape (ip2, shape4);
+
+	for (int i = 0; i < ndof; i++)
+          for (int j = 0; j < D; j++)
+            dshape(i, j*D+k) =
+              2/(3*eps) * (shape2(i,j) - shape1(i,j))
+              - 1/(12*eps) * (shape4(i,j) - shape3(i,j));
+      }
+  }
+
+  template <int D>
+  void HCurlFiniteElement<D> ::
+  CalcDShape (const SIMD<IntegrationPoint> & ip, BareSliceVector<SIMD<double>> dshape) const
+  {
+    throw ExceptionNOSIMD("HCurlFE - simd calcdshape not overloaded");
+  }
+
+  template <int D>
+  void HCurlFiniteElement<D> ::
+  EvaluateGradRef (const SIMD_IntegrationRule & ir, BareSliceVector<> coefs,
+                   BareSliceMatrix<SIMD<double>> values) const
+  {
+    throw ExceptionNOSIMD("HCurlFE - simd evaluategradref not overloaded");
+  }
+
+  template <int D>
+  void HCurlFiniteElement<D> ::
+  AddGradRefTrans (const SIMD_IntegrationRule & ir, BareSliceMatrix<SIMD<double>> values,
+                   BareSliceVector<> coefs) const
+  {
+    throw ExceptionNOSIMD("HCurlFE - simd addgradreftrans not overloaded");
+  }
+
+
   template <int D>
   void HCurlFiniteElement<D> ::
   CalcCurlShape (const IntegrationPoint & ip, 

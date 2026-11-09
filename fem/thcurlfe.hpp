@@ -93,6 +93,15 @@ namespace ngfem
                                                  BareSliceVector<> coefs) const override;
     NGS_DLL_HEADER virtual void AddCurlTrans (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<Complex>> values,
                                                  BareSliceVector<Complex> coefs) const override;
+
+    NGS_DLL_HEADER virtual void CalcDShape (const IntegrationPoint & ip,
+                                            BareSliceMatrix<> dshape) const override;
+    NGS_DLL_HEADER virtual void CalcDShape (const SIMD<IntegrationPoint> & ip,
+                                            BareSliceVector<SIMD<double>> dshape) const override;
+    NGS_DLL_HEADER virtual void EvaluateGradRef (const SIMD_IntegrationRule & ir, BareSliceVector<> coefs,
+                                                 BareSliceMatrix<SIMD<double>> values) const override;
+    NGS_DLL_HEADER virtual void AddGradRefTrans (const SIMD_IntegrationRule & ir, BareSliceMatrix<SIMD<double>> values,
+                                                 BareSliceVector<> coefs) const override;
 #endif
     
   };

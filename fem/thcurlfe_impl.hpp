@@ -374,6 +374,113 @@ namespace ngfem
        });
   }
 
+  // reference point, outer AutoDiff differentiates the shape
+  template <int DIM, typename SCAL, typename IP>
+  INLINE auto GetTIPGradNested (const IP & ip)
+  {
+    typedef AutoDiff<DIM,SCAL> TI;
+    typedef AutoDiff<DIM,TI> T;
+    auto coord = [&ip] (int m)
+    {
+      T c;
+      c.Value() = TI(SCAL(ip(m)), m);
+      for (int i = 0; i < DIM; i++)
+        c.DValue(i) = TI(SCAL(i == m ? 1.0 : 0.0));
+      return c;
+    };
+    if constexpr (DIM == 1)
+      return TIP<1,T> (coord(0), ip.FacetNr(), ip.VB());
+    else if constexpr (DIM == 2)
+      return TIP<2,T> (coord(0), coord(1), ip.FacetNr(), ip.VB());
+    else
+      return TIP<3,T> (coord(0), coord(1), coord(2), ip.FacetNr(), ip.VB());
+  }
+
+  template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
+  void T_HCurlHighOrderFiniteElement<ET,SHAPES,BASE> ::
+  CalcDShape (const IntegrationPoint & ip, BareSliceMatrix<> dshape) const
+  {
+    if constexpr (DIM == 0) return; else
+    this->T_CalcShape (GetTIPGradNested<DIM,double> (ip),
+                       SBLambda ([dshape] (size_t nr, auto s)
+                                 {
+                                   auto val = s.Value();
+                                   for (int j = 0; j < DIM; j++)
+                                     for (int k = 0; k < DIM; k++)
+                                       dshape(nr, j*DIM+k) = val(j).DValue(k);
+                                 }));
+  }
+
+  template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
+  void T_HCurlHighOrderFiniteElement<ET,SHAPES,BASE> ::
+  CalcDShape (const SIMD<IntegrationPoint> & ip, BareSliceVector<SIMD<double>> dshape) const
+  {
+    if constexpr (DIM == 0) return; else
+    this->T_CalcShape (GetTIPGradNested<DIM,SIMD<double>> (ip),
+                       SBLambda ([dshape] (size_t nr, auto s)
+                                 {
+                                   auto val = s.Value();
+                                   size_t base = nr*(DIM*DIM+DIM);
+                                   for (int j = 0; j < DIM; j++)
+                                     {
+                                       for (int k = 0; k < DIM; k++)
+                                         dshape(base+j*DIM+k) = val(j).DValue(k);
+                                       dshape(base+DIM*DIM+j) = val(j).Value();
+                                     }
+                                 }));
+  }
+
+  template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
+  void T_HCurlHighOrderFiniteElement<ET,SHAPES,BASE> ::
+  EvaluateGradRef (const SIMD_IntegrationRule & ir, BareSliceVector<> coefs,
+                   BareSliceMatrix<SIMD<double>> values) const
+  {
+    if constexpr (DIM == 0) return; else
+    for (size_t i = 0; i < ir.Size(); i++)
+      {
+        Vec<DIM,AutoDiff<DIM,SIMD<double>>> sum = AutoDiff<DIM,SIMD<double>> (SIMD<double>(0.0));
+        this->T_CalcShape (GetTIPGradNested<DIM,SIMD<double>> (ir[i]),
+                           SBLambda ([coefs,&sum] (size_t j, auto s)
+                                     {
+                                       auto val = s.Value();
+                                       for (int k = 0; k < DIM; k++)
+                                         sum(k) += coefs(j) * val(k);
+                                     }));
+        for (int j = 0; j < DIM; j++)
+          {
+            for (int k = 0; k < DIM; k++)
+              values(j*DIM+k, i) = sum(j).DValue(k);
+            values(DIM*DIM+j, i) = sum(j).Value();
+          }
+      }
+  }
+
+  template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
+  void T_HCurlHighOrderFiniteElement<ET,SHAPES,BASE> ::
+  AddGradRefTrans (const SIMD_IntegrationRule & ir, BareSliceMatrix<SIMD<double>> values,
+                   BareSliceVector<> coefs) const
+  {
+    if constexpr (DIM == 0) return; else
+    for (size_t i = 0; i < ir.Size(); i++)
+      {
+        Vec<DIM*DIM+DIM,SIMD<double>> vali = values.Col(i);
+        this->T_CalcShape (GetTIPGradNested<DIM,SIMD<double>> (ir[i]),
+                           SBLambda ([vali,coefs] (size_t nr, auto s)
+                                     {
+                                       auto val = s.Value();
+                                       SIMD<double> sum(0.0);
+                                       for (int j = 0; j < DIM; j++)
+                                         {
+                                           for (int k = 0; k < DIM; k++)
+                                             sum += vali(j*DIM+k) * val(j).DValue(k);
+                                           sum += vali(DIM*DIM+j) * val(j).Value();
+                                         }
+                                       coefs(nr) += HSum(sum);
+                                     }));
+      }
+  }
+
+
 #endif
 }
 

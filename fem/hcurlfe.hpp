@@ -189,6 +189,20 @@ namespace ngfem
 
 
     
+    /// reference gradient, dshape(i, j*D+k) = d shape_ij / d xi_k, default: numerical diff
+    NGS_DLL_HEADER virtual void CalcDShape (const IntegrationPoint & ip,
+                                            BareSliceMatrix<> dshape) const;
+
+    /// per shape: D*D gradient entries (as above), then D values
+    NGS_DLL_HEADER virtual void CalcDShape (const SIMD<IntegrationPoint> & ip,
+                                            BareSliceVector<SIMD<double>> dshape) const;
+
+    /// rows: D*D reference gradient, then D values
+    NGS_DLL_HEADER virtual void EvaluateGradRef (const SIMD_IntegrationRule & ir, BareSliceVector<> coefs,
+                                                 BareSliceMatrix<SIMD<double>> values) const;
+    NGS_DLL_HEADER virtual void AddGradRefTrans (const SIMD_IntegrationRule & ir, BareSliceMatrix<SIMD<double>> values,
+                                                 BareSliceVector<> coefs) const;
+
     NGS_DLL_HEADER virtual void CalcDualShape (const BaseMappedIntegrationPoint & bmip, BareSliceMatrix<> shape) const;
 
     NGS_DLL_HEADER virtual void CalcDualShape (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> shape) const;
