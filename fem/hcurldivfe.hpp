@@ -1190,7 +1190,7 @@ namespace ngfem
 
           AutoDiff<3,T> ls = ddlami[fav[0]], le = ddlami[fav[1]], lt = ddlami[fav[2]];
 	  
-	  DubinerBasis::Eval (maxorder_facet, ls, le, ha);
+	  DubinerBasis::Eval (p, ls, le, ha);  // DubinerBasis is not hierarchical
 
           for (int l = 0; l < (p+1)*(p+2)/2.0; l++)
 	    {	      
@@ -1385,10 +1385,8 @@ namespace ngfem
   /**
      The stored facet order is the actual polynomial degree of the
      normal-tangential trace: P_p(F)^2 on a horizontal triangular facet
-     and Q_{p,p}(F)^2 on a vertical quadrilateral facet.  The finite-element
-     space raises the horizontal prism-facet order by one, so that
-     HCurlDiv(order=k-1,orderinner=k) has the reduced RT prism traces
-     P_k(F)^2 and Q_{k-1,k-1}(F)^2.
+     and Q_{p,p}(F)^2 on a vertical quadrilateral facet.
+     GG bubbles are not used on prisms (weak symmetry is stable without).
   */
   template <> class HCurlDivFE<ET_PRISM> : public T_HCurlDivFE<ET_PRISM>
   {
@@ -1423,10 +1421,6 @@ namespace ngfem
       throw Exception("additional trace bubbles are not part of the HCurlDiv prism basis");
     }
 
-    static int GetNGGBubbleDofs (int /* order_inner */)
-    {
-      throw Exception("GG bubbles are not implemented for HCurlDiv prisms");
-    }
 
     virtual void ComputeNDof() override
     {
@@ -1454,8 +1448,6 @@ namespace ngfem
           order = max2(order, order_trace);
         }
 
-      if (GGbubbles)
-        ndof += GetNGGBubbleDofs(order_inner);
     }
 
     template <typename Tx, typename TFA>

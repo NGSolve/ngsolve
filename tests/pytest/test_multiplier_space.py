@@ -30,8 +30,6 @@ spaces = {
 @pytest.mark.parametrize("spacename", spaces)
 @pytest.mark.parametrize("order", [0, 1, 2])
 def test_multiplier_exact(meshname, spacename, order):
-    if meshname == "prism" and spacename == "HCurlDiv":
-        pytest.skip("HCurlDiv has no prism element")
     mesh = meshes[meshname]()
     create, trace, mname = spaces[spacename]
     Xdc = Discontinuous(create(mesh, order))

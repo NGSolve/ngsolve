@@ -407,7 +407,7 @@ namespace ngcomp
     if (types.empty())
       throw Exception("HDiv::CreateStressSpace: no elements");
     for (auto et : types)
-      if (et != ET_TRIG && et != ET_QUAD && et != ET_TET && et != ET_HEX)
+      if (et != ET_TRIG && et != ET_QUAD && et != ET_TET && et != ET_PRISM && et != ET_HEX)
         throw Exception(string("HDiv::CreateStressSpace: element type ")+ToString(et)+" is not supported");
 
     bool simplices = types.count(ET_TRIG) || types.count(ET_TET);

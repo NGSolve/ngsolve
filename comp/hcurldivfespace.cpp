@@ -564,16 +564,6 @@ namespace ngcomp
         continue;
       fine_facet[el.Facets()] = true;
     }
-
-    for (auto el : ma->Elements(VOL))
-      {
-        if (!DefinedOn(el) || el.GetType() != ET_PRISM)
-          continue;
-        for (auto facet : el.Facets())
-          if (ma->GetFacetType(facet) == ET_TRIG)
-            order_facet[facet] = max2(order_facet[facet],
-                                      uniform_order_facet+1);
-      }
     
     ndof = 0;    
     for(auto i : Range(ma->GetNFacets()))
@@ -587,7 +577,6 @@ namespace ngcomp
       }
 
       int of = order_facet[i];
-
       switch(ma->GetFacetType(i))
       {
         case ET_SEGM:
@@ -674,9 +663,6 @@ namespace ngcomp
 
           if (ot > -1)
             ndof += HCurlDivFE<ET_PRISM>::GetNTraceDofs(ot);
-
-          if (GGbubbles)
-            ndof += HCurlDivFE<ET_PRISM>::GetNGGBubbleDofs(oi);
 
           if(discontinuous)
                 {

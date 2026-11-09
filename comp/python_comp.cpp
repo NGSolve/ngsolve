@@ -1695,10 +1695,10 @@ component : int
                                        [&] (Flags flags) { return self->CreateStressSpace(flags, weaksym); });
          }, py::arg("weaksym")=false,
          "HCurlDiv stress space for MCS (mass conserving mixed stress) with this space as velocity\n"
-         "(trigs, quads, tets, hexes): HCurlDiv(order-1, orderinner=order), for BDM and RT;\n"
+         "(trigs, quads, tets, prisms, hexes, also mixed): HCurlDiv(order-1, orderinner=order), for BDM and RT;\n"
          "RT order 1 on trigs uses orderinner=2.\n"
          "weaksym=True: for the weakly symmetric version with HCurlDiv.CreateSymmetryMultiplierSpace(),\n"
-         "adds GGbubbles on trigs and tets (not available on hexes).\n"
+         "adds GGbubbles on trigs and tets (prisms need none; not available on hexes).\n"
          "Discontinuous(S).CreateMultiplierSpace() gives the tangential velocity uhat.\n"
          "The pressure space is CreateDivergenceSpace() of this space (L2(order-1), RT: L2(order)).\n"
          "kwargs (discontinuous, ...) are passed to HCurlDiv, an explicit order disables the automatic choice.")
