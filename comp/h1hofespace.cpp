@@ -1170,13 +1170,8 @@ into the wirebasket.
                  if constexpr (ET == ET_TRIG || ET == ET_QUAD || ET == ET_TET)
                    if (!nodalp2 && hofe->GetNDof() == ET_trait<ET>::PolDimension(order))
                      {
-                       auto vnums = ngel.Vertices();
-                       int cls = 0, bit = 0;
-                       for (int i = 0; i < vnums.Size(); i++)
-                         for (int j = i+1; j < vnums.Size(); j++, bit++)
-                           if (vnums[i] > vnums[j]) cls |= 1 << bit;
                        int row = (ET == ET_TRIG) ? 0 : (ET == ET_QUAD) ? 1 : 2;
-                       hofe -> SetDualInverse (&dual_inverse[row][cls]);
+                       hofe -> SetDualInverse (dual_inverse[row]);
                      }
                  return *hofe;
                });

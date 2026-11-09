@@ -638,7 +638,8 @@ namespace ngfem
     IVec<DIM-1> order_facet[ET_trait<ET>::N_FACET];
     IVec<DIM> order_inner;
 
-    // lazily filled D^-1 for full-order elements, owned by the space
+    // lazily filled D^-1 for full-order elements, owned by the space:
+    // a table with one slot per VertexOrderClass
     std::atomic<double*> * dual_inverse = nullptr;
 
   public:
@@ -646,13 +647,22 @@ namespace ngfem
     T_HCurlCurlFE * SetVertexNumbers (FlatArray<int> vnums) override
     { VertexOrientedFE<ELEMENT_TYPE(ET)>::SetVertexNumbers(vnums); return this; }
 
-    void SetDualInverse (std::atomic<double*> * slot) { dual_inverse = slot; }
+    void SetDualInverse (std::atomic<double*> * table) { dual_inverse = table; }
+
+    // the class is taken from the vertex numbers the element carries now, since a
+    // wrapper space may renumber them after GetFE (PeriodicFESpace does)
+    std::atomic<double*> * DualInverseSlot () const
+    {
+      int cls = this->VertexOrderClass();
+      return (dual_inverse && cls >= 0) ? dual_inverse + cls : nullptr;
+    }
 
     using HCurlCurlFiniteElement<DIM>::SolveDuality;
     bool SolveDuality (SliceMatrix<> x, LocalHeap & lh) const override
     {
-      if (!dual_inverse) return false;
-      FlatMatrix<> inv(ndof, ndof, GetDualInverse<ET,DIM*DIM> (*this, *dual_inverse, lh));
+      auto slot = DualInverseSlot();
+      if (!slot) return false;
+      FlatMatrix<> inv(ndof, ndof, GetDualInverse<ET,DIM*DIM> (*this, *slot, lh));
       HeapReset hr(lh);
       FlatMatrix<> tmp(x.Height(), x.Width(), lh);
       tmp = x;
@@ -665,8 +675,9 @@ namespace ngfem
 
     bool SolveDualityTrans (SliceMatrix<> x, LocalHeap & lh) const override
     {
-      if (!dual_inverse) return false;
-      FlatMatrix<> inv(ndof, ndof, GetDualInverse<ET,DIM*DIM> (*this, *dual_inverse, lh));
+      auto slot = DualInverseSlot();
+      if (!slot) return false;
+      FlatMatrix<> inv(ndof, ndof, GetDualInverse<ET,DIM*DIM> (*this, *slot, lh));
       HeapReset hr(lh);
       FlatMatrix<> tmp(x.Height(), x.Width(), lh);
       tmp = x;

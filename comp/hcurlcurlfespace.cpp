@@ -2157,13 +2157,8 @@ Einstein: Einstein tensor Ein_ij(g) = Ric_ij(g)-0.5*S(g) g_ij
           if (order_edge[e][0] != order) return;
       }
 
-    auto vnums = ngel.Vertices();
-    int cls = 0, bit = 0;
-    for (int i = 0; i < vnums.Size(); i++)
-      for (int j = i+1; j < vnums.Size(); j++, bit++)
-        if (vnums[i] > vnums[j]) cls |= 1 << bit;
     int row = (ET == ET_TRIG) ? 0 : (ET == ET_QUAD) ? 1 : 2;
-    fe->SetDualInverse (&dual_inverse[row][cls]);
+    fe->SetDualInverse (dual_inverse[row]);
   }
 
   FiniteElement & HCurlCurlFESpace :: GetFE (ElementId ei,Allocator & alloc) const

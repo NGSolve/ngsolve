@@ -60,7 +60,8 @@ namespace ngfem
     
     bool nodalp2 = false;
 
-    // lazily filled D^-1 for full-order elements, owned by the space
+    // lazily filled D^-1 for full-order elements, owned by the space:
+    // a table with one slot per VertexOrderClass
     std::atomic<double*> * dual_inverse = nullptr;
 
   public:
@@ -149,16 +150,17 @@ namespace ngfem
         || (ET == ET_HEX) || (ET == ET_TET) || (ET == ET_PYRAMID) || (ET == ET_PRISM) || (ET == ET_POINT);
     }
 
-    void SetDualInverse (std::atomic<double*> * slot) { dual_inverse = slot; }
+    void SetDualInverse (std::atomic<double*> * table) { dual_inverse = table; }
 
     using BASE::SolveDuality;
     bool SolveDuality (SliceMatrix<> x, LocalHeap & lh) const override
     {
-      if (!dual_inverse)
+      auto slot = DualInverseSlot();
+      if (!slot)
         return BASE::SolveDuality (x, lh);
 
       // D^-1 is block lower triangular in V,E,F,C order, with diagonal diagonal blocks
-      FlatMatrix<> inv(ndof, ndof, GetDualInverse(lh));
+      FlatMatrix<> inv(ndof, ndof, GetDualInverse(*slot, lh));
       auto [nv, ne, nf, nc] = GetNDofVEFC();
       int st[] = { 0, nv, nv+ne, nv+ne+nf, int(ndof) };
       if (x.Width() == 1)  // gemv instead of n x 1 gemm
@@ -188,8 +190,9 @@ namespace ngfem
 
     bool SolveDualityTrans (SliceMatrix<> x, LocalHeap & lh) const override
     {
-      if (!dual_inverse) return false;
-      FlatMatrix<> inv(ndof, ndof, GetDualInverse(lh));
+      auto slot = DualInverseSlot();
+      if (!slot) return false;
+      FlatMatrix<> inv(ndof, ndof, GetDualInverse(*slot, lh));
       auto [nv, ne, nf, nc] = GetNDofVEFC();
       int st[] = { 0, nv, nv+ne, nv+ne+nf, int(ndof) };
       if (x.Width() == 1)
@@ -218,9 +221,17 @@ namespace ngfem
     }
 
   private:
-    double * GetDualInverse (LocalHeap & lh) const
+    // the class is taken from the vertex numbers the element carries now, since a
+    // wrapper space may renumber them after GetFE (PeriodicFESpace does)
+    std::atomic<double*> * DualInverseSlot () const
     {
-      double * pinv = dual_inverse->load (std::memory_order_acquire);
+      int cls = this->VertexOrderClass();
+      return (dual_inverse && cls >= 0) ? dual_inverse + cls : nullptr;
+    }
+
+    double * GetDualInverse (std::atomic<double*> & slot, LocalHeap & lh) const
+    {
+      double * pinv = slot.load (std::memory_order_acquire);
       if (!pinv)
         {
           // columns of D^-1 from the matrix-free solve
@@ -234,7 +245,7 @@ namespace ngfem
               this->SolveDuality1 (ej, inv.Col(j), lh);
             }
           double * expected = nullptr;
-          if (!dual_inverse->compare_exchange_strong (expected, pinv, std::memory_order_acq_rel))
+          if (!slot.compare_exchange_strong (expected, pinv, std::memory_order_acq_rel))
             {
               delete [] pinv;
               pinv = expected;

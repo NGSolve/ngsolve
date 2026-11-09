@@ -994,13 +994,7 @@ namespace ngcomp
           else
             for (auto e : ngel.Edges()) same &= order_facet[e][0] == order;
           if (same)
-            {
-              int cls = 0, bit = 0;
-              for (int i = 0; i < ngel.vertices.Size(); i++)
-                for (int j = i+1; j < ngel.vertices.Size(); j++, bit++)
-                  if (ngel.vertices[i] > ngel.vertices[j]) cls |= 1 << bit;
-              hofe -> SetDualInverse (&dual_inverse[ET == ET_TET][cls]);
-            }
+            hofe -> SetDualInverse (dual_inverse[ET == ET_TET]);
         }
     return *hofe;
   }
