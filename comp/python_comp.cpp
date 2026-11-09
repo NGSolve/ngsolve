@@ -1685,8 +1685,13 @@ component : int
   ExportFESpace<HDivHighOrderFESpace> (m, "HDiv")
     .def("Average", &HDivHighOrderFESpace::Average,
          py::arg("vector"))
-    .def("CreateDivergenceSpace", [](shared_ptr<HDivHighOrderFESpace> self)
-         { return self->CreateDivergenceSpace(); },
+    .def("CreateDivergenceSpace", [](shared_ptr<HDivHighOrderFESpace> self, py::kwargs kwargs)
+         {
+           py::list info;
+           info.append(self->GetMeshAccess());
+           auto pyl2 = py::module::import("ngsolve.comp").attr("L2");
+           return self->CreateDivergenceSpace(CreateFlagsFromKwArgs(kwargs, pyl2, info));
+         },
          "L2 space of matching order, containing div of this space.\n"
          "B = BilinearForm(div(u)*q*dx) on (HDiv, L2) is geometry-independent.")
     .def("CreateStressSpace", [fes_class] (shared_ptr<HDivHighOrderFESpace> self, py::kwargs kwargs)
@@ -1769,8 +1774,13 @@ component : int
   ExportFESpace<HDivHighOrderSurfaceFESpace> (m, "HDivSurface")
     .def("Average", &HDivHighOrderSurfaceFESpace::Average,
          py::arg("vector"))
-    .def("CreateDivergenceSpace", [](shared_ptr<HDivHighOrderSurfaceFESpace> self)
-         { return self->CreateDivergenceSpace(); },
+    .def("CreateDivergenceSpace", [](shared_ptr<HDivHighOrderSurfaceFESpace> self, py::kwargs kwargs)
+         {
+           py::list info;
+           info.append(self->GetMeshAccess());
+           auto pyl2 = py::module::import("ngsolve.comp").attr("SurfaceL2");
+           return self->CreateDivergenceSpace(CreateFlagsFromKwArgs(kwargs, pyl2, info));
+         },
          "SurfaceL2 space of matching order, containing the surface div of this space.")
     ;
 

@@ -341,7 +341,7 @@ namespace ngcomp
   }
   
 
-  shared_ptr<FESpace> HDivHighOrderFESpace :: CreateDivergenceSpace() const
+  shared_ptr<FESpace> HDivHighOrderFESpace :: CreateDivergenceSpace(Flags l2flags) const
   {
     auto divorder = [&](ElementId ei)
     {
@@ -350,10 +350,10 @@ namespace ngcomp
       return et_RT[ma->GetElType(ei)] ? p : max(p-1, 0);
     };
 
-    Flags l2flags;
     if (iscomplex) l2flags.SetFlag("complex");
     // element constants are not controlled by local velocity dofs: keep them global for condensation
-    l2flags.SetFlag("lowest_order_wb");
+    if (!l2flags.GetDefineFlagX("lowest_order_wb").IsFalse())
+      l2flags.SetFlag("lowest_order_wb");
     int minorder = std::numeric_limits<int>::max(), maxorder = 0;
     for (auto ei : ma->Elements(VOL))
       if (DefinedOn(ei))

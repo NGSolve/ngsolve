@@ -903,11 +903,10 @@ void HDivHighOrderSurfaceFESpace :: Average (BaseVector & vec) const
     return CreateCompanionSpace(*this, "facetsurface", flags);
   }
 
-  shared_ptr<FESpace> HDivHighOrderSurfaceFESpace :: CreateDivergenceSpace () const
+  shared_ptr<FESpace> HDivHighOrderSurfaceFESpace :: CreateDivergenceSpace (Flags flags) const
   {
     // div onto P_{k-1} / Q_{k-1} (P_k / Q_k with RT); hodivfree: P_0
     auto divorder = [&](ELEMENT_TYPE et) { return ho_div_free ? 0 : (et_RT[et] ? order : max(order-1, 0)); };
-    Flags flags;
     flags.SetFlag("order", divorder(ET_TRIG));
     flags.SetFlag("quadbonus", divorder(ET_QUAD)-divorder(ET_TRIG));
     return CreateCompanionSpace(*this, "l2surf", flags);

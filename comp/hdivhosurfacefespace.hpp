@@ -85,7 +85,7 @@ namespace ngcomp
     shared_ptr<FESpace> CreateMultiplierSpace (Flags flags = Flags()) const override;
 
     // SurfaceL2 space of matching order, containing div of this space
-    shared_ptr<FESpace> CreateDivergenceSpace () const;
+    shared_ptr<FESpace> CreateDivergenceSpace (Flags flags = Flags()) const;
     
     void Update() override;
 
