@@ -1175,6 +1175,20 @@ namespace ngbla
 
 
 
+  // dist conversion must not drop a row/col stride
+  template <ORDERING ORD, typename TDIST, typename TH2, typename TW2, typename TDIST2>
+  constexpr bool IsDistConvertible()
+  {
+    if constexpr (!std::is_same_v<TDIST,unused_dist>)
+      return std::is_constructible_v<TDIST,TDIST2>;
+    else if constexpr (std::is_same_v<TDIST2,unused_dist>)
+      return true;
+    else if constexpr (is_IC<TDIST2>())
+      return std::is_same_v<TDIST2, std::conditional_t<ORD==RowMajor,TW2,TH2>>;
+    else
+      return false;
+  }
+
   template <typename T, ORDERING ORD, typename TH, typename TW, typename TDIST>
   class MatrixView : public MatExpr<MatrixView<T,ORD,TH,TW,TDIST>>
   {
@@ -1481,7 +1495,7 @@ namespace ngbla
               enable_if_t<is_convertible<T2*,T*>::value, int> =0,
               enable_if_t<is_constructible<TH,TH2>::value, int> =0,
               enable_if_t<is_constructible<TW,TW2>::value, int> =0,
-              enable_if_t<is_constructible<TDIST,TDIST2>::value, int> =0>
+              enable_if_t<IsDistConvertible<ORD,TDIST,TH2,TW2,TDIST2>(), int> =0>
     INLINE MatrixView (const MatrixView<T2, ORD, TH2, TW2, TDIST2> & m2)
     // : h{TH(m2.Height())}, w{TW(m2.Width())}, dist{TDIST(m2.Dist())}, data{m2.Data()} { }
       : layout(m2.Data(), TH(m2.Height()), TW(m2.Width()), TDIST(m2.Dist())) {}
@@ -1490,10 +1504,10 @@ namespace ngbla
               enable_if_t<is_convertible<T2*,T*>::value, int> =0,
               enable_if_t<is_constructible<TH,TH2>::value, int> =0,
               enable_if_t<is_constructible<TW,TW2>::value, int> =0,
-              enable_if_t<is_same<unused_dist,TDIST2>::value, int> =0>
+              enable_if_t<is_same<unused_dist,TDIST2>::value && !is_same<unused_dist,TDIST>::value, int> =0>
     INLINE MatrixView (const MatrixView<T2, ORD, TH2, TW2, TDIST2> & m2)
-    // : h{TH(m2.Height())}, w{TW(m2.Width())}, dist{TDIST(m2.Dist())}, data{m2.Data()} { }
-      : layout(m2.Data(), TH(m2.Height()), TW(m2.Width()), TDIST(m2.Dist())) {}
+      : layout(m2.Data(), TH(m2.Height()), TW(m2.Width()),
+               TDIST(ORD==RowMajor ? m2.Width() : m2.Height())) {}
 
     
     /// set height, width, dist, and mem

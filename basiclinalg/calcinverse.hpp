@@ -23,15 +23,10 @@ namespace ngbla
     CalcInverse (SliceMatrix<T>(inv), il);
   }
 
-  template <class T, class T2>
-  inline void CalcInverse (const FlatMatrix<T> m, FlatMatrix<T2> inv)
-  {
-    inv = m;
-    CalcInverse (inv);
-  }
-
-  template <class T, class T2>
-  inline void CalcInverse (const FlatMatrix<T> m, Matrix<T2> & inv)
+  template <typename T, typename TH, typename TW, typename TDIST,
+            typename T2, typename TH2, typename TW2, typename TDIST2>
+  inline void CalcInverse (MatrixView<T,RowMajor,TH,TW,TDIST> m,
+                           MatrixView<T2,RowMajor,TH2,TW2,TDIST2> inv)
   {
     inv = m;
     CalcInverse (inv);
@@ -43,10 +38,10 @@ namespace ngbla
      Calculates the inverse of a Matrix.
   */
 
-  template <typename T>
-  inline Matrix<T> Inverse (const FlatMatrix<T> & m)
+  template <typename T, typename TH, typename TW, typename TDIST>
+  inline auto Inverse (MatrixView<T,RowMajor,TH,TW,TDIST> m)
   {
-    Matrix<T> inv(m.Height(),m.Height());
+    Matrix<std::remove_const_t<T>> inv(m.Height(),m.Height());
     CalcInverse (m, inv);
     return inv;
   }
