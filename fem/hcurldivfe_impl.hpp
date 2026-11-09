@@ -12,6 +12,45 @@
 
 namespace ngfem
 {
+  template <typename T>
+  class T_HCurlDivPrismPolynomialShape
+  {
+    Mat<3,3,AutoDiff<3,T>> sigma;
+
+  public:
+    T_HCurlDivPrismPolynomialShape (Mat<3,3,AutoDiff<3,T>> asigma)
+      : sigma(asigma) { }
+
+    Vec<9,T> Shape() const
+    {
+      Vec<9,T> value;
+      for (int i = 0; i < 3; i++)
+        for (int j = 0; j < 3; j++)
+          value(3*i+j) = sigma(i,j).Value();
+      return value;
+    }
+
+    Vec<3,T> DivShape() const
+    {
+      Vec<3,T> div = T(0.0);
+      for (int i = 0; i < 3; i++)
+        for (int j = 0; j < 3; j++)
+          div(i) += sigma(i,j).DValue(j);
+      return div;
+    }
+
+    Vec<9,T> CurlShape() const
+    {
+      throw Exception("curl is not implemented for HCurlDiv prism shapes");
+    }
+  };
+
+  template <typename T>
+  auto HCurlDivPrismPolynomialShape (Mat<3,3,AutoDiff<3,T>> sigma)
+  {
+    return T_HCurlDivPrismPolynomialShape<T>(sigma);
+  }
+
   /* ############### edge basis functions - div-free ############### */
   /* sigma(grad v) = Curl(grad v), where Curl is the 1D to 2D curl operator */
   template <int D, typename T>  class T_Sigma_gradv;

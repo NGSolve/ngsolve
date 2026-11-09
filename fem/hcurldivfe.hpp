@@ -1171,7 +1171,7 @@ namespace ngfem
       int ii = 0;
       
       int maxorder_facet =
-        max2(order_facet[0],max2(order_facet[1],order_facet[2]));
+        max2(order_facet[0],max2(order_facet[1],max2(order_facet[2],order_facet[3])));
 
       const FACE * faces = ElementTopology::GetFaces(ET_TET).Data();
        
@@ -1379,6 +1379,266 @@ namespace ngfem
             }
 
         }
+    }
+  };
+
+  /**
+     The stored facet order is the actual polynomial degree of the
+     normal-tangential trace: P_p(F)^2 on a horizontal triangular facet
+     and Q_{p,p}(F)^2 on a vertical quadrilateral facet.  The finite-element
+     space raises the horizontal prism-facet order by one, so that
+     HCurlDiv(order=k-1,orderinner=k) has the reduced RT prism traces
+     P_k(F)^2 and Q_{k-1,k-1}(F)^2.
+  */
+  template <> class HCurlDivFE<ET_PRISM> : public T_HCurlDivFE<ET_PRISM>
+  {
+  public:
+    using T_HCurlDivFE<ET_PRISM>::T_HCurlDivFE;
+
+    static int GetNFacetDofs (ELEMENT_TYPE facet_type, int p)
+    {
+      if (p < 0)
+        throw Exception("HCurlDiv prism trace requires orderfacet >= 0");
+
+      switch (facet_type)
+        {
+        case ET_TRIG:
+          // P_p(F)^2.
+          return (p+1)*(p+2);
+        case ET_QUAD:
+          // Q_{p,p}(F)^2.
+          return 2*(p+1)*(p+1);
+        default:
+          throw Exception("Illegal facet type in HCurlDivFE<ET_PRISM>");
+        }
+    }
+
+    static int GetNInnerDofs (int k)
+    {
+      return (k+2)*(4*k*k+8*k+2);
+    }
+
+    static int GetNTraceDofs (int /* order_trace */)
+    {
+      throw Exception("additional trace bubbles are not part of the HCurlDiv prism basis");
+    }
+
+    static int GetNGGBubbleDofs (int /* order_inner */)
+    {
+      throw Exception("GG bubbles are not implemented for HCurlDiv prisms");
+    }
+
+    virtual void ComputeNDof() override
+    {
+      order = 0;
+      ndof = 0;
+
+      for (int i = 0; i < ET_trait<ET_PRISM>::N_FACET; i++)
+        {
+          int p = order_facet[i];
+          ELEMENT_TYPE facet_type = ET_trait<ET_PRISM>::FaceType(i);
+          ndof += GetNFacetDofs(facet_type, p);
+
+          // Facet extensions contain one additional linear factor in the
+          // direction normal to the facet.
+          int facet_degree = p+1;
+          order = max2(order, facet_degree);
+        }
+
+      ndof += GetNInnerDofs(order_inner);
+      order = max2(order, order_inner+1);
+
+      if (order_trace > -1)
+        {
+          ndof += GetNTraceDofs(order_trace);
+          order = max2(order, order_trace);
+        }
+
+      if (GGbubbles)
+        ndof += GetNGGBubbleDofs(order_inner);
+    }
+
+    template <typename Tx, typename TFA>
+    void T_CalcShape (TIP<3,Tx> ip, TFA & shape) const
+    {
+      auto x = ip.x, y = ip.y, z = ip.z;
+      typedef decltype(x.Value()+x.Value()) T;
+      typedef AutoDiff<3,T> AD;
+
+      AD xx(x.Value(), &x.DValue(0));
+      AD yy(y.Value(), &y.DValue(0));
+      AD zz(z.Value(), &z.DValue(0));
+
+      // Barycentric coordinates in NGSolve's prism vertex ordering.  They
+      // are used for the common tetrahedron-prism triangular trace basis.
+      AD lami[6] = { xx, yy, 1-xx-yy, xx, yy, 1-xx-yy };
+      AD lamx[3] = { 1-xx-yy, xx, yy };
+      AD lamz[2] = { 1-zz, zz };
+
+      Vec<3,T> covariant[3];
+      for (int j = 0; j < 3; j++)
+        {
+          covariant[0](j) = xx.DValue(j);
+          covariant[1](j) = yy.DValue(j);
+          covariant[2](j) = zz.DValue(j);
+        }
+      Vec<3,T> piola[3] =
+        {
+          Cross(covariant[1], covariant[2]),
+          Cross(covariant[2], covariant[0]),
+          Cross(covariant[0], covariant[1])
+        };
+
+      Mat<3,3,AD> sz0[3], sz1[3], sx[2], sxz;
+      for (int i = 0; i < 3; i++)
+        for (int j = 0; j < 3; j++)
+          {
+            sxz(i,j) = 0.0;
+            for (int m = 0; m < 3; m++)
+              {
+                sz0[m](i,j) = 0.0;
+                sz1[m](i,j) = 0.0;
+              }
+            for (int l = 0; l < 2; l++)
+              sx[l](i,j) = 0.0;
+          }
+
+      sz0[0](0,0) = -0.5;
+      sz0[0](1,1) =  0.5;
+      sz1[0](2,0) = xx;
+      sz1[0](2,1) = yy;
+
+      sz0[1](0,0) =  0.5;
+      sz0[1](1,0) =  1.0;
+      sz0[1](1,1) = -0.5;
+      sz1[1](2,0) = xx-1.0;
+      sz1[1](2,1) = yy;
+
+      sz0[2](0,0) =  0.5;
+      sz0[2](0,1) = -1.0;
+      sz0[2](1,1) = -0.5;
+      sz1[2](2,0) = xx;
+      sz1[2](2,1) = yy-1.0;
+
+      sx[0](0,2) = 1.0;
+      sx[1](1,2) = 1.0;
+      sxz(0,0) = -0.5;
+      sxz(1,1) = -0.5;
+      sxz(2,2) =  1.0;
+
+      int ii = 0;
+      auto add_shape = [&] (AD polynomial, const Mat<3,3,AD> & sigma_ref)
+        {
+          Mat<3,3,AD> sigma;
+          for (int i = 0; i < 3; i++)
+            for (int j = 0; j < 3; j++)
+              {
+                sigma(i,j) = 0.0;
+                for (int r = 0; r < 3; r++)
+                  for (int c = 0; c < 3; c++)
+                    sigma(i,j) += polynomial * sigma_ref(r,c)
+                      * covariant[r](i) * piola[c](j);
+              }
+          shape[ii++] = HCurlDivPrismPolynomialShape(sigma);
+        };
+
+      // Horizontal triangular facets: P_p(F)^2.  This is the same oriented
+      // trace basis as on tetrahedra.  Only the extension into the volume is
+      // different: lamz[fa] equals one on the selected horizontal facet and
+      // vanishes on the opposite one.
+      for (int fa = 0; fa < 2; fa++)
+        {
+          int p = order_facet[fa];
+          IVec<4> fav = ET_trait<ET_PRISM>::GetFaceSort(fa, vnums);
+          AD ls = lami[fav[0]];
+          AD le = lami[fav[1]];
+          AD lt = lami[fav[2]];
+
+          ArrayMem<AD,20> facet_polynomials((p+1)*(p+2)/2);
+          DubinerBasis::Eval(p, ls, le, facet_polynomials);
+
+          for (int l = 0; l < (p+1)*(p+2)/2; l++)
+            {
+              AD extension = lamz[fa]*facet_polynomials[l];
+              shape[ii++] = T_Dl1_o_Dl2xDl3_v<T>(le,ls,lt,extension);
+              shape[ii++] = T_Dl1_o_Dl2xDl3_v<T>(ls,lt,le,extension);
+            }
+        }
+
+      // Vertical quadrilateral facets: Q_{p,p}(F)^2
+      int paper_vertex[3] = { 2, 0, 1 };
+      int ngsolve_vertex[3] = { 2, 0, 1 };
+      for (int fa = 2; fa < 5; fa++)
+        {
+          int p = order_facet[fa];
+          int m = paper_vertex[fa-2];
+          int e0 = (m+1)%3;
+          int e1 = (m+2)%3;
+          double edge_sign = 1.0;
+          if (vnums[ngsolve_vertex[e0]] > vnums[ngsolve_vertex[e1]])
+            {
+              swap(e0, e1);
+              edge_sign = -1.0;
+            }
+
+          ArrayMem<AD,20> edgepol(p+2), zpol(p+2);
+          ScaledLegendrePolynomial(p,
+                                   lamx[e0]-lamx[e1], lamx[e0]+lamx[e1],
+                                   edgepol);
+          LegendrePolynomial::Eval(p, 2*zz-1, zpol);
+
+          for (int i = 0; i <= p; i++)
+            for (int j = 0; j <= p; j++)
+              add_shape(edgepol[i]*zpol[j], sz0[m]);
+          for (int i = 0; i <= p; i++)
+            for (int j = 0; j <= p; j++)
+              add_shape(edge_sign*edgepol[i]*zpol[j], sz1[m]);
+        }
+
+      int k = order_inner;
+      ArrayMem<AD,20> polx(k+2), poly(k+2), zpol(k+2);
+      ScaledLegendrePolynomial(k+1,
+                               lamx[0]-lamx[1], lamx[0]+lamx[1],
+                               polx);
+      LegendrePolynomial::Eval(k+1, 1-2*lamx[2], poly);
+      LegendrePolynomial::Eval(k+1, 2*zz-1, zpol);
+
+      // B^z_{m,0}: P_x^k tensor P_z^k
+      for (int m = 0; m < 3; m++)
+        for (int i = 0; i <= k; i++)
+          for (int j = 0; i+j <= k; j++)
+            for (int l = 0; l <= k; l++)
+              add_shape(polx[i]*poly[j]*zpol[l]*lamx[m], sz0[m]);
+
+      // B^z_{m,1}: P_x^{k-1} tensor P_z^{k+1}
+      for (int m = 0; m < 2; m++)
+        for (int i = 0; i <= k-1; i++)
+          for (int j = 0; i+j <= k-1; j++)
+            for (int l = 0; l <= k+1; l++)
+              add_shape(polx[i]*poly[j]*zpol[l]*lamx[m], sz1[m]);
+
+      // B^x_l: P_x^{k+1} tensor P_z^{k-1}
+      for (int m = 0; m < 2; m++)
+        for (int i = 0; i <= k+1; i++)
+          for (int j = 0; i+j <= k+1; j++)
+            for (int l = 0; l <= k-1; l++)
+              add_shape(polx[i]*poly[j]*zpol[l]*lamz[0]*lamz[1], sx[m]);
+
+      // B^{xz}: P_x^k tensor P_z^k
+      for (int i = 0; i <= k; i++)
+        for (int j = 0; i+j <= k; j++)
+          for (int l = 0; l <= k; l++)
+            add_shape(polx[i]*poly[j]*zpol[l], sxz);
+
+      if (ii != ndof)
+        throw Exception("inconsistent HCurlDiv prism shape count: got "
+                        +ToString(ii)+", expected "+ToString(ndof));
+    }
+
+    template <typename MIP, typename TFA>
+    void CalcDualShape2 (const MIP & /* mip */, TFA & /* shape */) const
+    {
+      throw Exception("HCurlDiv prism dual shape functions are not implemented yet");
     }
   };
 

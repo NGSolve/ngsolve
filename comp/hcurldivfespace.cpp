@@ -564,6 +564,16 @@ namespace ngcomp
         continue;
       fine_facet[el.Facets()] = true;
     }
+
+    for (auto el : ma->Elements(VOL))
+      {
+        if (!DefinedOn(el) || el.GetType() != ET_PRISM)
+          continue;
+        for (auto facet : el.Facets())
+          if (ma->GetFacetType(facet) == ET_TRIG)
+            order_facet[facet] = max2(order_facet[facet],
+                                      uniform_order_facet+1);
+      }
     
     ndof = 0;    
     for(auto i : Range(ma->GetNFacets()))
@@ -577,6 +587,7 @@ namespace ngcomp
       }
 
       int of = order_facet[i];
+
       switch(ma->GetFacetType(i))
       {
         case ET_SEGM:
@@ -656,6 +667,21 @@ namespace ngcomp
                 {
                   for (auto f : ma->GetElFacets(ei))
                     ndof += first_facet_dof[f+1] - first_facet_dof[f];            
+                }
+          break;
+      case ET_PRISM:
+          ndof += HCurlDivFE<ET_PRISM>::GetNInnerDofs(oi);
+
+          if (ot > -1)
+            ndof += HCurlDivFE<ET_PRISM>::GetNTraceDofs(ot);
+
+          if (GGbubbles)
+            ndof += HCurlDivFE<ET_PRISM>::GetNGGBubbleDofs(oi);
+
+          if(discontinuous)
+                {
+                  for (auto f : ma->GetElFacets(ei))
+                    ndof += first_facet_dof[f+1] - first_facet_dof[f];
                 }
           break;
       case ET_HEX:	
@@ -809,6 +835,11 @@ namespace ngcomp
         
           break;*/
 
+      case ET_PRISM:
+        for (auto dof : innerdofs)
+          ctofdof[dof] = LOCAL_DOF;
+        break;
+
       case ET_HEX:
         diag_offset = 2 * (oi+1)*(oi+1)*(oi+1);
         //dev-diagonal dofs
@@ -896,6 +927,11 @@ namespace ngcomp
     {
       if(!discontinuous)
       {
+        int facet_nr = ei.Nr();
+        if (ma->GetDimension() == 3)
+          facet_nr = ma->GetSElFace(ei.Nr());
+        int surface_order = order_facet[facet_nr];
+
         auto feseg = new (alloc) HCurlDivSurfaceFE<ET_SEGM> (order);
         auto fetr = new (alloc) HCurlDivSurfaceFE<ET_TRIG> (order);
         auto fequ = new (alloc) HCurlDivSurfaceFE<ET_QUAD> (order);
@@ -904,17 +940,17 @@ namespace ngcomp
         {
           case ET_SEGM:  
             feseg->SetVertexNumbers (ngel.Vertices());
-            feseg->SetOrderInner(order_facet[ei.Nr()]);
+            feseg->SetOrderInner(surface_order);
             feseg->ComputeNDof();
             return *feseg;
           case ET_TRIG:          
             fetr->SetVertexNumbers (ngel.Vertices());
-            fetr->SetOrderInner(order_facet[ei.Nr()]);
+            fetr->SetOrderInner(surface_order);
             fetr->ComputeNDof();
             return *fetr;
           case ET_QUAD:          
             fequ->SetVertexNumbers (ngel.Vertices());
-            fequ->SetOrderInner(order_facet[ei.Nr()]);
+            fequ->SetOrderInner(surface_order);
             fequ->ComputeNDof();
             return *fequ;
           
@@ -949,6 +985,7 @@ namespace ngcomp
       case ET_TRIG: return T_GetFE<ET_TRIG> (ei, alloc);      
       case ET_QUAD: return T_GetFE<ET_QUAD> (ei, alloc);
       case ET_TET: return T_GetFE<ET_TET>   (ei, alloc);
+      case ET_PRISM: return T_GetFE<ET_PRISM> (ei, alloc);
       
       case ET_HEX: return T_GetFE<ET_HEX>   (ei, alloc);
       default:
