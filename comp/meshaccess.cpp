@@ -136,32 +136,19 @@ namespace ngcomp
 
     virtual void VCalcHesse (const SIMD<ngfem::IntegrationPoint> & ip, SIMD<double> * hesse) const override
     {
-      double eps = 1e-4;
-      Mat<4*DIMS,DIMS,SIMD<double>> pnts;
-      for (int i = 0; i < DIMS; i++)
+      if constexpr (DIMS > 0)
         {
+          SIMD<double> xi[DIMS];
           for (int j = 0; j < DIMS; j++)
-	    pnts(2*i,j) = pnts(2*i+1, j) = pnts(2*(i+DIMS), j) = pnts(2*(i+DIMS)+1, j)= ip(j); 
-          pnts(2*i,i) += eps;
-          pnts(2*i+1,i) -= eps;
-	  pnts(2*(i+DIMS),i) += 2*eps;
-	  pnts(2*(i+DIMS)+1,i) -= 2*eps;
+            xi[j] = ip(j);
+          mesh->mesh.MultiElementHesse<DIMS,DIMR> (elnr, 1, xi, DIMS, hesse, DIMR*DIMS*DIMS);
         }
+    }
 
-      Mat<4*DIMS,DIMR,SIMD<double>> x;
-      Mat<4*DIMS,DIMR*DIMS,SIMD<double>> dx;
-
-      mesh->mesh.MultiElementTransformation <DIMS,DIMR>
-        (elnr, 4*DIMS,
-         &pnts(0,0), &pnts(1,0)-&pnts(0,0),
-         &x(0,0), &x(1,0)-&x(0,0),
-         &dx(0,0), &dx(1,0)-&dx(0,0));
-      
-      for (int i = 0; i < DIMR; i++)
-        for (int j = 0; j < DIMS; j++)
-          for (int k = 0; k < DIMS; k++)
-	    hesse[i*DIMS*DIMS + j*DIMS + k] = (8.0*dx(2*j, i*DIMS+k) - 8.0*dx(2*j+1, i*DIMS+k) - dx(2*(j+DIMS), i*DIMS+k) + dx(2*(j+DIMS)+1, i*DIMS+k)) / (12.0*eps);
-      //hesse[i*DIMS*DIMS + j*DIMS + k] = (dx(2*j, i*DIMS+k) - dx(2*j+1, i*DIMS+k) ) / (2*eps);
+    virtual void VCalcHesse (const IntegrationPoint & ip, double * hesse) const override
+    {
+      if constexpr (DIMS > 0)
+        mesh->mesh.MultiElementHesse<DIMS,DIMR> (elnr, 1, &ip(0), DIMS, hesse, DIMR*DIMS*DIMS);
     }
 
     virtual BaseMappedIntegrationRule & operator() (const IntegrationRule & ir, Allocator & lh) const override
@@ -418,6 +405,11 @@ namespace ngcomp
       
       for (int i = 0; i < ir.Size(); i++)
         mir[i].Compute();
+    }
+
+    virtual void VCalcHesse (const IntegrationPoint & ip, double * hesse) const override
+    {
+      ElementTransformation::VCalcHesse (ip, hesse);
     }
 
     virtual void VCalcHesse (const SIMD<ngfem::IntegrationPoint> & ip, SIMD<double> * hesse) const override
@@ -687,6 +679,12 @@ namespace ngcomp
     {
       for (size_t i = 0; i < DIMS*DIMS*DIMR; i++)
         hesse[i] = SIMD<double>(0);
+    }
+
+    virtual void VCalcHesse (const IntegrationPoint & ip, double * hesse) const override
+    {
+      for (size_t i = 0; i < DIMS*DIMS*DIMR; i++)
+        hesse[i] = 0;
     }
 
     virtual bool BelongsToMesh (const void * mesh2) const override 

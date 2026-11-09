@@ -25,7 +25,32 @@ namespace ngfem
 
   void ElementTransformation :: VCalcHesse (const SIMD<ngfem::IntegrationPoint> & ip, SIMD<double> * hesse) const
   {
-    cout << "ElementTransformation::VCalcHesse not overloaded for " << typeid(*this).name() << endl;
+    constexpr size_t NL = SIMD<double>::Size();
+    int n = ElementDim()*ElementDim()*SpaceDim();
+    double h[NL][27];
+    for (size_t l = 0; l < NL; l++)
+      VCalcHesse (ip[l], h[l]);
+    for (int i = 0; i < n; i++)
+      hesse[i] = SIMD<double> ([&](size_t l) { return h[l][i]; });
+  }
+
+  void ElementTransformation :: VCalcHesse (const IntegrationPoint & ip, double * hesse) const
+  {
+    int ds = ElementDim(), dr = SpaceDim();
+    double eps = 1e-6;
+    double memr[9], meml[9];
+    FlatMatrix<> jacr(dr, ds, memr), jacl(dr, ds, meml);
+    for (int dir = 0; dir < ds; dir++)
+      {
+        IntegrationPoint ipr = ip, ipl = ip;
+        ipr(dir) += eps;
+        ipl(dir) -= eps;
+        CalcJacobian (ipr, jacr);
+        CalcJacobian (ipl, jacl);
+        for (int i = 0; i < dr; i++)
+          for (int j = 0; j < ds; j++)
+            hesse[i*ds*ds + dir*ds + j] = (jacr(i,j) - jacl(i,j)) / (2*eps);
+      }
   }
   
   void ElementTransformation :: CalcMultiPointJacobian (const SIMD_IntegrationRule & ir,

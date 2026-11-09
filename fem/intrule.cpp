@@ -213,6 +213,13 @@ namespace ngfem
   void MappedIntegrationPoint<S,R,SCAL> :: 
   CalcHesse (Mat<2> & ddx1, Mat<2> & ddx2) const
   {
+    if constexpr (S == 2 && R == 2)
+      {
+        Vec<2,Mat<2,2>> h;
+        CalcHesse (h);
+        ddx1 = h(0); ddx2 = h(1);
+        return;
+      }
     double eps = 1e-6;
 
     Mat<2> jacr, jacl;
@@ -237,6 +244,13 @@ namespace ngfem
   void MappedIntegrationPoint<S,R,SCAL> ::
   CalcHesse (Mat<1> & ddx1, Mat<1> & ddx2) const
   {
+    if constexpr (S == 1 && R == 2)
+      {
+        Vec<2,Mat<1,1>> h;
+        CalcHesse (h);
+        ddx1 = h(0); ddx2 = h(1);
+        return;
+      }
     //if (S == R)
     //  {
     //    this -> CalcHesse(ddx1, ddx2);
@@ -270,6 +284,13 @@ namespace ngfem
   void MappedIntegrationPoint<S,R,SCAL> ::
   CalcHesse (Mat<1> & ddx1, Mat<1> & ddx2, Mat<1> & ddx3) const
   {
+    if constexpr (S == 1 && R == 3)
+      {
+        Vec<3,Mat<1,1>> h;
+        CalcHesse (h);
+        ddx1 = h(0); ddx2 = h(1); ddx3 = h(2);
+        return;
+      }
     //if (S == R)
     //  {
     //    this -> CalcHesse(ddx1, ddx2);
@@ -306,6 +327,13 @@ namespace ngfem
   void MappedIntegrationPoint<S,R,SCAL> :: 
   CalcHesse (Mat<3> & ddx1, Mat<3> & ddx2, Mat<3> & ddx3) const
   {
+    if constexpr (S == 3 && R == 3)
+      {
+        Vec<3,Mat<3,3>> h;
+        CalcHesse (h);
+        ddx1 = h(0); ddx2 = h(1); ddx3 = h(2);
+        return;
+      }
     double eps = 1e-6;
 
     Mat<3> jacr, jacl;
@@ -331,6 +359,13 @@ namespace ngfem
   void MappedIntegrationPoint<S,R,SCAL> :: 
   CalcHesse (Mat<2> & ddx1, Mat<2> & ddx2, Mat<2> & ddx3) const
   {
+    if constexpr (S == 2 && R == 3)
+      {
+        Vec<3,Mat<2,2>> h;
+        CalcHesse (h);
+        ddx1 = h(0); ddx2 = h(1); ddx3 = h(2);
+        return;
+      }
     if (S == R)
       {
         this -> CalcHesse(ddx1, ddx2);
@@ -365,21 +400,8 @@ namespace ngfem
     void MappedIntegrationPoint<DIMS,DIMR,SCAL>::
     CalcHesse (Vec<DIMR,Mat<DIMS,DIMS>> & ddx) const
   {
-    double eps = 1e-6;
-    Mat<DIMR,DIMS> jacr, jacl;
-    for (int dir = 0; dir < DIMS; dir++)
-      {
-        IntegrationPoint ipr = this->IP();
-        IntegrationPoint ipl = this->IP();
-        ipr(dir) += eps;
-        ipl(dir) -= eps;
-        this->eltrans->CalcJacobian (ipr, jacr);    
-        this->eltrans->CalcJacobian (ipl, jacl);    
-        
-        for (int j = 0; j < DIMS; j++)
-          for (int k = 0; k < DIMR; k++)
-            ddx(k)(dir,j) = (jacr(k,j) - jacl(k,j) ) / (2*eps);
-      }
+    if constexpr (DIMS > 0)
+      this->eltrans->VCalcHesse (this->IP(), &ddx(0)(0,0));
   }
 
 
@@ -4851,23 +4873,8 @@ namespace ngcore
   void SIMD<ngfem::MappedIntegrationPoint<DIMS,DIMR>>::
   CalcHesse (Vec<DIMR,Mat<DIMS,DIMS,SIMD<double>>> & ddx) const
   {
-    double eps = 1e-6;
-    LocalHeapMem<2500*SIMD<double>::Size()> lh("calchesse");
-    ngfem::SIMD_IntegrationRule ir(2*SIMD<double>::Size(), lh);  // number of scalar pnts
-    
-    for (int dir = 0; dir < DIMS; dir++)
-      {
-        ir[0] = this->IP();
-        ir[0](dir) += eps;
-        ir[1] = this->IP();
-        ir[1](dir) -= eps;
-        ngfem::SIMD_MappedIntegrationRule<DIMS,DIMR> mir(ir, *this->eltrans, lh);
-        auto jacr = mir[0].GetJacobian();
-        auto jacl = mir[1].GetJacobian();
-        for (int k = 0; k < DIMR; k++)
-          for (int j = 0; j < DIMS; j++)
-            ddx(k)(dir,j) = (jacr(k,j) - jacl(k,j) ) / (2*eps);
-      }
+    if constexpr (DIMS > 0)
+      this->eltrans->VCalcHesse (this->IP(), &ddx(0)(0,0));
   }
   
   template class SIMD<ngfem::MappedIntegrationPoint<0,0>>;

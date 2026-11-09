@@ -170,6 +170,8 @@ namespace ngfem
       VCalcHesse (ip, &hesse(0)(0,0));
     }
     virtual void VCalcHesse (const SIMD<ngfem::IntegrationPoint> & ip, SIMD<double> * hesse) const;
+    // d^2 x_i / dxi_j dxi_k at hesse[i*D*D+j*D+k], D = ElementDim(); default: differences of the Jacobian
+    virtual void VCalcHesse (const IntegrationPoint & ip, double * hesse) const;
         
     virtual bool BelongsToMesh (const void * mesh) const { return true; }
     virtual const void * GetMesh () const { return NULL; }
