@@ -1450,38 +1450,11 @@ namespace ngfem
 
     }
 
-    template <typename Tx, typename TFA>
-    void T_CalcShape (TIP<3,Tx> ip, TFA & shape) const
+    // reference matrices of the shapes, sigma = F^{-T} (poly*S) F^T / J
+    template <typename TA>
+    static void RefMatrices (TA xx, TA yy, Mat<3,3,TA> (&sz0)[3], Mat<3,3,TA> (&sz1)[3],
+                             Mat<3,3,TA> (&sx)[2], Mat<3,3,TA> & sxz)
     {
-      auto x = ip.x, y = ip.y, z = ip.z;
-      typedef decltype(x.Value()+x.Value()) T;
-      typedef AutoDiff<3,T> AD;
-
-      AD xx(x.Value(), &x.DValue(0));
-      AD yy(y.Value(), &y.DValue(0));
-      AD zz(z.Value(), &z.DValue(0));
-
-      // Barycentric coordinates in NGSolve's prism vertex ordering.  They
-      // are used for the common tetrahedron-prism triangular trace basis.
-      AD lami[6] = { xx, yy, 1-xx-yy, xx, yy, 1-xx-yy };
-      AD lamx[3] = { 1-xx-yy, xx, yy };
-      AD lamz[2] = { 1-zz, zz };
-
-      Vec<3,T> covariant[3];
-      for (int j = 0; j < 3; j++)
-        {
-          covariant[0](j) = xx.DValue(j);
-          covariant[1](j) = yy.DValue(j);
-          covariant[2](j) = zz.DValue(j);
-        }
-      Vec<3,T> piola[3] =
-        {
-          Cross(covariant[1], covariant[2]),
-          Cross(covariant[2], covariant[0]),
-          Cross(covariant[0], covariant[1])
-        };
-
-      Mat<3,3,AD> sz0[3], sz1[3], sx[2], sxz;
       for (int i = 0; i < 3; i++)
         for (int j = 0; j < 3; j++)
           {
@@ -1517,6 +1490,84 @@ namespace ngfem
       sxz(0,0) = -0.5;
       sxz(1,1) = -0.5;
       sxz(2,2) =  1.0;
+    }
+
+    // inner shapes as (polynomial, reference matrix), shared by shapes and dual shapes
+    template <typename TA, typename FUNC>
+    void InnerShapes (TA xx, TA yy, TA zz, Mat<3,3,TA> (&sz0)[3], Mat<3,3,TA> (&sz1)[3],
+                      Mat<3,3,TA> (&sx)[2], Mat<3,3,TA> & sxz, FUNC && add_shape) const
+    {
+      TA lamx[3] = { 1-xx-yy, xx, yy };
+      TA lamz[2] = { 1-zz, zz };
+      int k = order_inner;
+      ArrayMem<TA,20> polx(k+2), poly(k+2), zpol(k+2);
+      ScaledLegendrePolynomial(k+1,
+                               lamx[0]-lamx[1], lamx[0]+lamx[1],
+                               polx);
+      LegendrePolynomial::Eval(k+1, 1-2*lamx[2], poly);
+      LegendrePolynomial::Eval(k+1, 2*zz-1, zpol);
+
+      // B^z_{m,0}: P_x^k tensor P_z^k
+      for (int m = 0; m < 3; m++)
+        for (int i = 0; i <= k; i++)
+          for (int j = 0; i+j <= k; j++)
+            for (int l = 0; l <= k; l++)
+              add_shape(polx[i]*poly[j]*zpol[l]*lamx[m], sz0[m]);
+
+      // B^z_{m,1}: P_x^{k-1} tensor P_z^{k+1}
+      for (int m = 0; m < 2; m++)
+        for (int i = 0; i <= k-1; i++)
+          for (int j = 0; i+j <= k-1; j++)
+            for (int l = 0; l <= k+1; l++)
+              add_shape(polx[i]*poly[j]*zpol[l]*lamx[m], sz1[m]);
+
+      // B^x_l: P_x^{k+1} tensor P_z^{k-1}
+      for (int m = 0; m < 2; m++)
+        for (int i = 0; i <= k+1; i++)
+          for (int j = 0; i+j <= k+1; j++)
+            for (int l = 0; l <= k-1; l++)
+              add_shape(polx[i]*poly[j]*zpol[l]*lamz[0]*lamz[1], sx[m]);
+
+      // B^{xz}: P_x^k tensor P_z^k
+      for (int i = 0; i <= k; i++)
+        for (int j = 0; i+j <= k; j++)
+          for (int l = 0; l <= k; l++)
+            add_shape(polx[i]*poly[j]*zpol[l], sxz);
+    }
+
+    template <typename Tx, typename TFA>
+    void T_CalcShape (TIP<3,Tx> ip, TFA & shape) const
+    {
+      auto x = ip.x, y = ip.y, z = ip.z;
+      typedef decltype(x.Value()+x.Value()) T;
+      typedef AutoDiff<3,T> AD;
+
+      AD xx(x.Value(), &x.DValue(0));
+      AD yy(y.Value(), &y.DValue(0));
+      AD zz(z.Value(), &z.DValue(0));
+
+      // Barycentric coordinates in NGSolve's prism vertex ordering.  They
+      // are used for the common tetrahedron-prism triangular trace basis.
+      AD lami[6] = { xx, yy, 1-xx-yy, xx, yy, 1-xx-yy };
+      AD lamx[3] = { 1-xx-yy, xx, yy };
+      AD lamz[2] = { 1-zz, zz };
+
+      Vec<3,T> covariant[3];
+      for (int j = 0; j < 3; j++)
+        {
+          covariant[0](j) = xx.DValue(j);
+          covariant[1](j) = yy.DValue(j);
+          covariant[2](j) = zz.DValue(j);
+        }
+      Vec<3,T> piola[3] =
+        {
+          Cross(covariant[1], covariant[2]),
+          Cross(covariant[2], covariant[0]),
+          Cross(covariant[0], covariant[1])
+        };
+
+      Mat<3,3,AD> sz0[3], sz1[3], sx[2], sxz;
+      RefMatrices(xx, yy, sz0, sz1, sx, sxz);
 
       int ii = 0;
       auto add_shape = [&] (AD polynomial, const Mat<3,3,AD> & sigma_ref)
@@ -1587,54 +1638,94 @@ namespace ngfem
               add_shape(edge_sign*edgepol[i]*zpol[j], sz1[m]);
         }
 
-      int k = order_inner;
-      ArrayMem<AD,20> polx(k+2), poly(k+2), zpol(k+2);
-      ScaledLegendrePolynomial(k+1,
-                               lamx[0]-lamx[1], lamx[0]+lamx[1],
-                               polx);
-      LegendrePolynomial::Eval(k+1, 1-2*lamx[2], poly);
-      LegendrePolynomial::Eval(k+1, 2*zz-1, zpol);
-
-      // B^z_{m,0}: P_x^k tensor P_z^k
-      for (int m = 0; m < 3; m++)
-        for (int i = 0; i <= k; i++)
-          for (int j = 0; i+j <= k; j++)
-            for (int l = 0; l <= k; l++)
-              add_shape(polx[i]*poly[j]*zpol[l]*lamx[m], sz0[m]);
-
-      // B^z_{m,1}: P_x^{k-1} tensor P_z^{k+1}
-      for (int m = 0; m < 2; m++)
-        for (int i = 0; i <= k-1; i++)
-          for (int j = 0; i+j <= k-1; j++)
-            for (int l = 0; l <= k+1; l++)
-              add_shape(polx[i]*poly[j]*zpol[l]*lamx[m], sz1[m]);
-
-      // B^x_l: P_x^{k+1} tensor P_z^{k-1}
-      for (int m = 0; m < 2; m++)
-        for (int i = 0; i <= k+1; i++)
-          for (int j = 0; i+j <= k+1; j++)
-            for (int l = 0; l <= k-1; l++)
-              add_shape(polx[i]*poly[j]*zpol[l]*lamz[0]*lamz[1], sx[m]);
-
-      // B^{xz}: P_x^k tensor P_z^k
-      for (int i = 0; i <= k; i++)
-        for (int j = 0; i+j <= k; j++)
-          for (int l = 0; l <= k; l++)
-            add_shape(polx[i]*poly[j]*zpol[l], sxz);
+      InnerShapes(xx, yy, zz, sz0, sz1, sx, sxz, add_shape);
 
       if (ii != ndof)
         throw Exception("inconsistent HCurlDiv prism shape count: got "
                         +ToString(ii)+", expected "+ToString(ndof));
     }
 
+    // facet duals: sigma_nt moments against P_p(F)^2 (trig) and Q_p(F)^2 (quad),
+    // inner duals: inner shapes mapped by F S F^{-1}, pairing is geometry free
     template <typename MIP, typename TFA>
-    void CalcDualShape2 (const MIP & /* mip */, TFA & /* shape */) const
+    void CalcDualShape2 (const MIP & mip, TFA & shape) const
     {
-      throw Exception("HCurlDiv prism dual shape functions are not implemented yet");
+      typedef typename std::remove_const<typename std::remove_reference<decltype(mip.IP()(0))>::type>::type T;
+      auto & ip = mip.IP();
+      T x = ip(0), y = ip(1), z = ip(2);
+      T lami[6] = { x, y, 1-x-y, x, y, 1-x-y };
+      const POINT3D * verts = ElementTopology::GetVertices(ET_PRISM);
+      const FACE * faces = ElementTopology::GetFaces(ET_PRISM).Data();
+      int facetnr = ip.FacetNr();
+      int ii = 0;
+
+      auto facet_dyads = [&] (Vec<3,T> tauref1, Vec<3,T> tauref2, auto & nt1, auto & nt2)
+        {
+          Vec<3,T> nvref = Cross(tauref1, tauref2);
+          auto nv = L2Norm(nvref) / L2Norm(Trans(mip.GetJacobianInverse())*nvref) * Trans(mip.GetJacobianInverse())*nvref;
+          nt1 = DyadProd(mip.GetJacobian()*tauref1, nv);
+          nt2 = DyadProd(mip.GetJacobian()*tauref2, nv);
+        };
+
+      for (int i = 0; i < 5; i++)
+        {
+          int p = order_facet[i];
+          if (ip.VB() == BND && i == facetnr)
+            {
+              Mat<3,3,T> nt1, nt2;
+              if (i < 2)
+                {
+                  IVec<4> fav = ET_trait<ET_PRISM>::GetFaceSort (i, vnums);
+                  Vec<3> v0, v1, v2;
+                  for (int d = 0; d < 3; d++)
+                    { v0(d) = verts[fav[0]][d]; v1(d) = verts[fav[1]][d]; v2(d) = verts[fav[2]][d]; }
+                  facet_dyads (v1-v2, v2-v0, nt1, nt2);
+                  DubinerBasis::Eval
+                    (p, lami[fav[1]]-lami[fav[2]], lami[fav[1]]-lami[fav[0]],
+                     SBLambda([&] (size_t nr, T val)
+                              {
+                                shape[ii++] = val*nt1;
+                                shape[ii++] = val*nt2;
+                              }));
+                }
+              else
+                {
+                  int a = -1, b = -1;
+                  for (int j = 0; j < 4; j++)
+                    if (faces[i][j] < 3)
+                      { if (a == -1) a = faces[i][j]; else b = faces[i][j]; }
+                  Vec<3> va, vb;
+                  for (int d = 0; d < 3; d++)
+                    { va(d) = verts[a][d]; vb(d) = verts[b][d]; }
+                  facet_dyads (vb-va, Vec<3,T>(0,0,1), nt1, nt2);
+                  ArrayMem<T,20> spol(p+1), zpol(p+1);
+                  LegendrePolynomial::Eval(p, lami[a]-lami[b], spol);
+                  LegendrePolynomial::Eval(p, 2*z-1, zpol);
+                  for (int l = 0; l <= p; l++)
+                    for (int j = 0; j <= p; j++)
+                      {
+                        shape[ii++] = spol[l]*zpol[j]*nt1;
+                        shape[ii++] = spol[l]*zpol[j]*nt2;
+                      }
+                }
+            }
+          else
+            ii += GetNFacetDofs (ElementTopology::GetFacetType(ET_PRISM, i), p);
+        }
+
+      if (ip.VB() == VOL)
+        {
+          Mat<3,3,T> sz0[3], sz1[3], sx[2], sxz;
+          RefMatrices(x, y, sz0, sz1, sx, sxz);
+          InnerShapes(x, y, z, sz0, sz1, sx, sxz, [&] (T val, const Mat<3,3,T> & sref)
+                      {
+                        shape[ii++] = val * mip.GetJacobian() * sref * mip.GetJacobianInverse();
+                      });
+        }
     }
   };
 
-  template <> class HCurlDivFE<ET_HEX> : public T_HCurlDivFE<ET_HEX> 
+template <> class HCurlDivFE<ET_HEX> : public T_HCurlDivFE<ET_HEX> 
   {
     
   public:

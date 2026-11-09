@@ -112,3 +112,18 @@ def test_tet_prism_nt_continuity(seed, k):
     for a, b in [(0.1, 0.1), (0.3, 0.5), (0.6, 0.2)]:
         lo, hi = g(mesh(a, b, 1-eps)), g(mesh(a, b, 1+eps))
         assert abs(lo[2]-hi[2]) < 1e-5 and abs(lo[5]-hi[5]) < 1e-5
+
+@pytest.mark.parametrize("kind", ["tet", "prism", "warped prism"])
+@pytest.mark.parametrize("fi", [(0, 1), (1, 2), (2, 3)])
+def test_dual_set_reproduces(kind, fi):
+    import numpy as np
+    if kind == "tet":
+        mesh = mesh_of("tet", 2)
+    else:
+        warp = (lambda x, y, z: (x+0.1*y*z, y+0.05*x*x, z+0.1*x*y)) if kind == "warped prism" else None
+        mesh = MakeStructured3DMesh(hexes=False, prism=True, nx=2, ny=2, nz=2, mapping=warp)
+    fes = HCurlDiv(mesh, order=fi[0], orderinner=fi[1])
+    g, gs = GridFunction(fes), GridFunction(fes)
+    g.vec.FV().NumPy()[:] = np.random.RandomState(1).uniform(-1, 1, fes.ndof)
+    gs.Set(g, dual=True)
+    assert np.abs(gs.vec.FV().NumPy() - g.vec.FV().NumPy()).max() < 1e-9
