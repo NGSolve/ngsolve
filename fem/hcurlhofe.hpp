@@ -132,7 +132,8 @@ namespace ngfem
     bool type1;
     bool biorth = false;  // trig cell: biorthogonal basis (Haubold-Beuchler-Schoeberl 2024)
 
-    // lazily filled D^-1 for full-order elements, owned by the space
+    // lazily filled D^-1 for full-order elements, owned by the space:
+    // a table with one slot per VertexOrderClass
     std::atomic<double*> * dual_inverse = nullptr;
 
     using BASE::ndof;
@@ -231,13 +232,22 @@ namespace ngfem
     virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> values,
                                BareSliceVector<double> coefs) const override;
 
-    void SetDualInverse (std::atomic<double*> * slot) { dual_inverse = slot; }
+    void SetDualInverse (std::atomic<double*> * table) { dual_inverse = table; }
+
+    // the class is taken from the vertex numbers the element carries now, since a
+    // wrapper space may renumber them after GetFE (PeriodicFESpace does)
+    std::atomic<double*> * DualInverseSlot () const
+    {
+      int cls = this->VertexOrderClass();
+      return (dual_inverse && cls >= 0) ? dual_inverse + cls : nullptr;
+    }
 
     using BASE::SolveDuality;
     bool SolveDuality (SliceMatrix<> x, LocalHeap & lh) const override
     {
-      if (!dual_inverse) return false;
-      FlatMatrix<> inv(ndof, ndof, GetDualInverse<ET,DIM> (*this, *dual_inverse, lh));
+      auto slot = DualInverseSlot();
+      if (!slot) return false;
+      FlatMatrix<> inv(ndof, ndof, GetDualInverse<ET,DIM> (*this, *slot, lh));
       HeapReset hr(lh);
       FlatMatrix<> tmp(x.Height(), x.Width(), lh);
       tmp = x;
@@ -250,8 +260,9 @@ namespace ngfem
 
     bool SolveDualityTrans (SliceMatrix<> x, LocalHeap & lh) const override
     {
-      if (!dual_inverse) return false;
-      FlatMatrix<> inv(ndof, ndof, GetDualInverse<ET,DIM> (*this, *dual_inverse, lh));
+      auto slot = DualInverseSlot();
+      if (!slot) return false;
+      FlatMatrix<> inv(ndof, ndof, GetDualInverse<ET,DIM> (*this, *slot, lh));
       HeapReset hr(lh);
       FlatMatrix<> tmp(x.Height(), x.Width(), lh);
       tmp = x;

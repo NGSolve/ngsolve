@@ -4,7 +4,8 @@
 /*
   Inverse duality matrix D_ij = <dual_i, phi_j> of a vector-valued element,
   computed once on the reference element and shared through a slot owned by
-  the space (one per vertex-order class)
+  the space (one per vertex-order class; the element picks the slot from the
+  vertex numbers it carries, see VertexOrientedFE::VertexOrderClass)
 */
 
 #include "scalarfe.hpp"

@@ -1108,12 +1108,8 @@ namespace ngcomp
               full.ComputeNDof();
               if (same && hofe->GetNDof() == full.GetNDof() && hofe->Order() == full.Order())
                 {
-                  int cls = 0, bit = 0;
-                  for (int i = 0; i < ngel.vertices.Size(); i++)
-                    for (int j = i+1; j < ngel.vertices.Size(); j++, bit++)
-                      if (ngel.vertices[i] > ngel.vertices[j]) cls |= 1 << bit;
                   int row = (ET == ET_TRIG) ? 0 : (ET == ET_QUAD) ? 1 : 2;
-                  hofe -> SetDualInverse (&dual_inverse[grad][row][cls]);
+                  hofe -> SetDualInverse (dual_inverse[grad][row]);
                 }
             }
           return *hofe;

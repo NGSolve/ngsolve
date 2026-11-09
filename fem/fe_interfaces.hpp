@@ -26,6 +26,20 @@ namespace ngfem
     {
       return ET_trait<ET>::GetFaceSort (nr, vnums);
     }
+    /// vertex-order class: bit k is set if vnums[i] > vnums[j] for the k-th pair i < j.
+    /// Shape functions depend on the vertex numbers only through this class.
+    /// -1 if two vertex numbers coincide, since the class then does not fix the orientation.
+    int VertexOrderClass () const
+    {
+      int cls = 0, bit = 0;
+      for (int i = 0; i < N_VERTEX; i++)
+        for (int j = i+1; j < N_VERTEX; j++, bit++)
+          {
+            if (vnums[i] == vnums[j]) return -1;
+            if (vnums[i] > vnums[j]) cls |= 1 << bit;
+          }
+      return cls;
+    }
   };
 }
 
