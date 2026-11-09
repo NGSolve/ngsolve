@@ -423,13 +423,6 @@ namespace ngsbem
                            VorB _source_vb,
                            optional<Region> _definedon,    
                            shared_ptr<DifferentialOperator> _evaluator,
-                           int _intorder)
-      : proxy(_proxy), /* factor(_factor), */ source_vb(_source_vb), definedon(_definedon), evaluator(_evaluator), intorder(_intorder) { ; }
-
-    BasePotentialOperator (shared_ptr<ProxyFunction> _proxy, // shared_ptr<CoefficientFunction> _factor,
-                           VorB _source_vb,
-                           optional<Region> _definedon,    
-                           shared_ptr<DifferentialOperator> _evaluator,
                            IntOp_Parameters _io_params, 
                            int _intorder)
       : proxy(_proxy), source_vb(_source_vb), definedon(_definedon), evaluator(_evaluator), io_params(_io_params), intorder(_intorder) { ; }
@@ -459,12 +452,6 @@ namespace ngsbem
   public:
     shared_ptr<const BaseIntegralKernel<TSCAL>> kernel;
   public:
-    PotentialOperator (shared_ptr<ProxyFunction> _proxy,
-                       VorB _source_vb,
-                       optional<Region> _definedon,
-                       shared_ptr<DifferentialOperator> _evaluator,
-                       shared_ptr<const BaseIntegralKernel<TSCAL>> _kernel, int _intorder);
-
     PotentialOperator (shared_ptr<ProxyFunction> _proxy,
                        VorB _source_vb,
                        optional<Region> _definedon,

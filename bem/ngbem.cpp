@@ -1344,14 +1344,6 @@ namespace ngsbem
   PotentialOperator<TSCAL> ::
   PotentialOperator (shared_ptr<ProxyFunction> _proxy, VorB _source_vb, optional<Region> _definedon,
                      shared_ptr<DifferentialOperator> _evaluator,
-                     shared_ptr<const BaseIntegralKernel<TSCAL>> _kernel, int _intorder)
-    : PotentialOperator(_proxy, _source_vb, _definedon, _evaluator, std::move(_kernel), IntOp_Parameters(), _intorder)
-  { ; }
-
-  template <typename TSCAL>
-  PotentialOperator<TSCAL> ::
-  PotentialOperator (shared_ptr<ProxyFunction> _proxy, VorB _source_vb, optional<Region> _definedon,
-                     shared_ptr<DifferentialOperator> _evaluator,
                      shared_ptr<const BaseIntegralKernel<TSCAL>> _kernel, IntOp_Parameters _io_params, int _intorder)
     : BasePotentialOperator(_proxy, _source_vb, _definedon, _evaluator, _io_params, _intorder), kernel(std::move(_kernel))
   { ; }
