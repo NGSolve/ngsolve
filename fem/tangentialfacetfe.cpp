@@ -413,55 +413,66 @@ namespace ngfem
 
   /* **************************** Facet Quad ********************************* */
 
-  template<>
-  void TangentialFacetFacetFE<ET_QUAD>::CalcShape (const IntegrationPoint & ip,
-                                               BareSliceMatrix<> shape) const
+  template<> template <typename Tx, typename TFA>
+  void TangentialFacetFacetFE<ET_QUAD>::T_CalcShape(TIP<DIM,Tx> tip,
+                                                TFA &  shape) const
   {
-    AutoDiff<2> x (ip(0), 0);
-    AutoDiff<2> y (ip(1), 1);
+    // same face basis as the quad faces of prism and hex volume elements
+    auto x = tip.x, y = tip.y;
+    Tx sigma[4] = {(1-x)+(1-y),x+(1-y),x+y,(1-x)+y};
+    IVec<4> f = GetFaceSort (0, vnums);
+    Tx xi  = sigma[f[0]] - sigma[f[1]];
+    Tx eta = sigma[f[0]] - sigma[f[3]];
 
-    // orient: copied from h1
-    AutoDiff<2> sigma[4] = {(1-x)+(1-y),x+(1-y),x+y,(1-x)+y};  
-    // int fmax = 0; 
-    // for (int j = 1; j < 4; j++)
-    //   if (vnums[j] > vnums[fmax]) fmax = j;
-    // int f1 = (fmax+3)%4; 
-    // int f2 = (fmax+1)%4; 
-    // if(vnums[f2] > vnums[f1]) swap(f1,f2);  // fmax > f1 > f2; 
-
-    // AutoDiff<2> xi  = sigma[fmax] - sigma[f1]; 
-    // AutoDiff<2> eta = sigma[fmax] - sigma[f2]; 
-    
-    IVec<4> f = GetFaceSort (0, vnums); 
-    AutoDiff<2> xi  = sigma[f[0]] - sigma[f[1]]; 
-    AutoDiff<2> eta = sigma[f[0]] - sigma[f[3]]; 
+    typedef std::remove_const_t<std::remove_reference_t<decltype(x.Value())>> T;
+    int n = max2(order_inner[0],order_inner[1]);
+    ArrayMem<T,20> polx(n+1), poly(n+1);
+    LegendrePolynomial::Eval (n, xi.Value(), polx);
+    LegendrePolynomial::Eval (n, eta.Value(), poly);
 
     int ii = 0;
-    
-    int n = max2(order_inner[0],order_inner[1]);
-    ArrayMem<double, 20> polx(n+1), poly(n+1);
-
-    LegendrePolynomial (n, xi.Value(), polx);
-    LegendrePolynomial (n, eta.Value(), poly);
-    
     for (int i = 0; i <= order_inner[0]; i++)
       for (int j = 0; j <= order_inner[1]; j++)
-	{
-	  double val = polx[i] * poly[j];
-	  shape(ii,0) = val * xi.DValue(0);
-	  shape(ii,1) = val * xi.DValue(1);
-	  ii++;
-	  shape(ii,0) = val * eta.DValue(0);
-	  shape(ii,1) = val * eta.DValue(1);
-	  ii++;
-	}
+        {
+          Tx val = polx[i] * poly[j];
+          shape[ii++] = uDv(val, xi);
+          shape[ii++] = uDv(val, eta);
+        }
   }
 
   template<> template <typename MIP, typename TFA>
   void TangentialFacetFacetFE<ET_QUAD>::CalcDualShape2 (const MIP & mip,
                                                         TFA & shape) const
   {
-    throw Exception("TangentialFacetFacetFE<ET_QUAD>::CalcDualShape2 not implemented");
+    typedef typename std::remove_const<typename std::remove_reference<decltype(mip.IP()(0))>::type>::type T;
+    auto & ip = mip.IP();
+    T x = ip(0), y = ip(1);
+    T sigma[4] = {(1-x)+(1-y),x+(1-y),x+y,(1-x)+y};
+    Vec<2> pnts[4] = { { 0, 0 }, { 1, 0 }, { 1, 1 }, { 0, 1 } };
+
+    IVec<4> f = GetFaceSort (0, vnums);
+    T xi  = sigma[f[0]] - sigma[f[1]];
+    T eta = sigma[f[0]] - sigma[f[3]];
+
+    Mat<2,2,T> tauhat;
+    tauhat.Col(0) = pnts[f[1]] - pnts[f[0]];
+    tauhat.Col(1) = pnts[f[3]] - pnts[f[0]];
+    Mat<3,2,T> tau = mip.GetJacobian() * tauhat;
+    tau /= mip.GetMeasure();
+
+    int n = max2(order_inner[0],order_inner[1]);
+    ArrayMem<T,20> polx(n+1), poly(n+1);
+    LegendrePolynomial::Eval (n, xi, polx);
+    LegendrePolynomial::Eval (n, eta, poly);
+
+    int ii = 0;
+    for (int i = 0; i <= order_inner[0]; i++)
+      for (int j = 0; j <= order_inner[1]; j++)
+        {
+          T val = polx[i] * poly[j];
+          shape[ii++] = tau * Vec<2,T>(val, 0);
+          shape[ii++] = tau * Vec<2,T>(0, val);
+        }
   }
 
 
