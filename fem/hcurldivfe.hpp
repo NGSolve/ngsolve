@@ -1492,6 +1492,45 @@ namespace ngfem
       sxz(2,2) =  1.0;
     }
 
+    // quad face fa: hex trace of grad(a) o (grad xi x grad eta) over trace of sz0[m] (ch), sz1[m] (cv),
+    // xi = sigma[f0]-sigma[f1], eta = sigma[f0]-sigma[f3]; returns whether xi is horizontal
+    bool QuadFaceScaling (int fa, int m, double & ch, double & cv) const
+    {
+      const POINT3D * verts = ElementTopology::GetVertices(ET_PRISM);
+      const FACE * faces = ElementTopology::GetFaces(ET_PRISM).Data();
+      IVec<4> f = ET_trait<ET_PRISM>::GetFaceSort(fa, vnums);
+      bool hor = f[0]/3 == f[1]/3;
+      auto gsig = [] (int v)
+        {
+          Vec<3> g(0, 0, v < 3 ? -1 : 1);
+          if (v%3 == 0) g(0) += 1;
+          else if (v%3 == 1) g(1) += 1;
+          else { g(0) -= 1; g(1) -= 1; }
+          return g;
+        };
+      Vec<3> gxi = gsig(f[0])-gsig(f[1]), geta = gsig(f[0])-gsig(f[3]);
+      Vec<3> N = Cross(gxi, geta);
+
+      int a = -1, b = -1;
+      Vec<3> mid(0.0);
+      for (int j = 0; j < 4; j++)
+        {
+          int v = faces[fa][j];
+          for (int d = 0; d < 3; d++) mid(d) += 0.25*verts[v][d];
+          if (v < 3) { if (a == -1) a = v; else b = v; }
+        }
+      Vec<3> th, tv(0,0,1);
+      for (int d = 0; d < 3; d++) th(d) = verts[b][d]-verts[a][d];
+      Vec<3> n = Cross(th, tv);
+
+      Mat<3,3> sz0[3], sz1[3], sx[2], sxz;
+      RefMatrices(mid(0), mid(1), sz0, sz1, sx, sxz);
+      Vec<3> gh = hor ? gxi : geta, gv = hor ? geta : gxi;
+      ch = InnerProduct(th,gh)*InnerProduct(N,n) / InnerProduct(th, Vec<3>(sz0[m]*n));
+      cv = InnerProduct(tv,gv)*InnerProduct(N,n) / InnerProduct(tv, Vec<3>(sz1[m]*n));
+      return hor;
+    }
+
     // inner shapes as (polynomial, reference matrix), shared by shapes and dual shapes
     template <typename TA, typename FUNC>
     void InnerShapes (TA xx, TA yy, TA zz, Mat<3,3,TA> (&sz0)[3], Mat<3,3,TA> (&sz1)[3],
@@ -1549,7 +1588,6 @@ namespace ngfem
       // Barycentric coordinates in NGSolve's prism vertex ordering.  They
       // are used for the common tetrahedron-prism triangular trace basis.
       AD lami[6] = { xx, yy, 1-xx-yy, xx, yy, 1-xx-yy };
-      AD lamx[3] = { 1-xx-yy, xx, yy };
       AD lamz[2] = { 1-zz, zz };
 
       Vec<3,T> covariant[3];
@@ -1608,34 +1646,39 @@ namespace ngfem
             }
         }
 
-      // Vertical quadrilateral facets: Q_{p,p}(F)^2
+      // Vertical quadrilateral facets: Q_{p,p}(F)^2, same nt-traces as on hexes
+      AD muz[6] = { 1-zz, 1-zz, 1-zz, zz, zz, zz };
       int paper_vertex[3] = { 2, 0, 1 };
-      int ngsolve_vertex[3] = { 2, 0, 1 };
       for (int fa = 2; fa < 5; fa++)
         {
           int p = order_facet[fa];
           int m = paper_vertex[fa-2];
-          int e0 = (m+1)%3;
-          int e1 = (m+2)%3;
-          double edge_sign = 1.0;
-          if (vnums[ngsolve_vertex[e0]] > vnums[ngsolve_vertex[e1]])
-            {
-              swap(e0, e1);
-              edge_sign = -1.0;
-            }
+          double ch, cv;
+          bool hor = QuadFaceScaling (fa, m, ch, cv);
+          IVec<4> f = ET_trait<ET_PRISM>::GetFaceSort(fa, vnums);
+          int fh = hor ? f[1] : f[3], fv = hor ? f[3] : f[1];
 
-          ArrayMem<AD,20> edgepol(p+2), zpol(p+2);
-          ScaledLegendrePolynomial(p,
-                                   lamx[e0]-lamx[e1], lamx[e0]+lamx[e1],
-                                   edgepol);
-          LegendrePolynomial::Eval(p, 2*zz-1, zpol);
+          ArrayMem<AD,20> hpol(p+2), vpol(p+2);
+          ScaledLegendrePolynomial(p, lami[f[0]]-lami[fh], lami[f[0]]+lami[fh], hpol);
+          LegendrePolynomial::Eval(p, muz[f[0]]-muz[fv], vpol);
+          auto & xipol = hor ? hpol : vpol;
+          auto & etapol = hor ? vpol : hpol;
 
-          for (int i = 0; i <= p; i++)
-            for (int j = 0; j <= p; j++)
-              add_shape(edgepol[i]*zpol[j], sz0[m]);
-          for (int i = 0; i <= p; i++)
-            for (int j = 0; j <= p; j++)
-              add_shape(edge_sign*edgepol[i]*zpol[j], sz1[m]);
+          for (int j = 0; j <= p; j++)
+            for (int k = 0; k <= p; k++)
+              {
+                AD w = etapol[j]*xipol[k];
+                if (hor)
+                  {
+                    add_shape(ch*w, sz0[m]);
+                    add_shape(cv*w, sz1[m]);
+                  }
+                else
+                  {
+                    add_shape(cv*w, sz1[m]);
+                    add_shape(ch*w, sz0[m]);
+                  }
+              }
         }
 
       InnerShapes(xx, yy, zz, sz0, sz1, sx, sxz, add_shape);
@@ -1655,7 +1698,6 @@ namespace ngfem
       T x = ip(0), y = ip(1), z = ip(2);
       T lami[6] = { x, y, 1-x-y, x, y, 1-x-y };
       const POINT3D * verts = ElementTopology::GetVertices(ET_PRISM);
-      const FACE * faces = ElementTopology::GetFaces(ET_PRISM).Data();
       int facetnr = ip.FacetNr();
       int ii = 0;
 
@@ -1690,22 +1732,22 @@ namespace ngfem
                 }
               else
                 {
-                  int a = -1, b = -1;
-                  for (int j = 0; j < 4; j++)
-                    if (faces[i][j] < 3)
-                      { if (a == -1) a = faces[i][j]; else b = faces[i][j]; }
-                  Vec<3> va, vb;
+                  // hex face convention: xi = sigma[f0]-sigma[f1], eta = sigma[f0]-sigma[f3]
+                  IVec<4> f = ET_trait<ET_PRISM>::GetFaceSort (i, vnums);
+                  T sig[6];
+                  for (int v = 0; v < 6; v++) sig[v] = lami[v] + (v < 3 ? 1-z : z);
+                  Vec<3> v0, v1, v3;
                   for (int d = 0; d < 3; d++)
-                    { va(d) = verts[a][d]; vb(d) = verts[b][d]; }
-                  facet_dyads (vb-va, Vec<3,T>(0,0,1), nt1, nt2);
-                  ArrayMem<T,20> spol(p+1), zpol(p+1);
-                  LegendrePolynomial::Eval(p, lami[a]-lami[b], spol);
-                  LegendrePolynomial::Eval(p, 2*z-1, zpol);
-                  for (int l = 0; l <= p; l++)
-                    for (int j = 0; j <= p; j++)
+                    { v0(d) = verts[f[0]][d]; v1(d) = verts[f[1]][d]; v3(d) = verts[f[3]][d]; }
+                  facet_dyads (v1-v0, v3-v0, nt1, nt2);
+                  ArrayMem<T,20> xipol(p+1), etapol(p+1);
+                  LegendrePolynomial::Eval(p, sig[f[0]]-sig[f[1]], xipol);
+                  LegendrePolynomial::Eval(p, sig[f[0]]-sig[f[3]], etapol);
+                  for (int j = 0; j <= p; j++)
+                    for (int k = 0; k <= p; k++)
                       {
-                        shape[ii++] = spol[l]*zpol[j]*nt1;
-                        shape[ii++] = spol[l]*zpol[j]*nt2;
+                        shape[ii++] = etapol[j]*xipol[k]*nt1;
+                        shape[ii++] = etapol[j]*xipol[k]*nt2;
                       }
                 }
             }
@@ -1896,14 +1938,78 @@ template <> class HCurlDivFE<ET_HEX> : public T_HCurlDivFE<ET_HEX>
       
         }	  
     };
+    // facet duals: sigma_nt moments against Q_p(F)^2 in the face coordinates of T_CalcShape,
+    // inner duals: inner shapes mapped by F S F^{-1}, pairing is geometry free
     template <typename MIP, typename TFA>
     void CalcDualShape2 (const MIP & mip, TFA & shape) const
     {
-      throw Exception ("Hcurldivfe not implementend for element type");
+      typedef typename std::remove_const<typename std::remove_reference<decltype(mip.IP()(0))>::type>::type T;
+      auto & ip = mip.IP();
+      T x = ip(0), y = ip(1), z = ip(2);
+      const POINT3D * verts = ElementTopology::GetVertices(ET_HEX);
+      int facetnr = ip.FacetNr();
+
+      int nfacet = 0;
+      for (int i = 0; i < 6; i++)
+        nfacet += 2*(order_facet[i]+1)*(order_facet[i]+1);
+
+      if (ip.VB() == BND)
+        {
+          T sig[8];
+          for (int v = 0; v < 8; v++)
+            sig[v] = (verts[v][0] ? x : 1-x) + (verts[v][1] ? y : 1-y) + (verts[v][2] ? z : 1-z);
+
+          int ii = 0;
+          for (int i = 0; i < 6; i++)
+            {
+              int p = order_facet[i];
+              if (i == facetnr)
+                {
+                  IVec<4> f = ET_trait<ET_HEX>::GetFaceSort (i, vnums);
+                  Vec<3> v0, v1, v3;
+                  for (int d = 0; d < 3; d++)
+                    { v0(d) = verts[f[0]][d]; v1(d) = verts[f[1]][d]; v3(d) = verts[f[3]][d]; }
+                  Vec<3> t1 = v1-v0, t2 = v3-v0;
+                  Vec<3> nvref = Cross(t1, t2);
+                  Vec<3,T> nvi = Trans(mip.GetJacobianInverse())*nvref;
+                  Vec<3,T> nv = (L2Norm(nvref) / L2Norm(nvi)) * nvi;
+                  Mat<3,3,T> nt1 = DyadProd(Vec<3,T>(mip.GetJacobian()*t1), nv);
+                  Mat<3,3,T> nt2 = DyadProd(Vec<3,T>(mip.GetJacobian()*t2), nv);
+
+                  ArrayMem<T,20> xipol(p+1), etapol(p+1);
+                  LegendrePolynomial::Eval(p, sig[f[0]]-sig[f[1]], xipol);
+                  LegendrePolynomial::Eval(p, sig[f[0]]-sig[f[3]], etapol);
+                  for (int j = 0; j <= p; j++)
+                    for (int k = 0; k <= p; k++)
+                      {
+                        shape[ii++] = etapol[j]*xipol[k]*nt1;
+                        shape[ii++] = etapol[j]*xipol[k]*nt2;
+                      }
+                  return;
+                }
+              ii += 2*(p+1)*(p+1);
+            }
+          return;
+        }
+
+      if (ip.VB() == VOL)
+        {
+          // reference shapes: unit gradients
+          TIP<3,AutoDiffDiff<3,T>> rip(AutoDiffDiff<3,T>(x, 0), AutoDiffDiff<3,T>(y, 1), AutoDiffDiff<3,T>(z, 2), ip.FacetNr(), ip.VB());
+          Mat<3,3,T> jac = mip.GetJacobian(), jacinv = mip.GetJacobianInverse();
+          T_CalcShape (rip, SBLambda([&] (size_t nr, auto val)
+                                     {
+                                       if (nr < nfacet) return;
+                                       Vec<9,T> s = val.Shape();
+                                       Mat<3,3,T> sref;
+                                       for (int k = 0; k < 9; k++) sref(k/3, k%3) = s(k);
+                                       shape[nr] = jac * sref * jacinv;
+                                     }));
+        }
     }
 
   };
-  
+
   ////////////////////// SURFACE ////////////////////////////
     template <int DIM>
   class HCurlDivSurfaceFiniteElement : public FiniteElement
