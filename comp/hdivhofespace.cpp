@@ -352,6 +352,8 @@ namespace ngcomp
 
     Flags l2flags;
     if (iscomplex) l2flags.SetFlag("complex");
+    // element constants are not controlled by local velocity dofs: keep them global for condensation
+    l2flags.SetFlag("lowest_order_wb");
     int minorder = std::numeric_limits<int>::max(), maxorder = 0;
     for (auto ei : ma->Elements(VOL))
       if (DefinedOn(ei))
