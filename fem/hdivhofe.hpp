@@ -539,6 +539,11 @@ namespace ngfem
 
     virtual tuple<int,int,int,int> GetNDofVEFC () const override;
 
+    // facet normal moments + commuting cell moments (grad Q + explicit complement),
+    // quad, prism, hex, pyramid; trig and tet have their own in HDivHighOrderFE_Shape
+    template <typename MIP, typename TFA>
+    void CalcDualShape2 (const MIP & mip, TFA & shape) const;
+
     void SetDualInverse (std::atomic<double*> * slot) { dual_inverse = slot; }
 
     using BASE::SolveDuality;

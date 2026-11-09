@@ -32,11 +32,6 @@ namespace ngfem
     template<typename Tx, typename TFA>  
     INLINE void T_CalcShape (TIP<2,Tx> ip, TFA & shape) const;
 
-    template <typename MIP, typename TFA>
-    inline void CalcDualShape2 (const MIP & mip, TFA & shape) const
-    {
-      throw Exception(string("CalcDualShape missing for HighOrderHDiv element ")+ElementTopology::GetElementName(ET_QUAD));
-    }
   };
 
   template<> 
@@ -59,11 +54,6 @@ namespace ngfem
     template<typename Tx, typename TFA>  
     void T_CalcShape (TIP<3,Tx> ip, TFA & shape) const;
 
-    template <typename MIP, typename TFA>
-    inline void CalcDualShape2 (const MIP & mip, TFA & shape) const
-    {
-      throw Exception(string("CalcDualShape missing for HighOrderHDiv element ")+ElementTopology::GetElementName(ET_PRISM));
-    }
   };
 
   template<>
@@ -73,11 +63,6 @@ namespace ngfem
     template<typename Tx, typename TFA>
     void T_CalcShape (TIP<3,Tx> ip, TFA & shape) const;
 
-    template <typename MIP, typename TFA>
-    inline void CalcDualShape2 (const MIP & mip, TFA & shape) const
-    {
-      throw Exception(string("CalcDualShape missing for HighOrderHDiv element ")+ElementTopology::GetElementName(ET_PYRAMID));
-    }
   };
 
   template<>
@@ -87,11 +72,6 @@ namespace ngfem
     template<typename Tx, typename TFA>  
     void T_CalcShape (TIP<3,Tx> ip, TFA & shape) const;
 
-    template <typename MIP, typename TFA>
-    inline void CalcDualShape2 (const MIP & mip, TFA & shape) const
-    {
-      throw Exception(string("CalcDualShape missing for HighOrderHDiv element ")+ElementTopology::GetElementName(ET_HEX));
-    }
   };
 
 
@@ -209,6 +189,238 @@ namespace ngfem
   }
 
 
+
+
+  template <ELEMENT_TYPE ET> template <typename MIP, typename TFA>
+  void HDivHighOrderFE<ET> :: CalcDualShape2 (const MIP & mip, TFA & shape) const
+  {
+    typedef typename std::remove_const<typename std::remove_reference<decltype(mip.IP()(0))>::type>::type T;
+    auto & ip = mip.IP();
+    const POINT3D * verts = ElementTopology::GetVertices(ET);
+    auto vert = [verts] (int v) { Vec<DIM> p; for (int d = 0; d < DIM; d++) p(d) = verts[v][d]; return p; };
+    Vec<DIM,T> X;
+    for (int d = 0; d < DIM; d++) X(d) = ip(d);
+
+    auto nho = [this] (int i)
+      {
+        auto p = order_facet[i];
+        switch (ElementTopology::GetFacetType(ET, i))
+          {
+          case ET_SEGM: return int(p[0]);
+          case ET_TRIG: return int((p[0]+1)*(p[0]+2)/2-1);
+          default: return int((p[0]+1)*(p[DIM-2]+1)-1);
+          }
+      };
+    int first = 0;
+    if (!only_ho_div)
+      {
+        first = N_FACET;
+        for (int i = 0; i < N_FACET; i++) first += nho(i);
+      }
+
+    if (ip.VB() == BND && !only_ho_div)
+      {
+        // normal moments against P_p (segm, trig) or Q_p (quad) in sorted facet coordinates
+        int fnr = ip.FacetNr();
+        int ii = N_FACET;
+        for (int i = 0; i < fnr; i++) ii += nho(i);
+        auto p = order_facet[fnr];
+        auto put = [&] (auto nvref, auto & polys)
+          {
+            auto nvi = Trans(mip.GetJacobianInverse())*nvref;
+            auto nv = (L2Norm(nvref) / L2Norm(nvi)) * nvi;
+            for (size_t nr = 0; nr < polys.Size(); nr++)
+              shape[nr == 0 ? size_t(fnr) : ii+nr-1] = polys[nr] * nv;
+          };
+        auto coord = [&] (Vec<DIM> v0, Vec<DIM> t) -> T
+          { return 2*InnerProduct(X-v0, t)/L2Norm2(t) - 1; };
+
+        if constexpr (DIM == 2)
+          {
+            IVec<2> e = ET_trait<ET>::GetEdgeSort (fnr, vnums);
+            Vec<2> t = vert(e[1])-vert(e[0]);
+            ArrayMem<T,20> pol(p[0]+1);
+            LegendrePolynomial::Eval (p[0], coord(vert(e[0]), t), pol);
+            put (Vec<2>(t(1), -t(0)), pol);
+          }
+        else
+          {
+            IVec<4> f = ET_trait<ET>::GetFaceSort (fnr, vnums);
+            if (ElementTopology::GetFacetType(ET, fnr) == ET_TRIG)
+              {
+                // barycentrics of f[0], f[1]
+                Vec<3> t0 = vert(f[0])-vert(f[2]), t1 = vert(f[1])-vert(f[2]);
+                Vec<3,T> r = X-vert(f[2]);
+                double g00 = L2Norm2(t0), g01 = InnerProduct(t0,t1), g11 = L2Norm2(t1);
+                double idet = 1.0/(g00*g11-g01*g01);
+                T r0 = InnerProduct(r,t0), r1 = InnerProduct(r,t1);
+                T la = idet*(g11*r0-g01*r1), lb = idet*(g00*r1-g01*r0);
+                ArrayMem<T,40> pol((p[0]+1)*(p[0]+2)/2);
+                DubinerBasis::Eval (p[0], la, lb, pol);
+                put (Cross(t0, t1), pol);
+              }
+            else
+              {
+                Vec<3> t0 = vert(f[1])-vert(f[0]), t1 = vert(f[3])-vert(f[0]);
+                ArrayMem<T,20> px(p[0]+1), py(p[1]+1);
+                LegendrePolynomial::Eval (p[0], coord(vert(f[0]), t0), px);
+                LegendrePolynomial::Eval (p[1], coord(vert(f[0]), t1), py);
+                ArrayMem<T,100> pol((p[0]+1)*(p[1]+1));
+                for (int k = 0, nr = 0; k <= p[0]; k++)
+                  for (int l = 0; l <= p[1]; l++)
+                    pol[nr++] = px[k]*py[l];
+                put (Cross(t0, t1), pol);
+              }
+          }
+        return;
+      }
+
+    if (ip.VB() == VOL)
+      {
+        // commuting: moments against grad Q (Q = div space) plus an explicit complement W_c
+        // of grad Q_p in the tensor RT test space, dual to the div-free bubbles
+        auto jacinv = mip.GetJacobianInverse();
+        size_t ii = first;
+        auto put = [&] (Vec<DIM,T> v) { shape[ii++] = Trans(jacinv) * v; };
+        auto putgrad = [&] (AutoDiff<DIM,T> g) { Vec<DIM,T> v; for (int k = 0; k < DIM; k++) v(k) = g.DValue(k); put(v); };
+        bool withfree = !only_ho_div, withdiv = !ho_div_free;
+        auto qd = [&] (int pi) { return max(pi - (RT ? 0 : 1), 0); };
+        typedef AutoDiff<DIM,T> AD;
+        AD adx(ip(0), 0);
+        AD ady = (DIM >= 2) ? AD(ip(1), 1) : AD(0.0);
+
+        if constexpr (ET == ET_QUAD)
+          {
+            // axis of order_inner[0] as in T_CalcShape
+            int fmax = 0;
+            for (int j = 1; j < 4; j++) if (vnums[j] > vnums[fmax]) fmax = j;
+            int f1 = (fmax+3)%4, f2 = (fmax+1)%4;
+            if (vnums[f2] > vnums[f1]) swap(f1, f2);
+            bool xfirst = verts[fmax][0] != verts[f1][0];
+            int px = order_inner[xfirst ? 0 : 1], py = order_inner[xfirst ? 1 : 0];
+            int n = max(px, py)+1;
+            ArrayMem<AD,20> lx(n+1), ly(n+1);
+            LegendrePolynomial::Eval (n, 2*adx-1, lx);
+            LegendrePolynomial::Eval (n, 2*ady-1, ly);
+            if (withfree)
+              for (int i = 1; i <= px; i++)
+                for (int j = 0; j < py; j++)
+                  put (Vec<DIM,T>(0, lx[i].Value()*ly[j].Value()));
+            if (withdiv)
+              for (int i = 0; i <= qd(px); i++)
+                for (int j = 0; j <= qd(py); j++)
+                  if (i || j) putgrad (lx[i]*ly[j]);
+          }
+
+        if constexpr (ET == ET_HEX)
+          {
+            AD adz(ip(2), 2);
+            auto p = order_inner;
+            int n = max(p[0], max(p[1], p[2]))+1;
+            ArrayMem<AD,20> lx(n+1), ly(n+1), lz(n+1);
+            LegendrePolynomial::Eval (n, 2*adx-1, lx);
+            LegendrePolynomial::Eval (n, 2*ady-1, ly);
+            LegendrePolynomial::Eval (n, 2*adz-1, lz);
+            if (withfree)
+              {
+                for (int i = 1; i <= p[0]; i++)
+                  for (int j = 0; j < p[1]; j++)
+                    for (int k = 0; k <= p[2]; k++)
+                      put (Vec<DIM,T>(0, lx[i].Value()*ly[j].Value()*lz[k].Value(), 0));
+                for (int i = 0; i <= p[0]; i++)
+                  for (int j = 0; j <= p[1]; j++)
+                    if (i || j)
+                      for (int k = 0; k < p[2]; k++)
+                        put (Vec<DIM,T>(0, 0, lx[i].Value()*ly[j].Value()*lz[k].Value()));
+              }
+            if (withdiv)
+              for (int i = 0; i <= qd(p[0]); i++)
+                for (int j = 0; j <= qd(p[1]); j++)
+                  for (int k = 0; k <= qd(p[2]); k++)
+                    if (i || j || k) putgrad (lx[i]*ly[j]*lz[k]);
+          }
+
+        if constexpr (ET == ET_PRISM)
+          {
+            AD adz(ip(2), 2);
+            int p = order_inner[0], pz = order_inner[2];
+            if (p < 1 || pz < 1) return;
+            ArrayMem<AD,20> lz(pz+2);
+            LegendrePolynomial::Eval (pz+1, 2*adz-1, lz);
+            T x = ip(0);
+            if (withfree)
+              {
+                if (p >= 2)
+                  DubinerBasis::Eval (p-2, adx, ady, SBLambda([&] (size_t nr, AD r)
+                    {
+                      for (int k = 0; k <= pz; k++)
+                        put (Vec<DIM,T>(0, x*r.Value()*lz[k].Value(), 0));
+                    }));
+                DubinerBasis::Eval (p, adx, ady, SBLambda([&] (size_t nr, AD r)
+                  {
+                    if (nr == 0) return;
+                    for (int k = 0; k < pz; k++)
+                      put (Vec<DIM,T>(0, 0, r.Value()*lz[k].Value()));
+                  }));
+              }
+            if (withdiv)
+              DubinerBasis::Eval (qd(p), adx, ady, SBLambda([&] (size_t nr, AD r)
+                {
+                  for (int k = 0; k <= qd(pz); k++)
+                    if (nr || k) putgrad (r*lz[k]);
+                }));
+          }
+
+        if constexpr (ET == ET_PYRAMID)
+          {
+            // collapsed coordinates xt = x/lam, yt = y/lam, lam = 1-z,
+            // Q = span { P_a(xt) P_b(yt) lam^c : max(a,b) <= c <= pd }  (L2 pyramid space)
+            AD adz(ClampPyramidApex(T(ip(2))), 2);
+            AD lam = 1-adz, xt = adx/lam, yt = ady/lam;
+            T lv = lam.Value(), yv = ip(1);
+            int p = order_inner[0];
+            int n = p+2;
+            ArrayMem<AD,20> px(n+1), py(n+1), lp(n+3);
+            LegendrePolynomial::Eval (n, 2*xt-1, px);
+            LegendrePolynomial::Eval (n, 2*yt-1, py);
+            lp[0] = AD(1.0);
+            for (int k = 1; k < n+3; k++) lp[k] = lp[k-1]*lam;
+            if (withfree && p >= 1)
+              {
+                // div-free bubbles pulled back to the hex: curl(lam^c grad(L_i L_j)) and
+                // curl(z lam^c P_a L_(b+2) grad xt) (+ sym); horizontal parts rot(L_i L_j),
+                // tested by P_(i-1)(xt) P_(j-2)(yt) lam^k grad yt, k = max(i,j) ... p+1
+                for (int i = 2; i <= p+1; i++)
+                  for (int j = 2; j <= p+1; j++)
+                    for (int k = max(i,j); k <= p+1; k++)
+                      {
+                        T v = px[i-1].Value()*py[j-2].Value()*lp[k-1].Value();
+                        put (Vec<DIM,T>(0, v*lv, v*yv));
+                      }
+                // the rest by its horizontal divergence: P_i(xt) P_j(yt) lam^c grad z
+                for (int c = 2; c <= p+1; c++)
+                  {
+                    ArrayMem<bool,64> used(c*c);
+                    used = false;
+                    for (int b = 0; b <= c-2; b++)
+                      for (int a = 0; a <= c-2; a++)
+                        if (b <= c-3 || a == 0)
+                          used[a*c+b+1] = used[(b+1)*c+a] = true;
+                    for (int i = 0; i < c; i++)
+                      for (int j = 0; j < c; j++)
+                        if (used[i*c+j])
+                          put (Vec<DIM,T>(0, 0, px[i].Value()*py[j].Value()*lp[c].Value()));
+                  }
+              }
+            int pd = RT ? p : p-1;
+            if (withdiv)
+              for (int c = 0; c <= pd; c++)
+                for (int a = 0; a <= c; a++)
+                  for (int b = 0; b <= c; b++)
+                    if (a || b || c) putgrad (px[a]*py[b]*lp[c]);
+          }
+      }
+  }
 
 
 template <typename MIP, typename TFA>
