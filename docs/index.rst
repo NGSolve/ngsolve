@@ -29,3 +29,9 @@ We acknowledge support from the `TU Wien <https://www.tuwien.at>`_ and by the Au
 
    mylittlengs/1_Basic/README
    mylittlengs/2_Advanced/README
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Technical notes
+
+   technotes/index.rst

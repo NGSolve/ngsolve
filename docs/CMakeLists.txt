@@ -61,6 +61,29 @@ if (NETGEN_USE_PYTHON)
     	"${SPHINX_OUTPUT_DIR}/latex"
     	COMMENT "Building Latex documentation with Sphinx")
 
+    # technotes/<nr>_<name>/<name>.tex -> html/technotes/<nr>_<name>.pdf
+    find_program(LATEXMK_EXECUTABLE latexmk)
+    if(LATEXMK_EXECUTABLE)
+      add_custom_target(technotes
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${SPHINX_OUTPUT_DIR}/html/technotes")
+      file(GLOB technote_dirs "${CMAKE_CURRENT_SOURCE_DIR}/technotes/*")
+      foreach(dir ${technote_dirs})
+        get_filename_component(note "${dir}" NAME)
+        string(REGEX REPLACE "^[0-9]+-[0-9]+_" "" name "${note}")
+        if(EXISTS "${dir}/${name}.tex")
+          set(outdir "${CMAKE_CURRENT_BINARY_DIR}/technotes/${note}")
+          add_custom_command(TARGET technotes POST_BUILD
+            COMMAND ${LATEXMK_EXECUTABLE} -pdf -quiet -interaction=nonstopmode -outdir=${outdir} ${name}.tex
+            COMMAND ${CMAKE_COMMAND} -E copy "${outdir}/${name}.pdf" "${SPHINX_OUTPUT_DIR}/html/technotes/${note}.pdf"
+            WORKING_DIRECTORY "${dir}"
+            COMMENT "Building technote ${note}")
+        endif()
+      endforeach()
+      add_dependencies(docs technotes)
+    else()
+      message("latexmk not found, technotes PDFs are not built")
+    endif()
+
       if(NOT WIN32)
         add_dependencies(docs link_mylittlengs)
         add_dependencies(docs_latex link_mylittlengs)
