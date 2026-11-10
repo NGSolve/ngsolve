@@ -1150,6 +1150,13 @@ namespace ngsbem
     if (!nearfield)
       throw Exception("GenericIntegralOperator::CalcSubMatrix expects sparse nearfield matrix");
 
+    for (auto i : target_ids)
+      if (i < 0 || size_t(i) >= test_space->GetNDof())
+        throw Exception("CalcSubMatrix: row id " + ToString(i) + " out of range [0," + ToString(test_space->GetNDof()) + ")");
+    for (auto j : source_ids)
+      if (j < 0 || size_t(j) >= trial_space->GetNDof())
+        throw Exception("CalcSubMatrix: column id " + ToString(j) + " out of range [0," + ToString(trial_space->GetNDof()) + ")");
+
     Matrix<value_type> mat(target_ids.Size(), source_ids.Size());
     mat = value_type(0.0);
 
@@ -1161,7 +1168,7 @@ namespace ngsbem
 
     auto CreateDof2El = [&] (const FESpace & fes, VorB vb)
     {
-      TableCreator<tuple<ElementId,int>,DofId> creator;
+      TableCreator<tuple<ElementId,int>,DofId> creator(fes.GetNDof());
       Array<DofId> dofs;
       for ( ; !creator.Done(); creator++)
         for (auto ei : fes.Elements(vb))
@@ -1174,15 +1181,14 @@ namespace ngsbem
     };
 
     static std::mutex lock;
-    if (!trial_dof2el)
-      {
-        lock_guard<mutex> guard(lock);
-        if (!trial_dof2el)
-          {
-            trial_dof2el = CreateDof2El(*trial_space, trial_vb);
-            test_dof2el = CreateDof2El(*test_space, test_vb);
-          }
-      }
+    {
+      lock_guard<mutex> guard(lock);
+      if (!trial_dof2el)
+        {
+          trial_dof2el = CreateDof2El(*trial_space, trial_vb);
+          test_dof2el = CreateDof2El(*test_space, test_vb);
+        }
+    }
 
     Array<tuple<ElementId,int,int>> target_map;
     Array<tuple<ElementId,int,int>> source_map;

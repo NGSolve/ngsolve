@@ -1,5 +1,4 @@
 #ifdef NGS_PYTHON
-#include <regex>
 #include <unordered_map>
 #include <variant>
 
@@ -241,8 +240,6 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
          py::arg("current"), py::arg("region"), py::arg("intorder")=3)
     
     .def("Calc", &SingularMLExpansion<Vec<3,Complex>>::CalcMP)
-    // .def("Norm", &SingularMLExpansion<Complex>::Norm)    
-    // .def("__str__", [](SingularMLExpansion<Complex>& mlmp) { return ToString<>(mlmp); })
     ;
 
   
@@ -346,8 +343,8 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
       FlatArray<DofId> colidsa(colids.size(), colids.mutable_data());      
 
       py::gil_scoped_release rel;
-      LocalHeapMem<1000000> lh("CalcSubMatrix lh"); // TODO: form LocalHeapProvider in python_comp.cpp
-      // iop->CalcSubMatrix(rowidsa, colidsa, lh);  // call it twice, for timing
+      LocalHeap & lh = TLHeap();
+      HeapReset hr(lh);
       return iop->CalcSubMatrix(rowidsa, colidsa, lh);
     }, py::arg("rowids"), py::arg("colids"))
 
@@ -395,7 +392,8 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
         Context* ctx = static_cast<Context*>(vctx);
         auto& iop = *ctx->iop;
 
-        LocalHeapMem<1000000> lh("CalcSubMatrix lh");
+        LocalHeap & lh = TLHeap();
+        HeapReset hr(lh);
 
         FlatArray<DofId> rowidsa(n, const_cast<int*>(rowid));
         FlatArray<DofId> colidsa(m, const_cast<int*>(colid));
@@ -560,7 +558,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
         return pot->MakeDiffBasePotential(name);
     })
     .def("__mul__", [](shared_ptr<BasePotentialOperator> pot, shared_ptr<CoefficientFunction> test_proxy) {
-      return BasePotentialOperatorAndTest (pot, test_proxy); //  { pot, dynamic_pointer_cast<ProxyFunction>(test_proxy) };
+      return BasePotentialOperatorAndTest (pot, test_proxy);
     })
     .def("__rmul__", [](shared_ptr<BasePotentialOperator> pot, double fac) {
       return SumOfPotentialOperators(Scalar(fac), pot); 
@@ -626,7 +624,6 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     auto flags = BEMFlags(kwargs);
     IntOp_Parameters ioparams(flags);
     const bool fp32 = flags.GetDefineFlag("fp32");
-    // cout << ioflags << endl;
     
     optional<Region> definedon = DefinedOnRegion(fes->GetMeshAccess(), igl->dx);
 
@@ -656,17 +653,8 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     if (potential->icfs.Size()!=1) throw Exception("need one integral");
     auto igl = potential->icfs[0];
     if (igl->dx.vb != BND) throw Exception("need boundary integral");
-    auto proxy = dynamic_pointer_cast<ProxyFunction>(igl->cf);
+    auto proxy = GetProxyWithFactor(igl->cf, true);
     auto fes = proxy->GetFESpace();
-    /*
-    auto tmpfes = fes;
-    auto tmpeval = proxy->Evaluator();
-    while (auto compeval = dynamic_pointer_cast<CompoundDifferentialOperator>(tmpeval))
-      {
-        tmpfes = (*dynamic_pointer_cast<CompoundFESpace>(tmpfes))[compeval->Component()];
-        tmpeval = compeval->BaseDiffOp();
-      }
-    */
     int fesorder = GetFESOrder (proxy);
     auto flags = BEMFlags(kwargs);
     IntOp_Parameters ioparams(flags);
@@ -695,23 +683,9 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
   m.def("HelmholtzSL", [](shared_ptr<SumOfIntegrals> potential, std::variant<double, Complex> kappa, py::kwargs kwargs) -> shared_ptr<BasePotentialOperator> {
     if (potential->icfs.Size()!=1) throw Exception("need one integral");
     auto igl = potential->icfs[0];
-    /*
-    auto proxy = dynamic_pointer_cast<ProxyFunction>(igl->cf);
-    auto fes = proxy->GetFESpace();
-    */
     auto proxy = GetProxyWithFactor(igl->cf, true, igl->dx.vb);
     auto fes = proxy->GetFESpace();
 
-    
-    /*
-    auto tmpfes = fes;
-    auto tmpeval = proxy->Evaluator();
-    while (auto compeval = dynamic_pointer_cast<CompoundDifferentialOperator>(tmpeval))
-      {
-        tmpfes = (*dynamic_pointer_cast<CompoundFESpace>(tmpfes))[compeval->Component()];
-        tmpeval = compeval->BaseDiffOp();
-      }
-    */
     int fesorder = GetFESOrder (proxy);
     auto flags = BEMFlags(kwargs);
     IntOp_Parameters ioparams(flags);
@@ -734,21 +708,9 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     auto igl = potential->icfs[0];
     if (igl->dx.vb != BND) throw Exception("need boundary integral");
 
-    
-    // auto proxy = dynamic_pointer_cast<ProxyFunction>(igl->cf);
-    // auto fes = proxy->GetFESpace();
     auto proxy = GetProxyWithFactor(igl->cf, true);
     auto fes = proxy->GetFESpace();
 
-    /*
-    auto tmpfes = fes;
-    auto tmpeval = proxy->Evaluator();
-    while (auto compeval = dynamic_pointer_cast<CompoundDifferentialOperator>(tmpeval))
-      {
-        tmpfes = (*dynamic_pointer_cast<CompoundFESpace>(tmpfes))[compeval->Component()];
-        tmpeval = compeval->BaseDiffOp();
-      }
-    */
     int fesorder = GetFESOrder (proxy);    
     auto flags = BEMFlags(kwargs);
     IntOp_Parameters ioparams(flags);
@@ -771,18 +733,9 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     if (potential->icfs.Size()!=1) throw Exception("need one integral");
     auto igl = potential->icfs[0];
     if (igl->dx.vb != BND) throw Exception("need boundary integral");
-    auto proxy = dynamic_pointer_cast<ProxyFunction>(igl->cf);
+    auto proxy = GetProxyWithFactor(igl->cf, true);
     auto fes = proxy->GetFESpace();
 
-    /*
-    auto tmpfes = fes;
-    auto tmpeval = proxy->Evaluator();
-    while (auto compeval = dynamic_pointer_cast<CompoundDifferentialOperator>(tmpeval))
-      {
-        tmpfes = (*dynamic_pointer_cast<CompoundFESpace>(tmpfes))[compeval->Component()];
-        tmpeval = compeval->BaseDiffOp();
-      }
-    */
     int fesorder = GetFESOrder (proxy);
 
     auto flags = BEMFlags(kwargs);
@@ -803,7 +756,6 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
   m.def("MaxwellDL", [](shared_ptr<SumOfIntegrals> potential, std::variant<double, Complex> kappa, py::kwargs kwargs) -> shared_ptr<BasePotentialOperator> {
     if (potential->icfs.Size()!=1) throw Exception("need one integral");
     auto igl = potential->icfs[0];
-    // if (igl->dx.vb != BND) throw Exception("need boundary integral");
 
     auto proxy = GetProxyWithFactor(igl->cf, true, igl->dx.vb);
     auto fes = proxy->GetFESpace();
@@ -827,7 +779,6 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     auto igl = potential->icfs[0];
     if (igl->dx.vb != BND) throw Exception("need boundary integral");
     
-    // auto [proxy,factor] = GetProxyAndFactor(igl->cf, true);
     auto proxy = GetProxyWithFactor(igl->cf, true);
     
     auto fes = proxy->GetFESpace();
@@ -835,15 +786,6 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     IntOp_Parameters ioparams(flags);
     const bool fp32 = flags.GetDefineFlag("fp32");
 
-    /*
-    auto tmpfes = fes;
-    auto tmpeval = proxy->Evaluator();
-    while (auto compeval = dynamic_pointer_cast<CompoundDifferentialOperator>(tmpeval))
-      {
-        tmpfes = (*dynamic_pointer_cast<CompoundFESpace>(tmpfes))[compeval->Component()];
-        tmpeval = compeval->BaseDiffOp();
-      }
-    */
     int fesorder = GetFESOrder (proxy);
     
     optional<Region> definedon = DefinedOnRegion(fes->GetMeshAccess(), igl->dx);
