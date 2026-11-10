@@ -41,6 +41,13 @@ RUN apt-get update && apt-get -y install \
         ninja-build \
         wget \
         zip
+# LaTeX for docs/technotes
+RUN apt-get update && apt-get -y install --no-install-recommends \
+        latexmk \
+        texlive-latex-recommended \
+        texlive-latex-extra \
+        texlive-pictures \
+        texlive-fonts-recommended
 RUN pip3 install --break-system-packages mpi4py cython pip setuptools wheel numpy scipy
 
 RUN wget -qO- https://pypi.io/packages/source/p/petsc/petsc-3.25.5.tar.gz | tar xz
