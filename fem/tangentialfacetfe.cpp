@@ -54,6 +54,27 @@ namespace ngfem
                                  }));
   }
 
+  template <> template<typename Tx, typename TFA>
+  void TangentialFacetVolumeFE<ET_QUAD>::
+  T_CalcShape (Tx hx[DIM], int fanr, TFA & shape) const
+  {
+    if (fanr == -1) throw Exception("vector-facet element evaluated not at BND");
+    Tx x = hx[0], y = hx[1];
+    Tx sigma[4] = { (1-x)+(1-y), x+(1-y), x+y, (1-x)+y };
+
+    int first = first_facet_dof[fanr];
+    int p = facet_order[fanr][0];
+
+    IVec<2> e = GetVertexOrientedEdge(fanr);
+    Tx xi = sigma[e[0]] - sigma[e[1]];
+
+    LegendrePolynomial (p, xi,
+                        SBLambda([&](int nr, auto val)
+                                 {
+                                   shape[first+nr] = uDv (val, xi);
+                                 }));
+  }
+
 
   template<> template<typename Tx, typename TFA>  
   void TangentialFacetVolumeFE<ET_TET> ::
