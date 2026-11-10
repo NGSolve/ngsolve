@@ -348,9 +348,29 @@ namespace ngcomp
   template <int DIMS, int DIMR>
   class MatFreeTrafo : public FE_ElementTransformation<DIMS,DIMR>
   {
+    Vec<DIMR,Mat<DIMS,DIMS>> hesse;
+    bool curved = false;
   public:
     using FE_ElementTransformation<DIMS,DIMR>::FE_ElementTransformation;
     void Set (int nr, int index) { this->elnr = nr; this->elindex = index; }
+    void SetHesse (const Tensor<3> & geocoefs, const Tensor<3> & DDgeo, size_t el, size_t ip)
+    {
+      curved = true;
+      hesse = 0.0;
+      for (size_t n = 0; n < get<0>(DDgeo.Shape()); n++)
+        for (int r = 0; r < DIMR; r++)
+          for (int a = 0; a < DIMS; a++)
+            for (int b = 0; b < DIMS; b++)
+              hesse(r)(a,b) += geocoefs(el,n,r) * DDgeo(n,a*DIMS+b,ip);
+    }
+    bool IsCurvedElement() const override { return curved; }
+    void VCalcHesse (const IntegrationPoint &, double * h) const override
+    {
+      for (int r = 0; r < DIMR; r++)
+        for (int a = 0; a < DIMS; a++)
+          for (int b = 0; b < DIMS; b++)
+            h[(r*DIMS+a)*DIMS+b] = hesse(r)(a,b);
+    }
   };
 
   MatrixFreeBTDTB ::
@@ -969,7 +989,8 @@ namespace ngcomp
                           for (size_t k = 0; k < SW; k++)
                             {
                               size_t ii = i*SW+k;
-                                                           
+                              if (!affine)
+                                eltrafo.SetHesse (geocoefs, DDgeo, ii, j);
                               MappedIntegrationPoint<dims,dimr> mip(dummyip, eltrafo, Vec<dimr>(0), Mat<dimr,dims>(Jacobi(ii, STAR, STAR, (nipJ > 1) ? j : 0)));
                               pointvalsx = 0;
                               for (size_t i : Range(diffopsx))
@@ -1071,7 +1092,8 @@ namespace ngcomp
                   for (size_t j : Range(nip))
                     {
                       HeapReset hr(lh);
-                      
+                      if (!affine)
+                        eltrafo.SetHesse (geocoefs, DDgeo, i, j);
                       MappedIntegrationPoint<dims,dimr> mip(dummyip, eltrafo, Vec<dimr>(0), Mat<dimr,dims>(Jacobi(i, STAR, STAR, (nipJ > 1) ? j : 0)));
                       
                       pointvalsrefx = Trans(Bx(STAR,STAR,j)) * elvecx;

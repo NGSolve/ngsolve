@@ -3597,7 +3597,33 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
           for (int k = 0; k < DIM_SPC; k++)
             for (int l = 0; l < DIM_SPC; l++)
               mat(i*DIM_SPC+k,j*DIM_SPC+l) = cov_trans(k,l)*piola_trans(i,j);
-    }    
+
+      // curved: 1/J (dF uhat - (F uhat) (x) dlnJ) Finv
+      if (mip.GetTransformation().IsCurvedElement())
+        {
+          auto jac = mip.GetJacobian();
+          Mat<DIM_SPC,DIM_SPC> inv = Inv(jac);
+          double invJ = 1/mip.GetJacobiDet();
+          Vec<DIM_SPC, Mat<DIM_SPC,DIM_SPC>> hesse;
+          mip.CalcHesse(hesse);
+
+          Vec<DIM_SPC> dlnJ = 0.0;
+          for (int b = 0; b < DIM_SPC; b++)
+            for (int p = 0; p < DIM_SPC; p++)
+              for (int q = 0; q < DIM_SPC; q++)
+                dlnJ(b) += inv(p,q) * hesse(q)(p,b);
+
+          for (int i = 0; i < DIM_SPC; i++)
+            for (int j = 0; j < DIM_SPC; j++)
+              for (int k = 0; k < DIM_SPC; k++)
+                {
+                  double val = 0;
+                  for (int b = 0; b < DIM_SPC; b++)
+                    val += (hesse(i)(j,b) - jac(i,j)*dlnJ(b)) * inv(b,k);
+                  mat(i*DIM_SPC+k, DIM_DMAT+j) = invJ * val;
+                }
+        }
+    }
 
     static string GenerateTransformationCode (string invar, string outvar, bool trans,
                                               bool curved = false)
