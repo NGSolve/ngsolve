@@ -7,6 +7,7 @@
 
 
 // #include <la.hpp>
+#include <bit>
 #include <ngstd.hpp>
 #include "order.hpp"
 
@@ -181,6 +182,7 @@ namespace ngla
     static Timer t("MDO::EliminateMaster", NoTracing);
     RegionTimer reg(t);
     curstamp++;
+    ReleaseChain (v);
 
     // the elements of v go, their members and the adjacency of v form the
     // new element (masters only, each once; v itself excluded via Used)
@@ -369,18 +371,29 @@ namespace ngla
     // indistinguishable vertices: only the new element and no adjacency
     // left -> merged into v; equal elements and adjacency -> merged
     CliqueEl * p3 = newp;
+    bool merged;
     do
       {
-	if (IsMaster (p3->GetVertexNr()) && NumCliques (*p3) == 1 && adjlen[*p3] == 0)
-          SetMaster (v, *p3);
-	p3 = p3->next;
+        // a merge may release waiting vertices: next pass
+        merged = false;
+        do
+          {
+            if (IsMaster (p3->GetVertexNr()) && NumCliques (*p3) == 1 && adjlen[*p3] == 0 && nwait[*p3] == 0)
+              {
+                ReleaseChain (*p3);
+                SetMaster (v, *p3);
+                merged = true;
+              }
+            p3 = p3->next;
+          }
+        while (p3 != newp);
       }
-    while (p3 != newp);
+    while (merged && level.Size());
 
     p3 = newp;
     do
       {
-	if (IsMaster (p3->GetVertexNr()))
+	if (IsMaster (p3->GetVertexNr()) && nwait[*p3] == 0)
 	  {
 	    int nclp3 = NumCliques (*p3), nadj3 = adjlen[*p3];
             SetFlagCliques (p3->GetVertexNr());
@@ -388,7 +401,7 @@ namespace ngla
             for (int w : Adj(*p3)) vmark[w] = markid;
 
             for (CliqueEl * p4 = p3->next; p4 != newp; p4 = p4->next)
-              if (IsMaster (*p4) && NumCliques(*p4) == nclp3 && adjlen[*p4] == nadj3)
+              if (IsMaster (*p4) && NumCliques(*p4) == nclp3 && adjlen[*p4] == nadj3 && nwait[*p4] == 0)
                 { 
                   bool same = true;
                   for (CliqueEl * p1 = cliques[p4->Nr()]; p1; p1 = p1->nextcl)
@@ -522,9 +535,9 @@ namespace ngla
                 for (CliqueEl * p1 = cliques[v3]; p1; p1 = p1->nextcl)
                   if (p1 != p3 && p1->clmaster->stamp == curstamp)
                     deg += p1->clmaster->w;
-                int olddeg = priqueue.GetDegree (v3);
+                int olddeg = GetDeg (v3);
                 if (olddeg > 0 && olddeg < n) deg = min (deg, olddeg + growth);
-                priqueue.SetDegree (v3, min (deg, n-1));
+                SetDeg (v3, min (deg, n-1));
                 p3 = p3->next;
               }
             while (p3 != anymaster);
@@ -562,7 +575,7 @@ namespace ngla
                 for (int w : Adj(v3))
                   if (!vertices[w].Used())
                     { deg += 1 + NumMinions (w); vertices[w].SetUsed (1); }
-                priqueue.SetDegree (v3, deg - NumMinions (v3));
+                SetDeg (v3, deg - NumMinions (v3));
                 p3 = p3->next;
               }
             while (p3 != anymaster);
@@ -613,6 +626,44 @@ namespace ngla
     adjstart = 0;
     for (size_t k = 0; k < edges.Size(); k += 2)
       { adjstart[edges[k]+1]++; adjstart[edges[k+1]+1]++; }
+
+    int locked_dofs = 0;
+    for (int i = 0; i < n; i++)
+      if (vertices[i].Eliminated()) locked_dofs++;
+    nused = n-locked_dofs;
+
+    // dense vertices leave the graph, each costs O(n) per elimination
+    densev.SetSize0();
+    denseedges.SetSize0();
+    if (densefac > 0)
+      {
+        size_t limit = max (16.0, densefac * sqrt (double(nused)));
+        for (int i = 0; i < n; i++)
+          if (adjstart[i+1] > limit) densev.Append (i);
+        if (densev.Size() > 256) densev.SetSize0();   // too many
+      }
+    for (int d : lastdofs)
+      if (!vertices[d].Eliminated() && !densev.Contains(d)) densev.Append (d);
+    if (densev.Size() >= nused) densev.SetSize0();
+    if (densev.Size())
+      {
+        vmark = 0;
+        for (int d : densev) vmark[d] = 1;
+        adjstart = 0;
+        size_t keep = 0;
+        for (size_t k = 0; k < edges.Size(); k += 2)
+          {
+            int v1 = edges[k], v2 = edges[k+1];
+            if (vmark[v1] || vmark[v2])
+              { denseedges.Append (v1); denseedges.Append (v2); }
+            else
+              {
+                edges[keep++] = v1; edges[keep++] = v2;
+                adjstart[v1+1]++; adjstart[v2+1]++;
+              }
+          }
+        edges.SetSize (keep);
+      }
     for (int i = 0; i < n; i++) adjstart[i+1] += adjstart[i];
     adjdata.SetSize (adjstart[n]);
     adjlen = 0;
@@ -626,8 +677,52 @@ namespace ngla
     vmark = 0;
     adjw = 0;
 
+    nwait.SetSize (n);
+    nwait = 0;
+    relstart.SetSize (n+1);
+    relstart = 0;
+    if (level.Size())
+      {
+        // levels of the -1 vertices, breadth first
+        int maxfixed = 0;
+        for (int l : level) maxfixed = max (maxfixed, l);
+        Array<int> front, next;
+        for (int k = 0; ; k++)
+          {
+            if (k <= maxfixed)
+              {
+                front.SetSize0();
+                for (int i = 0; i < n; i++)
+                  if (level[i] == k) front.Append (i);
+              }
+            else if (!front.Size()) break;
+            next.SetSize0();
+            for (int v : front)
+              for (int w : Adj(v))
+                if (level[w] == -1) { level[w] = k+1; next.Append (w); }
+            Swap (front, next);
+          }
+        for (int & l : level)
+          if (l == -1) l = 0;
+
+        for (int v = 0; v < n; v++)
+          for (int w : Adj(v))
+            if (level[w] > level[v]) { relstart[v+1]++; nwait[w]++; }
+        if (waitfrac < 1)
+          for (int & nw : nwait) nw = int (ceil (waitfrac * nw));
+        for (int i = 0; i < n; i++) relstart[i+1] += relstart[i];
+        reldata.SetSize (relstart[n]);
+        for (int v = 0; v < n; v++)
+          {
+            size_t pos = relstart[v];
+            for (int w : Adj(v))
+              if (level[w] > level[v]) reldata[pos++] = w;
+          }
+        waitdeg.SetSize (n);
+      }
+
     for (int j = 0; j < n; j++)
-      priqueue.SetDegree(j, 1+adjlen[j]);
+      SetDeg (j, 1+adjlen[j]);
 
     int minj = -1;
     int lastel = -1;
@@ -635,16 +730,14 @@ namespace ngla
     if (n > 5000)
       cout << IM(4) << "order " << flush;
 
-    int locked_dofs = 0;
     for (int i = 0; i < n; i++)
-      if (vertices[i].Eliminated())                
-        {
-          locked_dofs++;
-          priqueue.SetDegree (i, n);                  
-        }
-    nused = n-locked_dofs;
+      if (vertices[i].Eliminated())
+        priqueue.SetDegree (i, n);
+    for (int d : densev)
+      priqueue.SetDegree (d, n);
+    int nreg = nused - densev.Size();
 
-    for (int i = 0; i < nused; i++)
+    for (int i = 0; i < nreg; i++)
       {
 	if (n > 5000 && i % 1000 == 999)
 	  {
@@ -686,7 +779,212 @@ namespace ngla
 	vertices[minj].SetEliminated (1);
 	lastel = minj;
       }
+
+    if (level.Size())
+      {
+        // inside a supernode: lower levels first. Root block: waiting vertices
+        // with a neighbour outside go first (multiplier fixing a kernel)
+        Array<int> pos(n);
+        pos = -1;
+        for (int i = 0; i < nreg; i++) pos[order[i]] = i;
+        Array<unsigned char> outside(n);
+        outside = 0;
+        for (int i = 0; i < nreg; i++)
+          for (int w : reldata.Range (relstart[order[i]], relstart[order[i]+1]))
+            if (pos[w] >= 0 && blocknr[pos[w]] != blocknr[i]) outside[w] = 1;
+
+        for (int i0 = 0; i0 < nreg; )
+          {
+            int i1 = i0+1;
+            while (i1 < nreg && blocknr[i1] == i0) i1++;
+            int oldfirst = order[i0];
+            bool root = vertices[oldfirst].nconnected == i1-i0-1;
+            auto key = [&] (int v) -> std::pair<int,int>
+            {
+              if (level[v] == 0) return { 1, 0 };
+              return { root && outside[v] ? 0 : 2, level[v] };
+            };
+            auto block = order.Range (i0, i1);
+            std::stable_sort (block.begin(), block.end(),
+                              [&] (int a, int b) { return key(a) < key(b); });
+            if (int newfirst = order[i0]; newfirst != oldfirst)
+              {
+                std::swap (vertices[newfirst].connected, vertices[oldfirst].connected);
+                std::swap (vertices[newfirst].nconnected, vertices[oldfirst].nconnected);
+                for (int j = 0; j < vertices[newfirst].nconnected; j++)
+                  if (vertices[newfirst].connected[j] == newfirst)
+                    vertices[newfirst].connected[j] = oldfirst;
+              }
+            i0 = i1;
+          }
+      }
+
+    if (densev.Size())
+      AppendDense (nreg);
+
     if (auto *tm = GetTaskManager(); tm) tm -> StartWorkers();
+  }
+
+
+  void MinimumDegreeOrdering :: AppendDense (int nreg)
+  {
+    static Timer t("MinimumDegreeOrdering::AppendDense");
+    RegionTimer reg(t);
+    int m = densev.Size();
+
+    // dense vertices get position nreg+j
+    Array<int> pos(n);
+    pos = -1;
+    for (int i = 0; i < nreg; i++) pos[order[i]] = i;
+    for (int j = 0; j < m; j++) pos[densev[j]] = nreg+j;
+
+    // parent in the elimination tree: block of the first external vertex
+    Array<int> bstart, parent(nreg);
+    for (int i0 = 0; i0 < nreg; )
+      {
+        int i1 = i0+1;
+        while (i1 < nreg && blocknr[i1] == i0) i1++;
+        bstart.Append (i0);
+        MDOVertex & v = vertices[order[i0]];
+        int minpos = nreg;
+        for (int j = 0; j < v.nconnected; j++)
+          if (int p = pos[v.connected[j]]; p >= i1) minpos = min (minpos, p);
+        parent[i0] = minpos < nreg ? blocknr[minpos] : -1;
+        i0 = i1;
+      }
+
+    // structure of the dense vertices: adjacent blocks and their ancestors
+    int nchunks = (m+63)/64;
+    Array<uint64_t> mask(size_t(nchunks)*nreg);
+    mask = 0;
+    Array<int> firstnb(m);
+    firstnb = nreg;
+    for (size_t k = 0; k < denseedges.Size(); k += 2)
+      {
+        int p1 = pos[denseedges[k]], p2 = pos[denseedges[k+1]];
+        if (p1 > p2) Swap (p1, p2);
+        if (p1 < 0 || p1 >= nreg || p2 < nreg) continue;
+        int j = p2-nreg;
+        mask[size_t(j/64)*nreg + blocknr[p1]] |= uint64_t(1) << (j%64);
+        firstnb[j] = min (firstnb[j], p1);
+      }
+    for (int c = 0; c < nchunks; c++)
+      {
+        auto cm = mask.Range (size_t(c)*nreg, size_t(c+1)*nreg);
+        for (int b : bstart)
+          if (cm[b] && parent[b] >= 0) cm[parent[b]] |= cm[b];
+      }
+    for (int b : bstart)
+      {
+        int cnt = 0;
+        for (int c = 0; c < nchunks; c++)
+          cnt += std::popcount (mask[size_t(c)*nreg + b]);
+        if (!cnt) continue;
+        MDOVertex & v = vertices[order[b]];
+        int * newc = new int[v.nconnected + cnt];
+        for (int j = 0; j < v.nconnected; j++) newc[j] = v.connected[j];
+        delete [] v.connected;
+        v.connected = newc;
+        for (int j = 0; j < m; j++)
+          if (mask[size_t(j/64)*nreg + b] >> (j%64) & 1)
+            v.connected[v.nconnected++] = densev[j];
+      }
+
+    // final block: dense vertices, then the coupled root block. A constraint
+    // fixing a kernel (mean value, rigid body motions) must not come last.
+    // Several roots: only their last vertices of each level
+    Array<int> ntail(nreg);
+    ntail = 0;
+    size_t sumtail = 0;
+    int nroots = 0;
+    for (size_t ib = 0; ib < bstart.Size(); ib++)
+      if (int b = bstart[ib]; parent[b] == -1)
+        {
+          int cnt = 0;
+          for (int c = 0; c < nchunks; c++)
+            cnt += std::popcount (mask[size_t(c)*nreg + b]);
+          if (!cnt) continue;
+          int bend = ib+1 < bstart.Size() ? bstart[ib+1] : nreg;
+          ntail[b] = min (2*cnt, bend-b);
+          sumtail += ntail[b];
+          nroots++;
+        }
+    if (nroots == 1)
+      {
+        for (int & nt : ntail)
+          if (nt) nt = nreg;
+      }
+    else if (sumtail > size_t (max (64, 4*m)))
+      ntail = 0;               // many components: plain append
+
+    Array<int> neworder(nused), newblocknr(nused), tail;
+    Array<unsigned char> intail(nreg);
+    intail = 0;
+    int cnt = 0;
+    for (size_t ib = 0; ib < bstart.Size(); ib++)
+      {
+        int b = bstart[ib];
+        int bend = ib+1 < bstart.Size() ? bstart[ib+1] : nreg;
+        int nb = cnt;
+        if (ntail[b])
+          for (int i = bend-1, curlevel = -1, taken = 0; i >= b; i--)
+            {
+              int l = level.Size() ? level[order[i]] : 0;
+              if (l != curlevel) { curlevel = l; taken = 0; }
+              if (taken < ntail[b]) { intail[i] = 1; taken++; }
+            }
+        int oldfirst = order[b], newfirst = -1;
+        for (int i = b; i < bend; i++)
+          if (intail[i])
+            tail.Append (order[i]);
+          else
+            {
+              if (newfirst == -1) newfirst = order[i];
+              neworder[cnt] = order[i]; newblocknr[cnt++] = nb;
+            }
+        if (newfirst == -1)
+          {
+            MDOVertex & v = vertices[oldfirst];
+            delete [] v.connected;
+            v.connected = nullptr;
+            v.nconnected = 0;
+          }
+        else if (newfirst != oldfirst)
+          {
+            std::swap (vertices[newfirst].connected, vertices[oldfirst].connected);
+            std::swap (vertices[newfirst].nconnected, vertices[oldfirst].nconnected);
+            for (int j = 0; j < vertices[newfirst].nconnected; j++)
+              if (vertices[newfirst].connected[j] == newfirst)
+                vertices[newfirst].connected[j] = oldfirst;
+          }
+      }
+    int f0 = cnt;
+    // dense vertices coupling only to the tails go to the very end
+    Array<unsigned char> before(m);
+    for (int j = 0; j < m; j++) before[j] = firstnb[j] == nreg;
+    for (size_t k = 0; k < denseedges.Size(); k += 2)
+      {
+        int p1 = pos[denseedges[k]], p2 = pos[denseedges[k+1]];
+        if (p1 > p2) Swap (p1, p2);
+        if (p1 >= 0 && p1 < nreg && p2 >= nreg && !intail[p1]) before[p2-nreg] = 1;
+      }
+    Array<int> atend;
+    for (int j = 0; j < m; j++)
+      if (before[j]) neworder[cnt++] = densev[j]; else atend.Append (densev[j]);
+    for (int v : tail) neworder[cnt++] = v;
+    for (int v : atend) neworder[cnt++] = v;
+    for (int i = f0; i < nused; i++) newblocknr[i] = f0;
+
+    order.Range(0, nused) = neworder;
+    blocknr.Range(0, nused) = newblocknr;
+
+    for (int d : densev) vertices[d].nconnected = 0;
+    MDOVertex & first = vertices[order[f0]];
+    delete [] first.connected;
+    first.nconnected = nused-f0-1;
+    first.connected = new int[first.nconnected];
+    for (int i = f0+1; i < nused; i++)
+      first.connected[i-f0-1] = order[i];
   }
 
 

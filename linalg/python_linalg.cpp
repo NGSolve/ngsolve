@@ -1211,6 +1211,15 @@ inverse : string
     pardiso        - PARDISO, either provided by libpardiso (USE_PARDISO=ON) or Intel MKL (USE_MKL=ON).
                      If neither Pardiso nor Intel MKL was linked at compile-time, NGSolve will look
                      for libmkl_rt in LD_LIBRARY_PATH (Unix) or PATH (Windows) at run-time.
+
+flags : dict
+  Options of the solver. For sparsecholesky (ordering of saddle point matrices):
+    late     - "zero" (default): dofs with zero diagonal are eliminated after their neighbours,
+               "nonpos": also dofs with negative diagonal (real matrices), "off": no constraints
+    densefac - rows with more than densefac*sqrt(n) entries (NumberSpace dofs) are not ordered
+               but eliminated at the end (default 10, 0 switches it off)
+    lastdofs - list of dofs to be eliminated at the end
+    waitfrac - wait only for this fraction of the neighbours (less fill, heuristic, default 1)
 )raw_string"), py::call_guard<py::gil_scoped_release>())
     // .def("Inverse", [](BM &m)  { return m.InverseMatrix(); })
 

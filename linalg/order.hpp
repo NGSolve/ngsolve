@@ -165,6 +165,32 @@ namespace ngla
     Array<int> vmark;           // per-vertex marks of the equivalence test
     int markid = 0;
     FlatArray<int> Adj (int v) { return adjdata.Range (adjstart[v], adjstart[v]+adjlen[v]); }
+
+    // saddle point matrices: a vertex waits for its neighbours of lower level
+    // level: >= 0 fixed, -1 = 1 + min level of the neighbours, empty = no constraints
+    Array<int> level;
+    double waitfrac = 1;                // wait for this fraction only (heuristic)
+    Array<int> nwait, waitdeg;          // open lower neighbours, degree while waiting
+    Array<size_t> relstart;
+    Array<int> reldata;                 // vertices waiting for v
+    void SetDeg (int v, int deg)
+    { if (nwait[v] > 0) waitdeg[v] = deg; else priqueue.SetDegree (v, deg); }
+    int GetDeg (int v) const
+    { return nwait[v] > 0 ? waitdeg[v] : priqueue.GetDegree (v); }
+    void Release (int v)
+    {
+      for (int w : reldata.Range (relstart[v], relstart[v+1]))
+        if (nwait[w] > 0 && --nwait[w] == 0) priqueue.SetDegree (w, waitdeg[w]);
+    }
+    void ReleaseChain (int v)
+    { for ( ; v != -1; v = NextMinion(v)) Release (v); }
+
+    // dense vertices (degree > densefac*sqrt(n), e.g. NumberSpace dofs) and
+    // the lastdofs are not ordered, they go into the last supernode
+    double densefac = 10;
+    Array<int> lastdofs;
+    Array<int> densev, denseedges;
+    void AppendDense (int nreg);
   public:
     ///
     MinimumDegreeOrdering (int an);

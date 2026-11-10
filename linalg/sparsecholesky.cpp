@@ -250,6 +250,43 @@ namespace ngla
 	}
     */
 
+    {
+      // ordering constraints, see order.hpp
+      const Flags & iflags = a->GetInverseFlags();
+      string late = iflags.GetStringFlag ("late", "zero");
+      if (late != "zero" && late != "nonpos" && late != "off")
+        throw Exception ("SparseCholesky: flag late must be 'zero', 'nonpos' or 'off', got '"+late+"'");
+      mdo->densefac = iflags.GetNumFlag ("densefac", 10.0);
+      if (iflags.NumListFlagDefined ("lastdofs"))
+        for (double d : iflags.GetNumListFlag ("lastdofs"))
+          {
+            if (d < 0 || d >= n) throw Exception ("SparseCholesky: lastdofs out of range");
+            mdo->lastdofs.Append (int(d));
+          }
+      if (late != "off")
+        {
+          mdo->level.SetSize (n);
+          mdo->level = 0;
+          ParallelFor (n, [&] (size_t i)
+                         {
+                           if (inner && !inner->Test(i)) return;
+                           if (cluster && !(*cluster)[i]) return;
+                           const TM & d = (*a)(i,i);
+                           if (ngbla::L2Norm2 (d) == 0)
+                             mdo->level[i] = -1;
+                           else if (late == "nonpos")
+                             {
+                               if constexpr (std::is_same_v<TM,double>)
+                                 if (d < 0) mdo->level[i] = 1;
+                             }
+                         });
+          mdo->waitfrac = iflags.GetNumFlag ("waitfrac", 1.0);
+          bool any = false;
+          for (int l : mdo->level) if (l != 0) { any = true; break; }
+          if (!any) mdo->level.SetSize (0);
+        }
+    }
+
     if (printstat)
       cout << IM(4) << "start ordering" << endl;
     
@@ -576,6 +613,7 @@ namespace ngla
 	return;
       }
     lfact = TM(0.0);
+    diag = TM(0.0);   // matrix may have no diagonal entry
     if (!inner && !cluster)
       ParallelFor 
         (Range(height), [&](auto i)
