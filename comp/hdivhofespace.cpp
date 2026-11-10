@@ -766,13 +766,10 @@ namespace ngcomp
             if (highest_order_dc)
               switch (et)
                 {
-                case ET_TET: case ET_PYRAMID:
+                case ET_TET: case ET_PYRAMID: case ET_PRISM: case ET_HEX:
                   for (auto f : ma->GetElFacets(i))
                     if (!boundary_facet[f])
                       inci += (ma->GetFacePNums(f).Size()==3) ? order_facet[f][0]+1 : order_facet[f][0]+order_facet[f][1]+1;
-                  break;
-                case ET_PRISM:
-                  inci += 2*(p[0]+1)+3*(p[0]+p[2]+1);
                   break;
                 default:
                   break;
@@ -786,26 +783,28 @@ namespace ngcomp
         
         if (highest_order_dc)
           {
-            dc_pairs.SetSize ((order+1)*ma->GetNFacets());
+            Array<int> first_dc(nfa+1);
+            first_dc[0] = 0;
+            for (size_t f = 0; f < nfa; f++)
+              {
+                int ndc = 0;
+                if (!boundary_facet[f])
+                  ndc = (ma->GetFacePNums(f).Size()==3) ? order_facet[f][0]+1 : order_facet[f][0]+order_facet[f][1]+1;
+                first_dc[f+1] = first_dc[f] + ndc;
+              }
+            dc_pairs.SetSize (first_dc[nfa]);
             dc_pairs = IVec<2> (-1,-1);
             
             for (int i = 0; i < ma->GetNE(); i++)
               {
                 ElementId ei(VOL,i);
-                auto fnums = ma->GetElFacets (ei);
-		int di = first_inner_dof[i]; // +k*(order+1);
-		    
-                for (int k = 0; k < fnums.Size(); k++)
-		  if (!boundary_facet[fnums[k]])
-		    {
-		      int base = fnums[k]*(order+1);
-		      
-		      for (int l = 0; l < order+1; l++)
-			{
-			  dc_pairs[base+l][1] = dc_pairs[base+l][0];
-			  dc_pairs[base+l][0] = di++;
-			}
-		    }
+		int di = first_inner_dof[i];
+                for (auto f : ma->GetElFacets (ei))
+                  for (int l = first_dc[f]; l < first_dc[f+1]; l++)
+                    {
+                      dc_pairs[l][1] = dc_pairs[l][0];
+                      dc_pairs[l][0] = di++;
+                    }
               }
           }
         else
@@ -1368,25 +1367,50 @@ namespace ngcomp
 		dnums += fanums;
 		
 		int firstel = eldofs.First();
+                ELEMENT_TYPE et = ma->GetElType(ei);
 		
 		for(int i = 0; i < fanums.Size(); i++)
 		  {
 		    int firstfa = GetFacetDofs(fanums[i]).First();
+                    auto add = [&] (bool dc) { dnums.Append(dc ? firstel++ : firstfa++); };
 		    
-		    if (!boundary_facet[fanums[i]])
-		      {
-			for (int i = 0; i <= order-1; i++)
-			  {
-			    for(int j = 0; j < order-i-1; j++)
-			      dnums.Append(firstfa++);
-			    dnums.Append(firstel++);
-			  }
-			for (int i = 0; i < order-1; i++)
-			  dnums.Append(firstfa++);
-			dnums.Append(firstel++);
-		      }
-		    else
+		    if (boundary_facet[fanums[i]])
 		      dnums += GetFacetDofs (fanums[i]);
+                    else if (ElementTopology::GetFaceType(et, i) == ET_TRIG)
+		      {
+                        int p = order_facet[fanums[i]][0];
+			for (int k = 0; k <= p-1; k++)
+                          for (int l = 0; l <= p-1-k; l++)
+                            add (l == p-1-k);
+                        for (int j = 0; j <= p-1; j++)
+                          add (j == p-1);
+		      }
+                    else if (et == ET_PRISM || et == ET_PYRAMID || et == ET_HEX)
+                      {
+                        // as HDivHighOrderFE_Shape: a p0 x p1 block, ordered by the
+                        // vertex numbers, then p0 and p1 edge-type shapes
+                        IVec<2> p = order_facet[fanums[i]];
+                        bool k_outer = true;
+                        if (et == ET_PRISM)
+                          {
+                            auto vnums = ma->GetElVertices(ei);
+                            auto face = ElementTopology::GetFaces(ET_PRISM)[i];
+                            int fmax = 0;
+                            for (int j = 1; j < 4; j++)
+                              if (vnums[face[j]] < vnums[face[fmax]]) fmax = j;
+                            k_outer = vnums[face[fmax^1]] < vnums[face[3-fmax]];
+                          }
+                        int nouter = k_outer ? p[0] : p[1], ninner = k_outer ? p[1] : p[0];
+                        for (int a = 0; a < nouter; a++)
+                          for (int b = 0; b < ninner; b++)
+                            add (a == nouter-1 || b == ninner-1);
+                        for (int j = 0; j < p[0]; j++)
+                          add (j == p[0]-1);
+                        for (int j = 0; j < p[1]; j++)
+                          add (j == p[1]-1);
+                      }
+                    else
+                      throw Exception ("HDiv highest_order_dc: quad faces not implemented for this element type");
 		  }
 		dnums += IntRange (firstel, eldofs.Next());
 	      }
