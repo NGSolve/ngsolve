@@ -1145,18 +1145,16 @@ namespace ngcomp
     auto fesy = GetTestSpace();
     auto ma = GetMeshAccess();
 
-    Array<short> classnr(ma->GetNE(VOL));
+    Array<int> classnr(ma->GetNE(VOL));
     ma->IterateElements
       (VOL, lh, [&] (auto el, LocalHeap & llh)
        {
+         if (!fesx->DefinedOn (el) || !fesy->DefinedOn (el)) { classnr[el.Nr()] = -1; return; }
          bool curved = ma->GetElement(el).is_curved;
-         classnr[el.Nr()] = 
-           2 * SwitchET<ET_SEGM, ET_TRIG,ET_TET>
-           (el.GetType(),
-            [el] (auto et) { return ET_trait<et.ElementType()>::GetClassNr(el.Vertices()); })
-           + (curved ? 1 : 0);
+         classnr[el.Nr()] = 2 * ElementClassNr (el.GetType(), el.Vertices()) + (curved ? 1 : 0);
        });
-        
+    CompressClassNrs (classnr);
+
     // reorder each class individually by RCM on its induced dof-sharing
     // subgraph: batches of consecutive elements within a class row share dofs
     // -> compact dof windows, consistent with the space's dof numbering
@@ -1166,11 +1164,8 @@ namespace ngcomp
     TableCreator<size_t> creator;
     for ( ; !creator.Done(); creator++)
       for (size_t i = 0; i < classnr.Size(); i++)
-        {
-          ElementId ei(VOL, i);
-          if (fesx->DefinedOn(ei) && fesy->DefinedOn(ei))
-            creator.Add (classnr[i], i);
-        }
+        if (classnr[i] >= 0)
+          creator.Add (classnr[i], i);
     Table<size_t> table = creator.MoveTable();
 
     Table<int> doftablex = fesx->CreateDofTable(VOL);
@@ -1738,16 +1733,15 @@ namespace ngcomp
     static Timer tgroupTi2("assmble-group Ti2");        
     
 
-    Array<short> classnr(ma->GetNE(VOL));
+    Array<int> classnr(ma->GetNE(VOL));
     tclass.Start();
     ma->IterateElements
       (VOL, lh, [&] (auto el, LocalHeap & llh)
        {
-         classnr[el.Nr()] = 
-           SwitchET<ET_SEGM, ET_TRIG,ET_TET>
-           (el.GetType(),
-            [el] (auto et) { return ET_trait<et.ElementType()>::GetClassNr(el.Vertices()); });
+         if (!fesx->DefinedOn (el) || !fesy->DefinedOn (el)) { classnr[el.Nr()] = -1; return; }
+         classnr[el.Nr()] = ElementClassNr (el.GetType(), el.Vertices());
        });
+    CompressClassNrs (classnr);
     tclass.Stop();
         
     // reorder each class individually by RCM on its induced dof-sharing
@@ -1759,11 +1753,8 @@ namespace ngcomp
     TableCreator<size_t> creator;
     for ( ; !creator.Done(); creator++)
       for (size_t i = 0; i < classnr.Size(); i++)
-        {
-          ElementId ei(VOL, i);
-          if (fesx->DefinedOn(ei) && fesy->DefinedOn(ei))
-            creator.Add (classnr[i], i);
-        }
+        if (classnr[i] >= 0)
+          creator.Add (classnr[i], i);
     Table<size_t> table = creator.MoveTable();
 
     Table<int> doftablex = fesx->CreateDofTable(VOL);
@@ -1820,15 +1811,16 @@ namespace ngcomp
             IntegrationRule ir;
             if (bfi->ElementVB() == VOL)
               {
-                const IntegrationRule & volir = bfi->GetIntegrationRule(felx.ElementType(), felx.Order()+fely.Order()+bonus_intorder);
+                // same rule as the standard assembly
+                const IntegrationRule & volir = bfi->GetIntegrationRule(fel, lh);
                 for (auto ip : volir)
                   ir += ip;
               }
             else
               {
                 auto eltype = felx.ElementType();
-                
-                Facet2ElementTrafo transform(eltype, bfi->ElementVB()); 
+
+                Facet2ElementTrafo transform(eltype, bfi->ElementVB());
                 int nfacet = transform.GetNFacets();
                 
                 for (int k = 0; k < nfacet; k++)

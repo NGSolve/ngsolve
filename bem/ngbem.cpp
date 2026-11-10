@@ -192,23 +192,18 @@ namespace ngsbem
                            VorB vb)
     {
       auto mesh = fes.GetMeshAccess();
-      Array<short> classnr(mesh->GetNE(vb));
+      Array<int> classnr(mesh->GetNE(vb));
       mesh->IterateElements
         (vb, lh, [&] (auto el, LocalHeap & llh)
         {
-          if (el.GetType() == ET_QUAD)
-            classnr[el.Nr()] = 8 /* max trig calsses */  +  ET_trait<ET_QUAD>::GetClassNr(el.Vertices());
-          else
-            classnr[el.Nr()] =
-              SwitchET<ET_SEGM, ET_TRIG, ET_TET>
-              (el.GetType(),
-               [el] (auto et) { return ET_trait<et.ElementType()>::GetClassNr(el.Vertices()); });
+          classnr[el.Nr()] = (compress_els[el.Nr()] != -1) ? ElementClassNr (el.GetType(), el.Vertices()) : -1;
         });
+      CompressClassNrs (classnr);
 
       TableCreator<size_t> creator;
       for ( ; !creator.Done(); creator++)
         for (auto i : Range(classnr))
-          if (compress_els[i] != -1)
+          if (classnr[i] >= 0)
             creator.Add (classnr[i], i);
       Table<size_t> table = creator.MoveTable();
 

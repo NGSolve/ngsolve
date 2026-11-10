@@ -1913,7 +1913,25 @@ namespace ngfem
   }
 
 
-  // element type and vertex permutation
+  // first class number of et, nv! classes per type
+  constexpr int ElementClassOffset (ELEMENT_TYPE et)
+  {
+    switch (et)
+      {
+      case ET_POINT:   return 0;
+      case ET_SEGM:    return 1;
+      case ET_TRIG:    return 3;
+      case ET_QUAD:    return 9;
+      case ET_TET:     return 33;
+      case ET_PYRAMID: return 57;
+      case ET_PRISM:   return 177;
+      case ET_HEXAMID: return 897;
+      case ET_HEX:     return 5937;
+      }
+    return 46257;
+  }
+
+  // element type and vertex permutation, below 46257
   template <typename TVN>
   inline int ElementClassNr (ELEMENT_TYPE et, const TVN & vnums)
   {
@@ -1925,7 +1943,7 @@ namespace ngfem
           if (vnums[j] < vnums[i]) smaller++;
         perm = perm * (vnums.Size()-i) + smaller;
       }
-    return 40320 * int(et) + perm;
+    return ElementClassOffset(et) + perm;
   }
 
   // renumber non-negative entries to 0..k-1, keeps order

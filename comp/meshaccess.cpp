@@ -2324,17 +2324,15 @@ namespace ngcomp
     if (int(elements_of_class_timestamp[vb]) >= mesh.GetTimeStamp())
       return elements_of_class[vb];
 
-    Array<short> classnr(GetNE(vb));
+    Array<int> classnr(GetNE(vb));
     LocalHeap lh(10000);  // should use ParallelForRange, then we don't need the lh
     IterateElements
       (vb, lh, [&] (auto el, LocalHeap & llh)
        {
-         classnr[el.Nr()] = 
-           SwitchET<ET_SEGM,ET_TRIG,ET_TET>
-           (el.GetType(),
-            [el] (auto et) { return ET_trait<et.ElementType()>::GetClassNr(el.Vertices()); });
+         classnr[el.Nr()] = ElementClassNr (el.GetType(), el.Vertices());
        });
-    
+    CompressClassNrs (classnr);
+
     TableCreator<size_t> creator;
     for ( ; !creator.Done(); creator++)
       for (auto i : Range(classnr))

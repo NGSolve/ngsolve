@@ -372,34 +372,16 @@ namespace ngcomp
     /** element equivalence classes **/
     // LocalHeap lh(10000000);
 
-    /** #of equivalence classes per element type **/
-    Array<short> et_eqc_cnt(ET_HEX+1); et_eqc_cnt = 0;
+    Array<int> classnr(ma->GetNE(vb));
     ma->IterateElements
-      (vb, lh, [&] (auto el, LocalHeap & llh) {
-	short anum = 1 +
-	  SwitchET (el.GetType(),
-		    [&] (auto et) { return ET_trait<et.ElementType()>::GetClassNr(el.Vertices()); });
-	et_eqc_cnt[int(el.GetType())] = max(et_eqc_cnt[int(el.GetType())], anum);
-      });
-    /** prefix-sum so we have a unique nr for every element-type/element-eqc pair **/
-    Array<short> et_firsti(ET_HEX+2); et_firsti = 0;
-    for (auto k : Range(et_eqc_cnt))
-      { et_firsti[k+1] = et_eqc_cnt[k] + et_firsti[k]; }
-    /** actual class nrs **/
-    Array<short> classnr(ma->GetNE(vb));
-    ma->IterateElements
-      (vb, lh, [&] (auto el, LocalHeap & llh) 
+      (vb, lh, [&] (auto el, LocalHeap & llh)
       {
-        if ( (space_a->DefinedOn(vb, el.GetIndex())) && (space_b->DefinedOn(vb, el.GetIndex())) )
-        {
-            classnr[el.Nr()] =
-            SwitchET
-            (el.GetType(),
-            [&] (auto et) { return et_firsti[int(et)] + ET_trait<et.ElementType()>::GetClassNr(el.Vertices()); });
-        }
+        if (space_a->DefinedOn(vb, el.GetIndex()) && space_b->DefinedOn(vb, el.GetIndex()))
+          classnr[el.Nr()] = ElementClassNr (el.GetType(), el.Vertices());
         else
-        {classnr[el.Nr()] = -1;}
+          classnr[el.Nr()] = -1;
       });
+    CompressClassNrs (classnr);
     
     TableCreator<size_t> creator;
     for ( ; !creator.Done(); creator++)

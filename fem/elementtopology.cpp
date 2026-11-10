@@ -387,9 +387,9 @@ namespace ngfem
     for (int c : classnr) maxc = max(maxc, c);
     if (maxc < 0) return;
 
-    if (size_t(maxc) <= max(classnr.Size(), size_t(1) << 20))
+    if (size_t(maxc) <= 4*classnr.Size())
       {
-        // lookup table, covers all ElementClassNr
+        // lookup table
         Array<int> map(size_t(maxc)+1);
         map = 0;
         for (int c : classnr)

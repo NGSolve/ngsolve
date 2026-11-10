@@ -1581,21 +1581,23 @@ global system.
     
     auto ma = GetMeshAccess();
 
-    Array<short> classnr(ma->GetNE(VOL));
+    Array<int> classnr(ma->GetNE(VOL));
     ma->IterateElements
       (VOL, lh, [&] (auto el, LocalHeap & llh)
        {
-         classnr[el.Nr()] = 
-           SwitchET<ET_SEGM, ET_TRIG,ET_TET>
-           (el.GetType(),
-            [el] (auto et) { return ET_trait<et.ElementType()>::GetClassNr(el.Vertices()); });
+         // constant-Jacobian shortcut above needs simplices
+         if (auto et = el.GetType(); et != ET_SEGM && et != ET_TRIG && et != ET_TET)
+           throw Exception("L2 mass operator: element type not supported");
+         if (optimize_constant && !el.is_curved) { classnr[el.Nr()] = -1; return; }
+         classnr[el.Nr()] = ElementClassNr (el.GetType(), el.Vertices());
        });
-        
+    CompressClassNrs (classnr);
+
     TableCreator<size_t> creator;
     for ( ; !creator.Done(); creator++)
       for (auto i : Range(classnr))
-        if (!optimize_constant || ma->GetElement({VOL,i}).is_curved)
-            creator.Add (classnr[i], i);
+        if (classnr[i] >= 0)
+          creator.Add (classnr[i], i);
     Table<size_t> table = creator.MoveTable();
 
 
@@ -1789,7 +1791,7 @@ global system.
     IterateElements (*this, VOL, lh,
                      [&rho, &vec, fv, def, this] (FESpace::Element el, LocalHeap & lh)
                      {
-                       auto tid = TaskManager::GetThreadId();
+                       auto tid = TaskManager::GetTimerThreadId();
                        RegionTimer rtall(tall);
                        tel.Start(tid);
 
@@ -1892,7 +1894,7 @@ global system.
                                    pntvals(i) *= ir[i].Weight() * mir[i].GetMeasure() * rhovals(0,i);
                                else
                                  for (size_t i = 0; i < ir.Size(); i++)
-                                   pntvals(i) *= ir[i].Weight() / mir[i].GetMeasure();
+                                   pntvals(i) *= ir[i].Weight() * mir[i].GetMeasure();
 
                                melx.Col(comp) = 0.0;
                                fel.AddTrans (ir, pntvals, melx.Col(comp));
@@ -1941,15 +1943,13 @@ global system.
   GetTraceOperator (shared_ptr<FESpace> tracespace, bool avg) const
   {
     LocalHeap lh(1000000);
-    Array<short> classnr(ma->GetNE());
+    Array<int> classnr(ma->GetNE());
     ma->IterateElements
       (VOL, lh, [&] (auto el, LocalHeap & llh)
        {
-         classnr[el.Nr()] =
-           SwitchET<ET_TRIG,ET_TET>
-           (el.GetType(),
-            [el] (auto et) { return ET_trait<et.ElementType()>::GetClassNr(el.Vertices()); });
+         classnr[el.Nr()] = ElementClassNr (el.GetType(), el.Vertices());
        });
+    CompressClassNrs (classnr);
 
     TableCreator<size_t> creator;
     for ( ; !creator.Done(); creator++)
@@ -2029,15 +2029,13 @@ global system.
     static Timer t("GetTrace"); RegionTimer reg(t);
 
     out = 0.0;
-    Array<short> classnr(ma->GetNE());
+    Array<int> classnr(ma->GetNE());
     ma->IterateElements
       (VOL, lh, [&] (auto el, LocalHeap & llh)
        {
-         classnr[el.Nr()] =
-           SwitchET<ET_TRIG,ET_TET>
-           (el.GetType(),
-            [el] (auto et) { return ET_trait<et.ElementType()>::GetClassNr(el.Vertices()); });
+         classnr[el.Nr()] = ElementClassNr (el.GetType(), el.Vertices());
        });
+    CompressClassNrs (classnr);
 
     TableCreator<size_t> creator;
     for ( ; !creator.Done(); creator++)
@@ -2100,15 +2098,13 @@ global system.
     static Timer t("GetTraceTrans"); RegionTimer reg(t);
 
     out = 0.0;
-    Array<short> classnr(ma->GetNE());
+    Array<int> classnr(ma->GetNE());
     ma->IterateElements
       (VOL, lh, [&] (auto el, LocalHeap & llh)
        {
-         classnr[el.Nr()] =
-           SwitchET<ET_TRIG,ET_TET>
-           (el.GetType(),
-            [el] (auto et) { return ET_trait<et.ElementType()>::GetClassNr(el.Vertices()); });
+         classnr[el.Nr()] = ElementClassNr (el.GetType(), el.Vertices());
        });
+    CompressClassNrs (classnr);
 
     TableCreator<size_t> creator;
     for ( ; !creator.Done(); creator++)
@@ -4996,7 +4992,7 @@ One can evaluate the vector-valued function, and one can take the gradient.
          << "rho = " << *rho << endl
          << "elwiseconst = " << rho->ElementwiseConstant() << endl;
     */
-    if (rho->ElementwiseConstant() && order_policy == CONSTANT_ORDER && !curved)
+    if ((!rho || rho->ElementwiseConstant()) && order_policy == CONSTANT_ORDER && !curved)
       // && (covariant || piola || (rho && rho->Dimension() > 1) )
       {
         // cout << "optimized vector-apply-mass" << endl;
@@ -5351,22 +5347,25 @@ One can evaluate the vector-valued function, and one can take the gradient.
     
     auto ma = GetMeshAccess();
 
-    Array<short> classnr(ma->GetNE(VOL));
+    Array<int> classnr(ma->GetNE(VOL));
     ma->IterateElements
       (VOL, lh, [&] (auto el, LocalHeap & llh)
        {
-         classnr[el.Nr()] = 
-           SwitchET<ET_SEGM, ET_TRIG,ET_TET>
-           (el.GetType(),
-            [el] (auto et) { return ET_trait<et.ElementType()>::GetClassNr(el.Vertices()); });
+         // constant-Jacobian shortcut above needs simplices
+         if (auto et = el.GetType(); et != ET_SEGM && et != ET_TRIG && et != ET_TET)
+           throw Exception("VectorL2 mass operator: element type not supported");
+         if ((optimize_constant && !el.is_curved) ||
+             (defon && !defon->Mask()[el.GetIndex()]))
+           { classnr[el.Nr()] = -1; return; }
+         classnr[el.Nr()] = ElementClassNr (el.GetType(), el.Vertices());
        });
-        
+    CompressClassNrs (classnr);
+
     TableCreator<size_t> creator;
     for ( ; !creator.Done(); creator++)
       for (auto i : Range(classnr))
-        if (!optimize_constant || ma->GetElement({VOL,i}).is_curved)
-          if (!defon || defon->Mask()[ma->GetElIndex({VOL,i})])  
-            creator.Add (classnr[i], i);
+        if (classnr[i] >= 0)
+          creator.Add (classnr[i], i);
     Table<size_t> table = creator.MoveTable();
 
     for (auto elclass_inds : table)
@@ -5684,7 +5683,6 @@ One can evaluate the vector-valued function, and one can take the gradient.
 
          bool curved = trafo.IsCurvedElement();
          if (rho && !rho->ElementwiseConstant()) curved = true;
-         curved = false;  // curved not implemented
 
          if (!curved)
            {
@@ -5707,6 +5705,42 @@ One can evaluate the vector-valued function, and one can take the gradient.
                  hv *=  diag_mass(i);
                  melx.Col(i) = trans * hv;
                }
+           }
+         else
+           {
+             SIMD_IntegrationRule ir(fel.ElementType(), 2*fel.Order());
+             SIMD_MappedIntegrationRule<DIM,DIM> mir(ir, trafo, lh);
+             FlatMatrix<SIMD<double>> pntvals(DIM, ir.Size(), lh);
+             FlatMatrix<SIMD<double>> rhovals1(1, ir.Size(), lh);
+             FlatMatrix<SIMD<double>> rhovals(DIM*DIM, ir.Size(), lh);
+             if (rho)
+               {
+                 if (rho->Dimension() == 1)
+                   rho->Evaluate (mir, rhovals1);
+                 else
+                   rho->Evaluate (mir, rhovals);
+               }
+
+             for (int comp = 0; comp < DIM; comp++)
+               feli.Evaluate (ir, melx.Row(comp), pntvals.Row(comp));
+             Mat<DIM,DIM,SIMD<double>> rhoi(0.0);
+             for (int i = 0; i < ir.Size(); i++)
+               {
+                 if (!rho)
+                   rhoi = Identity(DIM);
+                 else if (rho->Dimension() == 1)
+                   rhoi = rhovals1(0,i) * Identity(DIM);
+                 else
+                   rhoi.AsVector() = rhovals.Col(i);
+                 rhoi *= mir[i].GetMeasure() * mir[i].IP().Weight();
+
+                 Vec<DIM,SIMD<double>> rhopval = rhoi * pntvals.Col(i);
+                 pntvals.Col(i) = rhopval;
+               }
+
+             melx = 0.0;
+             for (int comp = 0; comp < DIM; comp++)
+               feli.AddTrans (ir, pntvals.Row(comp), melx.Row(comp));
            }
          /*
            else
@@ -5772,7 +5806,6 @@ One can evaluate the vector-valued function, and one can take the gradient.
 
          bool curved = trafo.IsCurvedElement();
          if (rho && !rho->ElementwiseConstant()) curved = true;
-         curved = false;  // curved not implemented
 
          if (!curved)
            {
@@ -5796,6 +5829,45 @@ One can evaluate the vector-valued function, and one can take the gradient.
                  hv *=  diag_mass(i);
                  melx.Col(i) = trans * hv;
                }
+           }
+         else
+           {
+             SIMD_IntegrationRule ir(fel.ElementType(), 2*fel.Order());
+             SIMD_MappedIntegrationRule<DIM,DIM> mir(ir, trafo, lh);
+             FlatMatrix<SIMD<double>> pntvals(DIM, ir.Size(), lh);
+             FlatMatrix<SIMD<double>> rhovals1(1, ir.Size(), lh);
+             FlatMatrix<SIMD<double>> rhovals(DIM*DIM, ir.Size(), lh);
+             if (rho)
+               {
+                 if (rho->Dimension() == 1)
+                   rho->Evaluate (mir, rhovals1);
+                 else
+                   rho->Evaluate (mir, rhovals);
+               }
+
+             for (int comp = 0; comp < DIM; comp++)
+               feli.Evaluate (ir, melx.Row(comp), pntvals.Row(comp));
+             Mat<DIM> B = GetBasis<PiolaBasisTrafo,DIM>(fel);
+             Mat<DIM,DIM,SIMD<double>> rhoi(0.0);
+             for (int i = 0; i < ir.Size(); i++)
+               {
+                 if (!rho)
+                   rhoi = Identity(DIM);
+                 else if (rho->Dimension() == 1)
+                   rhoi = rhovals1(0,i) * Identity(DIM);
+                 else
+                   rhoi.AsVector() = rhovals.Col(i);
+                 Mat<DIM,DIM,SIMD<double>> trans = 1/mir[i].GetJacobiDet() * MultBasis (mir[i].GetJacobian(), B);
+                 rhoi = Trans(trans)*rhoi*trans;
+                 rhoi *= mir[i].GetMeasure() * mir[i].IP().Weight();
+
+                 Vec<DIM,SIMD<double>> rhopval = rhoi * pntvals.Col(i);
+                 pntvals.Col(i) = rhopval;
+               }
+
+             melx = 0.0;
+             for (int comp = 0; comp < DIM; comp++)
+               feli.AddTrans (ir, pntvals.Row(comp), melx.Row(comp));
            }
          /*
            else
@@ -5859,7 +5931,6 @@ One can evaluate the vector-valued function, and one can take the gradient.
 
          bool curved = trafo.IsCurvedElement();
          if (rho && !rho->ElementwiseConstant()) curved = true;
-         curved = false;  // curved not implemented
 
          if (!curved)
            {
@@ -5883,6 +5954,45 @@ One can evaluate the vector-valued function, and one can take the gradient.
                  hv *=  diag_mass(i);
                  melx.Col(i) = trans * hv;
                }
+           }
+         else
+           {
+             SIMD_IntegrationRule ir(fel.ElementType(), 2*fel.Order());
+             SIMD_MappedIntegrationRule<DIM,DIM> mir(ir, trafo, lh);
+             FlatMatrix<SIMD<double>> pntvals(DIM, ir.Size(), lh);
+             FlatMatrix<SIMD<double>> rhovals1(1, ir.Size(), lh);
+             FlatMatrix<SIMD<double>> rhovals(DIM*DIM, ir.Size(), lh);
+             if (rho)
+               {
+                 if (rho->Dimension() == 1)
+                   rho->Evaluate (mir, rhovals1);
+                 else
+                   rho->Evaluate (mir, rhovals);
+               }
+
+             for (int comp = 0; comp < DIM; comp++)
+               feli.Evaluate (ir, melx.Row(comp), pntvals.Row(comp));
+             Mat<DIM> B = GetBasis<CovariantBasisTrafo,DIM>(fel);
+             Mat<DIM,DIM,SIMD<double>> rhoi(0.0);
+             for (int i = 0; i < ir.Size(); i++)
+               {
+                 if (!rho)
+                   rhoi = Identity(DIM);
+                 else if (rho->Dimension() == 1)
+                   rhoi = rhovals1(0,i) * Identity(DIM);
+                 else
+                   rhoi.AsVector() = rhovals.Col(i);
+                 Mat<DIM,DIM,SIMD<double>> trans = MultBasis (Mat<DIM,DIM,SIMD<double>>(Trans(mir[i].GetJacobianInverse())), B);
+                 rhoi = Trans(trans)*rhoi*trans;
+                 rhoi *= mir[i].GetMeasure() * mir[i].IP().Weight();
+
+                 Vec<DIM,SIMD<double>> rhopval = rhoi * pntvals.Col(i);
+                 pntvals.Col(i) = rhopval;
+               }
+
+             melx = 0.0;
+             for (int comp = 0; comp < DIM; comp++)
+               feli.AddTrans (ir, pntvals.Row(comp), melx.Row(comp));
            }
          /*
            else
