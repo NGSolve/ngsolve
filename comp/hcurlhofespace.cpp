@@ -238,6 +238,8 @@ namespace ngcomp
       "  gradbnds = [1 if bnd == 'iron_bnd' else 0 for bnd in mesh.GetBoundaries()]";
     docu.Arg("highest_order_dc") = "bool = False\n"
       "  Activates relaxed H(curl)-conformity. Allows tangential discontinuity of highest order edge basis functions";
+    docu.Arg("orderinner") = "int = None\n"
+      "  Polynomial order of element-interior basis functions, default is order";
     return docu;
   }
 
