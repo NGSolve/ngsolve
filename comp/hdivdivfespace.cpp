@@ -240,7 +240,7 @@ namespace ngcomp
   static constexpr int DIM = 1;
   static constexpr int DIM_SPACE = D;
   static constexpr int DIM_ELEMENT = D;
-  static constexpr int DIM_DMAT = D*D;
+  static constexpr int DIM_DMAT = D;
   static constexpr int DIFFORDER = 0;
   static constexpr int DIM_STRESS = D*D;
   using FiniteElementType = HDivDivFiniteElement<D>;
