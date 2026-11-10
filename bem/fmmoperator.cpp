@@ -196,7 +196,7 @@ namespace ngsbem
     info.source_bbox_radius = rx;
     info.target_bbox_radius = ry;
 
-    double dense = double(info.source_size) * double(info.target_size);
+    double dense = double(info.source_size) * source->DeviceSourceEntries() * double(info.target_size);
     info.direct_fallback_fraction = (dense > 0) ? double(info.num_direct_evaluations) / dense : 0.0;
 
     return info;

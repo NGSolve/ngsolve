@@ -63,9 +63,9 @@ namespace ngsbem
     size_t num_leaves = 0;                       // Number of leaf nodes, including empty leaves.
     size_t active_leaves = 0;                    // Number of leaves containing at least one source or target item.
     Array<size_t> nodes_per_level;               // Histogram of node counts by tree level.
-    size_t leaf_size_min = std::numeric_limits<size_t>::max(); // Minimum number of source or target items in a leaf.
+    size_t leaf_size_min = std::numeric_limits<size_t>::max(); // Minimum number of items in a non-empty leaf.
     size_t leaf_size_max = 0;                    // Maximum number of source or target items in a leaf.
-    double leaf_size_sum = 0;                    // Sum of leaf sizes, used to compute the mean leaf size.
+    double leaf_size_sum = 0;                    // Sum of leaf sizes, used to compute the mean over active_leaves.
     int order_min = std::numeric_limits<int>::max(); // Minimum allocated spherical expansion order.
     int order_max = -1;                          // Maximum allocated spherical expansion order.
     double order_sum = 0;                        // Sum of allocated orders, used to compute the mean order.
@@ -92,7 +92,7 @@ namespace ngsbem
     struct M2LCounts
     {
       size_t num_s2r = 0;                        // Number of recorded source-to-regular box translations.
-      size_t num_direct_evaluations = 0;         // Estimated quadrature-point interactions handled by direct fallback.
+      size_t num_direct_evaluations = 0;         // Number of (source entry, target point) pairs handled by direct fallback.
     };
 
     virtual ~BaseRegularMLExpansion() = default;

@@ -30,8 +30,8 @@ namespace ngsbem
     size_t total_multipole_coefficients = 0;     // Combined number of stored source and target expansion coefficients.
     size_t total_memory_bytes = 0;               // Combined memory used by stored expansion coefficients.
     size_t num_s2r = 0;                          // Number of recorded source-to-regular box translations.
-    size_t num_direct_evaluations = 0;           // Estimated quadrature-point interactions handled by direct fallback.
-    double direct_fallback_fraction = 0;         // Fraction of dense quadrature-point pairs handled by direct fallback.
+    size_t num_direct_evaluations = 0;           // Number of (source entry, target point) pairs handled by direct fallback.
+    double direct_fallback_fraction = 0;         // num_direct_evaluations / (source entries * target points).
     size_t nearfield_nze = 0;                    // Nonzero entries in the sparse Sauter-Schwab nearfield correction.
     double nearfield_fraction = 0;               // nearfield_nze divided by target_dofs*source_dofs.
     double source_bbox_radius = 0;               // Radius of the source root box.
