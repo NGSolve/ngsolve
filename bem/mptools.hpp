@@ -843,6 +843,45 @@ namespace ngsbem
   }
 
 
+  // the statistics of the tree below root, a singular or regular ML expansion node
+  template <typename Node>
+  void CollectTreeStatistics (Node & root, FMMTreeStats & stats)
+  {
+    root.TraverseTree([&](Node & node) {
+      stats.num_nodes++;
+      stats.max_level = max(stats.max_level, node.level);
+      while (stats.nodes_per_level.Size() <= size_t(node.level))
+        stats.nodes_per_level.Append(0);
+      stats.nodes_per_level[node.level]++;
+
+      if (!node.childs[0])
+        {
+          stats.num_leaves++;
+          size_t leaf_size = node.NumItems();
+          if (leaf_size > 0)
+            {
+              stats.active_leaves++;
+              stats.leaf_size_min = min(stats.leaf_size_min, leaf_size);
+              stats.leaf_size_max = max(stats.leaf_size_max, leaf_size);
+              stats.leaf_size_sum += leaf_size;
+            }
+        }
+
+      int order = node.mp.SH().Order();
+      if (order >= 0)
+        {
+          stats.num_allocated_multipoles++;
+          stats.order_min = min(stats.order_min, order);
+          stats.order_max = max(stats.order_max, order);
+          stats.order_sum += order;
+          auto coefs = node.mp.SH().Coefs();
+          stats.total_coefficients += coefs.Size();
+          stats.multipole_bytes += coefs.Size() * sizeof(coefs[0]);
+        }
+    });
+  }
+
+
   template <typename entry_type=Complex, typename T_Kappa = double>
   class SingularMLExpansion : public BaseSingularMLExpansion
   {
@@ -1494,6 +1533,8 @@ namespace ngsbem
         return norm;
       }
       
+      size_t NumItems () const { return charges.Size() + dipoles.Size() + chargedipoles.Size() + currents.Size(); }
+
       void TraverseTree (const std::function<void(Node&)> & func)
       {
         func(*this);
@@ -1554,36 +1595,7 @@ namespace ngsbem
 
     void CollectStatistics(FMMTreeStats & stats) const override
     {
-      const_cast<Node&>(root).TraverseTree([&](Node & node) {
-        stats.num_nodes++;
-        stats.max_level = max(stats.max_level, node.level);
-        while (stats.nodes_per_level.Size() <= size_t(node.level))
-          stats.nodes_per_level.Append(0);
-        stats.nodes_per_level[node.level]++;
-
-        if (!node.childs[0])
-          {
-            stats.num_leaves++;
-            size_t leaf_size = node.charges.Size() + node.dipoles.Size()
-                             + node.chargedipoles.Size() + node.currents.Size();
-            if (leaf_size > 0) stats.active_leaves++;
-            stats.leaf_size_min = min(stats.leaf_size_min, leaf_size);
-            stats.leaf_size_max = max(stats.leaf_size_max, leaf_size);
-            stats.leaf_size_sum += leaf_size;
-          }
-
-        int order = node.mp.SH().Order();
-        if (order >= 0)
-          {
-            stats.num_allocated_multipoles++;
-            stats.order_min = min(stats.order_min, order);
-            stats.order_max = max(stats.order_max, order);
-            stats.order_sum += order;
-            size_t coefs = node.mp.SH().Coefs().Size();
-            stats.total_coefficients += coefs;
-            stats.multipole_bytes += coefs * sizeof(entry_type);
-          }
-      });
+      CollectTreeStatistics(const_cast<Node&>(root), stats);
     }
 
     void CalcMP() override
@@ -2115,6 +2127,8 @@ namespace ngsbem
         return sum;
       }
 
+      size_t NumItems () const { return targets.Size() + vol_targets.Size(); }
+
       void TraverseTree (const std::function<void(Node&)> & func)
       {
         func(*this);
@@ -2431,35 +2445,7 @@ namespace ngsbem
 
     void CollectStatistics(FMMTreeStats & stats) const override
     {
-      const_cast<Node&>(root).TraverseTree([&](Node & node) {
-        stats.num_nodes++;
-        stats.max_level = max(stats.max_level, node.level);
-        while (stats.nodes_per_level.Size() <= size_t(node.level))
-          stats.nodes_per_level.Append(0);
-        stats.nodes_per_level[node.level]++;
-
-        if (!node.childs[0])
-          {
-            stats.num_leaves++;
-            size_t leaf_size = node.targets.Size() + node.vol_targets.Size();
-            if (leaf_size > 0) stats.active_leaves++;
-            stats.leaf_size_min = min(stats.leaf_size_min, leaf_size);
-            stats.leaf_size_max = max(stats.leaf_size_max, leaf_size);
-            stats.leaf_size_sum += leaf_size;
-          }
-
-        int order = node.mp.SH().Order();
-        if (order >= 0)
-          {
-            stats.num_allocated_multipoles++;
-            stats.order_min = min(stats.order_min, order);
-            stats.order_max = max(stats.order_max, order);
-            stats.order_sum += order;
-            size_t coefs = node.mp.SH().Coefs().Size();
-            stats.total_coefficients += coefs;
-            stats.multipole_bytes += coefs * sizeof(elem_type);
-          }
-      });
+      CollectTreeStatistics(const_cast<Node&>(root), stats);
     }
 
     // Run the S2R planning walk to populate target-tree multipoles and count translations / direct-evaluation work

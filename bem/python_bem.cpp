@@ -89,13 +89,13 @@ namespace
       d["active_leaves"] = s.active_leaves;
       d["active_leaves_fraction"] = (s.num_leaves > 0) ? double(s.active_leaves) / double(s.num_leaves) : 0.0;
       d["bbox_radius"] = bbox_radius;
-      d["diameter_in_wavelengths"] = maybe(has_wavelength, 2.0 * bbox_radius / wavelength);
+      d["diameter_in_wavelengths"] = maybe(has_wavelength, bbox_radius / wavelength);
       py::list npl;
       for (auto n : s.nodes_per_level) npl.append(n);
       d["nodes_per_level"] = npl;
-      d["leaf_size_min"] = maybe(s.num_leaves > 0, s.leaf_size_min);
-      d["leaf_size_max"] = maybe(s.num_leaves > 0, s.leaf_size_max);
-      d["leaf_size_mean"] = mean_or_none(s.leaf_size_sum, s.num_leaves);
+      d["leaf_size_min"] = maybe(s.active_leaves > 0, s.leaf_size_min);
+      d["leaf_size_max"] = maybe(s.active_leaves > 0, s.leaf_size_max);
+      d["leaf_size_mean"] = mean_or_none(s.leaf_size_sum, s.active_leaves);
       d["order_min"] = maybe(s.num_allocated_multipoles > 0, s.order_min);
       d["order_max"] = maybe(s.num_allocated_multipoles > 0, s.order_max);
       d["order_mean"] = mean_or_none(s.order_sum, s.num_allocated_multipoles);
