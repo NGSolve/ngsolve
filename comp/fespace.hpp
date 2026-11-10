@@ -1474,35 +1474,6 @@ ANY                  1 1 1 1 | 15
                                                                   const string & type,
                                                                   Flags flags);
 
-  template <typename TVN>
-  inline int ElementClassNr (ELEMENT_TYPE et, const TVN & vnums)
-  {
-    int perm = 0;
-    for (size_t i = 0; i < vnums.Size(); i++)
-      {
-        int smaller = 0;
-        for (size_t j = i+1; j < vnums.Size(); j++)
-          if (vnums[j] < vnums[i]) smaller++;
-        perm = perm * (vnums.Size()-i) + smaller;
-      }
-    return 40320 * int(et) + perm;
-  }
-
-  inline void CompressClassNrs (FlatArray<int> classnr)
-  {
-    Array<int> keys;
-    for (int c : classnr)
-      if (c >= 0) keys.Append(c);
-    QuickSort (keys);
-    int nk = 0;
-    for (size_t i = 0; i < keys.Size(); i++)
-      if (i == 0 || keys[i] != keys[i-1]) keys[nk++] = keys[i];
-    keys.SetSize(nk);
-    for (int & c : classnr)
-      if (c >= 0)
-        c = std::lower_bound(keys.begin(), keys.end(), c) - keys.begin();
-  }
-
 
   /**
      template for registration of finite element spaces.

@@ -381,7 +381,50 @@ namespace ngfem
   */
 
 
-  
+  void CompressClassNrs (FlatArray<int> classnr)
+  {
+    int maxc = -1;
+    for (int c : classnr) maxc = max(maxc, c);
+    if (maxc < 0) return;
 
+    if (size_t(maxc) <= max(classnr.Size(), size_t(1) << 20))
+      {
+        // lookup table, covers all ElementClassNr
+        Array<int> map(size_t(maxc)+1);
+        map = 0;
+        for (int c : classnr)
+          if (c >= 0) map[c] = 1;
+        int nk = 0;
+        for (int & m : map)
+          { int used = m; m = nk; nk += used; }
+        for (int & c : classnr)
+          if (c >= 0) c = map[c];
+        return;
+      }
+
+    // sparse numbers: hash, sort distinct keys only
+    ClosedHashTable<int,int> ht(1024);
+    Array<int> keys;
+    int last = -1;
+    for (int c : classnr)
+      if (c >= 0 && c != last)
+        {
+          size_t pos;
+          if (ht.PositionCreate (c, pos)) keys.Append(c);
+          last = c;
+        }
+    QuickSort (keys);
+    for (size_t i = 0; i < keys.Size(); i++)
+      ht[keys[i]] = int(i);
+
+    last = -1;
+    int lastnr = -1;
+    for (int & c : classnr)
+      if (c >= 0)
+        {
+          if (c != last) { last = c; lastnr = ht.GetData (ht.Position(c)); }
+          c = lastnr;
+        }
+  }
 
 }

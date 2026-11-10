@@ -1912,6 +1912,25 @@ namespace ngfem
     return n;
   }
 
+
+  // element type and vertex permutation
+  template <typename TVN>
+  inline int ElementClassNr (ELEMENT_TYPE et, const TVN & vnums)
+  {
+    int perm = 0;
+    for (size_t i = 0; i < vnums.Size(); i++)
+      {
+        int smaller = 0;
+        for (size_t j = i+1; j < vnums.Size(); j++)
+          if (vnums[j] < vnums[i]) smaller++;
+        perm = perm * (vnums.Size()-i) + smaller;
+      }
+    return 40320 * int(et) + perm;
+  }
+
+  // renumber non-negative entries to 0..k-1, keeps order
+  NGS_DLL_HEADER void CompressClassNrs (FlatArray<int> classnr);
+
 }
 
 #endif
