@@ -2546,16 +2546,12 @@ lot of new non-zero entries in the matrix!\n" << endl;
       (VOL, lh, [&] (auto el, LocalHeap & llh)
        {
          if (!DefinedOn (el) || !l2space->DefinedOn (el)) { classnr[el.Nr()] = -1; return; }
-         classnr[el.Nr()] = 
-           SwitchET<ET_TRIG,ET_QUAD,ET_TET,ET_HEX>
-           (el.GetType(),
-            [el, vertex_map] (auto et) {
-             if (vertex_map.Size())
-               return ET_trait<et.ElementType()>::GetClassNr(vertex_map[el.Vertices()]);
-             else
-               return ET_trait<et.ElementType()>::GetClassNr(el.Vertices());
-            });
+         if (vertex_map.Size())
+           classnr[el.Nr()] = ElementClassNr (el.GetType(), vertex_map[el.Vertices()]);
+         else
+           classnr[el.Nr()] = ElementClassNr (el.GetType(), el.Vertices());
        });
+    CompressClassNrs (classnr);
 
     TableCreator<size_t> creator;
     for ( ; !creator.Done(); creator++)
