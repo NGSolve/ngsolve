@@ -231,12 +231,12 @@ namespace ngcomp
       }
     int bgeo_rem_rows = dims*nip_pad;
 
-    // second derivatives [refdir pair][ip][node] on curved classes (a dummy
+    // second derivatives [refdir pair][ip][node] on non-affine classes (a dummy
     // otherwise); the Hessian of each coordinate is symmetric, only the
     // pairs a <= b are stored, in the order of SymSliceTens3::Pair
     int nddir = dims*(dims+1)/2;
     int ddgeo_rem_rows = nddir*nip_pad;
-    bool geo_hesse_data = pmat->geo_order > 1;
+    bool geo_hesse_data = !pmat->affine;
     buffer_ddgeo = NewSharedBuffer(geo_hesse_data ? TableSize(nddir, geo_stride) : 1);
     buffer_ddgeo.HostData()[0] = 0;
     if (geo_hesse_data)
