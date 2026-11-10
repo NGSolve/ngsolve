@@ -91,6 +91,11 @@ namespace ngfem
     virtual void CalcFacetDShapeVolIP (int fnr, const IntegrationPoint & ip, 
                                        BareSliceMatrix<> shape) const override;
 
+    // L2-projection on each facet
+    virtual void Interpolate (const ElementTransformation & trafo,
+                              const class CoefficientFunction & func, SliceMatrix<> coefs,
+                              LocalHeap & lh, int bonus_intorder = 0) const override;
+
   private:
     template<typename Tx, typename TFA>  
     void T_CalcShapeFNr (int fnr, TIP<ET_trait<ET>::DIM,Tx> ip, TFA && shape) const;

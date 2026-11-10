@@ -9,6 +9,7 @@
 #include "facethofe.hpp"
 #include <tscalarfe_impl.hpp>
 #include <facethofe.hpp>
+#include "coefficient.hpp"
 
 
 
@@ -246,6 +247,84 @@ namespace ngfem
                     { dshape.Row(i) = GetGradient(shape); }));
   }
 
+
+  template<ELEMENT_TYPE ET>
+  void FacetFE<ET>::Interpolate (const ElementTransformation & trafo,
+                                 const CoefficientFunction & func, SliceMatrix<> coefs,
+                                 LocalHeap & lh, int bonus_intorder) const
+  {
+    Facet2ElementTrafo f2el (ET, BND);
+    for (int fnr = 0; fnr < N_FACET; fnr++)
+      {
+        HeapReset hr(lh);
+        IntRange dofs = this->GetFacetDofs(fnr);
+        size_t nd = dofs.Size();
+        int intorder = 2*facet_order[fnr] + bonus_intorder;
+
+        // shape: nd x np, vals: dim x np, weights (reference facet)
+        FlatMatrix<> shape, vals;
+        FlatVector<> weights;
+        try
+          {
+            SIMD_IntegrationRule irfacet(f2el.FacetType(fnr), intorder);
+            auto & irvol = f2el(fnr, irfacet, lh);
+            auto & mir = trafo(irvol, lh);
+            mir.ComputeNormalsAndMeasure (ET, fnr);
+
+            FlatMatrix<SIMD<double>> svals(coefs.Width(), mir.Size(), lh);
+            func.Evaluate (mir, svals);
+            FlatMatrix<SIMD<double>> sshape(nd, mir.Size(), lh);
+            CalcFacetShapeVolIR (fnr, irvol, sshape);
+            FlatVector<SIMD<double>> sweights(mir.Size(), lh);
+            for (size_t j = 0; j < mir.Size(); j++)
+              sweights(j) = irvol[j].Weight();
+
+            // padded points have weight 0
+            size_t np = mir.Size()*SIMD<double>::Size();
+            shape.AssignMemory (nd, np, (double*)sshape.Data());
+            vals.AssignMemory (coefs.Width(), np, (double*)svals.Data());
+            weights.AssignMemory (np, (double*)sweights.Data());
+          }
+        catch (const ExceptionNOSIMD & e)
+          {
+            IntegrationRule irfacet(f2el.FacetType(fnr), intorder);
+            auto & irvol = f2el(fnr, irfacet, lh);
+            auto & mir = trafo(irvol, lh);
+            mir.ComputeNormalsAndMeasure (ET, fnr);
+
+            size_t np = irvol.Size();
+            FlatMatrix<> valst(np, coefs.Width(), lh);
+            func.Evaluate (mir, valst);
+            vals.AssignMemory (coefs.Width(), np, lh);
+            vals = Trans(valst);
+            shape.AssignMemory (nd, np, lh);
+            weights.AssignMemory (np, lh);
+            for (size_t j = 0; j < np; j++)
+              {
+                CalcFacetShapeVolIP (fnr, irvol[j], shape.Col(j));
+                weights(j) = irvol[j].Weight();
+              }
+          }
+
+        FlatMatrix<> wshape(nd, shape.Width(), lh);
+        for (size_t j = 0; j < shape.Width(); j++)
+          wshape.Col(j) = weights(j) * shape.Col(j);
+
+        auto fcoefs = coefs.Rows(dofs);
+        fcoefs = wshape * Trans(vals);
+        if (nodal || ET == ET_PYRAMID)  // pyramid shapes are perturbed at the apex
+          {
+            FlatMatrix<> mass(nd, nd, lh), rhs(nd, coefs.Width(), lh);
+            mass = wshape * Trans(shape);
+            CalcInverse (mass);
+            rhs = fcoefs;
+            fcoefs = mass * rhs;
+          }
+        else  // L2-orthogonal basis
+          for (size_t i = 0; i < nd; i++)
+            fcoefs.Row(i) /= InnerProduct (wshape.Row(i), shape.Row(i));
+      }
+  }
 
 
   template class FacetFE<ET_SEGM>;
