@@ -576,12 +576,47 @@ namespace ngfem
       return 0;
     }
 
+    // W = grad_Gamma n = -Finv^T (sum_i n_i H_i) Finv
+    template <typename SCAL>
+    static Mat<D,D,SCAL> CalcWeingarten (const Mat<D,D-1,SCAL> & F, const Vec<D,SCAL> & nv,
+                                         const Vec<D,Mat<D-1,D-1,SCAL>> & hesse)
+    {
+      Mat<D-1,D-1,SCAL> b = SCAL(0.0);
+      for (int i = 0; i < D; i++)
+        b += nv(i) * hesse(i);
+      Mat<D-1,D-1,SCAL> FtF = Trans(F)*F;
+      Mat<D-1,D,SCAL> Finv = Inv(FtF)*Trans(F);
+      Mat<D-1,D,SCAL> bFinv = b*Finv;
+      Mat<D,D,SCAL> W = -Trans(Finv)*bFinv;
+      return W;
+    }
+
+    // Hessian of the facet parametrization of a volume element
+    template <typename SCAL>
+    static Vec<D,Mat<D-1,D-1,SCAL>> FacetHesse (const Vec<D,Mat<D,D,SCAL>> & hvol, const Mat<D,D-1> & Jf)
+    {
+      Vec<D,Mat<D-1,D-1,SCAL>> hesse;
+      for (int i = 0; i < D; i++)
+        {
+          Mat<D,D-1,SCAL> hJ = hvol(i)*Jf;
+          hesse(i) = Trans(Jf)*hJ;
+        }
+      return hesse;
+    }
+
+    static Mat<D,D-1> FacetJacobian (const ElementTransformation & eltrans, int fnr)
+    {
+      if (fnr < 0)
+        throw Exception("WeingartenCF: volume point is not on a facet");
+      LocalHeapMem<1000> lh("Weingarten-lh");
+      return Facet2ElementTrafo(eltrans.GetElementType()).GetJacobian(fnr,lh);
+    }
+
     void Evaluate (const BaseMappedIntegrationPoint & bmip, FlatVector<> res) const override
     {
       if ( (bmip.DimSpace() != D) || D == 1)
         throw Exception("illegal dim of Weingarten tensor");
 
-      const IntegrationPoint& ip = bmip.IP();
       const ElementTransformation & eltrans = bmip.GetTransformation();
 
       if (!eltrans.IsCurvedElement())
@@ -589,174 +624,66 @@ namespace ngfem
 	  res = 0;
 	  return;
 	}
-      
-      double eps = 1e-4;
 
-      Mat<D,D-1> dshape;
-      
+      Mat<D,D> W;
       if (bmip.DimSpace() != bmip.DimElement())
 	{
-	  for (int j = 0; j < D-1; j++)   // d / dxj
-	    {
-	      IntegrationPoint ipl(ip);
-	      ipl(j) -= eps;
-	      IntegrationPoint ipr(ip);
-	      ipr(j) += eps;
-	      IntegrationPoint ipll(ip);
-	      ipll(j) -= 2*eps;
-	      IntegrationPoint iprr(ip);
-	      iprr(j) += 2*eps;
-	      
-	      MappedIntegrationPoint<D-1,D> sipl(ipl, eltrans);
-	      MappedIntegrationPoint<D-1,D> sipr(ipr, eltrans);
-	      MappedIntegrationPoint<D-1,D> sipll(ipll, eltrans);
-	      MappedIntegrationPoint<D-1,D> siprr(iprr, eltrans);
-	      
-	      dshape.Col(j) = (1.0/(12.0*eps)) * (8.0*sipr.GetNV()-8.0*sipl.GetNV()-siprr.GetNV()+sipll.GetNV());
-            }
-	  
-	  res = (dshape*static_cast<const MappedIntegrationPoint<D-1,D>&>(bmip).GetJacobianInverse()).AsVector();
+          auto & mip = static_cast<const MappedIntegrationPoint<D-1,D>&>(bmip);
+          Vec<D,Mat<D-1,D-1>> hesse;
+          mip.CalcHesse (hesse);
+          W = CalcWeingarten<double> (mip.GetJacobian(), mip.GetNV(), hesse);
 	}
       else
 	{
-          LocalHeapMem<10000> lh("Weingarten-lh-nosimd");
-
-	  ELEMENT_TYPE et = eltrans.GetElementType();
-          int fnr = bmip.IP().FacetNr();
-          auto f2eltrafo = Facet2ElementTrafo(et);
-
-	  for (int j = 0; j < D-1; j++)   // d / dxj
-	    {
-	      HeapReset hr(lh);
-	      IntegrationPoint ipts[4];
-              ipts[0] = ip;
-	      ipts[0](j) -= eps;
-	      ipts[1] = ip;
-              ipts[1](j) += eps;
-	      ipts[2] = ip;
-              ipts[2](j) -= 2*eps;
-	      ipts[3] = ip;
-	      ipts[3](j) += 2*eps;
-
-              IntegrationPoint ipts_vol[4];
-              f2eltrafo(fnr,ipts[0],ipts_vol[0]);
-              f2eltrafo(fnr,ipts[1],ipts_vol[1]);
-              f2eltrafo(fnr,ipts[2],ipts_vol[2]);
-              f2eltrafo(fnr,ipts[3],ipts_vol[3]);
-
-              IntegrationRule ir(4,ipts_vol);
-              MappedIntegrationRule<D,D> mir(ir, eltrans, lh);
-
-              dshape.Col(j) = (1.0/(12.0*eps)) * (8.0*mir[1].GetNV()-8.0*mir[0].GetNV()-mir[3].GetNV()+mir[2].GetNV());
-	    }
-
-          Mat<D,D-1> F = bmip.GetJacobian()*f2eltrafo.GetJacobian(fnr,lh);
-          Mat<D-1,D-1> FtF = Trans(F)*F;
-          Mat<D-1,D> Finv = Inv(FtF)*Trans(F);
-          res = (dshape*Finv).AsVector();
+          auto & mip = static_cast<const MappedIntegrationPoint<D,D>&>(bmip);
+          Mat<D,D-1> Jf = FacetJacobian (eltrans, mip.IP().FacetNr());
+          Vec<D,Mat<D,D>> hvol;
+          mip.CalcHesse (hvol);
+          Mat<D,D-1> F = mip.GetJacobian()*Jf;
+          W = CalcWeingarten<double> (F, mip.GetNV(), FacetHesse<double> (hvol, Jf));
         }
+      res = W.AsVector();
     }
 
     
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> values) const override 
     {
-      LocalHeapMem<10000> lh("Weingarten-lh");
+      const ElementTransformation & eltrans = bmir.GetTransformation();
+      if (!eltrans.IsCurvedElement())
+        {
+          values.AddSize(D*D, bmir.Size()) = SIMD<double>(0.0);
+          return;
+        }
 
-      double eps = 1e-4;
-
-      Mat<D,D-1,SIMD<double>> dshape;
-      Mat<D,D,SIMD<double>> phys_dshape;
-
+      Mat<D,D,SIMD<double>> W;
       if (bmir[0].DimSpace() != bmir[0].DimElement())
 	{
           auto & mir = static_cast<const SIMD_MappedIntegrationRule<D-1,D>&> (bmir);
-          auto & ir = mir.IR();
-      
 	  for (size_t i = 0; i < mir.Size(); i++)
 	    {
-	      const SIMD<IntegrationPoint> & ip = ir[i];
-	      const ElementTransformation & eltrans = mir[i].GetTransformation();
-	      
-	      if (!eltrans.IsCurvedElement())
-		{
-		  values.Col(i).Range(D*D) = 0;
-		  continue;
-		}
-	      for (int j = 0; j < D-1; j++)   // d / dxj
-		{
-		  HeapReset hr(lh);
-		  SIMD<IntegrationPoint> ipts[4];
-		  ipts[0] = ip;
-		  ipts[0](j) -= eps;
-		  ipts[1] = ip;
-		  ipts[1](j) += eps;              
-		  ipts[2] = ip;
-		  ipts[2](j) -= 2*eps;
-		  ipts[3] = ip;
-		  ipts[3](j) += 2*eps;
-		  
-		  SIMD_IntegrationRule ir(4, ipts);
-		  SIMD_MappedIntegrationRule<D-1,D> mirl(ir, eltrans, lh);
-		  
-		  dshape.Col(j) = (1.0/(12.0*eps)) * ( mirl.GetNormals().Row(2) - mirl.GetNormals().Row(3) - 8.0*mirl.GetNormals().Row(0) + 8.0*mirl.GetNormals().Row(1) );
-		}
-	      
-	      phys_dshape = dshape*mir[i].GetJacobianInverse();
-              
+              Vec<D,Mat<D-1,D-1,SIMD<double>>> hesse;
+              mir[i].CalcHesse (hesse);
+              Vec<D,SIMD<double>> nv = mir.GetNormals().Row(i);
+              W = CalcWeingarten<SIMD<double>> (mir[i].GetJacobian(), nv, hesse);
 	      for (size_t l = 0; l < D*D; l++)
-		values(l, i) = phys_dshape(l);
+		values(l, i) = W(l);
 	    }
 	}
       else
 	{
           auto & mir = static_cast<const SIMD_MappedIntegrationRule<D,D>&> (bmir);
-          auto & ir = mir.IR();
-
+          Mat<D,D-1> Jf = FacetJacobian (eltrans, mir.IR()[0].FacetNr());
 	  for (size_t i = 0; i < mir.Size(); i++)
 	    {
-	      const SIMD<IntegrationPoint> & ip = ir[i];
-	      const ElementTransformation & eltrans = mir[i].GetTransformation();
-	      
-	      if (!eltrans.IsCurvedElement())
-		{
-		  values.Col(i).Range(D*D) = 0;
-		  continue;
-		}
-
-	      ELEMENT_TYPE et = eltrans.GetElementType();
-              int fnr = ip.FacetNr();
-              auto f2eltrafo = Facet2ElementTrafo(et);
-
-              for (int j = 0; j < D-1; j++)   // d / d t_j
-		{
-		  HeapReset hr(lh);
-		  SIMD<IntegrationPoint> ipts[4];
-		  ipts[0] = ip;
-                  ipts[0](j) -= eps;
-		  ipts[1] = ip;
-                  ipts[1](j) += eps;
-		  ipts[2] = ip;
-                  ipts[2](j) -= 2*eps;
-		  ipts[3] = ip;
-                  ipts[3](j) += 2*eps;
-                  
-		  SIMD_IntegrationRule ir(4,ipts);
-                  const SIMD_IntegrationRule & f2elir =f2eltrafo(fnr,ir,lh);
-                  SIMD_MappedIntegrationRule<D,D> mir(f2elir, eltrans, lh);
-                  
-                  dshape.Col(j) = (1.0/(12.0*eps)) * (mir.GetNormals().Row(2) - mir.GetNormals().Row(3) - 8.0*mir.GetNormals().Row(0) + 8.0*mir.GetNormals().Row(1));
-		}
-              
-              Mat<D,D-1,SIMD<double>> F = mir[i].GetJacobian()*f2eltrafo.GetJacobian(fnr,lh);
-              Mat<D-1,D-1,SIMD<double>> FtF = Trans(F)*F;
-              Mat<D-1,D,SIMD<double>> Finv = Inv(FtF)*Trans(F);
-              phys_dshape = dshape*Finv;
-              
+              Vec<D,Mat<D,D,SIMD<double>>> hvol;
+              mir[i].CalcHesse (hvol);
+              Vec<D,SIMD<double>> nv = mir.GetNormals().Row(i);
+              Mat<D,D-1,SIMD<double>> F = mir[i].GetJacobian()*Jf;
+              W = CalcWeingarten<SIMD<double>> (F, nv, FacetHesse<SIMD<double>> (hvol, Jf));
 	      for (size_t l = 0; l < D*D; l++)
-		values(l, i) = phys_dshape(l);
+		values(l, i) = W(l);
 	    }
 	}
-      
     }
 
     virtual shared_ptr<CoefficientFunction>
@@ -1041,76 +968,28 @@ namespace ngfem
         throw Exception("illegal dim of EdgeCurvatureCF");
 
 
-      // (nabla_t t)circ\phi = nabla(t\circ\phi) F^-1 t\circ\phi
-      //                     = nabla(t\circ\phi) F^-1 1/|F t_ref| F t_ref
-      //                     = 1/|F t_ref|*nabla(t\circ\phi) t_ref
-      //                     = 1/|F t_ref|*nabla(t\circ\phi) t_ref
-
-
-      if (bmip.IP().VB() == BND)
+      // kappa = d_s t,  with  v = F tau,  w = tau^T H tau:  kappa = (w - (v.w)/(v.v) v) / (v.v)
+      if (bmip.IP().VB() == BND && bmip.DimElement() == 2)
         {
-	  const IntegrationPoint& ip = bmip.IP();
-	  const ElementTransformation & eltrans = bmip.GetTransformation();
+          auto & mip = static_cast<const MappedIntegrationPoint<2,D>&>(bmip);
+          ELEMENT_TYPE et = mip.GetTransformation().GetElementType();
+          auto e = ElementTopology::GetEdges(et)[mip.IP().FacetNr()];
+          auto verts = ElementTopology::GetVertices(et);
 
-	  double eps = 1e-4;
-	  
-	  Vec<D> dshape;
-          auto mip = static_cast<const MappedIntegrationPoint<D-1,D>&>(bmip);
-          
-          auto F = bmip.GetJacobian();
-          auto & trafo = bmip.GetTransformation();
-	  ELEMENT_TYPE et = trafo.GetElementType();
-          auto e = ElementTopology::GetEdges(et)[bmip.IP().FacetNr()];
-	  
+          Vec<2> tau;
+          for (int k = 0; k < 2; k++)
+            tau(k) = verts[e[1]][k] - verts[e[0]][k];
 
-	  Vec<2> pnts[3] = { { 1, 0 }, { 0, 1 } , { 0, 0 } };
-          Vec<2> tv_ref = pnts[e[1]] - pnts[e[0]];
-	  tv_ref /= L2Norm(tv_ref);
+          Vec<D,Mat<2,2>> hesse;
+          mip.CalcHesse (hesse);
 
-          // compute |F t_ref|
-          Vec<D> tv_phys = F*tv_ref;
-          double measure = L2Norm(tv_phys);
+          Vec<D> v = mip.GetJacobian()*tau;
+          Vec<D> w;
+          for (int i = 0; i < D; i++)
+            w(i) = InnerProduct (tau, hesse(i)*tau);
 
-          // compute nabla(t\circ\phi) t_ref numerically
-          // This is the directional derivative in direction t_ref
-
-          IntegrationPoint ipl(ip);
-          ipl(0) -= tv_ref[0]*eps;
-          ipl(1) -= tv_ref[1]*eps;
-          IntegrationPoint ipr(ip);
-          ipr(0) += tv_ref[0]*eps;
-          ipr(1) += tv_ref[1]*eps;
-          IntegrationPoint ipll(ip);
-          ipll(0) -= 2*tv_ref[0]*eps;
-          ipll(1) -= 2*tv_ref[1]*eps;
-          IntegrationPoint iprr(ip);
-          iprr(0) += 2*tv_ref[0]*eps;
-          iprr(1) += 2*tv_ref[1]*eps;
-
-          MappedIntegrationPoint<2,D> sipl(ipl, eltrans);
-          MappedIntegrationPoint<2,D> sipr(ipr, eltrans);
-          MappedIntegrationPoint<2,D> sipll(ipll, eltrans);
-          MappedIntegrationPoint<2,D> siprr(iprr, eltrans);
-
-          // Need unit tangent vectors at the stencil points, not directly computed in MappedIntegrationPoint
-	  Mat<D,2> Ft = sipr.GetJacobian();
-	  Vec<D> tangr = Ft*tv_ref;
-	  tangr /= L2Norm(tangr);
-	  Ft = sipl.GetJacobian();
-	  Vec<D> tangl = Ft*tv_ref;
-	  tangl /= L2Norm(tangl);
-	  Ft = siprr.GetJacobian();
-	  Vec<D> tangrr = Ft*tv_ref;
-	  tangrr /= L2Norm(tangrr);
-	  Ft = sipll.GetJacobian();
-	  Vec<D> tangll = Ft*tv_ref;
-	  tangll /= L2Norm(tangll);
-
-          // nabla(t\circ\phi) t_ref
-          dshape = (1.0/(12.0*eps)) * (8.0*tangr-8.0*tangl-tangrr+tangll);
-       
-
-          res = 1/measure*dshape;
+          double v2 = InnerProduct (v,v);
+          res = 1/v2 * (w - InnerProduct(v,w)/v2 * v);
         }
       else //throw Exception();
         res = 0.0;
