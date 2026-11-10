@@ -69,7 +69,7 @@ namespace ngcomp
     typedef DiffOp<DiffOpHDivDivDual<D>> BASE;
     enum { DIM = 1 };
     enum { DIM_SPACE = D };
-    enum { DIM_ELEMENT = D-1 };
+    enum { DIM_ELEMENT = D };
     enum { DIM_DMAT = D*D };
     enum { DIFFORDER = 0 };
     enum { DIM_STRESS = D*D };

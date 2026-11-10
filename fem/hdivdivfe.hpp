@@ -865,6 +865,52 @@ namespace ngfem
     }
 
 
+    template <typename TFA>
+    void T_CalcCurvedMappedDivShape (
+      const SIMD<MappedIntegrationPoint<DIM,DIM>> & mip, TFA && shape) const
+    {
+      Mat<DIM,DIM,SIMD<double>> jac = mip.GetJacobian();
+      Mat<DIM,DIM,SIMD<double>> inv_jac = mip.GetJacobianInverse();
+      Vec<DIM,Mat<DIM,DIM,SIMD<double>>> hesse;
+      mip.CalcHesse(hesse);
+
+      // Differentiate the first Piola factor in det(F)^(-2) F sigma F^T.
+      // The divergence from GetTIP(mip) already contains the other factor.
+      Mat<DIM,DIM,AutoDiff<DIM,SIMD<double>>> f_tilde;
+      for (int i = 0; i < DIM; i++)
+        for (int j = 0; j < DIM; j++)
+          {
+            f_tilde(i,j).Value() = jac(i,j);
+            for (int k = 0; k < DIM; k++)
+              f_tilde(i,j).DValue(k) = hesse[i](j,k);
+          }
+      f_tilde *= 1.0 / Det(f_tilde);
+
+      Mat<DIM,DIM,SIMD<double>> correction[DIM];
+      for (int i = 0; i < DIM; i++)
+        {
+          correction[i] = 0;
+          for (int alpha = 0; alpha < DIM; alpha++)
+            for (int beta = 0; beta < DIM; beta++)
+              for (int gamma = 0; gamma < DIM; gamma++)
+                for (int delta = 0; delta < DIM; delta++)
+                  correction[i](alpha,beta) += inv_jac(gamma,alpha)
+                    * f_tilde(i,gamma).DValue(delta) * inv_jac(delta,beta);
+          correction[i] *= mip.GetJacobiDet();
+        }
+
+      T_CalcShape (GetTIP(mip),
+                   SBLambda([&](int nr, auto val)
+                            {
+                              Vec<DIM,SIMD<double>> divshape = val.DivShape();
+                              Mat<DIM,DIM,SIMD<double>> matshape = val.Shape();
+                              for (int k = 0; k < DIM; k++)
+                                divshape(k) += InnerProduct(correction[k], matshape);
+                              shape(nr, divshape);
+                            }));
+    }
+
+
     virtual void CalcMappedDivShape (const SIMD_BaseMappedIntegrationRule & bmir, 
                       BareSliceMatrix<SIMD<double>> divshapes) const override
     {
@@ -912,71 +958,12 @@ namespace ngfem
       }
       else
       {
-        // throw ExceptionNOSIMD(string("HDivDiv - CalcMappedDivShape SIMD only for noncurved elements"));
         for (size_t i = 0; i < mir.Size(); i++)
-          {
-            // static Timer t0("HDivDivFE - hesse", NoTracing);
-            // static Timer t1("HDivDivFE - prepare div", NoTracing);
-            // static Timer t2("HDivDivFE - calc div", NoTracing);
-            
-            Mat<DIM,DIM,SIMD<double>> jac = mir[i].GetJacobian();
-            Mat<DIM,DIM,SIMD<double>> inv_jac = mir[i].GetJacobianInverse();
-            Mat<DIM,DIM,SIMD<double>> finvT_h_tilde_finv[DIM];
-
-            // RegionTracer reg0(TaskManager::GetThreadId(), t0);
-            
-            Vec<DIM, Mat<DIM,DIM,SIMD<double>>> hesse;
-            mir.GetTransformation().CalcHesse (mir.IR()[i], hesse);
-
-            // RegionTracer reg1(TaskManager::GetThreadId(), t1);    
-
-            Mat<DIM,DIM,AutoDiff<DIM,SIMD<double>> > f_tilde;
-            for(int i = 0; i < DIM; i++)
-              for(int j = 0; j < DIM; j++)
-                {
-                  f_tilde(i,j).Value() = jac(i,j);
-                  for(int k = 0; k < DIM; k++)
-                    f_tilde(i,j).DValue(k) = hesse[i](j,k);
-                }
-            
-            AutoDiff<DIM,SIMD<double>> ad_det = Det (f_tilde);
-            AutoDiff<DIM, SIMD<double>> iad_det = 1.0 / ad_det;
-            f_tilde *= iad_det;
-            
-            for(int i=0; i<DIM; i++)
-              {
-                finvT_h_tilde_finv[i] = 0;
-                for(int alpha=0; alpha<DIM; alpha++)
-                  for(int beta=0; beta<DIM; beta++)
-                    for(int gamma=0; gamma<DIM; gamma++)
-                      for(int delta=0; delta<DIM; delta++)
-                        finvT_h_tilde_finv[i](alpha,beta) += inv_jac(gamma,alpha)*f_tilde(i,gamma).DValue(delta)*inv_jac(delta,beta);
-              }
-            for (int j = 0; j < DIM; j++)
-              finvT_h_tilde_finv[j] *= mir[i].GetJacobiDet();
-            
-            // Vec<DIM,AutoDiff<DIM,SIMD<double>>> adp = mir[i];
-            // TIP<DIM,AutoDiffDiff<DIM,SIMD<double>>> addp(adp);
-            // TIP<DIM,AutoDiff<DIM,SIMD<double>>> addp(adp);
-            // RegionTracer reg2(TaskManager::GetThreadId(), t2);    
-            /* Cast() -> */ T_CalcShape
-              (GetTIP(mir[i]), // TIP<DIM,AutoDiff<DIM,SIMD<double>>>(adp),
-               SBLambda([&](int nr,auto val)
-                              {
-                                BareSliceVector<SIMD<double>> divshape = divshapes.Rows(nr*DIM,(nr+1)*DIM).Col(i);
-
-                                Vec<DIM,SIMD<double>> div1 = val.DivShape();
-                                Mat<DIM,DIM,SIMD<double>> matshape = val.Shape();
-                                
-                                for(size_t k = 0; k < DIM; k++)
-                                  {
-                                    SIMD<double> sum = div1(k);
-                                    for(size_t j = 0; j < DIM*DIM; j++)
-                                      sum += finvT_h_tilde_finv[k](j) * matshape(j);
-                                    divshape(k) = sum;
-                                  }
-                              }));
-          }
+          T_CalcCurvedMappedDivShape (
+            mir[i], [&] (int nr, auto divshape)
+                    {
+                      divshapes.Rows(nr*DIM,(nr+1)*DIM).Col(i).Range(0,DIM) = divshape;
+                    });
       }
     }
 
@@ -1038,7 +1025,16 @@ namespace ngfem
       }
       else
       {
-        throw ExceptionNOSIMD(string("HDivDiv - EvaluateDiv SIMD only for noncurved elements"));
+        for (size_t i = 0; i < mir.Size(); i++)
+          {
+            Vec<DIM,SIMD<double>> sum(0.0);
+            T_CalcCurvedMappedDivShape (
+              mir[i], [&] (int nr, auto divshape)
+                      {
+                        sum += coefs(nr) * divshape;
+                      });
+            values.Col(i).Range(0,DIM) = sum;
+          }
       }
     }
 
@@ -1103,7 +1099,16 @@ namespace ngfem
       }
       else
       {
-        throw ExceptionNOSIMD(string("HDivDiv - AddTrans SIMD only for noncurved elements"));
+        for (size_t i = 0; i < mir.Size(); i++)
+          {
+            Vec<DIM,SIMD<double>> value;
+            value = values.Col(i).Range(0,DIM);
+            T_CalcCurvedMappedDivShape (
+              mir[i], [&] (int nr, auto divshape)
+                      {
+                        coefs(nr) += HSum(InnerProduct(value, divshape));
+                      });
+          }
 
       }
     }
