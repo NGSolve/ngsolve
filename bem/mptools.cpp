@@ -61,42 +61,6 @@ namespace ngsbem
   }
 
 
-  template <typename entry_type>  
-  entry_type SphericalHarmonics<entry_type> :: EvalOrder (int n, double theta, double phi) const
-  {
-    static Timer t("mptool sh evalorder");
-
-    RegionTimer rg(t);
-      
-    Matrix<real_type> legfunc(order+1, order+1);
-    real_type costheta = cos(theta);
-    NormalizedLegendreFunctions::EvalAll (order, costheta, legfunc);
-    Vector<complex_type> exp_imphi(order+1);
-    complex_type exp_iphi(cos(phi), sin(phi));
-    complex_type prod = 1.0;
-    for (int i = 0; i <= order; i++)
-      {
-        exp_imphi(i) = prod;
-        prod *= -exp_iphi;
-      }
-
-    entry_type sum{0.0};
-    auto coefsn = CoefsN(n);
-    int ii = 0;
-    // for (int n = 0; n <= order; n++)
-    {
-      for (int m = -n; m < 0; m++, ii++)
-        sum += conj(exp_imphi(-m)) * legfunc(n, -m) * coefsn(ii);
-      for (int m = 0; m <= n; m++, ii++)
-        sum += exp_imphi(m) * legfunc(n, m) * coefsn(ii);
-    }
-
-    sum /= sqrt(4*M_PI);
-    return sum;
-  }
-
-
-
   template <typename entry_type>
   void SphericalHarmonics<entry_type> :: EvalOrders (double theta, double phi, FlatVector<entry_type> vals) const
   {
@@ -961,90 +925,6 @@ namespace ngsbem
   template void besseljs3d (int, Complex, double, SliceVector<Complex>, SliceVector<Complex>);
   template void besseljs3d (int, Complex32, double, SliceVector<Complex32>, SliceVector<Complex32>);
 
-  /*
-  // from A. Barnett 
-  // http://www.fresco.org.uk/functions/barnett/index.htm
-
-  spherical bessel functions of first (the j_n) and second (the y_n) kind.
-
-  j0(r) = sin(r)/r
-  j1(r) = (sin(r)-r cos(r)) / r**2
-
-  y0(r) = -cos(r)/r
-  y1(r) = (-cos(r)-r*sin(r)) / r**2
-  */
-  void SBESJY (double x, int lmax,
-               FlatVector<double> j,
-               FlatVector<double> y,
-               FlatVector<double> jp,
-               FlatVector<double> yp)
-  {
-    if (x < 1e-8)
-      {
-        cout << "TODO: special treatment for small x" << endl;
-        return;
-      }
-
-    double xinv = 1/x;
-
-    if (lmax > 0)
-      {
-        double twoxi = 2*xinv;
-        double sl = lmax*xinv;
-        double tk = 2*sl+3*xinv;
-        double cf1 = sl;
-        double den = 1;
-        if (abs(cf1) < 1e-8) cf1 = 1e-8;
-        double c = cf1;
-        double d = 0;
-        for (int l = 1; l < 10000; l++)
-          {
-            c = tk-1/c;
-            d = tk-d;
-            if (abs(c) < 1e-8) c = 1e-8;
-            if (abs(d) < 1e-8) d = 1e-8;
-            d = 1/d;
-            double dcf1 = d*c;
-            cf1 *= dcf1;
-            if (d < 0) den = -den;
-            if (abs(dcf1-1) < 1e-10)
-              break;
-            tk += twoxi;
-            // nfp = l;
-          }
-
-        j(lmax) = den;
-        jp(lmax) = cf1*den;
-        for (int l = lmax; l >= 1; l--)
-          {
-            j(l-1) = (sl+xinv)*j(l) + jp(l);
-            sl = sl-xinv;
-            jp(l-1) = sl*j(l-1) - j(l);
-          }
-      }
-
-    double j0 = j(0);
-    double jp0 = jp(0);
-
-    // C------ CALCULATE THE L=0 SPHERICAL BESSEL FUNCTIONS DIRECTLY
-    j(0) = xinv * sin(x);
-    y(0) = -xinv * cos(x);
-    jp(0) = -y(0)-xinv*j(0);
-    yp(0) = j(0)-xinv*y(0);
-
-    double omega = (abs(j0)>abs(jp0)) ? j(0)/j0 : jp(0) / jp0;    // fix for x \approx 2 pi
-    double sl = 0;
-    for (int l = 1; l <=lmax; l++)
-      {
-        j(l) *= omega;
-        jp(l) *= omega;
-        y(l) = sl*y(l-1) - yp(l-1);
-        sl += xinv;
-        yp(l) = y(l-1) - (sl+xinv)*y(l);
-      }
-  }
-
-
 
   /* ************************************** Multipole class ******************************* */
 
@@ -1244,72 +1124,6 @@ namespace ngsbem
   template class SingularMLExpansionCF<Complex>;
   template class SingularMLExpansionCF<Vec<3,Complex>>;
   
-  template<>
-  Array<size_t> RegularMLExpansion<Complex>::nodes_on_level(100);
-  template<>  
-  Array<size_t> SingularMLExpansion<Complex>::nodes_on_level(100);
-  template<>
-  Array<size_t> RegularMLExpansion<Vec<1,Complex>>::nodes_on_level(100);
-  template<>
-  Array<size_t> SingularMLExpansion<Vec<1,Complex>>::nodes_on_level(100);
-  template<>
-  Array<size_t> RegularMLExpansion<Vec<1,Complex32>>::nodes_on_level(100);
-  template<>
-  Array<size_t> SingularMLExpansion<Vec<1,Complex32>>::nodes_on_level(100);
-  template<>
-  Array<size_t> RegularMLExpansion<Vec<3,Complex>>::nodes_on_level(100);
-  template<>
-  Array<size_t> SingularMLExpansion<Vec<3,Complex>>::nodes_on_level(100);
-  template<>
-  Array<size_t> RegularMLExpansion<Vec<3,Complex32>>::nodes_on_level(100);
-  template<>
-  Array<size_t> SingularMLExpansion<Vec<3,Complex32>>::nodes_on_level(100);
-  template<>
-  Array<size_t> RegularMLExpansion<Vec<4,Complex>>::nodes_on_level(100);
-  template<>
-  Array<size_t> SingularMLExpansion<Vec<4,Complex>>::nodes_on_level(100);
-  template<>
-  Array<size_t> RegularMLExpansion<Vec<6,Complex>>::nodes_on_level(100);
-  template<>
-  Array<size_t> SingularMLExpansion<Vec<6,Complex>>::nodes_on_level(100);
-  template<>
-  Array<size_t> RegularMLExpansion<Vec<6,Complex32>>::nodes_on_level(100);
-  template<>
-  Array<size_t> SingularMLExpansion<Vec<6,Complex32>>::nodes_on_level(100);
-
-  template<>
-  Array<size_t> RegularMLExpansion<Complex,Complex>::nodes_on_level(100);
-  template<>
-  Array<size_t> SingularMLExpansion<Complex,Complex>::nodes_on_level(100);
-  template<>
-  Array<size_t> RegularMLExpansion<Vec<1,Complex>,Complex>::nodes_on_level(100);
-  template<>
-  Array<size_t> SingularMLExpansion<Vec<1,Complex>,Complex>::nodes_on_level(100);
-  template<>
-  Array<size_t> RegularMLExpansion<Vec<1,Complex32>,Complex>::nodes_on_level(100);
-  template<>
-  Array<size_t> SingularMLExpansion<Vec<1,Complex32>,Complex>::nodes_on_level(100);
-  template<>
-  Array<size_t> RegularMLExpansion<Vec<3,Complex>,Complex>::nodes_on_level(100);
-  template<>
-  Array<size_t> SingularMLExpansion<Vec<3,Complex>,Complex>::nodes_on_level(100);
-  template<>
-  Array<size_t> RegularMLExpansion<Vec<3,Complex32>,Complex>::nodes_on_level(100);
-  template<>
-  Array<size_t> SingularMLExpansion<Vec<3,Complex32>,Complex>::nodes_on_level(100);
-  template<>
-  Array<size_t> RegularMLExpansion<Vec<4,Complex>,Complex>::nodes_on_level(100);
-  template<>
-  Array<size_t> SingularMLExpansion<Vec<4,Complex>,Complex>::nodes_on_level(100);
-  template<>
-  Array<size_t> RegularMLExpansion<Vec<6,Complex>,Complex>::nodes_on_level(100);
-  template<>
-  Array<size_t> SingularMLExpansion<Vec<6,Complex>,Complex>::nodes_on_level(100);
-  template<>
-  Array<size_t> RegularMLExpansion<Vec<6,Complex32>,Complex>::nodes_on_level(100);
-  template<>
-  Array<size_t> SingularMLExpansion<Vec<6,Complex32>,Complex>::nodes_on_level(100);
-
 
   template class SingularMLExpansion<Complex>;
   template class SingularMLExpansion<Vec<3,Complex>>;

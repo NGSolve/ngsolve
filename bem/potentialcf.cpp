@@ -299,36 +299,6 @@ namespace ngsbem
   }
 
 
-  // IntegrationPoint ProjectPointToReference(Vec<3> x, const ElementTransformation & trafo)
-  // {
-  //   auto et = trafo.GetElementType();
-  //   IntegrationPoint ip = et == ET_TRIG ?
-  //     IntegrationPoint(1./3, 1./3) : IntegrationPoint(1./2, 1./2);
-  //   constexpr double reference_step_tolerance = 1e-12;
-  //   for (int j = 0; j < 5; j++) // SQP steps
-  //     {
-  //       MappedIntegrationPoint<2,3> mip(ip, trafo);
-  //       Mat<3,2> jac = mip.GetJacobian();
-  //       Vec<2> ipvec { ip(0), ip(1) };
-  //       auto Hesse = mip.CalcHesse();
-  //       Vec<3> r = mip.GetPoint()-x;
-
-  //       // Newton model of 1/2 ||F(uv)-x||^2, with a*ipvec+b = J^T*r.
-  //       Mat<2,2> a = Trans(jac)*jac;
-  //       for (int k = 0; k < 3; k++)
-  //         a += r(k)*Hesse[k];
-  //       // CalcHesse uses finite differences; enforce symmetry for the minimizer.
-  //       a(0,1) = a(1,0) = 0.5*(a(0,1)+a(1,0));
-  //       Vec<2> b = Trans(jac)*r-a*ipvec;
-  //       Vec<2> uv = et == ET_TRIG ? MinimizeOnTrig(a, b, 0) : MinimizeOnQuad(a, b, 0);
-  //       ip = IntegrationPoint(uv(0), uv(1));
-  //       if (L2Norm(uv-ipvec) <= reference_step_tolerance)
-  //         break;
-  //     }
-  //   return ip;
-  // }
-
-
   IntegrationPoint ProjectPointToReference(Vec<3> x, const ElementTransformation & trafo)
   {
     auto et = trafo.GetElementType();
@@ -1027,9 +997,6 @@ namespace ngsbem
   {
     static Timer t("ngbem evaluate potential (ir-simd), throwing"); RegionTimer reg(t);
     throw ExceptionNOSIMD ("PotentialCF::Evaluate (SIMD) not available");
-
-    result.AddSize(Dimension(), ir.Size()) = SIMD<T>(0.0);
-    return;
   }
 
 

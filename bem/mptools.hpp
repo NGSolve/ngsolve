@@ -250,14 +250,6 @@ namespace ngsbem
   
     entry_type Eval (double theta, double phi) const;
     
-    entry_type EvalOrder (int n, Vec<3> x) const
-    {
-      auto [theta, phi] = Polar (x);
-      return EvalOrder(n, theta, phi);
-    }
-  
-    entry_type EvalOrder (int n, double theta, double phi) const;
-
     void EvalOrders (Vec<3> x, FlatVector<entry_type> vals) const
     {
       auto [theta, phi] = Polar(x);
@@ -465,35 +457,12 @@ namespace ngsbem
 
   // besseljs3d: bem/besseljs3d.hpp
 
-  
-  /*
-  spherical bessel functions of first (the j_n) and second (the y_n) kind.
-  
-  j0(r) = sin(r)/r
-  j1(r) = (sin(r)-r cos(r)) / r**2
 
-  y0(r) = -cos(r)/r
-  y1(r) = (-cos(r)-r*sin(r)) / r**2
-  */
-  NGS_DLL_HEADER    
-  void SBESJY (double x, int lmax,
-               FlatVector<double> j,
-               FlatVector<double> y,
-               FlatVector<double> jp,
-               FlatVector<double> yp);
-
-
-  
   template <typename T, typename U>
   void SphericalBessel (int n, U rho, double scale, T && values)
   {
     using value_type = std::remove_cvref_t<decltype(values(0))>;
     besseljs3d<value_type> (n, value_type(rho), scale, values);
-    /*
-    Vector<double> j(n+1), jp(n+1);
-    besseljs3d (n, rho, scale,  j, jp);
-    values = j;
-    */
   }
 
 
@@ -523,33 +492,6 @@ namespace ngsbem
     complex_type zinv = rscale/crho;
     for (int i = 1; i < n; i++)
       values(i+1) = real_type(2*i+1)*zinv*values(i) - scale2*values(i-1);
-
-    // if (abs(rho) < 1e-100)
-    //   {
-    //     values = Complex(0);
-    //     return;
-    //   }
-    // Vector<T_Kappa> j(n+1), y(n+1), jp(n+1), yp(n+1);
-
-    // // the bessel-evaluation with scale
-    // besseljs3d (n, rho, 1/scale,  j, jp);
-
-    // // Bessel y directly with the recurrence formula for (y, yp):
-    // T_Kappa x = rho;
-    // T_Kappa xinv = T_Kappa{1}/x;
-    // y(0) = -xinv * cos(x);
-    // yp(0) = j(0)-xinv*y(0);
-
-    // T_Kappa sl = 0;
-    // for (int l = 1; l <= n; l++)
-    //   {
-    //     y(l) = scale * (sl*y(l-1) - yp(l-1));
-    //     sl += xinv;
-    //     yp(l) = scale * y(l-1) - (sl+xinv)*y(l);
-    //   }
-
-    // for (int i = 0; i <= n; i++)
-    //   values(i) = Complex (j(i)) + Complex(y(i)) * Complex(0,1);
   }
 
   int BalancedScaleExponent (int N, Complex x);
@@ -660,14 +602,6 @@ namespace ngsbem
       return sh.Dim();
     }
     
-    SphericalExpansion Truncate(int neworder) const
-    {
-      if (neworder > sh.Order()) neworder=sh.Order();
-      SphericalExpansion nmp(neworder, kappa, rtyp);
-      nmp.sh.Coefs() = sh.Coefs().Range(sqr(neworder+1));
-      return nmp;
-    }
-
     SphericalExpansion & operator+= (const SphericalExpansion & mp2)
     {
       size_t commonsize = min(SH().Coefs().Size(), mp2.SH().Coefs().Size());
@@ -895,18 +829,6 @@ namespace ngsbem
   };
 
 
-  // ***************** parameters ****************
-
-  /*
-  static constexpr int MPOrder (double rho_kappa)
-  {
-    // return max (20, int(2*rho_kappa));
-    return 20+int(2*rho_kappa);
-  }
-  static constexpr int maxdirect = 100;
-  */
-
-
   template <typename SCAL, auto S>
   inline auto VecVector2Matrix (FlatVector<Vec<S,SCAL>> vec)
   {
@@ -926,7 +848,6 @@ namespace ngsbem
   {
     using complex_type = typename SphericalHarmonics<entry_type>::complex_type;
     using real_type = typename SphericalHarmonics<entry_type>::real_type;
-    static Array<size_t> nodes_on_level;    
     
     struct RecordingSS
     {
@@ -944,7 +865,6 @@ namespace ngsbem
         : mp_source(amp_source), mp_target(amp_target), target_lock(atarget_lock), dist(adist)
       {
         std::tie(len, theta, phi) = SphericalCoordinates(adist);
-        // flipz = false;       
         flipz = theta > M_PI/2;
         if (flipz) theta = M_PI-theta;
       }
@@ -977,7 +897,6 @@ namespace ngsbem
       constexpr int vec_length = VecLength<entry_type>;
       size_t dim = batch.Size()*vec_length;
 
-      // *testout << "Processing vectorized S->S batch of size " << batch.Size() << ", with N = " << dim << ", vec_length = " << vec_length << ", len = " << len << ", theta = " << theta << endl;
       T_Kappa kappa = batch[0]->mp_source->Kappa();
       int so = batch[0]->mp_source->Order();
       int to = batch[0]->mp_target->Order();
@@ -1047,13 +966,10 @@ namespace ngsbem
       bool device_p2m = false;   // its P2M runs on the device, which has its sources (FMMDeviceP2M)
       
       Node (Vec<3> acenter, double ar, int alevel, T_Kappa akappa, const FMM_Parameters & afmm_params, CoefPool & apool)
-      // : center(acenter), r(ar), level(alevel), mp(MPOrder(ar*akappa), akappa, ar), fmm_params(afmm_params)
         : center(acenter), r(ar), level(alevel),
           mp(int(afmm_params.minorder+afmm_params.order_factor*ar*abs(akappa)), akappa, ar, apool, alevel),
           fmm_params(afmm_params), pool(apool)
       {
-        if (level < nodes_on_level.Size())
-          nodes_on_level[level]++;
       }
 
       int GetChildNum (Vec<3> x) const
@@ -1431,7 +1347,6 @@ namespace ngsbem
 
       void CalcMP(Array<RecordingSS> & recording, Array<Node*> & nodes_to_process)
       {
-        // mp.SH().Coefs() = 0.0;
         if (childs[0])
           {
             for (auto & child : childs)
@@ -1579,15 +1494,6 @@ namespace ngsbem
         return norm;
       }
       
-      size_t NumCoefficients() const
-      {
-        size_t num = sqr(mp.SH().Order()+1);
-        if (childs[0])
-          for (auto & ch : childs)
-            num += ch->NumCoefficients();
-        return num;
-      }
-
       void TraverseTree (const std::function<void(Node&)> & func)
       {
         func(*this);
@@ -1608,8 +1514,6 @@ namespace ngsbem
     SingularMLExpansion (Vec<3> center, double r, T_Kappa kappa, FMM_Parameters _params = FMM_Parameters())
       : fmm_params(_params), root(center, r, 0, kappa, fmm_params, pool)
     {
-      nodes_on_level = 0;
-      nodes_on_level[0] = 1;
     }
 
     T_Kappa Kappa() const { return root.mp.Kappa(); }
@@ -1636,23 +1540,6 @@ namespace ngsbem
         throw Exception("AddCurrent needs a singular vectorial MP");
       
       root.AddCurrent (sp, ep, j, num);
-      /*
-         // for testing
-      Vec<3> tau = ep-sp;
-      Vec<3> tau_num = 1.0/num *  tau;
-      for (int i = 0; i < num; i++)
-        {
-          for (int k = 0; k < 3; k++)
-            {
-              Vec<3> ek{0.0}; ek(k) = 1;
-              Vec<3> cp = Cross(tau, ek);
-              Vec<3,Complex> source{0.0};
-              source(k) = j/double(num);
-              if constexpr (std::is_same<entry_type, Vec<3,Complex>>())
-                root.AddDipole (sp+(i+0.5)*tau_num, cp, source);
-            }
-        }
-      */
     }
 
     void Print (ostream & ost) const
@@ -1663,11 +1550,6 @@ namespace ngsbem
     double Norm() const
     {
       return root.Norm();
-    }
-
-    size_t NumCoefficients() const
-    {
-      return root.NumCoefficients();
     }
 
     void CollectStatistics(FMMTreeStats & stats) const override
@@ -1712,15 +1594,6 @@ namespace ngsbem
       static Timer trec("mptool comput singular recording");
       static Timer tsort("mptool comput singular sort");
 
-      /*
-      int maxlevel = 0;
-      for (auto [i,num] : Enumerate(nodes_on_level))
-        if (num > 0) maxlevel = i;
-
-      for (int i = 0; i <= maxlevel; i++)
-        cout << "sing " <<  i << ": " << nodes_on_level[i] << endl;
-      */
-      
       root.CalcTotalSources();
 
       {
@@ -1820,8 +1693,6 @@ namespace ngsbem
           }
         }
 
-      // cout << "have singular:" << endl;
-      // PrintStatistics (cout);
       havemp = true;
     }
 
@@ -1832,40 +1703,6 @@ namespace ngsbem
       else
         return root.Evaluate(p);
     }
-
-
-    void PrintStatistics (ostream & ost)
-    {
-      int levels = 0;
-      int cnt = 0;
-      root.TraverseTree( [&](Node & node) {
-        levels = max(levels, node.level);
-        cnt++;
-      });
-      ost << "levels: " << levels << endl;
-      ost << "nodes: " << cnt << endl;
-
-      Array<int> num_on_level(levels+1);
-      Array<int> order_on_level(levels+1);
-      Array<size_t> coefs_on_level(levels+1);            
-      num_on_level = 0;
-      order_on_level = 0;
-      root.TraverseTree( [&](Node & node) {
-        num_on_level[node.level]++;
-        order_on_level[node.level] = max(order_on_level[node.level],node.mp.Order());
-        coefs_on_level[node.level] += node.mp.SH().Coefs().Size();
-      });
-
-      cout << "num on level" << endl;
-      for (int i = 0; i < num_on_level.Size(); i++)
-        cout << i << ": " << num_on_level[i] << ", order = " << order_on_level[i] << ", coefs " << coefs_on_level[i] << endl;
-
-      size_t totcoefs = 0;
-      for (auto n : coefs_on_level)
-        totcoefs += n;
-      cout << "total mem in coefs: " << sizeof(entry_type)*totcoefs / sqr(1024) << " MB" << endl;
-    }
-
 
     
     template <typename entry_type2, typename T_Kappa2>
@@ -1888,7 +1725,6 @@ namespace ngsbem
   class NGS_DLL_HEADER RegularMLExpansion : public BaseRegularMLExpansion
   {
     using complex_type = typename SphericalHarmonics<elem_type>::complex_type;
-    static Array<size_t> nodes_on_level;
 
     
     struct RecordingSR
@@ -1994,7 +1830,6 @@ namespace ngsbem
 
       // Copy vectorized multipole into individual multipoles
       for (int i = 0; i < batch.Size(); i++) {
-        // auto source_i = VecVector2Matrix (tmp_target.SH().Coefs());
         auto source_mati = vec_target.SH().Coefs().Cols(i*vec_length, (i+1)*vec_length);
         auto targeti = VecVector2Matrix(batch[i]->mpR->SH().Coefs());
         
@@ -2005,8 +1840,6 @@ namespace ngsbem
                                             auto t = targeti.Row(ii); auto s = source_mati.Row(ii);
                                             for (size_t k = 0; k < t.Size(); k++) t(k) += factor * s(k);
                                           });
-        // for (int j = 0; j < tmp_target.SH().Coefs().Size(); j++)
-        // AtomicAdd(batch[i]->mpR->SH().Coefs()[j], tmp_target.SH().Coefs()[j]);
       }
 
     }
@@ -2093,12 +1926,8 @@ namespace ngsbem
       
       Node (Vec<3> acenter, double ar, int alevel, T_Kappa kappa, const FMM_Parameters & _params, CoefPool & apool)
         : center(acenter), r(ar), level(alevel),
-          // mp(MPOrder(ar*kappa), kappa, ar) // 1.0/min(1.0, 0.25*r*kappa))
           mp(-1, kappa, ar), params(_params), pool(apool)
-          // : center(acenter), r(ar), level(alevel), mp(MPOrder(ar*kappa), kappa, 1.0)
       {
-        if (level < nodes_on_level.Size())
-          nodes_on_level[level]++;
       }
 
       void Allocate()
@@ -2269,8 +2098,6 @@ namespace ngsbem
       elem_type EvaluateDirectionalDerivative (Vec<3> p, Vec<3> d, int & device_order, bool with_dipoles = true) const
       {
         elem_type sum{0.0};
-        // cout << "EvaluateDirectionalDerivative RegularMLMP, r = " << r << ", level = " << level << ", center = " << center << endl;
-        // cout << "Singnodes: " << singnodes.Size() << ", childs: " << childs[0] << endl;
 
         int childnum = 0;
         if (p(0) > center(0)) childnum += 1;
@@ -2303,15 +2130,6 @@ namespace ngsbem
           for (auto & ch : childs)
             norm += ch->Norm();
         return norm;
-      }
-
-      size_t NumCoefficients() const
-      {
-        size_t num = sqr(mp.SH().Order()+1);
-        if (childs[0])
-          for (auto & ch : childs)
-            num += ch->NumCoefficients();
-        return num;
       }
 
       int GetChildNum (Vec<3> x) const
@@ -2377,20 +2195,6 @@ namespace ngsbem
             }
       }
 
-      void RemoveEmptyTrees()
-      {
-        for (auto & child : childs)
-          if (child)
-            {
-              child->RemoveEmptyTrees();
-              // if (child->total_targets == 0)
-              // child = nullptr;
-            }
-
-        if (total_targets == 0)
-          mp = SphericalExpansion<Regular,elem_type,T_Kappa>(-1, mp.Kappa(),1.);
-      }
-
       void AllocateMemory()
       {
         for (auto & child : childs)
@@ -2399,7 +2203,6 @@ namespace ngsbem
 
         if (total_targets > 0)
           Allocate();
-        // mp = SphericalExpansion<Regular,elem_type>(MPOrder(r*mp.Kappa()), mp.Kappa(), r); // -1, mp.Kappa(),1.);
       }
 
 
@@ -2490,16 +2293,12 @@ namespace ngsbem
       if (!singmp->havemp) throw Exception("first call Calc for singular MP");
       root.Allocate();
       
-      nodes_on_level = 0;
-      nodes_on_level[0] = 1;
       CalcMP(asingmp, false);
     }
 
   RegularMLExpansion (Vec<3> center, double r, T_Kappa kappa, const FMM_Parameters & _params)
   : fmm_params(_params), root(center, r, 0, kappa, fmm_params, pool)
   {
-    nodes_on_level = 0;
-    nodes_on_level[0] = 1;
   }
   
     void AddTarget (Vec<3> t) override
@@ -2515,7 +2314,6 @@ namespace ngsbem
     void CalcMP(shared_ptr<BaseSingularMLExpansion> asingmp, bool onlytargets = true) override
     {
       static Timer t("mptool regular MLMP"); RegionTimer rg(t);
-      static Timer tremove("removeempty");
       static Timer trec("mptool regular MLMP - recording");
       static Timer tsort("mptool regular MLMP - sort");
       
@@ -2525,23 +2323,7 @@ namespace ngsbem
 
       
       root.CalcTotalTargets();
-      // cout << "before remove empty trees:" << endl;
-      // PrintStatistics(cout);
-
-      /*
-      tremove.Start();
-      if (onlytargets)
-        root.RemoveEmptyTrees();
-      tremove.Stop();
-      */
-      
       root.AllocateMemory();
-
-      // cout << "after allocating regular:" << endl;
-      // PrintStatistics(cout);
-
-      // cout << "starting S-R converion" << endl;
-      // PrintStatistics(cout);
 
 
       {
@@ -2633,58 +2415,10 @@ namespace ngsbem
         }
           
       
-      /*
-      int maxlevel = 0;
-      for (auto [i,num] : Enumerate(RegularMLExpansion::nodes_on_level))
-        if (num > 0) maxlevel = i;
-
-      for (int i = 0; i <= maxlevel; i++)
-        cout << "reg " << i << ": " << RegularMLExpansion::nodes_on_level[i] << endl;
-      */
-
-      // cout << "starting R-R converion" << endl;
-      // PrintStatistics(cout);
-      
       static Timer tloc("mptool regular localize expansion"); RegionTimer rloc(tloc);
       LocalizeExpansionBatched(!onlytargets);
-
-
-      // cout << "R-R conversion done" << endl;
-      // PrintStatistics(cout);      
     }
 
-    void PrintStatistics (ostream & ost)
-    {
-      int levels = 0;
-      int cnt = 0;
-      root.TraverseTree( [&](Node & node) {
-        levels = max(levels, node.level);
-        cnt++;
-      });
-      ost << "levels: " << levels << endl;
-      ost << "nodes: " << cnt << endl;
-
-      Array<int> num_on_level(levels+1);
-      Array<int> order_on_level(levels+1);
-      Array<size_t> coefs_on_level(levels+1);            
-      num_on_level = 0;
-      order_on_level = 0;
-      root.TraverseTree( [&](Node & node) {
-        num_on_level[node.level]++;
-        order_on_level[node.level] = max(order_on_level[node.level],node.mp.Order());
-        coefs_on_level[node.level] += node.mp.SH().Coefs().Size();
-      });
-
-      cout << "num on level" << endl;
-      for (int i = 0; i < num_on_level.Size(); i++)
-        cout << i << ": " << num_on_level[i] << ", order = " << order_on_level[i] << ", coefs " << coefs_on_level[i] << endl;
-
-      size_t totcoefs = 0;
-      for (auto n : coefs_on_level)
-        totcoefs += n;
-      cout << "total mem in coefs: " << sizeof(elem_type)*totcoefs / sqr(1024) << " MB" << endl;
-    }
-    
     void Print (ostream & ost) const
     {
       root.Print(ost);
@@ -2693,11 +2427,6 @@ namespace ngsbem
     double Norm() const
     {
       return root.Norm();
-    }
-
-    size_t NumCoefficients() const
-    {
-      return root.NumCoefficients();
     }
 
     void CollectStatistics(FMMTreeStats & stats) const override
