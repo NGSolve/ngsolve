@@ -1230,6 +1230,9 @@ namespace ngcomp
 
             bool curved = ma->GetElement(ei).is_curved;
             int geo_order = curved ? ma->GetCurveOrder() : 1;
+            // constant Jacobian: straight simplices only, a straight prism is bilinear
+            auto eltype_geo = felx.ElementType();
+            bool affine = !curved && (eltype_geo == ET_SEGM || eltype_geo == ET_TRIG || eltype_geo == ET_TET);
             
             IntegrationRule ir;
             if (bfi->ElementVB() == VOL)
@@ -1312,11 +1315,13 @@ namespace ngcomp
             */
             auto eltype = felx.ElementType();
             L2HighOrderFE<ET_TET> geofe_tet(geo_order);
+            L2HighOrderFE<ET_PRISM> geofe_prism(geo_order);    // P_p(trig) x P_p(segm)
             L2HighOrderFE<ET_TRIG> geofe_trig(geo_order);
-            ScalarFiniteElement<3> * geofe3 = &geofe_tet;
+            ScalarFiniteElement<3> * geofe3 = (eltype == ET_PRISM)
+              ? static_cast<ScalarFiniteElement<3>*>(&geofe_prism) : &geofe_tet;
             ScalarFiniteElement<2> * geofe2 = &geofe_trig;
-            if (eltype != ET_TET && eltype != ET_TRIG)
-              throw Exception("matrix-free geometry: only trigs and tets supported");
+            if (eltype != ET_TET && eltype != ET_TRIG && eltype != ET_PRISM)
+              throw Exception("matrix-free geometry: only trigs, tets and prisms supported");
             auto geo_ndof = (dimS == 3) ? geofe3->GetNDof() : geofe2->GetNDof();
             auto GeoShape = [&] (const IntegrationPoint & ip, FlatVector<> shape)
             { if (dimS == 3) geofe3->CalcShape(ip, shape); else geofe2->CalcShape(ip, shape); };
@@ -1336,8 +1341,8 @@ namespace ngcomp
                 GeoShape (ir[i], shape);
                 Sgeo.Col(i) = shape;
               }
-            Tensor<3> DDgeo(geo_order > 1 ? geo_ndof : 0, dimS*dimS, ir.Size());
-            if (geo_order > 1)
+            Tensor<3> DDgeo(affine ? 0 : geo_ndof, dimS*dimS, ir.Size());
+            if (!affine)
               for (int i : Range(ir.Size()))
                 {
                   Matrix<> ddshape(geo_ndof, dimS*dimS);
@@ -1397,10 +1402,10 @@ namespace ngcomp
             
             if (linear)
               {
-                // D varies over the element: measure (boundary, curved) or coefficient
-                bool perpoint = eb || curved || !bfi->GetCoefficientFunction()->ElementwiseConstant();
+                // D varies over the element: measure (boundary, non-affine) or coefficient
+                bool perpoint = eb || !affine || !bfi->GetCoefficientFunction()->ElementwiseConstant();
                 Tensor<4> diag(elclass_inds.Size(), dimy, dimx, perpoint ? ir.Size() : 1);
-                Tensor<4> Jacobi(elclass_inds.Size(), dimR, dimS, curved ? ir.Size() : 1);
+                Tensor<4> Jacobi(elclass_inds.Size(), dimR, dimS, affine ? 1 : ir.Size());
                 
                 // for (auto i : Range(elclass_inds))
                 ParallelForRange (Range(elclass_inds), [&] (IntRange r)  {
@@ -1433,7 +1438,7 @@ namespace ngcomp
                               }
                           }
 
-                      for (auto j : Range(curved?ir.Size():1))
+                      for (auto j : Range(affine ? 1 : ir.Size()))
                         Jacobi(i, STAR, STAR, j) = mir[j].GetJacobian();
 
                       {
@@ -1550,6 +1555,7 @@ namespace ngcomp
                 mfmat->facetnr = std::move(facetnr);
                 mfmat->normals_ref = std::move(normals_ref);
                 mfmat->geo_order = geo_order;
+                mfmat->affine = affine;
                 mfmat->geocoefs = std::move(geocoefs);
                 mfmat->Bgeo = std::move(Bgeo);
                 mfmat->Sgeo = std::move(Sgeo);

@@ -1095,10 +1095,11 @@ namespace ngcomp
     // geocoefs(el, node, coordinate), Bgeo(node, refdir, ip) its gradients at
     // the integration points; F = sum_node geocoefs (x) Bgeo
     int geo_order = 1;
+    bool affine = true;   // constant Jacobian, no second derivatives of the mapping
     Tensor<3> geocoefs;
     Tensor<3> Bgeo;
     Matrix<> Sgeo;    // (node, ip) basis values, x(ip) = sum_node geocoefs Sgeo
-    Tensor<3> DDgeo;  // (node, refdir pair a*dims+b, ip) second derivatives; empty when straight
+    Tensor<3> DDgeo;  // (node, refdir pair a*dims+b, ip) second derivatives; empty when affine
     MatFreeOptions opts;
     Array<IntRange> ranges_x, ranges_xref, ranges_y, ranges_yref;
     Array<Code> physics;    // code for d_form / d_test
