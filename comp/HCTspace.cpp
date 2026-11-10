@@ -11,6 +11,12 @@ namespace ngcore
   {
     return x.Value() < y.Value();
   }
+
+  template<int D, typename SCAL>
+  NETGEN_INLINE bool operator< (const AutoDiffDiff<D,SCAL> & x, const AutoDiffDiff<D,SCAL> & y)
+  {
+    return x.Value() < y.Value();
+  }
 }
 
 
@@ -55,6 +61,33 @@ namespace ngcomp
           dshape(i,0) = adshape(i).DValue(0);
           dshape(i,1) = adshape(i).DValue(1);
         }
+    }
+
+    using ScalarFiniteElement<2>::CalcMappedDDShape;
+
+    void CalcDDShape (const IntegrationPoint & ip,
+                      BareSliceMatrix<> ddshape) const override
+    {
+      SetDDShape (AutoDiffDiff<2>(ip(0), 0), AutoDiffDiff<2>(ip(1), 1), ddshape);
+    }
+
+    void CalcMappedDDShape (const BaseMappedIntegrationPoint & bmip,
+                            BareSliceMatrix<> ddshape) const override
+    {
+      auto & mip = static_cast<const MappedIntegrationPoint<2,2>&> (bmip);
+      auto tip = GetTIPHesse (mip);
+      SetDDShape (tip.x, tip.y, ddshape);
+    }
+
+    void SetDDShape (AutoDiffDiff<2> x, AutoDiffDiff<2> y,
+                     BareSliceMatrix<> ddshape) const
+    {
+      Vector<AutoDiffDiff<2>> adshape(ndof_all);
+      T_CalcShape<AutoDiffDiff<2>> (x, y, adshape);
+      for (int i = 0; i < ndof; i++)
+        for (int j = 0; j < 2; j++)
+          for (int k = 0; k < 2; k++)
+            ddshape(i,2*j+k) = adshape(i).DDValue(j,k);
     }
 
     template <typename T>
