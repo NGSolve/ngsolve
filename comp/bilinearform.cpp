@@ -1038,16 +1038,14 @@ namespace ngcomp
         if (!has_vb)
           continue;
 
-        Array<short> classnr(ma->GetNE(vb));
+        Array<int> classnr(ma->GetNE(vb));
         ma->IterateElements
           (vb, lh, [&] (auto el, LocalHeap & llh)
            {
              if (!fesx->DefinedOn (el) || !fesy->DefinedOn (el)) { classnr[el.Nr()] = -1; return; }
-             classnr[el.Nr()] = 
-               SwitchET<ET_SEGM, ET_TRIG,ET_TET>
-               (el.GetType(),
-                [el] (auto et) { return ET_trait<et.ElementType()>::GetClassNr(el.Vertices()); });
+             classnr[el.Nr()] = ElementClassNr (el.GetType(), el.Vertices());
            });
+        CompressClassNrs (classnr);
         
         TableCreator<size_t> creator;
         for ( ; !creator.Done(); creator++)
