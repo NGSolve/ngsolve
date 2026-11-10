@@ -1026,7 +1026,52 @@ namespace ngfem
   template<typename MIP, typename TFA>  
   void TangentialFacetVolumeFE<ET_PRISM> :: CalcDualShape2 (const MIP & mip, int fnr, TFA & shape) const
   {
-    throw Exception("calcdualshape2 not implemented for ET_PRISM TangentialFacetVolumeFE ");
+    typedef typename std::remove_const<typename std::remove_reference<decltype(mip.IP()(0))>::type>::type T;
+    auto & ip = mip.IP();
+    T x = ip(0), y = ip(1), z = ip(2);
+    T lam[6] = { x, y, 1-x-y, x, y, 1-x-y };
+    T muz[6] = { 1-z, 1-z, 1-z, z, z, z };
+    Vec<3> pnts[6] = { { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 0 }, { 1, 0, 1 }, { 0, 1, 1 }, { 0, 0, 1 } };
+    int ii = first_facet_dof[fnr];
+    int p = facet_order[fnr][0];
+    IVec<4> f = ET_trait<ET_PRISM>::GetFaceSort (fnr, vnums);
+
+    Mat<3,2,T> tauhat;
+    if (fnr < 2)
+      {
+        tauhat.Col(0) = pnts[f[0]] - pnts[f[2]];
+        tauhat.Col(1) = pnts[f[1]] - pnts[f[2]];
+      }
+    else
+      {
+        tauhat.Col(0) = pnts[f[1]] - pnts[f[0]];
+        tauhat.Col(1) = pnts[f[3]] - pnts[f[0]];
+      }
+    Mat<3,2,T> tau = mip.GetJacobian() * tauhat;
+    tau /= mip.GetMeasure();
+
+    if (fnr < 2)
+      DubinerBasis::Eval (p, lam[f[1]], lam[f[0]],
+                          SBLambda([&] (size_t nr, auto val)
+                                   {
+                                     shape[ii++] = tau * Vec<2,T>(val, 0);
+                                     shape[ii++] = tau * Vec<2,T>(0, val);
+                                   }));
+    else
+      {
+        T sigma[6];
+        for (int i = 0; i < 6; i++) sigma[i] = lam[i] + muz[i];
+        ArrayMem<T,20> polx(p+1), poly(p+1);
+        LegendrePolynomial::Eval (p, sigma[f[0]] - sigma[f[1]], polx);
+        LegendrePolynomial::Eval (p, sigma[f[0]] - sigma[f[3]], poly);
+        for (int i = 0; i <= p; i++)
+          for (int j = 0; j <= p; j++)
+            {
+              T val = polx[i] * poly[j];
+              shape[ii++] = tau * Vec<2,T>(val, 0);
+              shape[ii++] = tau * Vec<2,T>(0, val);
+            }
+      }
   }
 
 
@@ -1100,7 +1145,36 @@ namespace ngfem
   template<typename MIP, typename TFA>  
   void TangentialFacetVolumeFE<ET_HEX> :: CalcDualShape2 (const MIP & mip, int fnr, TFA & shape) const
   {
-    throw Exception("calcdualshape2 not implemented for ET_HEX TangentialFacetVolumeFE ");
+    typedef typename std::remove_const<typename std::remove_reference<decltype(mip.IP()(0))>::type>::type T;
+    auto & ip = mip.IP();
+    T x = ip(0), y = ip(1), z = ip(2);
+    T mux[8] = { 1-x, x, x, 1-x, 1-x, x, x, 1-x };
+    T muy[8] = { 1-y, 1-y, y, y, 1-y, 1-y, y, y };
+    T muz[8] = { 1-z, 1-z, 1-z, 1-z, z, z, z, z };
+    Vec<3> pnts[8] = { { 0, 0, 0 }, { 1, 0, 0 }, { 1, 1, 0 }, { 0, 1, 0 },
+                       { 0, 0, 1 }, { 1, 0, 1 }, { 1, 1, 1 }, { 0, 1, 1 } };
+    int ii = first_facet_dof[fnr];
+    int p = facet_order[fnr][0];
+    IVec<4> f = ET_trait<ET_HEX>::GetFaceSort (fnr, vnums);
+
+    Mat<3,2,T> tauhat;
+    tauhat.Col(0) = pnts[f[1]] - pnts[f[0]];
+    tauhat.Col(1) = pnts[f[3]] - pnts[f[0]];
+    Mat<3,2,T> tau = mip.GetJacobian() * tauhat;
+    tau /= mip.GetMeasure();
+
+    T sigma[8];
+    for (int i = 0; i < 8; i++) sigma[i] = mux[i] + muy[i] + muz[i];
+    ArrayMem<T,20> polx(p+1), poly(p+1);
+    LegendrePolynomial::Eval (p, sigma[f[0]] - sigma[f[1]], polx);
+    LegendrePolynomial::Eval (p, sigma[f[0]] - sigma[f[3]], poly);
+    for (int i = 0; i <= p; i++)
+      for (int j = 0; j <= p; j++)
+        {
+          T val = polx[i] * poly[j];
+          shape[ii++] = tau * Vec<2,T>(val, 0);
+          shape[ii++] = tau * Vec<2,T>(0, val);
+        }
   }
 
 
