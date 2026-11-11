@@ -2794,24 +2794,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     // SetDummyFE<ScalarDummyFE> ();
 
-    auto one = make_shared<ConstantCoefficientFunction> (1);
-    if (ma->GetDimension() == 2)
-      {
-	integrator[VOL] = make_shared<MassIntegrator<2>> (one);
-        integrator[BND] = make_shared<RobinIntegrator<2>> (one);
-      }
-    else
-      {
-	integrator[VOL] = make_shared<MassIntegrator<3>> (one);
-	integrator[BND] = make_shared<RobinIntegrator<3>> (one);
-      }
-    
-    if (dimension > 1)
-      {
-	integrator[VOL] = make_shared<BlockBilinearFormIntegrator> (integrator[VOL], dimension);
-	integrator[BND] = make_shared<BlockBilinearFormIntegrator> (integrator[BND], dimension);  
-      }
-
 
     switch (ma->GetDimension())
       {
@@ -3085,11 +3067,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
     // trig = new FE_NcTrig1;
     // segm = new FE_Segm0;
       
-    auto one = make_shared<ConstantCoefficientFunction> (1);
     if (ma->GetDimension() == 2)
       {
-	integrator[VOL] = make_shared<MassIntegrator<2>> (one);
-        integrator[BND] = make_shared<RobinIntegrator<2>> (one);
         evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<2>>>();
         flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradient<2>>>();
         evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<2>>>();
@@ -3099,16 +3078,16 @@ lot of new non-zero entries in the matrix!\n" << endl;
         evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<3>>>();
         flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradient<3>>>();
         evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<3>>>();
-        
-	integrator[VOL].reset (new MassIntegrator<3> (new ConstantCoefficientFunction(1)));
-	integrator[BND].reset (new RobinIntegrator<3> (new ConstantCoefficientFunction(1)));
       }
 
     if (dimension > 1)
-      {
-	integrator[VOL] = make_shared<BlockBilinearFormIntegrator> (integrator[VOL], dimension);
-	integrator[BND] = make_shared<BlockBilinearFormIntegrator> (integrator[BND], dimension);
-      }
+      for (auto vb : { VOL, BND })
+        {
+          if (evaluator[vb])
+            evaluator[vb] = make_shared<BlockDifferentialOperator> (evaluator[vb], dimension);
+          if (flux_evaluator[vb])
+            flux_evaluator[vb] = make_shared<BlockDifferentialOperator> (flux_evaluator[vb], dimension);
+        }
   }
 
   NonconformingFESpace :: ~NonconformingFESpace ()
@@ -3236,7 +3215,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
     // trig = new FE_NcTrig1;
     // segm = new FE_Segm0;
       
-    auto one = make_shared<ConstantCoefficientFunction> (1);
     if (ma->GetDimension() < 3)
       {
         throw Exception("NonconformingSurfaceFESpace only for dim=3");
@@ -3247,16 +3225,16 @@ lot of new non-zero entries in the matrix!\n" << endl;
         flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradient<3>>>();
         evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<3>>>();
         flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpGradientBoundary<3>>>();
-        
-	integrator[VOL].reset (new MassIntegrator<3> (new ConstantCoefficientFunction(1)));
-	integrator[BND].reset (new RobinIntegrator<3> (new ConstantCoefficientFunction(1)));
       }
 
     if (dimension > 1)
-      {
-	integrator[VOL] = make_shared<BlockBilinearFormIntegrator> (integrator[VOL], dimension);
-	integrator[BND] = make_shared<BlockBilinearFormIntegrator> (integrator[BND], dimension);
-      }
+      for (auto vb : { VOL, BND })
+        {
+          if (evaluator[vb])
+            evaluator[vb] = make_shared<BlockDifferentialOperator> (evaluator[vb], dimension);
+          if (flux_evaluator[vb])
+            flux_evaluator[vb] = make_shared<BlockDifferentialOperator> (flux_evaluator[vb], dimension);
+        }
   }
 
   NonconformingSurfaceFESpace :: ~NonconformingSurfaceFESpace ()
@@ -3330,23 +3308,13 @@ lot of new non-zero entries in the matrix!\n" << endl;
     }
 
     // SetDummyFE<ScalarDummyFE> ();
-    static ConstantCoefficientFunction one(1);
-
     if (ma->GetDimension() == 2)
-      {
-        integrator[VOL].reset (new MassIntegrator<2> (&one));
-        integrator[BND] = 0;
-        evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<2>>>();
-      }
+      evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<2>>>();
     else
-      {
-        integrator[VOL].reset (new MassIntegrator<3> (&one));
-	integrator[BND] = 0;
-        evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<3>>>();
-      }
+      evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<3>>>();
     
     if (dimension > 1)
-      integrator[VOL] = make_shared<BlockBilinearFormIntegrator> (integrator[VOL], dimension);
+      evaluator[VOL] = make_shared<BlockDifferentialOperator> (evaluator[VOL], dimension);
   }
   
   ElementFESpace :: ~ElementFESpace ()
@@ -3473,10 +3441,15 @@ lot of new non-zero entries in the matrix!\n" << endl;
         n_el_dofs = 9;
     }
 
-    integrator[BND].reset (new RobinIntegrator<3> (new ConstantCoefficientFunction(1)));
+    switch (ma->GetDimension())
+      {
+      case 1: evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<1>>>(); break;
+      case 2: evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<2>>>(); break;
+      default: evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<3>>>();
+      }
 
     if (dimension > 1)
-      integrator[BND] = make_shared<BlockBilinearFormIntegrator> (integrator[BND], dimension);
+      evaluator[BND] = make_shared<BlockDifferentialOperator> (evaluator[BND], dimension);
   }
 
   

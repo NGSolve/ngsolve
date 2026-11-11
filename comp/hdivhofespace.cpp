@@ -256,9 +256,6 @@ namespace ngcomp
     uniform_order_facet = int (flags.GetNumFlag ("orderfacet", -1));
 
 
-    auto one = make_shared<ConstantCoefficientFunction> (1);
-    // integrator[VOL]= GetIntegrators().CreateBFI("masshdiv", ma->GetDimension(), one);
-    // integrator[BND] = GetIntegrators().CreateBFI("robinhdiv", ma->GetDimension(), one);
     
     if (ma->GetDimension() == 2)
       {

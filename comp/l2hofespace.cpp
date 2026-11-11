@@ -2264,8 +2264,6 @@ global system.
       {
         if (ma->GetDimension() == 2)
           {
-            integrator[BND] =
-              make_shared<RobinIntegrator<2>>(make_shared<ConstantCoefficientFunction>(1));
             evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<2>>>();
             evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<2>>>(); // for dimension
             flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradient<2>>>(); // to avoid exception "grad does not exist"
@@ -2274,8 +2272,6 @@ global system.
           }
         else
           {
-            integrator[BND] =
-              make_shared<RobinIntegrator<3>> (make_shared<ConstantCoefficientFunction>(1));
             evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<3>>>();
             flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradient<3>>>(); // to avoid exception "grad does not exist"
             evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<3>>>(); // for dimension
@@ -2313,7 +2309,6 @@ global system.
     
     if (dimension > 1)
     {
-      integrator[BND] = make_shared<BlockBilinearFormIntegrator> (integrator[BND], dimension);
       for (auto vb : { VOL,BND, BBND, BBBND })
       {
         if (evaluator[vb])

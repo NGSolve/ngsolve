@@ -715,14 +715,6 @@ namespace ngcomp
   };
 
 
-  template <int D>
-  class NGS_DLL_HEADER HDivDivMassIntegrator 
-    : public T_BDBIntegrator<DiffOpIdHDivDiv<D>, DiagDMat<D*D>, HDivDivFiniteElement<D> >
-  {
-  public:
-    using T_BDBIntegrator<DiffOpIdHDivDiv<D>, DiagDMat<D*D>, HDivDivFiniteElement<D>>::T_BDBIntegrator;
-  };
-  
   
   HDivDivFESpace :: HDivDivFESpace (shared_ptr<MeshAccess> ama,const Flags & flags,bool checkflags)
     : FESpace(ama,flags)
@@ -737,14 +729,12 @@ namespace ngcomp
     uniform_order_facet = int(flags.GetNumFlag("orderfacet",order));
     uniform_order_inner = int(flags.GetNumFlag("orderinner",order));
 
-    auto one = make_shared<ConstantCoefficientFunction>(1);
     // evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpBoundIdHDivSym<2>>>();
     if(ma->GetDimension() == 2)
     {
       if (!discontinuous)
         evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundaryHDivDiv<1>>>();
       evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdHDivDiv<2>>>();
-      integrator[VOL] = make_shared<HDivDivMassIntegrator<2>> (one);
       flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpDivHDivDiv<2>>>();
     }
     else
@@ -752,7 +742,6 @@ namespace ngcomp
       if (!discontinuous)
         evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundaryHDivDiv<2>>>();
       evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdHDivDiv<3>>>();
-      integrator[VOL] = make_shared<HDivDivMassIntegrator<3>> (one);
       flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpDivHDivDiv<3>>>();
     }
 

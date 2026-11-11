@@ -470,14 +470,6 @@ namespace ngcomp
 
   
 
-  template <int D>
-  class NGS_DLL_HEADER HCurlDivMassIntegrator 
-    : public T_BDBIntegrator<DiffOpIdHCurlDiv<D>, DiagDMat<D*D> >
-  {
-  public:
-    using T_BDBIntegrator<DiffOpIdHCurlDiv<D>, DiagDMat<D*D>>::T_BDBIntegrator;
-  };
-  
   
   HCurlDivFESpace :: HCurlDivFESpace (shared_ptr<MeshAccess> ama,const Flags & flags,bool checkflags)
     : FESpace(ama,flags)
@@ -497,13 +489,11 @@ namespace ngcomp
     uniform_order_inner = int(flags.GetNumFlag("orderinner",order));
     uniform_order_trace = int(flags.GetNumFlag("ordertrace",-1));     
 
-    auto one = make_shared<ConstantCoefficientFunction>(1);
     if(ma->GetDimension() == 2)
     {
       evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundaryHCurlDiv<1>>>();
       evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdHCurlDiv<2>>>();
       // evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdHCurlDiv_old<2>>>();
-      // integrator[VOL] = make_shared<HCurlDivMassIntegrator<2>> (one);
       flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpDivHCurlDiv<2>>>();
     }
     else
@@ -512,7 +502,6 @@ namespace ngcomp
       // evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdHCurlDiv_old<3>>>();
       // additional_evaluators.Set("oldid",  make_shared<T_DifferentialOperator<DiffOpIdHCurlDiv_old<3>>>());
       evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdHCurlDiv<3>>>();
-      // integrator[VOL] = make_shared<HCurlDivMassIntegrator<3>> (one);
       flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpDivHCurlDiv<3>>>();
     }
 

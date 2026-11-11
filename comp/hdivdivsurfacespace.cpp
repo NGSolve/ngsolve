@@ -399,17 +399,6 @@ namespace ngcomp
   };
 
 
-  template <int D>
-  class HDivDivSurfaceMassIntegrator 
-    : public T_BDBIntegrator<DiffOpIdHDivDivSurface<D>, DiagDMat<DiffOpIdHDivDivSurface<D>::DIM_DMAT>, FiniteElement>
-  {
-    typedef T_BDBIntegrator<DiffOpIdHDivDivSurface<D>, DiagDMat<DiffOpIdHDivDivSurface<D>::DIM_DMAT>, FiniteElement> BASE;
-  public:
-    using  T_BDBIntegrator<DiffOpIdHDivDivSurface<D>, DiagDMat<DiffOpIdHDivDivSurface<D>::DIM_DMAT>, FiniteElement>::T_BDBIntegrator;
-
-    virtual string Name () const { return "HDivDivSurface-Mass"; }
-  };
-
 
   HDivDivSurfaceSpace::HDivDivSurfaceSpace(shared_ptr<MeshAccess> ama,
                                            const Flags & aflags, bool parseflags)

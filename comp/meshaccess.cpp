@@ -1895,102 +1895,32 @@ namespace ngcomp
 
   double MeshAccess :: ElementVolume (int elnr) const
   {
-    static FE_Segm0 segm0;
-    static ScalarFE<ET_TRIG,0> trig0;
-    static ScalarFE<ET_QUAD,0> quad0;
-    static ScalarFE<ET_TET,0> tet0;
-    static FE_Prism0 prism0;
-    static FE_Pyramid0 pyramid0;
-    FE_Hex0 hex0;
-    
-    const FiniteElement * fe = NULL;
-    switch (GetElType (ElementId(VOL, elnr)))
-      {
-      case ET_SEGM: fe = &segm0; break;
-      case ET_TRIG: fe = &trig0; break;
-      case ET_QUAD: fe = &quad0; break;
-      case ET_TET: fe = &tet0; break;
-      case ET_PYRAMID: fe = &pyramid0; break;
-      case ET_PRISM: fe = &prism0; break;
-	// case ET_HEX: fe = &hex0; break;
-      default:
-	{
-	  cerr << "ElementVolume not implemented for el " << GetElType(ElementId(VOL, elnr)) << endl;
-	}
-      }
-  
+    ElementId ei(VOL, elnr);
     LocalHeapMem<10000> lh("MeshAccess - elementvolume");
-
-    ElementTransformation & trans = GetTrafo (ElementId(VOL, elnr), lh);
-    // ConstantCoefficientFunction ccf(1);
-
-    if (GetDimension() == 1)
-      {
-	// SourceIntegrator<1> si (&ccf);
-        static SourceIntegrator<1> si(make_shared<ConstantCoefficientFunction>(1));        
-	FlatVector<> elvec(fe->GetNDof(), lh);
-	si.CalcElementVector (*fe, trans, elvec, lh);
-	return elvec(0);
-      }
-    else if (GetDimension() == 2)
-      {
-	// SourceIntegrator<2> si (&ccf);
-        static SourceIntegrator<2> si(make_shared<ConstantCoefficientFunction>(1));                
-	FlatVector<> elvec(fe->GetNDof(), lh);
-	si.CalcElementVector (*fe, trans, elvec, lh);
-	return elvec(0);
-      }
-    else
-      {
-	// SourceIntegrator<3> si(&ccf);
-        static SourceIntegrator<3> si(make_shared<ConstantCoefficientFunction>(1));                        
-	FlatVector<> elvec(fe->GetNDof(), lh);
-	si.CalcElementVector (*fe, trans, elvec, lh);
-	return elvec(0);
-      }
+    ElementTransformation & trans = GetTrafo (ei, lh);
+    IntegrationRule ir(GetElType(ei), 1);
+    BaseMappedIntegrationRule & mir = trans(ir, lh);
+    double vol = 0;
+    for (size_t i = 0; i < mir.Size(); i++)
+      vol += mir[i].GetWeight();
+    return vol;
   }
 
 
   
   double MeshAccess :: SurfaceElementVolume (int selnr) const
   {
-    static ScalarFE<ET_TRIG,0> trig0;
-    static ScalarFE<ET_QUAD,0> quad0;
     ElementId sei(BND, selnr);
-    const FiniteElement * fe;
-    switch (GetElType (sei))
-      {
-      case ET_TRIG: fe = &trig0; break;
-      case ET_QUAD: fe = &quad0; break;
-      default:
-	{
-	  cerr << "SurfaceElementVolume not implemented for el " << GetElType(sei) << endl;
-	  return 0;
-	}
-      }
-
     LocalHeapMem<10000> lh("MeshAccess - surfaceelementvolume");
-
     ElementTransformation & trans = GetTrafo (sei, lh);
-    // ConstantCoefficientFunction ccf(1);
-
-    if (GetDimension() == 2)
-      {
-	// NeumannIntegrator<2> si( &ccf );
-        static NeumannIntegrator<2> si(make_shared<ConstantCoefficientFunction>(1));
-	FlatVector<> elvec (fe->GetNDof(), lh);
-	si.CalcElementVector (*fe, trans, elvec, lh);
-	return elvec(0);
-      }
-    else
-      {
-	// NeumannIntegrator<3> si( &ccf );
-        static NeumannIntegrator<3> si(make_shared<ConstantCoefficientFunction>(1));        
-	FlatVector<> elvec (fe->GetNDof(), lh);
-	si.CalcElementVector (*fe, trans, elvec, lh);
-	return elvec(0);
-      }
+    IntegrationRule ir(GetElType(sei), 1);
+    BaseMappedIntegrationRule & mir = trans(ir, lh);
+    double vol = 0;
+    for (size_t i = 0; i < mir.Size(); i++)
+      vol += mir[i].GetWeight();
+    return vol;
   }
+
 
   /*
   void MeshAccess :: SetPointSearchStartElement(const int el) const

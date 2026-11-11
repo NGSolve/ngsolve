@@ -707,19 +707,16 @@ namespace ngcomp
     
     nowirebasket = flags.GetDefineFlag ("nowirebasket");
     
-    auto one = make_shared<ConstantCoefficientFunction>(1);
     if (ma->GetDimension() == 1)
       {
         evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdFacet<1>>>();
         evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<1>>>();
-        integrator[BND] = make_shared<RobinIntegrator<1>> (one);
         additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpIdFacet<1>>>());
       }
     else if (ma->GetDimension() == 2)
       {
         evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdFacet<2>>>();
         evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<2>>>();
-        integrator[BND] = make_shared<RobinIntegrator<2>> (one);
         flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradFacet<2>>>();
         flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpGradientBoundary<2>>>();
 
@@ -729,7 +726,6 @@ namespace ngcomp
       {
         evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdFacet<3>>>();
 	evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<3>>>();
-        integrator[BND] = make_shared<RobinIntegrator<3>> (one);
         flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradFacet<3>>>();
         flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpGradientBoundary<3>>>();
 
@@ -738,9 +734,6 @@ namespace ngcomp
 
     if (dimension > 1)
       {
-        integrator[VOL] = make_shared<BlockBilinearFormIntegrator> (integrator[VOL], dimension);
-        integrator[BND] = make_shared<BlockBilinearFormIntegrator> (integrator[BND], dimension);
-
         if (ma->GetDimension() >= 2)
           {
             additional_evaluators.Set ("Grad", make_shared<BlockDifferentialOperatorTrans>(flux_evaluator[VOL], dimension));
@@ -1518,22 +1511,11 @@ for the two neighbouring elements. This allows a simple implementation of the Le
     if (flags.GetDefineFlag ("edges"))
       throw Exception ("HDG fespace with edges not supported");
 
-    static ConstantCoefficientFunction one(1);
-    integrator[VOL] = GetIntegrators().CreateBFI("HDG_mass", ma->GetDimension(), &one);
-
     if (ma->GetDimension() == 2)
-      {
-	// integrator = new HDG_MassIntegrator<2> (&one);
-        integrator[BND].reset (new RobinIntegrator<2> (&one));
-	evaluator[VOL] = make_shared<T_DifferentialOperator<ngcomp::DiffOpIdHDG<2>>>();
-      }
+      evaluator[VOL] = make_shared<T_DifferentialOperator<ngcomp::DiffOpIdHDG<2>>>();
     else
-      {
-        // integrator = new HDG_MassIntegrator<3> (&one);
-        integrator[BND] = make_shared<RobinIntegrator<3>> (&one);
-	evaluator[VOL] = make_shared<T_DifferentialOperator<ngcomp::DiffOpIdHDG<3>>>();
-      }
-    integrator[BND] = make_shared<CompoundBilinearFormIntegrator> (integrator[BND], 1);
+      evaluator[VOL] = make_shared<T_DifferentialOperator<ngcomp::DiffOpIdHDG<3>>>();
+    evaluator[BND] = make_shared<CompoundDifferentialOperator> (spaces[1]->GetEvaluator(BND), 1);
   }
 
   HybridDGFESpace :: ~HybridDGFESpace () { ; }

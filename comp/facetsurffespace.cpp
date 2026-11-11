@@ -307,7 +307,6 @@ namespace ngcomp
     
     nowirebasket = flags.GetDefineFlag ("nowirebasket");
     
-    auto one = make_shared<ConstantCoefficientFunction>(1);
     if (ma->GetDimension() == 2)
       {
         //throw Exception("FacetSurfaceFESpace only implemented for 3d!");
@@ -315,7 +314,6 @@ namespace ngcomp
         evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdFacetSurface<2>>>();
         evaluator[BBND] = make_shared<T_DifferentialOperator<DiffOpIdFacetSurfaceBoundary<2>>>();
 	
-        integrator[BND] = make_shared<RobinIntegrator<3>> (one);
       }
     else if (ma->GetDimension() == 3)
       {
@@ -324,7 +322,6 @@ namespace ngcomp
       	evaluator[BBND] = make_shared<T_DifferentialOperator<DiffOpIdFacetSurfaceBoundary<3>>>();
 
       	flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpGradFacetSurface<3>>>();
-        integrator[BND] = make_shared<RobinIntegrator<3>> (one);
       }
     else
     {
@@ -333,8 +330,6 @@ namespace ngcomp
 
     if (dimension > 1)
       {
-        integrator[BND] = make_shared<BlockBilinearFormIntegrator> (integrator[BND], dimension);
-        
         for (auto vb : { VOL,BND, BBND, BBBND })
           if (evaluator[vb])
             evaluator[vb] = make_shared<BlockDifferentialOperator> (evaluator[vb], dimension);

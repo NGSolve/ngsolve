@@ -2488,14 +2488,6 @@ into the wirebasket.
 
   
   
-  template <int D>
-  class NGS_DLL_HEADER VectorH1MassIntegrator 
-    : public T_BDBIntegrator<DiffOpIdVectorH1<D>, DiagDMat<D> >
-  {
-  public:
-    using T_BDBIntegrator<DiffOpIdVectorH1<D>, DiagDMat<D>>::T_BDBIntegrator;
-  };
-  
 
 
   VectorH1FESpace::VectorH1FESpace (shared_ptr<MeshAccess> ama, const Flags & flags, 
