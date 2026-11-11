@@ -13,35 +13,10 @@
 // #include "thdivfe.hpp"
 #include "hcurlhofe.hpp"
 #include "hcurlfe_utils.hpp"
+#include "biortho_utils.hpp"
 
 namespace ngfem
 {
-  // 1/k, sqrt(k), 1/sqrt(k) for biorth trig coefficients
-  struct BiorthTabs
-  {
-    std::array<double,1024> inv{}, sq{}, isq{};
-    BiorthTabs ()
-    {
-      for (size_t k = 1; k < inv.size(); k++)
-        { inv[k] = 1.0/k; sq[k] = sqrt(double(k)); isq[k] = 1.0/sq[k]; }
-    }
-  };
-  inline const BiorthTabs biorth_tabs;
-
-  // biorth trig w~ coefficients U = c0 g - c1 gm1, V = c2 g - c3 gm1, index [i][n], p < 64
-  struct BiorthCoefs {
-    static constexpr int N = 64;
-    std::array<std::array<double,4>,N*N> c{};
-    BiorthCoefs () {
-      for (int i = 2; i < N; i++)
-        for (int n = 0; i+n < N; n++) {
-          double t = sqrt(2.*i-1)/sqrt(2.*n+2*i)/(i-1);
-          double al = t*(n+2*i)/(n+i+1), be = t*n/(n+i);
-          c[i*N+n] = { al*(n+1), be*n, al*i, be*i };
-        }
-    }
-  };
-  inline const BiorthCoefs biorth_coefs;
 
   // dual shape helpers
 
@@ -81,8 +56,8 @@ namespace ngfem
   }
 
   // trig face duals, as for the tet; xi, eta = barycentrics of the sorted vertices fav[0], fav[1]
-  template <typename T, typename TFA>
-  INLINE void HCurlTrigFaceDual (const Mat<3,2,T> & ftrafo, T xi, T eta, int p,
+  template <typename T, typename TM, typename TFA>
+  INLINE void HCurlTrigFaceDual (const TM & ftrafo, T xi, T eta, int p,
                                  bool usegrad, bool type1, int & ii, TFA & shape)
   {
     if (p < 2) return;
@@ -90,7 +65,7 @@ namespace ngfem
       {
         // surface rot of P_{p-1}, annihilates the face gradients
         DubinerBasis::Eval(p-1, AutoDiff<2,T>(xi, 0), AutoDiff<2,T>(eta, 1),
-                           SBLambda([&] (size_t nr, auto val)
+                           SBLambda([&] (size_t nr, auto val) LAMBDA_INLINE
                                     {
                                       if (nr == 0) return;
                                       shape[ii++] = ftrafo*Vec<2,T> (val.DValue(1), -val.DValue(0));
@@ -98,7 +73,7 @@ namespace ngfem
         return;
       }
     DubinerBasis::Eval(p-2, xi, eta,
-                       SBLambda([&] (size_t nr, auto val)
+                       SBLambda([&] (size_t nr, auto val) LAMBDA_INLINE
                                 {
                                   shape[ii++] = ftrafo*Vec<2,T> (val, 0);
                                   if (type1)
@@ -108,10 +83,22 @@ namespace ngfem
                                 }));
     if (!type1)   // P^(1,0)(2xi-1), orthogonal on the face
       JacobiPolynomialFix<1,0>::Eval(p-2, 2*xi-1,
-                                     SBLambda([&] (size_t nr, auto val)
+                                     SBLambda([&] (size_t nr, auto val) LAMBDA_INLINE
                                               {
                                                 shape[ii++] = ftrafo*Vec<2,T>(0, val);
                                               }));
+  }
+
+  // trig face duals: closed-form biortho duals for type1/nograds, else standard
+  template <typename T, typename TM, typename TFA>
+  INLINE void HCurlTrigFaceDuals (bool biortho, const TM & ftrafo, T xi, T eta, int p,
+                                  bool usegrad, bool type1, int & ii, TFA & shape)
+  {
+    if (biortho && (type1 || !usegrad))
+      BiorthoTrigDuals (p, usegrad, type1, 1-xi-eta, eta, xi, ftrafo,
+                        Vec<2,T>(0,0), Vec<2,T>(0,1), Vec<2,T>(1,0), ii, shape);
+    else
+      HCurlTrigFaceDual (ftrafo, xi, eta, p, usegrad, type1, ii, shape);
   }
 
   // Legendre L_i(x) with dL_i/dx, x = 2s-1
@@ -224,7 +211,7 @@ namespace ngfem
     using ET_trait<ET>::FaceType;
     using Base = HCurlHighOrderFE<ET>;
     using Base::type1;
-    using Base::biorth;
+    using Base::biortho;
     using Base::order;
     using Base::order_edge;
     using Base::order_face;
@@ -373,35 +360,9 @@ namespace ngfem
 		shape[ii++] = Du (val);
 	      }));
 
-        if (biorth)
-          {
-            // C = fav[0] (collapse), B = fav[1], A = fav[2]
-            // f_i ~ lamA lamB P^(1,1)_{i-2}, g_ij ~ lamC IntJac^(2i)_{j-1}
-            // w_ij = j g grad f - i f grad g,  i+j <= p+1
-            // combine w_n, w_{n-1}: curl ~ Dubiner L_{i-1}(xi) P^(2i-1,0)_n(eta)
-            Tx lc = lam[fav[0]], lb = lam[fav[1]], la = lam[fav[2]];
-            auto & tb = biorth_tabs;
-            JacobiPolynomialFix<1,1>::EvalScaledMult
-              (p-2, lb-la, la+lb, la*lb, SBLambda([&](int m, Tx f) LAMBDA_INLINE
-              {
-                int i = m+2;
-                Tx gm1(0.0);
-                IntegratedJacobiPolynomialAlpha(2*i).EvalMult
-                  (p-2-m, 2*lc-1, lc, SBLambda([&](int n, Tx g) LAMBDA_INLINE
-                  {
-                    // |curl w~|_ref = 1
-                    auto & cf = biorth_coefs.c[i*BiorthCoefs::N+n];
-                    shape[ii++] = uDw_minus_wDv (cf[0]*g - cf[1]*gm1, f, cf[2]*g - cf[3]*gm1);
-                    gm1 = g;
-                  }));
-              }));
-            // Whitney(A,B) * lamC P^(2,1)_{j-1}, |curl|_ref = 1
-            IntegratedJacobiPolynomialAlpha(3).EvalMult
-              (p-2, 2*lc-1, lc, SBLambda([&](int j, Tx g) LAMBDA_INLINE
-              {
-                shape[ii++] = wuDv_minus_wvDu (la, lb, tb.sq[2*j+4]*g);
-              }));
-          }
+        if (biortho)
+          // C = fav[0] (collapse), B = fav[1], A = fav[2]
+          BiorthoTrigShapes (p, lam[fav[2]], lam[fav[1]], lam[fav[0]], 1.0, ii, shape);
 	// now ready: compatibility with tets/prisms ! non-gradient inner shapes, same for type 1 and 2
         else if (true) // if (type1)
           {
@@ -622,8 +583,9 @@ namespace ngfem
             
 
 	  // non-gradient face shapes
-          // if (type1) {
-	  if (true) {
+          if (biortho)
+            BiorthoTrigShapes (p, lam[fav[2]], lam[fav[1]], lam[fav[0]], 1.0, ii, shape);
+	  else if (true) {
 
 	    DubinerBasis::EvalMult
 	      (p-2, lam[fav[0]], lam[fav[1]],
@@ -673,7 +635,46 @@ namespace ngfem
 
     // non-gradient inner shapes, same for type 1 and type 2 Nedelec:
 
-    if (p >= 3)  {
+    if (biortho && p >= 3)
+      {
+        // arXiv 2609.28345 (23): f = Lhat_i, g = Phat^{2i}_j, h = Phat^{2i+2j}_k, i+j+k <= p+1
+        // j grad f g h - i f grad g h,  k grad f g h - i f g grad h,
+        // Whitney(A,B) Phat^3_j Phat^{2j+3}_k, j+k <= p-1
+        int sv[4] = { 0, 1, 2, 3 };
+        for (int a = 0; a < 3; a++)
+          for (int b = 0; b < 3-a; b++)
+            if (vnums[sv[b]] > vnums[sv[b+1]]) swap (sv[b], sv[b+1]);
+        Tx la = lam[sv[0]], lb = lam[sv[1]], lc = lam[sv[2]], ld = lam[sv[3]];
+        Tx t = 1-ld;
+        JacobiPolynomialFix<1,1>::EvalScaledMult
+          (p-3, lb-la, la+lb, la*lb, SBLambda([&](int m, Tx f) LAMBDA_INLINE
+          {
+            int i = m+2;
+            IntegratedJacobiPolynomialAlpha(2*i).EvalScaledMult
+              (p-i-1, 2*lc-t, t, lc, SBLambda([&](int n, Tx g) LAMBDA_INLINE
+              {
+                int j = n+1;
+                IntegratedJacobiPolynomialAlpha(2*i+2*j).EvalMult
+                  (p-i-j, 2*ld-1, ld, SBLambda([&](int l, Tx h) LAMBDA_INLINE
+                  {
+                    int k = l+1;
+                    shape[ii++] = aDuvw_buDvw_cuvDw (j, -i, 0, f, g, h);
+                    shape[ii++] = aDuvw_buDvw_cuvDw (k, 0, -i, f, g, h);
+                  }));
+              }));
+          }));
+        IntegratedJacobiPolynomialAlpha(3).EvalScaledMult
+          (p-3, 2*lc-t, t, lc, SBLambda([&](int n, Tx g) LAMBDA_INLINE
+          {
+            int j = n+1;
+            IntegratedJacobiPolynomialAlpha(2*j+3).EvalMult
+              (p-2-j, 2*ld-1, ld, SBLambda([&](int l, Tx h) LAMBDA_INLINE
+              {
+                shape[ii++] = wuDv_minus_wvDu (la, lb, g*h);
+              }));
+          }));
+      }
+    else if (p >= 3)  {
 
       Tx lam21 = lam[2]*lam[1], lam30 = lam[3]*lam[0];
 
@@ -803,8 +804,9 @@ namespace ngfem
             }
         }
 
-        // if (type1) {        
-        if (true) {
+        if (biortho)
+          BiorthoTrigShapes (p, lam[fav[2]], lam[fav[1]], lam[fav[0]], muz[fav[2]], ii, shape);
+        else if (true) {
           
           DubinerBasis::EvalMult
             (p-2, lam[fav[0]], lam[fav[1]],
@@ -1408,8 +1410,9 @@ namespace ngfem
                 shape[ii++] = Du<3> (pol_xi[j] * pol_eta[k]);
           */
 
-          // if (type1) {          
-          if (true) {
+          if (biortho)
+            BiorthoTrigShapes (p, bary[fav[2]], bary[fav[1]], bary[fav[0]], lam_face, ii, shape);
+          else if (true) {
             
             DubinerBasis::EvalMult
               (p-2, bary[fav[0]], bary[fav[1]],
@@ -1629,108 +1632,17 @@ namespace ngfem
           ii += order_edge[i] * usegrad_edge[i];
 
 
-        auto trafo = 1/mip.GetMeasure()*mip.GetJacobian();
-
-        if (biorth)
+        auto jac = mip.GetJacobian();
+        std::remove_cvref_t<decltype(jac)> trafo = (1/mip.GetMeasure()) * jac;
+        int p = order_face[0][0];
+        if (biortho && (type1 || !usegrad_face[0]))
           {
-            // duals B_kl, C_kl of Haubold-Beuchler-Schoeberl (SINUM 2024), (4.12),
-            // in collapsed coords xi = (lb-la)/(la+lb), yc = 2lc-1 on (-1,1)^2
-            int p = order_face[0][0];
-            if (p < 2) return;
             IVec<4> fav = GetFaceSort (0, vnums);
-            T lc = lam[fav[0]], lb = lam[fav[1]], la = lam[fav[2]];
-            T xs = lb-la, s = la+lb, yc = 2*lc-1;
-            Vec<2,T> tex = trafo * Vec<2,T>(0.5 * (pnts[fav[1]]-pnts[fav[2]]));
-            Vec<2,T> tey = trafo * Vec<2,T>(0.5 * (pnts[fav[0]]-0.5*(pnts[fav[1]]+pnts[fav[2]])));
-
-            auto & invtab = biorth_tabs.inv;
-
-            // writing grad duals and w duals at their own offsets
-            int pg = (usegrad_face[0]) ? p-2-(type1 ? 1 : 0) : -1;
-            int ig = ii, iw = ii + (pg+1)*(pg+2)/2;
-
-            // scaled Ls_i and d/dxs on the fly, step i = m+2 uses Ls_{i-2..i}
-            typedef AutoDiff<1,T> AD1;
-            AD1 Lm1(0.0), Lm2(0.0);
-            LegendrePolynomial::EvalScaled1Assign
-              (p, AD1(xs,0), AD1(s), SBLambda([&](int i, AD1 Li) LAMBDA_INLINE
-              {
-                if (i >= 2)
-                  {
-                    int m = i-2;
-                    // B = q1 b, C = q2 c
-                    Vec<2,T> b = Lm1.Value() * tex;
-                    Vec<2,T> c = (2.0*Li.DValue(0)) * tex - (4.0*s*Lm1.DValue(0)) * tey;
-                    Vec<2,T> bg = double(i) * b;
-
-                    // w duals: nrm rot (Ls_{i-1}(xi) Q(yc)), Q = P^(2i-1,0)_n
-                    Vec<2,T> dq = (2.0*s*Lm2.DValue(0)) * tex - (4.0*Lm1.DValue(0)) * tey;
-                    Vec<2,T> dqp = (4.0*Lm1.Value()) * tex;
-
-                    // P = P^(2i,1)_n = (n+1) IntJac^(2i+1)_n, rest by index shifts
-                    T Pm1(0.0), Pam1(0.0);
-                    IntegratedJacobiPolynomialAlpha(2*i+1).Eval
-                      (p-2-m, yc, SBLambda([&](int n, T R) LAMBDA_INLINE
-                      {
-                        T P = (n+1)*R;
-                        double inv = invtab[2*n+2*i+1];
-                        T Pa = inv * ((n+2*i+1)*P - (n+1)*Pm1);   // P^(2i-1,1)_n
-                        if (n <= pg-m)
-                          {
-                            T Pb = inv * ((n+2*i+1)*P + (n+2*i)*Pm1);   // P^(2i,0)_n
-                            T a2 = ((n+1)*0.5*invtab[n+2*i]) * Pb;
-                            shape[ig++] = Vec<2,T>(Pa*bg(0)+a2*c(0), Pa*bg(1)+a2*c(1));
-                          }
-                        double nrm = biorth_tabs.sq[2*i-1]*biorth_tabs.sq[2*n+2*i];
-                        T Q = (nrm*0.5*invtab[n+i]) * ((n+2*i)*Pa + (n+2*i-1)*Pam1);
-                        T dQ = (nrm*0.5*(n+2*i)) * Pm1;   // Q' = (n+2i)/2 P^(2i,1)_{n-1}
-                        shape[iw++] = Vec<2,T>(Q*dq(0)+dQ*dqp(0), Q*dq(1)+dQ*dqp(1));
-                        Pm1 = P;
-                        Pam1 = Pa;
-                      }));
-                  }
-                Lm2 = Lm1;
-                Lm1 = Li;
-              }));
-            ii = iw;
-
-            // (j+1) IntJac^(3)_j = P^(2,1)_j
-            IntegratedJacobiPolynomialAlpha(3).Eval
-              (p-2, yc, SBLambda([&](int j, T R) LAMBDA_INLINE
-              {
-                shape[ii++] = ((j+1)*biorth_tabs.isq[2*j+4]*R) * tex;
-              }));
-            return;
+            BiorthoTrigDuals (p, usegrad_face[0], type1, lam[fav[2]], lam[fav[1]], lam[fav[0]],
+                              trafo, pnts[fav[2]], pnts[fav[1]], pnts[fav[0]], ii, shape);
           }
-
-        if (!usegrad_face[0])
-          {
-            // no gradients: rot of P_{p-1}, annihilates the gradient bubbles
-            int p = order_face[0][0];
-            if (p >= 2)
-              DubinerBasis::Eval(p-1, AutoDiff<2,T>(x, 0), AutoDiff<2,T>(y, 1),
-                                 SBLambda([&] (size_t nr, auto val)
-                                          {
-                                            if (nr == 0) return;
-                                            shape[ii++] = trafo * Vec<2,T> (val.DValue(1), -val.DValue(0));
-                                          }));
-            return;
-          }
-        DubinerBasis::Eval(order-2, x, y,
-                           SBLambda([&] (size_t nr, auto val)
-                                    {
-                                      shape[ii++] = trafo * Vec<2,T> (val, 0);
-                                      if (type1)
-                                        shape[ii++] = trafo * Vec<2,T> (0, val);
-                                      else
-                                        shape[ii++] = trafo * Vec<2,T> (val*x, val*y);
-                                    }));
-        if (!type1)   // P^(1,0)(2x-1): orthogonal on the trig, Legendre(x) is not
-          JacobiPolynomialFix<1,0>::Eval(order-2, 2*x-1,
-                                         SBLambda([&] (size_t nr, auto val)
-                                                  {
-                                                    shape[ii++] = trafo * Vec<2,T>(0,val);
-                                                  }));
+        else
+          HCurlTrigFaceDual (trafo, x, y, p, usegrad_face[0], type1, ii, shape);
       }
   }
 
@@ -1844,55 +1756,8 @@ namespace ngfem
 	     if (f == facetnr)
 	       {
 		 IVec<4> fav = GetFaceSort (facetnr, vnums);
-		 //AutoDiff<3,T> adxi = lami[fav[0]]-lami[fav[2]];
-		 //AutoDiff<3,T> adeta = lami[fav[1]]-lami[fav[2]];
-		 Vec<3> adxi = pnts[fav[0]] - pnts[fav[2]];
-		 Vec<3> adeta = pnts[fav[1]] - pnts[fav[2]];
-		 T xi = lam[fav[0]];
-		 T eta = lam[fav[1]];
-		 
-		 Mat<3,2> F;
-		 for (int k = 0; k < 3; k++)
-		   { F(k,0) = adxi(k); F(k,1) = adeta(k); }
-		 Mat<2,2> Ftmp = Trans(F)*F;
-		 double det = sqrt(Ftmp(0,0)*Ftmp(1,1)-Ftmp(1,0)*Ftmp(0,1));
-
-		 // face map, once per point: 1/(det*measure) J F
-		 Mat<3,3,T> jac = mip.GetJacobian();
-		 T scal = 1/(det*mip.GetMeasure());
-		 Mat<3,2,T> ftrafo;
-		 for (int i = 0; i < 3; i++)
-		   for (int j = 0; j < 2; j++)
-		     ftrafo(i,j) = scal * (jac(i,0)*F(0,j) + jac(i,1)*F(1,j) + jac(i,2)*F(2,j));
-
-		 if (!usegrad_face[f])
-		   {
-		     // no gradients: surface rot of P_{p-1}, annihilates the face gradients
-		     if (p >= 2)
-		       DubinerBasis::Eval(p-1, AutoDiff<2,T>(xi, 0), AutoDiff<2,T>(eta, 1),
-					  SBLambda([&] (size_t nr, auto val)
-						   {
-						     if (nr == 0) return;
-						     shape[ii++] = ftrafo*Vec<2,T> (val.DValue(1), -val.DValue(0));
-						   }));
-		     continue;
-		   }
-		 
-		 DubinerBasis::Eval(order-2, xi, eta,
-                                    SBLambda([&] (size_t nr, auto val)
-                                             {						 
-                                               shape[ii++] = ftrafo*Vec<2,T> (val, 0);
-					       if (type1)
-						 shape[ii++] = ftrafo*Vec<2,T>(0, val);
-					       else
-						 shape[ii++] = ftrafo*Vec<2,T> (val*xi, val*eta);
-                                             }));
-		 if (!type1)   // P^(1,0)(2xi-1), orthogonal on the face
-		   JacobiPolynomialFix<1,0>::Eval(order-2, 2*xi-1,
-					  SBLambda([&] (size_t nr, auto val)
-						   {
-						     shape[ii++] = ftrafo*Vec<2,T>(0, val);
-						   }));
+		 auto ftrafo = HCurlFaceTrafo<T> (mip, pnts[fav[0]]-pnts[fav[2]], pnts[fav[1]]-pnts[fav[2]]);
+		 HCurlTrigFaceDuals (biortho, ftrafo, lam[fav[0]], lam[fav[1]], p, usegrad_face[f], type1, ii, shape);
 	       }
 	     else
 	       ii += usegrad_face[f] ? (p+!type1)*(p-1) : (p+2)*(p-1)/2;
@@ -2020,7 +1885,7 @@ namespace ngfem
                     T xi, eta;
                     HCurlFaceCoords (X, pnts[f[2]], pnts[f[0]], pnts[f[1]], xi, eta);
                     auto ftrafo = HCurlFaceTrafo<T> (mip, pnts[f[0]]-pnts[f[2]], pnts[f[1]]-pnts[f[2]]);
-                    HCurlTrigFaceDual (ftrafo, xi, eta, int(order_face[i][0]), usegrad_face[i], type1, ii, shape);
+                    HCurlTrigFaceDuals (biortho, ftrafo, xi, eta, int(order_face[i][0]), usegrad_face[i], type1, ii, shape);
                   }
                 else
                   {
@@ -2169,7 +2034,7 @@ namespace ngfem
                     T xi, eta;
                     HCurlFaceCoords (X, pnts[f[2]], pnts[f[0]], pnts[f[1]], xi, eta);
                     auto ftrafo = HCurlFaceTrafo<T> (mip, pnts[f[0]]-pnts[f[2]], pnts[f[1]]-pnts[f[2]]);
-                    HCurlTrigFaceDual (ftrafo, xi, eta, int(order_face[i][0]), usegrad_face[i], type1, ii, shape);
+                    HCurlTrigFaceDuals (biortho, ftrafo, xi, eta, int(order_face[i][0]), usegrad_face[i], type1, ii, shape);
                   }
                 else
                   {

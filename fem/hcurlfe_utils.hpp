@@ -100,6 +100,55 @@ namespace ngfem
     }
   };
 
+  // z (u grad w - w grad v)
+  template <int DIM, typename SCAL>
+  class zuDw_minus_wDv
+  {
+  public:
+    const AutoDiff<DIM, SCAL> u, w, v, z;
+
+    zuDw_minus_wDv (const AutoDiff<DIM,SCAL> au, const AutoDiff<DIM,SCAL> aw,
+                    const AutoDiff<DIM,SCAL> av, const AutoDiff<DIM,SCAL> az)
+      : u(au), w(aw), v(av), z(az) { }
+
+    auto Value () const
+    {
+      return z.Value()*(u.Value()*GetGradient(w)-w.Value()*GetGradient(v));
+    }
+
+    auto CurlValue () const
+    {
+      return z.Value()*Cross (GetGradient(u)+GetGradient(v), GetGradient(w))
+        + Cross (GetGradient(z), u.Value()*GetGradient(w)-w.Value()*GetGradient(v));
+    }
+  };
+
+  // a grad(u) v w + b u grad(v) w + c u v grad(w)
+  template <int DIM, typename SCAL>
+  class aDuvw_buDvw_cuvDw
+  {
+  public:
+    double a, b, c;
+    const AutoDiff<DIM, SCAL> u, v, w;
+
+    aDuvw_buDvw_cuvDw (double aa, double ab, double ac, const AutoDiff<DIM,SCAL> au,
+                       const AutoDiff<DIM,SCAL> av, const AutoDiff<DIM,SCAL> aw)
+      : a(aa), b(ab), c(ac), u(au), v(av), w(aw) { }
+
+    auto Value () const
+    {
+      return (a*v.Value()*w.Value())*GetGradient(u) + (b*u.Value()*w.Value())*GetGradient(v)
+        + (c*u.Value()*v.Value())*GetGradient(w);
+    }
+
+    auto CurlValue () const
+    {
+      return ((a-b)*w.Value())*Cross (GetGradient(v), GetGradient(u))
+        + ((a-c)*v.Value())*Cross (GetGradient(w), GetGradient(u))
+        + ((b-c)*u.Value())*Cross (GetGradient(w), GetGradient(v));
+    }
+  };
+
 
   template <int DIM, typename SCAL>
   class wuDv_minus_wvDu

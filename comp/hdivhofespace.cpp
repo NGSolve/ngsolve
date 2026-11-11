@@ -167,6 +167,7 @@ namespace ngcomp
     DefineDefineFlag("noprint");
     DefineDefineFlag("variableorder"); 
     DefineDefineFlag("hodivfree"); 
+    DefineDefineFlag("biortho");
 
     DefineDefineFlag("RT");
     for (auto et : { ET_TRIG, ET_QUAD, ET_TET, ET_PRISM, ET_PYRAMID, ET_HEX })
@@ -243,6 +244,7 @@ namespace ngcomp
     print = flags.GetDefineFlag("print"); 
 
     ho_div_free = flags.GetDefineFlag("hodivfree"); 
+    biortho = flags.GetDefineFlag("biortho");
     fixed_order = flags.GetDefineFlag ("fixedorder");
     hdiv_ndof::SetupRT (flags, order, et_RT);
     
@@ -327,6 +329,9 @@ namespace ngcomp
     for (auto et : { ET_TRIG, ET_QUAD, ET_TET, ET_PRISM, ET_PYRAMID, ET_HEX })
       docu.Arg(hdiv_ndof::RTFlagName(et)) = "bool = unset\n"
         "  RT for this element type, overrides 'RT'";
+    docu.Arg("biortho") = "bool = False\n"
+      "  trig and tet cells: basis of Haubold, Beuchler, Schoeberl (arXiv 2609.28345),\n"
+      "  standard dual moments";
     docu.Arg("discontinuous") = "bool = False\n"
       "  Create discontinuous HDiv space";
     docu.Arg("hodivfree") = "bool = False\n"
@@ -982,7 +987,11 @@ namespace ngcomp
         hofe -> SetOrderFacet (order_facet[ngel.Faces()]);
         break;
       }
+    if constexpr (ET == ET_TRIG || ET == ET_TET)
+      hofe -> SetBiortho (biortho);
     hofe -> ComputeNDof();
+    if (biortho && hofe->Order() >= 64)
+      throw Exception ("HDiv biortho: order must be < 64");
 
     if constexpr (ET == ET_TRIG || ET == ET_TET)
       if (!ho_div_free && !onlyhdiv)

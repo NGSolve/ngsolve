@@ -224,6 +224,18 @@ namespace ngfem
       : u1(au1), v1(av1), u2(au2), v2(av2) { ; }
   };
 
+  // a g Dh x W - b curl(g h W),  W = u Dv - v Du  (tet RT bubbles of Haubold-Beuchler-Schoeberl)
+  template <int DIM, typename SCAL>
+  class agDhW_minus_bcurlghW
+  {
+  public:
+    double a, b;
+    const AutoDiff<DIM,SCAL> u, v, g, h;
+    agDhW_minus_bcurlghW (double aa, double ab, const AutoDiff<DIM,SCAL> au, const AutoDiff<DIM,SCAL> av,
+                          const AutoDiff<DIM,SCAL> ag, const AutoDiff<DIM,SCAL> ah)
+      : a(aa), b(ab), u(au), v(av), g(ag), h(ah) { ; }
+  };
+
   // Piola-type shape:  a Dv x Dw + b Dw x Du + c Du x Dv
   // (used for pyramids with (u,v,w) = (xt, yt, z), i.e. Piola-transform of (a,b,c) from the collapsed hex)
   template <int DIM, typename SCAL>
@@ -411,6 +423,12 @@ namespace ngfem
     return data;
   }
   
+  template <int DIM, typename SCAL>
+  INLINE auto HDiv2ShapeNew (const uDw_minus_wDv<DIM,SCAL> & s)
+  {
+    return Vec<DIM,SCAL> (s.Value());
+  }
+
   template <typename SCAL>  
   INLINE auto HDiv2ShapeNew (Du<3,SCAL> uv)
   {
@@ -545,6 +563,16 @@ namespace ngfem
   }
 
   template <typename SCAL>
+  INLINE auto HDiv2ShapeNew (const agDhW_minus_bcurlghW<3,SCAL> & s)
+  {
+    Vec<3,SCAL> du = GetGradient(s.u), dv = GetGradient(s.v), dg = GetGradient(s.g), dh = GetGradient(s.h);
+    Vec<3,SCAL> W = s.u.Value()*dv - s.v.Value()*du;
+    SCAL gv = s.g.Value(), hv = s.h.Value();
+    Vec<3,SCAL> dgh = hv*dg + gv*dh;
+    return Vec<3,SCAL> ((s.a*gv)*Cross(dh,W) - s.b*(Cross(dgh,W) + (2*gv*hv)*Cross(du,dv)));
+  }
+
+  template <typename SCAL>
   INLINE auto HDiv2ShapeNew (const aDvDw_bDwDu_cDuDv<3,SCAL> & s)
   {
     AutoDiff<3,SCAL> p1 = Cross (s.v, s.w);
@@ -638,6 +666,11 @@ namespace ngfem
       AutoDiff<1,SCAL> hd = Cross (uv.u*uv.w, uv.v) + Cross(uv.u, uv.v*uv.w);
       data = -hd.DValue(0);
     }
+
+    INLINE THDiv2DivShape (const uDw_minus_wDv<2,SCAL> & s)
+    {
+      data = -s.CurlValue()(0);
+    }
     
     INLINE operator SCAL () const { return data; }
     INLINE SCAL Get() const { return data; }
@@ -690,6 +723,13 @@ namespace ngfem
     INLINE THDiv2DivShape (const Du_Cross_Dv_Sum<3,SCAL> & uv)
     {
       data = SCAL(0.0);
+    }
+
+    INLINE THDiv2DivShape (const agDhW_minus_bcurlghW<3,SCAL> & s)
+    {
+      Vec<3,SCAL> du = GetGradient(s.u), dv = GetGradient(s.v), dg = GetGradient(s.g), dh = GetGradient(s.h);
+      Vec<3,SCAL> W = s.u.Value()*dv - s.v.Value()*du;
+      data = s.a * (InnerProduct (dg, Cross(dh,W)) - 2*s.g.Value()*InnerProduct (dh, Cross(du,dv)));
     }
 
     INLINE THDiv2DivShape (const aDvDw_bDwDu_cDuDv<3,SCAL> & s)

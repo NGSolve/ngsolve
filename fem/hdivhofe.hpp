@@ -471,6 +471,7 @@ namespace ngfem
     bool ho_div_free;
     bool only_ho_div;
     bool RT = false;
+    bool biortho = false;  // trig cell, tet cell: Haubold-Beuchler-Schoeberl basis
     std::atomic<double*> * dual_inverse = nullptr;
   public:
     using VertexOrientedFE<ET>::SetVertexNumbers;
@@ -512,6 +513,8 @@ namespace ngfem
       ho_div_free = aho_div_free; 
       only_ho_div = only_ho_div && !ho_div_free;
     };  
+
+    void SetBiortho (bool b) { biortho = b; }
 
     void SetOnlyHODiv (bool aonly_ho_div) 
     { 

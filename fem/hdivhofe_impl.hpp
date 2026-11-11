@@ -8,6 +8,7 @@
 /*********************************************************************/
 
 #include "recursive_pol_tet.hpp"
+#include "biortho_utils.hpp"
 
 namespace ngfem
 {
@@ -137,7 +138,10 @@ namespace ngfem
                                               }));
           }
 
-        if (!ho_div_free)
+        if (!ho_div_free && biortho)
+          // rotated biortho HCurl trig shapes
+          BiorthoTrigShapes (pd, lam[fav[2]], lam[fav[1]], lam[fav[0]], 1.0, ii, shape);
+        else if (!ho_div_free)
           {
             // Tx x = lam[fav[0]];
             // Tx y = lam[fav[1]];
@@ -686,7 +690,78 @@ template <typename MIP, typename TFA>
     // int pp = max2(p,pc);
     int pd = p;
     if (RT) pd++;
-    if ( order >= 2 )
+    if (biortho && order >= 2)
+      {
+        // arXiv 2609.28345: f = Lhat_i, g = Phat^{2i}_j, h = Phat^{2i+2j}_k
+        int sv[4] = { 0, 1, 2, 3 };
+        for (int a = 0; a < 3; a++)
+          for (int b = 0; b < 3-a; b++)
+            if (vnums[sv[b]] > vnums[sv[b+1]]) swap (sv[b], sv[b+1]);
+        Tx la = lami[sv[0]], lb = lami[sv[1]], lc = lami[sv[2]], ld = lami[sv[3]];
+        Tx t = 1-ld;
+        // a f Dg x Dh + b g Dh x Df + c h Df x Dg, i+j+k <= q+1
+        auto fgh = [&] (int q, auto coefs)
+          {
+            JacobiPolynomialFix<1,1>::EvalScaledMult
+              (q-3, lb-la, la+lb, la*lb, SBLambda([&](int m, Tx f) LAMBDA_INLINE
+              {
+                int i = m+2;
+                IntegratedJacobiPolynomialAlpha(2*i).EvalScaledMult
+                  (q-i-1, 2*lc-t, t, lc, SBLambda([&](int n, Tx g) LAMBDA_INLINE
+                  {
+                    int j = n+1;
+                    IntegratedJacobiPolynomialAlpha(2*i+2*j).EvalMult
+                      (q-i-j, 2*ld-1, ld, SBLambda([&](int l, Tx h) LAMBDA_INLINE
+                      {
+                        coefs (i, j, l+1, f, g, h);
+                      }));
+                  }));
+              }));
+          };
+        // g = Phat^3_j, h = Phat^{2j+3}_k, j+k <= q
+        auto gh1 = [&] (int q, auto func)
+          {
+            IntegratedJacobiPolynomialAlpha(3).EvalScaledMult
+              (q-2, 2*lc-t, t, lc, SBLambda([&](int n, Tx g) LAMBDA_INLINE
+              {
+                int j = n+1;
+                IntegratedJacobiPolynomialAlpha(2*j+3).EvalMult
+                  (q-1-j, 2*ld-1, ld, SBLambda([&](int l, Tx h) LAMBDA_INLINE { func (g, h); }));
+              }));
+          };
+
+        if (pc >= 2 && !only_ho_div)
+          {
+            // curls of HCurl biortho types II, III, IV (order pc+1)
+            fgh (pc+1, [&](int i, int j, int k, Tx f, Tx g, Tx h) LAMBDA_INLINE
+                 {
+                   shape[ii++] = aDvDw_bDwDu_cDuDv (i*f, j*g, -(i+j)*h, f, g, h);
+                   shape[ii++] = aDvDw_bDwDu_cDuDv (-i*f, (i+k)*g, -k*h, f, g, h);
+                 });
+            gh1 (pc, [&](Tx g, Tx h) LAMBDA_INLINE
+                 { shape[ii++] = curl_uDvw_minus_Duvw (la, lb, g*h); });
+          }
+        if (!ho_div_free)
+          {
+            // (25), RT-conforming
+            fgh (pd+1, [&](int i, int j, int k, Tx f, Tx g, Tx h) LAMBDA_INLINE
+                 { shape[ii++] = aDvDw_bDwDu_cDuDv (i*f, j*g, k*h, f, g, h); });
+            // (26) = (j+k+2) g Dh x W - k curl(g h W), W = Whitney(A,B)
+            IntegratedJacobiPolynomialAlpha(3).EvalScaledMult
+              (pd-2, 2*lc-t, t, lc, SBLambda([&](int n, Tx g) LAMBDA_INLINE
+              {
+                int j = n+1;
+                IntegratedJacobiPolynomialAlpha(2*j+3).EvalMult
+                  (pd-1-j, 2*ld-1, ld, SBLambda([&](int l, Tx h) LAMBDA_INLINE
+                  { shape[ii++] = agDhW_minus_bcurlghW (j+l+3, l+1, la, lb, g, h); }));
+              }));
+            // RT face function (A,B,C) * Phat^4_k(z)
+            IntegratedJacobiPolynomialAlpha(4).EvalMult
+              (pd-2, 2*ld-1, ld, SBLambda([&](int k, Tx h) LAMBDA_INLINE
+              { shape[ii++] = z_times_uDvDw_Cyclic (la, lb, lc, h); }));
+          }
+      }
+    else if ( order >= 2 )
       {
         STACK_ARRAY(Tx, mem, 3*order);
         Tx * adpol1 = &mem[0];

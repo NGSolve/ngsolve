@@ -50,6 +50,8 @@ namespace ngcomp
 
     // high order divergence free
     bool ho_div_free; 
+    // trig/tet cells: Haubold-Beuchler-Schoeberl basis
+    bool biortho = false;
     ///
     bool fixed_order;
 

@@ -76,7 +76,7 @@ namespace ngcomp
     bool discontinuous;
     bool highest_order_dc;
     bool type1;        // first family
-    bool biorth;       // trig cells: biorthogonal basis (Haubold-Beuchler-Schoeberl 2024)
+    bool biortho;       // trig cells: biorthogonal basis (Haubold-Beuchler-Schoeberl 2024)
 
     // D^-1 of full-order trigs, quads, tets, per [nograd/grad][type][vertex-order class]
     mutable std::atomic<double*> dual_inverse[2][3][64] {};

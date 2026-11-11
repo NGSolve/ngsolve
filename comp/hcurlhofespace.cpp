@@ -46,12 +46,12 @@ namespace ngcomp
     DefineDefineFlag ("discontinuous");
     DefineDefineFlag ("type1");
     DefineDefineFlag ("hoprolongation");
-    DefineDefineFlag ("biorth");
+    DefineDefineFlag ("biortho");
 
     if(parseflags) CheckFlags(flags);
 
     type1 = flags.GetDefineFlag("type1");
-    biorth = flags.GetDefineFlag("biorth");
+    biortho = flags.GetDefineFlag("biortho");
     // Variable order space: 
     //      in case of (var_order && order) or (relorder) 
     var_order = flags.GetDefineFlag("variableorder");  
@@ -223,9 +223,10 @@ namespace ngcomp
     docu.Arg("type1") = "bool = False\n"
       "  Use type 1 Nedelec elements: gradients from H1(order) instead of H1(order+1).\n"
       "  The non-gradient part is the same, its curl lies in HDiv(order-1)";
-    docu.Arg("biorth") = "bool = False\n"
+    docu.Arg("biortho") = "bool = False\n"
       "  Triangles: interior basis and dual shapes biorthogonal\n"
-      "  (Haubold, Beuchler, Schoeberl, SINUM 2024)";
+      "  (Haubold, Beuchler, Schoeberl, SINUM 2024); trig faces of 3D\n"
+      "  elements alike, tet interior basis of arXiv 2609.28345 (standard duals)";
     docu.Arg("discontinuous") = "bool = False\n"
       "  Create discontinuous HCurl space";
     docu.Arg("gradientdomains") = "List[int] = None\n"
@@ -1076,13 +1077,12 @@ namespace ngcomp
               }
             }
           hofe -> SetType1 (type1);
-          if constexpr (ET == ET_TRIG)
-            {
-              if (biorth && order_inner[ei.Nr()][0] >= 64)
-                throw Exception ("HCurl biorth: order must be < 64");
-              hofe -> SetBiorth (biorth);
-            }
+          // trig cells and trig faces
+          if constexpr (ET == ET_TRIG || ET == ET_TET || ET == ET_PRISM || ET == ET_PYRAMID)
+            hofe -> SetBiortho (biortho);
           hofe -> ComputeNDof();
+          if (biortho && hofe->Order() >= 64)
+            throw Exception ("HCurl biortho: order must be < 64");
           // hofe -> SetDiscontinuous(discontinuous);
 
           // full order, and gradients on all or on no nodes of the element
@@ -1162,6 +1162,8 @@ namespace ngcomp
               hofe -> SetUseGradCell(usegrad_face[ma->GetSElFace(ei.Nr())]);   // old style
             }
           hofe -> SetType1 (type1);              
+          if constexpr (ET == ET_TRIG)
+            hofe -> SetBiortho (biortho);
           hofe -> ComputeNDof();
           return *hofe;
         }
