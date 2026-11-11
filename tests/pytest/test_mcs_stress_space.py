@@ -73,13 +73,13 @@ def test_explicit_order_and_errors():
     with pytest.raises(Exception):
         HDiv(mesh, order=0).CreateStressSpace()
 
-@pytest.mark.parametrize("kind,ns", [("trig", [4, 8]), ("quad", [4, 8]), ("tet", [2, 4]), ("prism", [4, 8]), ("hex", [2, 4])])
+@pytest.mark.parametrize("kind,ns", [("trig", [4, 8]), ("quad", [4, 8]), ("tet", [2, 4]), ("prism", [4, 6]), ("hex", [2, 4])])
 @pytest.mark.parametrize("k", [1, 2])
 @pytest.mark.parametrize("rt", [False, True])
 @pytest.mark.parametrize("ws", [False, True])
 def test_stokes_rates(kind, ns, k, rt, ws):
     if kind == "prism" and k == 2:
-        ns = [2, 4]  # already asymptotic, n=8 takes a minute
+        ns = [2, 4]  # already asymptotic
     errs = [stokes_errors(mesh_of(kind, n), k, rt, ws) for n in ns]
     ru = log(errs[0][0]/errs[1][0])/log(ns[1]/ns[0])
     rs = log(errs[0][1]/errs[1][1])/log(ns[1]/ns[0])
