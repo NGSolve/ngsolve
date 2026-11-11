@@ -1355,6 +1355,7 @@ namespace ngfem
 
     
     nonzeros_proxies = Matrix<bool>(test_proxies.Size(), trial_proxies.Size());
+    nonzeros_deriv_proxies = Matrix<bool>(test_proxies.Size(), trial_proxies.Size());
     diagonal_proxies = Matrix<bool>(test_proxies.Size(), trial_proxies.Size());
     same_diffops = Matrix<bool>(test_proxies.Size(), trial_proxies.Size());
     is_symmetric = true;
@@ -1365,16 +1366,22 @@ namespace ngfem
           auto proxy2 = test_proxies[l1];
           
           bool is_nonzero = false;
+          bool is_nonzero_deriv = false;
           bool is_diagonal = proxy1->Dimension() == proxy2->Dimension();
           
           for (int k = 0; k < proxy1->Dimension(); k++)
             for (int l = 0; l < proxy2->Dimension(); l++)
-              if (nonzeros(test_cum[l1]+l, trial_cum[k1]+k))
-                {
-                  is_nonzero = true;
-                  if (k != l) is_diagonal = false;
-                }
+              {
+                if (nonzeros(test_cum[l1]+l, trial_cum[k1]+k))
+                  {
+                    is_nonzero = true;
+                    if (k != l) is_diagonal = false;
+                  }
+                if (nonzeros_deriv(test_cum[l1]+l, trial_cum[k1]+k))
+                  is_nonzero_deriv = true;
+              }
           nonzeros_proxies(l1, k1) = is_nonzero;
+          nonzeros_deriv_proxies(l1, k1) = is_nonzero_deriv;
           diagonal_proxies(l1, k1) = is_diagonal;
           same_diffops(l1,k1) = *(proxy2->Evaluator()) == *(proxy1->Evaluator());
           // same_diffops(l1,k1) = proxy2->Evaluator() == proxy1->Evaluator();
@@ -2660,6 +2667,14 @@ namespace ngfem
         ud.testfunction = nullptr;
         for (size_t k = 0; k < dim1; k++)
           {
+            bool any = false;
+            for (size_t l = 0; l < dim2; l++)
+              any |= nonzeros_deriv(test_cum[l1]+l, trial_cum[k1]+k);
+            if (!any)
+              {
+                proxyvalues.Rows(k*dim2, (k+1)*dim2) = SIMD<double>(0.0);
+                continue;
+              }
             ud.trialfunction = proxy1;
             ud.trial_comp = k;
             dcf_dtest[l1] -> Evaluate (mir, dval);
@@ -2673,6 +2688,11 @@ namespace ngfem
     for (size_t k = 0, kk = 0; k < dim1; k++)
       for (size_t l = 0; l < dim2; l++, kk++)
         {
+          if (!nonzeros_deriv(test_cum[l1]+l, trial_cum[k1]+k))
+            {
+              proxyvalues.Row(kk) = SIMD<double>(0.0);
+              continue;
+            }
           ud.trialfunction = proxy1;
           ud.trial_comp = k;
           ud.testfunction = proxy2;
@@ -2758,6 +2778,7 @@ namespace ngfem
               
               for (int k1 : Range(trial_proxies))
                 {
+                  if (!nonzeros_deriv_proxies(l1, k1)) continue;
                   HeapReset hr(lh);
                   auto proxy1 = trial_proxies[k1];
                   
@@ -2846,6 +2867,7 @@ namespace ngfem
     for (int k1 : Range(trial_proxies))
       for (int l1 : Range(test_proxies))
         {
+          if (!nonzeros_deriv_proxies(l1, k1)) continue;
           HeapReset hr(lh);
           auto proxy1 = trial_proxies[k1];
           auto proxy2 = test_proxies[l1];
@@ -2972,6 +2994,7 @@ namespace ngfem
                   
                   for (int k1 : Range(trial_proxies))
                     {
+                      if (!nonzeros_deriv_proxies(l1, k1)) continue;
                       HeapReset hr(lh);
                       auto proxy1 = trial_proxies[k1];
                       
@@ -3048,6 +3071,7 @@ namespace ngfem
           for (int k1 : Range(trial_proxies))
             for (int l1 : Range(test_proxies))
               {
+                if (!nonzeros_deriv_proxies(l1, k1)) continue;
                 HeapReset hr(lh);
                 auto proxy1 = trial_proxies[k1];
                 auto proxy2 = test_proxies[l1];

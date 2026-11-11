@@ -515,6 +515,7 @@ public:
     Matrix<bool> nonzeros;    // do components interact ?
     Matrix<bool> nonzeros_deriv;   // do components interact ? 
     Matrix<bool> nonzeros_proxies; // do proxies interact ?
+    Matrix<bool> nonzeros_deriv_proxies; // do proxies interact in the linearization ?
     Matrix<bool> diagonal_proxies; // do proxies interact diagonally ?
     Matrix<bool> same_diffops; // are diffops the same ? 
     bool elementwise_constant;
