@@ -61,6 +61,16 @@ namespace ngfem
     virtual void CalcMappedDivShape (const SIMD_BaseMappedIntegrationRule & bmir, 
 				     BareSliceMatrix<SIMD<double>> divshapes) const = 0;    
 
+    virtual void EvaluateDiv (const SIMD_BaseMappedIntegrationRule & ir,
+                              BareSliceVector<> coefs,
+                              BareSliceMatrix<SIMD<double>> values) const
+    { throw ExceptionNOSIMD("HCurlDivFiniteElement::EvaluateDiv not implemented"); }
+
+    virtual void AddDivTrans (const SIMD_BaseMappedIntegrationRule & ir,
+                              BareSliceMatrix<SIMD<double>> values,
+                              BareSliceVector<> coefs) const
+    { throw ExceptionNOSIMD("HCurlDivFiniteElement::AddDivTrans not implemented"); }
+
 
     virtual void CalcDualShape (const BaseMappedIntegrationPoint & bmip, BareSliceMatrix<> shape) const = 0;    
     virtual void CalcDualShape (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> shape) const = 0;
@@ -109,6 +119,14 @@ namespace ngfem
 
     virtual void CalcMappedDivShape (const SIMD_BaseMappedIntegrationRule & bmir, 
 				     BareSliceMatrix<SIMD<double>> divshapes) const override { ; }
+
+    virtual void EvaluateDiv (const SIMD_BaseMappedIntegrationRule & ir,
+                              BareSliceVector<> coefs,
+                              BareSliceMatrix<SIMD<double>> values) const override { ; }
+
+    virtual void AddDivTrans (const SIMD_BaseMappedIntegrationRule & ir,
+                              BareSliceMatrix<SIMD<double>> values,
+                              BareSliceVector<> coefs) const override { ; }
              
     virtual void CalcDualShape (const BaseMappedIntegrationPoint & bmip, BareSliceMatrix<> shape) const override {;}
     virtual void CalcDualShape (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> shape) const override {;}
@@ -525,115 +543,120 @@ namespace ngfem
     }
 
 
+    // curved elements: mapped divergence = DivShape + F Shape, F from the
+    // second derivatives of the element mapping
+    Mat<DIM,DIM*DIM,SIMD<double>> CurvedDivCorrection (const SIMD_MappedIntegrationRule<DIM,DIM> & mir,
+                                                       size_t i) const
+    {
+      auto mip = mir[i];
+      Mat<DIM,DIM,SIMD<double>> jac = mip.GetJacobian();
+      Mat<DIM,DIM,SIMD<double>> inv_jac = mip.GetJacobianInverse();
+
+      Vec<DIM, Mat<DIM,DIM,SIMD<double>>> hesse;
+      mir.GetTransformation().CalcHesse (mir.IR()[i], hesse);
+
+      Vec<DIM, Mat<DIM,DIM,SIMD<double>>> hesseinvT;
+      Vec<DIM, Mat<DIM,DIM,SIMD<double>>> dd_of_F_xi;
+      Vec<DIM, Mat<DIM,DIM,SIMD<double>>> dd_of_FinvT_xi;
+
+      //revert ordering of CalcHesse
+      //dd_of_J_xi contains der derivative of the Jacobian F with respect to x_i
+      for (int l = 0; l < DIM; l++)
+        for (int j = 0; j < DIM; j++)
+          for (int k = 0; k < DIM; k++)
+            dd_of_F_xi[l](j,k) = hesse[j](l,k);
+
+      //use the formula d_xi(F^-T) = - F^-T * Trans(d_xi(F)) * F^-T
+      for (int l = 0; l < DIM; l++)
+        dd_of_FinvT_xi[l] = -Trans(inv_jac) * Trans(dd_of_F_xi[l]) * Trans(inv_jac);
+
+      //reorder such that hesseinvT contains derivatives in all directions x_i of one component
+      for (int l = 0; l < DIM; l++)
+        for (int j = 0; j < DIM; j++)
+          for (int k = 0; k < DIM; k++)
+            hesseinvT[l](j,k) = dd_of_FinvT_xi[j](l,k);
+
+      //This comes from the formula of div(sigma) on curved elements
+      Mat<DIM,DIM*DIM,SIMD<double>> F;
+      for (int k = 0; k < DIM; k++)
+        F.Row(k) = (jac * Trans(hesseinvT[k]) * inv_jac).AsVector();
+      return F;
+    }
+
+    // calls f(nr, val) for every shape function at point i, val provides DivShape() and Shape()
+    template <typename F>
+    void T_CalcDivShape (const SIMD_MappedIntegrationRule<DIM,DIM> & mir, size_t i, F f) const
+    {
+      Vec<DIM,AutoDiff<DIM,SIMD<double>>> adp = mir[i];
+      Vec<DIM,AutoDiffDiff<DIM,SIMD<double>>> addp;
+      for (int j = 0; j < DIM; j++)
+        {
+          addp[j] = adp[j].Value();
+          addp[j].LoadGradient(&adp[j].DValue(0));
+        }
+      Cast() -> T_CalcShape (TIP<DIM,AutoDiffDiff<DIM,SIMD<double>>>(addp), SBLambda(f));
+    }
+
     virtual void CalcMappedDivShape (const SIMD_BaseMappedIntegrationRule & bmir, 
                       BareSliceMatrix<SIMD<double>> divshapes) const override
     {
       auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
+      bool curved = mir.GetTransformation().IsCurvedElement();
+      for (size_t i = 0; i < mir.Size(); i++)
+        {
+          Mat<DIM,DIM*DIM,SIMD<double>> F(0.0);
+          if (curved) F = CurvedDivCorrection (mir, i);
+          T_CalcDivShape (mir, i, [&] (int nr, auto val)
+                          {
+                            Vec<DIM,SIMD<double>> divshape = val.DivShape();
+                            if (curved)
+                              divshape += F * Vec<DIM*DIM,SIMD<double>> (val.Shape());
+                            divshapes.Rows(nr*DIM,(nr+1)*DIM).Col(i).Range(0,DIM) = divshape;
+                          });
+        }
+    }
 
-      if(!mir.GetTransformation().IsCurvedElement()) // non-curved element
-      {		
-	for (size_t i = 0; i < mir.Size(); i++)
-	{
-	  /*
-          auto jacinv = mir[i].GetJacobianInverse();
-          auto d = mir[i].GetJacobiDet();
-          
-          Vec<DIM,SIMD<double>> vec;
-          SIMD<double> mem[DIM*DIM_STRESS];
-          FlatMatrix<SIMD<double>> trans(DIM,DIM,&mem[0]);
-          trans = 1/d*Trans(jacinv);
-	  */
-	  
-          //Vec<DIM,AutoDiff<DIM,SIMD<double>>> adp = mir.ip()[i];
-	  Vec<DIM,AutoDiff<DIM,SIMD<double>>> adp = mir[i];
-	  Vec<DIM,AutoDiffDiff<DIM,SIMD<double>>> addp;
-	  for (int j=0; j<DIM; j++)
-	    {
-	      addp[j] = adp[j].Value();
-	      addp[j].LoadGradient(&adp[j].DValue(0));
-	    }
-	  Cast() -> T_CalcShape
-            (TIP<DIM,AutoDiffDiff<DIM,SIMD<double>>>(addp),
-             //SBLambda([divshapes,i,trans](int j, auto val)
-	     SBLambda([divshapes,i](int j, auto val)
-                      {
-			//divshapes.Rows(j*DIM,(j+1)*DIM).Col(i).Range(DIM) = trans * val.DivShape();
-                        divshapes.Rows(j*DIM,(j+1)*DIM).Col(i).Range(0,DIM) = val.DivShape();
-                      }));
-	}
-      }
-      else
-  
-	{	  
-	  //throw ExceptionNOSIMD(string("HCurlDiv - CalcMappedDivShape SIMD only for noncurved elements"));
-	  for (size_t i = 0; i < mir.Size(); i++)
-          {
-	    auto mip = mir[i];
-	    Vec<DIM,AutoDiff<DIM,SIMD<double>>> adp = mir[i];
-	    Mat<DIM,DIM,SIMD<double>> jac = mip.GetJacobian();
-	    Mat<DIM,DIM,SIMD<double>> inv_jac = mip.GetJacobianInverse();        
-	    Mat<DIM,DIM,SIMD<double>> F_HFinvT_Finv[3];
+    virtual void EvaluateDiv (const SIMD_BaseMappedIntegrationRule & bmir,
+                              BareSliceVector<> coefs,
+                              BareSliceMatrix<SIMD<double>> values) const override
+    {
+      auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
+      bool curved = mir.GetTransformation().IsCurvedElement();
+      for (size_t i = 0; i < mir.Size(); i++)
+        {
+          Vec<DIM,SIMD<double>> sumdiv(0.0);
+          Vec<DIM*DIM,SIMD<double>> sumshape(0.0);
+          T_CalcDivShape (mir, i, [&] (int nr, auto val)
+                          {
+                            sumdiv += coefs(nr) * Vec<DIM,SIMD<double>> (val.DivShape());
+                            if (curved)
+                              sumshape += coefs(nr) * Vec<DIM*DIM,SIMD<double>> (val.Shape());
+                          });
+          if (curved)
+            sumdiv += CurvedDivCorrection (mir, i) * sumshape;
+          values.Col(i).Range(0,DIM) = sumdiv;
+        }
+    }
 
-	    Vec<DIM, Mat<DIM,DIM,SIMD<double>>> hesse;
-            mir.GetTransformation().CalcHesse (mir.IR()[i], hesse);
-
-	    Vec<DIM, Mat<DIM,DIM,SIMD<double>>> hesseinvT;	    
-	    Vec<DIM, Mat<DIM,DIM,SIMD<double>>> dd_of_F_xi;
-	    Vec<DIM, Mat<DIM,DIM,SIMD<double>>> dd_of_FinvT_xi;
-
-	    //revert ordering of CalcHesse
-	    //dd_of_J_xi contains der derivative of the Jacobian F with respect to x_i
-	    for (int l = 0; l < DIM; l++)
-	      {
-		for (int j = 0; j < DIM; j++)
-		  for (int k = 0; k < DIM; k++)
-		    dd_of_F_xi[l](j,k)=hesse[j](l,k);
-	      }
-
-	    //use the formula d_xi(F^-T) = - F^-T * Trans(d_xi(F)) * F^-T 
-	    for (int l = 0; l < DIM; l++)
-	      dd_of_FinvT_xi[l] = -Trans(inv_jac) * Trans(dd_of_F_xi[l]) * Trans(inv_jac);
-
-	    //reorder such that hesseinvT contains derivatives in all directions x_i of one component
-	    for (int l = 0; l < DIM; l++)
-	      {
-		for (int j = 0; j < DIM; j++)
-		  for (int k = 0; k < DIM; k++)
-		    hesseinvT[l](j,k) = dd_of_FinvT_xi[j](l,k);
-	      }	    	    
-
-	    //This comes from the formula of div(sigma) on curved elements
-	    for(int j=0; j<DIM; j++)	    
-	      F_HFinvT_Finv[j] = jac * Trans(hesseinvT[j]) *  inv_jac;
-	    
-
-	    //Vec<DIM,AutoDiff<DIM,SIMD<double>>> adp = mir[i];
-	    Vec<DIM,AutoDiffDiff<DIM,SIMD<double>>> addp;
-
-	    for (int j=0; j<DIM; j++)
-	    {
-	      addp[j] = adp[j].Value();
-	      addp[j].LoadGradient(&adp[j].DValue(0));
-	    }
-	    
-	    Cast() -> T_CalcShape (TIP<DIM,AutoDiffDiff<DIM, SIMD<double>>> (addp),SBLambda([&](int nr,auto val)
-									      {
-										BareSliceVector<SIMD<double>> divshape = divshapes.Rows(nr*DIM,(nr+1)*DIM).Col(i);
-										Vec<DIM,SIMD<double>> div1 = val.DivShape();										
-										Vec<DIM*DIM, SIMD<double>> matshape = val.Shape();				    
-				    
-										for(int k=0; k<DIM; k++)
-										  {
-										    SIMD<double> sum = div1(k);
-										    for(int j=0; j<DIM*DIM; j++)
-										      sum += F_HFinvT_Finv[k](j) * matshape(j);
-										    divshape(k) = sum;
-										  }
-									      }));
-	    
-	  }
-	  
-	}
+    virtual void AddDivTrans (const SIMD_BaseMappedIntegrationRule & bmir,
+                              BareSliceMatrix<SIMD<double>> values,
+                              BareSliceVector<> coefs) const override
+    {
+      auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
+      bool curved = mir.GetTransformation().IsCurvedElement();
+      for (size_t i = 0; i < mir.Size(); i++)
+        {
+          Vec<DIM,SIMD<double>> v = values.Col(i).Range(0,DIM);
+          Vec<DIM*DIM,SIMD<double>> w(0.0);
+          if (curved) w = Trans(CurvedDivCorrection (mir, i)) * v;
+          T_CalcDivShape (mir, i, [&] (int nr, auto val)
+                          {
+                            SIMD<double> sum = InnerProduct (v, Vec<DIM,SIMD<double>> (val.DivShape()));
+                            if (curved)
+                              sum += InnerProduct (w, Vec<DIM*DIM,SIMD<double>> (val.Shape()));
+                            coefs(nr) += HSum(sum);
+                          });
+        }
     }
 
     virtual void CalcDualShape (const BaseMappedIntegrationPoint & bmip, BareSliceMatrix<> shape) const override

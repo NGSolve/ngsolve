@@ -321,6 +321,20 @@ namespace ngcomp
       static_cast<const HCurlDivFiniteElement<D>&> (bfel).CalcMappedDivShape (mir, mat);      
     }
     
+    using DiffOp<DiffOpDivHCurlDiv<D>>::ApplySIMDIR;
+    static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    {
+      static_cast<const HCurlDivFiniteElement<D>&>(fel).EvaluateDiv (mir, x, y);
+    }
+
+    using DiffOp<DiffOpDivHCurlDiv<D>>::AddTransSIMDIR;
+    static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
+    {
+      static_cast<const HCurlDivFiniteElement<D>&>(fel).AddDivTrans (mir, y, x);
+    }
+
     /*
     
     template <typename FEL, typename SIP, typename MAT>
