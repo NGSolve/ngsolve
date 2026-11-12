@@ -1062,6 +1062,17 @@ into the wirebasket.
   }
 
   
+  // one bit per vertex pair
+  template <typename TV>
+  static int VertexOrderClass (const TV & vnums)
+  {
+    int cls = 0, bit = 0;
+    for (int i = 0; i < vnums.Size(); i++)
+      for (int j = i+1; j < vnums.Size(); j++, bit++)
+        if (vnums[i] > vnums[j]) cls |= 1 << bit;
+    return cls;
+  }
+
   Timer tgetfe("H1FESpace::GetFE");
   FiniteElement & H1HighOrderFESpace :: GetFE (ElementId ei, Allocator & alloc) const
   {
@@ -1082,28 +1093,35 @@ into the wirebasket.
     
     try
       {
-        if (fixed_order && eltype == ET_TRIG)
+        if (fixed_order && !nodal && !nodalp2 && !highest_order_dc &&
+            (eltype == ET_TRIG || eltype == ET_TET))
           {
-            switch (order)
-              {
-              case 1: return *(new (alloc) H1HighOrderFEFO<ET_TRIG,1> ()) -> SetVertexNumbers(ngel.vertices);
-              case 2: return *(new (alloc) H1HighOrderFEFO<ET_TRIG,2> ()) -> SetVertexNumbers(ngel.vertices);
-              case 3: return *(new (alloc) H1HighOrderFEFO<ET_TRIG,3> ()) -> SetVertexNumbers(ngel.vertices);
-              default:
-                ; 
-              }
-          }
-        
-        if (fixed_order && eltype == ET_TET)
-          {
-            switch (order)
-              {
-              case 1: return *(new (alloc) H1HighOrderFEFO<ET_TET,1> ()) -> SetVertexNumbers(ngel.vertices);
-              case 2: return *(new (alloc) H1HighOrderFEFO<ET_TET,2> ()) -> SetVertexNumbers(ngel.vertices);
-              case 3: return *(new (alloc) H1HighOrderFEFO<ET_TET,3> ()) -> SetVertexNumbers(ngel.vertices);
-              default:
-                ; 
-              }
+            // same basis as H1HighOrderFE
+            auto vnums = ngel.Vertices();
+            std::atomic<double*> * slot = ei.IsVolume() ?
+              &dual_inverse[eltype == ET_TRIG ? 0 : 2][VertexOrderClass(vnums)] : nullptr;
+            auto init = [&] (auto * fe) -> FiniteElement&
+            {
+              fe -> SetVertexNumbers (vnums);
+              fe -> SetDualInverse (slot);
+              return *fe;
+            };
+            if (eltype == ET_TRIG)
+              switch (order)
+                {
+                case 1: return init (new (alloc) H1HighOrderFEFO<ET_TRIG,1> ());
+                case 2: return init (new (alloc) H1HighOrderFEFO<ET_TRIG,2> ());
+                case 3: return init (new (alloc) H1HighOrderFEFO<ET_TRIG,3> ());
+                default: ;
+                }
+            else
+              switch (order)
+                {
+                case 1: return init (new (alloc) H1HighOrderFEFO<ET_TET,1> ());
+                case 2: return init (new (alloc) H1HighOrderFEFO<ET_TET,2> ());
+                case 3: return init (new (alloc) H1HighOrderFEFO<ET_TET,3> ());
+                default: ;
+                }
           }
 
         if (nodal)
@@ -1170,11 +1188,7 @@ into the wirebasket.
                  if constexpr (ET == ET_TRIG || ET == ET_QUAD || ET == ET_TET)
                    if (!nodalp2 && hofe->GetNDof() == ET_trait<ET>::PolDimension(order))
                      {
-                       auto vnums = ngel.Vertices();
-                       int cls = 0, bit = 0;
-                       for (int i = 0; i < vnums.Size(); i++)
-                         for (int j = i+1; j < vnums.Size(); j++, bit++)
-                           if (vnums[i] > vnums[j]) cls |= 1 << bit;
+                       int cls = VertexOrderClass (ngel.Vertices());
                        int row = (ET == ET_TRIG) ? 0 : (ET == ET_QUAD) ? 1 : 2;
                        hofe -> SetDualInverse (&dual_inverse[row][cls]);
                      }
