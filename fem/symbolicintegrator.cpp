@@ -5530,8 +5530,8 @@ namespace ngfem
                      FlatMatrix<double> elmat,
                      LocalHeap & lh) const
   {
-    FlatVector<double> elveclin(elmat.Height(), lh);
-    elveclin = 0.0;
+    // empty vector: linearization at zero, without evaluating the proxies
+    FlatVector<double> elveclin(0, lh);
     CalcLinearizedElementMatrix (fel, trafo, elveclin, elmat, lh);
   }
   
@@ -5543,6 +5543,17 @@ namespace ngfem
                                                  FlatMatrix<double> elmat,
                                                  LocalHeap & lh) const
   {
+    if (elveclin.Size() == 0 && elmat.Height() != 0)
+      for (auto proxy : trial_proxies)
+        if (proxy->Evaluator()->IsNonlinear())
+          {
+            // nonlinear operators need the point itself
+            FlatVector<double> zero(elmat.Height(), lh);
+            zero = 0.0;
+            CalcLinearizedElementMatrix (fel, trafo, zero, elmat, lh);
+            return;
+          }
+
     auto save_userdata = trafo.PushUserData();
     
     RegionTimer reg(timer);
@@ -5562,20 +5573,13 @@ namespace ngfem
               {
                 auto eltype = trafo.GetElementType();
         
-                Facet2ElementTrafo transform(eltype, element_vb); 
-                int nfacet = transform.GetNFacets();
-                
-                for (int k = 0; k < nfacet; k++)
-                  {
-                    HeapReset hr(lh);
-                    ngfem::ELEMENT_TYPE etfacet = transform.FacetType (k);
-                    
-                    auto & ir_facet = GetSIMDIntegrationRule(etfacet, 2*fel.Order()+bonus_intorder);
-                    auto & ir_facet_vol = transform(k, ir_facet, lh);
-                    auto & mir = trafo(ir_facet_vol, lh);
-                    // mir.ComputeNormalsAndMeasure (eltype, k);
-                    AddLinearizedElementMatrix (fel, trafo, mir, elveclin, elmat, lh);            
-                  }
+                Facet2ElementTrafo transform(eltype, element_vb);
+
+                // all facets in one rule
+                HeapReset hr(lh);
+                auto & ir_vol = AllFacetsSIMDRule (*this, transform, 2*fel.Order()+bonus_intorder, lh);
+                auto & mir = trafo(ir_vol, lh);
+                AddLinearizedElementMatrix (fel, trafo, mir, elveclin, elmat, lh);
               }
           }
 
@@ -5605,7 +5609,10 @@ namespace ngfem
         for (ProxyFunction * proxy : trial_proxies)
           {
             ud.AssignMemory (proxy, ir.Size(), proxy->Dimension(), lh);
-            proxy->Evaluator()->Apply(fel, mir, elveclin, ud.GetMemory(proxy), lh);        
+            if (elveclin.Size())
+              proxy->Evaluator()->Apply(fel, mir, elveclin, ud.GetMemory(proxy), lh);
+            else
+              ud.GetMemory(proxy) = 0.0;
           }
         
         elmat = 0;
@@ -5639,7 +5646,10 @@ namespace ngfem
             for (ProxyFunction * proxy : trial_proxies)
               {
                 ud.AssignMemory (proxy, ir_facet.GetNIP(), proxy->Dimension(), lh);
-                proxy->Evaluator()->Apply(fel, mir, elveclin, ud.GetMemory(proxy), lh);
+                if (elveclin.Size())
+                  proxy->Evaluator()->Apply(fel, mir, elveclin, ud.GetMemory(proxy), lh);
+                else
+                  ud.GetMemory(proxy) = 0.0;
               }
 
             AddLinearizedElementMatrix (fel, ud, mir, elveclin, elmat, lh);            
@@ -5748,7 +5758,10 @@ namespace ngfem
               FlatMatrix<double,ColMajor> bdbmat1(bs*proxy2->Dimension(), elmat.Width(), lh);
               FlatMatrix<double,ColMajor> bbmat2(bs*proxy2->Dimension(), elmat.Height(), lh);
 
-              proxy1->Evaluator()->CalcLinearizedMatrix(fel, mir.Range(i,i+bs,lh), elveclin, bbmat1, lh);
+              if (elveclin.Size())
+                proxy1->Evaluator()->CalcLinearizedMatrix(fel, mir.Range(i,i+bs,lh), elveclin, bbmat1, lh);
+              else
+                proxy1->Evaluator()->CalcMatrix(fel, mir.Range(i,i+bs,lh), bbmat1, lh);
               
               for (size_t j = 0; j < bs; j++)
                 {
@@ -5767,7 +5780,10 @@ namespace ngfem
                 part_elmat += Trans(bbmat1).Rows(r1) * bdbmat1.Cols(r1);
               else
                 {
-                  proxy2->Evaluator()->CalcLinearizedMatrix(fel, mir.Range(i,i+bs,lh), elveclin, bbmat2, lh);
+                  if (elveclin.Size())
+                    proxy2->Evaluator()->CalcLinearizedMatrix(fel, mir.Range(i,i+bs,lh), elveclin, bbmat2, lh);
+                  else
+                    proxy2->Evaluator()->CalcMatrix(fel, mir.Range(i,i+bs,lh), bbmat2, lh);
                   part_elmat += Trans(bbmat2).Rows(r2) * bdbmat1.Cols(r1);                  
                 }
 
@@ -5814,7 +5830,10 @@ namespace ngfem
     for (ProxyFunction * proxy : trial_proxies)
       {
         ud.AssignMemory (proxy, mir.IR().GetNIP(), proxy->Dimension(), lh);
-        proxy->Evaluator()->Apply(fel, mir, elveclin, ud.GetAMemory(proxy));
+        if (elveclin.Size())
+          proxy->Evaluator()->Apply(fel, mir, elveclin, ud.GetAMemory(proxy));
+        else
+          ud.GetAMemory(proxy) = SIMD<double>(0.0);
       }
 
 
@@ -5946,7 +5965,10 @@ namespace ngfem
                   */
                   {
                     RegionTimer reg(tbmat);
-                    proxy1->Evaluator()->CalcLinearizedMatrix(fel, mir, elveclin, bmat1);
+                    if (elveclin.Size())
+                      proxy1->Evaluator()->CalcLinearizedMatrix(fel, mir, elveclin, bmat1);
+                    else
+                      proxy1->Evaluator()->CalcMatrix(fel, mir, bmat1);
                   }
 
                   // symbolic derivatives are exactly zero outside their pattern
@@ -5990,7 +6012,10 @@ namespace ngfem
                       }
                     else
                       {
-                        proxy2->Evaluator()->CalcLinearizedMatrix(fel, mir, elveclin, bmat2);
+                        if (elveclin.Size())
+                          proxy2->Evaluator()->CalcLinearizedMatrix(fel, mir, elveclin, bmat2);
+                        else
+                          proxy2->Evaluator()->CalcMatrix(fel, mir, bmat2);
                         // via temporary: both evaluators may act on the same dofs
                         FlatMatrix<double> part(r2.Size(), r1.Size(), lh);
                         part = 0.0;
