@@ -2244,6 +2244,124 @@ namespace ngfem
     return ir_vol;
   }
 
+  // elmat += B2^T D B1 for one trial/test proxy pair on the all-facets rule of an element,
+  // proxyvalues are weighted, rows k*dim2+l, nonzero(j,k) masks components of D
+  template <typename SCAL, typename SCAL_SHAPES, typename SCAL_RES, typename TNZ>
+  static void AddEBProxyProduct (const ProxyFunction * proxy1, const ProxyFunction * proxy2,
+                                 const FiniteElement & fel_trial, const FiniteElement & fel_test,
+                                 FlatArray<tuple<int,IntRange>> facet_blocks,
+                                 FlatMatrix<SIMD<SCAL>> proxyvalues,
+                                 FlatMatrix<SIMD<SCAL_SHAPES>> bbmat1, FlatMatrix<SIMD<SCAL_SHAPES>> bbmat2,
+                                 TNZ nonzero, FlatMatrix<SCAL_RES> elmat, LocalHeap & lh)
+  {
+    size_t dim_proxy1 = proxy1->Dimension();
+    size_t dim_proxy2 = proxy2->Dimension();
+    size_t nip = proxyvalues.Width();
+    IntRange r1 = proxy1->Evaluator()->UsedDofs(fel_trial);
+    IntRange r2 = proxy2->Evaluator()->UsedDofs(fel_test);
+    SliceMatrix<SCAL_RES> part_elmat = elmat.Rows(r2).Cols(r1);
+
+    // per facet GEMMs if they halve the work and are not too small (work in SIMD units, tuned on M4)
+    constexpr size_t eb_min_work = 1000;
+    size_t work_merged = r1.Size()*r2.Size()*dim_proxy2*nip;
+    size_t work_facets = 0;
+    for (auto [fnr, cols] : facet_blocks)
+      work_facets += proxy1->Evaluator()->UsedDofs(fel_trial, fnr).Size()
+        * proxy2->Evaluator()->UsedDofs(fel_test, fnr).Size() * dim_proxy2 * cols.Size();
+    bool facet_restricted = 2*work_facets <= work_merged
+      && work_facets >= eb_min_work * facet_blocks.Size();
+
+    if (facet_restricted)
+      {
+        for (auto [fnr, cols] : facet_blocks)
+          {
+            HeapReset hr(lh);
+            IntRange r1k = proxy1->Evaluator()->UsedDofs(fel_trial, fnr);
+            IntRange r2k = proxy2->Evaluator()->UsedDofs(fel_test, fnr);
+            size_t nk = cols.Size();
+            FlatMatrix<SIMD<SCAL>> bdb(r1k.Size()*dim_proxy2, nk, lh);
+            FlatMatrix<SIMD<SCAL_SHAPES>> bb2(r2k.Size()*dim_proxy2, nk, lh);
+            bdb = 0.0;
+            for (size_t j = 0; j < dim_proxy2; j++)
+              {
+                auto bb2_j = bb2.RowSlice(j, dim_proxy2);
+                bb2_j = bbmat2.RowSlice(j, dim_proxy2).Rows(r2k).Cols(cols);
+                auto bdb_j = bdb.RowSlice(j, dim_proxy2);
+                for (size_t k = 0; k < dim_proxy1; k++)
+                  {
+                    if (!nonzero(j,k)) continue;
+                    auto pv = proxyvalues.Row(k*dim_proxy2+j).Range(cols);
+                    auto b1 = bbmat1.RowSlice(k, dim_proxy1).Rows(r1k).Cols(cols);
+                    for (size_t i = 0; i < nk; i++)
+                      bdb_j.Col(i) += pv(i)*b1.Col(i);
+                  }
+              }
+            AddABt (FlatMatrix<SIMD<SCAL_SHAPES>>(r2k.Size(), dim_proxy2*nk, bb2.Data()),
+                    FlatMatrix<SIMD<SCAL>>(r1k.Size(), dim_proxy2*nk, bdb.Data()),
+                    elmat.Rows(r2k).Cols(r1k));
+          }
+        return;
+      }
+
+    if (dim_proxy2 < dim_proxy1)
+      {
+        FlatMatrix<SIMD<SCAL>> bdbmat1(elmat.Width()*dim_proxy2, nip, lh);
+        FlatMatrix<SIMD<SCAL>> hbdbmat1(elmat.Width(), dim_proxy2*nip,
+                                        &bdbmat1(0,0));
+        {
+          // static Timer t("SymbolicBFI::EB - DB  V1", NoTracing);
+          // RegionTracer regtr(TaskManager::GetThreadId(), t);
+          hbdbmat1.Rows(r1) = 0.0;
+          for (size_t j = 0; j < dim_proxy2; j++)
+            for (size_t k = 0; k < dim_proxy1; k++)
+              if (nonzero(j,k))
+              {
+                auto proxyvalues_jk = proxyvalues.Row(k*dim_proxy2+j);
+                auto bbmat1_k = bbmat1.RowSlice(k, dim_proxy1).Rows(r1);
+                auto bdbmat1_j = bdbmat1.RowSlice(j, dim_proxy2).Rows(r1);
+
+                for (size_t i = 0; i < nip; i++)
+                  bdbmat1_j.Col(i).Range(0,r1.Size()) += proxyvalues_jk(i)*bbmat1_k.Col(i);
+              }
+        }
+        // static Timer t("SymbolicBFI::EB - AddABt V1", NoTracing);
+        // RegionTracer regtr(TaskManager::GetThreadId(), t);
+
+        FlatMatrix<SIMD<SCAL_SHAPES>> hbbmat2(elmat.Height(), dim_proxy2*nip,
+                                              &bbmat2(0,0));
+        AddABt (hbbmat2.Rows(r2), hbdbmat1.Rows(r1), part_elmat);
+      }
+    else
+      {
+        FlatMatrix<SIMD<SCAL>> bdbmat2(elmat.Height()*dim_proxy1, nip, lh);
+        FlatMatrix<SIMD<SCAL>> hbdbmat2(elmat.Height(), dim_proxy1*nip,
+                                        &bdbmat2(0,0));
+        {
+          // static Timer t("SymbolicBFI::EB - DB V2", NoTracing);
+          // RegionTracer regtr(TaskManager::GetThreadId(), t);
+          hbdbmat2.Rows(r2) = 0.0;
+          for (size_t j = 0; j < dim_proxy2; j++)
+            for (size_t k = 0; k < dim_proxy1; k++)
+              if (nonzero(j,k))
+              {
+                auto proxyvalues_jk = proxyvalues.Row(k*dim_proxy2+j);
+                auto bbmat2_j = bbmat2.RowSlice(j, dim_proxy2).Rows(r2);
+                auto bdbmat2_k = bdbmat2.RowSlice(k, dim_proxy1).Rows(r2);
+
+                for (size_t i = 0; i < nip; i++)
+                  bdbmat2_k.Col(i).Range(0,r2.Size()) += proxyvalues_jk(i)*bbmat2_j.Col(i);
+              }
+        }
+
+        // static Timer t("SymbolicBFI::EB - AddABt V2", NoTracing);
+        // RegionTracer regtr(TaskManager::GetThreadId(), t);
+
+        FlatMatrix<SIMD<SCAL_SHAPES>> hbbmat1(elmat.Width(), dim_proxy1*nip,
+                                              &bbmat1(0,0));
+        AddABt (hbdbmat2.Rows(r2), hbbmat1.Rows(r1), part_elmat);
+      }
+  }
+
   template <typename SCAL, typename SCAL_SHAPES, typename SCAL_RES>
   void SymbolicBilinearFormIntegrator ::
   T_CalcElementMatrixEBAdd (const FiniteElement & fel,
@@ -2333,10 +2451,6 @@ namespace ngfem
                             }
 
                         
-                        IntRange r1 = proxy1->Evaluator()->UsedDofs(fel_trial);
-                        IntRange r2 = proxy2->Evaluator()->UsedDofs(fel_test);
-                        SliceMatrix<SCAL_RES> part_elmat = elmat.Rows(r2).Cols(r1);
-                        
                         FlatMatrix<SIMD<SCAL_SHAPES>> bbmat1(elmat.Width()*dim_proxy1, mir.Size(), lh);
                         bool samediffop = false; // not yet available
                         FlatMatrix<SIMD<SCAL_SHAPES>> bbmat2 = samediffop ?
@@ -2349,107 +2463,9 @@ namespace ngfem
                             proxy2->Evaluator()->CalcMatrix(fel_test, mir, bbmat2);
                         }
 
-                        // per facet GEMMs if they halve the work and are not too small (work in SIMD units, tuned on M4)
-                        constexpr size_t eb_min_work = 1000;
-                        size_t work_merged = r1.Size()*r2.Size()*dim_proxy2*mir.Size();
-                        size_t work_facets = 0;
-                        for (auto [fnr, cols] : facet_blocks)
-                          work_facets += proxy1->Evaluator()->UsedDofs(fel_trial, fnr).Size()
-                            * proxy2->Evaluator()->UsedDofs(fel_test, fnr).Size() * dim_proxy2 * cols.Size();
-                        bool facet_restricted = 2*work_facets <= work_merged
-                          && work_facets >= eb_min_work * facet_blocks.Size();
-
-                        if (facet_restricted)
-                          {
-                            for (auto [fnr, cols] : facet_blocks)
-                              {
-                                HeapReset hr(lh);
-                                IntRange r1k = proxy1->Evaluator()->UsedDofs(fel_trial, fnr);
-                                IntRange r2k = proxy2->Evaluator()->UsedDofs(fel_test, fnr);
-                                size_t nk = cols.Size();
-                                FlatMatrix<SIMD<SCAL>> bdb(r1k.Size()*dim_proxy2, nk, lh);
-                                FlatMatrix<SIMD<SCAL_SHAPES>> bb2(r2k.Size()*dim_proxy2, nk, lh);
-                                bdb = 0.0;
-                                for (size_t j = 0; j < dim_proxy2; j++)
-                                  {
-                                    auto bb2_j = bb2.RowSlice(j, dim_proxy2);
-                                    bb2_j = bbmat2.RowSlice(j, dim_proxy2).Rows(r2k).Cols(cols);
-                                    auto bdb_j = bdb.RowSlice(j, dim_proxy2);
-                                    for (size_t k = 0; k < dim_proxy1; k++)
-                                      {
-                                        auto pv = proxyvalues.Row(k*dim_proxy2+j).Range(cols);
-                                        auto b1 = bbmat1.RowSlice(k, dim_proxy1).Rows(r1k).Cols(cols);
-                                        for (size_t i = 0; i < nk; i++)
-                                          bdb_j.Col(i) += pv(i)*b1.Col(i);
-                                      }
-                                  }
-                                AddABt (FlatMatrix<SIMD<SCAL_SHAPES>>(r2k.Size(), dim_proxy2*nk, bb2.Data()),
-                                        FlatMatrix<SIMD<SCAL>>(r1k.Size(), dim_proxy2*nk, bdb.Data()),
-                                        elmat.Rows(r2k).Cols(r1k));
-                              }
-                            continue;
-                          }
-
-                        if (dim_proxy2 < dim_proxy1)
-                          {
-                            FlatMatrix<SIMD<SCAL>> bdbmat1(elmat.Width()*dim_proxy2, mir.Size(), lh);
-                            FlatMatrix<SIMD<SCAL>> hbdbmat1(elmat.Width(), dim_proxy2*mir.Size(),
-                                                            &bdbmat1(0,0));
-                            
-                            {
-                              // static Timer t("SymbolicBFI::EB - DB  V1", NoTracing);
-                              // RegionTracer regtr(TaskManager::GetThreadId(), t);    
-                              hbdbmat1.Rows(r1) = 0.0;
-                              for (size_t j = 0; j < dim_proxy2; j++)
-                                for (size_t k = 0; k < dim_proxy1; k++)
-                                  // if (nonzeros(l1+j, k1+k))
-                                  {
-                                    auto proxyvalues_jk = proxyvalues.Row(k*dim_proxy2+j);
-                                    auto bbmat1_k = bbmat1.RowSlice(k, dim_proxy1).Rows(r1);
-                                    auto bdbmat1_j = bdbmat1.RowSlice(j, dim_proxy2).Rows(r1);
-                                    
-                                    for (size_t i = 0; i < mir.Size(); i++)
-                                      bdbmat1_j.Col(i).Range(0,r1.Size()) += proxyvalues_jk(i)*bbmat1_k.Col(i);
-                                  }
-                            }
-                            
-                            // static Timer t("SymbolicBFI::EB - AddABt V1", NoTracing);
-                            // RegionTracer regtr(TaskManager::GetThreadId(), t);    
-                            
-                            FlatMatrix<SIMD<SCAL_SHAPES>> hbbmat2(elmat.Height(), dim_proxy2*mir.Size(),
-                                                                  &bbmat2(0,0));
-                            AddABt (hbbmat2.Rows(r2), hbdbmat1.Rows(r1), part_elmat);
-                          }
-                        else
-                          {
-                            FlatMatrix<SIMD<SCAL>> bdbmat2(elmat.Height()*dim_proxy1, mir.Size(), lh);
-                            FlatMatrix<SIMD<SCAL>> hbdbmat2(elmat.Height(), dim_proxy1*mir.Size(),
-                                                            &bdbmat2(0,0));
-                            
-                            {
-                              // static Timer t("SymbolicBFI::EB - DB V2", NoTracing);
-                              // RegionTracer regtr(TaskManager::GetThreadId(), t);    
-                              hbdbmat2.Rows(r2) = 0.0;
-                              for (size_t j = 0; j < dim_proxy2; j++)
-                                for (size_t k = 0; k < dim_proxy1; k++)
-                                  // if (nonzeros(l1+j, k1+k))
-                                  {
-                                    auto proxyvalues_jk = proxyvalues.Row(k*dim_proxy2+j);
-                                    auto bbmat2_j = bbmat2.RowSlice(j, dim_proxy2).Rows(r2);
-                                    auto bdbmat2_k = bdbmat2.RowSlice(k, dim_proxy1).Rows(r2);
-                                    
-                                    for (size_t i = 0; i < mir.Size(); i++)
-                                      bdbmat2_k.Col(i).Range(0,r2.Size()) += proxyvalues_jk(i)*bbmat2_j.Col(i);
-                                  }
-                            }
-                            
-                            // static Timer t("SymbolicBFI::EB - AddABt V2", NoTracing);
-                            // RegionTracer regtr(TaskManager::GetThreadId(), t);    
-                            
-                            FlatMatrix<SIMD<SCAL_SHAPES>> hbbmat1(elmat.Width(), dim_proxy1*mir.Size(),
-                                                                  &bbmat1(0,0));
-                            AddABt (hbdbmat2.Rows(r2), hbbmat1.Rows(r1), part_elmat);
-                          }
+                        AddEBProxyProduct<SCAL,SCAL_SHAPES,SCAL_RES> (proxy1, proxy2, fel_trial, fel_test, facet_blocks,
+                                                                      proxyvalues, bbmat1, bbmat2,
+                                                                      [] (size_t, size_t) { return true; }, elmat, lh);
                       }
                 }
               return;
@@ -2720,7 +2736,16 @@ namespace ngfem
     if (element_vb != VOL)
       {
         auto save_userdata = trafo.PushUserData();
-        T_CalcLinearizedElementMatrixEB<double,double> (fel, trafo, elveclin, elmat, lh);
+        try
+          {
+            elmat = 0;
+            T_CalcLinearizedElementMatrixEB<double,double> (fel, trafo, elveclin, elmat, lh);
+          }
+        catch (const ExceptionNOSIMD& e)
+          {
+            elmat = 0;
+            T_CalcLinearizedElementMatrixEB<double,double> (fel, trafo, elveclin, elmat, lh);
+          }
         return;
       }
 
@@ -2746,9 +2771,17 @@ namespace ngfem
                                   bool & symmetric_so_far,
                                   LocalHeap & lh) const
   {
-    if (linearization || element_vb != VOL)
+    if (linearization)
       {
         BilinearFormIntegrator::CalcLinearizedElementMatrixAdd (fel, trafo, elveclin, elmat, symmetric_so_far, lh);
+        return;
+      }
+
+    if (element_vb != VOL)
+      {
+        symmetric_so_far = false;
+        auto save_userdata = trafo.PushUserData();
+        T_CalcLinearizedElementMatrixEB<double,double> (fel, trafo, elveclin, elmat, lh);
         return;
       }
 
@@ -2991,8 +3024,6 @@ namespace ngfem
     static Timer tir("symbolicbfi - calclinearized EB intrule", NoTracing);
     RegionTimer reg(t);
     
-    elmat = 0;
-    
     const MixedFiniteElement * mixedfe = AsMixedFE(fel1);
     const FiniteElement & fel_trial = mixedfe ? mixedfe->FETrial() : fel1;
     const FiniteElement & fel_test = mixedfe ? mixedfe->FETest() : fel1;
@@ -3005,73 +3036,61 @@ namespace ngfem
     if (simd_evaluate)
       try
         {
-          for (int k = 0; k < nfacet; k++)
+          HeapReset hr(lh);
+          auto & ir_vol = AllFacetsSIMDRule (*this, transform, fel_trial.Order()+fel_test.Order()+bonus_intorder, lh);
+          auto & mir = trafo(ir_vol, lh);
+          ProxyUserData ud(trial_proxies.Size(), gridfunction_cfs.Size(), lh);
+          const_cast<ElementTransformation&>(trafo).userdata = &ud;
+          ud.fel = &fel1;
+
+          for (ProxyFunction * proxy : trial_proxies)
             {
+              ud.AssignMemory (proxy, ir_vol.GetNIP(), proxy->Dimension(), lh);
+              proxy->Evaluator()->Apply(fel_trial, mir, elveclin, ud.GetAMemory(proxy));
+            }
+          for (CoefficientFunction * cf : gridfunction_cfs)
+            ud.AssignMemory (cf, ir_vol.GetNIP(), cf->Dimension(), lh, cf->IsComplex());
+
+          ArrayMem<tuple<int,IntRange>,8> facet_blocks;
+          IterateFacetBlocks (ir_vol, [&] (int fnr, IntRange r) { facet_blocks.Append (tuple(fnr, r)); });
+
+          for (int l1 : Range(test_proxies))
+            {
+              bool any = false;
+              for (int k1 : Range(trial_proxies))
+                any |= nonzeros_deriv_proxies(l1, k1);
+              if (!any) continue;
+
               HeapReset hr(lh);
-              ngfem::ELEMENT_TYPE etfacet = transform.FacetType (k);
-              // NgProfiler::StartThreadTimer(tir, tid);
-              const SIMD_IntegrationRule& ir_facet = GetSIMDIntegrationRule(etfacet, fel_trial.Order()+fel_test.Order()+bonus_intorder);
-              const SIMD_IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
-              SIMD_BaseMappedIntegrationRule & mir = trafo(ir_facet_vol, lh);
-              // mir.ComputeNormalsAndMeasure(eltype, k);
-              // NgProfiler::StopThreadTimer(tir, tid);
-              ProxyUserData ud(trial_proxies.Size(), gridfunction_cfs.Size(), lh);
-              const_cast<ElementTransformation&>(trafo).userdata = &ud;
-              ud.fel = &fel1;
+              auto proxy2 = test_proxies[l1];
+              FlatMatrix<SIMD<double>> bbmat2(elmat.Height()*proxy2->Dimension(), mir.Size(), lh);
+              proxy2->Evaluator()->CalcMatrix(fel_test, mir, bbmat2);
 
-              for (ProxyFunction * proxy : trial_proxies)
+              for (int k1 : Range(trial_proxies))
                 {
-                  ud.AssignMemory (proxy, ir_facet.GetNIP(), proxy->Dimension(), lh);
-                  proxy->Evaluator()->Apply(fel_trial, mir, elveclin, ud.GetAMemory(proxy));
-                }
-              for (CoefficientFunction * cf : gridfunction_cfs)
-                ud.AssignMemory (cf, ir_facet.GetNIP(), cf->Dimension(), lh,cf->IsComplex());
+                  if (!nonzeros_deriv_proxies(l1, k1)) continue;
+                  HeapReset hr(lh);
+                  auto proxy1 = trial_proxies[k1];
 
-              
-              for (int l1 : Range(test_proxies))
-                {
-                  HeapReset hr(lh);              
-                  auto proxy2 = test_proxies[l1];
-                  FlatMatrix<SIMD<double>> bdbmat1(elmat.Width()*proxy2->Dimension(), ir_facet.Size(), lh);
-                  FlatMatrix<SIMD<double>> hbdbmat1(elmat.Width(), proxy2->Dimension()*ir_facet.Size(),
-                                                    &bdbmat1(0,0));
-                  bdbmat1 = 0.0;
-                  
-                  for (int k1 : Range(trial_proxies))
-                    {
-                      if (!nonzeros_deriv_proxies(l1, k1)) continue;
-                      HeapReset hr(lh);
-                      auto proxy1 = trial_proxies[k1];
-                      
-                      FlatMatrix<SIMD<double>> proxyvalues(proxy1->Dimension()*proxy2->Dimension(), ir_facet.Size(), lh);
-                      
-                      LinearizedProxyValues (l1, k1, mir, ud, proxyvalues, lh);
+                  FlatMatrix<SIMD<double>> proxyvalues(proxy1->Dimension()*proxy2->Dimension(), mir.Size(), lh);
+                  LinearizedProxyValues (l1, k1, mir, ud, proxyvalues, lh);
+                  for (size_t i = 0; i < mir.Size(); i++)
+                    proxyvalues.Col(i) *= mir[i].GetWeight();
 
-                      for (size_t i = 0; i < mir.Size(); i++)
-                        proxyvalues.Col(i) *= mir[i].GetWeight();                        
-                      
-                      IntRange r1 = proxy1->Evaluator()->UsedDofs(fel_trial);
+                  // same diffop for trial and test: B is already computed
+                  bool samediffop = same_diffops(l1, k1) && !mixedfe;
+                  FlatMatrix<SIMD<double>> bbmat1 =
+                    samediffop ?
+                      bbmat2
+                      :
+                      FlatMatrix<SIMD<double>>(elmat.Width()*proxy1->Dimension(), mir.Size(), lh);
+                  if (!samediffop)
+                    proxy1->Evaluator()->CalcMatrix(fel_trial, mir, bbmat1);
 
-                      FlatMatrix<SIMD<double>> bbmat1(elmat.Width()*proxy1->Dimension(), ir_facet.Size(), lh);
-                      proxy1->Evaluator()->CalcMatrix(fel_trial, mir, bbmat1);
-
-                      for (auto i : r1)
-                        for (size_t j = 0; j < proxy2->Dimension(); j++)
-                          for (size_t k = 0; k < proxy1->Dimension(); k++)
-                            {
-                              bdbmat1.Row(i*proxy2->Dimension()+j) +=
-                                pw_mult (bbmat1.Row(i*proxy1->Dimension()+k),
-                                         proxyvalues.Row(k*proxy2->Dimension()+j));
-                            }
-                    }
-                  
-                  IntRange r2 = proxy2->Evaluator()->UsedDofs(fel_test);
-                  FlatMatrix<SIMD<double>> bbmat2(elmat.Height()*proxy2->Dimension(), ir_facet.Size(), lh);
-                  FlatMatrix<SIMD<double>> hbbmat2(elmat.Height(), proxy2->Dimension()*ir_facet.Size(),
-                                                   &bbmat2(0,0));
-
-                  proxy2->Evaluator()->CalcMatrix(fel_test, mir, bbmat2);
-                  AddABt (hbbmat2.Rows(r2), hbdbmat1, elmat.Rows(r2));
+                  AddEBProxyProduct<double,double,double>
+                    (proxy1, proxy2, fel_trial, fel_test, facet_blocks, proxyvalues, bbmat1, bbmat2,
+                     [&] (size_t j, size_t k) { return nonzeros_deriv(test_cum[l1]+j, trial_cum[k1]+k); },
+                     elmat, lh);
                 }
             }
 
@@ -3082,8 +3101,7 @@ namespace ngfem
           cout << IM(6) << e.What() << endl
                << "switching to scalar evaluation in CalcLinearizedEB" << endl;
           simd_evaluate = false;
-          T_CalcLinearizedElementMatrixEB<SCAL,SCAL_SHAPES> (fel1, trafo, elveclin, elmat, lh);
-          return;
+          throw;   // elmat is partly filled, the caller has to restart
         }
 
 
