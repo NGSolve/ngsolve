@@ -10,18 +10,26 @@ def _stream_package(solver):
     return pkg if pkg in package_wrapper.PACKAGE else "cuda"
 
 
-def _hybrid_execution(limit=None):
+def _free_device_memory():
+    from cuda.bindings import runtime
+    err, free, total = runtime.cudaMemGetInfo()
+    return free
+
+
+def _set_hybrid_limit(solver, limit=None):
     # keep the factors in host memory, limit is the device memory used as working space
-    # (bytes, "6GiB", "80%"), default 90% of the free device memory
-    import nvmath.sparse.advanced as nvs
+    # (bytes, "6GiB", "80%"), default 90% of the device memory left after the analysis
+    from nvmath.internal import utils
+    free = _free_device_memory()
+    need = int(solver.plan_info.memory_estimates.hybrid_min_device_memory)
     if limit is None:
-        from cuda.bindings import runtime
-        err, free, total = runtime.cudaMemGetInfo()
-        limit = int(0.9 * free)
-    elif isinstance(limit, float):
-        limit = int(limit)
-    return nvs.ExecutionCUDA(hybrid_memory_mode_options=nvs.HybridMemoryModeOptions(
-        hybrid_memory_mode=True, hybrid_device_memory_limit=limit))
+        limit = max(int(0.9 * free), min(need, free))
+    else:
+        limit = utils.get_memory_limit_from_device_id(int(limit) if isinstance(limit, float) else limit, solver.device_id)
+    if limit < need:
+        raise MemoryError(f"cuDSS hybrid memory mode needs {need / 2**30:.2f} GiB device memory, "
+                          f"the limit is {limit / 2**30:.2f} GiB ({free / 2**30:.2f} GiB free)")
+    solver._internal_config.hybrid_device_memory_limit = limit
 
 
 class CudssSolver(ngla.SparseFactorizationInterface):
@@ -77,15 +85,30 @@ class CudssSolver(ngla.SparseFactorizationInterface):
             options.sparse_system_view = nvs.DirectSolverMatrixViewType.LOWER
 
         tmp = np.empty(csr.shape[1], dtype=csr.dtype)
-        self.solver = nvs.DirectSolver(csr, tmp, options=options,
-                                       execution=self._execution())
-        self.solver.plan()
+        execution = None
+        if self._hybrid_active:
+            execution = nvs.ExecutionCUDA(hybrid_memory_mode_options=nvs.HybridMemoryModeOptions(hybrid_memory_mode=True))
+        self.solver = nvs.DirectSolver(csr, tmp, options=options, execution=execution)
+        try:
+            self.solver.plan()
+        except Exception as e:
+            from nvmath.bindings.cudss import cuDSSError, Status
+            if not (isinstance(e, cuDSSError) and e.status == Status.ALLOC_FAILED):
+                raise
+            raise MemoryError(f"cuDSS analysis does not fit into device memory ({_free_device_memory() / 2**30:.2f} GiB free)") from e
         self._is_first_factor_call = True
+        if self._hybrid_active:
+            # the minimal device memory is known after the analysis
+            _set_hybrid_limit(self.solver, None if self.hybrid in (None, True) else self.hybrid)
+        elif self.hybrid is None and self.solver.plan_info.memory_estimates.peak_device_memory > _free_device_memory():
+            self._switch_to_hybrid()
 
-    def _execution(self):
-        if not self._hybrid_active:
-            return None
-        return _hybrid_execution(None if self.hybrid in (None, True) else self.hybrid)
+    def _switch_to_hybrid(self):
+        print("cuDSS: factors do not fit into device memory, switching to hybrid memory mode")
+        self._hybrid_active = True
+        self.solver.free()
+        self.solver = None
+        self.Analyze()
 
     @TimeFunction
     def Factor(self):
@@ -106,13 +129,9 @@ class CudssSolver(ngla.SparseFactorizationInterface):
             self.solver.factorize()
         except Exception as e:
             from nvmath.bindings.cudss import cuDSSError, Status
-            if self.hybrid is not None or not (isinstance(e, cuDSSError) and e.status == Status.ALLOC_FAILED):
+            if self._hybrid_active or self.hybrid is not None or not (isinstance(e, cuDSSError) and e.status == Status.ALLOC_FAILED):
                 raise
-            print("cuDSS: factors do not fit into device memory, switching to hybrid memory mode")
-            self._hybrid_active = True
-            self.solver.free()
-            self.solver = None
-            self.Analyze()
+            self._switch_to_hybrid()
             self.solver.factorize()
         self._is_first_factor_call = False
 
