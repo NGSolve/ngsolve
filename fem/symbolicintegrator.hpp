@@ -873,6 +873,8 @@ public:
     Array<int> trial_cum;     // cumulated dimension of proxies
     Matrix<bool> nonzeros;    // do components interact ? 
     Matrix<bool> nonzeros_proxies; // do proxies interact ?
+    Matrix<bool> hess_nonzeros;         // as nonzeros, exact where ddcf is available
+    Matrix<bool> hess_nonzeros_proxies;
     Array<shared_ptr<CoefficientFunction>> dcf, ddcf;
 
     void EnergyGradient (int i, const SIMD_BaseMappedIntegrationRule & mir, ProxyUserData & ud,

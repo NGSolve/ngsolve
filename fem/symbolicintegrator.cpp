@@ -5454,9 +5454,38 @@ namespace ngfem
             cout << IM(5) << "dcf_dtest has thrown exception " << e.What() << endl;
           }
       }
-    
+
+    // nonzeros cannot separate mixed from pure second derivatives, the symbolic Hessian can
+    hess_nonzeros = nonzeros;
+    hess_nonzeros_proxies = nonzeros_proxies;
+    int np = trial_proxies.Size();
+    for (int i = 0; i < np; i++)
+      for (int j = 0; j <= i; j++)
+        if (auto dd = ddcf[i*np+j])
+          {
+            int ni = trial_proxies[i]->Dimension(), nj = trial_proxies[j]->Dimension();
+            ProxyUserData udd;
+            udd.fel = &dummyfe;
+            NonZeroPatternDAG nzdd(*dd);
+            Vector<AutoDiffDiff<1,NonZero>> nzddvec(ni*nj);
+            nzdd.Evaluate (udd, nzddvec);
+            bool any = false;
+            for (int k2 = 0; k2 < ni; k2++)
+              for (int l2 = 0; l2 < nj; l2++)
+                {
+                  bool nz = nzddvec(k2*nj+l2).Value();
+                  any |= nz;
+                  hess_nonzeros(trial_cum[i]+k2, trial_cum[j]+l2) = nz;
+                  if (i != j)
+                    hess_nonzeros(trial_cum[j]+l2, trial_cum[i]+k2) = nz;
+                }
+            hess_nonzeros_proxies(i,j) = any;
+            hess_nonzeros_proxies(j,i) = any;
+          }
+
     cout << IM(6) << "nonzero: " << cnt << "/" << sqr(nonzeros.Height()) << endl;
     cout << IM(6) << "nonzero-proxies: " << endl << nonzeros_proxies << endl;
+    cout << IM(6) << "hessian nonzero-proxies: " << endl << hess_nonzeros_proxies << endl;
   }
 
 
@@ -5821,7 +5850,7 @@ namespace ngfem
               for (int l1 : Range(trial_proxies))
                 {
                   HeapReset hr(lh);
-                  if (!nonzeros_proxies(k1,l1)) continue;
+                  if (!hess_nonzeros_proxies(k1,l1)) continue;
                   if (k1 < l1) continue;
                   auto proxy1 = trial_proxies[k1];
                   auto proxy2 = trial_proxies[l1];
@@ -5920,11 +5949,19 @@ namespace ngfem
                     proxy1->Evaluator()->CalcLinearizedMatrix(fel, mir, elveclin, bmat1);
                   }
 
-                  hdbmat1.Rows(r1) = 0.0; 
+                  // symbolic derivatives are exactly zero outside their pattern
+                  bool use_pattern = ddcf[k1*trial_proxies.Size()+l1] || dcf[k1];
+                  FlatArray<bool> used_d(dim_proxy1*dim_proxy2, lh);
+                  for (size_t k = 0; k < dim_proxy1; k++)
+                    for (size_t j = 0; j < dim_proxy2; j++)
+                      used_d[k*dim_proxy2+j] = !use_pattern || hess_nonzeros(trial_cum[k1]+k, trial_cum[l1]+j);
+
+                  hdbmat1.Rows(r1) = 0.0;
                   for (auto i : r1)
                     for (size_t j = 0; j < dim_proxy2; j++)
                       for (size_t k = 0; k < dim_proxy1; k++)
                         {
+                          if (!used_d[k*dim_proxy2+j]) continue;
                           auto res = dbmat1.Row(i*dim_proxy2+j);
                           auto a = bmat1.Row(i*dim_proxy1+k);
                           auto b = proxyvalues2.Row(k*dim_proxy2+j);
@@ -5935,15 +5972,32 @@ namespace ngfem
                     RegionTimer reg(tmult);
                     if (k1 == l1)
                       {
-                        AddABt (hbmat1.Rows(r1), hdbmat1.Rows(r1), elmat.Rows(r1).Cols(r1));
+                        // Hessian block is symmetric: lower triangle, then mirror
+                        size_t n = r1.Size();
+                        FlatMatrix<double> part(n, n, lh);
+                        part = 0.0;
+                        AddABtSym (hbmat1.Rows(r1), hdbmat1.Rows(r1), part);
+                        auto block = elmat.Rows(r1).Cols(r1);
+                        for (size_t i = 0; i < n; i++)
+                          {
+                            block(i,i) += part(i,i);
+                            for (size_t j = 0; j < i; j++)
+                              {
+                                block(i,j) += part(i,j);
+                                block(j,i) += part(i,j);
+                              }
+                          }
                       }
                     else
                       {
                         proxy2->Evaluator()->CalcLinearizedMatrix(fel, mir, elveclin, bmat2);
-                        AddABt (hbmat2.Rows(r2), hdbmat1.Rows(r1), elmat.Rows(r2).Cols(r1));
-                        AddABt (hdbmat1.Rows(r1), hbmat2.Rows(r2), elmat.Rows(r1).Cols(r2));
+                        // via temporary: both evaluators may act on the same dofs
+                        FlatMatrix<double> part(r2.Size(), r1.Size(), lh);
+                        part = 0.0;
+                        AddABt (hbmat2.Rows(r2), hdbmat1.Rows(r1), part);
+                        elmat.Rows(r2).Cols(r1) += part;
+                        elmat.Rows(r1).Cols(r2) += Trans(part);
                       }
-                    // elmat.Rows(r1).Cols(r2) = Trans(part_elmat); // buggy if both evaluators act on same element
                   }
                 }
 
