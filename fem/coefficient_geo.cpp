@@ -387,6 +387,17 @@ namespace ngfem
       }
   }
 
+  bool IsNormalVectorCF (const CoefficientFunction & cf)
+  {
+    bool isnormal = false;
+    Iterate<6> ([&] (auto i)
+                {
+                  if (dynamic_cast<const cl_NormalVectorCF<i.value+1>*> (&cf))
+                    isnormal = true;
+                });
+    return isnormal;
+  }
+
   template <int D>
   class cl_TangentialVectorCF : public CoefficientFunctionNoDerivative
   {

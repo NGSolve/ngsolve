@@ -2053,6 +2053,8 @@ shared_ptr<CompiledCoefficientFunctionInterface> Compile (shared_ptr<Coefficient
   shared_ptr<CoefficientFunction> NormalVectorCF
   (int dim, optional<BitArray> inverted_faces=nullopt);
   NGS_DLL_HEADER
+  bool IsNormalVectorCF (const CoefficientFunction & cf);
+  NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> TangentialVectorCF (int dim, bool consistent);
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> JacobianMatrixCF (int dims, int dimr);

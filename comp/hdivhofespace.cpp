@@ -126,21 +126,39 @@ namespace ngcomp
       */
     }
     
-    /*
-    using DiffOp<DiffOpIdHDivDiv<D> >::ApplySIMDIR;    
-    static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
+    using DiffOp<DiffOpNormalComponentHDiv<D> >::ApplySIMDIR;
+    static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & bmir,
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
-      dynamic_cast<const HDivDivFiniteElement<D>&> (bfel).Evaluate_Matrix (mir, x, y);
+      auto & mir = static_cast<const SIMD_MappedIntegrationRule<D,D>&> (bmir);
+      STACK_ARRAY(SIMD<double>, mem, D*mir.Size());
+      FlatMatrix<SIMD<double>> val(D, mir.Size(), mem);
+      static_cast<const HDivFiniteElement<D>&> (bfel).Evaluate (mir, x, val);
+      for (size_t i = 0; i < mir.Size(); i++)
+        {
+          Vec<D,SIMD<double>> n = mir[i].GetNV();
+          SIMD<double> sum = 0.0;
+          for (int k = 0; k < D; k++)
+            sum += val(k,i) * n(k);
+          y(0,i) = sum;
+        }
     }
 
-    using DiffOp<DiffOpIdHDivDiv<D> >::AddTransSIMDIR;        
-    static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
+    using DiffOp<DiffOpNormalComponentHDiv<D> >::AddTransSIMDIR;
+    static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & bmir,
                                 BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
     {
-      dynamic_cast<const HDivDivFiniteElement<D>&> (bfel).AddTrans_Matrix (mir, y, x);
-    }    
-    */
+      auto & mir = static_cast<const SIMD_MappedIntegrationRule<D,D>&> (bmir);
+      STACK_ARRAY(SIMD<double>, mem, D*mir.Size());
+      FlatMatrix<SIMD<double>> val(D, mir.Size(), mem);
+      for (size_t i = 0; i < mir.Size(); i++)
+        {
+          Vec<D,SIMD<double>> n = mir[i].GetNV();
+          for (int k = 0; k < D; k++)
+            val(k,i) = y(0,i) * n(k);
+        }
+      static_cast<const HDivFiniteElement<D>&> (bfel).AddTrans (mir, val, x);
+    }
   };
 
 

@@ -3971,6 +3971,43 @@ cl_BinaryOpCF<GenericDiv>::InputVJP (shared_ptr<CoefficientFunction> w) const
 
 
 
+// sigma*n -> sigma.Operator("normalcomponent"), (sigma*n)*n -> sigma.Operator("nncomponent")
+// only for the plain trial/test function and the normal vector, nullptr otherwise
+static shared_ptr<CoefficientFunction>
+NormalComponentProxy (const shared_ptr<CoefficientFunction> & c1,
+                      const shared_ptr<CoefficientFunction> & c2)
+{
+  auto proxy = dynamic_pointer_cast<ProxyFunction> (c1);
+  if (!proxy || proxy->IsOther()) return nullptr;
+  if (c2->Dimensions().Size() != 1 || !IsNormalVectorCF(*c2)) return nullptr;
+
+  auto is_plain = [] (const ProxyFunction & p)
+  { return !p.Primary() && !p.IsOther() && p.OrderDt() == 0; };
+
+  if (c1->Dimensions().Size() == 2)
+    {
+      if (!is_plain(*proxy) || !proxy->GetAdditionalEvaluator("normalcomponent"))
+        return nullptr;
+      if (size_t(c1->Dimensions()[1]) != c2->Dimension())
+        return nullptr;
+      auto nc = proxy->GetAdditionalProxy("normalcomponent");
+      if (nc->Dimensions().Size() == 1 && nc->Dimension() == size_t(c1->Dimensions()[0]))
+        return nc;
+      return nullptr;
+    }
+
+  if (c1->Dimensions().Size() == 1 && c1->Dimension() == c2->Dimension())
+    if (auto prim = dynamic_pointer_cast<ProxyFunction> (proxy->Primary()))
+      if (is_plain(*prim) && c1->Dimension() > 1 &&
+          prim->GetAdditionalEvaluator("normalcomponent") &&
+          prim->GetAdditionalEvaluator("nncomponent") &&
+          proxy == prim->GetAdditionalProxy("normalcomponent"))
+        return prim->GetAdditionalProxy("nncomponent");
+
+  return nullptr;
+}
+
+
 shared_ptr<CoefficientFunction> operator* (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2)
   {
     if (c1->IsZeroCF() || c2->IsZeroCF())
@@ -4008,12 +4045,18 @@ shared_ptr<CoefficientFunction> operator* (shared_ptr<CoefficientFunction> c1, s
       {
         if (dynamic_pointer_cast<IdentityCoefficientFunction>(c1) && !c1->IsVariable())
           return c2;
+        if (auto nc = NormalComponentProxy (c1, c2))
+          return nc;
         return make_shared<MultMatVecCoefficientFunction> (c1, c2);
       }
 
     if (c1->Dimensions().Size()==1 && c2->Dimensions().Size()==1)
       if (c1->Dimension() > 1 && c1->Dimension()==c2->Dimension())
         {
+          if (auto nn = NormalComponentProxy (c1, c2))
+            return nn;
+          if (auto nn = NormalComponentProxy (c2, c1))
+            return nn;
           switch (c1->Dimension())
           {
           case 2:
@@ -4183,7 +4226,15 @@ cl_UnaryOpCF<GenericIdentity>::Operator(const string & name) const
   {
     if (c1->IsZeroCF() || c2->IsZeroCF())
       return ZeroCF( Array<int>() );
-        
+
+    if (!c2->IsComplex() && c1->Dimensions().Size() == 1 && c2->Dimensions().Size() == 1)
+      {
+        if (auto nn = NormalComponentProxy (c1, c2))
+          return nn;
+        if (auto nn = NormalComponentProxy (c2, c1))
+          return nn;
+      }
+
     if (c2->IsComplex())
       {
         auto conj = ConjCF(c2);
