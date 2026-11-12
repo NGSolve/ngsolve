@@ -38,13 +38,26 @@ class CudssSolver(ngla.SparseFactorizationInterface):
     spd = False
 
     def __init__(self, *args, **kwargs):
-        """inverse flag hybrid: True or device memory limit (bytes, "6GiB", "80%") to keep
-        the factors in host memory, False to never do so. Default: switch to hybrid
-        memory mode if the factors do not fit into device memory."""
+        """inverse flags:
+        hybrid: True or device memory limit (bytes, "6GiB", "80%") to keep the factors
+          in host memory, False to never do so. Default: switch to hybrid memory mode
+          if the factors do not fit into device memory.
+        reordering: default|nested_dissection|amd|colamd|btf_colamd. colamd enables
+          global partial pivoting (more fill, no hybrid memory mode).
+        pivot_zero_diagonal: cuDSS pivots only locally by default and fails on zero
+          diagonal entries (saddle point systems). They are perturbed by this factor
+          times the row maximum and the solution is corrected by iterative refinement
+          with the original matrix. Default 1e-8, False to disable.
+        refinement: maximal iterative refinement steps, default 3 if a diagonal is
+          perturbed, else 0."""
         super().__init__(*args, **kwargs)
-        self.hybrid = None
+        flags = {}
         if args and hasattr(args[0], "inverse_flags"):
-            self.hybrid = args[0].inverse_flags.ToDict().get("hybrid")
+            flags = args[0].inverse_flags.ToDict()
+        self.hybrid = flags.get("hybrid")
+        self.reordering = flags.get("reordering")
+        self.pivot_zero_diagonal = flags.get("pivot_zero_diagonal", 1e-8)
+        self.refinement = flags.get("refinement")
         self._hybrid_active = self.hybrid not in (None, False)
 
     @TimeFunction
@@ -66,6 +79,7 @@ class CudssSolver(ngla.SparseFactorizationInterface):
         if np.iscomplexobj(csr.data):
             self.dtype = np.complex64 if self.dtype == np.float32 else np.complex128
         csr = csr.astype(self.dtype, copy=False)
+        self._full = csr
 
         options = make_directsolver_options()
         use_spd = self.spd or getattr(self, "is_spd", False)
@@ -84,11 +98,29 @@ class CudssSolver(ngla.SparseFactorizationInterface):
                 options.sparse_system_type = nvs.DirectSolverMatrixType.SYMMETRIC
             options.sparse_system_view = nvs.DirectSolverMatrixViewType.LOWER
 
+        self._diag_pos, self._diag_pert = None, None
+        if self.pivot_zero_diagonal and not use_spd:
+            zero = abs(self._full.diagonal()) <= 1e-14 * abs(self._full.data).max()
+            if zero.any():
+                rows = np.repeat(np.arange(csr.shape[0]), np.diff(csr.indptr))
+                self._diag_pos = np.where((rows == csr.indices) & zero[rows])[0]
+                rowmax = abs(self._full).max(axis=1).toarray().ravel()
+                self._diag_pert = self.pivot_zero_diagonal * rowmax[rows[self._diag_pos]]
+                csr = csr.copy()
+                csr.data[self._diag_pos] += self._diag_pert
+        self._nrefine = (self.refinement if self.refinement is not None
+                         else 3 if self._diag_pos is not None else 0)
+
+        reordering = self.reordering
         tmp = np.empty(csr.shape[1], dtype=csr.dtype)
         execution = None
         if self._hybrid_active:
             execution = nvs.ExecutionCUDA(hybrid_memory_mode_options=nvs.HybridMemoryModeOptions(hybrid_memory_mode=True))
         self.solver = nvs.DirectSolver(csr, tmp, options=options, execution=execution)
+        self._global_pivoting = reordering in ("colamd", "btf_colamd")
+        if reordering not in (None, "default"):
+            from nvmath.bindings import cudss
+            self.solver.plan_config.reordering_algorithm = cudss.ReorderingAlg[reordering.upper()]
         try:
             self.solver.plan()
         except Exception as e:
@@ -104,6 +136,9 @@ class CudssSolver(ngla.SparseFactorizationInterface):
             self._switch_to_hybrid()
 
     def _switch_to_hybrid(self):
+        if self._global_pivoting:
+            raise MemoryError("cuDSS: factors with global pivoting (colamd) do not fit into "
+                              "device memory, and hybrid memory mode does not support it")
         print("cuDSS: factors do not fit into device memory, switching to hybrid memory mode")
         self._hybrid_active = True
         self.solver.free()
@@ -122,6 +157,9 @@ class CudssSolver(ngla.SparseFactorizationInterface):
             else:
                 values = mat.AsVector().FV().NumPy()
             values = values.astype(self.dtype, copy=False)
+            if self._diag_pos is not None:
+                values = values.copy()
+                values[self._diag_pos] += self._diag_pert
             stream_holder = utils.get_or_create_stream(self.solver.device_id, None, _stream_package(self.solver))
             values_tensor = NumpyTensor(values)
             self.solver.a.values.copy_(values_tensor, stream_holder)
@@ -140,9 +178,23 @@ class CudssSolver(ngla.SparseFactorizationInterface):
         from nvmath.internal import utils
         from nvmath.internal.tensor_ifc_numpy import NumpyTensor
         stream_holder = utils.get_or_create_stream(self.solver.device_id, None, _stream_package(self.solver))
-        self.solver.b.copy_(NumpyTensor(b.FV().NumPy().astype(self.dtype, copy=False)), stream_holder)
-        result = self.solver.solve()
-        sol.FV().NumPy()[:] = result
+        rhs = b.FV().NumPy().astype(self.dtype, copy=False)
+        self.solver.b.copy_(NumpyTensor(rhs), stream_holder)
+        x = self.solver.solve().copy()
+        if self._nrefine:
+            # refinement with the original matrix, the factors may be perturbed
+            A = self._full
+            bnorm = np.linalg.norm(rhs)
+            rnorm_old = np.inf
+            for _ in range(self._nrefine):
+                r = rhs - A @ x
+                rnorm = np.linalg.norm(r)
+                if rnorm <= 1e-15 * bnorm or rnorm > 0.5 * rnorm_old:
+                    break
+                rnorm_old = rnorm
+                self.solver.b.copy_(NumpyTensor(r), stream_holder)
+                x += self.solver.solve()
+        sol.FV().NumPy()[:] = x
 
     def __del__(self):
         if self.solver is not None:
