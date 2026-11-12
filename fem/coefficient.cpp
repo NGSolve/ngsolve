@@ -7612,8 +7612,8 @@ Array<CoefficientFunction*> FindCacheCF (CoefficientFunction & func)
 }
 
 
-void PrecomputeCacheCF (const Array<CoefficientFunction*> & cachecfs, BaseMappedIntegrationRule & mir,
-                        LocalHeap & lh)
+void DoPrecomputeCacheCF (const Array<CoefficientFunction*> & cachecfs, BaseMappedIntegrationRule & mir,
+                          LocalHeap & lh)
 {
   // static Timer t("Precompute CacheCF");
   // RegionTracer reg(TaskManager::GetThreadId(), t);
@@ -7647,8 +7647,8 @@ void PrecomputeCacheCF (const Array<CoefficientFunction*> & cachecfs, BaseMapped
 
 
 
-void PrecomputeCacheCF (const Array<CoefficientFunction*> & cachecfs, SIMD_BaseMappedIntegrationRule & mir,
-                        LocalHeap & lh)
+void DoPrecomputeCacheCF (const Array<CoefficientFunction*> & cachecfs, SIMD_BaseMappedIntegrationRule & mir,
+                          LocalHeap & lh)
 {
   auto & trafo = mir.GetTransformation();
   ProxyUserData * ud = static_cast<ProxyUserData*> (trafo.userdata);

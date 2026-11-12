@@ -2028,11 +2028,25 @@ shared_ptr<CompiledCoefficientFunctionInterface> Compile (shared_ptr<Coefficient
 
   NGS_DLL_HEADER Array<CoefficientFunction*> FindCacheCF (CoefficientFunction & func);
   NGS_DLL_HEADER
-  void PrecomputeCacheCF (const Array<CoefficientFunction*> & cachecfs, BaseMappedIntegrationRule & mir,
-                          LocalHeap & lh);
+  void DoPrecomputeCacheCF (const Array<CoefficientFunction*> & cachecfs, BaseMappedIntegrationRule & mir,
+                            LocalHeap & lh);
   NGS_DLL_HEADER
-  void PrecomputeCacheCF (const Array<CoefficientFunction*> & cachecfs, SIMD_BaseMappedIntegrationRule & mir,
-                          LocalHeap & lh);
+  void DoPrecomputeCacheCF (const Array<CoefficientFunction*> & cachecfs, SIMD_BaseMappedIntegrationRule & mir,
+                            LocalHeap & lh);
+
+  // nothing to do (and no userdata needed) without cache functions
+  inline void PrecomputeCacheCF (const Array<CoefficientFunction*> & cachecfs, BaseMappedIntegrationRule & mir,
+                                 LocalHeap & lh)
+  {
+    if (cachecfs.Size())
+      DoPrecomputeCacheCF (cachecfs, mir, lh);
+  }
+  inline void PrecomputeCacheCF (const Array<CoefficientFunction*> & cachecfs, SIMD_BaseMappedIntegrationRule & mir,
+                                 LocalHeap & lh)
+  {
+    if (cachecfs.Size())
+      DoPrecomputeCacheCF (cachecfs, mir, lh);
+  }
 
   
   NGS_DLL_HEADER
