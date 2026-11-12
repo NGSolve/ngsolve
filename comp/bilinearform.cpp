@@ -3578,374 +3578,381 @@ namespace ngcomp
 
     try
       {
-        if(MixedSpaces())
+        if (!MixedSpaces())
+
+          {
+            size_t ndof = fespace->GetNDof();
+            useddof.SetSize(ndof);
+            useddof.Clear();
+
+            GetMatrix().SetZero();
+
+            cout << IM(3) << "Assemble linearization" << endl;
+
+            for (auto pre : preconditioners)
+              pre -> InitLevel(fespace->GetFreeDofs(eliminate_internal));
+
+            for (VorB vb : ALL_VB)
+              {
+                // other than in DoAssemble, boundary facet terms are added to the volume element matrix
+                bool bnd_facets = (vb == VOL) && facetwise_skeleton_parts[BND].Size();
+                if (!VB_parts[vb].Size() && !bnd_facets) continue;
+
+                RegionTimer reg(timers[int(vb)]);
+                ProgressOutput progress(ma,string("assemble ") + ToString(vb) + string(" element"), ma->GetNE(vb));
+
+                IterateElements
+                  (*fespace, vb, clh,  [&] (FESpace::Element el, LocalHeap & lh)
+                   {
+                     progress.Update ();
+
+                     bool elem_has_integrator = bnd_facets;
+                     for (auto & bfi : VB_parts[vb])
+                       if (bfi->DefinedOn (el.GetIndex()) && bfi->DefinedOnElement (el.Nr()))
+                         elem_has_integrator = true;
+
+                     if (!elem_has_integrator) return;
+
+                     const FiniteElement & fel = fespace->GetFE (el, lh);
+                     const ElementTransformation & eltrans = ma->GetTrafo (el, lh);
+                     FlatArray<int> dnums = el.GetDofs();
+
+                     if (fel.GetNDof() != dnums.Size() && !fespace->NeedsDofTransformation())
+                       {
+                         *testout << "Info from finite element: " << endl;
+                         fel.Print (*testout);
+                         (*testout) << "fel::GetNDof() = " << fel.GetNDof() << endl;
+                         (*testout) << "dnums.Size() = " << dnums.Size() << endl;
+                         (*testout) << "dnums = " << dnums << endl;
+                         throw Exception ( string("Inconsistent number of degrees of freedom, vb="+ToString(vb)+" fel::GetNDof() = ") + ToString(fel.GetNDof()) + string(" != dnums.Size() = ") + ToString(dnums.Size()) + string("!") );
+                       }
+
+                     // other than in DoAssemble, also without check_unused
+                     for (auto d : dnums)
+                       if (IsRegularDof(d)) MarkUsed (d);
+
+                     int elmat_size = fel.GetNDof()*fespace->GetDimension();
+                     FlatMatrix<SCAL> sum_elmat(elmat_size, lh);
+                     sum_elmat = 0;
+
+                     FlatVector<SCAL> elveclin (elmat_size, lh);
+                     if (auto doftrafo = fespace->GetDofTransformation (el, lh))
+                       {
+                         FlatVector<SCAL> glin (dnums.Size(), lh);
+                         lin.GetIndirect (dnums, glin);
+                         elveclin = *doftrafo * glin;
+                       }
+                     else
+                       {
+                         lin.GetIndirect (dnums, elveclin);
+                         fespace->TransformVec (el, elveclin, TRANSFORM_SOL);
+                       }
+
+                     if (printelmat || elmat_ev)
+                       {
+                         // need every part of the element matrix
+                         for (auto & bfip : VB_parts[vb])
+                           {
+                             const BilinearFormIntegrator & bfi = *bfip;
+                             if (!bfi.DefinedOn (el.GetIndex())) continue;
+                             if (!bfi.DefinedOnElement (el.Nr())) continue;
+
+                             HeapReset hr(lh);
+                             FlatMatrix<SCAL> elmat(elmat_size, lh);
+
+                             try
+                               {
+                                 auto & mapped_trafo = eltrans.AddDeformation(bfi.GetDeformation().get(), lh);
+                                 bfi.CalcLinearizedElementMatrix (fel, mapped_trafo, elveclin, elmat, lh);
+
+                                 if (printelmat)
+                                   {
+                                     lock_guard<mutex> guard(addelmatboundary1_mutex);
+                                     testout->precision(8);
+                                     *testout << "elnum = " << el << endl;
+                                     *testout << "eltype = " << fel.ElementType() << endl;
+                                     *testout << "integrator = " << bfi.Name() << endl;
+                                     *testout << "dnums = " << endl << dnums << endl;
+                                     *testout << "ct = ";
+                                     for (auto d : dnums)
+                                       if (!IsRegularDof(d)) *testout << "0 ";
+                                       else *testout << fespace->GetDofCouplingType (d) << " ";
+                                     *testout << endl;
+                                     *testout << "element-index = " << eltrans.GetElementIndex() << endl;
+                                     *testout << "elveclin = " << endl << elveclin << endl;
+                                     *testout << "elmat = " << endl << elmat << endl;
+                                   }
+
+                                 if (elmat_ev)
+                                   LapackEigenSystem(elmat, lh);
+                               }
+                             catch (Exception & e)
+                               {
+                                 e.Append (string(" in Assemble Element Matrix, bfi = ") +
+                                           bfi.Name() + string("\n"));
+                                 throw;
+                               }
+                             catch (exception & e)
+                               {
+                                 throw (Exception (string(e.what()) +
+                                                   string(" in Assemble Element Matrix, bfi = ") +
+                                                   bfi.Name() + string("\n")));
+                               }
+
+                             sum_elmat += elmat;
+                           }
+                       }
+                     else
+                       {
+                         bool done = false;
+                         while (!done)
+                           {
+                             done = true;
+                             sum_elmat = 0;
+                             bool symmetric_so_far = true;
+                             for (auto & bfip : VB_parts[vb])
+                               {
+                                 const BilinearFormIntegrator & bfi = *bfip;
+                                 if (!bfi.DefinedOn (el.GetIndex())) continue;
+                                 if (!bfi.DefinedOnElement (el.Nr())) continue;
+
+                                 try
+                                   {
+                                     HeapReset hr(lh);
+                                     auto & mapped_trafo = eltrans.AddDeformation(bfi.GetDeformation().get(), lh);
+                                     bfi.CalcLinearizedElementMatrixAdd (fel, mapped_trafo, elveclin, sum_elmat, symmetric_so_far, lh);
+                                   }
+                                 catch (ExceptionNOSIMD & e)
+                                   {
+                                     done = false;
+                                   }
+                                 catch (Exception & e)
+                                   {
+                                     e.Append (string(" in Assemble Element Matrix, bfi = ") +
+                                               bfi.Name() + string("\n"));
+                                     throw;
+                                   }
+                                 catch (exception & e)
+                                   {
+                                     throw (Exception (string(e.what()) +
+                                                       string(" in Assemble Element Matrix, bfi = ") +
+                                                       bfi.Name() + string("\n")));
+                                   }
+                               }
+                           }
+                       }
+
+                     if (bnd_facets)
+                       {
+                         Array<int> fnums, selnr, vnums, svnums;
+                         fnums = ma->GetElFacets(el);
+                         vnums = ma->GetElVertices (el);
+
+                         for (int facnr = 0; facnr < fnums.Size(); facnr++)
+                           {
+                             ma->GetFacetSurfaceElements(fnums[facnr], selnr);
+                             for (auto se : selnr)
+                               {
+                                 HeapReset hr(lh);
+                                 ElementId sei(BND, se);
+                                 svnums = ma->GetElVertices (sei);
+                                 ElementTransformation & seltrans = ma->GetTrafo (sei, lh);
+
+                                 if (fel.GetNDof() != dnums.Size())
+                                   {
+                                     (*testout) << "Surface fel::GetNDof() = " << fel.GetNDof() << endl;
+                                     (*testout) << "dnums.Size() = " << dnums.Size() << endl;
+                                     (*testout) << "dnums = " << dnums << endl;
+                                     throw Exception ( string("Inconsistent number of degrees of freedom Surface fel::GetNDof() = ") + ToString(fel.GetNDof()) + string(" != dnums.Size() = ") + ToString(dnums.Size()) + string("!") );
+                                   }
+
+                                 for (auto & bfi : facetwise_skeleton_parts[BND])
+                                   {
+                                     if (!bfi->DefinedOn (ma->GetElIndex(sei))) continue;
+                                     if (!bfi->DefinedOnElement (el.Nr())) continue;
+
+                                     FlatMatrix<SCAL> elmat(elmat_size, lh);
+                                     elmat = 0.0;
+
+                                     auto & mapped_trafo = eltrans.AddDeformation(bfi->GetDeformation().get(), lh);
+                                     auto & mapped_strafo = seltrans.AddDeformation(bfi->GetDeformation().get(), lh);
+                                     bfi->CalcLinearizedFacetMatrix (fel,facnr,mapped_trafo,vnums, mapped_strafo, svnums, elveclin, elmat, lh);
+
+                                     fespace->TransformMat (el, elmat, TRANSFORM_MAT_LEFT_RIGHT);
+
+                                     if (printelmat)
+                                       {
+                                         testout->precision(8);
+
+                                         (*testout) << "surface-elnum= " << se << endl;
+                                         (*testout) << "integrator " << bfi->Name() << endl;
+                                         (*testout) << "dnums = " << endl << dnums << endl;
+                                         (*testout) << "element-index = " << eltrans.GetElementIndex() << endl;
+                                         (*testout) << "elmat = " << endl << elmat << endl;
+                                       }
+
+                                     if (elmat_ev)
+                                       {
+                                         testout->precision(8);
+                                         (*testout) << "elind = " << eltrans.GetElementIndex() << endl;
+                                         LapackEigenSystem(elmat, lh);
+                                       }
+
+                                     sum_elmat += elmat;
+                                   }
+                               }
+                           }
+                       }
+
+                     AddElementMatrix (el, sum_elmat, false, lh);
+                   });
+
+                progress.Done();
+              }
+
+            if (facetwise_skeleton_parts[VOL].Size())
+              {
+                size_t dummy;
+                Assemble_facetwise_skeleton_parts_VOL(dummy, clh, &lin);
+              }
+
+            if (elementwise_skeleton_parts.Size())
+              throw Exception ("CalcLinearization for element-wise skeleton-VOL not implemented");
+
+            if (specialelements.Size())
+              cout << IM(3) << "special elements: " << specialelements.Size() << endl;
+
+            timerspecial.Start();
+            ParallelForRange(IntRange(specialelements.Size()), [&](IntRange r)
+            {
+              LocalHeap lh = clh.Split();
+              Array<DofId> dnums;
+              for (auto i : r)
+                {
+                  HeapReset hr(lh);
+                  const SpecialElement & el = *specialelements[i];
+                  el.GetDofNrs(dnums);
+                  FlatVector<SCAL> elvec(dnums.Size()*fespace->GetDimension(), lh);
+                  lin.GetIndirect (dnums, elvec);
+                  FlatMatrix<SCAL> elmat(dnums.Size() * fespace->GetDimension(), lh);
+                  el.CalcLinearizedElementMatrix(elvec, elmat, lh);
+
+                  // other than in DoAssemble: without check_unused, and the preconditioners get the matrix
+                  for (int j = 0; j < dnums.Size(); j++)
+                    if (IsRegularDof(dnums[j]))
+                      MarkUsed (dnums[j]);
+                  AddElementMatrix (dnums, dnums, elmat, ElementId(BND,i), true, lh);
+                  for (auto pre : preconditioners)
+                    pre->AddElementMatrix(dnums, elmat, ElementId(BND, i), lh);
+                }
+            }, 10*TaskManager::GetNumThreads());
+            timerspecial.Stop();
+
+
+            // add eps to avoid empty lines
+            HeapReset hr(clh);
+            FlatMatrix<SCAL> elmat (fespace->GetDimension(), clh);
+            elmat = 0;
+            Array<int> dnums;
+            dnums.SetSize(1);
+
+            if (eps_regularization != 0)
+              {
+                for (int i = 0; i < elmat.Height(); i++)
+                  elmat(i, i) = eps_regularization;
+                for (int i = 0; i < ndof; i++)
+                  {
+                    dnums[0] = i;
+                    AddElementMatrix (dnums, dnums, elmat, ElementId(BND,i), false, clh);
+                  }
+              }
+            // other than in DoAssemble, also without check_unused
+            if (unuseddiag != 0)
+              {
+                for (int i = 0; i < elmat.Height(); i++)
+                  elmat(i, i) = unuseddiag;
+                for (int i = 0; i < ndof; i++)
+                  if (!useddof[i])
+                    {
+                      dnums[0] = i;
+                      AddElementMatrix (dnums, dnums, elmat, ElementId(BND,i), false, clh);
+                    }
+              }
+
+            for (auto pre : preconditioners)
+              pre -> FinalizeLevel(&GetMatrix());
+
+            if (print)
+              {
+                (*testout) << "mat = " << endl << GetMatrix() << endl;
+                if (harmonicext) (*testout) << "harm ext = " << endl << *harmonicext << endl;
+                if (harmonicexttrans) (*testout) << "harm ext = " << endl << *harmonicexttrans << endl;
+                if (innermatrix) (*testout) << "harm ext = " << endl << *innermatrix << endl;
+              }
+
+            size_t cntused = useddof.NumSet();
+            cout << IM(5) << "used " << cntused
+                 << ", unused = " << useddof.Size()-cntused
+                 << ", total = " << useddof.Size() << endl;
+          }
+
+        else // MixedSpaces()
+
           {
             cout << IM(3) << "assemble linearization mixed bilinearform" << endl;
-            auto& mat = GetMatrix();
+
+            BaseMatrix & mat = GetMatrix();
             mat = 0.0;
-            for (auto vb : ALL_VB)
-              if(VB_parts[vb].Size())
+
+            for (VorB vb : ALL_VB)
+              if (VB_parts[vb].Size())
                 IterateElements
                   (*fespace, vb, clh,          // coloring for 1 space is enough
-                   [&] (FESpace::Element ei, LocalHeap & lh)
+                   [&] (ElementId ei, LocalHeap & lh)
                    {
-                     const FiniteElement & fel1 = fespace->GetFE (ei, lh);
-                     const FiniteElement & fel2 = fespace2->GetFE (ei, lh);
-
-                     Array<int> dnums1(fel1.GetNDof(), lh);
-                     Array<int> dnums2(fel2.GetNDof(), lh);
+                     auto el1 = fespace->GetElement (ei, lh);
+                     auto el2 = fespace2->GetElement (ei, lh);
+                     const FiniteElement & fel1 = el1.GetFE();
+                     const FiniteElement & fel2 = el2.GetFE();
                      const ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
-                     fespace->GetDofNrs (ei, dnums1);
-                     fespace2->GetDofNrs (ei, dnums2);
-                     FlatVector<SCAL> elveclin(dnums1.Size() * fespace->GetDimension(),lh);
-                     lin.GetIndirect(dnums1,elveclin);
-                     fespace->TransformVec(ei,elveclin,TRANSFORM_SOL);
-                     FlatMatrix<SCAL> elmat(dnums2.Size(), dnums1.Size(), lh);
+
+                     FlatMatrix<SCAL> elmat(fel2.GetNDof()*fespace2->GetDimension(),
+                                            fel1.GetNDof()*fespace->GetDimension(), lh);
+                     FlatMatrix<SCAL> sum_elmat(elmat.Height(), elmat.Width(), lh);
+                     sum_elmat = 0.0;
+
+                     FlatArray<int> dnums1 = el1.GetDofs();
+                     FlatVector<SCAL> elveclin (elmat.Width(), lh);
+                     if (auto doftrafo = fespace->GetDofTransformation (ei, lh))
+                       {
+                         FlatVector<SCAL> glin (dnums1.Size(), lh);
+                         lin.GetIndirect (dnums1, glin);
+                         elveclin = *doftrafo * glin;
+                       }
+                     else
+                       {
+                         lin.GetIndirect (dnums1, elveclin);
+                         fespace->TransformVec (ei, elveclin, TRANSFORM_SOL);
+                       }
+
+                     bool elem_has_integrator = false;
                      for (auto & bfi : VB_parts[vb])
                        {
-                         if (!bfi->DefinedOn(fespace->GetMeshAccess()->GetElIndex(ei))) continue;
-                         if (!bfi->DefinedOnElement(ei.Nr())) continue;
-                         MixedFiniteElement fel(fel1, fel2);
-                         bfi->CalcLinearizedElementMatrix (fel, eltrans, elveclin, elmat, lh);
-                         /*
-                           fespace->Transform (i, true, elmat, TRANSFORM_MAT_RIGHT);
-                           fespace2->Transform (i, true, elmat, TRANSFORM_MAT_LEFT);
-                         */
-                         AddElementMatrix (dnums2, dnums1, elmat, ei, false, lh);
-                       }
-                   });
-            return;
-          }
-        int ndof = fespace->GetNDof();
-        useddof.SetSize(ndof);
-        useddof.Clear();
-      
-        BaseMatrix & mat = GetMatrix();
-        mat = 0.0;
-      
-        cout << IM(3) << "Assemble linearization" << endl;
-      
-        Array<int> dnums;
+                         if (!bfi->DefinedOn (eltrans.GetElementIndex())) continue;
+                         if (!bfi->DefinedOnElement (ei.Nr())) continue;
 
-        for (auto pre : preconditioners)
-          pre -> InitLevel(fespace->GetFreeDofs(eliminate_internal));
-	
-        for (VorB vb : ALL_VB)
-          if (VB_parts[vb].Size() || ((vb == VOL) && facetwise_skeleton_parts[BND].Size())) 
-          {
-            RegionTimer reg(timers[int(vb)]);
-            ProgressOutput progress(ma,string("assemble ") + ToString(vb) + string(" element"), ma->GetNE(vb));
-
-            /*
-            if ( (vb == VOL || (!VB_parts[VOL].Size() && vb==BND) ) && eliminate_internal && keep_internal)
-              {
-                size_t ndof = fespace->GetNDof();
-                size_t ne = ma->GetNE(vb);
-                harmonicext = make_shared<ElementByElementMatrix<SCAL>>(ndof, ne);
-                if (!symmetric)
-                  harmonicexttrans = make_shared<ElementByElementMatrix<SCAL>>(ndof, ne);
-                else
-                  harmonicexttrans = make_shared<Transpose>(*harmonicext);
-                innersolve = make_shared<ElementByElementMatrix<SCAL>>(ndof, ne);
-                if (store_inner)
-                  innermatrix = make_shared<ElementByElementMatrix<SCAL>>(ndof, ne);
-              }
-            */
-            
-            IterateElements 
-              (*fespace, vb, clh,  [&] (FESpace::Element el, LocalHeap & lh)
-               {
-                 bool elem_has_integrator = false;
-                 for (auto & bfi : VB_parts[vb])
-                   if ((bfi->DefinedOn (el.GetIndex()))&&(bfi->DefinedOnElement (el.Nr())))
-                     elem_has_integrator = true;
-
-                  if ((vb == VOL) && facetwise_skeleton_parts[BND].Size())
-                    elem_has_integrator = true;
-        
-                 if (!elem_has_integrator)
-                   return;
-                 
-                 const FiniteElement & fel = fespace->GetFE (el, lh);
-                 ElementTransformation & eltrans = ma->GetTrafo (el, lh);
-                 
-                 Array<int> dnums(fel.GetNDof(), lh);
-                 fespace->GetDofNrs (el, dnums);
-                 
-                 auto doftrafo = fespace->GetDofTransformation (el, lh);
-
-                 if(fel.GetNDof() != dnums.Size() && !doftrafo)
-                   {
-                     (*testout) << "fel::GetNDof() = " << fel.GetNDof() << endl;
-                     (*testout) << "dnums.Size() = " << dnums.Size() << endl;
-                     (*testout) << "dnums = " << dnums << endl;
-                     throw Exception ( string("Inconsistent number of degrees of freedom fel::GetNDof() = ") + ToString(fel.GetNDof()) + string(" != dnums.Size() = ") + ToString(dnums.Size()) + string("!") );
-                   }
-                 for (auto d : dnums) 
-                   if (IsRegularDof(d)) MarkUsed (d);
-                 
-                 FlatMatrix<SCAL> sum_elmat(fel.GetNDof()*fespace->GetDimension(), lh);
-                 FlatMatrix<SCAL> elmat(fel.GetNDof()*fespace->GetDimension(), lh);
-                 sum_elmat = 0;
-                 
-                 FlatVector<SCAL> elveclin (fel.GetNDof()*fespace->GetDimension(), lh);
-                 if (doftrafo)
-                   {
-                     FlatVector<SCAL> glin (dnums.Size(), lh);
-                     lin.GetIndirect (dnums, glin);
-                     elveclin = *doftrafo * glin;
-                   }
-                 else
-                   {
-                     lin.GetIndirect (dnums, elveclin);
-                     fespace->TransformVec (el, elveclin, TRANSFORM_SOL);
-                   }
-
-                 for (auto & bfi : VB_parts[vb])
-                   {
-                     HeapReset hr(lh);
-                     if (!bfi->DefinedOn (el.GetIndex())) continue;
-                     if (!bfi->DefinedOnElement (el.Nr())) continue;
-                     
-                     try
-                       {
                          auto & mapped_trafo = eltrans.AddDeformation(bfi->GetDeformation().get(), lh);
+                         MixedFiniteElement fel(fel1, fel2);
                          bfi->CalcLinearizedElementMatrix (fel, mapped_trafo, elveclin, elmat, lh);
-                         
-                         if (printelmat) 
-                           {
-                             lock_guard<mutex> guard(addelmatboundary1_mutex);
-                             testout->precision(8);
-                             if (vb != VOL)
-                               {
-                                 (*testout) << "surface-elnum = " << el.Nr() << endl;
-                                 (*testout) << "boundary = " << ma->GetMaterial (el) << endl;
-                               }
-                             else
-                               (*testout) << "elnum = " << el.Nr() << endl;
-                             (*testout) << "eltype " << fel.ElementType() << endl;
-                             (*testout) << "integrator " << bfi->Name() << endl;
-                             (*testout) << "dnums = " << endl << dnums << endl;
-                             (*testout) << "elveclin = " << endl << elveclin << endl;
-                             (*testout) << "elmat = " << endl << elmat << endl;
-                           }
-
-                         if (elmat_ev)
-                            {
-                              testout->precision(8);
-                              
-                              (*testout) << "elind = " << eltrans.GetElementIndex() << endl;
-#ifdef LAPACK
-                              LapackEigenSystem(elmat, lh);
-#else
-                              Vector<SCAL> lami(elmat.Height());
-                              Matrix<SCAL> evecs(elmat.Height());
-                              
-                              CalcEigenSystem (elmat, lami, evecs);
-                              (*testout) << "lami = " << endl << lami << endl;
-#endif
-                              // << "evecs = " << endl << evecs << endl;
-                            } 
+                         sum_elmat += elmat;
+                         elem_has_integrator = true;
                        }
-                     catch (Exception & e)
-                       {
-                         e.Append (string("in Assemble Element Mat, bfi = ") + 
-                                   bfi->Name() + string("\n"));
-                         throw;
-                       }
-                     catch (exception & e)
-                       {
-                         throw (Exception (string(e.what()) +
-                                           string("in Assemble Element Mat, bfi = ") + 
-                                           bfi->Name() + string("\n")));
-                       }
-                     
-                     sum_elmat += elmat;
-                   }	 
-		 
-		 if((vb == VOL) && facetwise_skeleton_parts[BND].Size()) // skeleton = True on BND with element dofs
-		   {
-		     Array<int> fnums;
-		     fnums = ma->GetElFacets(el);
-		     
-		     for(int facnr = 0; facnr < fnums.Size(); facnr++)//for (auto f : ma->GetElFacets(el))
-		       {
-			 Array<int> selnr;
-			 ma->GetFacetSurfaceElements(fnums[facnr], selnr);
-			 for(auto se : selnr) // se is sel nr, facnr is facet number index
-			   {
-			     HeapReset hr(lh);
-			     ElementId sei(BND, se);
+                     if (elem_has_integrator)
+                       AddElementMatrix (el2, el1, sum_elmat, lh);
+                   });
 
-			     auto ei = el;
-			     Array<int>  vnums, svnums;
-			     
-			     vnums = ma->GetElVertices (ei);
-			     svnums = ma->GetElVertices (sei);
-			     
-			     ElementTransformation & seltrans = ma->GetTrafo (sei, lh);
-			     
-			     if(fel.GetNDof() != dnums.Size())
-			       {
-				 (*testout) << "Surface fel::GetNDof() = " << fel.GetNDof() << endl;
-				 (*testout) << "dnums.Size() = " << dnums.Size() << endl;
-				 (*testout) << "dnums = " << dnums << endl;
-				 throw Exception ( string("Inconsistent number of degrees of freedom Surface fel::GetNDof() = ") + ToString(fel.GetNDof()) + string(" != dnums.Size() = ") + ToString(dnums.Size()) + string("!") );
-			       }
-
-			     for (auto & bfi : facetwise_skeleton_parts[BND])
-			       {
-				              
-            if (!bfi->DefinedOn (ma->GetElIndex(sei) )) continue;                
-            if (!bfi->DefinedOnElement (el.Nr())) continue;   
-
-				 for (int k = 0; k < dnums.Size(); k++)
-				   if (IsRegularDof(dnums[k]))
-				     MarkUsed (dnums[k]);
-                          
-				 // int elmat_size = dnums.Size()*fespace->GetDimension();
-				 
-				 elmat = 0.0;
-				 // original version did not compile on MacOS V
-				 const FacetBilinearFormIntegrator & fbfi = 
-				   dynamic_cast<const FacetBilinearFormIntegrator&>(*bfi);				 
-				 
-         auto & mapped_trafo = eltrans.AddDeformation(fbfi.GetDeformation().get(), lh);
-         auto & mapped_strafo = seltrans.AddDeformation(fbfi.GetDeformation().get(), lh);
-				 fbfi.CalcLinearizedFacetMatrix (fel,facnr,mapped_trafo,vnums, mapped_strafo, svnums, elveclin, elmat, lh);
-				 fespace->TransformMat (ei, elmat, TRANSFORM_MAT_LEFT_RIGHT);
-				 if (printelmat)
-				   {
-				     testout->precision(8);
-                              
-				     (*testout) << "surface-elnum= " << se << endl;
-				     (*testout) << "integrator " << bfi->Name() << endl;
-				     (*testout) << "dnums = " << endl << dnums << endl;
-				     (*testout) << "element-index = " << eltrans.GetElementIndex() << endl;
-				     (*testout) << "elmat = " << endl << elmat << endl;
-				   }
-                          
-                          
-				 if (elmat_ev)
-				   {
-				     testout->precision(8);
-                              
-				     (*testout) << "elind = " << eltrans.GetElementIndex() << endl;
-#ifdef LAPACK
-				     LapackEigenSystem(elmat, lh);
-#else
-				     Vector<SCAL> lami(elmat.Height());
-				     Matrix<SCAL> evecs(elmat.Height());
-                              
-				     CalcEigenSystem (elmat, lami, evecs);
-				     (*testout) << "lami = " << endl << lami << endl;
-#endif				     
-				   }
-				 
-				  sum_elmat += elmat;				  
-			       } // for bf integrators			 
-			   } //for elements in getsurfacetelement of facet		       
-		       } // for facets of element
-		   } //if VOL and skeleton bfi
-                 
-                 
-                 AddElementMatrix (el, sum_elmat, false, lh);
-               });
-
-            progress.Done();
+            // other than in DoAssemble: no facet terms, no special elements
           }
-    
-
-        if (facetwise_skeleton_parts[VOL].Size()){
-          size_t dummy;
-          Assemble_facetwise_skeleton_parts_VOL(dummy, clh, &lin);
-        }
-        // if (facetwise_skeleton_parts[VOL].Size())
-        //   throw Exception ("CalcLinearization for facet-wise skeleton-VOL not implemented");
-        if (elementwise_skeleton_parts.Size())
-          throw Exception ("CalcLinearization for element-wise skeleton-VOL not implemented");
-                
-        if (specialelements.Size())
-          cout << IM(3) << "special elements: " << specialelements.Size() << endl;
-
-        timerspecial.Start();
-        static mutex specel_mutex;
-
-        // auto& secoloring = SpecialElementColoring();   // needs more testing 
-        ParallelForRange(IntRange(specialelements.Size()), [&](IntRange r)
-        {
-          LocalHeap lh = clh.Split();
-          Array<DofId> dnums;
-          for(auto i : r)
-            {
-              HeapReset hr(lh);
-              const SpecialElement & el = *specialelements[i];
-              el.GetDofNrs(dnums);
-              FlatVector<SCAL> elvec(dnums.Size()*fespace->GetDimension(), lh);
-              lin.GetIndirect (dnums, elvec);
-              FlatMatrix<SCAL> elmat(dnums.Size() * fespace->GetDimension(), lh);
-              el.CalcLinearizedElementMatrix(elvec, elmat, lh);
-
-              {
-                // lock_guard<mutex> guard(specel_mutex);
-                for (int j = 0; j < dnums.Size(); j++)
-                  if (IsRegularDof(dnums[j]))
-                    MarkUsed (dnums[j]);
-                AddElementMatrix (dnums, dnums, elmat, ElementId(BND,i), true, lh);
-                for(auto pre : preconditioners)
-                  pre->AddElementMatrix(dnums, elmat, ElementId(BND, i), lh);
-              }
-            }
-        }, 10*TaskManager::GetNumThreads());
-        timerspecial.Stop();
-      
-      
-        // add eps to avoid empty lines
-	HeapReset hr(clh);
-        FlatMatrix<SCAL> elmat (fespace->GetDimension(), clh);
-        elmat = 0;
-        dnums.SetSize(1);
-      
-        if (eps_regularization != 0)
-          {
-            for (int i = 0; i < elmat.Height(); i++)
-              elmat(i, i) = eps_regularization;
-            for (int i = 0; i < ndof; i++)
-              {
-                dnums[0] = i; 
-                AddElementMatrix (dnums, dnums, elmat, ElementId(BND,i), false, clh);
-              }
-          }
-        if (unuseddiag != 0)
-          {
-            for (int i = 0; i < elmat.Height(); i++)
-              elmat(i, i) = unuseddiag;
-            for (int i = 0; i < ndof; i++)
-              if (!useddof[i])
-                {
-                  dnums[0] = i;
-                  AddElementMatrix (dnums, dnums, elmat, ElementId(BND,i), false, clh);
-                }
-          }
-      
-        if (print)
-          {
-            (*testout) << "mat = " << endl << GetMatrix() << endl;
-            if (harmonicext) (*testout) << "harm ext = " << endl << *harmonicext << endl;
-            if (harmonicexttrans) (*testout) << "harm ext = " << endl << *harmonicexttrans << endl;
-            if (innermatrix) (*testout) << "harm ext = " << endl << *innermatrix << endl;
-          }
-        /*
-          if (mat.Height() < 100)
-          mat.Print (cout);
-        */
-        int cntused = useddof.NumSet();
-        cout << IM(5) << "used " << cntused
-             << ", unused = " << useddof.Size()-cntused
-             << ", total = " << useddof.Size() << endl;
-
-        for (int j = 0; j < preconditioners.Size(); j++)
-          preconditioners[j] -> FinalizeLevel(&GetMatrix());
       }
     catch (Exception & e)
       {

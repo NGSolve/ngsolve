@@ -452,6 +452,42 @@ namespace ngfem
 				 FlatMatrix<Complex> elmat,
 				 LocalHeap & lh) const;
 
+    /**
+       Computes the linearized element matrix.
+       Add the element to elmat
+    */
+    virtual void
+      CalcLinearizedElementMatrixAdd (const FiniteElement & fel,
+                                      const ElementTransformation & eltrans,
+                                      FlatVector<double> elveclin,
+                                      FlatMatrix<double> elmat,
+                                      bool & symmetric_so_far,
+                                      LocalHeap & lh) const;
+
+    /**
+       Computes the linearized element matrix.
+       Add the element to elmat
+    */
+    virtual void
+      CalcLinearizedElementMatrixAdd (const FiniteElement & fel,
+                                      const ElementTransformation & eltrans,
+                                      FlatVector<float> elveclin,
+                                      FlatMatrix<float> elmat,
+                                      bool & symmetric_so_far,
+                                      LocalHeap & lh) const;
+
+    /**
+       Computes the linearized element matrix.
+       Add the element to elmat
+    */
+    virtual void
+      CalcLinearizedElementMatrixAdd (const FiniteElement & fel,
+                                      const ElementTransformation & eltrans,
+                                      FlatVector<Complex> elveclin,
+                                      FlatMatrix<Complex> elmat,
+                                      bool & symmetric_so_far,
+                                      LocalHeap & lh) const;
+
 
     virtual void *  
     PrecomputeData (const FiniteElement & fel, 

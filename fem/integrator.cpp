@@ -296,6 +296,54 @@ namespace ngfem
   }
 
 
+  void BilinearFormIntegrator ::
+  CalcLinearizedElementMatrixAdd (const FiniteElement & fel,
+                                  const ElementTransformation & eltrans,
+                                  FlatVector<double> elveclin,
+                                  FlatMatrix<double> elmat,
+                                  bool & symmetric_so_far,
+                                  LocalHeap & lh) const
+  {
+    HeapReset hr(lh);
+    FlatMatrix<double> helmat(elmat.Height(), elmat.Width(), lh);
+    CalcLinearizedElementMatrix (fel, eltrans, elveclin, helmat, lh);
+    elmat += helmat;
+    symmetric_so_far = false;
+  }
+
+
+  void BilinearFormIntegrator ::
+  CalcLinearizedElementMatrixAdd (const FiniteElement & fel,
+                                  const ElementTransformation & eltrans,
+                                  FlatVector<float> elveclin,
+                                  FlatMatrix<float> elmat,
+                                  bool & symmetric_so_far,
+                                  LocalHeap & lh) const
+  {
+    HeapReset hr(lh);
+    FlatMatrix<float> helmat(elmat.Height(), elmat.Width(), lh);
+    CalcLinearizedElementMatrix (fel, eltrans, elveclin, helmat, lh);
+    elmat += helmat;
+    symmetric_so_far = false;
+  }
+
+
+  void BilinearFormIntegrator ::
+  CalcLinearizedElementMatrixAdd (const FiniteElement & fel,
+                                  const ElementTransformation & eltrans,
+                                  FlatVector<Complex> elveclin,
+                                  FlatMatrix<Complex> elmat,
+                                  bool & symmetric_so_far,
+                                  LocalHeap & lh) const
+  {
+    HeapReset hr(lh);
+    FlatMatrix<Complex> helmat(elmat.Height(), elmat.Width(), lh);
+    CalcLinearizedElementMatrix (fel, eltrans, elveclin, helmat, lh);
+    elmat += helmat;
+    symmetric_so_far = false;
+  }
+
+
 
   void BilinearFormIntegrator ::
   ApplyElementMatrix (const FiniteElement & fel, 

@@ -608,6 +608,20 @@ public:
                                  FlatMatrix<Complex> elmat,
                                  LocalHeap & lh) const override;
 
+    NGS_DLL_HEADER virtual void 
+    CalcLinearizedElementMatrixAdd (const FiniteElement & fel,
+                                    const ElementTransformation & trafo, 
+                                    FlatVector<double> elveclin,
+                                    FlatMatrix<double> elmat,
+                                    bool & symmetric_so_far,
+                                    LocalHeap & lh) const override;
+
+    void CalcLinearizedElementMatrixAddVOL (const FiniteElement & fel,
+                                            const ElementTransformation & trafo, 
+                                            FlatVector<double> elveclin,
+                                            FlatMatrix<double> elmat,
+                                            LocalHeap & lh) const;
+
     template<typename SCAL> void
     T_CalcLinearizedElementMatrixFrozen (const FiniteElement & fel,
                                          const ElementTransformation & trafo,
