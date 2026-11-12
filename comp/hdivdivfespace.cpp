@@ -285,23 +285,42 @@ namespace ngcomp
       // static Timer t("HDivDivFE - DiffOpNormalComponent", NoTracing);
       // RegionTracer regtr(TaskManager::GetThreadId(), t);    
 
-      dynamic_cast<const HDivDivFiniteElement<D>&> (bfel).CalcShape_NormalComponent (mir, mat);      
-    }
-    /*
-    using DiffOp<DiffOpIdHDivDiv<D> >::ApplySIMDIR;    
-    static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
-                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
-    {
-      dynamic_cast<const HDivDivFiniteElement<D>&> (bfel).Evaluate_Matrix (mir, x, y);
+      dynamic_cast<const HDivDivFiniteElement<D>&> (bfel).CalcShape_NormalComponent (mir, mat);
     }
 
-    using DiffOp<DiffOpIdHDivDiv<D> >::AddTransSIMDIR;        
-    static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
+    using DiffOp<DiffOpNormalComponentHDivDiv<D> >::ApplySIMDIR;
+    static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & bmir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    {
+      auto & mir = static_cast<const SIMD_MappedIntegrationRule<D,D>&> (bmir);
+      STACK_ARRAY(SIMD<double>, mem, D*D*mir.Size());
+      FlatMatrix<SIMD<double>> sig(D*D, mir.Size(), mem);
+      static_cast<const HDivDivFiniteElement<D>&> (bfel).Evaluate_Matrix (mir, x, sig);
+      for (size_t i = 0; i < mir.Size(); i++)
+        {
+          Vec<D,SIMD<double>> n = mir[i].GetNV();
+          Mat<D,D,SIMD<double>> m;
+          m.AsVector() = sig.Col(i);
+          y.Col(i).Range(0,D) = m * n;
+        }
+    }
+
+    using DiffOp<DiffOpNormalComponentHDivDiv<D> >::AddTransSIMDIR;
+    static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & bmir,
                                 BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
     {
-      dynamic_cast<const HDivDivFiniteElement<D>&> (bfel).AddTrans_Matrix (mir, y, x);
+      auto & mir = static_cast<const SIMD_MappedIntegrationRule<D,D>&> (bmir);
+      STACK_ARRAY(SIMD<double>, mem, D*D*mir.Size());
+      FlatMatrix<SIMD<double>> sig(D*D, mir.Size(), mem);
+      for (size_t i = 0; i < mir.Size(); i++)
+        {
+          Vec<D,SIMD<double>> n = mir[i].GetNV();
+          for (int k = 0; k < D; k++)
+            for (int l = 0; l < D; l++)
+              sig(k*D+l, i) = y(k,i) * n(l);
+        }
+      static_cast<const HDivDivFiniteElement<D>&> (bfel).AddTrans_Matrix (mir, sig, x);
     }
-    */
   };
 
 
@@ -343,6 +362,40 @@ namespace ngcomp
                                       BareSliceMatrix<SIMD<double>> mat)
     {
       static_cast<const HDivDivFiniteElement<D>&> (bfel).CalcShape_NNComponent (mir, mat);
+    }
+
+    using DiffOp<DiffOpNNComponentHDivDiv<D> >::ApplySIMDIR;
+    static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & bmir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    {
+      auto & mir = static_cast<const SIMD_MappedIntegrationRule<D,D>&> (bmir);
+      STACK_ARRAY(SIMD<double>, mem, D*D*mir.Size());
+      FlatMatrix<SIMD<double>> sig(D*D, mir.Size(), mem);
+      static_cast<const HDivDivFiniteElement<D>&> (bfel).Evaluate_Matrix (mir, x, sig);
+      for (size_t i = 0; i < mir.Size(); i++)
+        {
+          Vec<D,SIMD<double>> n = mir[i].GetNV();
+          Mat<D,D,SIMD<double>> m;
+          m.AsVector() = sig.Col(i);
+          y(0,i) = InnerProduct (n, m * n);
+        }
+    }
+
+    using DiffOp<DiffOpNNComponentHDivDiv<D> >::AddTransSIMDIR;
+    static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & bmir,
+                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
+    {
+      auto & mir = static_cast<const SIMD_MappedIntegrationRule<D,D>&> (bmir);
+      STACK_ARRAY(SIMD<double>, mem, D*D*mir.Size());
+      FlatMatrix<SIMD<double>> sig(D*D, mir.Size(), mem);
+      for (size_t i = 0; i < mir.Size(); i++)
+        {
+          Vec<D,SIMD<double>> n = mir[i].GetNV();
+          for (int k = 0; k < D; k++)
+            for (int l = 0; l < D; l++)
+              sig(k*D+l, i) = y(0,i) * n(k) * n(l);
+        }
+      static_cast<const HDivDivFiniteElement<D>&> (bfel).AddTrans_Matrix (mir, sig, x);
     }
   };
 
@@ -755,6 +808,7 @@ namespace ngcomp
         additional_evaluators.Set ("vec_old",make_shared<T_DifferentialOperator<DiffOpVecIdHDivDiv_old<2>>> ());
         additional_evaluators.Set ("div_old",make_shared<T_DifferentialOperator<DiffOpDivHDivDiv_old<2>>> ());
         additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHDivDivDual<2>>> ());
+        additional_evaluators.Set ("normalcomponent",make_shared<T_DifferentialOperator<DiffOpNormalComponentHDivDiv<2>>> ());
         additional_evaluators.Set ("nncomponent",make_shared<T_DifferentialOperator<DiffOpNNComponentHDivDiv<2>>> ());
         break;
       case 3:
