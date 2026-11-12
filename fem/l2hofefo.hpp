@@ -88,7 +88,9 @@ namespace detail
   */
 
   class GenericOrientation;
-  template <int V1, int V2, int V3, int V4=-1> class FixedOrientation;
+  // lowest vertices first, as in an oriented mesh:
+  // v0 < v1,v2 (trig), v0 < v1 < v2,v3 (tet), the order of the last two enters as sign
+  class MeshOrientation;
   
   template <ELEMENT_TYPE ET, int ORDER, typename ORIENTATION = GenericOrientation>
   class L2HighOrderFEFO_Shapes;
@@ -290,34 +292,30 @@ namespace detail
   };
 
 
-  template <int ORDER, int V1, int V2, int V3>
-  class L2HighOrderFEFO_Shapes<ET_TRIG, ORDER, FixedOrientation<V1,V2,V3>>
-    : public L2HighOrderFEFO<ET_TRIG, ORDER, FixedOrientation<V1,V2,V3>>
+  template <int ORDER>
+  class L2HighOrderFEFO_Shapes<ET_TRIG, ORDER, MeshOrientation>
+    : public L2HighOrderFEFO<ET_TRIG, ORDER, MeshOrientation>
   {
-    using L2HighOrderFEFO<ET_TRIG, ORDER, FixedOrientation<V1,V2,V3>>::ndof;
-    using L2HighOrderFEFO<ET_TRIG, ORDER, FixedOrientation<V1,V2,V3>>::vnums;
-    using L2HighOrderFEFO<ET_TRIG, ORDER, FixedOrientation<V1,V2,V3>>::DIM;     
-    
+    using L2HighOrderFEFO<ET_TRIG, ORDER, MeshOrientation>::ndof;
+    using L2HighOrderFEFO<ET_TRIG, ORDER, MeshOrientation>::vnums;
+
   public:
     static constexpr int NDOF = (ORDER+1)*(ORDER+2)/2;
 
-    template<typename Tx, typename TFA>  
-      INLINE void T_CalcShape (const TIP<DIM,Tx> & ip, TFA & shape) const
+    template<typename Tx, typename TFA>
+    INLINE void T_CalcShape (const TIP<2,Tx> & ip, TFA & shape) const
     {
       Tx lam[3] = { ip.x, ip.y, 1-ip.x-ip.y };
+      double sgn = vnums[1] < vnums[2] ? 1.0 : -1.0;
 
-      IVec<3> hvnums(V1,V2,V3);
-      IVec<4> f = this -> GetFaceSort (0, hvnums);
-
-      Tx x = lam[f[0]];
-      Tx y = lam[f[1]];
+      Tx x = lam[0];
 
       int ii = 0;
       JacobiPolynomialAlpha jac(1);
-      LegendrePolynomial::EvalScaled 
-        (IC<ORDER>(), 
-         y-(1-x-y), 1-x,
-         SBLambda ([&] (auto i, Tx val) LAMBDA_INLINE 
+      LegendrePolynomial::EvalScaled
+        (IC<ORDER>(),
+         sgn*(lam[1]-lam[2]), 1-x,
+         SBLambda ([&] (auto i, Tx val) LAMBDA_INLINE
                    {
                      jac.EvalMult (IC<ORDER-i.value>(), 2*x-1, val, shape+ii);
                      ii += IC<ORDER-i.value+1>();
@@ -326,86 +324,43 @@ namespace detail
     }
   };
 
-  template <int ORDER, int V1, int V2, int V3, int V4>
-  class L2HighOrderFEFO_Shapes<ET_TET, ORDER, FixedOrientation<V1,V2,V3,V4>>
-    : public L2HighOrderFEFO<ET_TET, ORDER, FixedOrientation<V1,V2,V3,V4>>
+  template <int ORDER>
+  class L2HighOrderFEFO_Shapes<ET_TET, ORDER, MeshOrientation>
+    : public L2HighOrderFEFO<ET_TET, ORDER, MeshOrientation>
   {
-    using L2HighOrderFEFO<ET_TET, ORDER, FixedOrientation<V1,V2,V3,V4>>::ndof;
-    using L2HighOrderFEFO<ET_TET, ORDER, FixedOrientation<V1,V2,V3,V4>>::vnums; 
+    using L2HighOrderFEFO<ET_TET, ORDER, MeshOrientation>::ndof;
+    using L2HighOrderFEFO<ET_TET, ORDER, MeshOrientation>::vnums;
 
   public:
     static constexpr int NDOF = (ORDER+1)*(ORDER+2)*(ORDER+3)/6;
 
-    template<typename Tx, typename TFA>  
+    template<typename Tx, typename TFA>
     INLINE void T_CalcShape (const TIP<3,Tx> & ip, TFA & shape) const
     {
-//       Tx lami[4] = { ip.x, ip.y, ip.z, 1-ip.x-ip.y-ip.z };
-// 
-//       IVec<4> hvnums(V1,V2,V3,V4);
-//       unsigned char sort[4] = { 0, 1, 2, 3 };
-//       if (hvnums[sort[0]] > hvnums[sort[1]]) Swap (sort[0], sort[1]);
-//       if (hvnums[sort[2]] > hvnums[sort[3]]) Swap (sort[2], sort[3]);
-//       if (hvnums[sort[0]] > hvnums[sort[2]]) Swap (sort[0], sort[2]);
-//       if (hvnums[sort[1]] > hvnums[sort[3]]) Swap (sort[1], sort[3]);
-//       if (hvnums[sort[1]] > hvnums[sort[2]]) Swap (sort[1], sort[2]);
-// 
-//       Tx lamis[4];
-//       for (int i = 0; i < 4; i++)
-//         lamis[i] = lami[sort[i]];
-
-      // Hack: only working because there are currently only 2 possibilities for V1-V4:
-      // 0,1,2,3
-      // 0,1,3,2
-      const Tx l4 = 1-ip.x-ip.y-ip.z;
-      auto const lamis = make_tuple( ip.x, ip.y, V3<V4 ? ip.z : l4, V3<V4 ? l4 : ip.z );
-      const auto & lami0 = get<0>(lamis);
-      const auto & lami1 = get<1>(lamis);
-      const auto & lami2 = get<2>(lamis);
-      const auto & lami3 = get<3>(lamis);
+      Tx lam[4] = { ip.x, ip.y, ip.z, 1-ip.x-ip.y-ip.z };
+      double sgn = vnums[2] < vnums[3] ? 1.0 : -1.0;
 
       size_t ii = 0;
       LegendrePolynomial leg;
-      JacobiPolynomialAlpha jac1(1);    
-      leg.EvalScaled 
-        (IC<ORDER>(), lami2-lami3, lami2+lami3,
+      JacobiPolynomialAlpha jac1(1);
+      leg.EvalScaled
+        (IC<ORDER>(), sgn*(lam[2]-lam[3]), lam[2]+lam[3],
          SBLambda ([&](auto k, Tx polz) LAMBDA_INLINE
                    {
                      JacobiPolynomialAlpha jac2(2*k+2);
-                     jac1.EvalScaledMult 
-                       (IC<ORDER-k.value>(), lami1-lami2-lami3, 1-lami0, polz, 
+                     jac1.EvalScaledMult
+                       (IC<ORDER-k.value>(), lam[1]-lam[2]-lam[3], 1-lam[0], polz,
                         SBLambda ([&] (auto j, Tx polsy) LAMBDA_INLINE
                                   {
-                                    jac2.EvalMult(IC<ORDER-k.value-j.value>(), 2 * lami0 - 1, polsy, shape+ii);
+                                    jac2.EvalMult(IC<ORDER-k.value-j.value>(), 2 * lam[0] - 1, polsy, shape+ii);
                                     ii += IC<ORDER-k.value-j.value+1>();
                                     jac2.IncAlpha2();
                                   }));
                      jac1.IncAlpha2();
                    }));
-      /*
-      size_t ii = 0;
-      LegendrePolynomial leg;
-      // JacobiPolynomialAlpha jac1(1);    
-      leg.EvalScaled 
-        (IC<ORDER>(), lami[0], lami[0]+lami[1],
-         SBLambda ([&](auto k, Tx polz) LAMBDA_INLINE
-                   {
-                     JacobiPolynomialFix<1+2*k,0> jac1;  
-                     // JacobiPolynomialAlpha jac2(2*k+2);
-                     jac1.EvalScaledMult 
-                       (IC<ORDER-k>(), lami[1], lami[0]+lami[1]+lami[2], polz, 
-                        SBLambda ([&] (auto j, Tx polsy) LAMBDA_INLINE
-                                  {
-                                    JacobiPolynomialFix<2+2*k+2*j,0> jac2;                                      
-                                    jac2.EvalMult(IC<ORDER-k-j>(), lami[2], polsy, shape+ii);
-                                    ii += IC<ORDER-k-j+1>();
-                                    // jac2.IncAlpha2();
-                                  }));
-                     // jac1.IncAlpha2();
-                   }));
-      */
     }
   };
-  
+
 
 
 #ifdef FILE_L2HOFEFO_CPP
