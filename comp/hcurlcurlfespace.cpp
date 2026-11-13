@@ -2179,7 +2179,7 @@ Einstein: Einstein tensor Ein_ij(g) = Ric_ij(g)-0.5*S(g) g_ij
           {
             auto feseg = new (alloc) HCurlCurlFE<ET_SEGM> (order);
             feseg->SetVertexNumbers (ngel.Vertices());
-            feseg->SetOrderInner(order_edge[ei.Nr()][0]);
+            feseg->SetOrderInner(order_edge[ngel.Edges()[0]][0]);
             feseg->ComputeNDof();
             return *feseg;
           }

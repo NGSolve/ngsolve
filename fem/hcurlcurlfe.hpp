@@ -1103,13 +1103,13 @@ namespace ngfem
       int ii = 0;
 
       IVec<2> e = ET_trait<ET_SEGM>::GetEdgeSort (0, vnums);
-      Tx ls = lami[e[0]], le = lami[e[1]];
+      Tx ls = lami[e[1]], le = lami[e[0]];
 
       auto symdyadic = MakeReggeAD(ls, le);
 
       LegendrePolynomial::Eval(order_inner[0], ls-le, SBLambda([symdyadic, &ii, shape] (size_t nr, auto val)
                             {
-                              shape[ii++] = 0.5*val*symdyadic;
+                              shape[ii++] = -val*symdyadic;
                             }));
     }
 
@@ -1658,7 +1658,7 @@ namespace ngfem
           IVec<2> e = ET_trait<ET_PRISM>::GetEdgeSort (i, vnums);
           Tx ls = lx[e[0]], lm1 = lz[e[0]], lm2 = lz[e[1]];
           auto symdyadic = ls*MakeReggeAD(lm1,lm1);
-          LegendrePolynomial (order_edge[i],lm1-lm2, leg_v);
+          LegendrePolynomial (order_edge[i],lm2-lm1, leg_v);
 
           for (int j=0; j <= order_edge[i]; j++)
             shape[ii++] = leg_v[j]*symdyadic;
