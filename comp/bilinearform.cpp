@@ -417,6 +417,128 @@ namespace ngcomp
     specialelements_timestamp = GetNextTimeStamp();
   }
 
+  void BilinearForm :: UpdateSpecialElementGroups (bool force) const
+  {
+    for (auto & seg : se_groups)
+      if (force || seg->GetTimeStamp() == 0)
+        {
+          auto trial = seg->GetTrialSpace();
+          auto test = seg->GetTestSpace();
+          if ( (trial && trial != GetTrialSpace()) || (test && test != GetTestSpace()) )
+            throw Exception("SpecialElementGroup is defined on other spaces than the BilinearForm");
+          seg -> Update();
+        }
+  }
+
+  size_t BilinearForm :: SpecialElementsTimeStamp () const
+  {
+    size_t ts = specialelements_timestamp;
+    for (auto & seg : se_groups)
+      ts = max(ts, seg->GetTimeStamp());
+    return ts;
+  }
+
+
+  void SpecialElementList :: GetDofNrs (std::function<void(int,FlatArray<DofId>)> eldofs)
+  {
+    Array<DofId> dnums;
+    for (int i : Range(elements))
+      {
+        elements[i]->GetDofNrs (dnums);
+        eldofs (i, dnums);
+      }
+  }
+
+  void SpecialElementList :: GetDofNrs2 (std::function<void(int,FlatArray<DofId>)> eldofs)
+  {
+    Array<DofId> dnums;
+    for (int i : Range(elements))
+      {
+        elements[i]->GetDofNrs2 (dnums);
+        eldofs (i, dnums);
+      }
+  }
+
+  void SpecialElementList ::
+  Assemble (std::function<void(FlatArray<DofId>,FlatArray<DofId>,FlatMatrix<double>,ElementId,LocalHeap&)> addelmat,
+            LocalHeap & clh)
+  {
+    ParallelForRange
+      (elements.Size(), [&] (IntRange r)
+       {
+         LocalHeap lh = clh.Split();
+         Array<DofId> dnums, dnums2;
+         for (auto i : r)
+           {
+             HeapReset hr(lh);
+             elements[i]->GetDofNrs (dnums);
+             elements[i]->GetDofNrs2 (dnums2);
+             FlatMatrix<double> elmat(dnums2.Size(), dnums.Size(), lh);
+             elements[i]->CalcElementMatrix (elmat, lh);
+             addelmat (dnums2, dnums, elmat, ElementId(BND,i), lh);
+           }
+       });
+  }
+
+  void SpecialElementList ::
+  AssembleLinearization (const BaseVector & lin, TAddElMat<double> addelmat, LocalHeap & clh)
+  {
+    ParallelForRange
+      (elements.Size(), [&] (IntRange r)
+       {
+         LocalHeap lh = clh.Split();
+         Array<DofId> dnums, dnums2;
+         for (auto i : r)
+           {
+             HeapReset hr(lh);
+             elements[i]->GetDofNrs (dnums);
+             elements[i]->GetDofNrs2 (dnums2);
+             FlatVector<double> elvec(dnums.Size(), lh);
+             lin.GetIndirect (dnums, elvec);
+             FlatMatrix<double> elmat(dnums2.Size(), dnums.Size(), lh);
+             elements[i]->CalcLinearizedElementMatrix (elvec, elmat, lh);
+             addelmat (dnums2, dnums, elmat, ElementId(BND,i), lh);
+           }
+       });
+  }
+
+  void SpecialElementList ::
+  Apply (const BaseVector & x, TAddElVec addelvec, LocalHeap & clh)
+  {
+    ParallelForRange
+      (elements.Size(), [&] (IntRange r)
+       {
+         LocalHeap lh = clh.Split();
+         Array<DofId> dnums, dnums2;
+         for (auto i : r)
+           {
+             HeapReset hr(lh);
+             elements[i]->GetDofNrs (dnums);
+             elements[i]->GetDofNrs2 (dnums2);
+             FlatVector<double> elvecx(dnums.Size(), lh);
+             FlatVector<double> elvecy(dnums2.Size(), lh);
+             x.GetIndirect (dnums, elvecx);
+             elements[i]->Apply (elvecx, elvecy, lh);
+             addelvec (dnums2, elvecy, lh);
+           }
+       });
+  }
+
+  double SpecialElementList :: Energy (const BaseVector & x, LocalHeap & lh)
+  {
+    double energy = 0;
+    Array<DofId> dnums;
+    for (auto & el : elements)
+      {
+        HeapReset hr(lh);
+        el->GetDofNrs (dnums);
+        FlatVector<double> elvecx(dnums.Size(), lh);
+        x.GetIndirect (dnums, elvecx);
+        energy += el->Energy (elvecx, lh);
+      }
+    return energy;
+  }
+
   Table<int> & BilinearForm :: SpecialElementColoring() const
   {
     if (!special_element_coloring)
@@ -561,11 +683,9 @@ namespace ngcomp
 
     int maxind = first_el[4] + specialelements.Size();
     
+    UpdateSpecialElementGroups (false);
     for (auto seg : se_groups)
-      {
-        seg -> Update();
-        maxind += seg -> GetNElements();
-      }
+      maxind += seg -> GetNElements();
     
     if (fespace->UsesDGCoupling()) maxind += nf;
     
@@ -810,6 +930,19 @@ namespace ngcomp
                    }
                });
             offset += specialelements.Size();	
+            for (auto seg : se_groups)
+              {
+                seg -> GetDofNrs2 ( [&] (int i, FlatArray<DofId> dnums) {
+                  QuickSort (dnums);
+                  int last = -1;
+                  for (DofId d : dnums)
+                    {
+                      if (d!=last && IsRegularDof(d)) creator2.Add (offset+i, d);
+                      last = d;
+                    }
+                });
+                offset += seg->GetNElements();
+              }
             if (fespace2->UsesDGCoupling())
               //add dofs of neighbour elements as well
               for (int i = 0; i < nf; i++)
@@ -1139,6 +1272,8 @@ namespace ngcomp
         return;
       }
 
+    UpdateSpecialElementGroups (true);
+
     if (nonassemble)
       {
         Assemble(lh);
@@ -1154,7 +1289,7 @@ namespace ngcomp
         return;
       }
 
-    if (specialelements_timestamp > graph_timestamp)
+    if (SpecialElementsTimeStamp() > graph_timestamp)
       {
         reallocate = true;
         cout << IM(3) << "reallocate due to changed special elements" << endl;
@@ -2710,6 +2845,9 @@ namespace ngcomp
             for (auto seg : se_groups)
               seg -> Assemble([&](FlatArray<DofId> dnumsr, FlatArray<DofId> dnumsc, FlatMatrix<SCAL> elmat, ElementId ei, LocalHeap &lh)
               {
+                if (check_unused)
+                  for (auto d : dnumsr)
+                    if (IsRegularDof(d)) MarkUsed (d);
                 AddElementMatrix(dnumsr, dnumsc, elmat, ei, true, lh);
               }, clh);
             
@@ -3313,6 +3451,12 @@ namespace ngcomp
                     }
                   lh.CleanUp();
                 });
+
+            for (auto seg : se_groups)
+              seg -> Assemble([&](FlatArray<DofId> dnumsr, FlatArray<DofId> dnumsc, FlatMatrix<SCAL> elmat, ElementId ei, LocalHeap &lh)
+              {
+                AddElementMatrix(dnumsr, dnumsc, elmat, ei, true, lh);
+              }, clh);
             
             if (print) *testout << "mat = " << mat << endl;
 
@@ -3557,7 +3701,8 @@ namespace ngcomp
     RegionTimer reg (timer);
     StatusRegion status_region ("Assemble Linearization");
 
-    if (specialelements_timestamp > graph_timestamp)
+    UpdateSpecialElementGroups (false);
+    if (SpecialElementsTimeStamp() > graph_timestamp)
       {
         reallocate = true;
         cout << IM(3) << "reallocate due to changed special elements" << endl;
@@ -3846,6 +3991,22 @@ namespace ngcomp
                     pre->AddElementMatrix(dnums, elmat, ElementId(BND, i), lh);
                 }
             }, 10*TaskManager::GetNumThreads());
+
+            for (auto seg : se_groups)
+              {
+                if constexpr (std::is_same_v<SCAL,double>)
+                  seg -> AssembleLinearization
+                    (lin, [&](FlatArray<DofId> dnumsr, FlatArray<DofId> dnumsc, FlatMatrix<double> elmat, ElementId ei, LocalHeap &lh)
+                    {
+                      for (auto d : dnumsr)
+                        if (IsRegularDof(d)) MarkUsed (d);
+                      AddElementMatrix (dnumsr, dnumsc, elmat, ei, true, lh);
+                      for (auto pre : preconditioners)
+                        pre->AddElementMatrix(dnumsc, elmat, ei, lh);
+                    }, clh);
+                else
+                  throw Exception ("SpecialElementGroup: linearization only for real forms");
+              }
             timerspecial.Stop();
 
 
@@ -5048,6 +5209,21 @@ namespace ngcomp
                 }
             });
           }
+
+        if (se_groups.Size())
+          {
+            RegionTimer regt(timerspecial);
+            UpdateSpecialElementGroups (false);
+            if constexpr (std::is_same_v<SCAL,double>)
+              for (auto & seg : se_groups)
+                seg -> Apply (x, [&] (FlatArray<DofId> dnums, FlatVector<double> elvecy, LocalHeap & lh)
+                {
+                  elvecy *= val;
+                  y.AddIndirect (dnums, elvecy, true);
+                }, clh);
+            else
+              throw Exception ("SpecialElementGroup: Apply only for real forms");
+          }
         /*
               }
             catch (LocalHeapOverflow lhex)
@@ -5126,6 +5302,21 @@ namespace ngcomp
                   y.AddIndirect (dnums_test, elvecy, true);
                 }
             });
+          }
+
+        if (se_groups.Size())
+          {
+            RegionTimer regt(timerspecial);
+            UpdateSpecialElementGroups (false);
+            if constexpr (std::is_same_v<SCAL,double>)
+              for (auto & seg : se_groups)
+                seg -> Apply (x, [&] (FlatArray<DofId> dnums, FlatVector<double> elvecy, LocalHeap & lh)
+                {
+                  elvecy *= val;
+                  y.AddIndirect (dnums, elvecy, true);
+                }, clh);
+            else
+              throw Exception ("SpecialElementGroup: Apply only for real forms");
           }
 
         
@@ -6052,6 +6243,9 @@ namespace ngcomp
             y.AddIndirect (dnums, elvecy);
             lh.CleanUp();
           }
+
+        if (se_groups.Size())
+          throw Exception ("ApplyLinearization not available for SpecialElementGroup");
       }
     else
       { 
@@ -6191,6 +6385,13 @@ namespace ngcomp
             x.GetIndirect (dnums, elvecx);
           
             AtomicAdd(energy, el.Energy (elvecx, lh));
+          }
+
+        if (se_groups.Size())
+          {
+            UpdateSpecialElementGroups (false);
+            for (auto & seg : se_groups)
+              energy += seg->Energy (x, lh);
           }
       }
     return energy;

@@ -5074,15 +5074,41 @@ secondary facets against each master element and puts a Gauss rule of order
 
    py::class_<ContactIntegrator2, shared_ptr<ContactIntegrator2>, SpecialElementGroup> (m, "ContactIntegrator")
      .def(py::init([](std::variant<Region,string> primary, std::variant<Region,string> secondary,
-                      shared_ptr<GridFunction> deformation, std::optional<int> intorder) {
-       auto ci = make_shared<ContactIntegrator2>(primary, secondary, deformation);
+                      shared_ptr<GridFunction> deformation, std::optional<int> intorder,
+                      double maxdist, bool both_sides, string quadrature,
+                      bool volume, bool element_boundary, bool draw_pairs) {
+       auto ci = make_shared<ContactIntegrator2>(primary, secondary, deformation,
+                                                 volume, element_boundary, draw_pairs);
        if (intorder.has_value()) ci->SetIntOrder (*intorder);
+       ci->SetMaxDist (maxdist);
+       ci->SetBothSides (both_sides);
+       ci->SetQuadrature (quadrature);
        return ci;
-     }), py::arg("me"), py::arg("other"), py::arg("deformation")=nullptr, py::arg("intorder")=nullopt)
-     .def("Add", [](shared_ptr<ContactIntegrator2> ci, shared_ptr<CoefficientFunction> coef) {
-       ci -> AddIntegrator(coef);
+     }), py::arg("me"), py::arg("other"), py::arg("deformation")=nullptr, py::arg("intorder")=nullopt,
+          py::arg("maxdist")=0., py::arg("both_sides")=false, py::arg("quadrature")="gauss",
+          py::arg("volume")=false, py::arg("element_boundary")=false, py::arg("draw_pairs")=false,
+          R"delimiter(
+Integrals over a pair of non-matching boundaries, to be added to a BilinearForm.
+The contact pairs are created by a ContactBoundary, see ContactBoundary.Update
+for `intorder`, `maxdist`, `both_sides` and `quadrature`.
+`me` and `other` are Regions or boundary names; `.Other()` in the forms refers to `other`.
+)delimiter")
+     .def("Add", [](shared_ptr<ContactIntegrator2> ci, shared_ptr<CoefficientFunction> coef, bool deformed) {
+       ci -> AddIntegrator(coef, deformed);
        return ci;
-     })
+     }, py::arg("form"), py::arg("deformed")=false)
+     .def("AddEnergy", [](shared_ptr<ContactIntegrator2> ci, shared_ptr<CoefficientFunction> coef, bool deformed) {
+       ci -> AddEnergy(coef, deformed);
+       return ci;
+     }, py::arg("form"), py::arg("deformed")=false)
+     .def("Update", &ContactIntegrator2::Update, R"delimiter(
+Search the contact pairs for the current deformation.
+Called by BilinearForm.Assemble, and at the first use of the form otherwise;
+AssembleLinearization, Apply and Energy keep the pairs.
+)delimiter")
+     .def_property_readonly("contactboundary", &ContactIntegrator2::GetContactBoundary)
+     .def_property_readonly("normal", [](ContactIntegrator2 & ci) { return ci.GetContactBoundary()->Normal(); })
+     .def_property_readonly("gap", [](ContactIntegrator2 & ci) { return ci.GetContactBoundary()->Gap(); })
      ;
           
    

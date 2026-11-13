@@ -151,7 +151,11 @@ namespace ngcomp
     size_t specialelements_timestamp = 0;
 
     Array<shared_ptr<SpecialElementGroup>> se_groups;
-    
+    // update the groups, without force only those never updated
+    void UpdateSpecialElementGroups (bool force) const;
+    // last change of special elements or groups
+    size_t SpecialElementsTimeStamp () const;
+
     
     /*
     Array<BilinearFormIntegrator*> independent_parts;

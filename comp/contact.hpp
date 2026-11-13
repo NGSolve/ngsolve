@@ -248,7 +248,13 @@ namespace ngcomp
     Array<ClipGeometry> clip_geometry;
 
     void AddSpecialElements(shared_ptr<BilinearForm> bf, ContactRule rule, bool keeppairs);
-    
+
+  public:
+    typedef std::function<void(unique_ptr<SpecialElement>)> ElementSink;
+  private:
+    void UpdateImpl(shared_ptr<GridFunction> gf, shared_ptr<BilinearForm> bf, const ElementSink & sink,
+                    int intorder, double h, bool both_sides, bool keep_pairs,
+                    shared_ptr<ContactBoundary> other_cb, string quadrature);
   public:
     void Draw();
     ContactBoundary(Region _master, Region _other, bool draw_pairs = false, bool _volume=false, bool element_boundary=false);
@@ -266,6 +272,12 @@ namespace ngcomp
                 shared_ptr<BilinearForm> bf,
                 int intorder, double h, bool both_sides, bool keep_pairs = false, shared_ptr<ContactBoundary> other_cb = nullptr,
                 string quadrature = "gauss");
+
+    // as Update, but the contact elements are handed to sink (spaces must be set)
+    void CreateElements(shared_ptr<GridFunction> gf, const ElementSink & sink,
+                        int intorder, double h, bool both_sides, bool keep_pairs = false,
+                        shared_ptr<ContactBoundary> other_cb = nullptr,
+                        string quadrature = "gauss");
 
     shared_ptr<CoefficientFunction> Gap() const { return gap; }
     shared_ptr<CoefficientFunction> Normal() const { return normal; }
@@ -286,28 +298,37 @@ namespace ngcomp
   };
 
   
-  class ContactIntegrator2 : public SpecialElementGroup
+  class ContactIntegrator2 : public SpecialElementList
   {
-    shared_ptr<ContactBoundary> cb;
+    shared_ptr<ContactBoundary> cb;   // created as soon as the mesh is known
     std::variant<Region,string> primary, secondary;
     shared_ptr<GridFunction> deformation;
-    Array<shared_ptr<ContactIntegrator>> integrators;
-    shared_ptr<FESpace> trial_fes, test_fes; // come from integrator
-    Array<unique_ptr<SpecialElement>> elements;
+    bool volume, element_boundary, draw_pairs;
     int intorder = 10;
+    double maxdist = 0;
+    bool both_sides = false;
+    string quadrature = "gauss";
+
+    void CreateBoundary(shared_ptr<MeshAccess> ma);
+    void SetSpaces(shared_ptr<CoefficientFunction> form);
   public:
     ContactIntegrator2(std::variant<Region,string> _primary,
                        std::variant<Region,string> _secondary,
                        shared_ptr<GridFunction> _deformation,
-                       bool _volume=false, bool element_boundary=false);
+                       bool _volume=false, bool _element_boundary=false,
+                       bool _draw_pairs=false);
     ~ContactIntegrator2() { }
     void SetIntOrder (int io) { intorder = io; }
-    void AddIntegrator(shared_ptr<CoefficientFunction> form);
+    void SetMaxDist (double h) { maxdist = h; }
+    void SetBothSides (bool bs) { both_sides = bs; }
+    void SetQuadrature (string q) { quadrature = q; }
+    void AddIntegrator(shared_ptr<CoefficientFunction> form, bool deformed = false);
+    void AddEnergy(shared_ptr<CoefficientFunction> form, bool deformed = false);
+    shared_ptr<ContactBoundary> GetContactBoundary() const;
 
     void Update() override;
-    int GetNElements() override;
-    void GetDofNrs(std::function<void(int,FlatArray<DofId>)> eldofs) override;
-    void Assemble(std::function<void(FlatArray<DofId>,FlatArray<DofId>,FlatMatrix<double>,ElementId,LocalHeap&)> addelmat, LocalHeap& lh) override;    
+    shared_ptr<FESpace> GetTrialSpace() const override { return cb ? cb->GetTrialFESpace() : nullptr; }
+    shared_ptr<FESpace> GetTestSpace() const override { return cb ? cb->GetTestFESpace() : nullptr; }
   };
   
 

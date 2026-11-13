@@ -1313,12 +1313,36 @@ namespace ngcomp
          int intorder, double h, bool both_sides, bool keep_pairs, shared_ptr<ContactBoundary> other_cb,
          string quadrature)
   {
+    ElementSink sink;
+    if (bf)
+      sink = [bf] (unique_ptr<SpecialElement> el) { bf->AddSpecialElement(std::move(el)); };
+    UpdateImpl (displacement_, bf, sink, intorder, h, both_sides, keep_pairs, other_cb, quadrature);
+  }
+
+  void ContactBoundary::
+  CreateElements(shared_ptr<GridFunction> displacement_, const ElementSink & sink,
+                 int intorder, double h, bool both_sides, bool keep_pairs, shared_ptr<ContactBoundary> other_cb,
+                 string quadrature)
+  {
+    if (!sink)
+      throw Exception("ContactBoundary::CreateElements needs a sink");
+    if (!trial_fes)
+      throw Exception("ContactBoundary::CreateElements: spaces not set");
+    UpdateImpl (displacement_, nullptr, sink, intorder, h, both_sides, keep_pairs, other_cb, quadrature);
+  }
+
+  void ContactBoundary::
+  UpdateImpl(shared_ptr<GridFunction> displacement_,
+             shared_ptr<BilinearForm> bf, const ElementSink & sink,
+             int intorder, double h, bool both_sides, bool keep_pairs, shared_ptr<ContactBoundary> other_cb,
+             string quadrature)
+  {
     if (quadrature != "gauss" && quadrature != "clip")
       throw Exception("ContactBoundary: unknown quadrature '" + quadrature + "', use 'gauss' or 'clip'");
     bool clip = quadrature == "clip";
     if (clip && element_boundary)
       throw Exception("ContactBoundary: quadrature='clip' not available with element_boundary");
-    if(!displacement_ && !bf)
+    if(!displacement_ && !sink)
       throw Exception("Either displacement or BilinearForm needed in ContactBoundary update!");
     if(!trial_fes)
       {
@@ -1366,7 +1390,7 @@ namespace ngcomp
       static_pointer_cast<DisplacedNormal<2>>(normal)->Update(displacement);
     else
       static_pointer_cast<DisplacedNormal<3>>(normal)->Update(displacement);
-    if(bf)
+    if(sink)
       {
         static Timer t1("Build contact pairs");
         RegionTimer regt1(t1);
@@ -1389,14 +1413,17 @@ namespace ngcomp
              if(mesh->GetDimension() == DIM)
                {
                  // Delete special elements created by me
-                 auto& specialels = bf->GetSpecialElements();
-                 auto last = specialels.Size()-1;
-                 for(auto i : Range(specialels))
+                 if (bf)
                    {
-                     auto index = last-i;
-                     auto cont_el = dynamic_cast<MPContactElement<DIM>*>(specialels[index].get());
-                     if(cont_el && cont_el->GetContactBoundary().get() == this)
-                       bf->DeleteSpecialElement(index);
+                     auto& specialels = bf->GetSpecialElements();
+                     auto last = specialels.Size()-1;
+                     for(auto i : Range(specialels))
+                       {
+                         auto index = last-i;
+                         auto cont_el = dynamic_cast<MPContactElement<DIM>*>(specialels[index].get());
+                         if(cont_el && cont_el->GetContactBoundary().get() == this)
+                           bf->DeleteSpecialElement(index);
+                       }
                    }
 
                  // with 'clip' the pairing is cheap: share the search tree, clip at the own order
@@ -1405,10 +1432,10 @@ namespace ngcomp
                      if(!other_cb->has_contact_rules)
                        throw Exception("ContactBoundary passed to Update has no contact pairs (call its Update with keep_pairs=True first)");
                      for(const auto& rule : other_cb->contact_rules)
-                       bf->AddSpecialElement(make_unique<MPContactElement<DIM>>
-                                             (rule.primary_ei, rule.secondary_ei,
-                                              CopyIR(rule.primary_ir), CopyIR(rule.secondary_ir),
-                                              shared_from_this(), displacement.get()));
+                       sink(make_unique<MPContactElement<DIM>>
+                            (rule.primary_ei, rule.secondary_ei,
+                             CopyIR(rule.primary_ir), CopyIR(rule.secondary_ir),
+                             shared_from_this(), displacement.get()));
                      return;
                    }
 
@@ -1549,10 +1576,10 @@ namespace ngcomp
                               lock_guard<mutex> guard(add_mutex);
                               if(keep_pairs)
                                 AddSpecialElements(bf, ContactRule{this_ei, other_ei, CopyIR(primary_ir), CopyIR(secondary_ir)}, keep_pairs);
-                              bf->AddSpecialElement(make_unique<MPContactElement<DIM>>
-                                                    (el, other_ei,
-                                                     std::move(primary_ir), std::move(secondary_ir),
-                                                     shared_from_this(), displacement.get()));
+                              sink(make_unique<MPContactElement<DIM>>
+                                   (el, other_ei,
+                                    std::move(primary_ir), std::move(secondary_ir),
+                                    shared_from_this(), displacement.get()));
                             }
                           else
                             {
@@ -1596,12 +1623,12 @@ namespace ngcomp
                               lock_guard<mutex> guard(add_mutex);
                               if(keep_pairs)
                                 AddSpecialElements(bf, ContactRule{vei, ElementId(BND, other_nr[index[first]]), CopyIR(volir), CopyIR(secondary_ir)}, keep_pairs);
-                              bf->AddSpecialElement(make_unique<MPContactElement<DIM>>
-                                                    (vei, ElementId(BND, other_nr[index[first]]),
-                                                     std::move(volir), std::move(secondary_ir),
-                                                     shared_from_this(), displacement.get()));
+                              sink(make_unique<MPContactElement<DIM>>
+                                   (vei, ElementId(BND, other_nr[index[first]]),
+                                    std::move(volir), std::move(secondary_ir),
+                                    shared_from_this(), displacement.get()));
                             }
-                          
+
                           first = next;
                         }
                     });
@@ -1624,267 +1651,79 @@ namespace ngcomp
   ContactIntegrator2 :: ContactIntegrator2(std::variant<Region,string> _primary,
                                            std::variant<Region,string> _secondary,
                                            shared_ptr<GridFunction> _deformation,
-                                           bool _volume, bool element_boundary)
-  // : cb(make_shared<ContactBoundary>(_primary, _secondary)), primary(_primary), secondary(_secondary)
-    : cb{make_shared<ContactBoundary>(Region(), Region())},
-      primary(_primary), secondary(_secondary),
-      deformation(_deformation)
+                                           bool _volume, bool _element_boundary,
+                                           bool _draw_pairs)
+    : primary(_primary), secondary(_secondary), deformation(_deformation),
+      volume(_volume), element_boundary(_element_boundary), draw_pairs(_draw_pairs)
   {
+    if (auto p = get_if<Region>(&primary))
+      CreateBoundary (p->Mesh());
+    else if (auto p = get_if<Region>(&secondary))
+      CreateBoundary (p->Mesh());
   }
 
-  void ContactIntegrator2 :: AddIntegrator(shared_ptr<CoefficientFunction> form)
+  void ContactIntegrator2 :: CreateBoundary(shared_ptr<MeshAccess> ma)
   {
-    cb -> AddIntegrator (form);
-    integrators.Append(make_shared<ContactIntegrator>(form, true));
-    trial_fes = integrators.Last()->GetTrialSpace();
-    test_fes = integrators.Last()->GetTestSpace();
-
-    cb->SetTrialFESpace(trial_fes);
-    cb->SetTestFESpace(test_fes);
+    auto reg = [&] (const std::variant<Region,string> & r)
+    {
+      if (auto p = get_if<Region>(&r)) return *p;
+      return Region (ma, BND, get<string>(r));
+    };
+    cb = make_shared<ContactBoundary>(reg(primary), reg(secondary),
+                                      draw_pairs, volume, element_boundary);
   }
 
-  int ContactIntegrator2 :: GetNElements()
+  shared_ptr<ContactBoundary> ContactIntegrator2 :: GetContactBoundary() const
   {
-    // cout << "ContactIntegrator: have " << elements.Size() << " elements" << endl;
-    return elements.Size();
+    if (!cb)
+      throw Exception("ContactIntegrator: mesh not known yet, pass Regions or add a form first");
+    return cb;
   }
 
-  
+  void ContactIntegrator2 :: SetSpaces(shared_ptr<CoefficientFunction> form)
+  {
+    shared_ptr<FESpace> trial, test;
+    form->TraverseDAG
+      ([&] (CoefficientFunction & nodecf)
+       {
+         if (auto proxy = dynamic_cast<ProxyFunction*>(&nodecf))
+           (proxy->IsTestFunction() ? test : trial) = proxy->GetFESpace();
+       });
+    if (!trial) trial = test;
+    if (!test) test = trial;
+    if (!trial)
+      throw Exception("ContactIntegrator: form has neither trial nor test function");
+
+    if (!cb) CreateBoundary (trial->GetMeshAccess());
+    if (cb->GetTrialFESpace() &&
+        (cb->GetTrialFESpace() != trial || cb->GetTestFESpace() != test))
+      throw Exception("ContactIntegrator: forms are defined on different spaces");
+
+    cb->SetTrialFESpace (trial);
+    cb->SetTestFESpace (test);
+  }
+
+  void ContactIntegrator2 :: AddIntegrator(shared_ptr<CoefficientFunction> form, bool deformed)
+  {
+    SetSpaces (form);
+    cb->AddIntegrator (form, deformed);
+  }
+
+  void ContactIntegrator2 :: AddEnergy(shared_ptr<CoefficientFunction> form, bool deformed)
+  {
+    SetSpaces (form);
+    cb->AddEnergy (form, deformed);
+  }
+
   void ContactIntegrator2 :: Update()
   {
-    // copied from ContactBoundary update
+    elements.SetSize0();
+    timestamp = NGS_Object::GetNextTimeStamp();
+    if (!cb || !(cb->GetIntegrators().Size() || cb->GetEnergies().Size())) return;
 
-    // cout << "ContactIntegrator Update called" << endl;
-
-    /*
-      // TODO
-    if(displacement_)
-      fes_displacement = displacement_->GetFESpace();
-
-    shared_ptr<GridFunction> displacement = nullptr;
-    
-    if(displacement_)
-      {
-        auto flags = displacement_->GetFlags();
-        flags.SetFlag("novisual");
-        displacement = CreateGridFunction(displacement_->GetFESpace(), "_cb_displacement", flags);
-        displacement->Update();
-        displacement->GetVector() = displacement_->GetVector();
-      }
-    */
-    
-    auto mesh = trial_fes->GetMeshAccess();
-
-    Region primary_reg;
-    if (auto p = get_if<Region>(&primary))
-      primary_reg = *p;
-    else
-      primary_reg = Region (mesh, BND, get<string>(primary));
-
-    Region secondary_reg;
-    if (auto p = get_if<Region>(&secondary))
-      secondary_reg = *p;
-    else
-      secondary_reg = Region (mesh, BND, get<string>(secondary));
-    
-    bool element_boundary = false;  // TODO
-    bool volume = false;    // TODO
-    
-    LocalHeap lh(1000000, "ContactIntegrator-Update", true);
-    
-    Iterate<2>
-      ([&](auto i)
-      {
-        constexpr auto DIM = i.value+2;
-        if(mesh->GetDimension() == DIM)
-          {
-            elements.SetSize0();
-            auto tgap = make_shared<T_GapFunction<DIM>>(mesh, primary_reg, secondary_reg);
-            tgap -> Update (deformation,
-                            10, // intorder
-                            5,  //  h
-                            true  /* bothsides */ );
-            
-            static mutex add_mutex;
-            auto& mask = primary_reg.Mask();
-
-            mesh->IterateElements
-              (primary_reg.VB(), lh,
-               [&] (Ngs_Element el, LocalHeap& lh)
-               {
-                 constexpr auto DIM = i.value+2; // Declare DIM again (MSVC bug)
-                 HeapReset hr(lh);
-                 if(!mask.Test(el.GetIndex())) return;
-
-                 auto& trafo = mesh->GetTrafo(el, lh);
-                 Array<unique_ptr<MappedIntegrationRule<DIM-1, DIM>>> mirs;
-                 /*
-                 // TODO
-                 if (element_boundary)
-                 {
-                 auto eltype = trafo.GetElementType();
-                 Facet2ElementTrafo transform(eltype, BND);
-                 auto nfacet = transform.GetNFacets();
-                 for(int facnr : Range(nfacet))
-                 {
-                 auto etfacet = transform.FacetType(facnr);
-                 IntegrationRule ir_facet(etfacet, intorder);
-                 IntegrationRule & ir_facet_vol = transform(facnr, ir_facet, lh);
-                 mirs.Append(make_unique<MappedIntegrationRule<DIM-1, DIM>>(ir_facet_vol, trafo, lh));
-                 }
-                 }
-                 else
-                 */
-                 {
-                   IntegrationRule ir(trafo.GetElementType(), intorder);
-                   mirs.Append(make_unique<MappedIntegrationRule<DIM-1, DIM>>(ir, trafo, lh));
-                 }
-                 
-                 int npts = 0;
-                 for(const auto& mir : mirs)
-                   npts += mir->Size();
-                 FlatArray<IntegrationPoint> this_ir(npts, lh);
-                 FlatArray<IntegrationPoint> other_ir(npts, lh);
-                 FlatArray<size_t> other_nr(npts, lh);
-                 
-                 int cntpair = 0;
-                 for(const auto& mir : mirs)
-                   for(auto& mip : *mir)
-                     {
-                       bool both_sides = true; // ???
-                       auto pair = tgap->CreateContactPair(mip, lh,
-                                                           both_sides);
-                       if (pair.has_value())
-                         {
-                           this_ir[cntpair] =  (*pair).primary_ip;
-                           /*
-                             // todo
-                           if(element_boundary)
-                             this_ir[cntpair].SetFacetNr
-                               (mip.IP().FacetNr(),
-                                mip.IP().VB());
-                           */
-                           other_ir[cntpair] = (*pair).secondary_ip;
-                           other_nr[cntpair] = (*pair).secondary_el.Nr();
-                           cntpair++;
-                         }
-                     }
-                 
-                 FlatArray<int> index(cntpair, lh);
-                 for (int i : Range(cntpair))
-                   index[i] = i;
-                 
-                 QuickSort (index, [&] (auto i1, auto i2) { return other_nr[i1] < other_nr[i2]; });
-                 
-                 // cout << "index = " << index << endl;
-                 
-                 int first = 0;
-                 while (first < cntpair)
-                   {
-                     int next = first;
-                     while ((next < cntpair && other_nr[index[next]] == other_nr[index[first]]) &&
-                            (!element_boundary || this_ir[index[next]].FacetNr() == this_ir[index[first]].FacetNr()))
-                       next++;
-                     // cout << "interval = [" << first << ", " << next << ")" << endl;
-                     
-                     IntegrationRule primary_ir;
-                     IntegrationRule secondary_ir;
-                     
-                     for (int i = first; i < next; i++)
-                       {
-                         primary_ir.AddIntegrationPoint (this_ir[index[i]]);
-                         secondary_ir.AddIntegrationPoint (other_ir[index[i]]);
-                       }
-                     
-                     
-                     /*
-                       cout << "surfmir =  " << trafo(primary_ir, lh) << endl;
-                       auto & t2 = mesh->GetTrafo(ElementId(BND, other_nr[index[first]]), lh);
-                       cout << "secondarymir =  " << t2(secondary_ir, lh) << endl;                              
-                       // they are not matching ??? 
-                       */
-                     
-                     
-                     if (!volume)
-                       {
-                         lock_guard<mutex> guard(add_mutex);
-                         elements.Append (make_unique<MPContactElement<DIM>>
-                                          (el, ElementId(BND, other_nr[index[first]]),
-                                           std::move(primary_ir), std::move(secondary_ir),
-                                           cb, 
-                                           nullptr // displacement.get()
-                                           ));
-                       }
-                 /*
-                   TODO
-                   else
-                   {
-                   // LocalHeapMem<100000> lh("lhbfv");
-                   // const ElementTransformation & trafo = ir.GetTransformation();
-                   // auto ei = trafo.GetElementId();
-                   // const MeshAccess & ma = *static_cast<const MeshAccess*> (trafo.GetMesh());
-                   
-                   int facet = mesh->GetElFacets(el)[0];
-                   ArrayMem<int,2> elnums;
-                   mesh->GetFacetElements (facet, elnums);
-                   if (elnums.Size() != 1)
-                   throw Exception("surface element does not have exactly one vol element");
-                   
-                   ElementId vei(VOL, elnums[0]);
-                   int locfacnr = mesh->GetElFacets(vei).Pos(facet);
-                   
-                   ElementTransformation & vol_trafo = mesh->GetTrafo (vei, lh);
-                   // if (!vol_cf->DefinedOn(vol_trafo)) continue;
-                   
-                   Facet2ElementTrafo f2el(vol_trafo.GetElementType(), mesh->GetElVertices(vei));
-                   Array<int> surfvnums { mesh->GetElVertices(el) };
-                   Facet2SurfaceElementTrafo f2sel(trafo.GetElementType(), surfvnums);
-                   
-                   auto & ir_ref = f2sel.Inverse(primary_ir, lh);
-                   auto & ir_vol = f2el(locfacnr, ir_ref, lh);
-                   
-                   IntegrationRule volir;
-                   for (int i = 0; i < ir_vol.Size(); i++)
-                   volir.AddIntegrationPoint (ir_vol[i]);
-                   
-                   
-                   lock_guard<mutex> guard(add_mutex);
-                   bf->AddSpecialElement(make_unique<MPContactElement<DIM>>
-                   (vei, ElementId(BND, other_nr[index[first]]),
-                   std::move(volir), std::move(secondary_ir),
-                   shared_from_this(), displacement.get()));
-                   }
-                 */
-                 
-                     first = next;
-                   }   // while(...)
-               }); // iterate elements
-          }
-      }); // iterate dimension
-  }
-
-  void ContactIntegrator2 :: GetDofNrs(std::function<void(int,FlatArray<DofId>)> eldofs)
-  {
-    Array<DofId> dnums;
-    for (int i = 0; i < elements.Size(); i++)
-      {
-        elements[i]->GetDofNrs(dnums);
-        eldofs(i, dnums);
-      }
-  }
-
-  void ContactIntegrator2 :: Assemble(std::function<void(FlatArray<DofId>,FlatArray<DofId>,FlatMatrix<double>,ElementId,LocalHeap&)> addelmat, LocalHeap& lh)
-  {
-    Array<DofId> dnums;
-    for (auto& el : elements)
-      {
-        HeapReset hr(lh);
-        el->GetDofNrs(dnums);
-        FlatMatrix<double> elmat(dnums.Size(), dnums.Size(), lh);
-        el->CalcElementMatrix(elmat, lh);
-
-        addelmat(dnums, dnums, elmat, 0, lh);
-      }
+    cb->CreateElements (deformation,
+                        [&] (unique_ptr<SpecialElement> el) { elements.Append (std::move(el)); },
+                        intorder, maxdist, both_sides, false, nullptr, quadrature);
   }
 
 
