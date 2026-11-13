@@ -1,7 +1,14 @@
+:orphan:
+
 .. _how-to-navierstokes:
 
 Navier Stokes Equation
 ======================
+
+.. note::
+
+   This page shows the classic Python-script version of this example.
+   The current, interactive version is the i-tutorial :doc:`Navier Stokes equations </i-tutorials/wta/navierstokes>`.
 
 We solve the time-dependent incompressible Navier Stokes Equation. For
 that

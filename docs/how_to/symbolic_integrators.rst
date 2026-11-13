@@ -18,22 +18,26 @@ For linear problems we use the function ``Assemble`` of the ``BilinearForm`` to 
 
 from example :any:`Magnetic Fields <whetting-cmagnet>` we have to define the space
 
-.. literalinclude:: /../py_tutorials/cmagnet.py
-   :start-after: ngsglobals.msg_level
-   :end-before: # u and v refer to
+.. code-block:: python
+
+   fes = HCurl(mesh, order=4, dirichlet="outer", nograds=True)
+   u,v = fes.TnT()
 
 and the BilinearForm
 
-.. literalinclude:: /../py_tutorials/cmagnet.py
-   :start-after: nu =
-   :end-before: c =
-   :append: a.Assemble()
+.. code-block:: python
+
+   a = BilinearForm(fes, symmetric=True)
+   a += nu*curl(u)*curl(v)*dx + 1e-6*nu*u*v*dx
+   a.Assemble()
 
 as well as the LinearForm
 
-.. literalinclude:: /../py_tutorials/cmagnet.py
-   :start-after: a.Assemble()
-   :end-before: u =
+.. code-block:: python
+
+   f = LinearForm(fes)
+   f += CF((y,0.05-x,0)) * v * dx("coil")
+   f.Assemble()
 
 The argument of the symbolic integrator must be a coefficient function depending linearly on the test and trial function.
 

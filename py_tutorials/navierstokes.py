@@ -1,4 +1,5 @@
 from ngsolve import *
+from netgen.occ import *
 
 # viscosity
 nu = 0.001
@@ -7,55 +8,43 @@ nu = 0.001
 tau = 0.001
 tend = 10
 
-from netgen.geom2d import SplineGeometry
-geo = SplineGeometry()
-geo.AddRectangle( (0, 0), (2, 0.41), bcs = ("wall", "outlet", "wall", "inlet"))
-geo.AddCircle ( (0.2, 0.2), r=0.05, leftdomain=0, rightdomain=1, bc="cyl", maxh=0.02)
-mesh = Mesh( geo.GenerateMesh(maxh=0.07))
+# channel with a cylinder, boundaries get names
+channel = Rectangle(2, 0.41).Face()
+channel.edges.name = "wall"
+channel.edges.Min(X).name = "inlet"
+channel.edges.Max(X).name = "outlet"
+cyl = Circle((0.2,0.2), 0.05).Face()
+cyl.edges.name = "cyl"
+cyl.edges.maxh = 0.02
+mesh = (channel-cyl).GenerateMesh(dim=2, maxh=0.07)
 
 mesh.Curve(3)
 
 V = VectorH1(mesh,order=3, dirichlet="wall|cyl|inlet")
 Q = H1(mesh,order=2)
 
-X = V*Q
+fes = V*Q
 
-u,p = X.TrialFunction()
-v,q = X.TestFunction()
+u,p = fes.TrialFunction()
+v,q = fes.TestFunction()
 
-stokes = nu*InnerProduct(grad(u), grad(v))+div(u)*q+div(v)*p - 1e-10*p*q
-a = BilinearForm(X, symmetric=True)
-a += stokes*dx
-a.Assemble()
-
-# nothing here ...
-f = LinearForm(X)   
-f.Assemble()
-
-# gridfunction for the solution
-gfu = GridFunction(X)
+stokes = (nu*InnerProduct(grad(u), grad(v))+div(u)*q+div(v)*p - 1e-10*p*q)*dx
+a = BilinearForm(stokes).Assemble()
 
 # parabolic inflow at inlet:
-uin = CoefficientFunction( (1.5*4*y*(0.41-y)/(0.41*0.41), 0) )
-gfu.components[0].Set(uin, definedon=mesh.Boundaries("inlet"))
+uin = CF( (1.5*4*y*(0.41-y)/(0.41*0.41), 0) )
 
 # solve Stokes problem for initial conditions:
-inv_stokes = a.mat.Inverse(X.FreeDofs())
-
-res = f.vec.CreateVector()
-res.data = f.vec - a.mat*gfu.vec
-gfu.vec.data += inv_stokes * res
-
+gfu = Solve(stokes == 0,
+            u[BND("wall|cyl")] == (0,0),
+            u[BND("inlet")] == uin)
 
 # matrix for implicit Euler 
-mstar = BilinearForm(X, symmetric=True)
-mstar += (u*v + tau*stokes)*dx
-mstar.Assemble()
-inv = mstar.mat.Inverse(X.FreeDofs(), inverse="sparsecholesky")
+mstar = BilinearForm(u*v*dx + tau*stokes).Assemble()
+inv = mstar.mat.Inverse(fes.FreeDofs(), inverse="sparsecholesky")
 
 # the non-linear term 
-conv = BilinearForm(X, nonassemble = True)
-conv += (grad(u) * u) * v * dx
+conv = BilinearForm((grad(u) * u) * v * dx, nonassemble = True)
 
 # for visualization
 Draw (Norm(gfu.components[0]), mesh, "velocity", sd=3)
@@ -66,8 +55,7 @@ with TaskManager():
     while t < tend:
         print ("t=", t, end="\r")
 
-        conv.Apply (gfu.vec, res)
-        res.data += a.mat*gfu.vec
+        res = conv.Apply(gfu.vec) + a.mat*gfu.vec
         gfu.vec.data -= tau * inv * res    
 
         t = t + tau

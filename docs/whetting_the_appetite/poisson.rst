@@ -1,5 +1,12 @@
+:orphan:
+
 Poisson equation
 ================
+
+.. note::
+
+   This page shows the classic Python-script version of this example.
+   The current, interactive version is the i-tutorial :doc:`Poisson equation </i-tutorials/wta/poisson>`.
 
 We solve the Poisson equation on the unit-square, with homogeneous Dirichlet boundary conditions. You can run the :download:`example</../py_tutorials/poisson.py>` either directly within the Python interpreter (Python version 3 is required!):
 

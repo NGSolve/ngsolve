@@ -1,10 +1,17 @@
+:orphan:
+
 Adaptive mesh refinement
 ========================
+
+.. note::
+
+   This page shows the classic Python-script version of this example.
+   The current, interactive version is the i-tutorial :doc:`Adaptivity </i-tutorials/wta/adaptivity>`.
 
 We are solving a stationary heat equation with highly varying coefficients. 
 This example shows how to
  
-* model a 2D geometry be means of line segments
+* model a 2D geometry with sub-domains by the Netgen-OpenCascade interface
 * apply a Zienkiewicz-Zhu type error estimator. The flux is interpolated into an H(div)-conforming finite element space.
 * loop over several refinement levels
 

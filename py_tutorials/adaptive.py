@@ -1,72 +1,66 @@
 from ngsolve import *
-from netgen.geom2d import SplineGeometry
+from netgen.occ import *
 
 
-#   point numbers 0, 1, ... 11
-#   sub-domain numbers (1), (2), (3)
-#  
+#   sub-domains "base", "top", "chip", Dirichlet boundary "bot"
 #
-#             7-------------6
+#
+#             +-------------+
 #             |             |
-#             |     (2)     |
+#             |     top     |
 #             |             |
-#      3------4-------------5------2
+#      +------+-------------+------+
 #      |                           |
-#      |             11            |
+#      |             +             |
 #      |           /   \           |
-#      |         10 (3) 9          |
-#      |           \   /     (1)   |
-#      |             8             |
+#      |          +  chip +        |
+#      |           \   /    base   |
+#      |             +             |
 #      |                           |
-#      0---------------------------1
+#      +---------------------------+
+#                   bot
 #
 
 def MakeGeometry():
-    geometry = SplineGeometry()
-    
-    # point coordinates ...
-    pnts = [ (0,0), (1,0), (1,0.6), (0,0.6), \
-             (0.2,0.6), (0.8,0.6), (0.8,0.8), (0.2,0.8), \
-             (0.5,0.15), (0.65,0.3), (0.5,0.45), (0.35,0.3) ]
-    pnums = [geometry.AppendPoint(*p) for p in pnts]
-    
-    # start-point, end-point, boundary-condition, domain on left side, domain on right side:
-    lines = [ (0,1,1,1,0), (1,2,2,1,0), (2,5,2,1,0), (5,4,2,1,2), (4,3,2,1,0), (3,0,2,1,0), \
-              (5,6,2,2,0), (6,7,2,2,0), (7,4,2,2,0), \
-              (8,9,2,3,1), (9,10,2,3,1), (10,11,2,3,1), (11,8,2,3,1) ]
-        
-    for p1,p2,bc,left,right in lines:
-        geometry.Append( ["line", pnums[p1], pnums[p2]], bc=bc, leftdomain=left, rightdomain=right)
-    return geometry
+    base = Rectangle(1, 0.6).Face()
+    chip = MoveTo(0.5,0.15).Line(0.15,0.15).Line(-0.15,0.15).Line(-0.15,-0.15).Close().Face()
+    top = MoveTo(0.2,0.6).Rectangle(0.6,0.2).Face()
+    base -= chip
+
+    base.faces.name = "base"
+    chip.faces.name = "chip"
+    top.faces.name = "top"
+
+    # glue faces to one geometry with conforming interfaces
+    geo = Glue([base,chip,top])
+    geo.edges.name = "default"
+    geo.edges.Min(Y).name = "bot"
+    return geo
 
 
 
-mesh = Mesh(MakeGeometry().GenerateMesh (maxh=0.2))
+mesh = MakeGeometry().GenerateMesh(dim=2, maxh=0.2)
 
 
-fes = H1(mesh, order=3, dirichlet=[1], autoupdate=True)
-u = fes.TrialFunction()
-v = fes.TestFunction()
+fes = H1(mesh, order=3, dirichlet="bot")
+u,v = fes.TnT()
 
 # one heat conductivity coefficient per sub-domain
-lam = CoefficientFunction([1, 1000, 10])
-a = BilinearForm(fes, symmetric=False)
-a += lam*grad(u)*grad(v)*dx
+lam = mesh.MaterialCF({ "base" : 1, "top" : 1000, "chip" : 10 })
+a = BilinearForm(lam*grad(u)*grad(v)*dx)
 
+# heat-source in the chip
+f = LinearForm(1*v*dx("chip"))
 
-# heat-source in sub-domain 3
-f = LinearForm(fes)
-f += CoefficientFunction([0, 0, 1])*v*dx
+c = preconditioners.MultiGrid(a, inverse = "sparsecholesky")
 
-c = MultiGridPreconditioner(a, inverse = "sparsecholesky")
-
-gfu = GridFunction(fes, autoupdate=True)
+gfu = GridFunction(fes)
 Draw (gfu)
 
 # finite element space and gridfunction to represent
 # the heatflux:
-space_flux = HDiv(mesh, order=2, autoupdate=True)
-gf_flux = GridFunction(space_flux, "flux", autoupdate=True)
+space_flux = HDiv(mesh, order=2)
+gf_flux = GridFunction(space_flux, "flux")
 
 def SolveBVP():
     a.Assemble()
@@ -92,8 +86,8 @@ def CalcError():
     l.append ( (fes.ndof, sqrt(sum(elerr)) ))
     print ("maxerr = ", maxerr)
 
-    for el in mesh.Elements():
-        mesh.SetRefinementFlag(el, elerr[el.nr] > 0.25*maxerr)
+    # mark elements for refinement
+    mesh.ngmesh.Elements2D().NumPy()["refine"] = elerr.NumPy() > 0.25*maxerr
 
 
 with TaskManager():

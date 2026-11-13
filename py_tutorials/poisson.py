@@ -2,7 +2,6 @@
 # with Dirichlet boundary condition u = 0
 
 from ngsolve import *
-# from netgen.geom2d import unit_square
 
 ngsglobals.msg_level = 1
 
@@ -10,28 +9,18 @@ ngsglobals.msg_level = 1
 mesh = Mesh(unit_square.GenerateMesh(maxh=0.2))
 
 # H1-conforming finite element space
-fes = H1(mesh, order=3, dirichlet=[1,2,3,4])
+fes = H1(mesh, order=3)
 
 # define trial- and test-functions
-u = fes.TrialFunction()
-v = fes.TestFunction()
+u,v = fes.TnT()
 
 # the right hand side
-f = LinearForm(fes)
-f += 32 * (y*(1-y)+x*(1-x)) * v * dx
+f = 32 * (y*(1-y)+x*(1-x))
 
-# the bilinear-form 
-a = BilinearForm(fes, symmetric=True)
-a += grad(u)*grad(v)*dx
-
-a.Assemble()
-f.Assemble()
-
-# the solution field 
-gfu = GridFunction(fes)
-gfu.vec.data = a.mat.Inverse(fes.FreeDofs(), inverse="sparsecholesky") * f.vec
-# print (u.vec)
-
+# solve the variational equation,
+# Dirichlet conditions are given on named boundaries
+gfu = Solve(grad(u)*grad(v)*dx == f*v*dx,
+            u[BND("left|right|bottom|top")] == 0)
 
 # plot the solution (netgen-gui only)
 Draw (gfu)

@@ -27,33 +27,23 @@ mesh.Curve(5)
 
 ngsglobals.msg_level = 5
 
-fes = HCurl(mesh, order=4, dirichlet="outer", nograds = True)
+fes = HCurl(mesh, order=4, nograds = True)
 
 # u and v refer to trial and test-functions in the definition of forms below
-u = fes.TrialFunction()
-v = fes.TestFunction()
+u,v = fes.TnT()
 
 mur = mesh.MaterialCF({ "core" : 1000 }, default=1)
 mu0 = 1.257e-6
 nu = 1/(mu0*mur)
 
-a = BilinearForm(fes, symmetric=True)
-a += nu*curl(u)*curl(v)*dx + 1e-6*nu*u*v*dx
+# the variational equation, with the current density given in the coil
+lhs = nu*curl(u)*curl(v)*dx + 1e-6*nu*u*v*dx
+rhs = CF((y,0.05-x,0)) * v * dx("coil")
 
-c = Preconditioner(a, type="bddc")
-# c = Preconditioner(a, type="multigrid", flags = { "smoother" : "block" } )
-
-f = LinearForm(fes)
-f += CoefficientFunction((y,0.05-x,0)) * v * dx("coil")
-
-u = GridFunction(fes)
+# Dirichlet condition on the named boundary "outer",
+# solve by conjugate gradients with BDDC preconditioner
+gfu = Solve(lhs==rhs, u[BND("outer")]==(0,0,0),
+            preconditioners.BDDC(), solvers.CGSolver.Creator())
 
 
-with TaskManager():
-    a.Assemble()
-    f.Assemble()
-    solver = CGSolver(mat=a.mat, pre=c.mat)
-    u.vec.data = solver * f.vec
-
-
-Draw (u.Deriv(), mesh, "B-field", draw_surf=False)
+Draw (curl(gfu), mesh, "B-field", draw_surf=False)
