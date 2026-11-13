@@ -1,10 +1,19 @@
 import math
+import functools
 import numpy as np
 import ngsolve as ngs
 from typing import Optional
 from netgen.webgui import Draw, register_draw_type, WebGLScene, encodeData
 
-np.seterr(all='ignore', divide='ignore', invalid='ignore') # , over='ignore')  
+np.seterr(all='ignore', divide='ignore', invalid='ignore') # , over='ignore')
+
+def _with_taskmanager(func):
+    # parallel CF evaluation; no-op if a TaskManager is already running
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        with ngs.TaskManager():
+            return func(*args, **kwargs)
+    return wrapper
 
 def updatePMinMax( pmat, pmima=None ):
     pmima_new = [ngs.Vector(pmat[:,i], copy=False).MinMax(ignore_inf=True) for i in range(3)]
@@ -252,8 +261,9 @@ def GetNodalP1Data(encode, mesh, cf):
 
     timerp1.Stop()
     return d
-    
-    
+
+
+@_with_taskmanager
 def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, intpoints=None, deformation=None, regions=None, objects=[], nodal_p1=False, encoding='b64', settings={}):
     timer.Start()
 
@@ -562,6 +572,7 @@ def AddFieldLines(data: dict, add_data: dict):
 
     return data
 
+@_with_taskmanager
 def FieldLines(
     function: ngs.CoefficientFunction,
     start_region: Optional[ngs.Region] = None,
