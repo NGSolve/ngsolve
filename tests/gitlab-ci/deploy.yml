@@ -32,6 +32,9 @@ deploy_nightly:
     - bash
   script:
     - source tests/gitlab-ci/deploy/nightly.sh
+  retry:
+    max: 2
+    when: script_failure
   only:
     - schedules
   except:
