@@ -168,6 +168,7 @@ def plot(res, fname):
             ax.legend(handles=hs, loc="lower left", frameon=False, fontsize=5.6, handletextpad=0.1, borderpad=0.1, labelspacing=0.2)
     fig.subplots_adjust(left=0.045, right=0.985, bottom=0.185, top=0.895, wspace=0.27)
     fig.savefig(fname)
+    fig.savefig(os.path.splitext(fname)[0] + ".png", dpi=250)  # for the html note
 
 if __name__ == "__main__":
     cache = sys.argv[1] if len(sys.argv) > 1 else os.path.join(tempfile.gettempdir(), "tdnns_conv.json")

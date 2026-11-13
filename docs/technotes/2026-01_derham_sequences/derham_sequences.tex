@@ -31,6 +31,11 @@
  \draw[wf](A)--(B)--(E)--(D)--cycle;\draw[wf](D)--(F)--(E);\draw[wf](B)--(C)--(F);\draw[hd](A)--(C);\end{tikzpicture}}
 \newcommand{\hexic}{\begin{tikzpicture}[scale=0.8]\draw[wf](0,0)rectangle(0.9,0.9);\draw[wf](0.9,0)--(1.25,0.3)--(1.25,1.2)--(0.35,1.2)--(0,0.9);\draw[wf](0.9,0.9)--(1.25,1.2);
  \draw[hd](0,0)--(0.35,0.3)--(1.25,0.3);\draw[hd](0.35,0.3)--(0.35,1.2);\end{tikzpicture}}
+% html build: no tikz, css colors
+%html \renewcommand{\G}[1]{\textcolor{green}{\textbf{#1}}}\renewcommand{\B}[1]{\textcolor{blue}{\textbf{#1}}}
+%html \renewcommand{\tot}[1]{ZZBRZZ$=$\,\textbf{#1}}
+%html \renewcommand{\trigic}{trig}\renewcommand{\quadic}{quad}\renewcommand{\tetic}{tet}
+%html \renewcommand{\prismic}{prism}\renewcommand{\hexic}{hex}
 
 \title{\vspace{-1.2cm}High-Order de Rham Sequences on Mixed Meshes in NGSolve\\[2pt]
 \large The spaces \code{H1}, \code{HCurl}, \code{HDiv}, \code{L2}: orders, flags and degrees of freedom}
@@ -156,12 +161,12 @@ The following table lists the spaces for general order. \code{HCurl(k)} is \code
 \renewcommand{\arraystretch}{1.15}
 \begin{tabular}{@{}l>{\raggedright}p{7.0cm}>{\raggedright\arraybackslash}p{8.0cm}@{}}\toprule
  & \code{HCurl(k,type1)} & \code{HDiv(k,RT)}\\\midrule
-tet & N\'ed\'elec first kind, $\Pp_{k-1}^3 + x\times\tilde\Pp_{k-1}^3$ & Raviart--Thomas, $\Pp_k^3+x\,\tilde\Pp_k$\\
+tet & N\'ed\'elec first kind, $\Pp_{k-1}^3 + x\times\tilde{\Pp}_{k-1}^3$ & Raviart--Thomas, $\Pp_k^3+x\,\tilde{\Pp}_k$\\
 hex & $N_{[k-1]} = \Qq_{k-1,k,k}\times\Qq_{k,k-1,k}\times\Qq_{k,k,k-1}$ & RT$_{[k]}=\Qq_{k+1,k,k}\times\Qq_{k,k+1,k}\times\Qq_{k,k,k+1}$\\
 prism & $N^{\triangle}_k\otimes\Pp_k(z)$ horizontal, $\Pp_k(x,y)\otimes\Pp_{k-1}(z)$ vertical & RT$^{\triangle}_k\otimes\Pp_k(z)$ horizontal, $\Pp_k(x,y)\otimes\Pp_{k+1}(z)$ vertical\\\bottomrule
 \end{tabular}
 \end{center}
-Here $\tilde\Pp_k$ are the homogeneous polynomials, and $N^\triangle_k$, RT$^\triangle_k$ are the triangle spaces \code{HCurl(k,type1)} and \code{HDiv(k,RT)}.
+Here $\tilde{\Pp}_k$ are the homogeneous polynomials, and $N^\triangle_k$, RT$^\triangle_k$ are the triangle spaces \code{HCurl(k,type1)} and \code{HDiv(k,RT)}.
 \code{HDiv(k,BDM)} is the subspace of \code{HDiv(k,RT)} with divergence in \code{L2(k-1)}; on tets it is $\Pp_k^3$.
 Element dimensions for $k=1,2,3$:
 \begin{center}\small

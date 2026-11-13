@@ -61,8 +61,12 @@ if (NETGEN_USE_PYTHON)
     	"${SPHINX_OUTPUT_DIR}/latex"
     	COMMENT "Building Latex documentation with Sphinx")
 
-    # technotes/<nr>_<name>/<name>.tex -> html/technotes/<nr>_<name>.pdf
+    # technotes/<nr>_<name>/<name>.tex -> html/technotes/<nr>_<name>.pdf and .html
     find_program(LATEXMK_EXECUTABLE latexmk)
+    find_program(PANDOC_EXECUTABLE pandoc)
+    if(NOT PANDOC_EXECUTABLE)
+      message("pandoc not found, technotes html pages are not built")
+    endif()
     if(LATEXMK_EXECUTABLE)
       add_custom_target(technotes
         COMMAND ${CMAKE_COMMAND} -E make_directory "${SPHINX_OUTPUT_DIR}/html/technotes")
@@ -77,6 +81,12 @@ if (NETGEN_USE_PYTHON)
             COMMAND ${CMAKE_COMMAND} -E copy "${outdir}/${name}.pdf" "${SPHINX_OUTPUT_DIR}/html/technotes/${note}.pdf"
             WORKING_DIRECTORY "${dir}"
             COMMENT "Building technote ${note}")
+          if(PANDOC_EXECUTABLE)
+            add_custom_command(TARGET technotes POST_BUILD
+              COMMAND ${NETGEN_PYTHON_EXECUTABLE} "${CMAKE_CURRENT_SOURCE_DIR}/technotes/tex2html.py"
+                "${dir}/${name}.tex" "${SPHINX_OUTPUT_DIR}/html/technotes/${note}.html"
+              COMMENT "Building technote ${note} (html)")
+          endif()
         endif()
       endforeach()
       add_dependencies(docs technotes)
