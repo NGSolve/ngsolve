@@ -40,7 +40,7 @@ extensions = ["sphinx.ext.autodoc","sphinx.ext.mathjax","sphinx.ext.todo", "sphi
 
 # START nbsphinx stuff
 #increase timeout for cell execution, since some files take long to execute
-nbsphinx_timeout = 600
+nbsphinx_timeout = 1800
 
 # ipykernel >= 7 warns once per kernel that the client connection is plain TCP
 nbsphinx_execute_arguments = ["--log-level=ERROR"]
