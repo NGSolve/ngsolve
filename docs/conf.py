@@ -237,5 +237,35 @@ rst_epilog = """
 
 todo_include_todos = True
 
+# per-document read times (includes notebook execution), printed also with -q
+_doc_times = {}
+_doc_current = []
+
+def _doc_time_start(app, docname, source):
+    import time
+    _doc_current[:] = [docname, time.monotonic()]
+
+def _doc_time_stop(app, doctree):
+    import sys, time
+    name, start = _doc_current
+    _doc_current.clear()
+    t = _doc_times[name] = time.monotonic() - start
+    if t >= 1:
+        print(f"doc-time {t:8.1f} s  {name}", file=sys.stderr, flush=True)
+
+def _doc_time_summary(app, exception):
+    import sys, time
+    if _doc_current:
+        print(f"doc-time {time.monotonic()-_doc_current[1]:8.1f} s  {_doc_current[0]} (not finished)", file=sys.stderr)
+    if not _doc_times: return
+    ranked = sorted(_doc_times.items(), key=lambda kv: -kv[1])
+    print(f"doc-time total {sum(_doc_times.values()):.0f} s for {len(ranked)} documents, slowest:", file=sys.stderr)
+    for name, t in ranked[:30]:
+        print(f"doc-time {t:8.1f} s  {name}", file=sys.stderr)
+    sys.stderr.flush()
+
 def setup(app):
     app.add_css_file("custom.css")
+    app.connect('source-read', _doc_time_start)
+    app.connect('doctree-read', _doc_time_stop)
+    app.connect('build-finished', _doc_time_summary)
