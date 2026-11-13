@@ -238,34 +238,55 @@ rst_epilog = """
 todo_include_todos = True
 
 # per-document read times (includes notebook execution), printed also with -q
-_doc_times = {}
+# collected in a file, as parallel builds (-j) read in worker processes
 _doc_current = []
+
+def _doc_time_file(app):
+    import os
+    return os.path.join(app.doctreedir, "doc-times.txt")
+
+def _doc_time_init(app):
+    import os, time
+    os.makedirs(app.doctreedir, exist_ok=True)
+    with open(_doc_time_file(app), "w") as f:
+        f.write(f"B {time.time()} -\n")
 
 def _doc_time_start(app, docname, source):
     import time
-    _doc_current[:] = [docname, time.monotonic()]
+    _doc_current[:] = [docname, time.time()]
+    with open(_doc_time_file(app), "a") as f:
+        f.write(f"S {_doc_current[1]} {docname}\n")
 
 def _doc_time_stop(app, doctree):
     import sys, time
     name, start = _doc_current
-    _doc_current.clear()
-    t = _doc_times[name] = time.monotonic() - start
+    t = time.time() - start
+    with open(_doc_time_file(app), "a") as f:
+        f.write(f"T {t} {name}\n")
     if t >= 1:
         print(f"doc-time {t:8.1f} s  {name}", file=sys.stderr, flush=True)
 
 def _doc_time_summary(app, exception):
     import sys, time
-    if _doc_current:
-        print(f"doc-time {time.monotonic()-_doc_current[1]:8.1f} s  {_doc_current[0]} (not finished)", file=sys.stderr)
-    if not _doc_times: return
-    ranked = sorted(_doc_times.items(), key=lambda kv: -kv[1])
-    print(f"doc-time total {sum(_doc_times.values()):.0f} s for {len(ranked)} documents, slowest:", file=sys.stderr)
+    begin, started, times = time.time(), {}, {}
+    for line in open(_doc_time_file(app)):
+        kind, val, name = line.rstrip("\n").split(" ", 2)
+        if kind == "B": begin = float(val)
+        if kind == "S": started[name] = float(val)
+        if kind == "T": times[name] = float(val)
+    for name, start in started.items():
+        if name not in times:
+            print(f"doc-time {time.time()-start:8.1f} s  {name} (not finished)", file=sys.stderr)
+    ranked = sorted(times.items(), key=lambda kv: -kv[1])
+    print(f"doc-time total {sum(times.values()):.0f} s for {len(ranked)} documents, "
+          f"{time.time()-begin:.0f} s wall time, slowest:", file=sys.stderr)
     for name, t in ranked[:30]:
         print(f"doc-time {t:8.1f} s  {name}", file=sys.stderr)
     sys.stderr.flush()
 
 def setup(app):
     app.add_css_file("custom.css")
+    app.connect('builder-inited', _doc_time_init)
     app.connect('source-read', _doc_time_start)
     app.connect('doctree-read', _doc_time_stop)
     app.connect('build-finished', _doc_time_summary)

@@ -23,6 +23,11 @@ then
   export CMAKE_ARGS="$CMAKE_ARGS -DUSE_MPI=ON -DMKL_STATIC=ON -DMKL_SDL=OFF -DUSE_HYPRE=OFF -DUSE_MUMPS=OFF -DMKL_MULTI_THREADED=OFF -DUSE_GUI=OFF -DBUILD_STUB_FILES=OFF -DCHECK_RANGE=ON"
 fi
 
+if [ "$IMAGE_NAME" == "docu" ]
+then
+  export CMAKE_ARGS="$CMAKE_ARGS -DSPHINX_JOBS=4"
+fi
+
 cd 
 cd src/ngsolve
 cd external_dependencies

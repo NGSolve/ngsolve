@@ -37,13 +37,15 @@ if (NETGEN_USE_PYTHON)
       "${BINARY_BUILD_DIR}/conf.py"
       @ONLY)
 
+    set(SPHINX_JOBS 1 CACHE STRING "parallel jobs of sphinx-build, notebooks are executed concurrently")
+
     add_custom_target(docs
       COMMAND
       ${CMAKE_COMMAND} -E env NETGEN_DOCUMENTATION_RST_FORMAT=1
       ${CMAKE_COMMAND} -E env NETGEN_DOCUMENTATION_OUT_DIR="${SPHINX_OUTPUT_DIR}/html"
       ${CMAKE_COMMAND} -E env NETGEN_DOCUMENTATION_SRC_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
       ${SPHINX_EXECUTABLE}
-      -a -q -b html
+      -a -q -j ${SPHINX_JOBS} -b html
       -c "${BINARY_BUILD_DIR}"
       -d "${SPHINX_CACHE_DIR}"
       "${CMAKE_CURRENT_SOURCE_DIR}"
