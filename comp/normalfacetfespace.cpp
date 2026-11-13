@@ -785,11 +785,6 @@ namespace ngcomp
   }
 
 
-  shared_ptr<Table<int>> NormalFacetFESpace :: CreateSmoothingBlocks (const Flags & precflags) const
-  { 
-    return nullptr;
-  }
-
   shared_ptr<Array<int>> NormalFacetFESpace :: CreateDirectSolverClusters (const Flags & precflags) const
   {
     return nullptr;

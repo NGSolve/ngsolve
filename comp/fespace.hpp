@@ -131,6 +131,20 @@ ANY                  1 1 1 1 | 15
 
   
   /**
+     A type of smoothing blocks: the dofs of a node go into the blocks of
+     all anchor nodes in its closure, for nodes up to type maxnt.
+     anchor < 0: one block per element with all dofs of the element.
+     anchor == NT_ELEMENT: inner dofs, one block per element.
+  */
+  struct SmoothingBlockType
+  {
+    int anchor, maxnt;         // NODE_TYPE
+    bool periodic = false;     // merge blocks of periodic anchors
+    optional<string> dofset;   // only dofs selected by FESpace::SelectDofs
+  };
+
+  
+  /**
      Base class for finite element space.
      Provides finite elements, global degrees of freedom, 
      and transformations of element-matrices and element-vectors
@@ -614,8 +628,18 @@ ANY                  1 1 1 1 | 15
     bool IsDirichletFace (size_t i) const { return dirichlet_face.Size() && dirichlet_face[i]; }
 
     void GetFilteredDofs(COUPLING_TYPE doffilter, BitArray & output, bool freedofsonly=true) const;
-    /// 
-    virtual shared_ptr<Table<int>> CreateSmoothingBlocks (const Flags & flags) const;
+    /// blocks for block-Jacobi / block-Gauss-Seidel, flag blocktype
+    shared_ptr<Table<int>> CreateSmoothingBlocks (const Flags & flags) const;
+    /// free dofs respecting condense, subassembled and additional constraints
+    shared_ptr<BitArray> GetSmoothingFreeDofs (const Flags & flags) const;
+    /// blocks from named types: vertex, edge, vertexpatch, ...
+    shared_ptr<Table<int>> CreateGenericSmoothingBlocks (FlatArray<string> blocktypes,
+                                                         shared_ptr<BitArray> freedofs) const;
+    /// blocks of the given types, in this order
+    shared_ptr<Table<int>> CreateGenericSmoothingBlocks (FlatArray<SmoothingBlockType> types,
+                                                         shared_ptr<BitArray> freedofs) const;
+    /// space-specific blocks, if no named blocktype is given (nullptr: vertexpatch)
+    virtual shared_ptr<Table<int>> CreateSpecificSmoothingBlocks (const Flags & flags) const;
     /// for anisotropic plane smoothing:
     virtual shared_ptr<Array<int>> CreateDirectSolverClusters (const Flags & flags) const
     { return nullptr; }

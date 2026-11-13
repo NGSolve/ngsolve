@@ -1508,297 +1508,74 @@ into the wirebasket.
 
   
   shared_ptr<Table<int>> H1HighOrderFESpace :: 
-  CreateSmoothingBlocks (const Flags & precflags) const
+  CreateSpecificSmoothingBlocks (const Flags & precflags) const
   {
-    if (precflags.StringFlagDefined("blocktype") || precflags.StringListFlagDefined("blocktype"))
-      return FESpace::CreateSmoothingBlocks(precflags);
-
-    
     static Timer t("H1HighOrderFESpace :: CreateSmoothingBlocks");
     RegionTimer reg(t);
 
     bool eliminate_internal = precflags.GetDefineFlag("eliminate_internal");
     bool subassembled = precflags.GetDefineFlag("subassembled");
-    // smoothing_types: 
-    // 1: 2d V + E + I 
-    // 2: 2d VE + I 
-    // 3: V + E + F + I 
-    // 4: VE + F + I 
-    // 5: VE + FI 
-    // 6: VEF + I 
-    // 7: VEFI 
-    // 8: V + E + FI 
-    // 9: V + EF + I 
-    // 10:V + EF + FI 
 
     int smoothing_type = int(precflags.GetNumFlag("blocktype",4)); 
     if (subassembled) smoothing_type = 51;
+
+    cout << IM(4) << " blocktype " << smoothing_type << endl;
+
+    auto freedofs = GetSmoothingFreeDofs(precflags);
+
+    /*
+      combinations of vertex (V), edge (E), face (F) and inner (I) dofs:
+      1: V + E + I      2: VE + I       3: V + E + F + I
+      4: VE + F + I     5: VE + FI      6: VEF + I
+      7: VEFI           8: V + E + FI   9: V + EF + I
+      20: VE + EF + I
+      a group collects the dofs around its first node type
+    */
+    {
+      int dim = ma->GetDimension();
+      Array<SmoothingBlockType> types;
+      // nodes below the cell only, the inner dofs are I
+      auto add = [&] (int anchor, int maxnt)
+      {
+        if (anchor < dim)
+          types += SmoothingBlockType { anchor, min(maxnt, dim-1) };
+      };
+      auto addI = [&] ()
+      {
+        if (!eliminate_internal)
+          types += SmoothingBlockType { NT_ELEMENT, NT_ELEMENT };
+      };
+      auto addFI = [&] () { types += SmoothingBlockType { NT_FACE, NT_CELL }; };
+      
+      bool generic = true;
+      switch (smoothing_type)
+        {
+        case 1: add(NT_VERTEX, NT_VERTEX); add(NT_EDGE, NT_EDGE); addI(); break;
+        case 2: add(NT_VERTEX, NT_EDGE); addI(); break;
+        case 3: add(NT_VERTEX, NT_VERTEX); add(NT_EDGE, NT_EDGE); add(NT_FACE, NT_FACE); addI(); break;
+        case 4: add(NT_VERTEX, NT_EDGE); add(NT_FACE, NT_FACE); addI(); break;
+        case 5: add(NT_VERTEX, NT_EDGE); addFI(); break;
+        case 6: add(NT_VERTEX, NT_FACE); addI(); break;
+        case 7: types += SmoothingBlockType { NT_VERTEX, NT_CELL }; break;
+        case 8: add(NT_VERTEX, NT_VERTEX); add(NT_EDGE, NT_EDGE); addFI(); break;
+        case 9: add(NT_VERTEX, NT_VERTEX); add(NT_EDGE, NT_FACE); addI(); break;
+        case 20: add(NT_VERTEX, NT_EDGE); add(NT_EDGE, NT_FACE); addI(); break;
+        default: generic = false;
+        }
+      if (generic)
+        return CreateGenericSmoothingBlocks (types, freedofs);
+    }
 
     size_t nv = ma->GetNV();
     size_t ned = ma->GetNEdges();
     size_t nfa = (ma->GetDimension() == 2) ? 0 : ma->GetNFaces();
     size_t ni = (eliminate_internal) ? 0 : ma->GetNE(); 
-   
-    cout << IM(4) << " blocktype " << smoothing_type << endl;
-    // cout << " Use H1-Block Smoother:  "; 
-
-    auto freedofs = GetFreeDofs();
-    if (precflags.AnyFlagDefined("additional_dirichlet_constraints"))
-      {
-        Region reg = std::any_cast<Region>(precflags.GetAnyFlag("additional_dirichlet_constraints"));
-        BitArray dofs = GetDofs(reg);
-        dofs.Invert();
-        dofs.And(*freedofs);
-        freedofs = make_shared<BitArray>(std::move(dofs));
-      }
-    
     
     FilteredTableCreator creator(freedofs.get());
     for ( ; !creator.Done(); creator++)
       {
 	switch (smoothing_type)
 	  {
-
-	  case 1:  // 2d: V + E + I
-		
-	    if (creator.GetMode() == 1)
-              {
-                cout << " V + E + I " << endl;
-                creator.SetSize(nv+ned+ni);
-                continue;
-              }
-            /*
-	    for (size_t i = 0; i < nv; i++)
-	      creator.Add (i, i);
-	    for (size_t i = 0; i < ned; i++)
-	      creator.Add (nv+i, GetEdgeDofs(i));
-	    for (size_t i = 0; i < ni; i++)
-	      creator.Add (nv+ned+i, GetElementDofs(i));
-            */
-
-            ParallelFor (nv, [&creator] (size_t i)
-                         { creator.Add (i,i); });
-            ParallelFor (ned, [&creator,nv,this] (size_t i)
-                         { creator.Add (nv+i, GetEdgeDofs(i)); });
-            ParallelFor (ni, [&creator,nv,ned,this] (size_t i)
-                         { creator.Add (nv+ned+i, GetElementDofs(i)); });
-	    break; 
-		
-	  case 2: // 2d VE + I
-
-	    if (creator.GetMode() == 1)
-              {
-                cout << " 2d VE + I " << endl;
-                creator.SetSize(nv+ned+ni);
-                continue;
-              }
-
-	    for (int i = 0; i < nv; i++)
-	      creator.Add(i, i);
-
-	    for (auto i : Range(ned))
-              for (auto v : ma->GetEdgePNums(i))
-                creator.Add (v, GetEdgeDofs(i));
-		
-	    for (int i = 0; i < ni; i++)
-	      creator.Add (nv+ned+i, GetElementDofs(i));
-		
-	    break;
-
-
-	  case 3: // V + E + F + I
-		
-	    if (creator.GetMode() == 1)
-	      cout << " V + E + F + I " << endl; 
-
-	    for (int i = 0; i < nv; i++)
-	      creator.Add(i, i);
-
-	    for (int i = 0; i < ned; i++)
-	      creator.Add (nv+i, GetEdgeDofs(i));
-
-	    for (int i = 0; i < nfa; i++)
-	      creator.Add(nv+ned+i, GetFaceDofs(i));
-
-	    for (int i = 0; i < ni; i++)
-	      creator.Add (nv+ned+nfa+i, GetElementDofs(i));
-	    
-	    break; 
-
-	  case 4: // VE + F + I
-		
-            if (creator.GetMode() == 1)
-              {
-                cout << IM(4) << " VE + F + I " << endl;
-                creator.SetSize(nv+nfa+ni);
-                break;
-              }
-            
-            ParallelFor (nv, [&creator] (size_t i)
-              { creator.Add(i, i); });
-		
-            ParallelFor (ned, [&creator,this,&ma=*ma] (size_t i)
-              {
-                for (auto v : ma.GetEdgePNums(i))
-                  creator.Add (v, GetEdgeDofs(i));
-              });
-	    
-            for (int i = 0; i < nfa; i++)
-              creator.Add(nv+i, GetFaceDofs(i));
-	    
-            ParallelFor (ni, [&] (size_t i)
-              { creator.Add (nv+nfa+i, GetElementDofs(i)); });
-		
-	    break; 
-
-	  case 5: // VE + FI
-
-	    if (creator.GetMode() == 1)
-	      cout << " VE + FI " << endl; 
-
-	    for (int i = 0; i < nv; i++)
-	      creator.Add(i, i);
-		
-	    for (int i = 0; i < ned; i++)
-              for (auto v : ma->GetEdgePNums(i))
-                creator.Add (v, GetEdgeDofs(i));
-	    
-	    for (int i = 0; i < nfa; i++)
-	      creator.Add(nv+i, GetFaceDofs(i));
-
-	    for (size_t i = 0; i < ni; i++)
-              for (auto f : ma->GetElement( { VOL, i } ).Faces())
-                creator.Add (nv+f, GetElementDofs(i));                  
-
-	    break; 
-
-
-	  case 6: // VEF + I
-
-	    if (creator.GetMode() == 1)
-	      cout << " VEF + I " << endl; 
-
-	    for (int i = 0; i < nv; i++)
-	      creator.Add (i, i);
-		
-	    for (int i = 0; i < ned; i++)
-	      {
-		Ng_Node<1> edge = ma->GetNode<1> (i);
-		for (int k = 0; k < 2; k++)
-		  creator.Add (edge.vertices[k], GetEdgeDofs(i));
-	      }
-	    
-		
-	    for (int i = 0; i < nfa; i++)
-	      {
-		Ng_Node<2> face = ma->GetNode<2> (i);
-		for (int k = 0; k < face.vertices.Size(); k++)
-		  creator.Add (face.vertices[k], GetFaceDofs(i));
-	      }
-	    
-	    for (int i = 0; i < ni; i++)
-	      creator.Add (nv+i, GetElementDofs(i));
-		
-	    break; 
-
-	  case 7: // VEFI
-
-	    if (creator.GetMode() == 1)
-	      cout << " VEFI " << endl; 
-
-	    for (int i = 0; i < nv; i++)
-	      creator.Add (i, i);
-		
-	    for (int i = 0; i < ned; i++)
-	      {
-		Ng_Node<1> edge = ma->GetNode<1> (i);
-		for (int k = 0; k < 2; k++)
-		  creator.Add (edge.vertices[k], GetEdgeDofs(i));
-	      }
-
-	    for (int i = 0; i < nfa; i++)
-	      {
-		Ng_Node<2> face = ma->GetNode<2> (i);
-		for (int k = 0; k < face.vertices.Size(); k++)
-		  creator.Add (face.vertices[k], GetFaceDofs(i));
-	      }
-	    
-	    for (int i = 0; i < ni; i++)
-              for (auto v : ma->GetElement(ElementId(VOL,i)).Vertices())
-                creator.Add (v, GetElementDofs(i));
-
-	    break; 
-	    
-	  case 8: // V + E + FI
-	    if (creator.GetMode() == 1)
-	      cout << " V + E + FI " << endl; 
-		
-	    for (int i = 0; i < nv; i++)
-	      creator.Add (i, i);
-		
-	    for (int i = 0; i < ned; i++)
-	      creator.Add (nv+i, GetEdgeDofs(i));
-		
-	    for (int i = 0; i < nfa; i++)
-	      creator.Add(nv+ned+i, GetFaceDofs(i));
-		
-	    for (int i = 0; i < ni; i++)
-	      for (int f : ma->GetElement(ElementId(VOL,i)).Faces())
-		creator.Add (nv+ned+f, GetElementDofs(i));                  
-
-	    break;
-
-
-	  case 9: // V + EF + I
-	    {
-	      if (creator.GetMode() == 1)
-                {
-                  cout << " V + EF + I " << endl; 
-		  creator.SetSize(nv+ned+ni);
-                  continue;
-                }
-
-              ParallelFor (nv, [&] (size_t i)
-                           { creator.Add(i,i); });
-              
-              ParallelFor (ned, [&] (size_t i) 
-                           { creator.Add(nv+i,GetEdgeDofs(i)); });
-              
-              ParallelFor (nfa, [&] (size_t i) 
-                           {
-                             for (auto edge : ma->GetFaceEdges(i))
-                               creator.Add (nv+edge, GetFaceDofs(i));                                   
-                           });
-              
-              ParallelFor (ni, [&] (size_t i) 
-                           { creator.Add(nv+ned+i,GetElementDofs(i)); });
-              
-              
-                  /*
-                  for (int i = 0; i < nv; i++)
-                    creator.Add (i, i);
-                  
-                  for (int i = 0; i < ned; i++)
-                    creator.Add (nv+i, GetEdgeDofs(i));
-                  
-                  for (int i = 0; i < nfa; i++)
-                    {
-                      // Ng_Node<2> face = ma->GetNode<2> (i);
-                      // for (int k = 0; k < face.edges.Size(); k++)
-                      // creator.Add (face.edges[k], GetFaceDofs(i));
-                      
-                      ArrayMem<int,4> f2ed;
-                      ma->GetFaceEdges (i, f2ed);
-                      for (int k = 0; k < f2ed.Size(); k++)
-                        creator.Add (nv+f2ed[k], GetFaceDofs(i));
-                    }
-                  
-                  for (int i = 0; i < ni; i++)
-                    creator.Add (nv+ned+i, GetElementDofs(i));
-                  */
-            break; 
-          }
-        
 
 	  case 10: 
 	    if (creator.GetMode() == 1)
@@ -1894,31 +1671,6 @@ into the wirebasket.
 	      }
 	    break; 
 
-	  case 20: // VE + EF + I
-	    {
-	      if (creator.GetMode() == 1)
-		cout << "VE + EF + I" << endl;
-		  
-	      for (int i = 0; i < nv; i++)
-		creator.Add (i, i);
-		  
-	      for (int i = 0; i < ned; i++)
-		{
-		  creator.Add (nv+i, GetEdgeDofs(i));
-		  Ng_Node<1> edge = ma->GetNode<1> (i);
-		  for (int k = 0; k < 2; k++)
-		    creator.Add (edge.vertices[k], GetEdgeDofs(i));
-		}
-	      
-	      for (auto face : Range(nfa))
-                for (auto edge : ma->GetFaceEdges(face))
-                  creator.Add (nv+edge, GetFaceDofs(face));
-	      
-	      for (int i = 0; i < ni; i++)
-		creator.Add (nv+ned+i, GetElementDofs(i));
-	      break;
-	    }
-	    
 	  case 21: // E + F 
 	  {
 	    if (creator.GetMode() == 1)

@@ -1473,15 +1473,8 @@ namespace ngcomp
   //  1) 2d-Vertex / 3d-Edge blocks + F + I  --- default
   //  2) 2d: edge by edge,  3d: face by face
 
-  shared_ptr<Table<int>> HDivHighOrderFESpace :: CreateSmoothingBlocks (const Flags & precflags) const
+  shared_ptr<Table<int>> HDivHighOrderFESpace :: CreateSpecificSmoothingBlocks (const Flags & precflags) const
   {
-    {
-      // auto blocktype = precflags.GetStringFlag ("blocktype", "");
-      // if (blocktype == "edgepatch" || blocktype == "facepatch" || blocktype == "vertexpatch")
-      if (precflags.StringFlagDefined("blocktype") || precflags.StringListFlagDefined("blocktype"))
-        return FESpace::CreateSmoothingBlocks(precflags);
-    }
-    
     int first;
     int ncnt = 0;
     // int ni = ma->GetNE(); //nel;
@@ -1675,6 +1668,8 @@ namespace ngcomp
 		for ( int l = first; l < last; l++ )
 		  table[offset + i ] [cnt[offset+i]++] = l;
 	      }
+
+	    offset += ned;
 
 	    for (int i = 0; i < nel; i++ )
 	      {

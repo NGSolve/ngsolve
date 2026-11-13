@@ -353,7 +353,7 @@ namespace ngcomp
   }
 
   
-  shared_ptr<Table<int>> TPHighOrderFESpace::CreateSmoothingBlocks (const Flags & precflags) const
+  shared_ptr<Table<int>> TPHighOrderFESpace::CreateSpecificSmoothingBlocks (const Flags & precflags) const
   {
     throw Exception("TPHighOrderFESpace::CreateSmoothingBlocks() not implemented");
   }

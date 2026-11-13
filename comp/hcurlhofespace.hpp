@@ -129,7 +129,7 @@ namespace ngcomp
     const BitArray & GetGradientDomains() const { return gradientdomains; }
     const BitArray & GetGradientBoundaries() const { return gradientboundaries; }
     
-    virtual shared_ptr<Table<int>> CreateSmoothingBlocks (const Flags & precflags) const override;
+    virtual shared_ptr<Table<int>> CreateSpecificSmoothingBlocks (const Flags & precflags) const override;
   
     //virtual BitArray * CreateIntermediatePlanes (int type = 0) const;
     ///

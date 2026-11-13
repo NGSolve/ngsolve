@@ -418,9 +418,9 @@ namespace ngcomp
       "  If coarsetype is smoothing, then how many smoothingsteps will be done.";
 
     docu.Arg("updatealways") = "bool = False\n";
-    docu.Arg("blocktype") = "str = vertexpatch\n"
-      "  Blocktype used in compound FESpace for smoothing\n"
-      "  blocks. Options: vertexpatch, edgepatch";
+    docu.Arg("blocktype") = "str | [str] | int = undefined\n"
+      "  blocks of the block smoother, e.g. 'vertexpatch' or 'edgepatch',\n"
+      "  see FESpace.CreateSmoothingBlocks";
     
     
     /*
@@ -733,11 +733,14 @@ namespace ngcomp
 )raw_string";      
     
     docu.Arg("block") = "bool = false\n"
-      "  use block Jacobi/Gauss-Seidel";
+      "  use block Jacobi/Gauss-Seidel with the default blocks of the space";
     docu.Arg("GS") = "bool = false\n"
-      "  use Gauss-Seidel instead of Jacobi";
-    docu.Arg("blocktype") = "string = undefined\n"
-      "  uses block Jacobi with blocks defined by space";
+      "  use (symmetric) Gauss-Seidel instead of Jacobi";
+    docu.Arg("blocktype") = "str | [str] | int = undefined\n"
+      "  use block Jacobi/Gauss-Seidel with these blocks,\n"
+      "  e.g. 'vertexpatch' or ['vertexedge','face'], see FESpace.CreateSmoothingBlocks";
+    docu.Arg("blockcreator") = "function = undefined\n"
+      "  function fes -> block table, used if no named blocktype is given";
     
     return docu;    
   }
@@ -755,83 +758,37 @@ namespace ngcomp
       timestamp = bfa->GetTimeStamp();
       jacobi = nullptr;
 
-      if (flags.StringFlagDefined("blocktype") || flags.StringListFlagDefined("blocktype"))
+      shared_ptr<BaseMatrix> bfmat = bfa->GetMatrixPtr();
+#ifdef PARALLEL
+      if (auto parmat = dynamic_pointer_cast<ParallelMatrix> (bfmat))
+        bfmat = parmat->GetMatrix();
+#endif
+      auto spmat = dynamic_pointer_cast<BaseSparseMatrix> (bfmat);
+      if (!spmat)
+        throw Exception ("LocalPreconditioner needs a sparse matrix");
+
+      bool namedblocks = flags.StringFlagDefined("blocktype") || flags.StringListFlagDefined("blocktype");
+      bool spaceblocks = namedblocks || block || int (flags.GetNumFlag ("blocktype", -1)) >= 0;
+
+      if (spaceblocks || blockcreator)
         {
-          if (additional_dirichlet_boundaries.Size())          
-            flags.SetFlag ("additional_dirichlet_boundaries", std::any(additional_dirichlet_boundaries));
-          
-          auto blocks = bfa->GetFESpace()->CreateSmoothingBlocks(flags);
-          shared_ptr<BaseMatrix> mat = bfa->GetMatrixPtr();          
-          auto spmat = dynamic_pointer_cast<BaseSparseMatrix> (mat);
+          shared_ptr<Table<int>> blocks;
+          if (blockcreator && !namedblocks)
+            blocks = blockcreator(*bfa->GetFESpace());
+          else
+            {
+              if (additional_dirichlet_boundaries.Size())          
+                flags.SetFlag ("additional_dirichlet_boundaries", std::any(additional_dirichlet_boundaries));
+              blocks = bfa->GetFESpace()->CreateSmoothingBlocks(flags);
+            }
           
           if (GaussSeidel)
             jacobi = make_shared<SymmetricBlockGaussSeidelPrecond>(spmat, blocks);
           else
             jacobi = spmat -> CreateBlockJacobiPrecond(blocks);
-
-            /*
-            jacobi = dynamic_cast<const BaseSparseMatrix&> (bfa->GetMatrix())
-              .CreateBlockJacobiPrecond(blocks);
-            */
-          return;
-        }
-
-
-      
-      int blocktype = int (flags.GetNumFlag ( "blocktype", -1));
-      
-      // if (MyMPI_GetNTasks() != 1) return;
-      bool parallel = (this->on_proc == -1);
-      /*
-        if ( !parallel && id != this->on_proc )
-        {
-	jacobi = 0; 
-	return;
-        }
-      */
-
-//     BaseBlockJacobiPrecond::COARSE_TYPE bbct;
-//     switch ( ct  )
-//       {
-//       case NO_COARSE:
-// 	bbct = NO_COARSE; break;
-//       case DIRECT_COARSE:
-// 	bbct = DIRECT_COARSE; break;
-//       }
-
-      if (blockcreator)
-        {
-          shared_ptr<Table<int>> blocks = blockcreator(*bfa->GetFESpace());
-          // cout << "created blocks: " << *blocks << endl;
-          jacobi = dynamic_cast<const BaseSparseMatrix&> (bfa->GetMatrix())
-            .CreateBlockJacobiPrecond(blocks); // , 0, parallel, bfa->GetFESpace()->GetFreeDofs());
-          return;
-        }
-      
-      if ( block && blocktype == -1 ) blocktype = 0;
-      if ( blocktype >= 0 )
-        {
-          // new: blocktypes, specified in fespace
-          if (bfa->UsesEliminateInternal())
-            flags.SetFlag("eliminate_internal");
-          shared_ptr<Table<int>> blocks = bfa->GetFESpace()->CreateSmoothingBlocks(flags);
-          jacobi = dynamic_cast<const BaseSparseMatrix&> (bfa->GetMatrix())
-            .CreateBlockJacobiPrecond(blocks, 0, parallel, bfa->GetFESpace()->GetFreeDofs());
-        }
-      else if (block)
-        {
-          cout << "\nFlag block deprecated: use -blocktype=<typeno> instead" << endl;
         }
       else
         {
-          shared_ptr<BaseMatrix> mat = bfa->GetMatrixPtr();
-#ifdef PARALLEL
-          if (dynamic_pointer_cast<ParallelMatrix> (mat))
-            mat = dynamic_pointer_cast<ParallelMatrix> (mat)->GetMatrix();
-#endif
-
-          auto spmat = dynamic_pointer_cast<BaseSparseMatrix> (mat);
-          // auto inner = bfa->GetFESpace()->GetFreeDofs(bfa->UsesEliminateInternal());
           auto inner = this->GetFreeDofs(bfa->UsesEliminateInternal());
           if (GaussSeidel)
             jacobi = make_shared<SymmetricGaussSeidelPrecond>(spmat, inner);

@@ -1449,7 +1449,7 @@ global system.
   }
 
   shared_ptr<Table<int>> L2HighOrderFESpace ::
-  CreateSmoothingBlocks (const Flags & precflags) const
+  CreateSpecificSmoothingBlocks (const Flags & precflags) const
   {
     size_t nel = ma->GetNE();
     Array<int> cnt(nel);
@@ -2915,8 +2915,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
                      });
   }
   shared_ptr<Table<int>> L2SurfaceHighOrderFESpace ::
-  // CreateSmoothingBlocks ( int type) const
-  CreateSmoothingBlocks (const Flags & precflags) const
+  CreateSpecificSmoothingBlocks (const Flags & precflags) const
   {
     int i, j, first;
     size_t nel = ma->GetNE(BND);

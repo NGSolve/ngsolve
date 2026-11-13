@@ -1342,7 +1342,7 @@ for the two neighbouring elements. This allows a simple implementation of the Le
   }
   
   // ------------------------------------------------------------------------
-  shared_ptr<Table<int>> FacetFESpace :: CreateSmoothingBlocks (const Flags & precflags) const
+  shared_ptr<Table<int>> FacetFESpace :: CreateSpecificSmoothingBlocks (const Flags & precflags) const
   {
     if (all_dofs_together)
       throw Exception("FacetFESpace ::CreateSmoothingBlocks not implemented for case all_dofs_together!");
@@ -1369,7 +1369,7 @@ for the two neighbouring elements. This allows a simple implementation of the Le
         table[i-ncfa][0] = i-ncfa;
         ii=1;
         for (int j = first_facet_dof[i]; j < first_facet_dof[i+1]; j++, ii++)
-          table[i][ii] = j;
+          table[i-ncfa][ii] = j;
       }
       
     // cout << "smoothingblocks = " << endl << table << endl;
@@ -1606,7 +1606,7 @@ for the two neighbouring elements. This allows a simple implementation of the Le
       }
   }
 
-  shared_ptr<Table<int>> HybridDGFESpace :: CreateSmoothingBlocks (const Flags & precflags) const
+  shared_ptr<Table<int>> HybridDGFESpace :: CreateSpecificSmoothingBlocks (const Flags & precflags) const
   {
     bool eliminate_internal = precflags.GetDefineFlag("eliminate_internal");
     bool subassembled = precflags.GetDefineFlag("subassembled");

@@ -109,7 +109,7 @@ namespace ngcomp
       return (first_facet_dof[felnr+1]-first_facet_dof[felnr] + (all_dofs_together ? 0 : 1) );
     }
     ///
-    virtual shared_ptr<Table<int>> CreateSmoothingBlocks (const Flags & precflags) const override;
+    virtual shared_ptr<Table<int>> CreateSpecificSmoothingBlocks (const Flags & precflags) const override;
     ///
     virtual shared_ptr<Array<int>> CreateDirectSolverClusters (const Flags & precflags) const override;
 
@@ -172,7 +172,7 @@ namespace ngcomp
     virtual string GetClassName () const override { return "HybridDGFESpace"; }
 
     virtual shared_ptr<Array<int>> CreateDirectSolverClusters (const Flags & flags) const override;
-    virtual shared_ptr<Table<int>> CreateSmoothingBlocks (const Flags & precflags) const override;
+    virtual shared_ptr<Table<int>> CreateSpecificSmoothingBlocks (const Flags & precflags) const override;
   };
 
 }

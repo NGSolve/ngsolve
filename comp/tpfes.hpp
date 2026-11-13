@@ -110,7 +110,7 @@ namespace ngcomp
     
     virtual void GetDofNrs(ngfem::ElementId ei, ngstd::Array<int>& dnums) const override;
     ///
-    virtual shared_ptr<Table<int>> CreateSmoothingBlocks (const Flags & precflags) const override;
+    virtual shared_ptr<Table<int>> CreateSpecificSmoothingBlocks (const Flags & precflags) const override;
     /// 
     void ReduceToXSpace(shared_ptr<GridFunction> gf_in, shared_ptr<GridFunction> gf_out,LocalHeap & lh,const function<void(shared_ptr<FESpace>,const FiniteElement &, const ElementTransformation & ,FlatVector<>,FlatVector<>,LocalHeap&)> & func);
     void ProlongateFromXSpace(shared_ptr<GridFunction> gf_in, shared_ptr<GridFunction> gf_out, LocalHeap & lh);

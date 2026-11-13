@@ -1673,7 +1673,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
 
-  shared_ptr<Table<int>> FESpace :: CreateSmoothingBlocks (const Flags & flags) const
+  shared_ptr<BitArray> FESpace :: GetSmoothingFreeDofs (const Flags & flags) const
   {
     bool eliminate_internal =
       flags.GetDefineFlag("eliminate_internal") ||
@@ -1699,472 +1699,414 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
     if (flags.AnyFlagDefined("additional_dirichlet_boundaries"))
       {
-        // cout << "got additional_dirichlet_boundaries" << endl;
         auto dirbcs = std::any_cast<Array<DirichletBoundary>>(flags.GetAnyFlag("additional_dirichlet_boundaries"));
         freedofs = make_shared<BitArray>(*freedofs);
         for (auto dbc : dirbcs)
           {
-            // cout << "dirichlet bc: " << dbc.vbn << endl;
             Region reg(ma, dbc.vbn.vb, dbc.vbn.name);
             BitArray dofs = GetDofs(reg, dbc.proxy->Evaluator().get());
-            // cout << "subspace dofs = " << dofs << endl;
             dofs.Invert();
             freedofs->And(dofs);
           }
       }
-
-    FilteredTableCreator creator(freedofs.get());
-
-    /*
-    for ( ; !creator.Done(); creator++)
-      {
-	for (size_t i = 0; i < nd; i++)
-	  if (freedofs->Test(i))
-	    creator.Add (i, i);
-      }
-    */
+    return freedofs;
+  }
 
 
-    // new version for ngs24:
+  shared_ptr<Table<int>> FESpace :: CreateSmoothingBlocks (const Flags & aflags) const
+  {
+    static Timer t("FESpace::CreateSmoothingBlocks");
+    RegionTimer reg(t);
+
+    Flags flags(aflags);
+    if (flags.GetDefineFlag("condense"))
+      flags.SetFlag("eliminate_internal");
+
+    auto freedofs = GetSmoothingFreeDofs(flags);
 
     Array<string> blocktypes { flags.GetStringListFlag("blocktype") };
-    std::map<string, optional<string>> filtered_blocktypes;
-    
-    if (flags.GetStringFlag("blocktype")=="vertex" ||
-        flags.GetStringFlag("blocktype")=="edge" ||
-        flags.GetStringFlag("blocktype")=="face" ||
-        flags.GetStringFlag("blocktype")=="facet" ||
-        flags.GetStringFlag("blocktype")=="element" ||        
-        flags.GetStringFlag("blocktype")=="vertexpatch" ||
-        flags.GetStringFlag("blocktype")=="edgepatch" ||                
-        flags.GetStringFlag("blocktype")=="vertexedge")
+    if (flags.StringFlagDefined("blocktype"))
       blocktypes += flags.GetStringFlag("blocktype");
+
+    shared_ptr<Table<int>> blocks;
+    if (blocktypes.Size())
+      blocks = CreateGenericSmoothingBlocks (blocktypes, freedofs);
+    else
+      {
+        blocks = CreateSpecificSmoothingBlocks (flags);
+        if (!blocks)
+          {
+            blocktypes += string("vertexpatch");
+            blocks = CreateGenericSmoothingBlocks (blocktypes, freedofs);
+          }
+        else
+          {
+            // space-specific tables may contain constrained dofs
+            Array<int> cnt(blocks->Size());
+            size_t removed = 0;
+            for (auto i : Range(blocks->Size()))
+              {
+                int c = 0;
+                for (auto d : (*blocks)[i])
+                  {
+                    if (d < 0 || d >= GetNDof())
+                      throw Exception("CreateSmoothingBlocks: dof "+ToString(d)+" in block "+ToString(i)+" out of range");
+                    if (freedofs->Test(d)) c++;
+                  }
+                cnt[i] = c;
+                removed += (*blocks)[i].Size()-c;
+              }
+            if (removed)
+              {
+                auto filtered = make_shared<Table<int>> (cnt);
+                for (auto i : Range(blocks->Size()))
+                  {
+                    int j = 0;
+                    for (auto d : (*blocks)[i])
+                      if (freedofs->Test(d))
+                        (*filtered)[i][j++] = d;
+                  }
+                blocks = filtered;
+              }
+          }
+      }
+
+    if (print)
+      *testout << "smoothing blocks = " << endl << *blocks << endl;
+    return blocks;
+  }
+
+
+  shared_ptr<Table<int>> FESpace :: CreateSpecificSmoothingBlocks (const Flags & flags) const
+  {
+    return nullptr;
+  }
+
+
+  shared_ptr<Table<int>> FESpace ::
+  CreateGenericSmoothingBlocks (FlatArray<string> blocktypes, shared_ptr<BitArray> freedofs) const
+  {
+    int dim = ma->GetDimension();
+    Array<SmoothingBlockType> types;
     
     for (auto fulltype : blocktypes)
       {
         auto pos = fulltype.find(':');
-        string type, filter;
-        if (pos != std::string::npos)
+        string name = fulltype.substr(0, pos);
+
+        SmoothingBlockType type;
+        if (name == "vertex")           type = { NT_VERTEX, NT_VERTEX };
+        else if (name == "edge")        type = { NT_EDGE, NT_EDGE };
+        else if (name == "face")        type = { NT_FACE, NT_FACE };
+        else if (name == "facet")       type = { dim-1, dim-1 };
+        else if (name == "cell")        type = { NT_CELL, NT_CELL };
+        else if (name == "inner")       type = { NT_ELEMENT, NT_ELEMENT };
+        else if (name == "element")     type = { -1, -1 };
+        else if (name == "vertexedge")  type = { NT_VERTEX, NT_EDGE };
+        else if (name == "vertexpatch") type = { NT_VERTEX, NT_CELL };
+        else if (name == "edgepatch")   type = { NT_EDGE, NT_CELL };
+        else if (name == "facepatch")   type = { NT_FACE, NT_CELL };
+        else
+          throw Exception("FESpace::CreateSmoothingBlocks type '"+name+"' not available, available types are:\n"
+                          "vertex ... dofs of a vertex\n"
+                          "edge ..... dofs of an edge\n"
+                          "face ..... dofs of a face\n"
+                          "cell ..... dofs of a cell (3D)\n"
+                          "facet .... dofs of a facet (codimension 1)\n"
+                          "inner .... inner dofs of an element (codimension 0)\n"
+                          "element .. all dofs of an element (including its boundary)\n"
+                          "vertexpatch .. dofs of the vertex and of all edges, faces, cells containing it\n"
+                          "edgepatch .... dofs of the edge and of all faces, cells containing it\n"
+                          "facepatch .... dofs of the face and of the cells containing it\n"
+                          "vertexedge ... dofs of the vertex and of the edges containing it\n"
+                          "options: 'type:periodic', 'type:dofset', 'type:dofset,periodic'\n"
+                          );
+
+        if (pos != string::npos)
           {
-            type = fulltype.substr(0, pos);
-            filter = fulltype.substr(pos+1);
-            filtered_blocktypes[type] = filter;
+            string opts = fulltype.substr(pos+1);
+            while (opts.size())
+              {
+                auto end = opts.find_first_of(",: ");
+                string opt = opts.substr(0, end);
+                opts = (end == string::npos) ? string() : opts.substr(end+1);
+                if (opt.empty()) continue;
+                if (opt == "periodic")
+                  type.periodic = true;
+                else if (!type.dofset)
+                  type.dofset = opt;
+                else
+                  throw Exception("FESpace::CreateSmoothingBlocks: more than one dof set in '"+fulltype+"'");
+              }
+          }
+
+        // blocks in the order of the list, each type once
+        // inner is the node type of the elements
+        auto nodetype = [dim] (int nt) { return nt == NT_ELEMENT ? dim : nt; };
+        bool found = false;
+        for (auto & other : types)
+          if (nodetype(other.anchor) == nodetype(type.anchor) &&
+              nodetype(other.maxnt) == nodetype(type.maxnt) &&
+              other.periodic == type.periodic && other.dofset == type.dofset)
+            found = true;
+        if (!found)
+          types += type;
+      }
+
+    return CreateGenericSmoothingBlocks (types, freedofs);
+  }
+
+
+  shared_ptr<Table<int>> FESpace ::
+  CreateGenericSmoothingBlocks (FlatArray<SmoothingBlockType> types, shared_ptr<BitArray> freedofs) const
+  {
+    static Timer t("FESpace::CreateGenericSmoothingBlocks");
+    RegionTimer reg(t);
+
+    int dim = ma->GetDimension();
+    size_t ntypes = types.Size();
+    Array<size_t> base(ntypes);
+    Array<int> anchors(ntypes), maxnts(ntypes);
+    Array<Array<int>> entry(ntypes);    // anchor node -> block, if not the identity
+    Array<BitArray> mask(ntypes);
+
+    size_t nblocks = 0;
+    bool neednodes[4] = { false, false, false, false };
+    bool needelements = false;
+    
+    for (auto ti : Range(ntypes))
+      {
+        auto & type = types[ti];
+        anchors[ti] = type.anchor;
+        maxnts[ti] = type.maxnt;
+        size_t nb;
+        if (type.anchor < 0)
+          {
+            if (type.periodic)
+              throw Exception("FESpace::CreateSmoothingBlocks: periodic not available for element blocks");
+            nb = ma->GetNE(VOL);
+            needelements = true;
+          }
+        else if (type.anchor == NT_ELEMENT)
+          {
+            // inner dofs, blocks numbered like the elements
+            if (type.periodic)
+              throw Exception("FESpace::CreateSmoothingBlocks: periodic not available for element blocks");
+            anchors[ti] = maxnts[ti] = dim;
+            neednodes[dim] = true;
+            nb = ma->GetNNodes(NODE_TYPE(dim));
+            if (dim == 2)
+              {
+                entry[ti].SetSize(nb);
+                for (auto i : Range(nb))
+                  entry[ti][i] = ma->GetNode<2>(i).surface_el;
+                nb = ma->GetNE(VOL);
+              }
           }
         else
           {
-            type = fulltype;
-            filtered_blocktypes[type] = nullopt;
+            auto nt = NODE_TYPE(type.anchor);
+            nb = ma->GetNNodes(nt);
+            for (int i = type.anchor; i <= type.maxnt; i++)
+              neednodes[i] = true;
+
+            if (type.periodic)
+              {
+                // blocks of identified anchors are merged
+                Array<int> rep(nb);
+                for (auto i : Range(rep))
+                  rep[i] = i;
+                if (nt != NT_CELL)
+                  for (auto idnr : Range(ma->GetNPeriodicIdentifications()))
+                    for (auto & pair : ma->GetPeriodicNodes(nt, idnr))
+                      rep[pair[1]] = pair[0];
+                for (auto i : Range(rep))
+                  while (rep[rep[i]] != rep[i])
+                    rep[i] = rep[rep[i]];
+
+                entry[ti].SetSize(rep.Size());
+                nb = 0;
+                for (auto i : Range(rep))
+                  if (rep[i] == i)
+                    entry[ti][i] = nb++;
+                for (auto i : Range(rep))
+                  if (rep[i] != i)
+                    entry[ti][i] = entry[ti][rep[i]];
+              }
           }
 
-        Array<string> types { "vertex", "edge", "face", "facet", "element", "vertexpatch", "edgepatch", "vertexedge" };
-        if (!types.Contains(type))
+        if (type.dofset)
           {
-            throw Exception("FESpace::CreateSmoothingBlocks type '"+ToString(type)+"' not available, available types are:\n"
-                            "vertex ... all dofs associated with vertices\n"
-                            "edge ..... all dofs associated with edges\n"
-                            "face ..... all dofs associated with faces\n"
-                            "facet .... all dofs associated with faces\n"
-                            "vertexpatch .. all dofs associated with the open vertex patch\n"
-                            "edgepatch .... all dofs associated with the open edge patch\n"
-                            "vertexedge ... all dofs on edges connected to vertex+vertex dofs\n"
-                            );
+            mask[ti].SetSize (GetNDof());
+            SelectDofs (*type.dofset, mask[ti]);
           }
+        
+        base[ti] = nblocks;
+        nblocks += nb;
       }
 
-    Array<int> vertex_map;
-    Array<int> edge_map;
-    Array<int> facet_map;
-    Array<int> patchentry;
-    int nentries = ma->GetNV();
-    bool has_periodic = false;
-    for (auto fulltype : blocktypes)
-       if(fulltype.find("periodic") != std::string::npos)
-         {
-           has_periodic = true;
-           break;
-         }
-    if(has_periodic)
-      {
-        nentries = 0;
-        vertex_map.SetSize(ma->GetNV());
-        patchentry.SetSize(ma->GetNV());
-        edge_map.SetSize(ma->GetNEdges());
-        facet_map.SetSize(ma->GetNFaces());
-        for (auto i : Range(ma->GetNV()))
-          vertex_map[i] = i;
-        for (auto i : Range(ma->GetNFaces()))
-          facet_map[i] = i;
-        for (auto i : Range(ma->GetNEdges()))
-          edge_map[i] = i;
-        for (auto idnr : Range(ma->GetNPeriodicIdentifications()))
-          {
-            for(auto & per_verts : ma->GetPeriodicNodes(NT_VERTEX, idnr))
-              vertex_map[per_verts[1]] = per_verts[0];
-            for(auto & per_edges : ma->GetPeriodicNodes(NT_EDGE, idnr))
-              edge_map[per_edges[1]] = per_edges[0];
-            for(auto & per_faces : ma->GetPeriodicNodes(NT_FACE, idnr))
-              facet_map[per_faces[1]] = per_faces[0];
-          }
-        for (auto i : Range(vertex_map))
-          while (vertex_map[vertex_map[i]] != vertex_map[i])
-            vertex_map[i] = vertex_map[vertex_map[i]];
-        for(auto i : Range(ma->GetNV()))
-          if (int v = vertex_map[i]; v == i)
-            patchentry[i] = nentries++;
-        for(auto i : Range(ma->GetNV()))
-          if (int v = vertex_map[i]; v != i)
-            patchentry[i] = patchentry[v];
-      }
-    
-    if (blocktypes.Size())
+
+    // free dofs per node / per element
+    auto CollectDofs = [&] (size_t n, auto getdofs)
+    {
+      Array<int> cnt(n);
+      ParallelForRange (n, [&] (IntRange r)
       {
         Array<DofId> dofs;
-        BitArray filtermask(GetNDof());
-        
-        for ( ; !creator.Done(); creator++)
+        for (auto i : r)
           {
-            size_t base = 0;
-
-            if (blocktypes.Contains("vertex"))
-              {
-                for (size_t i : Range(ma->GetNV()))        
-                  {
-                    if(vertex_map.Size() && vertex_map[i] != i) continue; // skip periodic minion vertices
-                    GetDofNrs (NodeId(NT_VERTEX, i), dofs);
-                    for (auto d : dofs)
-                      if (IsRegularDof(d))
-                        creator.Add (base+i, d);
-                  }
-                base += ma->GetNV();
-              }
-
-            if (blocktypes.Contains("edge") ||
-                (ma->GetDimension()==2 && blocktypes.Contains("facet")) )
-              {
-                for (size_t i : Range(ma->GetNEdges()))        
-                  {
-                    if(edge_map.Size() && edge_map[i] != i) continue; // skip periodic minion edges
-                    GetDofNrs (NodeId(NT_EDGE, i), dofs);
-                    for (auto d : dofs)
-                      if (IsRegularDof(d))
-                        creator.Add (base+i, d);
-                  }
-                base += ma->GetNEdges();
-              }
-
-            if (blocktypes.Contains("face") ||
-                (ma->GetDimension()==3 && blocktypes.Contains("facet")) )              
-              {
-                for (size_t i : Range(ma->GetNFaces()))        
-                  {
-                    if(facet_map.Size() && facet_map[i] != i) continue; // skip periodic faces
-                    GetDofNrs (NodeId(NT_FACE, i), dofs);
-                    for (auto d : dofs)
-                      if (IsRegularDof(d))
-                        creator.Add (base+i, d);
-                  }
-                base += ma->GetNFaces();
-              }
-
-            if (blocktypes.Contains("element"))
-              {
-                for (int i : Range(ma->GetNE(VOL)))
-                  {
-                    GetDofNrs ( ElementId(VOL,i), dofs);
-                    for (auto d : dofs)
-                      if (IsRegularDof(d))
-                        creator.Add (base+i, d);
-                  }
-                base += ma->GetNE(VOL);
-              }
-            
-            if (blocktypes.Contains("vertexedge"))
-              {
-                for (size_t i : Range(ma->GetNV()))
-                  {
-                    GetDofNrs (NodeId(NT_VERTEX, i), dofs);
-                    for (auto d : dofs)
-                      if (IsRegularDof(d))              
-                        creator.Add (base+i, d);
-                  }
-                for (size_t i : Range(ma->GetNEdges()))        
-                  {
-                    Ng_Node<1> edge = ma->GetNode<1> (i);
-                    GetDofNrs (NodeId(NT_EDGE, i), dofs);
-                    for (auto d : dofs)
-                      if (IsRegularDof(d))
-                        for (int k = 0; k < 2; k++)
-                          creator.Add (base+edge.vertices[k], d);
-                  }
-                base += ma->GetNV();                
-              }
-
-            // if (blocktypes.Contains("vertexpatch"))
-            if (filtered_blocktypes.count("vertexpatch"))
-              {
-                optional<string> filter = filtered_blocktypes[string("vertexpatch")];
-                bool periodic = false;
-                if (filter)
-                  if (auto pos = filter->find("periodic"); pos != string::npos)
-                    {
-                      periodic = true;
-                      string rest = filter->substr(0, pos);
-                      while (rest.size() && (rest.back() == ',' || rest.back() == ':' || rest.back() == ' '))
-                        rest.pop_back();
-                      filter = rest.empty() ? nullopt : optional<string>(rest);
-                    }
-                if (filter)
-                  {
-                    SelectDofs (*filter, filtermask);
-                    filtermask &= *freedofs;
-                    creator.SetFilter (&filtermask);
-                  }
-
-                  
-                for (size_t i : Range(ma->GetNV()))
-                  {
-                    if(vertex_map.Size() && vertex_map[i] != i) continue; // skip periodic minion vertices
-                    GetDofNrs (NodeId(NT_VERTEX, i), dofs);
-                    for (auto d : dofs)
-                      if (IsRegularDof(d))              
-                        creator.Add (base + (periodic ? patchentry[i] : i), d);
-                  }
-                for (size_t i : Range(ma->GetNEdges()))        
-                  {
-                    if(edge_map.Size() && edge_map[i] != i) continue; // skip periodic minion edges
-                    Ng_Node<1> edge = ma->GetNode<1> (i);
-                    GetDofNrs (NodeId(NT_EDGE, i), dofs);
-                    for (auto d : dofs)
-                      if (IsRegularDof(d))
-                        for (int k = 0; k < 2; k++)
-                          creator.Add (base + (periodic ? patchentry[edge.vertices[k]] : edge.vertices[k]), d);
-                  }
-                for (size_t i : Range(ma->GetNFaces()))        
-                  {
-                    if(facet_map.Size() && facet_map[i] != i) continue; // skip periodic faces
-                    auto vnums = ma->GetFacePNums(i);
-                    GetDofNrs (NodeId(NT_FACE, i), dofs);
-                    for (auto d : dofs)
-                      if (IsRegularDof(d))
-                        for (auto v : vnums)
-                          creator.Add (base + (periodic ? patchentry[v] : v), d);
-                  }
-                // 3D only
-                for (size_t i : Range(ma->GetNElements(3)))
-                  {
-                    auto vnums = ma->GetElement({VOL,i}).Vertices();
-                    GetDofNrs (NodeId(NT_CELL, i), dofs);
-                    for (auto d : dofs)
-                      if (IsRegularDof(d))
-                        for (auto v : vnums)
-                          creator.Add (base + (periodic ? patchentry[v] : v), d);
-                  }
-                base += periodic ? nentries : ma->GetNV();
-
-                if (filter)
-                  creator.SetFilter (freedofs.get());                  
-              }
-
-            if (blocktypes.Contains("edgepatch"))
-              {
-                for (size_t i : Range(ma->GetNEdges()))        
-                  {
-                    GetDofNrs (NodeId(NT_EDGE, i), dofs);
-                    for (auto d : dofs)
-                      if (IsRegularDof(d))
-                        creator.Add (base+i, d);
-                  }
-                for (size_t i : Range(ma->GetNFaces()))        
-                  {
-                    auto edges = ma->GetFaceEdges(i);
-                    GetDofNrs (NodeId(NT_FACE, i), dofs);
-                    for (auto d : dofs)
-                      if (IsRegularDof(d))
-                        for (auto e : edges)
-                          creator.Add (base+e, d);
-                  }
-                // 3D only
-                for (size_t i : Range(ma->GetNElements(3)))
-                  {
-                    auto enums = ma->GetElement({VOL,i}).Edges();
-                    GetDofNrs (NodeId(NT_CELL, i), dofs);
-                    for (auto d : dofs)
-                      if (IsRegularDof(d))
-                        for (auto e : enums)
-                          creator.Add (base+e, d);
-                  }
-                base += ma->GetNEdges();                
-              }
-
-
-            
-            if (creator.GetMode()==1)
-              creator.SetSize(base);
+            getdofs (i, dofs);
+            int c = 0;
+            for (auto d : dofs)
+              if (IsRegularDof(d) && freedofs->Test(d)) c++;
+            cnt[i] = c;
           }
-
-        Table<int> table = creator.MoveTable();
-        return make_shared<Table<int>> (std::move(table));
-      }
-    
-
-
-    
-    
-    if (flags.GetStringFlag("blocktype") == "edgepatch")
+      });
+      Table<DofId> table(cnt);
+      ParallelForRange (n, [&] (IntRange r)
       {
-        
         Array<DofId> dofs;
-        for ( ; !creator.Done(); creator++)
+        for (auto i : r)
           {
-            // EFI
-
-            /*
-            for (size_t i : Range(ma->GetNV()))
-              {
-                GetDofNrs (NodeId(NT_VERTEX, i), dofs);
-                for (auto d : dofs)
-                  if (IsRegularDof(d))              
-                    creator.Add (i, d);
-              }
-            */
-            
-            for (size_t i : Range(ma->GetNEdges()))        
-              {
-                // Ng_Node<1> edge = ma->GetNode<1> (i);
-                
-                GetDofNrs (NodeId(NT_EDGE, i), dofs);
-                for (auto d : dofs)
-                  if (IsRegularDof(d))
-                    creator.Add (i, d);
-              }
-            
-            for (size_t i : Range(ma->GetNFaces()))        
-              {
-                // Ng_Node<2> face = ma->GetNode<2> (i);
-                
-                GetDofNrs (NodeId(NT_FACE, i), dofs);
-                for (auto d : dofs)
-                  if (IsRegularDof(d))
-                    for (auto e : ma->GetFaceEdges(i))
-                      creator.Add (e, d);
-              }
-            
-            if(ma->GetDimension() == 3)
-              for(size_t i : Range(ma->GetNE()))
-                {
-                  GetDofNrs(NodeId(NT_CELL, i), dofs);
-                  auto eledges = ma->GetElEdges(ElementId(VOL, i));
-                  for(auto d : dofs)
-                    if(IsRegularDof(d))
-                      for(auto v : eledges)
-                        creator.Add(v, d);
-                }
-        
+            getdofs (i, dofs);
+            int c = 0;
+            for (auto d : dofs)
+              if (IsRegularDof(d) && freedofs->Test(d))
+                table[i][c++] = d;
           }
-      }
+      });
+      return table;
+    };
+    
+    Table<DofId> nodedofs[4];
+    for (int nt = 0; nt < 4; nt++)
+      if (neednodes[nt])
+        nodedofs[nt] = CollectDofs (ma->GetNNodes(NODE_TYPE(nt)), [&] (size_t i, Array<DofId> & dofs)
+                                    { GetDofNrs (NodeId(NODE_TYPE(nt), i), dofs); });
+    Table<DofId> eldofs;
+    if (needelements)
+      eldofs = CollectDofs (ma->GetNE(VOL), [&] (size_t i, Array<DofId> & dofs)
+                            { GetDofNrs (ElementId(VOL,i), dofs); });
 
-    if (flags.GetStringFlag("blocktype") == "facepatch")
+
+    auto ForAnchors = [&] (int nt, size_t nr, int anchor, auto func)
+    {
+      if (nt == anchor)
+        {
+          func(nr);
+          return;
+        }
+      switch (nt)
+        {
+        case NT_EDGE:
+          for (auto v : ma->GetEdgePNums(nr)) func(v);
+          break;
+        case NT_FACE:
+          if (anchor == NT_VERTEX)
+            for (auto v : ma->GetFacePNums(nr)) func(v);
+          else
+            for (auto e : ma->GetFaceEdges(nr)) func(e);
+          break;
+        case NT_CELL:
+          {
+            auto el = ma->GetElement(ElementId(VOL,nr));
+            if (anchor == NT_VERTEX)
+              for (auto v : el.Vertices()) func(v);
+            else if (anchor == NT_EDGE)
+              for (auto e : el.Edges()) func(e);
+            else
+              for (auto f : el.Faces()) func(f);
+            break;
+          }
+        default:
+          break;
+        }
+    };
+
+    // func (block, dofs, mask)
+    auto ForContributions = [&] (auto func)
+    {
+      for (auto ti : Range(ntypes))
+        {
+          const BitArray * pmask = types[ti].dofset ? &mask[ti] : nullptr;
+          if (anchors[ti] < 0)
+            {
+              ParallelFor (eldofs.Size(), [&] (size_t i)
+              { func (base[ti]+i, eldofs[i], pmask); });
+              continue;
+            }
+          FlatArray<int> map = entry[ti];
+          for (int nt = anchors[ti]; nt <= maxnts[ti]; nt++)
+            ParallelFor (nodedofs[nt].Size(), [&] (size_t i)
+            {
+              auto dofs = nodedofs[nt][i];
+              if (dofs.Size() == 0) return;
+              ForAnchors (nt, i, anchors[ti], [&] (size_t a)
+              {
+                if (map.Size() == 0)
+                  func (base[ti]+a, dofs, pmask);
+                else if (map[a] >= 0)
+                  func (base[ti]+map[a], dofs, pmask);
+              });
+            });
+        }
+    };
+
+    Array<int> cnt(nblocks);
+    cnt = 0;
+    ForContributions ([&] (size_t block, FlatArray<DofId> dofs, const BitArray * pmask)
+    {
+      int c = dofs.Size();
+      if (pmask)
+        {
+          c = 0;
+          for (auto d : dofs)
+            if (pmask->Test(d)) c++;
+        }
+      AsAtomic(cnt[block]) += c;
+    });
+
+    Table<int> table(cnt);
+    cnt = 0;
+    ForContributions ([&] (size_t block, FlatArray<DofId> dofs, const BitArray * pmask)
+    {
+      int c = dofs.Size();
+      if (pmask)
+        {
+          c = 0;
+          for (auto d : dofs)
+            if (pmask->Test(d)) c++;
+        }
+      int pos = AsAtomic(cnt[block]).fetch_add(c);
+      auto row = table[block];
+      for (auto d : dofs)
+        if (!pmask || pmask->Test(d))
+          row[pos++] = d;
+    });
+
+    // sorted rows without duplicates, independent of the number of threads
+    atomic<size_t> nduplicates{0};
+    ParallelFor (table.Size(), [&] (size_t i)
+    {
+      auto row = table[i];
+      QuickSort (row);
+      int n = 0;
+      for (auto j : Range(row))
+        if (j == 0 || row[j] != row[j-1])
+          row[n++] = row[j];
+      cnt[i] = n;
+      if (n != row.Size())
+        nduplicates += row.Size()-n;
+    });
+
+    if (nduplicates)
       {
-        
-        Array<DofId> dofs;
-        for ( ; !creator.Done(); creator++)
-          {
-            // EFI
-            
-            for (size_t i : Range(ma->GetNFaces()))        
-              {
-                GetDofNrs (NodeId(NT_FACE, i), dofs);
-                for (auto d : dofs)
-                  if (IsRegularDof(d))
-                    creator.Add (i, d);
-              }
-            
-            if(ma->GetDimension() == 3)
-              for(size_t i : Range(ma->GetNE()))
-                {
-                  GetDofNrs(NodeId(NT_CELL, i), dofs);
-                  auto elfaces = ma->GetElFaces(ElementId(VOL, i));
-                  for(auto d : dofs)
-                    if(IsRegularDof(d))
-                      for(auto f : elfaces)
-                        creator.Add(f, d);
-                }
-        
-          }
+        Table<int> compressed(cnt);
+        ParallelFor (table.Size(), [&] (size_t i)
+        { compressed[i] = table[i].Range(0, cnt[i]); });
+        table = std::move(compressed);
       }
-
     
-    else
-      
-      { // default is vertexpatch
-        Array<DofId> dofs;
-        for ( ; !creator.Done(); creator++)
-          {
-            // VEFI
-
-            for (size_t i : Range(ma->GetNV()))
-              {
-                GetDofNrs (NodeId(NT_VERTEX, i), dofs);
-                for (auto d : dofs)
-                  if (IsRegularDof(d))              
-                    creator.Add (i, d);
-              }
-            for (size_t i : Range(ma->GetNEdges()))        
-              {
-                Ng_Node<1> edge = ma->GetNode<1> (i);
-                
-                GetDofNrs (NodeId(NT_EDGE, i), dofs);
-                for (auto d : dofs)
-                  if (IsRegularDof(d))
-                    for (int k = 0; k < 2; k++)
-                      creator.Add (edge.vertices[k], d);
-              }
-            
-            for (size_t i : Range(ma->GetNFaces()))        
-              {
-                Ng_Node<2> face = ma->GetNode<2> (i);
-                
-                GetDofNrs (NodeId(NT_FACE, i), dofs);
-                for (auto d : dofs)
-                  if (IsRegularDof(d))
-                    for (int k = 0; k < face.vertices.Size(); k++)
-                      creator.Add (face.vertices[k], d);
-              }
-            
-            if(ma->GetDimension() == 3)
-              for(size_t i : Range(ma->GetNE()))
-                {
-                  GetDofNrs(NodeId(NT_CELL, i), dofs);
-                  auto elverts = ma->GetElVertices(ElementId(VOL, i));
-                  for(auto d : dofs)
-                    if(IsRegularDof(d))
-                      for(auto v : elverts)
-                        creator.Add(v, d);
-                }
-          }
-        /*
-          
-          for (int i = 0; i < nfa; i++)
-          {
-          Ng_Node<2> face = ma->GetNode<2> (i);
-          for (int k = 0; k < face.vertices.Size(); k++)
-          creator.Add (face.vertices[k], GetFaceDofs(i));
-          }
-          
-          for (int i = 0; i < ni; i++)
-          for (auto v : ma->GetElement(ElementId(VOL,i)).Vertices())
-          creator.Add (v, GetElementDofs(i));
-          
-          break; 
-        */
-      }
-
-    
-        
-    // return make_shared<Table<int>> (creator.MoveTable());
-    Table<int> table = creator.MoveTable();
-    if (print)
-      *testout << "smoothing blocks = " << endl << table << endl;
     return make_shared<Table<int>> (std::move(table));
   }
 

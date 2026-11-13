@@ -1595,12 +1595,8 @@ namespace ngcomp
 
   
   shared_ptr<Table<int>> HCurlHighOrderFESpace :: 
-  CreateSmoothingBlocks (const Flags & precflags) const
+  CreateSpecificSmoothingBlocks (const Flags & precflags) const
   {
-    if (precflags.StringFlagDefined("blocktype") || precflags.StringListFlagDefined("blocktype"))
-      return FESpace::CreateSmoothingBlocks(precflags);
-
-    
     size_t nv = ma->GetNV();
     size_t ne = ma->GetNE();
     // int nse = ma->GetNSE();

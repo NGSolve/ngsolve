@@ -81,8 +81,9 @@ public:
 
   enum { SB_AFW, SB_HIPTMAIR, SB_POTENTIAL, SB_JAC };
   ///
+  using FESpace::CreateSmoothingBlocks;
   virtual shared_ptr<Table<int>> CreateSmoothingBlocks (int type = 0) const;
-  virtual shared_ptr<Table<int>> CreateSmoothingBlocks (const Flags & precflags) const override;
+  virtual shared_ptr<Table<int>> CreateSpecificSmoothingBlocks (const Flags & precflags) const override;
 
   SparseMatrix<double> * CreateGradient() const;
 

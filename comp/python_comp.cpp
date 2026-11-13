@@ -1425,30 +1425,67 @@ rho : ngsolve.fem.CoefficientFunction
     })
     
     .def("CreateSmoothingBlocks",
-         [](FESpace& self,
-            // variant<string,std::vector<string>,int> blocktype,
-            // bool condense,
-            py::kwargs kwargs)
+         [](FESpace& self, py::object blocktype, bool condense, py::kwargs kwargs)
          {
+           if (!blocktype.is_none())
+             kwargs["blocktype"] = blocktype;
+           if (condense)
+             kwargs["condense"] = true;
            auto flags = CreateFlagsFromKwArgs(kwargs);
            return self.CreateSmoothingBlocks(flags); 
          },
-         // py::arg("blocktype")="vertexpatch", py::arg("condense")=false,
+         py::arg("blocktype")=py::none(), py::arg("condense")=false,
          docu_string(R"delimiter(
-Create table of smoothing blocks for block-Jacobi/block-Gauss-Seidel preconditioners.
+Create the table of smoothing blocks for block-Jacobi / block-Gauss-Seidel
+smoothers. Each row lists the dofs of one block, sorted. Only free dofs
+enter the blocks: Dirichlet, unused and hidden dofs are left out.
 
-Every table entry describes the set of dofs belonging a Jacobi/Gauss-Seidel block.
+Parameters:
 
-Paramters:
+blocktype : str | list[str] | int | None
+  str: one of the named block types
+    vertex ........ dofs of a vertex
+    edge .......... dofs of an edge
+    face .......... dofs of a face
+    cell .......... dofs of a cell (3D)
+    facet ......... dofs of a facet (codimension 1: edge in 2D, face in 3D)
+    inner ......... inner dofs of an element (codimension 0)
+    element ....... all dofs of an element, including its boundary
+    vertexedge .... dofs of the vertex and of the edges containing it
+    vertexpatch ... dofs of the vertex and of all edges, faces and cells
+                    containing it
+    edgepatch ..... dofs of the edge and of all faces and cells containing it
+    facepatch ..... dofs of the face and of the cells containing it
+    An unknown name raises an exception.
 
-blocktype: string | [ string ] | int
-    describes blocktype.
-    string form ["vertex", "edge", "face",  "facet", "vertexedge", ....]
-    or list of strings for combining multiple blocktypes
-    int is for backward compatibility with old style blocktypes
+  list[str]: union of several types, e.g. ["vertexedge", "face", "inner"].
+    The table has one row per mesh entity of each type, rows can be empty.
+    The blocks of the types follow each other in the order of the list,
+    which is the order of a Gauss-Seidel sweep.
 
-condense: bool = False
-    exclude dofs eliminated by static condensation
+  Options are appended after a colon and separated by commas:
+    "vertexpatch:periodic" ... merge the blocks of periodic vertices
+    "edge:NAME" .............. use only the dofs which the space selects
+                               under NAME (e.g. "hdivlo" for HDiv)
+
+  None: blocks chosen by the space (H1: vertex with its edges, faces, inner;
+    HCurl: Arnold-Falk-Winther blocks; L2: elements). Spaces without their
+    own choice use vertexpatch.
+
+  int: space-specific block types of H1, HCurl and HDiv, kept for backward
+    compatibility.
+
+condense : bool = False
+  leave out the dofs eliminated by static condensation (LOCAL_DOFs).
+  eliminate_internal=True is an alias.
+
+subassembled : bool = False
+  keep only WIREBASKET_DOFs (blocks for the BDDC wirebasket matrix)
+
+Example:
+
+  blocks = fes.CreateSmoothingBlocks("vertexpatch")
+  pre = a.mat.CreateBlockSmoother(blocks)
          )delimiter"))
          ;
 
@@ -3478,14 +3515,18 @@ integrator : ngsolve.fem.LFI
   prec_class
     .def(py::init([prec_class](shared_ptr<BilinearForm> bfa, const string & type, py::kwargs kwargs)
          {
+           // a function is no flag
+           py::object blockcreator;
+           if (kwargs.contains("blockcreator"))
+             blockcreator = kwargs.attr("pop")("blockcreator");
+           
            auto oldlevel = Logger::SetGlobalLoggingLevel(level::off);
            auto flags = CreateFlagsFromKwArgs(kwargs, prec_class);
            Logger::SetGlobalLoggingLevel(oldlevel);
 
-           if (kwargs.contains("blockcreator"))
+           if (blockcreator)
              {
-               auto bc = kwargs["blockcreator"];
-               py::print("createor: ", bc);
+               py::object bc = blockcreator;
                  // if it is a compiled C++ user-function we should stay within C++
                // if (auto func = py::cast<function<shared_ptr<Table<DofId>>(const FESpace&)>>(bc))
                if (py::function pyf=bc; pyf.is_cpp_function())
@@ -3502,7 +3543,6 @@ integrator : ngsolve.fem.LFI
                  }
                else
                  {
-                   cout << "could not extract C++ function" << endl;                   
                    // cout << "create a wrapper" << endl;
                    function<shared_ptr<Table<DofId>>(const FESpace&)> lam =
                      [bc](const FESpace & fes) -> shared_ptr<Table<DofId>>
@@ -3560,7 +3600,8 @@ integrator : ngsolve.fem.LFI
                      py::arg("block") = "\n"
                      "  use block-Jacobi/block-Gauss-Seidel",
                      py::arg("blocktype") = "\n"
-                     "  blocktype like 'vertexpatch', 'edgepatch', ..."
+                     "  blocktype like 'vertexpatch', 'edgepatch', ...,\n"
+                     "  see FESpace.CreateSmoothingBlocks"
                      );
                 })
     .def ("Test", [](Preconditioner &pre) { pre.Test();}, py::call_guard<py::gil_scoped_release>())

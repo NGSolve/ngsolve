@@ -481,7 +481,7 @@ namespace ngcomp
   }
 
   
-  shared_ptr<Table<int>> NedelecFESpace :: CreateSmoothingBlocks (const Flags & precflags) const
+  shared_ptr<Table<int>> NedelecFESpace :: CreateSpecificSmoothingBlocks (const Flags & precflags) const
   {
     return CreateSmoothingBlocks (int (precflags.GetNumFlag ("loblocktype", SB_AFW)));
   }

@@ -86,7 +86,7 @@ namespace ngcomp
     virtual FlatArray<VorB> GetDualShapeNodes (VorB vb) const override;
 
     ///
-    virtual shared_ptr<Table<int>> CreateSmoothingBlocks (const Flags & precflags) const override;
+    virtual shared_ptr<Table<int>> CreateSpecificSmoothingBlocks (const Flags & precflags) const override;
     /// 
  
     virtual void GetVertexDofNrs (int vnr, Array<DofId> & dnums) const override;
@@ -201,7 +201,7 @@ namespace ngcomp
                          LocalHeap & lh) const override;
     virtual void ApplyM (CoefficientFunction * rho, BaseVector & vec, Region * definedon,
                          LocalHeap & lh) const override;
-    virtual shared_ptr<Table<int>> CreateSmoothingBlocks (const Flags & precflags) const override;
+    virtual shared_ptr<Table<int>> CreateSpecificSmoothingBlocks (const Flags & precflags) const override;
     ///
     
     virtual void GetDofNrs (NodeId ni, Array<DofId> & dnums) const override;
