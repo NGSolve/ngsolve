@@ -214,6 +214,23 @@ namespace ngfem
 
     void ComputeNDof();
 
+    // cell dofs have no tangential trace; Whitney faces are linear
+    int TangentialOrder () const override
+    {
+      if constexpr (ET == ET_TRIG || ET == ET_TET)
+        {
+          int o = (DIM == 3) ? 1 : 0;
+          for (int i = 0; i < N_EDGE; i++)
+            o = max2(o, int(order_edge[i]));
+          if constexpr (DIM == 3)
+            for (int i = 0; i < N_FACE; i++)
+              o = max2(o, int(order_face[i][0]));
+          return o;
+        }
+      else
+        return this->order;
+    }
+
     // same counts as ComputeNDof
     virtual tuple<int,int,int,int> GetNDofVEFC () const override
     {

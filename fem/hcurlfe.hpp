@@ -33,6 +33,9 @@ namespace ngfem
   {
   public:
     using FiniteElement :: FiniteElement;
+
+    // polynomial order of the tangential trace on facets
+    virtual int TangentialOrder () const { return order; }
     
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    BareSliceMatrix<> shape) const = 0;

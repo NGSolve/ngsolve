@@ -19,7 +19,90 @@
 
 namespace ngcomp 
 {
-  
+
+  // tangential trace u - (u.n) n on element boundaries
+  template <int D>
+  class DiffOpTangentialComponentHCurl : public DiffOp<DiffOpTangentialComponentHCurl<D>>
+  {
+  public:
+    static constexpr int DIM = 1;
+    static constexpr int DIM_SPACE = D;
+    static constexpr int DIM_ELEMENT = D;
+    static constexpr int DIM_DMAT = D;
+    static constexpr int DIFFORDER = 0;
+    using FiniteElementType = HCurlFiniteElement<D>;
+
+    static string Name() { return "tangentialcomponent"; }
+
+    static int IntOrder (const FiniteElement & fel)
+    {
+      if (auto hcfel = dynamic_cast<const BaseHCurlFiniteElement*> (&fel))
+        return hcfel->TangentialOrder();
+      return fel.Order();
+    }
+
+    template <typename FEL, typename MIP, typename MAT>
+    static void GenerateMatrix (const FEL & bfel, const MIP & mip, MAT && mat, LocalHeap & lh)
+    {
+      HeapReset hr(lh);
+      auto & fel = static_cast<const HCurlFiniteElement<D>&> (bfel);
+      FlatMatrixFixWidth<D> shape(fel.GetNDof(), lh);
+      fel.CalcMappedShape (mip, shape);
+      Vec<D> n = mip.GetNV();
+      for (size_t i = 0; i < fel.GetNDof(); i++)
+        {
+          Vec<D> s = shape.Row(i);
+          mat.Col(i) = s - InnerProduct(s, n) * n;
+        }
+    }
+
+    static void Project (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> mat, size_t nvec)
+    {
+      auto & mir = static_cast<const SIMD_MappedIntegrationRule<D,D>&> (bmir);
+      for (size_t i = 0; i < mir.Size(); i++)
+        {
+          Vec<D,SIMD<double>> n = mir[i].GetNV();
+          auto col = mat.Col(i);
+          for (size_t j = 0; j < nvec; j++)
+            {
+              SIMD<double> sn = 0.0;
+              for (int k = 0; k < D; k++)
+                sn += col(j*D+k) * n(k);
+              for (int k = 0; k < D; k++)
+                col(j*D+k) -= sn * n(k);
+            }
+        }
+    }
+
+    static void GenerateMatrixSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                                      BareSliceMatrix<SIMD<double>> mat)
+    {
+      static_cast<const HCurlFiniteElement<D>&> (fel).CalcMappedShape (mir, mat);
+      Project (mir, mat, fel.GetNDof());
+    }
+
+    using DiffOp<DiffOpTangentialComponentHCurl<D>>::ApplySIMDIR;
+    static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    {
+      static_cast<const HCurlFiniteElement<D>&> (fel).Evaluate (mir, x, y);
+      Project (mir, y, 1);
+    }
+
+    using DiffOp<DiffOpTangentialComponentHCurl<D>>::AddTransSIMDIR;
+    static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
+    {
+      STACK_ARRAY(SIMD<double>, mem, D*mir.Size());
+      FlatMatrix<SIMD<double>> ty(D, mir.Size(), mem);
+      for (size_t i = 0; i < mir.Size(); i++)
+        for (int k = 0; k < D; k++)
+          ty(k, i) = y(k, i);
+      Project (mir, ty, 1);
+      static_cast<const HCurlFiniteElement<D>&> (fel).AddTrans (mir, ty, x);
+    }
+  };
+
 
   HCurlHighOrderFESpace ::  
   HCurlHighOrderFESpace (shared_ptr<MeshAccess> ama, const Flags & aflags, bool parseflags)
@@ -192,10 +275,12 @@ namespace ngcomp
       case 2:
         additional_evaluators.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHCurl<2>>> ());
         additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHCurlDual<2>>> ());
+        additional_evaluators.Set ("tangentialcomponent", make_shared<T_DifferentialOperator<DiffOpTangentialComponentHCurl<2>>> ());
         break;
       case 3:
         additional_evaluators.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHCurl<3>>> ());
         additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHCurlDual<3>>> ());
+        additional_evaluators.Set ("tangentialcomponent", make_shared<T_DifferentialOperator<DiffOpTangentialComponentHCurl<3>>> ());
         additional_evaluators.Set ("rotated_trace", make_shared<T_DifferentialOperator<ngsbem::DiffOpRotatedTrace>> ());
         additional_evaluators.Set ("surface_curl", make_shared<T_DifferentialOperator<ngsbem::DiffOpCurlBoundaryEdge<>>> ());        
         break;

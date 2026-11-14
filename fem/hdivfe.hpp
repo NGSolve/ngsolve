@@ -37,6 +37,9 @@ namespace ngfem
     /// calc normal components of facet shapes, ip has facet-nr
     virtual void CalcNormalShape (const IntegrationPoint & ip, 
                                   BareSliceVector<> nshape) const = 0;
+
+    // polynomial order of the normal trace
+    virtual int NormalOrder () const { return order; }
   };
 
   template <int D>

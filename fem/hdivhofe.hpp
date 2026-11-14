@@ -527,6 +527,14 @@ namespace ngfem
       RT = aRT; 
     };  
 
+    int NormalOrder () const override
+    {
+      int o = 0;
+      for (auto & of : order_facet)
+        for (int j = 0; j < DIM-1; j++)
+          o = max2(o, int(of[j]));
+      return o;
+    }
     
     virtual void ComputeNDof();
     virtual ELEMENT_TYPE ElementType() const override { return ET; }
