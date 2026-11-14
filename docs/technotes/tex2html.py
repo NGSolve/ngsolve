@@ -87,10 +87,14 @@ span.math.display { display: block; overflow-x: auto; overflow-y: hidden; }
 </style>"""
 nav = '<nav class="note"><a href="index.html">NGSolve technical notes</a> &middot; <a href="%s">PDF version</a></nav>' % pdflink
 
-html = subprocess.run(["pandoc", "-f", "latex", "-t", "html5", "-s", "--mathjax", "-V", "lang=en",
+# explicit URL: Debian's pandoc defaults to /usr/share/javascript/mathjax
+MATHJAX = "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js"
+html = subprocess.run(["pandoc", "-f", "latex", "-t", "html5", "-s", "--mathjax=" + MATHJAX, "-V", "lang=en",
                        "-V", "header-includes=" + css, "-V", "include-before=" + nav],
                       input=tex, capture_output=True, text=True, encoding="utf-8", cwd=src.parent)
 sys.stderr.write(html.stderr)
 if html.returncode:
     sys.exit(html.returncode)
-out.write_text(html.stdout.replace(BR, "<br>"), encoding="utf-8")
+# pandoc 2.x template adds polyfill.io (hijacked domain)
+page = re.sub(r'\s*<script src="https://polyfill\.io/[^"]*"></script>', "", html.stdout)
+out.write_text(page.replace(BR, "<br>"), encoding="utf-8")
