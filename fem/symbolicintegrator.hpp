@@ -521,6 +521,8 @@ public:
     bool elementwise_constant;
 
     int trial_difforder, test_difforder;
+    // integration order from the coupled trial/test proxy pairs, includes bonus_intorder
+    NGS_DLL_HEADER int IntOrder (const FiniteElement & fel_trial, const FiniteElement & fel_test) const;
     bool is_symmetric;
     bool has_interpolate; // is there an interpolate in the expression tree ? 
     shared_ptr<BilinearFormIntegrator> linearization;

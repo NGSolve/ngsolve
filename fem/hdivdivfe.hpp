@@ -32,6 +32,9 @@ namespace ngfem
       : FiniteElement (andof, aorder) { ; }
 
     void SetAlgebraicMapping (bool am) { algebraic_mapping = am; }
+
+    // polynomial order of the normal-normal trace
+    virtual int NNOrder () const { return order; }
     
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    BareSliceMatrix<double> shape) const = 0;
@@ -1379,6 +1382,13 @@ namespace ngfem
   public:
     using T_HDivDivFE<ET_TRIG> :: T_HDivDivFE;
 
+    int NNOrder () const override
+    {
+      int o = 0;
+      for (auto & of : order_facet) o = max2(o, of[0]);
+      return o;
+    }
+
     virtual void ComputeNDof()
     {
       order = 0;
@@ -2468,6 +2478,13 @@ namespace ngfem
   {
   public:
     using T_HDivDivFE<ET_TET> :: T_HDivDivFE;
+
+    int NNOrder () const override
+    {
+      int o = 0;
+      for (auto & of : order_facet) o = max2(o, of[0]);
+      return o;
+    }
 
     virtual void ComputeNDof()
     {

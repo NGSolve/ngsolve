@@ -241,6 +241,7 @@ namespace ngfem
     
     virtual IntRange UsedDofs(const FiniteElement & fel) const override { return dim*diffop->UsedDofs(fel); }
     virtual IntRange UsedDofs(const FiniteElement & fel, int facetnr) const override { return dim*diffop->UsedDofs(fel, facetnr); }
+    virtual int IntOrder (const FiniteElement & fel) const override { return diffop->IntOrder(fel); }
 
     shared_ptr<DifferentialOperator> GetTrace() const override
     {
@@ -354,6 +355,7 @@ namespace ngfem
     
     virtual IntRange UsedDofs(const FiniteElement & fel) const override { return dim*diffop->UsedDofs(fel); }
     virtual IntRange UsedDofs(const FiniteElement & fel, int facetnr) const override { return dim*diffop->UsedDofs(fel, facetnr); }
+    virtual int IntOrder (const FiniteElement & fel) const override { return diffop->IntOrder(fel); }
 
     shared_ptr<DifferentialOperator> GetTrace() const override
     {
@@ -924,6 +926,11 @@ namespace ngfem
       size_t base = BlockDim() * fel.GetRange(comp).First();
       return diffop->UsedDofs(fel[comp], facetnr)+base;
     }
+
+    virtual int IntOrder (const FiniteElement & bfel) const override
+    {
+      return diffop->IntOrder(static_cast<const CompoundFiniteElement&> (bfel)[comp]);
+    }
   
     NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & bfel,
@@ -1207,6 +1214,14 @@ namespace ngfem
         return DIFFOP::UsedDofs(fel, facetnr);
       else
         return UsedDofs(fel);
+    }
+
+    virtual int IntOrder (const FiniteElement & fel) const override
+    {
+      if constexpr (requires { DIFFOP::IntOrder(fel); })
+        return DIFFOP::IntOrder(fel);
+      else
+        return DifferentialOperator::IntOrder(fel);
     }
 
     virtual shared_ptr<DifferentialOperator> GetTrace() const override

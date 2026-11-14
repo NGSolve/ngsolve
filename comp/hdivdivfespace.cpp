@@ -338,6 +338,13 @@ namespace ngcomp
 
     static Array<int> GetDimensions() { return Array<int> (); }
 
+    static int IntOrder (const FiniteElement & fel)
+    {
+      if (auto hddfel = dynamic_cast<const BaseHDivDivFiniteElement*> (&fel))
+        return hddfel->NNOrder();
+      return fel.Order();
+    }
+
     template <typename FEL,typename SIP,typename MAT>
     static void GenerateMatrix(const FEL & bfel,const SIP & sip,
                                MAT && mat,LocalHeap & lh)

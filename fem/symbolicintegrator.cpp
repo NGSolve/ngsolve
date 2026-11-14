@@ -1438,6 +1438,24 @@ namespace ngfem
   }
 
 
+  int SymbolicBilinearFormIntegrator ::
+  IntOrder (const FiniteElement & fel_trial, const FiniteElement & fel_test) const
+  {
+    // max over coupled pairs, a test proxy without partner counts with the trial element order
+    int order = -99;
+    for (int l : Range(test_proxies))
+      {
+        int partner = -99;
+        for (int k : Range(trial_proxies))
+          if (nonzeros_proxies(l,k) || nonzeros_deriv_proxies(l,k))
+            partner = max2(partner, trial_proxies[k]->Evaluator()->IntOrder(fel_trial));
+        if (partner == -99) partner = fel_trial.Order();
+        order = max2(order, partner + test_proxies[l]->Evaluator()->IntOrder(fel_test));
+      }
+    if (order == -99) order = fel_trial.Order()+fel_test.Order();
+    return order+bonus_intorder;
+  }
+
   const IntegrationRule& SymbolicBilinearFormIntegrator ::
   GetIntegrationRule (const FiniteElement & fel, LocalHeap & /* lh */) const
   {
@@ -1446,20 +1464,7 @@ namespace ngfem
     const FiniteElement & fel_trial = mixedfe ? mixedfe->FETrial() : fel;
     const FiniteElement & fel_test = mixedfe ? mixedfe->FETest() : fel;
 
-    /*
-    int trial_difforder = 99, test_difforder = 99;
-    for (auto proxy : trial_proxies)
-      trial_difforder = min2(trial_difforder, proxy->Evaluator()->DiffOrder());
-    for (auto proxy : test_proxies)
-      test_difforder = min2(test_difforder, proxy->Evaluator()->DiffOrder());
-    if (trial_proxies.Size() == 0) trial_difforder = 0;
-    */
-    
-    int intorder = fel_trial.Order()+fel_test.Order()+bonus_intorder;
-    auto et = fel.ElementType();
-    if (et == ET_TRIG || et == ET_TET)
-      intorder -= test_difforder+trial_difforder;
-    return SelectIntegrationRule (et, intorder);
+    return SelectIntegrationRule (fel.ElementType(), IntOrder(fel_trial, fel_test));
   }
 
   const SIMD_IntegrationRule& SymbolicBilinearFormIntegrator ::
@@ -1472,20 +1477,7 @@ namespace ngfem
     const FiniteElement & fel_trial = is_mixed ? mixedfe->FETrial() : fel;
     const FiniteElement & fel_test = is_mixed ? mixedfe->FETest() : fel;
 
-    /*
-    int trial_difforder = 99, test_difforder = 99;
-    for (auto proxy : trial_proxies)
-      trial_difforder = min2(trial_difforder, proxy->Evaluator()->DiffOrder());
-    for (auto proxy : test_proxies)
-      test_difforder = min2(test_difforder, proxy->Evaluator()->DiffOrder());
-    if (trial_proxies.Size() == 0) trial_difforder = 0;
-    */
-    
-    int intorder = fel_trial.Order()+fel_test.Order()+bonus_intorder;
-    auto et = fel.ElementType();
-    if (et == ET_TRIG || et == ET_TET)
-      intorder -= test_difforder+trial_difforder;
-    return SIMD_SelectIntegrationRule (et, intorder);
+    return SIMD_SelectIntegrationRule (fel.ElementType(), IntOrder(fel_trial, fel_test));
   }
 
 
@@ -2398,7 +2390,7 @@ namespace ngfem
             {
               HeapReset hr(lh);
 
-              auto & ir_vol = AllFacetsSIMDRule (*this, transform, fel_trial.Order()+fel_test.Order()+bonus_intorder, lh);
+              auto & ir_vol = AllFacetsSIMDRule (*this, transform, IntOrder(fel_trial, fel_test), lh);
 
               {
                   auto & mir = trafo(ir_vol, lh);
@@ -2485,7 +2477,7 @@ namespace ngfem
           // tir.Start();
           HeapReset hr(lh);
           ngfem::ELEMENT_TYPE etfacet = transform.FacetType (k);
-          const IntegrationRule& ir_facet = GetIntegrationRule(etfacet, fel_trial.Order()+fel_test.Order()+bonus_intorder);
+          const IntegrationRule& ir_facet = GetIntegrationRule(etfacet, IntOrder(fel_trial, fel_test));
           IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
           
           BaseMappedIntegrationRule & mir = trafo(ir_facet_vol, lh);
@@ -3037,7 +3029,7 @@ namespace ngfem
       try
         {
           HeapReset hr(lh);
-          auto & ir_vol = AllFacetsSIMDRule (*this, transform, fel_trial.Order()+fel_test.Order()+bonus_intorder, lh);
+          auto & ir_vol = AllFacetsSIMDRule (*this, transform, IntOrder(fel_trial, fel_test), lh);
           auto & mir = trafo(ir_vol, lh);
           ProxyUserData ud(trial_proxies.Size(), gridfunction_cfs.Size(), lh);
           const_cast<ElementTransformation&>(trafo).userdata = &ud;
@@ -3113,7 +3105,7 @@ namespace ngfem
           HeapReset hr(lh);
           ngfem::ELEMENT_TYPE etfacet = transform.FacetType (k);
         
-          const IntegrationRule & ir_facet = GetIntegrationRule(etfacet, fel_trial.Order()+fel_test.Order()+bonus_intorder);
+          const IntegrationRule & ir_facet = GetIntegrationRule(etfacet, IntOrder(fel_trial, fel_test));
           IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
           BaseMappedIntegrationRule & mir = trafo(ir_facet_vol, lh);
           //  mir.ComputeNormalsAndMeasure(eltype, k);
@@ -3526,7 +3518,7 @@ namespace ngfem
         {
           {
               HeapReset hr(lh);
-              auto & ir_vol = AllFacetsSIMDRule (*this, transform, fel_trial.Order()+fel_test.Order()+bonus_intorder, lh);
+              auto & ir_vol = AllFacetsSIMDRule (*this, transform, IntOrder(fel_trial, fel_test), lh);
               auto & mir = trafo(ir_vol, lh);
               // mir.ComputeNormalsAndMeasure (eltype, k);
               // NgProfiler::StopThreadTimer(tir, tid);
@@ -3597,7 +3589,7 @@ namespace ngfem
       {
         HeapReset hr(lh);
         ngfem::ELEMENT_TYPE etfacet = transform.FacetType (k);
-        const IntegrationRule & ir_facet = GetIntegrationRule(etfacet, fel_trial.Order()+fel_test.Order()+bonus_intorder);
+        const IntegrationRule & ir_facet = GetIntegrationRule(etfacet, IntOrder(fel_trial, fel_test));
         IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
         BaseMappedIntegrationRule & mir = trafo(ir_facet_vol, lh);
         // mir.ComputeNormalsAndMeasure (eltype, k);
@@ -3815,7 +3807,7 @@ namespace ngfem
               // NgProfiler::StartThreadTimer(tir, tid);                              
               ngfem::ELEMENT_TYPE etfacet = transform.FacetType (k);
               const SIMD_IntegrationRule & ir_facet =
-                GetSIMDIntegrationRule(etfacet,fel_trial.Order()+fel_test.Order()+bonus_intorder);
+                GetSIMDIntegrationRule(etfacet,IntOrder(fel_trial, fel_test));
               auto & ir_facet_vol = transform(k, ir_facet, lh);
               auto & mir = trafo(ir_facet_vol, lh);
               // mir.ComputeNormalsAndMeasure (eltype, k);
@@ -3879,7 +3871,7 @@ namespace ngfem
       {
         HeapReset hr(lh);
         ngfem::ELEMENT_TYPE etfacet = transform.FacetType (k);
-        const IntegrationRule & ir_facet = GetIntegrationRule(etfacet, fel_trial.Order()+fel_test.Order()+bonus_intorder);
+        const IntegrationRule & ir_facet = GetIntegrationRule(etfacet, IntOrder(fel_trial, fel_test));
         IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
         BaseMappedIntegrationRule & mir = trafo(ir_facet_vol, lh);
         // mir.ComputeNormalsAndMeasure (eltype, k);

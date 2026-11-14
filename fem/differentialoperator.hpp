@@ -86,6 +86,13 @@ namespace ngfem
     /// total polynomial degree is reduced by this order (i.e. minimal difforder)
     int DiffOrder() const { return difforder; } 
 
+    /// polynomial order of the result, used to choose integration rules
+    virtual int IntOrder (const FiniteElement & fel) const
+    {
+      auto et = fel.ElementType();
+      return (et == ET_TRIG || et == ET_TET) ? fel.Order()-difforder : fel.Order();
+    }
+
     virtual IntRange UsedDofs(const FiniteElement & fel) const { return IntRange(0, fel.GetNDof()); }
     // dofs used on facet facetnr of the element
     virtual IntRange UsedDofs(const FiniteElement & fel, int facetnr) const { return UsedDofs(fel); }
