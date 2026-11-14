@@ -47,11 +47,7 @@ namespace ngcomp
     static Array<int> GetDimensions() { return Array<int>(0); }
 
     static int IntOrder (const FiniteElement & fel)
-    {
-      if (auto hdivfel = dynamic_cast<const BaseHDivFiniteElement*> (&fel))
-        return hdivfel->NormalOrder();
-      return fel.Order();
-    }
+    { return static_cast<const BaseHDivFiniteElement&> (fel).NormalOrder(); }
 
     /*
       template <typename FEL,typename SIP>

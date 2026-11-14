@@ -35,11 +35,7 @@ namespace ngcomp
     static string Name() { return "tangentialcomponent"; }
 
     static int IntOrder (const FiniteElement & fel)
-    {
-      if (auto hcfel = dynamic_cast<const BaseHCurlFiniteElement*> (&fel))
-        return hcfel->TangentialOrder();
-      return fel.Order();
-    }
+    { return static_cast<const BaseHCurlFiniteElement&> (fel).TangentialOrder(); }
 
     template <typename FEL, typename MIP, typename MAT>
     static void GenerateMatrix (const FEL & bfel, const MIP & mip, MAT && mat, LocalHeap & lh)
