@@ -94,8 +94,16 @@ namespace ngcomp
   {
     return GetBilinearForm() == nullptr;
   }
+  const BaseMatrix & Preconditioner :: GetAMatrix() const
+  {
+    auto bfa = GetBilinearForm();
+    if (!bfa) ThrowPreconditionerNotReady();
+    return bfa->GetMatrix();
+  }
+
   shared_ptr<BitArray> Preconditioner :: GetFreeDofs (bool external) const
   {
+    if (!bf.lock()) ThrowPreconditionerNotReady();
     auto freedofs = bf.lock()->GetFESpace()->GetFreeDofs(external);
     /*
     if (additional_dirichlet_constraints)
@@ -260,6 +268,9 @@ namespace ngcomp
 
   void Preconditioner :: ThrowPreconditionerNotReady() const
   {
+    if (IsCreator())
+      throw Exception("Preconditioner has no bilinear form (it was deleted, or the preconditioner was created "
+                      "without one as a creator: call pre.Create(bf) or pass it to a solver)");
     throw Exception("Preconditioner not ready: either update manually, or use update from assembling");
   }
 
@@ -465,7 +476,10 @@ namespace ngcomp
   {
     Flags allflags{flags};
     allflags.Update (cflags); 
-    return make_shared<MGPreconditioner> (bfa, allflags);
+    auto pre = make_shared<MGPreconditioner> (bfa, allflags);
+    if (coarse_pre)
+      pre->SetCoarsePreconditioner(coarse_pre);
+    return pre;
   }
 
   
@@ -473,6 +487,8 @@ namespace ngcomp
   void MGPreconditioner :: Update ()
   {
     static Timer t("MGPreconditioner::Update"); RegionTimer reg(t);
+    if (!bfa) ThrowPreconditionerNotReady();
+    ready_levels = -1;
     
     shared_ptr<BilinearForm> lo_bfa = bfa->GetLowOrderBilinearForm();
     {
@@ -489,8 +505,19 @@ namespace ngcomp
         mgbfa->GalerkinProjection();
       if (int l = missing(); l >= 0)
         throw Exception ("multigrid preconditioner: no matrix on mesh level " + ToString(l));
+      auto mgfes = mgbfa->GetFESpace();
+      for (int l = 0; l < nlevels; l++)
+        if (auto spmat = dynamic_pointer_cast<BaseSparseMatrix>(mgbfa->GetMatrixPtr(l)))
+          if (spmat->Height() != mgfes->GetNDofLevel(l))
+            throw Exception ("multigrid preconditioner: matrix on level " + ToString(l) + " has " +
+                             ToString(spmat->Height()) + " rows, but the space has " +
+                             ToString(mgfes->GetNDofLevel(l)) + " dofs on this level "
+                             "(the space must be updated after every refinement)");
     }
 
+    if (!dynamic_cast<const BaseSparseMatrix*> (&bfa->GetMatrix()) ||
+        !dynamic_cast<const BaseSparseMatrix*> (&(lo_bfa ? lo_bfa : bfa)->GetMatrix(0)))
+      throw Exception ("multigrid preconditioner needs sparse matrices, got " + string(typeid(bfa->GetMatrix()).name()));
     string invtype = dynamic_cast<const BaseSparseMatrix & > (bfa->GetMatrix()).SetInverseType (inversetype);
     auto & coarsemat = (lo_bfa ? lo_bfa : bfa)->GetMatrix(0);
     string coarseinvtype = dynamic_cast<const BaseSparseMatrix & > (coarsemat).SetInverseType (inversetype);
@@ -528,6 +555,7 @@ namespace ngcomp
     else
       tlp = nullptr;
 
+    ready_levels = bfa->GetMeshAccess()->GetNLevels();
     if (timing) Timing();
     if (test) Test();
     if (mgtest) MgTest();
@@ -539,7 +567,7 @@ namespace ngcomp
   
   void MGPreconditioner :: CleanUpLevel () 
   { 
-    if (bfa->GetLowOrderBilinearForm())
+    if (bfa && bfa->GetLowOrderBilinearForm())
       {
 	tlp = nullptr;
       }    
@@ -548,6 +576,8 @@ namespace ngcomp
 
   const ngla::BaseMatrix & MGPreconditioner :: GetMatrix() const
   {
+    if (!mgp || ready_levels != ma->GetNLevels())
+      ThrowPreconditionerNotReady();
     if (tlp)
       return *tlp;
     else
@@ -557,7 +587,7 @@ namespace ngcomp
   void MGPreconditioner::PrintReport (ostream & ost) const
   {
     ost << "Multigrid preconditioner" << endl
-	<< "bilinear-form = " << bfa->GetName() << endl
+	<< "bilinear-form = " << (bfa ? bfa->GetName() : string("none")) << endl
 	<< "smoothertype = " << smoothertype << endl;
   }
 
@@ -608,6 +638,7 @@ namespace ngcomp
 
   void MGPreconditioner :: SetDirectSolverCluster(shared_ptr<Array<int>> cluster)
   {
+    if (!mgp) ThrowPreconditionerNotReady();
     if(tlp)
       {
         if(auto blocksmoother = dynamic_cast<BlockSmoother*>(&tlp->GetSmoother()))
@@ -620,8 +651,11 @@ namespace ngcomp
 
   void MGPreconditioner::SetCoarsePreconditioner(shared_ptr<BaseMatrix> prec)
   {
+      if (!prec)
+        throw Exception ("SetCoarsePreconditioner: preconditioner is None");
       coarse_pre = prec;
-      mgp->SetCoarseType (MultigridPreconditioner::USER_COARSE);
+      if (mgp)
+        mgp->SetCoarseType (MultigridPreconditioner::USER_COARSE);
   }
 
   
@@ -662,7 +696,7 @@ namespace ngcomp
   
   void DirectPreconditioner :: Update ()
   {
-    // delete inverse;
+    if (!bfa) ThrowPreconditionerNotReady();
     if (GetTimeStamp() == bfa->GetTimeStamp()) return;
     timestamp = bfa->GetTimeStamp();
     

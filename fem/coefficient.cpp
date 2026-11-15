@@ -6636,7 +6636,9 @@ class NGS_DLL_HEADER FrozenCoefficientFunction
   shared_ptr<CoefficientFunction>
     Operator (const string & name) const override
   {
-    return Freeze (cf->Operator(name));
+    auto op = cf->Operator(name);
+    if (!op) throw Exception ("operator " + name + " not available");
+    return Freeze (op);
   }
   
 };

@@ -204,8 +204,17 @@ namespace ngmg
 	linecluster[cl][cnts[cl]] = j;
 	cnts[cl]++;
       }
+    while (jac.Size() < level-1)
+      jac.Append (nullptr);
     jac.Append  (dynamic_cast<const BaseSparseMatrix&> (biform.GetMatrix()) . 
 		 CreateBlockJacobiPrecond(make_shared<Table<int>> (linecluster)));
+  }
+
+  void AnisotropicSmoother :: CheckLevel (int level) const
+  {
+    if (level < 0 || level >= jac.Size() || !jac[level])
+      throw Exception ("line smoother: not available on mesh level " + ToString(level) +
+                       ", the bilinear form was not assembled on this level");
   }
 
 
@@ -213,6 +222,7 @@ namespace ngmg
   PreSmooth (int level, BaseVector & u, 
 	     const BaseVector & f, int steps) const
   {
+    CheckLevel (level);
     for (int i = 0; i < steps; i++)
       jac[level]->GSSmooth (u, f);
   }
@@ -221,6 +231,7 @@ namespace ngmg
   PostSmooth (int level, BaseVector & u, 
 	      const BaseVector & f, int steps) const
   {
+    CheckLevel (level);
     for (int i = 0; i < steps; i++)
       jac[level] -> GSSmoothBack (u, f);
   }
@@ -748,6 +759,7 @@ namespace ngmg
     for(auto lvl : Range(startlevel,level+1))
       {
         jac[lvl-1] = nullptr;
+        if (!smoothing_blocks[lvl-1]) continue;
         if (!constraint)
           {
             jac[lvl-1] = dynamic_cast<const BaseSparseMatrix&>
@@ -838,9 +850,17 @@ namespace ngmg
   }
 
 
+  void BlockSmoother :: CheckLevel (int level) const
+  {
+    if (level < 0 || level >= jac.Size() || !jac[level])
+      throw Exception ("block smoother: no smoothing blocks on mesh level " + ToString(level) +
+                       ", the bilinear form was not assembled on this level");
+  }
+
   void BlockSmoother :: PreSmooth (int level, BaseVector & u, 
 				   const BaseVector & f, int steps) const
   {
+    CheckLevel (level);
     if(!inv[level]) 
       jac[level] -> GSSmooth (u, f, steps);
     else
@@ -865,6 +885,7 @@ namespace ngmg
 					   BaseVector & res, 
 					   int steps) const
   {
+    CheckLevel (level);
     res = f;
     u = 0;
 
@@ -907,6 +928,7 @@ namespace ngmg
   void  BlockSmoother :: PostSmooth (int level, BaseVector & u, 
 				     const BaseVector & f, int steps) const
   {
+    CheckLevel (level);
     if(!inv[level])
       {
 	//*testout << "postsmooth" << endl;
@@ -945,6 +967,7 @@ namespace ngmg
   void BlockSmoother :: Precond (int level, const BaseVector & f, 
 				 BaseVector & u) const
   {
+    CheckLevel (level);
     u = (*jac[level]) * f;
   }
   

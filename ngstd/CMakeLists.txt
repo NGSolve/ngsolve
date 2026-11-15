@@ -26,7 +26,7 @@ add_library( ngstd ${NGS_LIB_TYPE}
         evalfunc.cpp templates.cpp
         gpuwrapper.cpp gpu_cpu.cpp
         stringops.cpp python_ngstd.cpp
-        bspline.cpp
+        bspline.cpp memusage.cpp
         ${CMAKE_CURRENT_BINARY_DIR}/tinybla_code.cpp
         ${CMAKE_CURRENT_BINARY_DIR}/gpukernel_code.cpp
         )

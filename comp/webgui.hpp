@@ -74,14 +74,20 @@ string ToArchive(shared_ptr<T> obj, bool binary=true) {
 template<typename T>
 shared_ptr<T> FromArchive(string s, bool binary=true) {
   auto ss = make_shared<stringstream>(s);
+  ss->exceptions(std::ios::failbit | std::ios::badbit);
   shared_ptr<T> obj;
-  if(binary) {
-    BinaryInArchive ar(ss);
-    ar & obj;
+  try {
+    if(binary) {
+      BinaryInArchive ar(ss);
+      ar & obj;
+    }
+    else {
+      TextInArchive ar(ss);
+      ar & obj;
+    }
   }
-  else {
-    TextInArchive ar(ss);
-    ar & obj;
+  catch (const std::ios_base::failure &) {
+    throw Exception("FromArchive: invalid or truncated archive data");
   }
   return obj;
 }

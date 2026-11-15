@@ -959,8 +959,8 @@ namespace ngcomp
         if (ma->GetDimension() == 2 && ni.GetType() == NT_FACE)
 	  {
 	    Array<int> elnr;
-	    ma->GetFacetSurfaceElements(ni.GetNr(),elnr);
-	    if (elnr[0] < order_inner.Size())
+	    if (auto sel = ma->GetNode<2>(ni.GetNr()).surface_el; sel >= 0) elnr.Append(sel);   // 2D: face -> element
+	    if (elnr.Size() && elnr[0] < order_inner.Size())
 	      {
 		order_inner[elnr[0]] = order;
 		order_inner_curl[elnr[0]] = order;
@@ -989,8 +989,8 @@ namespace ngcomp
 	if (ma->GetDimension() == 2 && ni.GetType() == NT_FACE)
 	  {
 	    Array<int> elnr;
-	    ma->GetFacetSurfaceElements(ni.GetNr(),elnr);
-	    if (elnr[0] < order_inner.Size())
+	    if (auto sel = ma->GetNode<2>(ni.GetNr()).surface_el; sel >= 0) elnr.Append(sel);   // 2D: face -> element
+	    if (elnr.Size() && elnr[0] < order_inner.Size())
 	      return order_inner[elnr[0]][0];
 	  }
         else if (ni.GetNr() < order_inner.Size())

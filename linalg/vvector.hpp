@@ -34,6 +34,7 @@ namespace ngla
 
     S_BaseVectorPtr (size_t as, int aes)
     {
+      CheckAllocationSize (as, aes*sizeof(TSCAL), "BaseVector");
       this->size = as;
       es = aes;
       pdata = new TSCAL[as*aes];
@@ -45,13 +46,15 @@ namespace ngla
 
     void SetSize (size_t as)
     {
+      CheckAllocationSize (as, es*sizeof(TSCAL), "BaseVector");
+      TSCAL * hp = new TSCAL[as*es];
       if (ownmem)
         {
           MemTraceFree(pdata, sizeof(TSCAL) * this->size * es);
           delete [] pdata;
         }
       this->size = as;
-      pdata = new TSCAL[as*es];
+      pdata = hp;
       ownmem = true;
       MemTraceAlloc(pdata, sizeof(TSCAL) * as * es);
     }

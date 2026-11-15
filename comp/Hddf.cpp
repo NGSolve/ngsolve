@@ -904,18 +904,18 @@ void HDivDivFacetHOElement<ET_TET> :: CalcShape(const IntegrationPoint &ip, Slic
       case 3:
         evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdHDDFacet<3>>>();
         additional_evaluators.Set("div", make_shared<T_DifferentialOperator<DiffOpDivHDDFacet<3>>>());
+        evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdHDDFacetBND>>();
         break;
       default:
         throw Exception ("HDDFacet, unsupported dim");
       }
-        
-    evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdHDDFacetBND>>();
 
     switch(ma->GetDimension())
       {
       case 2:
         {
           dofs_per_face = (order + 1);
+          dofs_per_edge = 0;
           break;
         }
       case 3:

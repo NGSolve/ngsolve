@@ -1130,6 +1130,9 @@ cf : ngsolve.CoefficientFunction
 
     .def ("DiffShape", [] (shared_ptr<CF> coef, shared_ptr<CF> dir, std::vector<shared_ptr<CoefficientFunction>> Eulerian)
           {
+            if (!dir) throw py::value_error ("direction must not be None");
+            if (dir->Dimensions().Size() > 1)
+              throw py::value_error ("direction must be a vector field");
             auto shape = make_shared<DiffShapeCF>();
             for (auto gf : Eulerian)
               shape->Eulerian_gridfunctions.Append(gf);
@@ -1215,7 +1218,10 @@ cf : ngsolve.CoefficientFunction
 
     .def ("Compile", [] (shared_ptr<CF> coef, bool realcompile, int maxderiv, bool wait, bool keep_files)
           -> shared_ptr<CoefficientFunction>
-           { return Compile (coef, realcompile, maxderiv, wait, keep_files); },
+           {
+             PyCheckInt (maxderiv, 0, 2, "maxderiv");
+             return Compile (coef, realcompile, maxderiv, wait, keep_files);
+           },
            py::arg("realcompile")=false,
            py::arg("maxderiv")=2,
           py::arg("wait")=false,
@@ -1785,6 +1791,7 @@ value : complex
              CoefficientFunction>
     (m, "PlaceholderCF")
     .def(py::init<shared_ptr<CF>>())
+    .def(NGSPickle<PlaceholderCoefficientFunction, BinaryOutArchive, CheckedBinaryInArchive>())
     .def("Set", &PlaceholderCoefficientFunction::Set)
     ;
 
@@ -1806,8 +1813,7 @@ vals : list
     .def(py::init
          ([](int order, py::list knots, py::list vals)
           {
-            if (order < 1)
-              throw py::value_error ("order must be >= 1");
+            PyCheckInt (order, 1, 1000, "order");
             if (py::len(knots) == 0)
               throw py::value_error ("knots must not be empty");
             if (py::len(vals) + 1 < py::len(knots) || py::len(vals) > py::len(knots))
@@ -2226,7 +2232,8 @@ weights : list
     .def(py::init
          ([](ELEMENT_TYPE et, int order)
           {
-            PyCheckInt (order, 0, 1000, "order");
+            // 3D rules have O(order^3) points
+            PyCheckInt (order, 0, ElementTopology::GetSpaceDim(et) == 3 ? 300 : 1000, "order");
             return new IntegrationRule (et, order); }),
          py::arg("element type"), py::arg("order"))
     
@@ -3028,7 +3035,11 @@ alpha : double
 )raw_string"));
     
                            
-  m.def("GenerateL2ElementCode", &GenerateL2ElementCode);
+  m.def("GenerateL2ElementCode", [] (int order)
+        {
+          PyCheckInt (order, 0, 20, "order");
+          return GenerateL2ElementCode(order);
+        }, py::arg("order"));
 
   m.def("VoxelCoefficient",
         [](py::tuple pystart, py::tuple pyend, py::array values,

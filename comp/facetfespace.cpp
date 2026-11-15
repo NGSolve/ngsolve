@@ -679,7 +679,7 @@ namespace ngcomp
       }
 
     highest_order_dc = flags.GetDefineFlag("highest_order_dc");
-    if (order == 0)
+    if (order == 0 || ma->GetDimension() == 1)
       highest_order_dc = false;
 
     hide_highest_order_dc = flags.GetDefineFlag("hide_highest_order_dc");

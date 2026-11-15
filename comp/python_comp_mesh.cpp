@@ -883,6 +883,8 @@ will create a CF being 1e6 on the top boundary and 0. elsewhere.
 )delimiter")
     .def("LocalHCF", [](MeshAccess& self) -> shared_ptr<CoefficientFunction>
             {
+              if (!self.GetNetgenMesh()->LocalHFunctionGenerated())
+                throw Exception ("LocalHCF: mesh has no local mesh-size function");
               return make_shared<LocalHCF>( self.GetNetgenMesh()->GetLocalH() );
             })
     .def("GeoParamCF", [](shared_ptr<MeshAccess> self) -> shared_ptr<CoefficientFunction>
@@ -967,6 +969,8 @@ will create a CF being 1e6 on the top boundary and 0. elsewhere.
     .def("GetParentFaces", [](MeshAccess & ma, int fnum) -> py::tuple
          {
            PyCheckIndex (fnum, ma.GetNFaces(), "face number");
+           if (!ma.GetNetgenMesh()->GetTopology().HasParentFaces())
+             throw Exception ("GetParentFaces: mesh has no parent faces (not refined)");
            auto [info,nrs] = ma.GetParentFaces (fnum);
            if (nrs[1] == -1)
              return py::make_tuple(nrs[0]);
@@ -992,12 +996,16 @@ will create a CF being 1e6 on the top boundary and 0. elsewhere.
          [](MeshAccess & ma, ElementId id, int order)
          {
            PyCheckId (ma, id);
+           if (id.VB() != VOL || ma.GetDimension() < 2)
+             throw Exception ("SetElementOrder: only for VOL elements of 2D and 3D meshes");
            ma.SetElOrder(id.Nr(), order);
          }, py::arg("eid"), py::arg("order"), "For backward compatibility, not recommended to use")
     .def("SetElementOrders",
          [](MeshAccess & ma, ElementId id, tuple<int,int,int> orders)
          {
            PyCheckId (ma, id);
+           if (id.VB() != VOL || ma.GetDimension() < 2)
+             throw Exception ("SetElementOrders: only for VOL elements of 2D and 3D meshes");
            ma.SetElOrders(id.Nr(), get<0>(orders), get<1>(orders), get<2>(orders));
          }, py::arg("eid"), py::arg("orders"), "Set anisotropic element order (expert only)")
     

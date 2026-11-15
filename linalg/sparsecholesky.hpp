@@ -198,7 +198,7 @@ namespace ngla
     virtual void Update() override
     {
       // FactorNew (dynamic_cast<const SparseMatrix<TM>&> (*matrix.lock().get()));
-      auto castmatrix = dynamic_pointer_cast<const SparseMatrix<TM>>(matrix.lock());
+      auto castmatrix = dynamic_pointer_cast<const SparseMatrix<TM>>(LockedMatrix());
       FactorNew (*castmatrix);
     }
     ///

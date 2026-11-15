@@ -118,6 +118,7 @@ namespace ngfem
     if (num_dt)
       {
         auto op = dynamic_pointer_cast<ProxyFunction> (hproxy->Deriv());
+        if (!op) return nullptr;
         for (int i = 0; i < num_dt; i++)
           op = op->Dt();
         return op;
@@ -221,6 +222,7 @@ namespace ngfem
     if (num_dt)
       {
         auto op = dynamic_pointer_cast<ProxyFunction> (hproxy->GetAdditionalProxy(name));
+        if (!op) return nullptr;
         for (int i = 0; i < num_dt; i++)
           op = op->Dt();
         return op;
@@ -863,7 +865,9 @@ namespace ngfem
   {
     if (deriv_evaluator && deriv_evaluator->Name() == name)
       return Deriv();
-    return GetAdditionalProxy (name); 
+    if (auto op = GetAdditionalProxy (name))
+      return op;
+    throw Exception ("Operator \"" + name + "\" not available for this proxy");
   }
 
   
@@ -882,6 +886,7 @@ namespace ngfem
     if (num_dt)
       {
         auto op = dynamic_pointer_cast<ProxyFunction> (hproxy->Operator(diffop));
+        if (!op) throw Exception ("operator " + diffop->Name() + " not available");
         for (int i = 0; i < num_dt; i++)
           op = op->Dt();
         return op;

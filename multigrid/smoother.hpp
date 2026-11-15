@@ -162,6 +162,8 @@ namespace ngmg
 			   const ngla::BaseVector & f, ngla::BaseVector & d) const;
     ///
     virtual AutoVector CreateVector(int level) const;
+  private:
+    void CheckLevel (int level) const;
   };
 
 
@@ -227,6 +229,8 @@ namespace ngmg
 
     void SetDirectSolverCluster(shared_ptr<Array<int>> cluster)
     {  userdefined_direct = cluster; }
+  private:
+    void CheckLevel (int level) const;
   };
 
 

@@ -74,7 +74,7 @@ namespace ngcomp
 
     static shared_ptr<Preconditioner> CreateBF (shared_ptr<BilinearForm> bfa, const Flags & flags, const string & name)
     {
-      if (bfa->GetFESpace()->IsComplex())
+      if (bfa && bfa->GetFESpace()->IsComplex())
         return make_shared<H1AMG_Preconditioner<Complex>> (bfa, flags, name);
       else
         return make_shared<H1AMG_Preconditioner<double>> (bfa, flags, name);
@@ -96,7 +96,17 @@ namespace ngcomp
       param.use_smoothed_prolongation = flags.GetDefineFlagX("smoothedprolongation").IsMaybeTrue();
       param.max_coarse = int(flags.GetNumFlag("maxcoarse", 10));
       param.max_level = int(flags.GetNumFlag("maxlevel", 20));
+      CheckBilinearForm (abfa);
     }
+
+    shared_ptr<Preconditioner> Create (shared_ptr<BilinearForm> bfa, const Flags & cflags) const override
+    {
+      Flags allflags{flags};
+      allflags.Update (cflags);
+      return CreateBF (bfa, allflags, GetName());
+    }
+
+    void CheckBilinearForm (shared_ptr<BilinearForm> bfa) const;
 
     virtual void InitLevel (shared_ptr<BitArray> _freedofs) override
     {
@@ -113,9 +123,9 @@ namespace ngcomp
 
     virtual void Update () override { ; }
 
-    virtual const BaseMatrix & GetAMatrix() const override { return GetBilinearForm()->GetMatrix(); }
     virtual const BaseMatrix & GetMatrix() const override 
     {
+      if (!mat) ThrowPreconditionerNotReady();
       return *mat;
     }
 

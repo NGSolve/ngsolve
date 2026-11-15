@@ -636,15 +636,26 @@ when building the system matrices.
   m.def("SetHeapSize",
         [](size_t heapsize)
         {
+          static size_t tl_heapsize = 50*1000*1000;   // ngcore default
+          if (heapsize > std::numeric_limits<size_t>::max() / max(1, TaskManager::GetMaxThreads()))
+            throw py::value_error("SetHeapSize: heap size too large");
+          // allocate first, keep the old heaps if that fails
           if (heapsize > global_heapsize)
             {
-              global_heapsize = heapsize;
               glh = LocalHeap (heapsize, "python-comp lh", true);
+              global_heapsize = heapsize;
               lhp.Clear();
             }
-
-          ngcore::SetTLHeapSize(heapsize);
-          
+          try
+            {
+              ngcore::SetTLHeapSize(heapsize);
+              tl_heapsize = heapsize;
+            }
+          catch (...)
+            {
+              ngcore::SetTLHeapSize(tl_heapsize);
+              throw;
+            }
         }, py::arg("size"), docu_string(R"raw_string(
 Set a new heapsize.
 
@@ -1066,6 +1077,8 @@ region : ngsolve.comp.Region
     .def("SetOrder",
          [](shared_ptr<FESpace> self, ELEMENT_TYPE et, int order)
          {
+           if (order < 0) throw py::value_error("order must be non-negative");
+           FESpace::CheckOrder (order);
            self->SetOrder (et, order);
          },
          py::arg("element_type"),
@@ -1085,6 +1098,7 @@ order : object
          [](shared_ptr<FESpace> self, NodeId ni, int order)
          {
            PyCheckId (*self->GetMeshAccess(), ni);
+           FESpace::CheckOrder (order);
            self->SetOrder(ni, order);
          },
          py::arg("nodeid"),
@@ -1156,6 +1170,8 @@ ei : ngsolve.comp.ElementId
 )raw_string"))
     .def("Elements",
            [](const FESpace &self, const Region &reg) {
+             if (reg.Mesh() != self.GetMeshAccess())
+               throw Exception ("Elements: region is defined on another mesh");
              auto range = FESpace::ElementRange(self.Elements(reg.VB(), glh))
                | filter([reg](auto el) { return reg.Mask().Test(el.GetIndex()); });
              return py::make_iterator(range.begin(), range.end());
@@ -1759,6 +1775,20 @@ component : int
         }), py::arg("space"), py::arg("dim")=nullopt, py::arg("symmetric")=false,
          py::arg("deviatoric")=false, py::arg("skewsymmetric")=false,
         py::arg("autoupdate")=false)
+    .def(py::pickle([] (py::object pyfes)
+                    {
+                      auto fes = py::cast<shared_ptr<MatrixFESpace>>(pyfes);
+                      return py::make_tuple((*fes)[0], fes->GetVDim(), fes->GetFlags(), pyfes.attr("__dict__"));
+                    },
+                    [] (py::tuple state)
+                    {
+                      auto fes = make_shared<MatrixFESpace>(state[0].cast<shared_ptr<FESpace>>(),
+                                                            state[1].cast<int>(), state[2].cast<Flags>());
+                      fes->Update();
+                      fes->FinalizeUpdate();
+                      py::cast(fes).attr("__dict__") = state[3];
+                      return fes;
+                    }))
     ;
   
   ExportFESpace<HCurlHighOrderFESpace> (m, "HCurl")
@@ -2084,6 +2114,18 @@ fespace : ngsolve.comp.FESpace
                     connect_auto_update(hiddenfes.get());
                     return hiddenfes;
                   }), py::arg("fespace"))
+    .def(py::pickle([](const HiddenFESpace & fes)
+                    {
+                      return py::make_tuple(fes.GetBaseSpace(), fes.GetFlags());
+                    },
+                    [] (py::tuple state)
+                    {
+                      auto fes = make_shared<HiddenFESpace>(state[0].cast<shared_ptr<FESpace>>(), state[1].cast<Flags>());
+                      fes->Update();
+                      fes->FinalizeUpdate();
+                      connect_auto_update(fes.get());
+                      return fes;
+                    }))
     ;
 
 
@@ -2103,6 +2145,18 @@ fespace : ngsolve.comp.FESpace
                     connect_auto_update(refes.get());
                     return refes;
                   }), py::arg("fespace"), py::arg("autoupdate")=false)
+    .def(py::pickle([](const ReorderedFESpace & fes)
+                    {
+                      return py::make_tuple(fes.GetBaseSpace(), fes.GetFlags());
+                    },
+                    [] (py::tuple state)
+                    {
+                      auto fes = make_shared<ReorderedFESpace>(state[0].cast<shared_ptr<FESpace>>(), state[1].cast<Flags>());
+                      fes->Update();
+                      fes->FinalizeUpdate();
+                      connect_auto_update(fes.get());
+                      return fes;
+                    }))
     .def("GetClusters", &ReorderedFESpace::GetClusters)
     /*
     .def(py::pickle([](const PeriodicFESpace* per_fes)
@@ -2256,6 +2310,23 @@ active_dofs : BitArray or None
        return pfes;
 
      }))
+    .def(py::pickle([](const PlateauFESpace & fes)
+                    {
+                      py::list plateaus;
+                      for (auto & reg : fes.GetPlateaus())
+                        plateaus.append(reg);
+                      return py::make_tuple(fes.GetBaseSpace(), plateaus);
+                    },
+                    [] (py::tuple state)
+                    {
+                      Array<Region> plateaus;
+                      for (auto reg : state[1].cast<py::list>())
+                        plateaus.Append (reg.cast<Region>());
+                      auto fes = make_shared<PlateauFESpace>(state[0].cast<shared_ptr<FESpace>>(), std::move(plateaus));
+                      fes->Update();
+                      fes->FinalizeUpdate();
+                      return fes;
+                    }))
     ;
    
    py::class_<GlobalInterfaceSpace, shared_ptr<GlobalInterfaceSpace>,
@@ -2279,6 +2350,36 @@ active_dofs : BitArray or None
           "periodic"_a = false, "periodicu"_a = false,
           "periodicv"_a = false, "order"_a = 3, "complex"_a = false,
           "polar"_a = false, "autoupdate"_a = false)
+     .def(py::pickle([](const GlobalInterfaceSpace & fes)
+                     {
+                       auto & flags = fes.GetFlags();
+                       py::object definedon = py::none();
+                       if (flags.AnyFlagDefined("definedon"))
+                         definedon = py::cast(std::any_cast<Region>(flags.GetAnyFlag("definedon")));
+                       return py::make_tuple(fes.GetMeshAccess(),
+                                             std::any_cast<shared_ptr<CoefficientFunction>>(flags.GetAnyFlag("mapping")),
+                                             definedon,
+                                             flags.GetDefineFlag("periodic"), flags.GetDefineFlag("periodicu"),
+                                             flags.GetDefineFlag("periodicv"), fes.GetOrder(),
+                                             flags.GetDefineFlag("complex"), flags.GetDefineFlag("polar"),
+                                             flags.GetDefineFlag("autoupdate"));
+                     },
+                     [] (py::tuple state)
+                     {
+                       optional<Region> definedon;
+                       if (!state[2].is_none()) definedon = state[2].cast<Region>();
+                       auto fes = CreateGlobalInterfaceSpace(state[0].cast<shared_ptr<MeshAccess>>(),
+                                                             state[1].cast<shared_ptr<CoefficientFunction>>(),
+                                                             definedon,
+                                                             state[3].cast<bool>(), state[4].cast<bool>(),
+                                                             state[5].cast<bool>(), state[6].cast<int>(),
+                                                             state[7].cast<bool>(), state[8].cast<bool>(),
+                                                             state[9].cast<bool>());
+                       fes->Update();
+                       fes->FinalizeUpdate();
+                       connect_auto_update(fes.get());
+                       return fes;
+                     }))
      ;
 
 
@@ -2345,8 +2446,8 @@ active_dofs : BitArray or None
                                  py::kwargs kwargs)
     {
       auto flags = CreateFlagsFromKwArgs(kwargs, gf_class);
-      if (flags.GetNumFlag("multidim", 1) < 1)
-        throw py::value_error("multidim must be at least 1");
+      if (!(flags.GetNumFlag("multidim", 1) >= 1 && flags.GetNumFlag("multidim", 1) <= std::numeric_limits<int>::max()))
+        throw py::value_error("multidim must be at least 1 and fit into an int");
       flags.SetFlag("novisual");
       auto gf = CreateGridFunction(fes, name, flags);
       gf->Update();
@@ -3844,10 +3945,9 @@ integrator : ngsolve.fem.LFI
     .def(py::init([pre_bddc](OptPtr<BilinearForm> bf, py::kwargs kwargs)->shared_ptr<BASE_BDDCPreconditioner>
     {
       auto flags = CreateFlagsFromKwArgs(kwargs, pre_bddc);
-      if (bf && bf->GetFESpace()->IsComplex())
-        return make_shared<BDDCPreconditioner<Complex>> (bf, flags, "bddc");
-      else
-        return make_shared<BDDCPreconditioner<double>> (bf, flags, "bddc");
+      // scalar types chosen from the form, as for Preconditioner(bf, "bddc")
+      auto pre = GetPreconditionerClasses().GetPreconditioner("bddc")->creatorbf(bf, flags, "bddc");
+      return dynamic_pointer_cast<BASE_BDDCPreconditioner>(pre);
     }), py::arg("bf")=nullptr)
     .def_static("__flags_doc__", []()
     {
@@ -3859,6 +3959,7 @@ integrator : ngsolve.fem.LFI
 
   py::class_<BDDCPreconditioner<double>, shared_ptr<BDDCPreconditioner<double>>, BASE_BDDCPreconditioner>(m,"BDDCPreconditioner_double");
   py::class_<BDDCPreconditioner<Complex>, shared_ptr<BDDCPreconditioner<Complex>>, BASE_BDDCPreconditioner>(m,"BDDCPreconditioner_complex");  
+  py::class_<BDDCPreconditioner<double,Complex>, shared_ptr<BDDCPreconditioner<double,Complex>>, BASE_BDDCPreconditioner>(m,"BDDCPreconditioner_realcomplex");
 
   
   
@@ -3871,7 +3972,8 @@ integrator : ngsolve.fem.LFI
                     auto mgpre = make_shared<MGPreconditioner>(bfa,flags, name);
                     if(lo_precond.has_value())
                       mgpre->SetCoarsePreconditioner(lo_precond.value());
-                    if (bfa && bfa->GetNLevels() > 0)
+                    // only if the form is assembled on the current mesh level
+                    if (bfa && bfa->GetNLevels() > 0 && bfa->GetNLevels() == bfa->GetMeshAccess()->GetNLevels())
                       mgpre->Update();
                     return mgpre;
                   }), py::arg("bf")=nullptr, "name"_a = "multigrid", "lo_preconditioner"_a = nullopt)
@@ -3948,7 +4050,7 @@ integrator : ngsolve.fem.LFI
                           py::object acreator)
       : Preconditioner(bfa, flags), creator(acreator)
     {
-      if (bfa->GetMatrixPtr())
+      if (bfa && bfa->GetMatrixPtr())
         Update();
     }
     void InitLevel (shared_ptr<BitArray> afreedofs) override
@@ -3969,6 +4071,7 @@ integrator : ngsolve.fem.LFI
     {
       // cout << "update pre" << endl;
       auto bfa = GetBilinearForm();
+      if (!bfa) ThrowPreconditionerNotReady();
       freedofs = bfa->GetFESpace()->GetFreeDofs(bfa->UsesEliminateInternal());
       mat = bfa->GetMatrixPtr();
 
@@ -3979,26 +4082,31 @@ integrator : ngsolve.fem.LFI
 
     const BaseMatrix & GetAMatrix() const override
     {
+      if (!mat) ThrowPreconditionerNotReady();
       return *mat;
     }
 
     const BaseMatrix& GetMatrix() const override
     {
+      if (!premat) ThrowPreconditionerNotReady();
       return *premat;
     }
     
     shared_ptr<BaseMatrix> GetMatrixPtr() override
     {
+      if (!premat) ThrowPreconditionerNotReady();
       return premat;
     }
 
     void Mult (const BaseVector & x, BaseVector & y) const override
     {
+      if (!premat) ThrowPreconditionerNotReady();
       premat->Mult(x, y);
     }
 
     void MultAdd (double s, const BaseVector & x, BaseVector & y) const override
     {
+      if (!premat) ThrowPreconditionerNotReady();
       premat->MultAdd(s, x, y);
     }
   };
@@ -4045,6 +4153,8 @@ integrator : ngsolve.fem.LFI
         {
           static Timer t("Integrate CF"); RegionTimer reg(t);
           // static mutex addcomplex_mutex;
+          if (order < 0 || order > 1000)
+            throw Exception ("Integrate: order must be between 0 and 1000, got " + ToString(order));
 
           shared_ptr<MeshAccess> ma;
           if(auto is_region = get_if<Region>(&mesh_or_reg)) // ; is_region)
@@ -5338,15 +5448,10 @@ AssembleLinearization, Apply and Energy keep the pairs.
         return py::bytes(webgui::ToArchive(make_shared<webgui::WebguiArchiveData>(ma, cf), binary));
   });
 
-  m.def("FromArchiveMesh", [](string data, bool binary){
-        return webgui::FromArchive<netgen::Mesh>(data, binary);
-  });
+  // FromArchiveMesh/FESpace removed: unvalidated input, no users
   m.def("FromArchiveCF", [](string  data, bool binary){
         return webgui::FromArchive<CoefficientFunction>(data, binary);
-  });
-  m.def("FromArchiveFESpace", [](string data, bool binary){
-        return webgui::FromArchive<FESpace>(data, binary);
-  });
+  }, "for testing ToArchive only: data must come from ToArchive, other input may crash");
 
   /////////////////////////////////////////////////////////////////////////////////////
 

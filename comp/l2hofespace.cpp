@@ -1410,8 +1410,8 @@ global system.
 	if (ma->GetDimension() == 2 && ni.GetType() == NT_FACE)
 	  {
 	    Array<int> elnr;
-	    ma->GetFacetSurfaceElements(ni.GetNr(),elnr);
-	    if (elnr[0] < order_inner.Size())
+	    if (auto sel = ma->GetNode<2>(ni.GetNr()).surface_el; sel >= 0) elnr.Append(sel);   // 2D: face -> element
+	    if (elnr.Size() && elnr[0] < order_inner.Size())
 	      order_inner[elnr[0]] = order;
 	  }
         else if (ni.GetNr() < order_inner.Size())
@@ -1428,8 +1428,8 @@ global system.
 	if (ma->GetDimension() == 2 && ni.GetType() == NT_FACE)
 	  {
 	    Array<int> elnr;
-	    ma->GetFacetSurfaceElements(ni.GetNr(),elnr);
-	    if (elnr[0] < order_inner.Size())
+	    if (auto sel = ma->GetNode<2>(ni.GetNr()).surface_el; sel >= 0) elnr.Append(sel);   // 2D: face -> element
+	    if (elnr.Size() && elnr[0] < order_inner.Size())
 	      return order_inner[elnr[0]][0];
 	  }
         else if (ni.GetNr() < order_inner.Size())
@@ -1943,6 +1943,8 @@ global system.
   shared_ptr<BaseMatrix> L2HighOrderFESpace ::
   GetTraceOperator (shared_ptr<FESpace> tracespace, bool avg) const
   {
+    if (tracespace->GetMeshAccess() != ma)
+      throw Exception ("TraceOperator: trace space is defined on another mesh");
     LocalHeap lh(1000000);
     Array<int> classnr(ma->GetNE());
     ma->IterateElements
@@ -1990,6 +1992,8 @@ global system.
             ElementId ei(VOL, elclass_inds[i]);
             GetDofNrs(ei, dnumsx);
             tracespace->GetDofNrs(ei, dnumsy);
+            if (dnumsx.Size() != felx.GetNDof() || dnumsy.Size() != trace_op_x.Height())
+              throw Exception ("TraceOperator: trace space " + tracespace->GetClassName() + " does not match the element traces of " + GetClassName());
             xdofs[i] = dnumsx;
             ydofs[i] = dnumsy;
 
@@ -2056,6 +2060,10 @@ global system.
         // auto & trafo = GetMeshAccess()->GetTrafo(ei, lh);
 
         Matrix<> trace_op_x = GetTraceMatrix (felx);
+        Array<DofId> tracedofs;
+        if (tracespace.GetMeshAccess() == ma) tracespace.GetDofNrs(ei, tracedofs);
+        if (tracespace.GetMeshAccess() != ma || tracedofs.Size() != trace_op_x.Height())
+          throw Exception ("GetTrace: trace space " + tracespace.GetClassName() + " does not match the element traces of " + GetClassName());
 
         Matrix<> temp_x(elclass_inds.Size(), trace_op_x.Width());
         Matrix<> temp_trace(elclass_inds.Size(), trace_op_x.Height());
@@ -2125,6 +2133,10 @@ global system.
         // auto & trafo = GetMeshAccess()->GetTrafo(ei, lh);
 
         Matrix<> trace_op_x = GetTraceMatrix (felx);
+        Array<DofId> tracedofs;
+        if (tracespace.GetMeshAccess() == ma) tracespace.GetDofNrs(ei, tracedofs);
+        if (tracespace.GetMeshAccess() != ma || tracedofs.Size() != trace_op_x.Height())
+          throw Exception ("GetTrace: trace space " + tracespace.GetClassName() + " does not match the element traces of " + GetClassName());
 
         Matrix<> temp_x(elclass_inds.Size(), trace_op_x.Width());
         Matrix<> temp_trace(elclass_inds.Size(), trace_op_x.Height());
@@ -2499,7 +2511,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
 	  {
 	    Array<int> elnr;
 	    ma->GetFacetSurfaceElements(ni.GetNr(),elnr);
-	    if (elnr[0] < order_inner.Size())
+	    if (elnr.Size() && elnr[0] < order_inner.Size())
 	      order_inner[elnr[0]] = order;
 	  }
         else if (ni.GetNr() < order_inner.Size())
@@ -2517,7 +2529,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
 	  {
 	    Array<int> elnr;
 	    ma->GetFacetSurfaceElements(ni.GetNr(),elnr);
-	    if (elnr[0] < order_inner.Size())
+	    if (elnr.Size() && elnr[0] < order_inner.Size())
 	      return order_inner[elnr[0]][0];
 	  }
         else if (ni.GetNr() < order_inner.Size())
@@ -4933,6 +4945,8 @@ One can evaluate the vector-valued function, and one can take the gradient.
       piola = flags.GetDefineFlag ("piola") || flags.GetDefineFlag ("piola2");
       // covariant2 is the old name of covariant
       covariant = flags.GetDefineFlag ("covariant") || flags.GetDefineFlag ("covariant2");
+      if ((piola || covariant) && ma->GetDimension() == 1)
+        throw Exception ("VectorL2: piola and covariant need a 2D or 3D mesh");
 
       if (piola)
         {
@@ -4968,6 +4982,12 @@ One can evaluate the vector-valued function, and one can take the gradient.
       else
         switch (ma->GetDimension())
           {
+          case 1:
+            evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdVectorH1<1>>>();
+            flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradVectorH1<1>>>();
+            additional_evaluators.Set ("div", make_shared<T_DifferentialOperator<DiffOpDivVectorH1<1>>> ());
+            additional_evaluators.Set ("Grad", make_shared<T_DifferentialOperator<DiffOpGradVectorH1<1>>> ());
+            break;
           case 2:
             evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdVectorH1<2>>>();
             flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradVectorH1<2>>>();

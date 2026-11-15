@@ -808,7 +808,7 @@ namespace ngla
     BlockVector (const Array<shared_ptr<BaseVector>> & avecs);
 
     size_t NBlocks() const throw () { return vecs.Size(); }
-    virtual int EntrySizeScal() const throw () override { return vecs[0]->EntrySizeScal(); }
+    virtual int EntrySizeScal() const throw () override { return vecs.Size() ? vecs[0]->EntrySizeScal() : 1; }
     shared_ptr<BaseVector> & operator[] (size_t i) const { return vecs[i]; }
 
     void * Memory () const override;

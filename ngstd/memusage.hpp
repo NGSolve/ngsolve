@@ -57,6 +57,17 @@ public:
   const void * Owner () const { return owner; }
 };
 
+  // translated to MemoryError in Python
+  class NGS_DLL_HEADER AllocationException : public Exception
+  {
+  public:
+    AllocationException (const string & s);
+    ~AllocationException () override;
+  };
+
+  NGS_DLL_HEADER size_t PhysicalMemory ();
+  // throws AllocationException if n*elsize overflows or exceeds the physical memory
+  NGS_DLL_HEADER void CheckAllocationSize (size_t n, size_t elsize, const char * what);
 }
 
 #endif

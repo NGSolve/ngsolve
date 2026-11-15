@@ -560,18 +560,19 @@ void NGS_DLL_HEADER ExportNgbla(py::module & m) {
 
     py::class_<VD, FVD> cvd(m, "VectorD", py::buffer_protocol());
     cvd.def(py::init<SliceVector<double>>());
-    cvd.def(py::init( [] (int n) { if (n < 0) throw py::value_error ("negative size"); return new VD(n); }));
+    cvd.def(py::init( [] (int n) { if (n < 0) throw py::value_error ("negative size"); CheckAllocationSize (n, sizeof(double), "Vector"); return new VD(n); }));
     PyDefVecBuffer<VD>(cvd);
     ExportImmediateOperators<VD, double>(cvd);
 
     py::class_<VC, FVC > cvc(m, "VectorC", py::buffer_protocol());
-    cvc.def(py::init( [] (int n) { if (n < 0) throw py::value_error ("negative size"); return new VC(n); }));
+    cvc.def(py::init( [] (int n) { if (n < 0) throw py::value_error ("negative size"); CheckAllocationSize (n, sizeof(Complex), "Vector"); return new VC(n); }));
     PyDefVecBuffer<VC>(cvc);
     ExportImmediateOperators<VC, Complex>(cvc);
 
     m.def("Vector",
             [] (int n, bool is_complex) {
                 if (n < 0) throw py::value_error ("negative length");
+                CheckAllocationSize (n, is_complex ? sizeof(Complex) : sizeof(double), "Vector");
                 if(is_complex) {
                   return py::cast(Vector<Complex>(n));
                 }
@@ -818,13 +819,13 @@ vals : tuple
     PyDefMatBuffer<FMC>(class_FMC);
 
     auto class_MD = py::class_<Matrix<double>, FMD>(m, "MatrixD", py::buffer_protocol())
-      .def(py::init( [] (int n, int m) { if (n < 0 || m < 0) throw py::value_error ("negative matrix dimension"); return new Matrix<double>(n, m); }), py::arg("n"), py::arg("m"), "Makes matrix of dimension n x m")
+      .def(py::init( [] (int n, int m) { if (n < 0 || m < 0) throw py::value_error ("negative matrix dimension"); CheckAllocationSize (n, size_t(m)*sizeof(double), "Matrix"); return new Matrix<double>(n, m); }), py::arg("n"), py::arg("m"), "Makes matrix of dimension n x m")
         ;
     PyDefMatBuffer<Matrix<>>(class_MD);
     ExportImmediateOperators<Matrix<double>, double>(class_MD);
 
     auto class_MC = py::class_<Matrix<Complex>, FMC >(m, "MatrixC", py::buffer_protocol())
-      .def(py::init( [] (int n, int m) { if (n < 0 || m < 0) throw py::value_error ("negative matrix dimension"); return new Matrix<Complex>(n, m); }), py::arg("n"), py::arg("m"), "Makes matrix of dimension n x m")
+      .def(py::init( [] (int n, int m) { if (n < 0 || m < 0) throw py::value_error ("negative matrix dimension"); CheckAllocationSize (n, size_t(m)*sizeof(Complex), "Matrix"); return new Matrix<Complex>(n, m); }), py::arg("n"), py::arg("m"), "Makes matrix of dimension n x m")
         ;
     PyDefMatBuffer<Matrix<Complex>>(class_MC);
     ExportImmediateOperators<Matrix<Complex>, Complex>(class_MC);
@@ -850,6 +851,7 @@ vals : tuple
           [] (int h, optional<int> ow, bool is_complex) {
             int w = ow.value_or (h);
             if (h < 0 || w < 0) throw py::value_error ("negative matrix dimension");
+            CheckAllocationSize (h, size_t(w)*(is_complex ? sizeof(Complex) : sizeof(double)), "Matrix");
             if(is_complex) return py::cast(Matrix<Complex>(h,w));
             else return py::cast(Matrix<double>(h,w));
           },
@@ -967,7 +969,7 @@ complex : bool
 
 
     py::class_<SparseVector<double>> (m, "SparseVector")
-      .def(py::init( [] (int n) { return new SparseVector<double>(n); }))
+      .def(py::init( [] (int n) { if (n < 0) throw py::value_error ("negative size"); return new SparseVector<double>(n); }))
       .def("__str__", &ToString<SparseVector<double>>)
       .def("__setitem__", [](SparseVector<double> & self, py::ssize_t i, double v) { self[PyCheckIndex (i, self.Size())] = v; })
       .def("__getitem__", [](SparseVector<double> & self, py::ssize_t i) { return self[PyCheckIndex (i, self.Size())]; })

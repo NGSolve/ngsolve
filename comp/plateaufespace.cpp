@@ -8,6 +8,9 @@ namespace ngcomp
   PlateauFESpace (shared_ptr<FESpace> afes, Array<Region> aplateaus)
     : CompressedFESpace(afes), plateaus(aplateaus)
   {
+    for (auto & reg : plateaus)
+      if (reg.Mesh() != afes->GetMeshAccess())
+        throw Exception ("PlateauFESpace: plateau region is defined on another mesh");
     /*
     cout << "PlateauFESpace, plateaus: " << endl;
     for (auto p : plateaus)

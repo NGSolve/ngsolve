@@ -53,14 +53,15 @@ namespace ngla
   // size of a format: plain size, or the sum over blocks
   static int FormatSize (const VecFormat & f, const char * what, const type_info & type)
   {
-    if (f.size) return int(*f.size);
-    if (f.IsBlock())
-      {
-        int sum = 0;
-        for (auto & b : f.blocks) sum += FormatSize (b, what, type);
-        return sum;
-      }
-    throw Exception (string("BaseMatrix::") + what + " unknown, type = " + type.name());
+    size_t s = 0;
+    if (f.size) s = *f.size;
+    else if (f.IsBlock())
+      for (auto & b : f.blocks) s += FormatSize (b, what, type);
+    else
+      throw Exception (string("BaseMatrix::") + what + " unknown, type = " + type.name());
+    if (s > size_t(std::numeric_limits<int>::max()))
+      throw Exception (string("BaseMatrix::") + what + " = " + ToString(s) + " exceeds the int range, type = " + type.name());
+    return int(s);
   }
 
   int BaseMatrix :: VHeight() const

@@ -18,6 +18,7 @@ namespace ngcomp
     Array<Region> plateaus;
   public:
     PlateauFESpace (shared_ptr<FESpace> afes, Array<Region> aplateaus);
+    const Array<Region> & GetPlateaus () const { return plateaus; }
     void Update() override;
   };
   

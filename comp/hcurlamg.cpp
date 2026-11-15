@@ -1050,7 +1050,7 @@ namespace ngcomp
                        const string& name)
     : Preconditioner(bfa, flags, name)
   {
-    fes = bfa->GetFESpace();
+    if (bfa) fes = bfa->GetFESpace();
     param.potential_smooth_on_each_level = true; // flags.GetDefineFlag("dirichlet_on_each_level");
 
     param.verbose = int(flags.GetNumFlag("verbose", 0));
@@ -1072,6 +1072,26 @@ namespace ngcomp
   }
 
 
+  // edge and face weights assume triangular faces
+  static void CheckSimplicialFaces (const MeshAccess & ma, const string & name)
+  {
+    if (ma.GetDimension() < 2)
+      throw Exception(name + " needs a 2D or 3D mesh");
+    for (size_t f = 0; f < ma.GetNFaces(); f++)
+      if (ma.GetFaceType(f) != ET_TRIG)
+        throw Exception(name + " needs a simplicial mesh (triangular faces)");
+  }
+
+  template <typename SCAL>
+  static shared_ptr<SparseMatrix<SCAL>> GetAMGMatrix (shared_ptr<BaseMatrix> mat, const string & name)
+  {
+    auto smat = dynamic_pointer_cast<SparseMatrix<SCAL>> (mat);
+    if (!smat)
+      throw Exception(name + " needs a sparse matrix of type " +
+                      typeid(SparseMatrix<SCAL>).name() + ", got " + (mat ? typeid(*mat).name() : "none"));
+    return smat;
+  }
+
   void HCurlAMG :: InitLevel(shared_ptr<BitArray> _freedofs)
   {
     // dof numbers are used as edge numbers
@@ -1079,6 +1099,7 @@ namespace ngcomp
       throw Exception("hcurlamg needs a lowest order HCurl space (one dof per edge), got " +
                       fes->GetClassName() + " with " + ToString(fes->GetNDof()) + " dofs on " +
                       ToString(ma->GetNEdges()) + " edges");
+    CheckSimplicialFaces (*ma, "hcurlamg");
     freedofs = _freedofs; mat = nullptr;
   }
 
@@ -1205,15 +1226,15 @@ namespace ngcomp
 
     if(matrix->IsComplex())
       {
-        auto amat = dynamic_pointer_cast<SparseMatrix<Complex>>
-          (const_cast<BaseMatrix*>(matrix)->shared_from_this());
+        auto amat = GetAMGMatrix<Complex>
+          (const_cast<BaseMatrix*>(matrix)->shared_from_this(), "hcurlamg");
         mat = make_shared<HCurlAMG_Matrix<Complex>>(amat, freedofs, f2e, e2v,
                                                     edge_weights, face_weights, 0, param);
       }
     else
       {
-        auto amat = dynamic_pointer_cast<SparseMatrix<double>>
-          (const_cast<BaseMatrix*>(matrix)->shared_from_this());
+        auto amat = GetAMGMatrix<double>
+          (const_cast<BaseMatrix*>(matrix)->shared_from_this(), "hcurlamg");
         mat = make_shared<HCurlAMG_Matrix<double>>(amat, freedofs, f2e, e2v,
                                                    edge_weights, face_weights, 0, param);
       }
@@ -1278,6 +1299,20 @@ namespace ngcomp
   {
   }
 
+  void APhiHCurlAMG :: InitLevel(shared_ptr<BitArray> _freedofs)
+  {
+    // dofs: lowest order HCurl (one per edge), then H1 order 1 (one per vertex), tets only
+    auto cfes = dynamic_pointer_cast<CompoundFESpace>(fes);
+    if (!cfes || cfes->GetNSpaces() != 2 ||
+        !dynamic_pointer_cast<HCurlHighOrderFESpace>((*cfes)[0]) ||
+        (*cfes)[0]->GetNDof() != ma->GetNEdges() || (*cfes)[1]->GetNDof() != ma->GetNV() ||
+        ma->GetDimension() != 3)
+      throw Exception("APhiamg needs HCurl(order=0) * H1(order=1) on a 3D tet mesh, got " +
+                      (fes ? fes->GetClassName() : string("none")));
+    CheckSimplicialFaces (*ma, "APhiamg");
+    freedofs = _freedofs; mat = nullptr;
+  }
+
   void APhiHCurlAMG::AddElementMatrix(FlatArray<int> dnums,
                                       FlatMatrix<double> elmat,
                                       ElementId id, LocalHeap & lh)
@@ -1337,8 +1372,7 @@ namespace ngcomp
       {
         // auto amat = dynamic_pointer_cast<SparseMatrix<Complex>>
         //   (const_cast<BaseMatrix*>(matrix)->shared_from_this());
-        auto amat = dynamic_pointer_cast<SparseMatrix<Complex>>
-          (bfa->GetMatrixPtr());
+        auto amat = GetAMGMatrix<Complex> (bfa->GetMatrixPtr(), "APhiamg");
         mat = make_shared<APhiMatrix<Complex>>(amat, freedofs, f2e, e2v,
                                                edge_weights, face_weights, 0, param);
       }
@@ -1346,8 +1380,7 @@ namespace ngcomp
       {
         // auto amat = dynamic_pointer_cast<SparseMatrix<double>>
         //   (const_cast<BaseMatrix*>(matrix)->shared_from_this());
-        auto amat = dynamic_pointer_cast<SparseMatrix<double>>
-          (bfa->GetMatrixPtr());
+        auto amat = GetAMGMatrix<double> (bfa->GetMatrixPtr(), "APhiamg");
         mat = make_shared<APhiMatrix<double>>(amat, freedofs, f2e, e2v,
                                               edge_weights, face_weights, 0, param);
       }

@@ -57,7 +57,10 @@ namespace ngcomp
     void Update() override {}
 
     const BaseMatrix& GetMatrix() const override
-    { return *mat; }
+    {
+      if (!mat) ThrowPreconditionerNotReady();
+      return *mat;
+    }
 
   private:
     template<typename SCAL>
@@ -75,14 +78,16 @@ namespace ngcomp
                  const Flags& _flags,
                  const string& name = "A-Phi_HcurlAMG");
 
-    void InitLevel(shared_ptr<BitArray> _freedofs) override
-    { freedofs = _freedofs; mat = nullptr; }
+    void InitLevel(shared_ptr<BitArray> _freedofs) override;
 
     void FinalizeLevel(const BaseMatrix* matrix) override;
     void Update() override {}
 
     const BaseMatrix& GetMatrix() const override
-    { return *mat; }
+    {
+      if (!mat) ThrowPreconditionerNotReady();
+      return *mat;
+    }
 
     void AddElementMatrix(FlatArray<int> dnums,
                           FlatMatrix<double> elmat,

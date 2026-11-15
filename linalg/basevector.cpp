@@ -1220,6 +1220,8 @@ namespace ngla
   BlockVector :: BlockVector (const Array<shared_ptr<BaseVector>> & avecs)
     : vecs(avecs), ispar(vecs.Size())
   {
+    for (auto & vec : vecs)
+      if (!vec) throw Exception ("BlockVector: block is None");
     if (vecs.Size()) scaltype = vecs[0]->GetScalarType();
     size = 0;
     for (auto & vec:vecs)
@@ -1258,7 +1260,7 @@ namespace ngla
   
   // not yet implemented properly for complex components!!
   bool BlockVector :: IsComplex() const
-  { return vecs[0]->IsComplex(); }
+  { return vecs.Size() && vecs[0]->IsComplex(); }
   
   AutoVector BlockVector :: CreateVector () const
   {

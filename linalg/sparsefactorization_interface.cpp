@@ -110,7 +110,7 @@ void SparseFactorizationInterface::SetSubset(shared_ptr<BitArray> inner, shared_
 }
 
 void SparseFactorizationInterface::Update() {
-  auto m = matrix.lock();
+  auto m = LockedMatrix();
 
   shared_ptr<const MatrixGraph> p_mat = nullptr;
 

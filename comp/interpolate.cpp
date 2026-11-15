@@ -1145,6 +1145,13 @@ namespace ngcomp
     return space;
   }
 
+  static shared_ptr<DifferentialOperator> CheckInterpolateDiffOp (shared_ptr<DifferentialOperator> diffop)
+  {
+    if (!diffop)
+      throw Exception ("Interpolate: operator not available for this space");
+    return diffop;
+  }
+
   InterpolateProxy :: InterpolateProxy (shared_ptr<CoefficientFunction> afunc,
                                         shared_ptr<FESpace> aspace,
                                         bool atestfunction,
@@ -1153,7 +1160,7 @@ namespace ngcomp
                                         VorB avb)
     : ProxyFunction( /* aspace */
                     FindProxySpace(afunc), atestfunction, afunc->IsComplex(),
-                    make_shared<InterpolateDiffOp> (afunc, aspace, diffop, abonus_intorder,atestfunction, avb), nullptr, nullptr,
+                    make_shared<InterpolateDiffOp> (afunc, aspace, CheckInterpolateDiffOp(diffop), abonus_intorder,atestfunction, avb), nullptr, nullptr,
                     nullptr, nullptr, nullptr),
       func(afunc), space(aspace), testfunction(atestfunction),
       final_diffop(diffop),
@@ -1170,10 +1177,12 @@ namespace ngcomp
     new_diffop = space->GetFluxEvaluator();
     if (!new_diffop || new_diffop->Name()!=name)
       {
-        auto evaluators = fes->GetAdditionalEvaluators();
+        new_diffop = nullptr;
+        auto evaluators = space->GetAdditionalEvaluators();
         if (evaluators.Used(name))
           new_diffop = evaluators[name];
       }
+    if (!new_diffop) return nullptr;
     
     return make_shared<InterpolateProxy> (func, space, testfunction, new_diffop, bonus_intorder);
   }
@@ -1191,6 +1200,9 @@ namespace ngcomp
                                                  optional<string> opname)
   {
     // func->PrintReport(cout);
+
+    if (opname.has_value() && !space->GetAdditionalEvaluators().Used(*opname))
+      throw Exception ("Interpolate: operator '" + *opname + "' not available for " + space->GetClassName());
 
     if (func->IsZeroCF())
       return func;
@@ -1211,18 +1223,14 @@ namespace ngcomp
               if (proxy->IsTestFunction())
                 {
                   // if e.g. H1 without Trace is combined with space where Trace is mandatory
-                  if(opname.has_value())
-                    vb = max(proxy->GetAdditionalEvaluator(*opname)->VB(),vb);
-                  else
-                    vb = max(proxy->Evaluator()->VB(),vb);
+                  auto op = opname.has_value() ? proxy->GetAdditionalEvaluator(*opname) : nullptr;
+                  vb = max((op ? op : proxy->Evaluator())->VB(),vb);
                   has_test = true;
                 }
               else
                 {
-                  if(opname.has_value())
-                    vb = max(proxy->GetAdditionalEvaluator(*opname)->VB(),vb);
-                  else
-                    vb = max(proxy->Evaluator()->VB(),vb);
+                  auto op = opname.has_value() ? proxy->GetAdditionalEvaluator(*opname) : nullptr;
+                  vb = max((op ? op : proxy->Evaluator())->VB(),vb);
                   has_trial = true;
                 }
             }

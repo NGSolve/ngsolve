@@ -1267,8 +1267,8 @@ void ExportReadAnsys (py::module & m)
       // concentrated nodal forces (*CLOAD) -> a GridFunction on a vector
       // NodalFESpace.  Its coefficient vector holds the nodal force values (the
       // assembled point-load right-hand side); add it to your linear form vector.
-      // A NodalFESpace's scalar dof for a node equals the mesh point number,
-      // which is exactly id2vertex[node];
+      // A NodalFESpace's scalar dofs are the vertices, followed by one dof per
+      // edge (midside nodes) for order 2;
       {
         const int dim = model.maxdim;
         std::unordered_map<long long,double> fmap;       // node*dim + comp -> force
@@ -1289,19 +1289,49 @@ void ExportReadAnsys (py::module & m)
             Flags flags; flags.SetFlag("order", double(ho ? 2 : 1));
             auto fes = make_shared<VectorFESpace<NodalFESpace>>(ma, flags);
             fes->Update(); fes->FinalizeUpdate();
-            auto gf = CreateGridFunction(fes, "force", Flags());
+            Flags gfflags; gfflags.SetFlag("novisual");
+            auto gf = CreateGridFunction(fes, "force", gfflags);
             gf->Update();
             gf->GetVector() = 0.0;
             auto fv = gf->GetVector().FV<double>();
             size_t nscal = fes->GetNDof() / dim;
+            // point -> scalar dof: corners are vertex dofs, midside nodes the dof of the nearest element edge
+            Array<int> p2dof(ma->GetNP());
+            p2dof = -1;
+            for (auto ei : ma->Elements(VOL))
+              for (auto v : ma->GetElement(ei).Vertices())
+                p2dof[v] = v;
+            if (ho)
+              for (auto vb : { VOL, BND })
+                for (auto ei : ma->Elements(vb))
+                  {
+                    auto el = ma->GetElement(ei);
+                    auto pnts = el.Points();
+                    auto verts = el.Vertices();
+                    auto edges = el.Edges();
+                    for (size_t j = verts.Size(); j < pnts.Size(); j++)
+                      {
+                        if (p2dof[pnts[j]] >= 0) continue;
+                        Vec<3> p = ma->GetPoint<3>(pnts[j]);
+                        double best = 1e300;
+                        for (auto e : edges)
+                          {
+                            auto pv = ma->GetEdgePNums(e);
+                            double d = L2Norm(p - 0.5*(ma->GetPoint<3>(pv[0])+ma->GetPoint<3>(pv[1])));
+                            if (d < best) { best = d; p2dof[pnts[j]] = ma->GetNV()+e; }
+                          }
+                      }
+                  }
+            for (auto ei : ma->Elements(BND))
+              for (auto v : ma->GetElement(ei).Vertices())
+                if (p2dof[v] < 0) p2dof[v] = v;
             for (auto & [key, val] : fmap)
               {
                 long long node = key / dim; int comp = key % dim;
-                if (node >= 0 && node < (long long)id2vertex.size() && id2vertex[node] >= 0)
-                  {
-                    size_t vdof = (size_t)comp * nscal + (size_t)id2vertex[node];
-                    if (vdof < fv.Size()) fv[vdof] = val;
-                  }
+                if (node >= 0 && node < (long long)id2vertex.size() && id2vertex[node] >= 0
+                    && id2vertex[node] < (int)p2dof.Size() && p2dof[id2vertex[node]] >= 0
+                    && size_t(p2dof[id2vertex[node]]) < nscal)
+                  fv[(size_t)comp * nscal + p2dof[id2vertex[node]]] = val;
               }
             res["force"] = py::cast(gf);
           }

@@ -23,6 +23,20 @@ Array<T> ArrayFromVector (const std::vector<T> & vec)
 }
 
 
+// matrix dimensions are int
+static void PyCheckDim (size_t n, const char * what)
+{
+  if (n > size_t(std::numeric_limits<int>::max()))
+    throw py::value_error(string(what) + " = " + ToString(n) + " exceeds the int range");
+}
+
+// bytes of one copy of v, plus object overhead
+static size_t VectorBytes (const BaseVector & v)
+{
+  CheckAllocationSize (v.Size(), v.EntrySize()*sizeof(double), "BaseVector");
+  return v.Size()*v.EntrySize()*sizeof(double) + 128;
+}
+
 static void CheckMVCompat (const MultiVector & x, const BaseVector & y)
 {
   if (!x.RefVec())
@@ -180,6 +194,8 @@ void ExportSparseMatrix(py::module m)
     .def_static("CreateFromCOO",
                 [] (const Array<int> & cindi, const Array<int> & cindj, const Array<T> & cvalues, size_t h, size_t w)
                 {
+                  PyCheckDim(h, "h"); PyCheckDim(w, "w");
+                  CheckAllocationSize (h+1, 2*sizeof(size_t), "SparseMatrix");
                   PyCheckSize(cindj.Size(), cindi.Size(), "indj length");
                   PyCheckSize(cvalues.Size(), cindi.Size(), "values length");
                   for (size_t k = 0; k < cindi.Size(); k++)
@@ -196,6 +212,8 @@ void ExportSparseMatrix(py::module m)
     .def_static("CreateFromElmat",
                 [] (py::list coldnums, py::list rowdnums, py::list elmats, size_t h, size_t w)
                 {
+                  PyCheckDim(h, "h"); PyCheckDim(w, "w");
+                  CheckAllocationSize (h+1, 2*sizeof(size_t), "SparseMatrix");
                   PyCheckSize(py::len(rowdnums), py::len(coldnums), "row_ind length");
                   PyCheckSize(py::len(elmats), py::len(coldnums), "matrices length");
                   auto cdnums1 = makeCTable<int>(coldnums);
@@ -473,6 +491,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def("CreateVectors", [] (BaseVector & self, int num)
          {
            if (num < 0) throw py::value_error("num must be >= 0");
+           CheckAllocationSize (num, VectorBytes(self), "CreateVectors");
            std::vector<shared_ptr<BaseVector>> vecs;
            for ([[maybe_unused]] auto i : Range(num))
              vecs.push_back(self.CreateVector());
@@ -851,8 +870,13 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
 
   py::class_<MultiVector, MultiVectorExpr, shared_ptr<MultiVector>> (m, "MultiVector")
     .def(py::init<>([] (shared_ptr<BaseVector> bv, size_t cnt) {
+          if (!bv) throw py::type_error ("MultiVector needs a reference vector");
+          CheckAllocationSize (cnt, VectorBytes(*bv), "MultiVector");
           return bv->CreateMultiVector(cnt); } ))
-    .def(py::init<size_t,size_t,bool>())
+    .def(py::init<>([] (size_t size, size_t cnt, bool is_complex) {
+          CheckAllocationSize (size, is_complex ? sizeof(Complex) : sizeof(double), "MultiVector");
+          CheckAllocationSize (cnt, size * (is_complex ? sizeof(Complex) : sizeof(double)) + 128, "MultiVector");
+          return make_shared<MultiVector> (size, cnt, is_complex); }))
     .def("__len__", &MultiVector::Size)
     .def("__getitem__",
          [](MultiVector & self, int ind )
@@ -2254,7 +2278,11 @@ flags : dict
   
   py::class_<ngla::IdentityMatrix, shared_ptr<ngla::IdentityMatrix>, BaseMatrix> (m, "IdentityMatrix")
     .def(py::init<>())
-    .def(py::init<size_t, bool>(),
+    .def(py::init([](size_t size, bool is_complex)
+                  {
+                    PyCheckDim(size, "size");
+                    return make_shared<ngla::IdentityMatrix>(size, is_complex);
+                  }),
          py::arg("size"), py::arg("complex")=false)
     ;
 

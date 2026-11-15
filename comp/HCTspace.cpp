@@ -197,9 +197,9 @@ namespace ngcomp
     }
 
 
-    size_t Fact(int n) const
+    double Fact(int n) const
     {
-      size_t res = 1;
+      double res = 1;
       for (int i = 2; i <= n; i++)
         res *= i;
       return res;
@@ -234,7 +234,7 @@ namespace ngcomp
           prod *= lam[2] / (i+1);
         }
       
-      int factorder = Fact(p);
+      double factorder = Fact(p);
       for (int i = 0; i <= p; i++)
         for (int j = 0; j <= p - i; j++)
           {
@@ -249,6 +249,9 @@ namespace ngcomp
     : FESpace(ama, flags)
   {
     order = int(flags.GetNumFlag("order", 3));
+    // order >= 4 has linearly dependent shape functions
+    if (order < 1 || order > 3)
+      throw Exception("HCT_FESpace supports order 1 to 3, got order " + ToString(order));
 
 
     if (ma->GetDimension() != 2)

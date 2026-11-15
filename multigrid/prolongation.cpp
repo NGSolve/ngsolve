@@ -152,65 +152,83 @@ namespace ngmg
 
   shared_ptr<SparseMatrix< double >> LinearProlongation :: CreateProlongationMatrix( int finelevel ) const
   {
-    int i;
-    int parents[2];
-
+    if (finelevel < 1 || finelevel >= nvlevel.Size())
+      throw Exception("LinearProlongation: illegal level " + ToString(finelevel));
     int nc = nvlevel[finelevel-1];
     int nf = nvlevel[finelevel];
 
+    // parents may be new vertices of the same level (quad/hex centers): expand them recursively
+    Array<int> first(nf-nc+1);
+    first[0] = 0;
+    Array<int> cols;
+    Array<double> vals;
+    for (int i = nc; i < nf; i++)
+      {
+        first[i-nc] = cols.Size();
+        int parents[2];
+        ma->GetParentNodes( i, parents );
+        for (int p : parents)
+          {
+            if (p == -1) continue;
+            if (p < nc)
+              {
+                cols.Append(p);
+                vals.Append(0.5);
+              }
+            else if (p < i)
+              for (int k = first[p-nc]; k < first[p-nc+1]; k++)
+                {
+                  int c = cols[k];
+                  double v = 0.5*vals[k];
+                  cols.Append(c);
+                  vals.Append(v);
+                }
+            else
+              throw Exception("LinearProlongation: parent vertex " + ToString(p) +
+                              " is not older than vertex " + ToString(i));
+          }
+        // merge duplicates
+        auto rc = cols.Range(first[i-nc], cols.Size());
+        auto rv = vals.Range(first[i-nc], vals.Size());
+        int cnt = 0;
+        for (int k = 0; k < rc.Size(); k++)
+          {
+            int pos = -1;
+            for (int j = 0; j < cnt; j++)
+              if (rc[j] == rc[k]) pos = j;
+            if (pos >= 0)
+              rv[pos] += rv[k];
+            else
+              {
+                rc[cnt] = rc[k];
+                rv[cnt] = rv[k];
+                cnt++;
+              }
+          }
+        cols.SetSize(first[i-nc]+cnt);
+        vals.SetSize(first[i-nc]+cnt);
+        first[i-nc+1] = cols.Size();
+      }
+
     Array< int > indicesPerRow(nf);
+    for (int i = 0; i < nc; i++)
+      indicesPerRow[i] = 1;
+    for (int i = nc; i < nf; i++)
+      indicesPerRow[i] = first[i-nc+1]-first[i-nc];
 
-    /*
-      if (space.LowOrderFESpacePtr())
-      {
-      nf = space.LowOrderFESpacePtr()->GetNDofLevel( finelevel );
-      nc = space.LowOrderFESpacePtr()->GetNDofLevel( finelevel-1 );
-      }
-      else
-      {
-      nf = space.GetNDofLevel( finelevel );
-      nc = space.GetNDofLevel( finelevel-1 );
-      }
-    */
-    
-    // count entries per row
-    indicesPerRow = 0;
-    for( i=0; i<nc; i++ )
-      indicesPerRow[ i ]++;
-    for( i=nc; i<nf; i++ )
-      {
-        ma->GetParentNodes( i, parents );
-        if ( parents[ 0 ] != -1 )
-          indicesPerRow[ i ]++;
-        if ( parents[ 1 ] != -1 )
-          indicesPerRow[ i ]++;
-      }
-
-    // create matrix graph
     MatrixGraph mg( indicesPerRow, nc );
-    for( i=0; i<nc; i++ )
+    for (int i = 0; i < nc; i++)
       mg.CreatePosition( i, i );
-    for( i=nc; i<nf; i++ )
-      {
-        ma->GetParentNodes( i, parents );
-        if ( parents[ 0 ] != -1 )
-          mg.CreatePosition( i, parents[ 0 ] ); 
-        if ( parents[ 1 ] != -1 )
-          mg.CreatePosition( i, parents[ 1 ] ); 
-      }
+    for (int i = nc; i < nf; i++)
+      for (int k = first[i-nc]; k < first[i-nc+1]; k++)
+        mg.CreatePosition( i, cols[k] );
 
-    // write prolongation matrix
     shared_ptr<SparseMatrix< double >> prol = make_shared<SparseMatrix< double >> ( std::move(mg) );
-    for( i=0; i<nc; i++ )
+    for (int i = 0; i < nc; i++)
       (*prol)( i, i ) = 1;
-    for( i=nc; i<nf; i++ )
-      {
-        ma->GetParentNodes( i, parents );
-        if ( parents[ 0 ] != -1 )
-          (*prol)( i, parents[ 0 ] ) = 0.5; 
-        if ( parents[ 1 ] != -1 )
-          (*prol)( i, parents[ 1 ] ) = 0.5; 
-      }
+    for (int i = nc; i < nf; i++)
+      for (int k = first[i-nc]; k < first[i-nc+1]; k++)
+        (*prol)( i, cols[k] ) = vals[k];
 
     return prol;
   }

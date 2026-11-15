@@ -1,4 +1,5 @@
 #include "h1amg.hpp"
+#include "bilinearform.hpp"
 #include <devicevector.hpp>
 // #include "preconditioner.hpp"
 using namespace ngcomp;
@@ -603,6 +604,18 @@ namespace ngcomp
 
 
   
+
+  template <class SCAL>
+  void H1AMG_Preconditioner<SCAL> :: CheckBilinearForm (shared_ptr<BilinearForm> bfa) const
+  {
+    if (!bfa) return;
+    bool complex = is_same_v<SCAL,Complex>;
+    if (!dynamic_pointer_cast<S_BilinearForm<SCAL>> (bfa) || bfa->GetFESpace()->IsComplex() != complex)
+      throw Exception (string("H1AMG for ") + (complex ? "complex" : "real") +
+                       " matrices does not fit the bilinear form on the " +
+                       (bfa->GetFESpace()->IsComplex() ? "complex" : "real") + " space " +
+                       bfa->GetFESpace()->GetClassName());
+  }
 
   template <class SCAL>  
   void H1AMG_Preconditioner<SCAL> :: FinalizeLevel (const BaseMatrix * matrix) 

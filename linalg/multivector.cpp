@@ -204,7 +204,7 @@ namespace ngla {
               *mv[j] -= Rfactor(i,j) * *mv[i];              
           }
       }
-    else
+    else if (mv.Size() > 0)
       {
         if (mv.Size() == 1)
           {

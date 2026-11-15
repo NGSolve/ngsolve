@@ -1511,6 +1511,8 @@ into the wirebasket.
   
   void H1HighOrderFESpace :: GetEdgeDofNrs (int ednr, Array<int> & dnums) const
   {
+    dnums.SetSize0();
+    if (ma->GetDimension() < 2) return;   // 1D: inner dofs of the element
     dnums = GetEdgeDofs (ednr);
   }
 
@@ -2159,7 +2161,7 @@ into the wirebasket.
       auto & trafo = mip.GetTransformation();
       
       HDivHighOrderFE<ET_TRIG> fel_hdiv(order-1);
-      L2HighOrderFE<ET_TRIG> fel_l2(order-2);
+      L2HighOrderFE<ET_TRIG> fel_l2(max(order-2, 0));
       L2HighOrderFE<ET_TRIG> fel_koszul( max(order-3, -1) );
       // FacetFE<ET_TRIG> fel_facet;
       FacetFE<ET_TRIG> & fel_facet = *new (lh) FacetFE<ET_TRIG>;
@@ -2316,6 +2318,14 @@ into the wirebasket.
 
       switch (ma->GetDimension())
         {
+        case 1:
+          evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdVectorH1<1>>>();
+          flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradVectorH1<1>>>();
+          evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdVectorH1<1,BND>>>();
+          additional_evaluators.Set ("div", make_shared<T_DifferentialOperator<DiffOpDivVectorH1<1>>> ()); 
+          additional_evaluators.Set ("Grad", make_shared<T_DifferentialOperator<DiffOpGradVectorH1<1>>> ());
+          additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpDualVectorH1<1,1>>> ());
+          break;
         case 2:
           evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdVectorH1<2>>>();
           flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradVectorH1<2>>>();
@@ -2323,7 +2333,13 @@ into the wirebasket.
           flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpGradBoundaryVectorH1<2>>>();
           additional_evaluators.Set ("div", make_shared<T_DifferentialOperator<DiffOpDivVectorH1<2>>> ()); 
           additional_evaluators.Set ("strain", make_shared<StrainVectorH1DifferentialOperator<2>> ());
-          additional_evaluators.Set ("divfree_reconstruction", make_shared<T_DifferentialOperator<DiffOpDivFreeReconstructVectorH1<2>>> ());
+          {
+            bool alltrigs = true;   // trig-only reconstruction
+            for (size_t i = 0; i < ma->GetNE(VOL); i++)
+              if (ma->GetElType(ElementId(VOL,i)) != ET_TRIG) { alltrigs = false; break; }
+            if (alltrigs)
+              additional_evaluators.Set ("divfree_reconstruction", make_shared<T_DifferentialOperator<DiffOpDivFreeReconstructVectorH1<2>>> ());
+          }
           additional_evaluators.Set ("Grad", make_shared<T_DifferentialOperator<DiffOpGradVectorH1<2>>> ());
           additional_evaluators.Set ("Gradboundary", make_shared<T_DifferentialOperator<DiffOpGradBoundaryVectorH1<2>>>());
           additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpDualVectorH1<2,2>>> ());

@@ -304,6 +304,24 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
   
   std::string nested_name = "ngstd";
 
+  {
+    // AllocationError is an NgException and a MemoryError
+    py::object ngexc = py::none();
+    try { ngexc = py::module::import("netgen.libngpy._meshing").attr("NgException"); }
+    catch (py::error_already_set &) { }
+    py::list lbases;
+    if (!ngexc.is_none()) lbases.append(ngexc);
+    lbases.append(py::handle(PyExc_MemoryError));
+    py::tuple bases(lbases);
+    static PyObject * alloc_exc = PyErr_NewException ("ngsolve.ngstd.AllocationError", bases.ptr(), nullptr);
+    m.add_object ("AllocationError", py::handle(alloc_exc));
+    py::register_exception_translator([](std::exception_ptr p)
+    {
+      try { if (p) std::rethrow_exception(p); }
+      catch (const AllocationException & e) { PyErr_SetString (alloc_exc, e.what()); }
+    });
+  }
+
   ExportGPU (m);
 
   py::class_<DummyArgument>(m, "DummyArgument")

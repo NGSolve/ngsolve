@@ -508,6 +508,8 @@ namespace ngcomp
   shared_ptr<CoefficientFunction>
   GridFunction :: Operator (shared_ptr<DifferentialOperator> diffop) const
   {
+    if (!diffop)
+      throw Exception ("operator not available for " + GetFESpace()->GetClassName());
     shared_ptr<GridFunctionCoefficientFunction> coef;
     auto self = dynamic_pointer_cast<GridFunction> (const_cast<GridFunction*>(this)->shared_from_this());
     
@@ -536,6 +538,8 @@ namespace ngcomp
     if (!GetFESpace()->GetAdditionalEvaluators().Used(name))
       throw Exception(string("Operator \"") + name + string("\" does not exist for ") + GetFESpace()->GetClassName() + string("!"));
     auto diffop = GetFESpace()->GetAdditionalEvaluators()[name];
+    if (!diffop)
+      throw Exception(string("Operator \"") + name + string("\" not available for ") + GetFESpace()->GetClassName());
     auto self = dynamic_pointer_cast<GridFunction>
       (const_cast<GridFunction*>(this)->shared_from_this());
     shared_ptr<GridFunctionCoefficientFunction> coef;
@@ -1122,6 +1126,8 @@ namespace ngcomp
 
 
 	int ndof = this->GetFESpace()->GetNDof();
+        CheckAllocationSize (this->multidim, size_t(ndof)*this->GetFESpace()->GetDimension()*sizeof(TSCAL) + 128,
+                             "GridFunction vectors");
 
 	for (int i = 0; i < this->multidim; i++)
 	  {
@@ -1161,6 +1167,10 @@ namespace ngcomp
         for(auto comp : this->compgfs)
           if(!comp.expired())
             comp.lock()->Update();
+      }
+    catch (AllocationException &)
+      {
+        throw;
       }
     catch (Exception & e)
       {
@@ -1850,7 +1860,11 @@ namespace ngcomp
       }
     
     if ( (CoefficientFunction*)gf == var)
-      return dir->Operator(diffop[0]);
+      {
+        if (!diffop[0])
+          throw Exception ("Diff: operator not available for " + gf->GetFESpace()->GetClassName());
+        return dir->Operator(diffop[0]);
+      }
 
         /*
     if (auto gfvar = dynamic_cast<const GridFunction*> (var))

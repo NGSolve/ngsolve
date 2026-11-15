@@ -243,6 +243,8 @@ ANY                  1 1 1 1 | 15
     int et_bonus_order[30]; // order increase for element-type
 
     typedef int8_t TORDER;
+    static constexpr int max_order = 127;
+    static constexpr int max_dim = 1<<16;
 
     ORDER_POLICY order_policy = OLDSTYLE_ORDER;
   
@@ -323,6 +325,7 @@ ANY                  1 1 1 1 | 15
       order_policy = op;
     }
     
+    static void CheckOrder (double order);
     virtual void SetOrder (ELEMENT_TYPE et, TORDER order);
 
     virtual void SetOrder (NodeId ni, int order); 
@@ -1361,6 +1364,7 @@ ANY                  1 1 1 1 | 15
   public:
     MatrixFESpace (shared_ptr<FESpace> space, int avdim, const Flags & flags,
                    bool checkflags = false);
+    int GetVDim () const { return vdim; }
     virtual string GetClassName () const override;
     FiniteElement & GetFE (ElementId ei, Allocator & lh) const override;    
   };

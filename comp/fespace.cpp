@@ -66,9 +66,10 @@ namespace ngcomp
     DefineDefineFlag("dgjumps");
     DefineDefineFlag("autoupdate");
 
-    order = int (flags.GetNumFlag ("order", 1));
     if (flags.GetNumFlag ("order", 1) < 0)
       throw Exception ("FESpace: order must be non-negative, got " + ToString(flags.GetNumFlag ("order", 1)));
+    CheckOrder (flags.GetNumFlag ("order", 1));
+    order = int (flags.GetNumFlag ("order", 1));
 
     if (flags.NumFlagDefined("order_policy"))
       SetOrderPolicy(ORDER_POLICY(int(flags.GetNumFlag("order_policy",1))));
@@ -90,9 +91,9 @@ namespace ngcomp
       }
     */
     
+    if (!(flags.GetNumFlag ("dim", 1) >= 1 && flags.GetNumFlag ("dim", 1) <= max_dim))
+      throw Exception ("dim must be between 1 and " + ToString(max_dim) + ", got " + ToString(flags.GetNumFlag ("dim", 1)));
     dimension = int (flags.GetNumFlag ("dim", 1));
-    if (dimension < 1)
-      throw Exception ("dim must be at least 1, got " + ToString(dimension));
 
     if (flags.GetDefineFlag ("vec"))
       dimension = ma->GetDimension();
@@ -365,7 +366,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
         string flagname = string(ElementTopology::GetElementName(et)) + "order";
         std::transform(flagname.begin(), flagname.end(), flagname.begin(), ::tolower);
         if (flags.NumFlagDefined(flagname))
-          SetOrder (et, int(flags.GetNumFlag(flagname, 0)));
+          {
+            CheckOrder (flags.GetNumFlag(flagname, 0));
+            SetOrder (et, int(flags.GetNumFlag(flagname, 0)));
+          }
       }
 
 
@@ -1138,6 +1142,12 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
 
+  void FESpace :: CheckOrder (double order)
+  {
+    if (!(order <= max_order))
+      throw Exception ("FESpace: order " + ToString(order) + " exceeds the maximal order " + ToString(max_order));
+  }
+
   void FESpace :: SetOrder (ELEMENT_TYPE et, TORDER order)
   {
     if (order_policy == CONSTANT_ORDER || order_policy == OLDSTYLE_ORDER)
@@ -1352,7 +1362,20 @@ lot of new non-zero entries in the matrix!\n" << endl;
     switch (ni.GetType())
       {
       case NT_VERTEX: GetVertexDofNrs(ni.GetNr(), dnums); break;
-      case NT_EDGE:   GetEdgeDofNrs(ni.GetNr(), dnums); break;
+      case NT_EDGE:
+        GetEdgeDofNrs(ni.GetNr(), dnums);
+        if (ma->GetDimension() == 1)
+          {
+            // the edge is an element: add its inner dofs
+            Array<int> elnums, inner;
+            ma->GetEdgeElements(ni.GetNr(), elnums);
+            for (auto el : elnums)
+              {
+                GetInnerDofNrs(el, inner);
+                dnums += inner;
+              }
+          }
+        break;
       case NT_FACE:   
         if (ma->GetDimension() == 3)
           GetFaceDofNrs(ni.GetNr(), dnums); 
@@ -2313,11 +2336,14 @@ lot of new non-zero entries in the matrix!\n" << endl;
                 nb = ma->GetNE(VOL);
               }
           }
+        else if (type.anchor > dim)
+          nb = 0;   // no such nodes on this mesh
         else
           {
+            maxnts[ti] = min(type.maxnt, dim);
             auto nt = NODE_TYPE(type.anchor);
             nb = ma->GetNNodes(nt);
-            for (int i = type.anchor; i <= type.maxnt; i++)
+            for (int i = type.anchor; i <= maxnts[ti]; i++)
               neednodes[i] = true;
 
             if (type.periodic)
@@ -2857,6 +2883,13 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   shared_ptr<BaseMatrix> FESpace :: ConvertL2Operator (shared_ptr<FESpace> l2space) const
   {
+    if (l2space->GetMeshAccess() != ma)
+      throw Exception ("ConvertL2Operator: target space is defined on another mesh");
+    for (const FESpace * fes : { this, (const FESpace*)l2space.get() })
+      if (!fes->GetEvaluator(VOL) || fes->GetEvaluator(VOL)->OnlyOnFacets())
+        throw Exception ("ConvertL2Operator: " + fes->GetClassName() + " has no volume evaluator");
+    if (GetEvaluator(VOL)->Dim() != l2space->GetEvaluator(VOL)->Dim())
+      throw Exception ("ConvertL2Operator: spaces have different value dimensions");
     LocalHeap lh(100000000);
     
     Array<int> classnr(ma->GetNE());
@@ -3034,6 +3067,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   BitArray FESpace :: GetDofs (const Region & reg, const DifferentialOperator * diffop) const
   {
+    if (reg.Mesh() != ma)
+      throw Exception ("GetDofs: region is defined on another mesh");
     BitArray ba(GetNDof());
     ba.Clear();
     for (auto el : Elements(reg.VB()))
@@ -3101,7 +3136,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
   {
     name="NodalFESpace";
     type = "nodal";
-    
+    if (order != 1 && order != 2)
+      throw Exception ("NodalFESpace supports order 1 and 2, got order " + ToString(order));
+
     prol = make_shared<LinearProlongation> (GetMeshAccess());
 
     if (order >= 2)
@@ -3149,15 +3186,35 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	evaluator[VOL] = make_shared<BlockDifferentialOperator> (evaluator[VOL], dimension);
 	evaluator[BND] = make_shared<BlockDifferentialOperator> (evaluator[BND], dimension);
 	flux_evaluator[VOL] = make_shared<BlockDifferentialOperator> (flux_evaluator[VOL], dimension);
-	flux_evaluator[BND] = make_shared<BlockDifferentialOperator> (flux_evaluator[BND], dimension);
+        if (flux_evaluator[BND])
+          flux_evaluator[BND] = make_shared<BlockDifferentialOperator> (flux_evaluator[BND], dimension);
       }
 
-    
+
   }
 
   NodalFESpace :: ~NodalFESpace ()
   {
     ;
+  }
+
+  // local edge of each midpoint shape of the second-order element; empty: linear element
+  static FlatArray<int> NodalMidpointEdges (ELEMENT_TYPE et, bool hb)
+  {
+    static int segm[] = { 0 };
+    static int trig[] = { 1, 0, 2 };
+    static int quad[] = { 0, 1, 2, 3 };
+    static int tet[] = { 3, 4, 0, 5, 1, 2 };
+    static int hex[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 };
+    switch (et)
+      {
+      case ET_SEGM: return FlatArray<int>(1, segm);
+      case ET_TRIG: return FlatArray<int>(3, trig);
+      case ET_TET: return FlatArray<int>(6, tet);
+      case ET_QUAD: return hb ? FlatArray<int>(0, nullptr) : FlatArray<int>(4, quad);
+      case ET_HEX: return hb ? FlatArray<int>(0, nullptr) : FlatArray<int>(12, hex);
+      default: return FlatArray<int>(0, nullptr);
+      }
   }
 
   FiniteElement & NodalFESpace :: GetFE(ElementId ei, Allocator & lh) const
@@ -3180,6 +3237,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
               case ET_PYRAMID: return *(new (lh) FE_Pyramid1);
               case ET_TRIG:    return *(new (lh) FE_Trig2HB);
               case ET_QUAD:    return *(new (lh) ScalarFE<ET_QUAD,1>);
+              case ET_HEX:     return *(new (lh) ScalarFE<ET_HEX,1>);
               case ET_SEGM:    return *(new (lh) FE_Segm2);
               case ET_POINT:   return *(new (lh) FE_Point);
               default:
@@ -3234,7 +3292,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 	       used_vertex[el.Vertices()] = true;
                if (order > 1)
-                 used_edge[el.Edges()] = true;
+                 for (int k : NodalMidpointEdges(el.GetType(), hb_defined))
+                   used_edge[el.Edges()[k]] = true;
 	     });
       }
 
@@ -3242,13 +3301,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       {
 	size_t ndof = ma->GetNV();
         if (order > 1)
-          {
-            for (auto el : Elements(VOL))
-              for (DofId d : el.GetDofs()) ndof = max2(ndof, size_t(d+1));              
-            
-            for (auto el : Elements(BND))
-              for (DofId d : el.GetDofs()) ndof = max2(ndof, size_t(d+1));           
-          }
+          ndof += ma->GetNEdges();
 	// ndlevel.Append (ndof);
         SetNDof(ndof);
 
@@ -3280,7 +3333,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
          ctofdof[i] = used_vertex[i] ? WIREBASKET_DOF : UNUSED_DOF;
        });
 
-    if(order > 1 && GetNDof() > ma->GetNV())
+    if(order > 1)
       ParallelFor
         (ma->GetNEdges(), [&] (size_t i)
          {
@@ -3303,11 +3356,15 @@ lot of new non-zero entries in the matrix!\n" << endl;
  
   void NodalFESpace :: GetDofNrs (ElementId ei, Array<DofId> & dnums) const
   {
-    if (order == 1)
-      dnums = ma->GetElement(ei).Vertices();
-    else
-      dnums = ma->GetElement(ei).Points();
-      
+    auto el = ma->GetElement(ei);
+    dnums = el.Vertices();
+    if (order > 1)
+      {
+        auto edges = el.Edges();
+        size_t nv = ma->GetNV();
+        for (int k : NodalMidpointEdges(el.GetType(), hb_defined))
+          dnums.Append (nv + edges[k]);
+      }
     if (!DefinedOn (ei)) dnums = -1;
   }
 
@@ -3321,6 +3378,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
   void NodalFESpace :: GetEdgeDofNrs (int ednr, Array<int> & dnums) const
   {
     dnums.SetSize(0);
+    if (order > 1 && used_edge[ednr])
+      dnums.Append (ma->GetNV() + ednr);
   }
 
   void NodalFESpace :: GetFaceDofNrs (int fanr, Array<int> & dnums) const
@@ -4575,6 +4634,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
   {
     shared_ptr<BaseMatrix> sum;
     auto compoundtrace = dynamic_pointer_cast<CompoundFESpaceAllSame>(tracespace);
+    if (!compoundtrace || compoundtrace->Spaces().Size() != Spaces().Size())
+      throw Exception ("TraceOperator: trace space must be a vector space with " + ToString(Spaces().Size()) + " components");
     for (int i = 0; i < Spaces().Size(); i++)
       {
         auto tracei = ComposeOperators( compoundtrace->EmbeddingOperator(i),

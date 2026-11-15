@@ -2114,7 +2114,7 @@ Einstein: Einstein tensor Ein_ij(g) = Ric_ij(g)-0.5*S(g) g_ij
         if (ma->GetDimension() == 2 && ni.GetType() == NT_FACE)
 	  {
 	    Array<int> elnr;
-	    ma->GetFacetSurfaceElements(ni.GetNr(),elnr);
+	    if (auto sel = ma->GetNode<2>(ni.GetNr()).surface_el; sel >= 0) elnr.Append(sel);   // 2D: face -> element
 	    if (elnr.Size() > 0 && elnr[0] < order_inner.Size())
 		order_inner[elnr[0]] = order;
 	  }
@@ -2144,7 +2144,7 @@ Einstein: Einstein tensor Ein_ij(g) = Ric_ij(g)-0.5*S(g) g_ij
 	if (ma->GetDimension() == 2 && ni.GetType() == NT_FACE)
 	  {
 	    Array<int> elnr;
-	    ma->GetFacetSurfaceElements(ni.GetNr(),elnr);
+	    if (auto sel = ma->GetNode<2>(ni.GetNr()).surface_el; sel >= 0) elnr.Append(sel);   // 2D: face -> element
 	    if (elnr.Size() > 0 && elnr[0] < order_inner.Size())
 	      return order_inner[elnr[0]][0];
 	  }

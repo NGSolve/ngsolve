@@ -2197,12 +2197,12 @@ namespace ngla
     auto hvec2 = u.CreateVector();
 
     hvec1 = y;
-    matrix.lock()->MultAdd1 (-1, u, hvec1, inner.get(), cluster.get());
+    LockedMatrix()->MultAdd1 (-1, u, hvec1, inner.get(), cluster.get());
 
     hvec2 = (*this) * hvec1;
     u += hvec2;
     
-    matrix.lock()->MultAdd2 (-1, hvec2, y, inner.get(), cluster.get());
+    LockedMatrix()->MultAdd2 (-1, hvec2, y, inner.get(), cluster.get());
     }
   }
   

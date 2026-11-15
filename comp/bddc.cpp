@@ -503,8 +503,8 @@ namespace ngcomp
     ~BDDCMatrix()  { } 
 
 
-    VecFormat RowFormat () const override { return bfa->GetMatrix().ColFormat(); }
-    VecFormat ColFormat () const override { return bfa->GetMatrix().RowFormat(); }
+    VecFormat RowFormat () const override { return bfa->GetMatrix().ColFormat().WithScalar(TV(0)); }
+    VecFormat ColFormat () const override { return bfa->GetMatrix().RowFormat().WithScalar(TV(0)); }
 
     int VHeight() const override { return bfa->GetMatrix().VHeight(); }
     int VWidth() const override { return bfa->GetMatrix().VHeight(); }
@@ -617,17 +617,21 @@ namespace ngcomp
     return docu;    
   }
   
+  // scalar types from the bilinear form
+  static shared_ptr<Preconditioner> CreateBDDC (shared_ptr<BilinearForm> bfa, const Flags & flags, const string & name)
+  {
+    if (dynamic_pointer_cast<S_BilinearForm<Complex>> (bfa))
+      return make_shared<BDDCPreconditioner<Complex>> (bfa, flags, name);
+    if (bfa && bfa->GetFESpace()->IsComplex())
+      return make_shared<BDDCPreconditioner<double,Complex>> (bfa, flags, name);
+    return make_shared<BDDCPreconditioner<double>> (bfa, flags, name);
+  }
+
   shared_ptr<Preconditioner> BASE_BDDCPreconditioner :: Create (shared_ptr<BilinearForm> bfa, const Flags & cflags) const
   {
     Flags allflags{flags};
-    // allflags += cflags;
-    allflags.Update (cflags); // needs checking
-
-    if (auto bfa_d = dynamic_pointer_cast<T_BilinearForm<double>> (bfa))
-      return make_shared<BDDCPreconditioner<double>> (bfa, allflags);
-    if (auto bfa_c = dynamic_pointer_cast<T_BilinearForm<Complex>> (bfa))
-      return make_shared<BDDCPreconditioner<Complex>> (bfa, allflags);
-    return nullptr;
+    allflags.Update (cflags);
+    return CreateBDDC (bfa, allflags, "bddcprecond");
   }
   
 
@@ -639,11 +643,24 @@ namespace ngcomp
     : BASE_BDDCPreconditioner (abfa, aflags, aname)
   {
     bfa = dynamic_pointer_cast<S_BilinearForm<SCAL>> (abfa);
-    // bfa -> SetPreconditioner (this);
+    if (abfa && (!bfa || abfa->GetFESpace()->IsComplex() != is_same_v<TV,Complex>))
+      {
+        auto sc = [] (bool c) { return string(c ? "complex" : "real"); };
+        bool cmat = dynamic_pointer_cast<S_BilinearForm<Complex>> (abfa) != nullptr;
+        throw Exception ("BDDC preconditioner for " + sc(is_same_v<SCAL,Complex>) + " matrices and " +
+                         sc(is_same_v<TV,Complex>) + " vectors does not fit the bilinear form, which has " +
+                         sc(cmat) + " matrices and " + sc(abfa->GetFESpace()->IsComplex()) +
+                         " vectors (use 'bddc', it chooses the type)");
+      }
     inversetype = flags.GetStringFlag("inverse", "sparsecholesky");
     coarsetype = flags.GetStringFlag("coarsetype", "none");
-    if(coarsetype=="myamg_hcurl")
-      (dynamic_pointer_cast<HCurlHighOrderFESpace>(bfa->GetFESpace()))->DoCouplingDofUpgrade(false);
+    if(coarsetype=="myamg_hcurl" && bfa)
+      {
+        auto hcurl = dynamic_pointer_cast<HCurlHighOrderFESpace>(bfa->GetFESpace());
+        if (!hcurl)
+          throw Exception ("BDDC coarsetype 'myamg_hcurl' needs an HCurl space");
+        hcurl->DoCouplingDofUpgrade(false);
+      }
     if (flags.GetDefineFlag("refelement")) Exception ("refelement - BDDC not supported");
     block = flags.GetDefineFlag("block");
     hypre = flags.GetDefineFlag("usehypre");
@@ -727,7 +744,12 @@ namespace ngcomp
   GetMatrix() const
   {
     if (!pre)
-      ThrowPreconditionerNotReady();        
+      {
+        if (bfa && bfa->GetNLevels() > 0 && timestamp < bfa->GetTimeStamp())
+          throw Exception ("BDDC preconditioner not ready: it collects the element matrices during assembling, "
+                           "so it must be created before the bilinear form is assembled");
+        ThrowPreconditionerNotReady();
+      }
     return *pre;
   }
 
@@ -735,9 +757,20 @@ namespace ngcomp
   shared_ptr<BaseMatrix> BDDCPreconditioner<SCAL, TV> ::
   GetMatrixPtr()
   {
-    if (!pre)
-      ThrowPreconditionerNotReady();        
+    GetMatrix();
     return pre;
+  }
+
+  template <class SCAL, class TV>
+  VecFormat BDDCPreconditioner<SCAL, TV> :: RowFormat () const
+  {
+    return GetAMatrix().ColFormat().WithScalar(TV(0));
+  }
+
+  template <class SCAL, class TV>
+  VecFormat BDDCPreconditioner<SCAL, TV> :: ColFormat () const
+  {
+    return GetAMatrix().RowFormat().WithScalar(TV(0));
   }
   
   
@@ -745,6 +778,7 @@ namespace ngcomp
   void BDDCPreconditioner<SCAL, TV> ::
   Mult (const BaseVector & x, BaseVector & y) const
   {
+    GetMatrix();
     y = 0.0;
     pre -> MultAdd (1, x, y);
   }
@@ -754,6 +788,7 @@ namespace ngcomp
   void BDDCPreconditioner<SCAL, TV> ::
   MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
+    GetMatrix();
     pre -> MultAdd (s, x, y);
   }
 
@@ -771,11 +806,7 @@ namespace ngcomp
   shared_ptr<Preconditioner> RegisterPreconditioner<BDDCPreconditioner<double>>::
   CreateBF(shared_ptr<BilinearForm> bfa, const Flags & flags, const string & name)
   {
-    // cout << "complex bddc ? " << bfa->GetFESpace()->IsComplex() << endl;
-    if (bfa->GetFESpace()->IsComplex())
-      return make_shared<BDDCPreconditioner<Complex>> (bfa, flags, name);
-    else
-      return make_shared<BDDCPreconditioner<double>> (bfa, flags, name);
+    return CreateBDDC (bfa, flags, name);
   }
 
   static RegisterPreconditioner<BDDCPreconditioner<double> > initpre ("bddc");

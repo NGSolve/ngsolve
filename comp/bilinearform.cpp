@@ -3603,10 +3603,9 @@ namespace ngcomp
         make_shared<LinearizedBilinearFormApplication> (dynamic_pointer_cast<BilinearForm>(this->shared_from_this()), &lin, clh);
       if (fespace->IsParallel())
         app = make_shared<ParallelMatrix> (app, GetTrialSpace()->GetParallelDofs(), GetTestSpace()->GetParallelDofs(), C2D);
-      if (this->mats.Size() < this->ma->GetNLevels())
-	mats.Append (app);
-      else // we might be using a different vector now
-	mats.Last() = app;
+      // we might be using a different vector now
+      mats.SetSize(this->ma->GetNLevels());
+      mats.Last() = app;
       return;
     }
 
@@ -6565,7 +6564,8 @@ namespace ngcomp
       mat = make_shared<ParallelMatrix> (mat, this->GetTrialSpace()->GetParallelDofs(),
 					 this->GetTestSpace()->GetParallelDofs());
     
-    this->mats.Append (mat);
+    this->mats.SetSize(this->ma->GetNLevels());
+    this->mats.Last() = mat;
 
     // delete graph;
 
@@ -6856,7 +6856,8 @@ namespace ngcomp
     if (this->GetFESpace()->IsParallel())
       mat = make_shared<ParallelMatrix> (mat, this->GetTrialSpace()->GetParallelDofs(),
                                          this->GetTestSpace()->GetParallelDofs());
-    this->mats.Append (mat);
+    this->mats.SetSize(this->ma->GetNLevels());
+    this->mats.Last() = mat;
   }
 
   /*

@@ -127,8 +127,7 @@ namespace ngcomp
 
 
 
-    virtual const BaseMatrix & GetAMatrix() const
-    { throw Exception ("Preconditioner, A-Matrix not available"); }
+    virtual const BaseMatrix & GetAMatrix() const;
 
     ///
     virtual const char * ClassName() const
@@ -201,8 +200,8 @@ namespace ngcomp
     static DocInfo GetDocu ();
     virtual shared_ptr<Preconditioner> Create (shared_ptr<BilinearForm> bfa, const Flags & cflags) const override;  
     ///
-    virtual bool IsComplex() const override { return jacobi->IsComplex(); }
-    
+    virtual bool IsComplex() const override { return GetMatrix().IsComplex(); }
+
     ///
     virtual void FinalizeLevel (const BaseMatrix * mat) override;
 
@@ -231,11 +230,6 @@ namespace ngcomp
       return jacobi;
     }
 
-    ///
-    virtual const BaseMatrix & GetAMatrix() const override
-    {
-      return bfa->GetMatrix(); 
-    }
     ///
     virtual const char * ClassName() const override
     { return "Local Preconditioner"; }
@@ -288,11 +282,6 @@ namespace ngcomp
       return *inverse;
     }
 
-    virtual const BaseMatrix & GetAMatrix() const override
-    {
-      return bfa->GetMatrix(); 
-    }
-
     virtual const char * ClassName() const override
     {
       return "Direct Preconditioner"; 
@@ -343,17 +332,16 @@ namespace ngcomp
 
     virtual void Update () override
     {
+      if (!bfa) ThrowPreconditionerNotReady();
       if (timestamp < bfa->GetTimeStamp())
         throw Exception("A BDDC preconditioner must be defined before assembling");
     }  
 
-    virtual const BaseMatrix & GetAMatrix() const override
-    {
-      return bfa->GetMatrix();
-    }
-
     virtual const BaseMatrix & GetMatrix() const override;
     virtual shared_ptr<BaseMatrix> GetMatrixPtr() override;
+
+    VecFormat RowFormat () const override;
+    VecFormat ColFormat () const override;
 
     virtual void CleanUpLevel () override
     {
@@ -500,6 +488,7 @@ namespace ngcomp
     int mgnumber;
 
     string inversetype;
+    int ready_levels = -1;
 
   public:
     ///
@@ -528,11 +517,6 @@ namespace ngcomp
     virtual void CleanUpLevel () override;
     ///
     virtual const BaseMatrix & GetMatrix() const override;
-    ///
-    virtual const BaseMatrix & GetAMatrix() const override
-    {
-      return bfa->GetMatrix();
-    }
     ///
     virtual const char * ClassName() const override
     { return "Multigrid Preconditioner"; }

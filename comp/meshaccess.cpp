@@ -2133,6 +2133,8 @@ namespace ngcomp
 
   void MeshAccess :: Curve (int order)
   {
+    if (order < 1 || order > 50)
+      throw Exception ("Curve: order must be between 1 and 50, got " + ToString(order));
     mesh.Curve(order);
   } 
   

@@ -526,7 +526,7 @@ namespace ngla
   {
     cout << IM(3) << "call umfpack update..." << flush;
 
-    auto castmatrix = dynamic_pointer_cast<const S_BaseSparseMatrix<TSCAL>>(matrix.lock());
+    auto castmatrix = dynamic_pointer_cast<const S_BaseSparseMatrix<TSCAL>>(LockedMatrix());
 
     if (inner)
       GetUmfpackMatrix (*castmatrix, SubsetFree (*inner));
