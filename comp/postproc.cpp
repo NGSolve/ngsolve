@@ -1544,7 +1544,13 @@ namespace ngfem
   TSCAL Integral :: T_Integrate (const ngcomp::MeshAccess & ma,
                                FlatVector<TSCAL> element_wise)
   {
-    CheckContext (*cf, MakeCFContext (ma, CFContext::EVALUATE, dx.vb, dx.element_vb, dx.skeleton));
+    // ds(skeleton=True) is integrated over the boundary elements
+    bool skeleton = dx.skeleton && dx.vb != BND;
+    int eldim = ma.GetDimension() - int(skeleton ? VOL : dx.vb);
+    if (dx.element_vb != VOL && int(dx.element_vb) > eldim)
+      throw Exception ("Integrate: element_vb = " + ToString(dx.element_vb) + " on elements of dimension " +
+                       ToString(eldim) + ": the elements have no such sub-entities");
+    CheckContext (*cf, MakeCFContext (ma, CFContext::EVALUATE, dx.vb, dx.element_vb, skeleton));
     if (dx.deformation)
       CheckDeformation (*dx.deformation, ma);
     

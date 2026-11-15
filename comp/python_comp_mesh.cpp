@@ -81,6 +81,13 @@ inline auto Nr2VolElement(size_t nr) {  return ElementId(VOL,nr); };
 
 void ExportPml(py::module &m);
 
+// MeshAccess construction writes netgen's global mesh pointer
+static std::mutex & NetgenGlobalMeshMutex()
+{
+  static std::mutex m;
+  return m;
+}
+
 void ExportNgcompMesh (py::module &m)
 {
   py::module pml = m.def_submodule("pml", "module for perfectly matched layers");
@@ -505,6 +512,7 @@ mesh (netgen.Mesh): a mesh generated from Netgen
   mesh_access
     .def(py::init([](shared_ptr<netgen::Mesh> ngmesh)
                   {
+                     std::lock_guard lock(NetgenGlobalMeshMutex());
                      auto mesh = make_shared<MeshAccess>(ngmesh);
                      mesh->GetNetgenMesh()->updateSignal.Connect( mesh.get(), [p=mesh.get()]
                          {
@@ -518,6 +526,7 @@ mesh (netgen.Mesh): a mesh generated from Netgen
 
     .def(py::init([](const string & filename, NgMPI_Comm comm)
                   {
+                    std::lock_guard lock(NetgenGlobalMeshMutex());
                     NGSOStream::SetGlobalActive (comm.Rank()==0);
                     auto mesh = make_shared<MeshAccess>(filename, comm);
                     mesh->GetNetgenMesh()->updateSignal.Connect( mesh.get(), [p=mesh.get()]

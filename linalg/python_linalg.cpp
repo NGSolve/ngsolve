@@ -1338,8 +1338,12 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
       if (py::object * invobj = get_if<py::object>(&inverse))
         {
           // stored in the matrix, which may be deleted without holding the gil
-          shared_ptr<py::object> pyfunc(new py::object(*invobj),
-                                        [](py::object * f) { py::gil_scoped_acquire acq; delete f; });
+          shared_ptr<py::object> pyfunc;
+          {
+            py::gil_scoped_acquire acq;   // refcount of the copy
+            pyfunc = shared_ptr<py::object>(new py::object(*invobj),
+                                            [](py::object * f) { py::gil_scoped_acquire acq; delete f; });
+          }
           BaseMatrix::T_INVCREATOR func =
             [pyfunc](shared_ptr<BaseMatrix> mat, shared_ptr<BitArray> subset, shared_ptr<const Array<int>>) -> shared_ptr<BaseMatrix>
             {

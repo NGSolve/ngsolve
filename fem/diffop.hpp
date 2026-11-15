@@ -240,6 +240,8 @@ namespace ngfem
     virtual bool SupportsVB (VorB checkvb) const override { return diffop->SupportsVB(checkvb); }
     virtual bool DeclaresElementType () const override { return diffop->DeclaresElementType(); }
     virtual bool OnlyOnFacets () const override { return diffop->OnlyOnFacets(); }
+    virtual int DimSpace () const override { return diffop->DimSpace(); }
+    virtual int DimElement () const override { return diffop->DimElement(); }
     
     virtual IntRange UsedDofs(const FiniteElement & fel) const override { return dim*diffop->UsedDofs(fel); }
     virtual IntRange UsedDofs(const FiniteElement & fel, int facetnr) const override { return dim*diffop->UsedDofs(fel, facetnr); }
@@ -356,6 +358,8 @@ namespace ngfem
     virtual bool SupportsVB (VorB checkvb) const override { return diffop->SupportsVB(checkvb); }
     virtual bool DeclaresElementType () const override { return diffop->DeclaresElementType(); }
     virtual bool OnlyOnFacets () const override { return diffop->OnlyOnFacets(); }
+    virtual int DimSpace () const override { return diffop->DimSpace(); }
+    virtual int DimElement () const override { return diffop->DimElement(); }
     
     virtual IntRange UsedDofs(const FiniteElement & fel) const override { return dim*diffop->UsedDofs(fel); }
     virtual IntRange UsedDofs(const FiniteElement & fel, int facetnr) const override { return dim*diffop->UsedDofs(fel, facetnr); }
@@ -464,6 +468,8 @@ namespace ngfem
     virtual bool SupportsVB (VorB checkvb) const override { return diffop->SupportsVB(checkvb); }
     virtual bool DeclaresElementType () const override { return diffop->DeclaresElementType(); }
     virtual bool OnlyOnFacets () const override { return diffop->OnlyOnFacets(); }
+    virtual int DimSpace () const override { return diffop->DimSpace(); }
+    virtual int DimElement () const override { return diffop->DimElement(); }
     
     using DifferentialOperator::UsedDofs;
     virtual IntRange UsedDofs(const FiniteElement & fel) const override { return IntRange(0, fel.GetNDof()); }
@@ -586,6 +592,8 @@ namespace ngfem
     virtual bool SupportsVB (VorB checkvb) const override { return diffop->SupportsVB(checkvb); }
     virtual bool DeclaresElementType () const override { return diffop->DeclaresElementType(); }
     virtual bool OnlyOnFacets () const override { return diffop->OnlyOnFacets(); }
+    virtual int DimSpace () const override { return diffop->DimSpace(); }
+    virtual int DimElement () const override { return diffop->DimElement(); }
     
     using DifferentialOperator::UsedDofs;
     virtual IntRange UsedDofs(const FiniteElement & fel) const override { return IntRange(0, fel.GetNDof()); }
@@ -647,6 +655,8 @@ namespace ngfem
     virtual bool SupportsVB (VorB checkvb) const override { return diffop->SupportsVB(checkvb); }
     virtual bool DeclaresElementType () const override { return diffop->DeclaresElementType(); }
     virtual bool OnlyOnFacets () const override { return diffop->OnlyOnFacets(); }
+    virtual int DimSpace () const override { return diffop->DimSpace(); }
+    virtual int DimElement () const override { return diffop->DimElement(); }
     
     using DifferentialOperator::UsedDofs;
     virtual IntRange UsedDofs(const FiniteElement & fel) const override
@@ -730,6 +740,8 @@ namespace ngfem
     virtual bool SupportsVB (VorB checkvb) const override { return diffop->SupportsVB(checkvb); }
     virtual bool DeclaresElementType () const override { return diffop->DeclaresElementType(); }
     virtual bool OnlyOnFacets () const override { return diffop->OnlyOnFacets(); }
+    virtual int DimSpace () const override { return diffop->DimSpace(); }
+    virtual int DimElement () const override { return diffop->DimElement(); }
     
     using DifferentialOperator::UsedDofs;
     virtual IntRange UsedDofs(const FiniteElement & fel) const override
@@ -824,6 +836,8 @@ namespace ngfem
     virtual bool SupportsVB (VorB checkvb) const override { return diffop->SupportsVB(checkvb); }
     virtual bool DeclaresElementType () const override { return diffop->DeclaresElementType(); }
     virtual bool OnlyOnFacets () const override { return diffop->OnlyOnFacets(); }
+    virtual int DimSpace () const override { return diffop->DimSpace(); }
+    virtual int DimElement () const override { return diffop->DimElement(); }
     
     using DifferentialOperator::UsedDofs;
     virtual IntRange UsedDofs(const FiniteElement & fel) const override
@@ -909,6 +923,8 @@ namespace ngfem
     virtual bool SupportsVB (VorB checkvb) const override { return diffop->SupportsVB(checkvb); }
     virtual bool DeclaresElementType () const override { return diffop->DeclaresElementType(); }
     virtual bool OnlyOnFacets () const override { return diffop->OnlyOnFacets(); }
+    virtual int DimSpace () const override { return diffop->DimSpace(); }
+    virtual int DimElement () const override { return diffop->DimElement(); }
   
     shared_ptr<DifferentialOperator> GetTrace() const override
     {
@@ -1237,6 +1253,8 @@ namespace ngfem
       else
         return false;
     }
+    virtual int DimSpace () const override { return DIM_SPACE; }
+    virtual int DimElement () const override { return DIM_ELEMENT; }
 
     using DifferentialOperator::UsedDofs;
     virtual IntRange UsedDofs(const FiniteElement & fel, int facetnr) const override

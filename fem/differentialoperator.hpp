@@ -321,6 +321,9 @@ namespace ngfem
     virtual bool DeclaresElementType () const { return false; }
     // acts on volume elements only at facet points (facet spaces)
     virtual bool OnlyOnFacets () const { return false; }
+    // dimensions of the physical space and of the reference element, -1: unknown
+    virtual int DimSpace () const { return -1; }
+    virtual int DimElement () const { return -1; }
   };
 
   

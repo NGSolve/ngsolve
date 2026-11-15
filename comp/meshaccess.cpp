@@ -2358,14 +2358,28 @@ namespace ngcomp
 
     ~BoundaryFromVolumeCoefficientFunction() { ; }
 
-    // on boundary elements the input is evaluated on the facet of the volume element
+    Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
+    { return { vol_cf }; }
+    bool UsesInputValues() const override { return false; }
+
+    void CheckContext (const CFContext & ctx) const override
+    {
+      if (ctx.EvalVB() > BND)
+        throw Exception ("BoundaryFromVolumeCF is defined on volume and boundary elements");
+    }
+
+    // on boundary elements the input is evaluated on the facet of the volume element,
+    // there are no trial/test-functions of the volume element
     const CFContext * InputContext (const CFContext & ctx, CFContext & buffer) const override
     {
       if (ctx.EvalVB() != BND) return &ctx;
       buffer = ctx;
+      buffer.purpose = CFContext::EVALUATE;
       buffer.vb = VOL;
       buffer.element_vb = BND;
       buffer.skeleton = false;
+      buffer.trialspace = nullptr;
+      buffer.testspace = nullptr;
       return &buffer;
     }
     
@@ -2513,6 +2527,12 @@ namespace ngcomp
     }
 
 
+    Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
+    { return { func, trafo }; }
+    bool UsesInputValues() const override { return false; }
+    // the inputs live in two contexts, checked in CheckContext
+    const CFContext * InputContext (const CFContext & ctx, CFContext & buffer) const override { return nullptr; }
+
     // trafo on the outer element, func on the elements of region
     void CheckContext (const CFContext & ctx) const override
     {
@@ -2595,6 +2615,14 @@ namespace ngcomp
     {
       return "number of els on facet";
     }
+
+    // facet points of volume elements, or boundary elements (which are facets)
+    void CheckContext (const CFContext & ctx) const override
+    {
+      if (ctx.EvalVB() == VOL && ctx.OnElementFacet()) return;
+      if (ctx.EvalVB() == BND && ctx.element_vb == VOL) return;
+      throw Exception ("num_els_on_facet needs points on facets of volume elements (skeleton=True, element_boundary=True) or boundary elements");
+    }
     
     using CoefficientFunctionNoDerivative::Evaluate;
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override 
@@ -2606,12 +2634,12 @@ namespace ngcomp
       auto & trafo  = mip.GetTransformation();
       const ngcomp::MeshAccess * ma = static_cast<const ngcomp::MeshAccess*> (trafo.GetMesh());
       auto ei = trafo.GetElementId();
-      auto fnr = mip.IP().FacetNr(); // local facet nr
-      
       auto facets = ma->GetElFacets(ei);
+      // a boundary element is a facet itself
+      int facet = ei.IsVolume() ? facets[mip.IP().FacetNr()] : facets[0];
       
       Array<int> elnums;
-      ma -> GetFacetElements(facets[fnr], elnums);
+      ma -> GetFacetElements(facet, elnums);
       res(0) = elnums.Size();
     }
   };

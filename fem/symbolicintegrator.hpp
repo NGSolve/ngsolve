@@ -232,6 +232,16 @@ public:
   Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const override;
 
   void CheckContext (const CFContext & ctx) const override;
+
+  // boundary values of Other(bnd): evaluated by the DG apply on boundary elements
+  Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
+  {
+    Array<shared_ptr<CoefficientFunction>> in;
+    if (boundary_values) in.Append (boundary_values);
+    return in;
+  }
+  const CFContext * InputContext (const CFContext & ctx, CFContext & buffer) const override;
+  bool UsesInputValues() const override { return false; }
 };
 
 

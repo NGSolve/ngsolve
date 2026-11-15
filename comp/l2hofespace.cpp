@@ -4133,6 +4133,188 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
     }
   };
 
+
+  // dual shapes of the mapped VectorL2: contragredient mapping of the reference
+  // polynomials, piola: sgn(J) F^{-T} B^{-T} e_k psi_i, covariant: 1/|J| F B^{-T} e_k psi_i,
+  // so that the dual pairing is the reference mass on every element
+  template <int D, bool PIOLA>
+  class DiffOpVectorL2MappedDual : public DiffOp<DiffOpVectorL2MappedDual<D,PIOLA>>
+  {
+  public:
+    static constexpr int DIM = 1;
+    static constexpr int DIM_SPACE = D;
+    static constexpr int DIM_ELEMENT = D;
+    static constexpr int DIM_DMAT = D;
+    static constexpr int DIFFORDER = 0;
+    using FiniteElementType = VectorFiniteElement;
+    using TRAFO = conditional_t<PIOLA, PiolaBasisTrafo, CovariantBasisTrafo>;
+
+    static string Name() { return "dual"; }
+
+    static Mat<D> BInvT (const FiniteElement & fel)
+    {
+      Mat<D> B = GetBasis<TRAFO,D>(fel);
+      return Trans(Inv(B));
+    }
+
+    template <typename MIP>
+    static auto Trafo (const MIP & mip)
+    {
+      using T = decay_t<decltype(mip.GetJacobiDet())>;
+      Mat<D,D,T> m;
+      if constexpr (PIOLA)
+        m = (mip.GetJacobiDet()/mip.GetMeasure()) * Trans(mip.GetJacobianInverse());
+      else
+        m = (1.0/mip.GetMeasure()) * mip.GetJacobian();
+      return m;
+    }
+
+    template <typename FEL, typename MIP, typename MAT>
+    static void GenerateMatrix (const FEL & bfel, const MIP & mip,
+                                MAT && mat, LocalHeap & lh)
+    {
+      auto & fel = static_cast<const VectorFiniteElement&> (bfel);
+      mat.AddSize(D, bfel.GetNDof()) = 0.0;
+      auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
+      for (int i = 0; i < D; i++)
+        feli.CalcShape (mip.IP(), mat.Row(i).Range(fel.GetRange(i)));
+      Mat<D> trafo = Trafo(mip);
+      trafo = trafo * BInvT(bfel);
+      for (int i = 0; i < D*feli.GetNDof(); i++)
+        {
+          Vec<D> hv = mat.Col(i);
+          mat.Col(i) = trafo * hv;
+        }
+    }
+
+    static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
+                                      const SIMD_BaseMappedIntegrationRule & bmir,
+                                      BareSliceMatrix<SIMD<double>> mat)
+    {
+      auto & mir = static_cast<const SIMD_MappedIntegrationRule<D,D>&> (bmir);
+      Mat<D> binvt = BInvT(bfel);
+      auto & fel = static_cast<const VectorFiniteElement&> (bfel);
+      auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
+
+      size_t ndofi = feli.GetNDof();
+      auto scalmat = mat.Rows( (D*D-1)*ndofi, D*D*ndofi);
+      feli.CalcShape (mir.IR(), scalmat);
+
+      for (auto i_ip : Range(mir))
+        {
+          Mat<D,D,SIMD<double>> trafo = Trafo(mir[i_ip]);
+          trafo = trafo * binvt;
+          auto col = mat.Col(i_ip);
+          auto scalcol = scalmat.Col(i_ip);
+          size_t base = 0;
+          for (size_t k = 0; k < D; k++)
+            for (size_t i = 0; i < ndofi; i++, base += D)
+              col.Range(base, base+D) = scalcol(i) * trafo.Col(k);
+        }
+    }
+  };
+
+
+  // element of the mapped VectorL2: Interpolate by the mapped dual functionals,
+  // the duality matrix is reference mass x I
+  template <int D>
+  class VectorL2MappedFE : public VectorFiniteElement
+  {
+    bool piola;
+  public:
+    VectorL2MappedFE (const FiniteElement & ascalar_fe, bool apiola)
+      : VectorFiniteElement(ascalar_fe, D), piola(apiola) { }
+
+    Mat<D> BInv () const
+    {
+      Mat<D> B = piola ? GetBasis<PiolaBasisTrafo,D>(*this) : GetBasis<CovariantBasisTrafo,D>(*this);
+      return Inv(B);
+    }
+
+    // pullback to reference coefficients: piola: B^{-1} J F^{-1} u, covariant: B^{-1} F^T u
+    template <typename MIP, typename T>
+    Vec<D,T> PullBack (const MIP & mip, const Mat<D> & binv, Vec<D,T> u) const
+    {
+      Vec<D,T> r;
+      if (piola)
+        r = mip.GetJacobiDet() * (mip.GetJacobianInverse() * u);
+      else
+        r = Trans(mip.GetJacobian()) * u;
+      Vec<D,T> res;
+      for (int k = 0; k < D; k++)
+        {
+          T sum = 0.0;
+          for (int j = 0; j < D; j++) sum += binv(k,j) * r(j);
+          res(k) = sum;
+        }
+      return res;
+    }
+
+    void Interpolate (const ElementTransformation & trafo,
+                      const CoefficientFunction & func, SliceMatrix<> coefs,
+                      LocalHeap & lh, int bonus_intorder = 0) const override
+    {
+      if (func.Dimension() != D)
+        throw Exception("Dimensions do not match.");
+      HeapReset hr(lh);
+      auto & feli = static_cast<const BaseScalarFiniteElement&> (scalar_fe);
+      size_t nd = feli.GetNDof();
+      Mat<D> binv = BInv();
+      FlatMatrix<> c(D, nd, lh);
+      c = 0.0;
+      try
+        {
+          SIMD_IntegrationRule ir(ElementType(), 2*Order()+bonus_intorder);
+          auto & mir = static_cast<const SIMD_MappedIntegrationRule<D,D>&> (trafo(ir, lh));
+          FlatMatrix<SIMD<double>> vals(D, ir.Size(), lh);
+          func.Evaluate (mir, vals);
+          for (size_t i = 0; i < ir.Size(); i++)
+            vals.Col(i) = ir[i].Weight() * PullBack (mir[i], binv, Vec<D,SIMD<double>>(vals.Col(i)));
+          for (int k = 0; k < D; k++)
+            feli.AddTrans (ir, vals.Row(k), c.Row(k));
+        }
+      catch (const ExceptionNOSIMD &)
+        {
+          c = 0.0;
+          IntegrationRule ir(ElementType(), 2*Order()+bonus_intorder);
+          auto & mir = static_cast<const MappedIntegrationRule<D,D>&> (trafo(ir, lh));
+          FlatMatrix<> vals(ir.Size(), D, lh);
+          func.Evaluate (mir, vals);
+          for (size_t i = 0; i < ir.Size(); i++)
+            vals.Row(i) = ir[i].Weight() * PullBack (mir[i], binv, Vec<D>(vals.Row(i)));
+          FlatVector<> hc(nd, lh);
+          for (int k = 0; k < D; k++)
+            {
+              feli.EvaluateTrans (ir, vals.Col(k), hc);
+              c.Row(k) = hc;
+            }
+        }
+      FlatVector<> diag(nd, lh);
+      feli.GetDiagMassMatrix (diag);
+      for (int k = 0; k < D; k++)
+        for (size_t i = 0; i < nd; i++)
+          coefs(k*nd+i, 0) = c(k,i) / diag(i);
+    }
+
+    bool SolveDuality (SliceMatrix<> x, LocalHeap & lh) const override
+    {
+      auto & feli = static_cast<const BaseScalarFiniteElement&> (scalar_fe);
+      size_t nd = feli.GetNDof();
+      HeapReset hr(lh);
+      FlatVector<> diag(nd, lh);
+      feli.GetDiagMassMatrix (diag);
+      for (int k = 0; k < D; k++)
+        for (size_t i = 0; i < nd; i++)
+          x.Row(k*nd+i) *= 1.0/diag(i);
+      return true;
+    }
+
+    bool SolveDualityTrans (SliceMatrix<> x, LocalHeap & lh) const override
+    {
+      return SolveDuality (x, lh);
+    }
+  };
+
   /*class DiffOpCurlVectorL2Covariant : public DiffOp<DiffOpCurlVectorL2Covariant>
   {
   public:
@@ -5004,7 +5186,20 @@ One can evaluate the vector-valued function, and one can take the gradient.
             break;
           }
 
-      additional_evaluators.Set("dual", evaluator[VOL]);
+      if (piola || covariant)
+        switch (ma->GetDimension())
+          {
+          case 2:
+            if (piola) additional_evaluators.Set("dual", make_shared<T_DifferentialOperator<DiffOpVectorL2MappedDual<2,true>>>());
+            else additional_evaluators.Set("dual", make_shared<T_DifferentialOperator<DiffOpVectorL2MappedDual<2,false>>>());
+            break;
+          case 3:
+            if (piola) additional_evaluators.Set("dual", make_shared<T_DifferentialOperator<DiffOpVectorL2MappedDual<3,true>>>());
+            else additional_evaluators.Set("dual", make_shared<T_DifferentialOperator<DiffOpVectorL2MappedDual<3,false>>>());
+            break;
+          }
+      else
+        additional_evaluators.Set("dual", evaluator[VOL]);
 
       if (flags.GetDefineFlag("hoprolongation"))
         {
@@ -5017,7 +5212,14 @@ One can evaluate the vector-valued function, and one can take the gradient.
 
   FiniteElement & VectorL2FESpace ::GetFE (ElementId ei, Allocator & alloc) const
   {
-    return *new (alloc) VectorFiniteElement (spaces[0]->GetFE(ei, alloc), spaces.Size());
+    auto & sfe = spaces[0]->GetFE(ei, alloc);
+    if ((piola || covariant) && ei.VB() == VOL && DefinedOn(ei))
+      switch (ma->GetDimension())
+        {
+        case 2: return *new (alloc) VectorL2MappedFE<2> (sfe, piola);
+        case 3: return *new (alloc) VectorL2MappedFE<3> (sfe, piola);
+        }
+    return *new (alloc) VectorFiniteElement (sfe, spaces.Size());
   }
 
   void VectorL2FESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const

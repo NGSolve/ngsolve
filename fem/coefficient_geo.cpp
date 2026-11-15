@@ -867,8 +867,13 @@ namespace ngfem
     }
     string GetDescription () const override { return "edge-face tangential vectors"; }
 
+    // edges of volume elements
     void CheckContext (const CFContext & ctx) const override
-    { CheckGeoDim (D, ctx); }
+    {
+      CheckGeoDim (D, ctx);
+      if (ctx.dim >= 0 && (ctx.ElementDim() != 3 || ctx.element_vb != BBND))
+        throw Exception ("EdgeFaceTangentialVectors needs points on edges of 3D elements, use dx(element_vb=BBND)");
+    }
 
     using CoefficientFunctionNoDerivative::Evaluate;
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
@@ -917,6 +922,8 @@ namespace ngfem
 
           auto & trafo = ip.GetTransformation();
           ELEMENT_TYPE et = trafo.GetElementType();
+          if (et != ET_TET)
+            throw Exception ("EdgeFaceTangentialVectors is implemented for tets only, got " + ToString(et));
           auto edge = ElementTopology::GetEdges(et)[edgenr];
                     
           Vec<3> v1 = ElementTopology::GetVertices<3>(ET_TET)[edge[0]];

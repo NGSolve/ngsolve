@@ -387,6 +387,7 @@ namespace ngcomp
 
     Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
     { return Array<shared_ptr<CoefficientFunction>>({ func }); }
+    bool UsesInputValues() const override { return false; }
 
     // evaluated on the outer element as an element of fes: same mesh, volume elements
     void CheckContext (const CFContext & ctx) const override
@@ -572,6 +573,22 @@ namespace ngcomp
       for (auto & op : inner_ops)
         if (op) op->CheckElement (fel);
     } 
+
+    // dimensions of the operators acting on the form's element
+    int DimSpace () const override
+    {
+      int d = inner_ops.Size() && inner_ops[0] ? inner_ops[0]->DimSpace() : -1;
+      for (auto & op : inner_ops)
+        if (!op || op->DimSpace() != d) return -1;
+      return d;
+    }
+    int DimElement () const override
+    {
+      int d = inner_ops.Size() && inner_ops[0] ? inner_ops[0]->DimElement() : -1;
+      for (auto & op : inner_ops)
+        if (!op || op->DimElement() != d) return -1;
+      return d;
+    }
     
     void
     CalcMatrix (const FiniteElement & inner_fel,

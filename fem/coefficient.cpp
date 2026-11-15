@@ -267,14 +267,23 @@ namespace ngfem
   shared_ptr<CoefficientFunction>
   CoefficientFunction :: Transform (CoefficientFunction::T_Transform & transformation) const
   {
-    if (InputCoefficientFunctions().Size())
-      throw Exception("Transform not overloaed, desc = "+GetDescription());
-    
     auto thisptr = const_pointer_cast<CoefficientFunction>(this->shared_from_this());
     if (transformation.replace.find(thisptr) != transformation.replace.end()) 
       return transformation.replace[thisptr];
-    
+
+    // without an own Transform the node can only be kept if its inputs stay
+    for (auto & in : InputCoefficientFunctions())
+      if (in && in->Transform(transformation) != in)
+        throw Exception("Transform not overloaded, desc = "+GetDescription());
     return thisptr;
+  }
+  
+  static bool DependsOn (const CoefficientFunction & cf, const CoefficientFunction * var)
+  {
+    bool depends = false;
+    const_cast<CoefficientFunction&>(cf).TraverseDAG
+      ([&] (CoefficientFunction & node) { if (&node == var) depends = true; });
+    return depends;
   }
   
   shared_ptr<CoefficientFunction> CoefficientFunction ::
@@ -3001,6 +3010,23 @@ public:
   {
     CoefficientFunction /* NoDerivative */ ::DoArchive(ar);
     ar.Shallow(cfmat) & dim1 & vecdim;
+  }
+
+  Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
+  { return { cfmat }; }
+
+  shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var,
+                                        shared_ptr<CoefficientFunction> dir) const override
+  {
+    if (this == var) return dir;
+    if (!DependsOn (*cfmat, var)) return ZeroCF(Dimensions());
+    throw Exception ("Diff not implemented for Eig");
+  }
+
+  void CheckContext (const CFContext & ctx) const override
+  {
+    if (cfmat->IsComplex())
+      throw Exception ("Eig needs a real matrix");
   }
   
   using CoefficientFunction /* NoDerivative*/ ::Evaluate;
@@ -6014,10 +6040,18 @@ public:
   } 
   
   
+  // c1 is evaluated on the neighbour element
+  bool UsesInputValues() const override { return false; }
+
   void CheckContext (const CFContext & ctx) const override
   {
-    if (!ctx.skeleton && !ctx.pairing && ctx.element_vb == VOL)
+    if (ctx.skeleton || ctx.pairing) return;
+    if (ctx.element_vb == VOL)
       throw Exception ("Other() needs skeleton=True or element_boundary=True");
+    // element-boundary loops with a neighbour: bilinear forms and Integrate on volume elements
+    if (ctx.vb != VOL || ctx.element_vb != BND ||
+        (ctx.purpose != CFContext::BILINEAR && ctx.purpose != CFContext::EVALUATE))
+      throw Exception ("Other() with element_boundary/element_vb is supported only on volume elements (dx(element_boundary=True)) in bilinear forms and Integrate, use skeleton=True");
   }
 
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
@@ -6653,6 +6687,23 @@ shared_ptr<CoefficientFunction> Freeze (shared_ptr<CoefficientFunction> cf)
 
 
 
+  // DAG of the steps a compiled CF evaluates: inputs of nodes evaluating them themselves are no steps
+  static void TraverseEvaluationDAG (CoefficientFunction & cf, const function<void(CoefficientFunction&)> & func,
+                                     CoefficientFunction::T_Visited & visited)
+  {
+    if (!visited.insert(&cf).second) return;
+    if (cf.UsesInputValues())
+      for (auto & incf : cf.InputCoefficientFunctions())
+        if (incf) TraverseEvaluationDAG (*incf, func, visited);
+    func(cf);
+  }
+
+  static Array<shared_ptr<CoefficientFunction>> EvaluationInputs (const CoefficientFunction & cf)
+  {
+    if (!cf.UsesInputValues()) return Array<shared_ptr<CoefficientFunction>>();
+    return cf.InputCoefficientFunctions();
+  }
+
   // ///////////////////////////// Compiled CF /////////////////////////
 class CompiledCoefficientFunction : public CompiledCoefficientFunctionInterface //, public std::enable_shared_from_this<CompiledCoefficientFunction>
   {
@@ -6712,8 +6763,9 @@ class CompiledCoefficientFunction : public CompiledCoefficientFunctionInterface 
 
 
       SetDimensions (cf->Dimensions());
-      cf -> TraverseDAG
-        ([&] (CoefficientFunction & stepcf)
+      CoefficientFunction::T_Visited visited;
+      TraverseEvaluationDAG
+        (*cf, [&] (CoefficientFunction & stepcf)
          {
            if (handled_functions.count(getKey(stepcf))==0)
              {
@@ -6723,7 +6775,7 @@ class CompiledCoefficientFunction : public CompiledCoefficientFunctionInterface 
                dim.Append (stepcf.Dimension());
                is_complex.Append (stepcf.IsComplex());
              }
-         });
+         }, visited);
       
       totdim = 0;
       for (int d : dim) totdim += d;
@@ -6737,7 +6789,7 @@ class CompiledCoefficientFunction : public CompiledCoefficientFunctionInterface 
       
       for (auto i : Range(steps))
         {
-          Array<shared_ptr<CoefficientFunction>> in = steps[i]->InputCoefficientFunctions();
+          Array<shared_ptr<CoefficientFunction>> in = EvaluationInputs (*steps[i]);
           max_inputsize = max2(in.Size(), max_inputsize);
           for (auto incf : in)
             inputs.Add (i, getIndex(*incf.get()));
@@ -6802,8 +6854,9 @@ class CompiledCoefficientFunction : public CompiledCoefficientFunctionInterface 
       ar.Shallow(cf);
       if(ar.Input())
         {
-          cf -> TraverseDAG
-            ([&] (CoefficientFunction & stepcf)
+          CoefficientFunction::T_Visited visited;
+          TraverseEvaluationDAG
+            (*cf, [&] (CoefficientFunction & stepcf)
              {
                if (!steps.Contains(&stepcf))
                  {
@@ -6812,7 +6865,7 @@ class CompiledCoefficientFunction : public CompiledCoefficientFunctionInterface 
                    dim.Append (stepcf.Dimension());
                    is_complex.Append (stepcf.IsComplex());
                  }
-             });
+             }, visited);
           totdim = 0;
           for (int d : dim) totdim += d;
           inputs = DynamicTable<int> (steps.Size());
@@ -6820,7 +6873,7 @@ class CompiledCoefficientFunction : public CompiledCoefficientFunctionInterface 
 
           for (auto i : Range(steps))
             {
-              Array<shared_ptr<CoefficientFunction>> in = steps[i]->InputCoefficientFunctions();
+              Array<shared_ptr<CoefficientFunction>> in = EvaluationInputs (*steps[i]);
               max_inputsize = max2(in.Size(), max_inputsize);
               for (auto incf : in)
                 inputs.Add (i, steps.Pos(incf.get()));

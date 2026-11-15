@@ -93,17 +93,37 @@ namespace ngfem
       default:
         break;
       }
-    if (is_other && !ctx.skeleton && !ctx.pairing && ctx.element_vb == VOL)
-      throw Exception ("Other() needs skeleton=True or element_boundary=True");
+    if (is_other && !ctx.skeleton && !ctx.pairing)
+      {
+        if (ctx.element_vb == VOL)
+          throw Exception ("Other() needs skeleton=True or element_boundary=True");
+        // only the element-boundary loop of bilinear forms over volume elements provides the neighbour
+        if (ctx.purpose != CFContext::BILINEAR || ctx.vb != VOL || ctx.element_vb != BND)
+          throw Exception ("Other() with element_boundary/element_vb is supported only in bilinear forms on volume elements (dx(element_boundary=True)), use skeleton=True");
+      }
     // the operator acting on the elements of the context
     VorB evb = ctx.EvalVB();
+    // facet numbers of points must be facets (codimension 1) of the element
     for (auto op : { evaluator.get(), trace_evaluator.get(), ttrace_evaluator.get() })
       if (op && op->VB() == evb && op->OnlyOnFacets() && !ctx.OnElementFacet())
-        throw Exception ("functions of a facet space cannot be evaluated inside elements, use element_boundary=True or skeleton=True");
+        throw Exception ("functions of a facet space cannot be evaluated inside elements or on edges/vertices, only on element facets: use element_boundary=True or skeleton=True");
 
     auto & space = testfunction ? ctx.testspace : ctx.trialspace;
     if (space && ctx.check_proxy)
       ctx.check_proxy (*this, *space, ctx.EvalVB());
+  }
+
+  const CFContext * ProxyFunction :: InputContext (const CFContext & ctx, CFContext & buffer) const
+  {
+    if (!boundary_values) return &ctx;
+    buffer = ctx;
+    buffer.purpose = CFContext::EVALUATE;
+    buffer.vb = BND;
+    buffer.element_vb = VOL;
+    buffer.skeleton = false;
+    buffer.trialspace = nullptr;
+    buffer.testspace = nullptr;
+    return &buffer;
   }
 
   shared_ptr<ProxyFunction> ProxyFunction :: Deriv() const

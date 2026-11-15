@@ -1513,7 +1513,22 @@ lot of new non-zero entries in the matrix!\n" << endl;
     if (!eop || eop->VB() != elvb)
       eop = &op;
 
+    // the operator must fit the geometry: space dimension and dimension of the evaluated elements
     auto & ma = *space.GetMeshAccess();
+    int dimspace = eop->DimSpace(), dimel = eop->DimElement();
+    if (dimspace < 0 || dimel < 0)
+      throw Exception (describe() + ": the operator does not declare its dimensions, use trial/test-functions of the form's space");
+    if (dimspace > 0)   // 0: geometry free (NumberSpace)
+      {
+        int eldim = ma.GetDimension() - int(elvb);
+        if (dimspace != ma.GetDimension())
+          throw Exception (describe() + ": the operator acts in " + ToString(dimspace) + "D space, the mesh of " +
+                           space.GetClassName() + " has dimension " + ToString(ma.GetDimension()));
+        if (dimel != eldim && !eop->SupportsVB(elvb))
+          throw Exception (describe() + ": the operator acts on elements of dimension " + ToString(dimel) +
+                           ", evaluated on elements of dimension " + ToString(eldim));
+      }
+
     LocalHeap lh(1000*1000, "CheckOperatorSpace");
     for (ElementId ei : RepresentativeElements (ma, elvb))
       {
@@ -1587,6 +1602,28 @@ lot of new non-zero entries in the matrix!\n" << endl;
                        mip.DimSpace(), eb);
   }
 
+  // sub-entities the element loops integrate over, boundary facets for ds(skeleton=True)
+  static void CheckIntegrationDomain (const MeshAccess & ma, VorB vb, VorB element_vb, bool skeleton)
+  {
+    int eldim = ma.GetDimension() - int(skeleton ? VOL : vb);
+    if (element_vb != VOL && int(element_vb) > eldim)
+      throw Exception ("element_vb = " + ToString(element_vb) + " on elements of dimension " + ToString(eldim) +
+                       ": the elements have no such sub-entities");
+    if (skeleton && vb == BND && ma.GetNE(BND))
+      {
+        // the loop over boundary elements continues on the volume element of the facet
+        if (ma.GetNE(VOL) == 0)
+          throw Exception ("ds(skeleton=True) integrates over boundary facets of volume elements, the mesh has no volume elements");
+        Array<int> elnums;
+        for (size_t i = 0; i < ma.GetNE(BND); i++)
+          {
+            ma.GetFacetElements (ma.GetElFacets(ElementId(BND, i))[0], elnums);
+            if (elnums.Size() == 0)
+              throw Exception ("ds(skeleton=True): boundary element " + ToString(i) + " is not the facet of a volume element");
+          }
+      }
+  }
+  
   void CheckIntegratorContext (const Integrator & igt, CFContext::Purpose purpose,
                                shared_ptr<FESpace> trialspace, shared_ptr<FESpace> testspace,
                                bool allow_complex)
@@ -1620,13 +1657,24 @@ lot of new non-zero entries in the matrix!\n" << endl;
     if (!space) return;
     auto & ma = *space->GetMeshAccess();
 
-    // element loops test definedonelements by element number (volume elements for skeleton terms)
+    // loops test definedonelements by element number, facet loops by facet number
+    // (boundary skeleton terms: boundary element in assembly, facet in apply)
     if (auto doe = igt.GetDefinedOnElements())
       {
-        VorB evb = igt.SkeletonForm() ? VOL : igt.VB();
-        if (doe->Size() < ma.GetNE(evb))
+        size_t needed = ma.GetNE(igt.VB());
+        string what = ToString(igt.VB()) + " elements";
+        if (igt.SkeletonForm())
+          {
+            if (igt.GetDGFormulation().element_boundary)
+              { needed = ma.GetNE(VOL); what = "VOL elements"; }
+            else if (igt.VB() == VOL)
+              { needed = ma.GetNFacets(); what = "facets"; }
+            else
+              { needed = max(ma.GetNE(BND), ma.GetNFacets()); what = "BND elements/facets"; }
+          }
+        if (doe->Size() < needed)
           throw Exception ("definedonelements has size " + ToString(doe->Size()) + ", mesh has " +
-                           ToString(ma.GetNE(evb)) + " " + ToString(evb) + " elements");
+                           ToString(needed) + " " + what);
       }
     
     if (igt.GetDeformation())
@@ -1673,6 +1721,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
     if (!cf)
       {
+        CheckIntegrationDomain (ma, igt.VB(), VOL, igt.SkeletonForm());
         // classic integrators: element family, one element per element type
         if (trialspace && testspace && trialspace != testspace) return;
         VorB vb = igt.SkeletonForm() ? VOL : igt.VB();
@@ -1719,6 +1768,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
         return;
       }
 
+    CheckIntegrationDomain (ma, igt.VB(), element_vb, skeleton);
     CFContext ctx = MakeCFContext (ma, purpose, igt.VB(), element_vb, skeleton, allow_complex);
     ctx.trialspace = trialspace;
     ctx.testspace = testspace;

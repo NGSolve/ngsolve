@@ -585,3 +585,283 @@ def test_dof_consistency(m):
                     H1(mesh, order=2) * HDiv(mesh, order=1), Discontinuous(H1(mesh, order=2))]:
             fes._CheckDofConsistency(VOL)
             fes._CheckDofConsistency(BND)
+
+
+# ------------------------------------------------- every CF node reports its inputs
+
+def _cf_nodes():
+    from ngsolve.fem import Einsum, CoordinateTrafo, PlaceholderCF
+    from ngsolve.comp import BoundaryFromVolumeCF
+    nodes = {
+        "add": lambda u, M, s, m: u + u,
+        "scale": lambda u, M, s, m: 2 * u,
+        "scale_complex": lambda u, M, s, m: 2j * s,
+        "mult_scal_vec": lambda u, M, s, m: s * u,
+        "inner": lambda u, M, s, m: InnerProduct(u, u),
+        "norm": lambda u, M, s, m: Norm(u),
+        "norm_complex": lambda u, M, s, m: Norm(1j * u),
+        "mat_vec": lambda u, M, s, m: M * u,
+        "mat_mat": lambda u, M, s, m: M * M,
+        "cross": lambda u, M, s, m: Cross(CF((s, s, s)), CF((1, 2, 3))),
+        "component": lambda u, M, s, m: u[0],
+        "subtensor": lambda u, M, s, m: M[0, :],
+        "transpose": lambda u, M, s, m: M.trans,
+        "trace": lambda u, M, s, m: Trace(M),
+        "det": lambda u, M, s, m: Det(M),
+        "inv": lambda u, M, s, m: Inv(M),
+        "cof": lambda u, M, s, m: Cof(M),
+        "sym": lambda u, M, s, m: Sym(M),
+        "skew": lambda u, M, s, m: Skew(M),
+        "identity_mult": lambda u, M, s, m: Id(2) * s,
+        "unary": lambda u, M, s, m: sin(s),
+        "binary": lambda u, M, s, m: atan2(s, 1),
+        "power": lambda u, M, s, m: s ** 2,
+        "ifpos": lambda u, M, s, m: IfPos(s, u, -u),
+        "ifpos_condition": lambda u, M, s, m: IfPos(s, 1, 2),
+        "vectorial": lambda u, M, s, m: CF((s, 2 * s)),
+        "reshape": lambda u, M, s, m: u.Reshape((2, 1)),
+        "tensor_transpose": lambda u, M, s, m: M.TensorTranspose((1, 0)),
+        "extend_dimension": lambda u, M, s, m: u.ExtendDimension((3,)),
+        "einsum": lambda u, M, s, m: Einsum("ij,j->i", M, u),
+        "compile": lambda u, M, s, m: (s * s).Compile(),
+        "eig": lambda u, M, s, m: M.Eig(),
+        "boundary_from_volume": lambda u, M, s, m: BoundaryFromVolumeCF(u),
+        "freeze": lambda u, M, s, m: s.Freeze(),
+        "real": lambda u, M, s, m: s.real,
+        "imag": lambda u, M, s, m: s.imag,
+        "conj": lambda u, M, s, m: Conj(s),
+        "parameter": lambda u, M, s, m: Parameter(2) * s,
+        "domainwise": lambda u, M, s, m: m.MaterialCF({".*": s}),
+        "regionwise": lambda u, M, s, m: m.RegionCF(VOL, {".*": s}),
+        "coordinate_trafo": lambda u, M, s, m: s(CoordinateTrafo(CF((x, y)), m.Materials(".*"))),
+        "placeholder": lambda u, M, s, m: PlaceholderCF(s),
+        "bspline": lambda u, M, s, m: BSpline(2, [0, 0, 1, 2, 3], [1, 2, 3, 4])(s),
+        "other": lambda u, M, s, m: u.Other(),
+        "diff": lambda u, M, s, m: (s * s * x).Diff(x),
+    }
+    return nodes
+
+
+@pytest.mark.parametrize("name", sorted(_cf_nodes().keys()))
+def test_cf_node_reports_proxies(name):
+    m = MakeStructured2DMesh(nx=2, ny=2)
+    u = VectorH1(m, order=2).TrialFunction()
+    node = _cf_nodes()[name](u, grad(u), u[0], m)
+    msg = "can only be used in forms"
+    raises(lambda: Integrate(node, m), msg)
+    if name not in ("domainwise", "regionwise"):
+        raises(lambda: Integrate(node, m, BND), msg)
+    raises(lambda: node(m(0.3, 0.3)), msg)
+
+
+def test_hidden_inputs_now_visible(m):
+    # finding: BoundaryFromVolumeCF and Eig hid proxies from the gate
+    from ngsolve.comp import BoundaryFromVolumeCF
+    V = H1(m, order=2)
+    u, v = V.TnT()
+    a1 = BilinearForm(V)
+    a1 += BoundaryFromVolumeCF(u) * v * dx
+    a1.Assemble()
+    a2 = BilinearForm(u * v * dx).Assemble()
+    assert abs(nrm(a1) - nrm(a2)) < 1e-10 * nrm(a2)
+    raises(lambda: BilinearForm(V).__iadd__(BoundaryFromVolumeCF(u) * v * ds), "can only be used in forms")
+    gf = GridFunction(L2(m, order=2))
+    gf.Set(x * x * y)
+    bfv = BoundaryFromVolumeCF(grad(gf))[0]
+    i1 = Integrate(bfv * ds, m)
+    assert abs(i1 - Integrate(bfv.Compile() * ds, m)) < 1e-12
+    M = CF((1 + x * x, x, x, 2), dims=(2, 2))
+    gM = GridFunction(MatrixValued(L2(m, order=2)))
+    gM.Set(M)
+    eig = gM.Eig()
+    Integrate(eig, m)
+    p = Parameter(1)
+    assert Integrate((p * eig[4]).Diff(p) - eig[4], m) == pytest.approx(0, abs=1e-12)
+    raises(lambda: Integrate(CF((1j * x, 0, 0, 1), dims=(2, 2)).Eig(), m), "real")
+
+
+def test_hidden_inputs_replace(m):
+    from ngsolve.comp import BoundaryFromVolumeCF
+    gf = GridFunction(H1(m, order=1))
+    gf.Set(x)
+    bfv = BoundaryFromVolumeCF(gf) * x
+    r = bfv.Replace({x: y}) if hasattr(bfv, "Replace") else bfv
+    Integrate(r * ds, m)
+
+
+# ------------------------------------------------- operators of another mesh dimension
+
+def test_proxy_of_other_dimension():
+    m2 = MakeStructured2DMesh(nx=3, ny=3)
+    fes = H1(m2, order=2)
+    u, v = fes.TnT()
+    u3 = H1(MakeStructured3DMesh(hexes=False, nx=1, ny=1, nz=1), order=2).TrialFunction()
+    raises(lambda: BilinearForm(fes).__iadd__(u3 * v * dx), "3D space")
+    raises(lambda: BilinearForm(fes).__iadd__(grad(u3)[0] * grad(v)[0] * dx), "3D space")
+
+
+def test_proxy_of_other_mesh_same_dimension():
+    ma = MakeStructured2DMesh(nx=3, ny=3)
+    mb = MakeStructured2DMesh(nx=2, ny=2)
+    fa = H1(ma, order=2)
+    u, v = fa.TnT()
+    ub = H1(mb, order=2).TrialFunction()
+    a = BilinearForm(fa)
+    a += grad(ub) * grad(v) * dx + ub * v * dx
+    a.Assemble()
+    b = BilinearForm(grad(u) * grad(v) * dx + u * v * dx).Assemble()
+    assert abs(nrm(a) - nrm(b)) < 1e-10 * nrm(b)
+
+
+def test_gridfunction_of_other_dimension():
+    m2 = MakeStructured2DMesh(nx=3, ny=3)
+    m3 = MakeStructured3DMesh(hexes=False, nx=2, ny=2, nz=2)
+    g3 = GridFunction(H1(m3, order=1))
+    g3.Set(x + y + z)
+    raises(lambda: Integrate(g3, m2), "points of dimension")
+    raises(lambda: g3(m2(0.3, 0.3)), "points of dimension")
+    g2 = GridFunction(H1(m2, order=1))
+    g2.Set(x + y)
+    raises(lambda: Integrate(g2, m3), "points of dimension")
+    # same dimension: point search
+    mb = MakeStructured2DMesh(nx=5, ny=5)
+    assert Integrate(g2, mb) == pytest.approx(1.0)
+    # surface mesh (no volume elements) evaluated at points of a 3D mesh
+    from ngsolve.meshes import MakeStructuredSurfaceMesh
+    ms = MakeStructuredSurfaceMesh(nx=2, ny=2)
+    gs = GridFunction(VectorL2(ms, order=1))
+    mp = MakeStructured3DMesh(hexes=False, prism=True, nx=1, ny=1, nz=1)
+    raises(lambda: gs(mp(0.0, 0.0, 0.0)), "another mesh")
+
+
+# ------------------------------------------------- Other(), facet operators, element_vb
+
+@pytest.mark.parametrize("space", ["h1", "l2", "discontinuous"])
+def test_other_in_linearform_needs_skeleton(space):
+    mesh = MakeStructured2DMesh(nx=2, ny=2)
+    fes = {"h1": lambda: H1(mesh, order=1), "l2": lambda: L2(mesh, order=1),
+           "discontinuous": lambda: Discontinuous(H1(mesh, order=1))}[space]()
+    v = fes.TestFunction()
+    for dX in [ds(element_vb=BND), dx(element_vb=BND), ds(element_boundary=True), dx(element_boundary=True)]:
+        raises(lambda: LinearForm(y * v.Other() * dX), "Other")
+    LinearForm(y * v.Other() * dx(skeleton=True)).Assemble()
+
+
+def test_other_element_boundary_bilinear(m):
+    fes = L2(m, order=1, dgjumps=True)
+    u, v = fes.TnT()
+    n = specialcf.normal(2)
+    a = BilinearForm(fes)
+    a += 0.5 * (u + u.Other()) * n[0] * v * dx(element_boundary=True)
+    a.Assemble()
+    raises(lambda: BilinearForm(fes).__iadd__(u.Other() * v * ds(element_boundary=True)), "Other")
+    raises(lambda: Integrate(x.Other() * ds(element_boundary=True), m), "Other")
+    Integrate(x.Other() * dx(element_boundary=True), m)
+
+
+def test_facet_space_on_edges():
+    m3 = MakeStructured3DMesh(hexes=True, nx=1, ny=1, nz=1)
+    v = FacetFESpace(m3, order=1).TestFunction()
+    raises(lambda: LinearForm(z * v * dx(element_vb=BBND)), "facets")
+    LinearForm(z * v * dx(element_vb=BND)).Assemble()
+    gf = GridFunction(FacetFESpace(m3, order=1))
+    raises(lambda: Integrate(gf * dx(element_vb=BBND), m3), "inside elements")
+
+
+def test_element_vb_sub_entities(m):
+    # vertices of 2D elements are fine (dual bases), there is nothing below
+    V = H1(m, order=1)
+    u, v = V.TnT()
+    BilinearForm(u * v * dx(element_vb=BBND)).Assemble()
+    assert Integrate(CF(1) * dx(element_vb=BBND), m) == pytest.approx(3 * m.ne)
+    raises(lambda: BilinearForm(V).__iadd__(u * v * dx(element_vb=BBBND)), "sub-entities")
+    raises(lambda: BilinearForm(V).__iadd__(u * v * ds(element_vb=BBND)), "sub-entities")
+    raises(lambda: Integrate(CF(1) * dx(element_vb=BBBND), m), "sub-entities")
+
+
+# ------------------------------------------------- skeleton of surface meshes
+
+def test_surface_mesh_boundary_skeleton():
+    from ngsolve.meshes import MakeStructuredSurfaceMesh
+    ms = MakeStructuredSurfaceMesh(nx=2, ny=2)
+    u, v = H1(ms, order=1).TnT()
+    raises(lambda: BilinearForm(u * v * ds(skeleton=True)), "volume elements")
+    raises(lambda: LinearForm(v * ds(skeleton=True)), "volume elements")
+    BilinearForm(u * v * ds).Assemble()
+
+
+def test_boundary_skeleton_dg(m):
+    fes = L2(m, order=1)
+    u, v = fes.TnT()
+    n = specialcf.normal(2)
+    a = BilinearForm(fes)
+    a += 10 * u * v * ds(skeleton=True) - n * grad(u) * v * ds(skeleton=True)
+    a.Assemble()
+    f = LinearForm(v * ds(skeleton=True)).Assemble()
+    assert f.vec.Norm() > 0
+    assert Integrate(CF(1) * ds(skeleton=True), m) == pytest.approx(4)
+
+
+# ------------------------------------------------- geometric CFs
+
+def test_num_els_on_facet():
+    geo = g2d.SplineGeometry()
+    geo.AddRectangle((0, 0), (1, 1), bcs=("bottom", "right", "top", "left"))
+    mq = Mesh(geo.GenerateMesh(maxh=0.4, quad_dominated=True))
+    ne = specialcf.num_els_on_facet()
+    assert Integrate(ne * (1 + x), mq, BND) == pytest.approx(6)
+    # interior facets count twice, boundary facets once: 2*interior + boundary length
+    Integrate(ne * dx(element_boundary=True), mq)
+    raises(lambda: Integrate(ne, mq), "facets")
+    raises(lambda: Integrate(ne * dx(element_vb=BBND), mq), "facets")
+
+
+def test_edge_face_tangential_vectors():
+    m3 = MakeStructured3DMesh(hexes=False, nx=1, ny=1, nz=1)
+    t = specialcf.EdgeFaceTangentialVectors(3)
+    Integrate(t[0, 0] * dx(element_vb=BBND), m3)
+    raises(lambda: Integrate(t[0, 0], m3), "edges")
+    mh = MakeStructured3DMesh(hexes=True, nx=1, ny=1, nz=1)
+    raises(lambda: Integrate(t[0, 0] * dx(element_vb=BBND), mh), "tets")
+
+
+# ------------------------------------------------- definedonelements sizes
+
+def test_definedonelements_sizes(m):
+    from pyngcore import BitArray
+    V = H1(m, order=1)
+    u, v = V.TnT()
+    short = BitArray(3)
+    short.Set()
+    raises(lambda: Integrate(CF(1) * dx(definedonelements=short), m), "definedonelements")
+    raises(lambda: Integrate(x * dx(definedonelements=BitArray(0)), m), "definedonelements")
+    raises(lambda: BilinearForm(V).__iadd__(u * v * dx(definedonelements=short)), "definedonelements")
+    raises(lambda: LinearForm(V).__iadd__(v * ds(definedonelements=short)), "definedonelements")
+    gf = GridFunction(V)
+    raises(lambda: gf.Set(x, definedonelements=short))
+    L = L2(m, order=1, dgjumps=True)
+    p, q = L.TnT()
+    ba = BitArray(m.ne)
+    ba.Set()
+    raises(lambda: BilinearForm(L).__iadd__(p * q * dx(skeleton=True, definedonelements=ba)), "facets")
+    bf = BitArray(m.nfacet)
+    bf.Set()
+    BilinearForm(L).__iadd__(p * q * dx(skeleton=True, definedonelements=bf))
+    BilinearForm(L).__iadd__(p * q * dx(element_boundary=True, definedonelements=ba))
+    full = BitArray(m.ne)
+    full.Set()
+    assert Integrate(CF(1) * dx(definedonelements=full), m) == pytest.approx(1)
+
+
+def test_other_boundary_values(m):
+    fes = L2(m, order=1)
+    u, v = fes.TnT()
+    a = BilinearForm(fes, nonassemble=True)
+    a += (u.Other(bnd=x + y) - u) * v * dx(skeleton=True) + (u.Other(bnd=x + y) - u) * v * ds(skeleton=True)
+    gf = GridFunction(fes)
+    gf.Set(x)
+    r = gf.vec.CreateVector()
+    a.Apply(gf.vec, r)
+    raises(lambda: BilinearForm(fes).__iadd__(u.Other(bnd=v) * v * ds(skeleton=True)), "can only be used in forms")
+    w = L2(m, order=0).TrialFunction()
+    raises(lambda: BilinearForm(fes).__iadd__(u.Other(bnd=w) * v * ds(skeleton=True)), "can only be used in forms")

@@ -66,8 +66,8 @@ namespace ngfem
     int ElementDim() const { return dim - int(EvalVB()); }
     // points lie on a facet (or a lower dimensional entity)
     bool OnFacet() const { return skeleton || element_vb != VOL || vb != VOL; }
-    // points lie on facets of the elements they are evaluated on
-    bool OnElementFacet() const { return skeleton || element_vb != VOL; }
+    // points lie on facets (codimension 1) of the elements they are evaluated on
+    bool OnElementFacet() const { return skeleton || element_vb == BND; }
     string Description() const;
     bool SameAs (const CFContext & c) const;
   };
@@ -355,6 +355,8 @@ namespace ngfem
     virtual void CheckContext (const CFContext & ctx) const { ; }
     // context of the inputs, nullptr: inputs are not checked
     virtual const CFContext * InputContext (const CFContext & ctx, CFContext & buffer) const { return &ctx; }
+    // false: the node evaluates its inputs itself (other points or elements), a compiled CF must not
+    virtual bool UsesInputValues() const { return true; }
 
     // last point-evaluation context accepted by the gate
     mutable const void * gate_mesh = nullptr;
@@ -1792,6 +1794,11 @@ public:
     }
     ~DiffShapeCF() override;
     Array<shared_ptr<CoefficientFunction>> Eulerian_gridfunctions;
+    // not evaluated, only used by shape differentiation
+    Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
+    { return Array<shared_ptr<CoefficientFunction>> (Eulerian_gridfunctions); }
+    const CFContext * InputContext (const CFContext & ctx, CFContext & buffer) const override { return nullptr; }
+    bool UsesInputValues() const override { return false; }
   };
 
 

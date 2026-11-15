@@ -191,6 +191,155 @@ static shared_ptr<FESpace> CreateWithClassFlags (py::object fes_class, shared_pt
 void ExportNgcompMesh (py::module &m);
 void ExportReadAnsys (py::module &m);
 
+namespace
+{
+  // heap sizes set by SetHeapSize; a heap is re-created when heap_gen changed
+  std::mutex heapsize_mutex;
+  std::atomic<size_t> glh_size { 10*1000*1000 };
+  std::atomic<size_t> heap_gen { 0 };
+
+  struct ThreadHeaps
+  {
+    std::vector<unique_ptr<LocalHeap>> heaps;   // one per nesting depth
+    std::vector<size_t> gens;
+    size_t depth = 0;
+    size_t busy = 0;    // PyLH or borrowed heaps alive
+  };
+
+  ThreadHeaps & GetThreadHeaps()
+  {
+    static thread_local ThreadHeaps th;
+    return th;
+  }
+
+  // the calling thread's heap, exclusively used until destruction;
+  // not TLHeap(): callees Split() it, and code inside the tasks uses TLHeap() itself
+  class PyLH
+  {
+    ThreadHeaps & th;
+    LocalHeap * lh;
+    void * pos;
+  public:
+    PyLH () : th(GetThreadHeaps())
+    {
+      size_t d = th.depth;
+      size_t gen = heap_gen.load(std::memory_order_acquire);
+      if (d >= th.heaps.size())
+        {
+          th.heaps.resize(d+1);
+          th.gens.resize(d+1);
+        }
+      if (!th.heaps[d] || th.gens[d] != gen)
+        {
+          th.heaps[d] = nullptr;
+          th.heaps[d] = make_unique<LocalHeap>(glh_size.load(std::memory_order_acquire),
+                                               "python-comp lh", true);
+          th.gens[d] = gen;
+        }
+      lh = th.heaps[d].get();
+      pos = lh->GetPointer();
+      th.depth++;
+      th.busy++;
+    }
+    PyLH (const PyLH &) = delete;
+    ~PyLH () { lh->CleanUp(pos); th.depth--; th.busy--; }
+    operator LocalHeap & () { return *lh; }
+  };
+
+  // for objects keeping a LocalHeap& for their lifetime; old ones are never freed
+  LocalHeap & HolderHeap()
+  {
+    static std::mutex m;
+    static LocalHeap * lh = nullptr;
+    static size_t lhgen = 0;
+    std::lock_guard lock(m);
+    size_t gen = heap_gen.load(std::memory_order_acquire);
+    if (!lh || lhgen != gen)
+      {
+        lh = new LocalHeap(glh_size.load(std::memory_order_acquire), "python-comp holder lh", true);
+        lhgen = gen;
+      }
+    return *lh;
+  }
+  std::mutex holder_mutex;
+
+  class PyApplyMass : public ApplyMass
+  {
+  public:
+    PyApplyMass (shared_ptr<FESpace> afes, shared_ptr<CoefficientFunction> arho,
+                 bool ainverse, shared_ptr<Region> adefinedon)
+      : ApplyMass (afes, arho, ainverse, adefinedon, HolderHeap()) { ; }
+
+    shared_ptr<BaseMatrix> InverseMatrix (shared_ptr<BitArray> subset = nullptr) const override
+    { return make_shared<PyApplyMass> (fes, rho, !inverse, definedon); }
+
+    void Apply (BaseVector & vec) const
+    {
+      PyLH plh;
+      if (inverse)
+        fes->SolveM(rho.get(), vec, definedon.get(), plh);
+      else
+        fes->ApplyM(rho.get(), vec, definedon.get(), plh);
+    }
+    void Mult (const BaseVector & v, BaseVector & prod) const override
+    {
+      prod = v;
+      Apply (prod);
+    }
+    void MultAdd (double val, const BaseVector & v, BaseVector & prod) const override
+    {
+      auto hv = prod.CreateVector();
+      hv = v;
+      Apply (hv);
+      prod += val * hv;
+    }
+    void MultAdd (Complex val, const BaseVector & v, BaseVector & prod) const override
+    {
+      auto hv = prod.CreateVector();
+      hv = v;
+      Apply (hv);
+      prod += val * hv;
+    }
+  };
+
+  class PyBilinearFormApplication : public BilinearFormApplication
+  {
+  public:
+    PyBilinearFormApplication (shared_ptr<BilinearForm> abf)
+      : BilinearFormApplication (abf, HolderHeap()) { ; }
+
+    void Mult (const BaseVector & v, BaseVector & prod) const override
+    {
+      v.Cumulate();
+      prod = 0;
+      PyLH plh;
+      bf -> AddMatrix (1, v, prod, plh);
+      prod.SetParallelStatus (DISTRIBUTED);
+    }
+    void MultAdd (double val, const BaseVector & v, BaseVector & prod) const override
+    {
+      v.Cumulate();
+      prod.Distribute();
+      PyLH plh;
+      bf -> AddMatrix (val, v, prod, plh);
+    }
+    void MultAdd (Complex val, const BaseVector & v, BaseVector & prod) const override
+    {
+      v.Cumulate();
+      prod.Distribute();
+      PyLH plh;
+      bf -> AddMatrix (val, v, prod, plh);
+    }
+    void MultTransAdd (double val, const BaseVector & v, BaseVector & prod) const override
+    {
+      v.Cumulate();
+      prod.Distribute();
+      PyLH plh;
+      bf -> AddMatrixTrans (val, v, prod, plh);
+    }
+  };
+}
+
 void NGS_DLL_HEADER ExportNgcomp(py::module &m)
 {
 
@@ -198,63 +347,67 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
   ExportReadAnsys(m);
   //////////////////////////////////////////////////////////////////////////////////////////
 
-  static size_t global_heapsize =
-    (sizeof(size_t) == 8) ? 100000000 : 10000000;
-  // static LocalHeap glh(global_heapsize, "python-comp lh", true);
-
-  // the global variable glh should be replaced by LocalHeapProvider
-  static LocalHeap glh(10*1000*1000, "python-comp lh", true);
-
+  // pool of large heaps, each borrowed exclusively for one call
   class LocalHeapProvider
   {
-    Array<LocalHeap*> heaps;
+    std::vector<unique_ptr<LocalHeap>> heaps;
+    size_t size = (sizeof(size_t) == 8) ? 100000000 : 10000000;
+    size_t gen = 0;
     std::mutex m;
-    
-    class BorrowedLocalHeap 
+
+    class BorrowedLocalHeap
     {
-      LocalHeap * lh;
+      unique_ptr<LocalHeap> lh;
+      size_t gen;
       LocalHeapProvider * provider;
     public:
-      BorrowedLocalHeap (LocalHeap * alh, LocalHeapProvider * aprovider)
-        : lh(alh), provider(aprovider) { }
-    
-      ~BorrowedLocalHeap()
-      {
-        // cout << "returns lh to provider" << endl;
-        provider -> ReturnLH(lh);
-      }
-
-      LocalHeap & LH() { return *lh; }
+      BorrowedLocalHeap (unique_ptr<LocalHeap> alh, size_t agen, LocalHeapProvider * aprovider)
+        : lh(std::move(alh)), gen(agen), provider(aprovider) { GetThreadHeaps().busy++; }
+      BorrowedLocalHeap (const BorrowedLocalHeap &) = delete;
+      ~BorrowedLocalHeap() { GetThreadHeaps().busy--; provider -> ReturnLH(std::move(lh), gen); }
       operator LocalHeap& () { return *lh; }
     };
-    
-  
+
   public:
     BorrowedLocalHeap GetLH()
     {
-      std::lock_guard lock(m);
-      if (heaps.Size())
-        {
-          auto tmp = heaps.Last();
-          heaps.SetSize(heaps.Size()-1);
-          // cout << "reuse existing lh" << endl;        
-          return BorrowedLocalHeap (tmp, this);
-        }
-      
-      // cout << "create new lh" << endl;
-      return BorrowedLocalHeap(new LocalHeap(global_heapsize, "python-comp lh", true), this);
+      size_t s, g;
+      {
+        std::lock_guard lock(m);
+        g = gen;
+        s = size;
+        if (heaps.size())
+          {
+            auto tmp = std::move(heaps.back());
+            heaps.pop_back();
+            return BorrowedLocalHeap (std::move(tmp), g, this);
+          }
+      }
+      return BorrowedLocalHeap(make_unique<LocalHeap>(s, "python-comp lh", true), g, this);
     }
-    
-    void ReturnLH (LocalHeap * lh)
+
+    void ReturnLH (unique_ptr<LocalHeap> lh, size_t g)
+    {
+      lh->CleanUp();
+      std::lock_guard lock(m);
+      if (g == gen)
+        heaps.push_back (std::move(lh));
+    }
+
+    size_t Size()
     {
       std::lock_guard lock(m);
-      heaps.Append (lh);
+      return size;
     }
-    void Clear()
+
+    // borrowed heaps of the old size are freed when returned
+    void SetSize (size_t s)
     {
-        for (auto lh : heaps)
-            delete lh;
-        heaps.SetSize(0);
+      std::vector<unique_ptr<LocalHeap>> old;
+      std::lock_guard lock(m);
+      size = s;
+      gen++;
+      old.swap(heaps);
     }
   };
   static LocalHeapProvider lhp;
@@ -639,13 +792,22 @@ when building the system matrices.
           static size_t tl_heapsize = 50*1000*1000;   // ngcore default
           if (heapsize > std::numeric_limits<size_t>::max() / max(1, TaskManager::GetMaxThreads()))
             throw py::value_error("SetHeapSize: heap size too large");
-          // allocate first, keep the old heaps if that fails
-          if (heapsize > global_heapsize)
+          std::lock_guard lock(heapsize_mutex);
+          bool grow_glh = heapsize > glh_size.load();
+          bool grow_lhp = heapsize > lhp.Size();
+          // allocate first, keep the old sizes if that fails
+          if (grow_glh || grow_lhp)
+            LocalHeap test(heapsize, "python-comp lh", true);
+          if (grow_glh)
             {
-              glh = LocalHeap (heapsize, "python-comp lh", true);
-              global_heapsize = heapsize;
-              lhp.Clear();
+              glh_size.store(heapsize, std::memory_order_release);
+              heap_gen.fetch_add(1, std::memory_order_release);
             }
+          if (grow_lhp)
+            lhp.SetSize(heapsize);
+          // ngcore replaces only the calling thread's heap, which a caller up the stack may use
+          if (GetThreadHeaps().busy > 0)
+            return;
           try
             {
               ngcore::SetTLHeapSize(heapsize);
@@ -1130,7 +1292,8 @@ order : int
          {
            self->CheckUpToDate();
            // keep_alive by hand: py::keep_alive on overloads breaks when an overload is rejected
-           py::object res = py::cast(FESpace::ElementRange(self->Elements(vb, glh)));
+           // own heap: the range lives across Python statements and threads
+           py::object res = py::cast(FESpace::ElementRange(self->Elements(vb, LocalHeap(100000, "fes.Elements"))));
            py::detail::keep_alive_impl (res, py::cast(self));
            return res;
          },
@@ -1172,9 +1335,12 @@ ei : ngsolve.comp.ElementId
            [](const FESpace &self, const Region &reg) {
              if (reg.Mesh() != self.GetMeshAccess())
                throw Exception ("Elements: region is defined on another mesh");
-             auto range = FESpace::ElementRange(self.Elements(reg.VB(), glh))
-               | filter([reg](auto el) { return reg.Mask().Test(el.GetIndex()); });
-             return py::make_iterator(range.begin(), range.end());
+             auto range = make_shared<FESpace::ElementRange>(self.Elements(reg.VB(), LocalHeap(100000, "fes.Elements")));
+             auto frange = *range | filter([reg](auto el) { return reg.Mask().Test(el.GetIndex()); });
+             py::object it = py::make_iterator(frange.begin(), frange.end());
+             py::detail::keep_alive_impl (it, py::capsule(new shared_ptr<FESpace::ElementRange>(range),
+                                                          [](void * p) { delete static_cast<shared_ptr<FESpace::ElementRange>*>(p); }));
+             return it;
            }, py::keep_alive<0,1>(), py::keep_alive<0,2>())
 
     .def("GetDofNrs", [](shared_ptr<FESpace> self, NodeId ni)
@@ -1345,7 +1511,7 @@ coupling : bool
          [] (const shared_ptr<FESpace> self,
              OptPtr<CoefficientFunction> rho) -> shared_ptr<BaseMatrix>
          {
-           return make_shared<ApplyMass> (self, rho, true, nullptr, glh); 
+           return make_shared<PyApplyMass> (self, rho, true, nullptr);
          }, py::arg("rho") = nullptr)
     .def("Mass",
          [] (const shared_ptr<FESpace> self,
@@ -1356,7 +1522,13 @@ coupling : bool
            if (definedon) spdefon = make_shared<Region> (*definedon);
            CheckMassDensity (*self, rho.get(), spdefon.get());
            // return make_shared<ApplyMass> (self, rho, false, spdefon, glh);
-           return self->GetMassOperator(rho, spdefon, glh);
+           py::gil_scoped_release release;
+           std::lock_guard lock(holder_mutex);
+           auto op = self->GetMassOperator(rho, spdefon, HolderHeap());
+           auto & opref = *op;
+           if (typeid(opref) == typeid(ApplyMass))
+             return make_shared<PyApplyMass> (self, rho, false, spdefon);
+           return op;
          }, py::arg("rho") = nullptr, py::arg("definedon") = nullptr)
     
     .def("SolveM",
@@ -1364,7 +1536,8 @@ coupling : bool
              BaseVector& vec, OptPtr<CoefficientFunction> rho, Region * definedon) 
          { PyCheckSize (vec.Size(), self->GetNDof(), "vector size");
            CheckMassDensity (*self, rho.get(), definedon);
-           self->SolveM(rho.get(), vec, definedon, glh); },
+           PyLH lh;
+           self->SolveM(rho.get(), vec, definedon, lh); },
          py::arg("vec"), py::arg("rho")=nullptr, py::arg("definedon")=nullptr, docu_string(R"raw_string(
          Solve with the mass-matrix. Available only for L2-like spaces.
 
@@ -1382,7 +1555,8 @@ rho : ngsolve.fem.CoefficientFunction
              BaseVector& vec, OptPtr<CoefficientFunction> rho, Region * definedon)
          { PyCheckSize (vec.Size(), self->GetNDof(), "vector size");
            CheckMassDensity (*self, rho.get(), definedon);
-           self->ApplyM(rho.get(), vec, definedon, glh); },
+           PyLH lh;
+           self->ApplyM(rho.get(), vec, definedon, lh); },
          py::arg("vec"), py::arg("rho")=nullptr, py::arg("definedon")=nullptr,
          "Apply mass-matrix. Available only for L2-like spaces")
     .def ("TraceOperator", [] (shared_ptr<FESpace> self, shared_ptr<FESpace> tracespace,
@@ -1400,14 +1574,16 @@ rho : ngsolve.fem.CoefficientFunction
           {
             PyCheckSize (in.Size(), self->GetNDof(), "input vector size");
             PyCheckSize (out.Size(), tracespace.GetNDof(), "output vector size");
-            self->GetTrace(tracespace, in, out, avg, glh);
+            PyLH lh;
+            self->GetTrace(tracespace, in, out, avg, lh);
           })
     .def ("GetTraceTrans", [] (shared_ptr<FESpace> self, const FESpace & tracespace,
                                BaseVector & in, BaseVector & out, bool avg)
           {
             PyCheckSize (in.Size(), tracespace.GetNDof(), "input vector size");
             PyCheckSize (out.Size(), self->GetNDof(), "output vector size");
-            self->GetTraceTrans(tracespace, in, out, avg, glh);
+            PyLH lh;
+            self->GetTraceTrans(tracespace, in, out, avg, lh);
           })
     
     .def("__eq__",
@@ -2629,6 +2805,8 @@ parallel : bool
              }
            */
            
+            PyLH plh;
+            LocalHeap & glh = plh;
             if(tpspace)
             {
               Transfer2TPMesh(cf.get(),self.get(),glh);
@@ -2848,6 +3026,7 @@ VOL_or_BND : ngsolve.comp.VorB
     .def("__call__", 
          [](shared_ptr<GF> self, double x, double y, double z, VorB vb)
           {
+            LocalHeap & glh = TLHeap();
             HeapReset hr(glh);
             auto space = self->GetFESpace();
             if (vb != VOL && vb != BND)
@@ -3350,7 +3529,13 @@ integrator : ngsolve.fem.BFI
     .def("Assemble", [](shared_ptr<BilinearForm> self, bool reallocate)
          {
            // self->ReAssemble(glh,reallocate);
-           self->ReAssemble(lhp.GetLH(),reallocate);           
+           if (self->NonAssemble())
+             {
+               std::lock_guard lock(holder_mutex);
+               self->ReAssemble(HolderHeap(),reallocate);
+             }
+           else
+             self->ReAssemble(lhp.GetLH(),reallocate);
            return self;
          }, py::call_guard<py::gil_scoped_release>(),
          py::arg("reallocate")=false, docu_string(R"raw_string(
@@ -3367,7 +3552,7 @@ reallocate : bool
                                          {
                                            if (self->NonAssemble())
                                              {
-                                               auto app = make_shared<BilinearFormApplication> (self, glh);
+                                               auto app = make_shared<PyBilinearFormApplication> (self);
                                                if (self->GetTrialSpace()->IsParallel())
                                                  return make_shared<ParallelMatrix>(app,
                                                                                     self->GetTrialSpace()->GetParallelDofs(),
@@ -3462,7 +3647,7 @@ y : ngsolve.BaseVector
     .def ("Apply", [](shared_ptr<BilinearForm> self, shared_ptr<BaseVector> x)
           {
             PyCheckSize (x->Size(), self->GetTrialSpace()->GetNDof(), "vector size");
-            shared_ptr<BaseMatrix> app = make_shared<BilinearFormApplication> (self, glh);
+            shared_ptr<BaseMatrix> app = make_shared<PyBilinearFormApplication> (self);
             return DynamicVectorExpression(make_shared<DynamicMatVecExpression>(app,x));
           }, py::arg("u"))
     
@@ -3490,7 +3675,13 @@ f : ngsolve.la.BaseVector
                                      bool reallocate)
 	  {
             PyCheckSize (ulin.Size(), self.GetTrialSpace()->GetNDof(), "vector size");
-	    self.AssembleLinearization (ulin, lhp.GetLH(), reallocate);
+            if (self.NonAssemble())
+              {
+                std::lock_guard lock(holder_mutex);
+                self.AssembleLinearization (ulin, HolderHeap(), reallocate);
+              }
+            else
+              self.AssembleLinearization (ulin, lhp.GetLH(), reallocate);
 	  }, py::call_guard<py::gil_scoped_release>(),
          py::arg("ulin"), py::arg("reallocate")=false,
          docu_string(R"raw_string(
@@ -4198,7 +4389,7 @@ integrator : ngsolve.fem.LFI
               Vector<> element_sum(element_wise ? ma->GetNE(vb) : 0);
               region_sum = 0;
               element_sum = 0;
-              bool use_simd = true;
+              std::atomic<bool> use_simd { true };
               
               ma->IterateElements
                 (vb, lhp.GetLH(), [&] (Ngs_Element el, LocalHeap & lh)
@@ -4207,7 +4398,7 @@ integrator : ngsolve.fem.LFI
                    auto & trafo = ma->GetTrafo (el, lh);
                    FlatVector<> hsum(dim, lh);
                    hsum = 0.0;
-                   bool this_simd = use_simd;
+                   bool this_simd = use_simd.load(std::memory_order_relaxed);
                    
                    if (this_simd)
                      {
@@ -4228,7 +4419,7 @@ integrator : ngsolve.fem.LFI
                        catch (const ExceptionNOSIMD& e)
                          {
                            this_simd = false;
-                           use_simd = false;
+                           use_simd.store(false, std::memory_order_relaxed);
                            hsum = 0.0;
                          }
                      }
@@ -4296,7 +4487,7 @@ integrator : ngsolve.fem.LFI
               region_sum = 0;
               element_sum = 0;
               
-              bool use_simd = true;
+              std::atomic<bool> use_simd { true };
               
               ma->IterateElements
                 (vb, lhp.GetLH(), [&] (Ngs_Element el, LocalHeap & lh)
@@ -4306,7 +4497,7 @@ integrator : ngsolve.fem.LFI
                    FlatVector<Complex> hsum(dim, lh);
                    hsum = 0.0;
                    
-                   bool this_simd = use_simd;
+                   bool this_simd = use_simd.load(std::memory_order_relaxed);
                    
                    if (this_simd)
                      {
@@ -4327,7 +4518,7 @@ integrator : ngsolve.fem.LFI
                        catch (const ExceptionNOSIMD& e)
                          {
                            this_simd = false;
-                           use_simd = false;
+                           use_simd.store(false, std::memory_order_relaxed);
                            hsum = 0.0;
                          }
                      }
@@ -4810,7 +5001,8 @@ deformation : ngsolve.comp.GridFunction
 
    m.def("KSpaceCoeffs", [tpspace_of](shared_ptr<GF> gf_tp,shared_ptr<GF> gf_k, double x, double y)
            {
-			 HeapReset hr(glh);
+             LocalHeap & glh = TLHeap();
+             HeapReset hr(glh);
              auto tpfes = tpspace_of(gf_tp->GetFESpace(), "KSpaceCoeffs");
              IntegrationPoint ip;
              int elnr = tpfes->Spaces(0)[0]->GetMeshAccess()->FindElementOfPoint(Vec<2>(x,y),ip,false).Nr();
@@ -5038,7 +5230,8 @@ deformation : ngsolve.comp.GridFunction
                                 shared_ptr<GF> gfustd)
             {
               static Timer tall("comp.Transfer2StdMesh"); RegionTimer rall(tall);
-              Transfer2StdMesh(gfutp.get(),gfustd.get(),glh);
+              PyLH lh;
+              Transfer2StdMesh(gfutp.get(),gfustd.get(),lh);
               return;
              },
              py::arg("gftp"),
@@ -5237,6 +5430,8 @@ Interpolation is done on the fly for each element, no global GridFunction is all
 	   }
 
 	   shared_ptr<BaseMatrix> op;
+	   PyLH plh;
+	   LocalHeap & glh = plh;
 
 	   if (trial_proxy != nullptr) {
 	     if ( !trial_proxy->IsTrialFunction() )

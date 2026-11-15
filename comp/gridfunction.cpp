@@ -1326,9 +1326,16 @@ namespace ngcomp
       throw Exception ("GridFunction is not up to date with its mesh (refined without Update)");
     if (ctx.mesh != ma.get())
       {
-        // other (or no) mesh: point search, evaluation inside volume elements
-        if (!diffop[VOL] || diffop[VOL]->OnlyOnFacets())
+        // other (or no) mesh: point search, evaluation inside the found element
+        // (volume elements, boundary elements of meshes without volume elements)
+        VorB svb = ma->GetNE(VOL) ? VOL : BND;
+        if (!diffop[svb] || diffop[svb]->OnlyOnFacets())
           throw Exception ("GridFunction on " + fes->GetClassName() + " cannot be evaluated on points of another mesh");
+        // the point search reads mesh-dimension many coordinates
+        if (ctx.dim >= 0 && ctx.dim != ma->GetDimension())
+          throw Exception ("GridFunction on a mesh of dimension " + ToString(ma->GetDimension()) +
+                           " cannot be evaluated at points of dimension " + ToString(ctx.dim) +
+                           " (another mesh), map the points with CoordinateTrafo");
         return;
       }
     // Evaluate relies on these, it does not test them
