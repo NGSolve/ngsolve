@@ -101,6 +101,9 @@ namespace ngcomp
       bb_bfis.Append(bb_bfi);
       bb_bfi->SetBonusIntegrationOrder(bonus_intorder_bb);
     }
+    // trial_cf and the operators of both spaces act where the dual shapes of space_b live
+    for (auto & bfi : ab_bfis)
+      CheckIntegratorContext (*bfi, CFContext::BILINEAR, space_a, space_b, true);
 
     /** Utility **/
 
@@ -365,6 +368,9 @@ namespace ngcomp
       bb_bfis.Append(bb_bfi);
       bb_bfi->SetBonusIntegrationOrder(bonus_intorder_bb);
     }
+    // trial_cf and the operators of both spaces act where the dual shapes of space_b live
+    for (auto & bfi : ab_bfis)
+      CheckIntegratorContext (*bfi, CFContext::BILINEAR, space_a, space_b, true);
  
     /** Create Matrix Graph **/
     int dima = space_a->GetDimension(), dimb = space_b->GetDimension();

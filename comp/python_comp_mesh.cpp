@@ -1124,6 +1124,7 @@ will create a CF being 1e6 on the top boundary and 0. elsewhere.
           },
          py::arg("x") = 0.0, py::arg("y") = 0.0, py::arg("z") = 0.0,
          py::arg("VOL_or_BND") = VOL, py::arg("tol") = 1e-4,
+         py::keep_alive<0,1>(),   // mesh points refer to the mesh
 	 docu_string("Get a MappedIntegrationPoint in the point (x,y,z) on the matching volume (VorB=VOL, default) or surface (VorB=BND) element. BBND elements aren't supported"));
 
   

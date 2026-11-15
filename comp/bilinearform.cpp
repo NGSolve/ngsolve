@@ -245,13 +245,17 @@ namespace ngcomp
   
   BilinearForm & BilinearForm :: AddIntegrator (shared_ptr<BilinearFormIntegrator> bfi)
   {
-    CheckIntegratorContext (*bfi, CFContext::BILINEAR, GetTrialSpace(), GetTestSpace(), fespace->IsComplex());
-    
     /*
     auto anydim = dynamic_pointer_cast<BilinearFormIntegratorAnyDim> (bfi);
     if (anydim) bfi = anydim->GetBFI (ma->GetDimension());
     */
-    bfi = FixDimension(bfi, fespace->GetSpatialDimension());
+    {
+      Array<shared_ptr<CoefficientFunction>> coefs(bfi->context_coefficients);
+      bfi = FixDimension(bfi, fespace->GetSpatialDimension());
+      if (!bfi->context_coefficients.Size()) bfi->context_coefficients = std::move(coefs);
+    }
+    CheckIntegratorContext (*bfi, CFContext::BILINEAR, GetTrialSpace(), GetTestSpace(), fespace->IsComplex());
+    if (!parts.Size()) gate_meshstamp = ma->GetTimeStamp();
     
     if (symmetric && bfi->IsSymmetric().IsFalse())
       throw Exception (string ("Adding non-symmetric integrator to symmetric bilinear-form\n")+
@@ -325,6 +329,22 @@ namespace ngcomp
   BilinearForm :: ~BilinearForm ()
   { ; }
 
+  void BilinearForm :: CheckBeforeAssemble () const
+  {
+    if (ma->GetTimeStamp() != gate_meshstamp)
+      {
+        for (auto & bfi : parts)
+          CheckIntegratorContext (*bfi, CFContext::BILINEAR, GetTrialSpace(), GetTestSpace(), fespace->IsComplex());
+        gate_meshstamp = ma->GetTimeStamp();
+      }
+    // the element loops run over the VorBs with integrators, skeleton terms over volume elements
+    for (VorB vb : { VOL, BND, BBND, BBBND })
+      if (VB_parts[vb].Size() || (vb == VOL && (facetwise_skeleton_parts[VOL].Size() || facetwise_skeleton_parts[BND].Size() ||
+                                                elementwise_skeleton_parts.Size())))
+        for (auto space : { GetTrialSpace(), GetTestSpace() })
+          if (space) space->CheckDofConsistency(vb);
+  }
+  
   void BilinearForm :: CheckDGCoupling () const
   {
     if (!facetwise_skeleton_parts[VOL].Size()) return;
@@ -957,6 +977,7 @@ namespace ngcomp
   {
     if (mats.Size() == ma->GetNLevels())
       return;
+    CheckBeforeAssemble();
 
 
     if (nonassemble)
@@ -1529,14 +1550,6 @@ namespace ngcomp
                           
             vnums1 = ma->GetElVertices (ei1);
             vnums2 = ma->GetElVertices (ei2);
-            if(fel1.GetNDof() != dnums1.Size() || ((elnums.Size()>1) && (fel2.GetNDof() != dnums2.Size() )))
-            {
-              cout << "facet, neighbouring fel(1): GetNDof() = " << fel1.GetNDof() << endl;
-              cout << "facet, neighbouring fel(2): GetNDof() = " << fel2.GetNDof() << endl;
-              cout << "facet, neighbouring fel(1): dnums.Size() = " << fel1.GetNDof() << endl;
-              cout << "facet, neighbouring fel(2): dnums.Size() = " << fel2.GetNDof() << endl;
-              throw Exception ( "Inconsistent number of degrees of freedom " );
-            }
 
             FlatVector<SCAL> elveclin(dnums.Size() * fespace->GetDimension(),lh);
             if (lin)
@@ -2141,15 +2154,6 @@ namespace ngcomp
                          const ElementTransformation & eltrans = ma->GetTrafo (el, lh);
                          FlatArray<int> dnums = el.GetDofs();
                          
-                         if (fel.GetNDof() != dnums.Size() && !fespace->NeedsDofTransformation())
-                           {
-                             *testout << "Info from finite element: " << endl;
-                             fel.Print (*testout);
-                             (*testout) << "fel::GetNDof() = " << fel.GetNDof() << endl;
-                             (*testout) << "dnums.Size() = " << dnums.Size() << endl;
-                             (*testout) << "dnums = " << dnums << endl;
-                             throw Exception ( string("Inconsistent number of degrees of freedom, vb="+ToString(vb)+" fel::GetNDof() = ") + ToString(fel.GetNDof()) + string(" != dnums.Size() = ") + ToString(dnums.Size()) + string("!") );
-                           }
                          
                          int elmat_size = fel.GetNDof()*fespace->GetDimension();
                          FlatMatrix<SCAL> sum_elmat(elmat_size, lh);
@@ -2364,13 +2368,6 @@ namespace ngcomp
                                  ElementTransformation & seltrans = ma->GetTrafo (sei, lh);
                                  
                                  fespace->GetDofNrs (ei1, dnums);
-                                 if(fel.GetNDof() != dnums.Size())
-                                   {
-                                     (*testout) << "Surface fel::GetNDof() = " << fel.GetNDof() << endl;
-                                     (*testout) << "dnums.Size() = " << dnums.Size() << endl;
-                                     (*testout) << "dnums = " << dnums << endl;
-                                     throw Exception ( string("Inconsistent number of degrees of freedom Surface fel::GetNDof() = ") + ToString(fel.GetNDof()) + string(" != dnums.Size() = ") + ToString(dnums.Size()) + string("!") );
-                                   }
 
                                  /*
                                  for (int j = 0; j < NumIntegrators(); j++)
@@ -2451,14 +2448,6 @@ namespace ngcomp
                              
                              vnums1 = ma->GetElVertices (ei1);
                              vnums2 = ma->GetElVertices (ei2);
-                             if(fel1.GetNDof() != dnums1.Size() || ((elnums.Size()>1) && (fel2.GetNDof() != dnums2.Size() )))
-                               {
-                                 cout << "facet, neighbouring fel(1): GetNDof() = " << fel1.GetNDof() << endl;
-                                 cout << "facet, neighbouring fel(2): GetNDof() = " << fel2.GetNDof() << endl;
-                                 cout << "facet, neighbouring fel(1): dnums.Size() = " << fel1.GetNDof() << endl;
-                                 cout << "facet, neighbouring fel(2): dnums.Size() = " << fel2.GetNDof() << endl;
-                                 throw Exception ( "Inconsistent number of degrees of freedom " );
-                               }
                              /*
                              for (int j = 0; j < NumIntegrators(); j++)
                                {
@@ -2650,13 +2639,6 @@ namespace ngcomp
                           ElementTransformation & seltrans = ma->GetTrafo (sei, lh);
                               
                           fespace->GetDofNrs (ei, dnums);
-                          if(fel.GetNDof() != dnums.Size())
-                            {
-                              (*testout) << "Surface fel::GetNDof() = " << fel.GetNDof() << endl;
-                              (*testout) << "dnums.Size() = " << dnums.Size() << endl;
-                              (*testout) << "dnums = " << dnums << endl;
-                              throw Exception ( string("Inconsistent number of degrees of freedom Surface fel::GetNDof() = ") + ToString(fel.GetNDof()) + string(" != dnums.Size() = ") + ToString(dnums.Size()) + string("!") );
-                            }
 
                           /*
                             for (int j = 0; j < NumIntegrators(); j++)
@@ -3078,24 +3060,6 @@ namespace ngcomp
                         vnums1 = ma->GetElVertices (ei1);
                         vnums2 = ma->GetElVertices (ei2);
 
-                        bool inconsistent_ndof = false;
-                        inconsistent_ndof |= fel1_test.GetNDof() != dnums1_test.Size();
-                        inconsistent_ndof |= fel2_test.GetNDof() != dnums2_test.Size();
-                        inconsistent_ndof |= fel1_trial.GetNDof() != dnums1_trial.Size();
-                        inconsistent_ndof |= fel2_trial.GetNDof() != dnums2_trial.Size();
-                        
-                        if(inconsistent_ndof)
-                        {
-                          cout << "facet, neighbouring fel(1): Trial NDof() = " << fel1_trial.GetNDof() << endl;
-                          cout << "facet, neighbouring fel(1): Test NDof() = " << fel1_test.GetNDof() << endl;
-                          cout << "facet, neighbouring fel(2): Trial NDof() = " << fel2_trial.GetNDof() << endl;
-                          cout << "facet, neighbouring fel(2): Test NDof() = " << fel2_test.GetNDof() << endl;
-                          cout << "facet, neighbouring fel(1): dnums1_trial.Size() = " << dnums1_trial.Size() << endl;
-                          cout << "facet, neighbouring fel(1): dnums1_test.Size() = " << dnums1_test.Size() << endl;
-                          cout << "facet, neighbouring fel(2): dnums2_trial.Size() = " << dnums2_trial.Size() << endl;
-                          cout << "facet, neighbouring fel(2): dnums2_test.Size() = " << dnums2_test.Size() << endl;
-                          throw Exception ( "Inconsistent number of degrees of freedom " );
-                        }
 
                         for (auto & bfi : facetwise_skeleton_parts[VOL])
                         {
@@ -3287,21 +3251,6 @@ namespace ngcomp
                         fespace->GetDofNrs (ei, dnums_trial);
                         fespace2->GetDofNrs (ei, dnums_test);
 
-                        bool inconsistent_ndof = false;
-                        inconsistent_ndof |= fel_test.GetNDof() != dnums_test.Size();
-                        inconsistent_ndof |= fel_trial.GetNDof() != dnums_trial.Size();
-
-
-                          //if(fel.GetNDof() != dnums.Size())
-                          if(inconsistent_ndof)
-                            {
-                              (*testout) << "Surface fel::GetNDof() = " << fel.GetNDof() << endl;
-                              (*testout) << "dnums_test.Size() = " << dnums_test.Size() << endl;
-                              (*testout) << "dnums test = " << endl << dnums_test << endl;
-                              (*testout) << "dnums_trial.Size() = " << dnums_trial.Size() << endl;
-                              (*testout) << "dnums trial = " << endl << dnums_trial << endl;
-                              throw Exception ( string("Inconsistent number of degrees of freedom Surface!") );
-                            }
 
                           /*
                             for (int j = 0; j < NumIntegrators(); j++)
@@ -3611,6 +3560,7 @@ namespace ngcomp
                                                       LocalHeap & clh, 
                                                       bool reallocate)
   {
+    this->CheckBeforeAssemble();
     static Timer timer ("Assemble Linearization");
     static Timer timerspecial ("Assemble Linearization - SpecialElements");
     static Timer<> timers[4] = {
@@ -3715,15 +3665,6 @@ namespace ngcomp
                      const ElementTransformation & eltrans = ma->GetTrafo (el, lh);
                      FlatArray<int> dnums = el.GetDofs();
 
-                     if (fel.GetNDof() != dnums.Size() && !fespace->NeedsDofTransformation())
-                       {
-                         *testout << "Info from finite element: " << endl;
-                         fel.Print (*testout);
-                         (*testout) << "fel::GetNDof() = " << fel.GetNDof() << endl;
-                         (*testout) << "dnums.Size() = " << dnums.Size() << endl;
-                         (*testout) << "dnums = " << dnums << endl;
-                         throw Exception ( string("Inconsistent number of degrees of freedom, vb="+ToString(vb)+" fel::GetNDof() = ") + ToString(fel.GetNDof()) + string(" != dnums.Size() = ") + ToString(dnums.Size()) + string("!") );
-                       }
 
                      // other than in DoAssemble, also without check_unused
                      for (auto d : dnums)
@@ -3856,13 +3797,6 @@ namespace ngcomp
                                  svnums = ma->GetElVertices (sei);
                                  ElementTransformation & seltrans = ma->GetTrafo (sei, lh);
 
-                                 if (fel.GetNDof() != dnums.Size())
-                                   {
-                                     (*testout) << "Surface fel::GetNDof() = " << fel.GetNDof() << endl;
-                                     (*testout) << "dnums.Size() = " << dnums.Size() << endl;
-                                     (*testout) << "dnums = " << dnums << endl;
-                                     throw Exception ( string("Inconsistent number of degrees of freedom Surface fel::GetNDof() = ") + ToString(fel.GetNDof()) + string(" != dnums.Size() = ") + ToString(dnums.Size()) + string("!") );
-                                   }
 
                                  for (auto & bfi : facetwise_skeleton_parts[BND])
                                    {
@@ -4573,6 +4507,7 @@ namespace ngcomp
                                            const BaseVector & x,
                                            BaseVector & y, LocalHeap & clh) const
   {
+    this->CheckBeforeAssemble();
     if (geom_free_parts.Size())
       AddMatrixGF(val, x, y, false, clh);
     
@@ -4878,14 +4813,6 @@ namespace ngcomp
                            ElementTransformation & seltrans = ma->GetTrafo (sei, lh);
                            
                            fespace->GetDofNrs (ei1, dnums);
-                           if(fel.GetNDof() != dnums.Size())
-                             {
-
-                               (*testout) << "fel::GetNDof() = " << fel.GetNDof() << endl;
-                               (*testout) << "dnums.Size() = " << dnums.Size() << endl;
-                               (*testout) << "dnums = " << dnums << endl;
-                               throw Exception ( string("Inconsistent number of degrees of freedom Surface fel::GetNDof() = ") + ToString(fel.GetNDof()) + string(" != dnums.Size() = ") + ToString(dnums.Size()) + string("!") );
-                             }
                            
                            
                            for (auto & bfi : elementwise_skeleton_parts)
@@ -4931,14 +4858,6 @@ namespace ngcomp
                        vnums1 = ma->GetElVertices (ei1);
                        vnums2 = ma->GetElVertices (ei2);
                        
-                       if(fel1.GetNDof() != dnums1.Size() || ((elnums.Size()>1) && (fel2.GetNDof() != dnums2.Size() )))
-                         {
-                           cout << "facet, neighbouring fel(1): GetNDof() = " << fel1.GetNDof() << endl;
-                           cout << "facet, neighbouring fel(2): GetNDof() = " << fel2.GetNDof() << endl;
-                           cout << "facet, neighbouring fel(1): dnums.Size() = " << dnums1.Size() << endl;
-                           cout << "facet, neighbouring fel(2): dnums.Size() = " << dnums2.Size() << endl;
-                           throw Exception ( "Inconsistent number of degrees of freedom " );
-                         }
                        
                        Array<int> dnums(fel1.GetNDof()+fel2.GetNDof(), lh);
                        /*
@@ -6087,6 +6006,7 @@ namespace ngcomp
                                                           const BaseVector & x,
                                                           BaseVector & y, LocalHeap & lh) const
   {
+    this->CheckBeforeAssemble();
     if (!MixedSpaces())
       
       {
@@ -6215,6 +6135,7 @@ namespace ngcomp
   template <class SCAL>
   double S_BilinearForm<SCAL> :: Energy (const BaseVector & x, LocalHeap & lh) const
   {
+    this->CheckBeforeAssemble();
     static Timer t("BilinearForm::Energy"); RegionTimer reg(t);
     
     double energy = 0.0;

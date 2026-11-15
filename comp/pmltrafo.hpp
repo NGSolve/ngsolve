@@ -25,12 +25,27 @@ namespace ngcomp
 
     virtual string ParameterString() const = 0; 
 
+    /// user CoefficientFunctions evaluated by the transformation
+    virtual Array<shared_ptr<CoefficientFunction>> CoefficientFunctions() const { return Array<shared_ptr<CoefficientFunction>>(); }
+
     virtual void MapPointV(const BaseMappedIntegrationPoint & hpoint, FlatVector<Complex> point, FlatMatrix<Complex> jac) const = 0;
     
     virtual void MapPointV(FlatVector<double> hpoint, FlatVector<Complex> point, FlatMatrix<Complex> jac) const = 0;
 
   };
 
+
+  /// the context gate for the CoefficientFunctions of a PML
+  inline void CheckPMLContext (const PML_Transformation & pml, const CFContext & ctx)
+  {
+    CFContext c = ctx;
+    c.purpose = CFContext::EVALUATE;
+    c.allow_complex = true;
+    c.trialspace = nullptr;
+    c.testspace = nullptr;
+    for (auto & cf : pml.CoefficientFunctions())
+      if (cf) ngfem::CheckContext (*cf, c);
+  }
 
   /// print PML
   inline ostream & operator<< (ostream & ost, const PML_Transformation & pml)
@@ -52,6 +67,7 @@ namespace ngcomp
       CoefficientFunction(_pmltrafo->GetDimension(),true), 
       pmltrafo(_pmltrafo), dim(_pmltrafo->GetDimension())
     { ; }
+    void CheckContext (const CFContext & ctx) const override { CheckPMLContext (*pmltrafo, ctx); }
     using CoefficientFunction::Evaluate;
     double Evaluate(const BaseMappedIntegrationPoint & ip) const
     {
@@ -86,6 +102,7 @@ namespace ngcomp
     {
       SetDimensions (ngstd::IVec<2>(dim,dim));
     }
+    void CheckContext (const CFContext & ctx) const override { CheckPMLContext (*pmltrafo, ctx); }
     using CoefficientFunction::Evaluate;
     double Evaluate(const BaseMappedIntegrationPoint & ip) const
     {
@@ -123,6 +140,7 @@ namespace ngcomp
     {
       SetDimensions(ngstd::IVec<2>(dim,dim));
     }
+    void CheckContext (const CFContext & ctx) const override { CheckPMLContext (*pmltrafo, ctx); }
     using CoefficientFunction::Evaluate;
     double Evaluate(const BaseMappedIntegrationPoint & ip) const
     {
@@ -157,6 +175,7 @@ namespace ngcomp
     PML_Det(shared_ptr<PML_Transformation> _pmltrafo) : 
       CoefficientFunction(1,true), pmltrafo(_pmltrafo),dim(_pmltrafo->GetDimension())
     { ; }
+    void CheckContext (const CFContext & ctx) const override { CheckPMLContext (*pmltrafo, ctx); }
     using CoefficientFunction::Evaluate;
     double Evaluate(const BaseMappedIntegrationPoint & ip) const
     {
@@ -468,6 +487,8 @@ namespace ngcomp
       return str.str();
     }
 
+    Array<shared_ptr<CoefficientFunction>> CoefficientFunctions() const override { return { trafo, jac }; }
+
     virtual void MapIntegrationPoint (const BaseMappedIntegrationPoint & hpoint, Vec<DIM,Complex> & point,
                     Mat<DIM,DIM,Complex> & jacmat) const 
     {
@@ -501,6 +522,13 @@ namespace ngcomp
       }
     
     ~SumPML() {;}
+
+    Array<shared_ptr<CoefficientFunction>> CoefficientFunctions() const override
+    {
+      auto cfs = pml1->CoefficientFunctions();
+      cfs += pml2->CoefficientFunctions();
+      return cfs;
+    }
 
     virtual string ParameterString() const
     {
@@ -577,6 +605,13 @@ namespace ngcomp
     }
     
     ~CompoundPML() {;}
+
+    Array<shared_ptr<CoefficientFunction>> CoefficientFunctions() const override
+    {
+      auto cfs = pml1->CoefficientFunctions();
+      cfs += pml2->CoefficientFunctions();
+      return cfs;
+    }
 
     virtual string ParameterString() const
     {

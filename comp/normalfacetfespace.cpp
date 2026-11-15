@@ -17,6 +17,13 @@
 
 namespace ngcomp
 {
+  // shape functions live on the facets of the volume element only
+  template <int D>
+  class DiffOpIdNormalFacet : public DiffOpIdHDiv<D>
+  {
+  public:
+    static constexpr bool ONLY_ON_FACETS = true;
+  };
 
 
   /// Gradient operator for HCurl
@@ -259,14 +266,14 @@ namespace ngcomp
         if (flags.GetDefineFlag("normalmapping"))
           evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpNormalMapping<2>>>();
         else
-          evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdHDiv<2>>>();
+          evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdNormalFacet<2>>>();
           
         evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdVecHDivBoundary<2>>>();
       }
     else
       {
         evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdVecHDivBoundary<3>>>();
-        evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdHDiv<3>>>();
+        evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdNormalFacet<3>>>();
       }
 
     // static ConstantCoefficientFunction one(1);

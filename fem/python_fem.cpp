@@ -1541,9 +1541,22 @@ allow_fail : bool
            auto pts = points.unchecked<1>(); // pts has array access without bounds checks
            size_t npoints = pts.shape(0);
            size_t dim = self->Dimension();
-           for (size_t i = 0; i < npoints; i++)
-             if (pts(i).nr != -1 && pts(i).mesh)
-               ngcomp::CheckPointContext (*self, pts(i).mesh, pts(i).vb, pts(i).mesh->GetDimension(), pts(i).facetnr != -1);
+           {
+             const ngcomp::MeshAccess * lastmesh = nullptr;
+             int lastkey = -1;
+             for (size_t i = 0; i < npoints; i++)
+               {
+                 auto & p = pts(i);
+                 if (p.nr == -1) continue;
+                 if (!p.mesh)
+                   throw Exception("Meshpoint " + to_string(i) + " has no mesh");
+                 VorB eb = p.facetnr == -1 ? VOL : (p.eb == VOL ? BND : VorB(p.eb));
+                 int key = int(p.vb) | (int(eb) << 2);
+                 if (p.mesh == lastmesh && key == lastkey) continue;
+                 ngcomp::CheckPointContext (*self, p.mesh, p.vb, p.mesh->GetDimension(), eb);
+                 lastmesh = p.mesh; lastkey = key;
+               }
+           }
            constexpr size_t maxp = 16;
 
            // collects consecutive points of one element into ir
@@ -2372,6 +2385,11 @@ weights : list
            LocalHeap lh(1000000);           
            Matrix<double,ColMajor> mat(diffop.Dim(), fel.GetNDof());
 
+           if (mp.nr == -1 || !mp.mesh)
+             throw Exception("Meshpoint not in mesh!");
+           diffop.CheckElement (fel);
+           if (diffop.OnlyOnFacets() && mp.vb == diffop.VB() && mp.facetnr == -1)
+             throw Exception("operator '" + diffop.Name() + "' can be evaluated only on element facets");
            auto ei = ElementId(mp.vb, mp.nr);
            auto& trafo = mp.mesh->GetTrafo(ei, lh);
            IntegrationPoint ip(mp.x, mp.y, mp.z);
@@ -2417,8 +2435,7 @@ kwargs : kwargs
           Array<shared_ptr<CoefficientFunction>> coef = MakeCoefficients(py_coef);
           auto bfi = GetIntegrators().CreateBFI (name, dim, coef);
 
-          if (!bfi) cerr << "undefined integrator '" << name
-                         << "' in " << dim << " dimension" << endl;
+          if (!bfi) throw Exception ("undefined integrator '" + name + "' in " + ToString(dim) + " dimension");
 
           if (filename.length())
             {
@@ -2428,6 +2445,7 @@ kwargs : kwargs
           bfi -> SetFlags (flags);
           if (imag)
             bfi = make_shared<ComplexBilinearFormIntegrator> (bfi, Complex(0,1));
+          bfi -> context_coefficients = coef;
           bfi_class.attr("__initialize__")(bfi,**kwargs);
           return bfi;
         }),
@@ -2767,6 +2785,7 @@ definedonelem : object
       
       if (imag)
         lfi = make_shared<ComplexLinearFormIntegrator> (lfi, Complex(0,1));
+      lfi -> context_coefficients = coef;
       return lfi;
     }),
          py::arg("name")="lfi",py::arg("dim")=-1,

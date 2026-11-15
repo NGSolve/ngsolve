@@ -400,7 +400,13 @@ namespace ngcomp
     /// uses mixed spaces (non operational)
     bool MixedSpaces () const { return fespace2 != NULL; }
     /// interior skeleton terms need dgjumps on the spaces (matrix graph)
-    NGS_DLL_HEADER void CheckDGCoupling () const;
+    void CheckDGCoupling () const;
+    /// before an assembly loop: integrators are re-checked after a mesh change,
+    /// the spaces' dof numbering is checked once per update
+    void CheckBeforeAssemble () const;
+  private:
+    mutable size_t gate_meshstamp = 0;
+  public:
 
     /// returns the second space (form mixed spaces)
     // const FESpace & GetFESpace2() const { return *fespace2; }

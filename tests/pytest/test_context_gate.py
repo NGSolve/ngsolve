@@ -385,3 +385,203 @@ def test_interpolate_mixed_spaces(spaces):
     u = H.TrialFunction()
     s = D.TrialFunction()
     raises(lambda: Interpolate(u * CF((1, 1)) + s, VectorL2(H.mesh, order=0)), "different spaces")
+
+
+# ---------------------------------------------------------------- stage 2: more entry points
+
+def test_numpy_point_arrays(m):
+    u = H1(m, order=1).TrialFunction()
+    pts = m.MapToAllElements(IntegrationRule(TRIG, 2), VOL)
+    raises(lambda: u(pts), "trial")
+    raises(lambda: specialcf.normal(3)(pts), "dimension")
+    raises(lambda: specialcf.Weingarten(2)(pts), "facet")
+    assert (x * y)(pts).shape == (len(pts), 1)
+
+
+def test_vtk_output(m, tmp_path):
+    u = H1(m, order=1).TrialFunction()
+    for cf in [u, specialcf.normal(3), CF([1, 2, 3])[0] * 0 + m.BoundaryCF({".*": 1})]:
+        vtk = VTKOutput(m, coefs=[cf], names=["f"], filename=str(tmp_path / "out"))
+        raises(lambda: vtk.Do())
+    vtk = VTKOutput(m, coefs=[x * y], names=["f"], filename=str(tmp_path / "ok"))
+    vtk.Do()
+    vtk.Do(BND)
+
+
+def test_mass_operators(m, m2mat):
+    L = L2(m, order=1)
+    u = L.TrialFunction()
+    vec = GridFunction(L).vec
+    raises(lambda: L.Mass(rho=u))
+    raises(lambda: L.SolveM(vec, rho=specialcf.normal(3)), "dimension")
+    raises(lambda: L.ApplyM(vec, rho=1j * x), "complex")
+    raises(lambda: L2(m2mat, order=1).Mass(rho=CF([1])), "regions")
+    gh = GridFunction(H1(m, order=1))
+    M = gh.space.Mass(1)
+    raises(lambda: gh.vec.CreateVector().data.__class__ and M.Mult(gh.vec, gh.vec.CreateVector()), "L2")
+    L.SolveM(vec, rho=1 + x)
+
+
+def test_classic_integrator_coefficients(m, m2mat):
+    H = H1(m, order=1)
+    u = H.TrialFunction()
+    a = BilinearForm(H)
+    raises(lambda: a.__iadd__(BFI("mass", coef=u)))
+    a2 = BilinearForm(H1(m2mat, order=1))
+    raises(lambda: a2.__iadd__(BFI("mass", coef=CF([1]))), "regions")
+    f = LinearForm(H)
+    raises(lambda: f.__iadd__(LFI("source", coef=specialcf.normal(3)[0])), "dimension")
+    a += BFI("mass", coef=1 + x)
+    a.Assemble()
+
+
+def test_placeholder_set(m):
+    H = H1(m, order=1)
+    u, v = H.TnT()
+    p = PlaceholderCF(x)
+    assert Integrate(p, m) == pytest.approx(0.5)
+    assert p(m(0.3, 0.4)) == pytest.approx(0.3)
+    raises(lambda: p.Set(u), "trial")
+    raises(lambda: p.Set(specialcf.normal(3)[0]), "dimension")
+    raises(lambda: p.Set(1j * x), "real")
+    f = LinearForm(H)
+    q = PlaceholderCF(x)
+    f += q * v * dx
+    raises(lambda: q.Set(u), "trial")
+    q.Set(y)
+    f.Assemble()
+    p.Set(y)
+    assert p(m(0.3, 0.4)) == pytest.approx(0.4)
+
+
+def test_newton_cf_expression(m):
+    from ngsolve.fem import NewtonCF
+    L = L2(m, order=0)
+    u = L.TrialFunction()
+    ncf = NewtonCF(u * u - 2, 1)
+    assert Integrate(ncf, m) == pytest.approx(2 ** 0.5)
+    bad = NewtonCF(u * u - 2 + x * specialcf.normal(3)[0], 1)
+    raises(lambda: Integrate(bad, m), "dimension")
+    v = H1(m, order=1).TrialFunction()
+    raises(lambda: Integrate(NewtonCF(u * u - 2, v), m), "trial")
+
+
+def test_interpolate_cf_context(m):
+    V = H1(m, order=2)
+    raises(lambda: Integrate(Interpolate(x, V), m, BND), "Interpolate")
+    raises(lambda: Integrate(Interpolate(specialcf.normal(3)[0], V), m), "dimension")
+    assert Integrate(Interpolate(x * y, V), m) == pytest.approx(0.25)
+
+
+def test_pml_custom(m):
+    u = H1(m, order=1).TrialFunction()
+    raises(lambda: m.SetPML(pml.Custom(trafo=CF((x + 1j * u, y)), jac=CF((1, 0, 0, 1), dims=(2, 2))), 1))
+
+
+def test_convert_operator(m):
+    F = FacetFESpace(m, order=1)
+    L = L2(m, order=1)
+    raises(lambda: ConvertOperator(F, L), "inside elements")
+    H = H1(m, order=1)
+    raises(lambda: ConvertOperator(H, L, trial_cf=H.TrialFunction() * specialcf.normal(3)[0]), "dimension")
+    ConvertOperator(H, L)
+
+
+def test_point_evaluation_functional(m):
+    H = H1(m, order=1)
+    u, v = H.TnT()
+    f = LinearForm(H)
+    raises(lambda: f.__iadd__((u * v)(0.5, 0.5)), "rial")
+    raises(lambda: f.__iadd__(CF((v, v))(0.5, 0.5)), "scalar")
+    raises(lambda: f.__iadd__(x(0.5, 0.5)), "test")
+    f2 = LinearForm(H)
+    f2 += v(5, 5)
+    raises(lambda: f2.Assemble(), "not in the mesh")
+
+
+def test_facet_spaces_inside_elements(m):
+    for fes in [FacetFESpace(m, order=1), TangentialFacetFESpace(m, order=1), NormalFacetFESpace(m, order=1)]:
+        gf = GridFunction(fes)
+        gf.Set(x if fes.type == "facet" else CF((x, y)), dual=True)
+        raises(lambda: Integrate(gf, m))
+        raises(lambda: gf(m(0.3, 0.4)))
+        u, v = fes.TnT()
+        a = BilinearForm(fes)
+        raises(lambda: a.__iadd__(u * v * dx), "inside elements")
+        Integrate(InnerProduct(gf, gf) * dx(element_boundary=True), m)
+    F = FacetFESpace(m, order=1)
+    gF = GridFunction(F)
+    raises(lambda: gF.Set(x), "dual")
+    raises(lambda: gF(0.3, 0.4), "inside")
+
+
+def test_facet_surface_on_boundary():
+    m3 = MakeStructured3DMesh(nx=2, ny=2, nz=2)
+    F = FacetSurface(m3, order=1)
+    u, v = F.TnT()
+    a = BilinearForm(F)
+    raises(lambda: a.__iadd__(u * v * ds), "inside elements")
+    a += u * v * ds(element_boundary=True)
+    a.Assemble()
+
+
+def test_weingarten_and_tangent_need_facets(m):
+    raises(lambda: Integrate(specialcf.Weingarten(2)[0, 0], m), "facet")
+    Integrate(specialcf.Weingarten(2)[0, 0] * dx(element_boundary=True), m)
+    raises(lambda: Integrate(specialcf.tangential(2, consistent=True)[0], m), "facet")
+
+
+def test_gridfunction_after_refinement():
+    mesh = Mesh(unit_square.GenerateMesh(maxh=0.4))
+    H = H1(mesh, order=1)
+    gf = GridFunction(H, autoupdate=False)
+    gf.Set(x)
+    u, v = H.TnT()
+    a = BilinearForm(H)
+    a += gf * u * v * dx
+    f = LinearForm(H)
+    f += gf * v * dx
+    cf = gf * x
+    cf(mesh(0.3, 0.3))
+    mesh.Refine()
+    H.Update()
+    raises(lambda: a.Assemble(), "up to date")
+    raises(lambda: f.Assemble(), "up to date")
+    raises(lambda: cf(mesh(0.3, 0.3)), "up to date")
+    raises(lambda: gf(0.3, 0.3), "up to date")
+    gf.Update()
+    a.Assemble()
+    f.Assemble()
+    cf(mesh(0.3, 0.3))
+
+
+def test_exception_in_assembly_stops(m):
+    from ngsolve.fem import NewtonCF
+    L = L2(m, order=0)
+    w = L.TrialFunction()
+    ncf = NewtonCF(w * w + 1, 1, maxiter=2)
+    H = H1(m, order=1)
+    u, v = H.TnT()
+    a = BilinearForm(H)
+    a += ncf * u * v * dx
+    raises(lambda: a.Assemble())
+
+
+def test_proxy_names_demangled(spaces):
+    H, D, L, X, gf = spaces
+    t = D.TestFunction()
+    f = LinearForm(H)
+    with pytest.raises(Exception) as e:
+        f.__iadd__(CF((1, 1)) * t * dx)
+    assert "FN5ngfem" not in str(e.value)
+
+
+def test_dof_consistency(m):
+    # the assembly loops rely on GetFE and GetDofNrs agreeing, checked once per space update
+    m3 = MakeStructured3DMesh(nx=2, ny=2, nz=2)
+    for mesh in [m, m3]:
+        for fes in [H1(mesh, order=3), L2(mesh, order=2), HDiv(mesh, order=2), HCurl(mesh, order=2),
+                    FacetFESpace(mesh, order=2), HDivDiv(mesh, order=1), VectorH1(mesh, order=2),
+                    H1(mesh, order=2) * HDiv(mesh, order=1), Discontinuous(H1(mesh, order=2))]:
+            fes._CheckDofConsistency(VOL)
+            fes._CheckDofConsistency(BND)

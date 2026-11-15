@@ -1,4 +1,5 @@
 #include <potentialtools.hpp>
+#include <fespace.hpp>
 
 
 
@@ -9,6 +10,9 @@ namespace ngsbem
   {
     LocalHeap lh(10*1000*1000);
     auto ma = reg.Mesh();
+    if (charge->Dimension() != 1)
+      throw Exception ("AddChargeDensity: the charge must be scalar");
+    CheckContext (*charge, MakeCFContext (*ma, CFContext::EVALUATE, reg.VB()));
     
     for (auto ei : reg.GetElements())
       {
@@ -30,6 +34,9 @@ namespace ngsbem
   {
     LocalHeap lh(10*1000*1000);
     auto ma = reg.Mesh();
+    if (current->Dimension() != 3)
+      throw Exception ("AddCurrentDensity: the current must have 3 components");
+    CheckContext (*current, MakeCFContext (*ma, CFContext::EVALUATE, reg.VB()));
     
     for (auto ei : reg.GetElements())
       {

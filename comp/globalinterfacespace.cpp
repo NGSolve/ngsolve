@@ -476,6 +476,9 @@ namespace ngcomp
     if(autoupdate)
       flags.SetFlag("autoupdate");
     flags.SetFlag("order", order);
+    // the mapping is evaluated on volume and interface elements
+    for (VorB vb : { VOL, BND })
+      CheckContext (*mapping, MakeCFContext (*ma, CFContext::EVALUATE, vb, VOL, false, false));
     if(mapping->Dimension() == 1)
       return make_shared<GlobalInterfaceSpaceD<1>>(ma, flags);
     else if(mapping->Dimension() == 2)

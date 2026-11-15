@@ -1551,6 +1551,8 @@ namespace ngcomp
         throw Exception("MeshAccess::SetPML: was not able to set PML, domain index too high!");
       if (pml_trafo->GetDimension()!=dim)
         throw Exception("MeshAccess::SetPML: dimension of PML = "+ToString(pml_trafo->GetDimension())+" does not fit mesh dimension!");
+      // the transformation is evaluated on the volume elements of the domain
+      CheckPMLContext (*pml_trafo, MakeCFContext (*this, CFContext::EVALUATE, VOL));
       pml_trafos[_domnr] = pml_trafo; 
     }
     
@@ -2472,6 +2474,15 @@ namespace ngcomp
     }
 
 
+    // trafo on the outer element, func on the elements of region
+    void CheckContext (const CFContext & ctx) const override
+    {
+      CFContext c = ctx;
+      c.purpose = CFContext::EVALUATE;
+      ngfem::CheckContext (*trafo, c);
+      ngfem::CheckContext (*func, MakeCFContext (*region.Mesh(), CFContext::EVALUATE, region.VB(), VOL, false, false));
+    }
+    
     virtual void Evaluate(const BaseMappedIntegrationPoint & mip,
 			  FlatVector<> result) const override
     {
@@ -2511,6 +2522,8 @@ namespace ngcomp
         {
           throw Exception("TrafoCF not implemented for BBBND!");
         }
+      if (elnr < 0)
+        throw Exception ("CoordinateTrafo: mapped point " + ToString(mapped_point) + " is not in the region");
       auto& eltrafo = region.Mesh()->GetTrafo(ElementId(region.VB(), elnr), global_alloc);
       auto& mapped_mip = eltrafo(ip, global_alloc);
       func->Evaluate(mapped_mip, result);

@@ -486,6 +486,14 @@ ANY                  1 1 1 1 | 15
     /// test hook: checks that GetFE of all elements matches the families expected by the evaluators
     void CheckElementFamilies (LocalHeap & lh) const;
 
+    /// GetFE and GetDofNrs agree in the number of dofs on elements of vb: one element per
+    /// element class and region, once per mesh and ndof (assembly loops rely on it)
+    void CheckDofConsistency (VorB vb, bool all_elements = false) const;
+  private:
+    mutable size_t dofcheck_meshstamp[4] = { size_t(-1), size_t(-1), size_t(-1), size_t(-1) };
+    mutable size_t dofcheck_ndof[4] = { size_t(-1), size_t(-1), size_t(-1), size_t(-1) };
+  public:
+
 
     /// get dof-nrs of domain or boundary element elnr
     virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const = 0;
@@ -983,8 +991,11 @@ ANY                  1 1 1 1 | 15
 
   /// the gate for point evaluation, cached in cf for repeated calls with the same mesh and VorB
   NGS_DLL_HEADER void CheckPointContext (const CoefficientFunction & cf, const MeshAccess * ma,
-                                         VorB vb, int dim, bool on_facet);
+                                         VorB vb, int dim, VorB element_vb);
   NGS_DLL_HEADER void CheckPointContext (const CoefficientFunction & cf, const BaseMappedIntegrationPoint & mip);
+
+  /// density rho of the mass operators (Mass, InvM, SolveM, ApplyM)
+  NGS_DLL_HEADER void CheckMassDensity (const FESpace & fes, const CoefficientFunction * rho, const Region * definedon);
 
   /// the context gate for an integrator added to a form
   NGS_DLL_HEADER void CheckIntegratorContext (const Integrator & igt, CFContext::Purpose purpose,

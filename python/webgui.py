@@ -352,6 +352,15 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, intpoint
     cf_wire = ngs.CF((xyz, *[0.0]*(cf.dim-3)) )
     cf_edge = ngs.CF((xyz, 0.0))
     cf_surf = cf if draw_surf else cf_wire
+
+    def eval_surf(func, pts):
+        try:
+            return func(pts)
+        except Exception:
+            if mesh.dim != 3:
+                raise
+            # volume functions without trace (e.g. L2) are evaluated from the volume side
+            return ngs.BoundaryFromVolumeCF(func)(pts)
     
     d['show_wireframe'] = order2d>0
     d['show_mesh'] = order2d>0
@@ -395,7 +404,7 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, intpoint
         timer2map.Start()
         pts = mesh.MapToAllElements({ngs.ET.TRIG: ir_trig, ngs.ET.QUAD: ir_quad}, reg)
         timer2map.Stop()
-        pmat = cf_surf(pts)
+        pmat = eval_surf(cf_surf, pts)
         
         pmima = updatePMinMax(pmat)
 
@@ -475,7 +484,7 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, intpoint
         else:
             pts = mesh.MapToAllElements(get_intrules(2, order), reg)
 
-        pmat = ngs.CoefficientFunction( cf_surf ) (pts)
+        pmat = eval_surf(ngs.CoefficientFunction( cf_surf ), pts)
 
         
         n_points_per_trig = len(get_intrules(2, order2d)[ngs.ET.TRIG])

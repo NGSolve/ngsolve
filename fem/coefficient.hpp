@@ -46,13 +46,15 @@ namespace ngfem
   // where a CoefficientFunction is evaluated: checked once before any element is touched
   struct NGS_DLL_HEADER CFContext
   {
-    enum Purpose { BILINEAR, LINEAR, ENERGY, EVALUATE };
+    // LOCAL: expression of a local equation (NewtonCF), proxies are its unknowns
+    enum Purpose { BILINEAR, LINEAR, ENERGY, EVALUATE, LOCAL };
     Purpose purpose = EVALUATE;
     const void * mesh = nullptr;     // MeshAccess*, nullptr if unknown
     int dim = -1;                    // space dimension, -1 if unknown
     VorB vb = VOL;                   // VorB of the integral
     VorB element_vb = VOL;           // BND for element_boundary
     bool skeleton = false;
+    bool pairing = false;            // contact pairs: Other() is the paired element
     bool allow_complex = true;
     int nregions[4] = { -1, -1, -1, -1 };
     shared_ptr<ngcomp::FESpace> trialspace, testspace;
@@ -64,7 +66,10 @@ namespace ngfem
     int ElementDim() const { return dim - int(EvalVB()); }
     // points lie on a facet (or a lower dimensional entity)
     bool OnFacet() const { return skeleton || element_vb != VOL || vb != VOL; }
+    // points lie on facets of the elements they are evaluated on
+    bool OnElementFacet() const { return skeleton || element_vb != VOL; }
     string Description() const;
+    bool SameAs (const CFContext & c) const;
   };
 
   // walks the DAG once, calls CheckContext on every node, prefixes errors with the node
@@ -354,6 +359,7 @@ namespace ngfem
     // last point-evaluation context accepted by the gate
     mutable const void * gate_mesh = nullptr;
     mutable int gate_key = -1;
+    mutable size_t gate_stamp = 0;
   };
 
   
@@ -785,6 +791,8 @@ namespace ngfem
   class NGS_DLL_HEADER PlaceholderCoefficientFunction : public CoefficientFunction
   {
     shared_ptr<CoefficientFunction> cf;
+    // contexts accepted so far, Set checks the new function against them
+    mutable Array<CFContext> contexts;
   public:
     PlaceholderCoefficientFunction() = default;
     PlaceholderCoefficientFunction(shared_ptr<CoefficientFunction> _cf)
@@ -854,6 +862,8 @@ namespace ngfem
 
     Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
     { return { cf }; }
+
+    void CheckContext (const CFContext & ctx) const override;
   };
   
 

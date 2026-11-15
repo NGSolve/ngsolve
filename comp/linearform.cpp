@@ -25,9 +25,15 @@ namespace ngcomp
   LinearForm & LinearForm :: AddIntegrator (shared_ptr<LinearFormIntegrator> lfi)
   {
     auto anydim = dynamic_pointer_cast<LinearFormIntegratorAnyDim> (lfi);
-    if (anydim) lfi = anydim->GetLFI (ma->GetDimension());
+    if (anydim)
+      {
+        Array<shared_ptr<CoefficientFunction>> coefs(lfi->context_coefficients);
+        lfi = anydim->GetLFI (ma->GetDimension());
+        if (!lfi->context_coefficients.Size()) lfi->context_coefficients = coefs;
+      }
 
     CheckIntegratorContext (*lfi, CFContext::LINEAR, nullptr, fespace, fespace->IsComplex());
+    if (!parts.Size()) gate_meshstamp = ma->GetTimeStamp();
     
     parts.Append (lfi);
     if (!lfi->SkeletonForm() && !lfi->IntegrationAlongCurve())
@@ -58,6 +64,16 @@ namespace ngcomp
   template <class SCAL>
   void S_LinearForm<SCAL> :: Assemble (LocalHeap & clh)
   {
+    // a refined mesh is a new context for the integrators
+    if (this->ma->GetTimeStamp() != this->gate_meshstamp)
+      {
+        for (auto & lfi : this->parts)
+          CheckIntegratorContext (*lfi, CFContext::LINEAR, nullptr, this->fespace, this->fespace->IsComplex());
+        this->gate_meshstamp = this->ma->GetTimeStamp();
+      }
+    for (VorB vb : { VOL, BND, BBND, BBBND })
+      if (this->VB_parts[vb].Size() || (vb == VOL && this->parts.Size() > this->VB_parts[VOL].Size()))
+        this->fespace->CheckDofConsistency(vb);
     static Timer timer("Vector assembling");
     static Timer timer1("Vector assembling 1", NoTracing);
     static Timer timer2("Vector assembling 2", NoTracing);
@@ -255,6 +271,8 @@ namespace ngcomp
 
             IntegrationPoint ip;
             ElementId ei = ma->FindElementOfPoint(pe->point, ip, false);
+            if (ei.IsInvalid())
+              throw Exception ("point evaluation functional: point " + ToString(pe->point) + " is not in the mesh");
             // ElementId ei(VOL, elnr);
             auto & trafo = ma->GetTrafo(ei, lh);
             auto & fel = fespace->GetFE(ei, lh);
@@ -912,6 +930,8 @@ namespace ngcomp
     
     IntegrationPoint ip;
     auto ei = ma->FindElementOfPoint(point, ip, false);
+    if (ei.IsInvalid())
+      throw Exception ("point evaluation functional: point " + ToString(point) + " is not in the mesh");
 
     // ElementId ei(VOL, elnr);
     auto & trafo = ma->GetTrafo(ei, lh);

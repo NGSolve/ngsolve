@@ -48,15 +48,9 @@ namespace ngcomp
         }
       else
         {
-          // if (mip.BaseMappedIntegrationPoint::ElementVB() == BND)
-          // if (mip.IP().VB() == BND)
-          if (mip.DimElement() == D-1)
-            {
-              auto& fel = static_cast<const BaseScalarFiniteElement&> (bfel);
-              fel.CalcShape (mip.IP(), mat.Row(0));
-            }
-          else
-            throw Exception("cannot evaluate facet-fe inside element HERE");
+          // boundary element (precondition: no volume points, see the context gate)
+          auto& fel = static_cast<const BaseScalarFiniteElement&> (bfel);
+          fel.CalcShape (mip.IP(), mat.Row(0));
         }
     }
 
@@ -96,8 +90,6 @@ namespace ngcomp
 
       IterateFacetBlocks (mir.IR(), [&] (int facetnr, IntRange r)
         {
-          if (facetnr < 0)
-            throw Exception("cannot evaluate facet-fe inside element, apply simd");
           fel_facet.Facet(facetnr).Evaluate(mir.IR().Range(r.First(), r.Next()),
                                             x.Range(fel_facet.GetFacetDofs(facetnr)),
                                             y.Row(0).Range(r));
@@ -118,8 +110,6 @@ namespace ngcomp
 
       IterateFacetBlocks (mir.IR(), [&] (int facetnr, IntRange r)
         {
-          if (facetnr < 0)
-            throw Exception("cannot evaluate facet-fe inside element, add trans simd");
           fel_facet.Facet(facetnr).AddTrans(mir.IR().Range(r.First(), r.Next()),
                                             y.Row(0).Range(r),
                                             x.Range(fel_facet.GetFacetDofs(facetnr)));
@@ -208,17 +198,11 @@ namespace ngcomp
         }
       else
         {
-          // if (mip.BaseMappedIntegrationPoint::ElementVB() == BND)
-          // if (mip.IP().VB() == BND)
-          if (mip.DimElement() == D-1)          
-            {
-              const BaseScalarFiniteElement & fel = static_cast<const BaseScalarFiniteElement&> (bfel);
-              fel.CalcShape (mip.IP(), mat.Row(0));
+          // boundary element (precondition: no volume points, see the context gate)
+          const BaseScalarFiniteElement & fel = static_cast<const BaseScalarFiniteElement&> (bfel);
+          fel.CalcShape (mip.IP(), mat.Row(0));
 
-              mat.Row(0).Range(fel.GetNDof()) /= mip.GetMeasure();                        
-            }
-          else
-            throw Exception("cannot evaluate facet-fe inside element");
+          mat.Row(0).Range(fel.GetNDof()) /= mip.GetMeasure();                        
         }
     }
 
@@ -265,8 +249,6 @@ namespace ngcomp
 
       IterateFacetBlocks (mir.IR(), [&] (int facetnr, IntRange r)
         {
-          if (facetnr < 0)
-            throw Exception("cannot evaluate facet-fe inside element, apply simd");
           fel_facet.Facet(facetnr).Evaluate(mir.IR().Range(r.First(), r.Next()),
                                             x.Range(fel_facet.GetFacetDofs(facetnr)),
                                             y.Row(0).Range(r));
@@ -297,8 +279,6 @@ namespace ngcomp
         hy(j) /= mir[j].GetMeasure();
       IterateFacetBlocks (mir.IR(), [&] (int facetnr, IntRange r)
         {
-          if (facetnr < 0)
-            throw Exception("cannot evaluate facet-fe inside element, add trans simd");
           fel_facet.Facet(facetnr).AddTrans(mir.IR().Range(r.First(), r.Next()),
                                             hy.Range(r),
                                             x.Range(fel_facet.GetFacetDofs(facetnr)));
@@ -371,7 +351,7 @@ namespace ngcomp
                                 MAT && mat, LocalHeap & lh)
     {
       int facetnr = mip.IP().FacetNr();
-      if (facetnr >= 0)
+      // precondition: a facet point, see the context gate
         {
           HeapReset hr(lh);
           
@@ -386,10 +366,6 @@ namespace ngcomp
           */
           fel_facet.Facet(facetnr).CalcDShape(mip.IP(), dshaperef);
           mat.Cols(r) = Trans(mip.GetJacobianInverse()) * Trans(dshaperef);
-        }
-      else
-        {
-            throw Exception("cannot evaluate facet-fe inside element");
         }
     }
   };

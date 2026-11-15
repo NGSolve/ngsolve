@@ -204,8 +204,6 @@ namespace ngfem
     }
     virtual void Evaluate (const BaseMappedIntegrationPoint & ip, FlatVector<> res) const override 
     {
-      if (ip.DimSpace() != D)
-        throw Exception("illegal dim of normal vector");
       double fac = 1.;
       if (ip.GetTransformation().VB() == BND && inverted_faces.Size())
         {
@@ -228,8 +226,6 @@ namespace ngfem
               if(inverted_faces.Test(ei))
                 fac = -1.;
             }
-          if (ir[0].DimSpace() != D)
-            throw Exception("illegal dim of normal vector");
           // FlatMatrixFixWidth<D> resD(res);
           for (int i = 0; i < ir.Size(); i++)
             res.Row(i).Range(D) = fac * static_cast<const DimMappedIntegrationPoint<D>&>(ir[i]).GetNV();
@@ -276,9 +272,6 @@ namespace ngfem
 
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<Complex> res) const override 
     {
-      if (ir[0].DimSpace() != D)
-	throw Exception("illegal dim of normal vector");
-
       double fac = 1.;
       if (ir.GetTransformation().VB() == BND && inverted_faces.Size())
         {
@@ -421,6 +414,9 @@ namespace ngfem
     void CheckContext (const CFContext & ctx) const override
     {
       CheckGeoDim (D, ctx);
+      // the consistent tangent uses the facet number of the point
+      if (consistent && !ctx.OnElementFacet())
+        throw Exception ("the consistent tangential vector needs points on element facets, use element_boundary=True or skeleton=True");
     }
     // virtual int Dimension() const { return D; }
 
@@ -430,9 +426,6 @@ namespace ngfem
     }
     virtual void Evaluate (const BaseMappedIntegrationPoint & ip, FlatVector<> res) const override
     {
-      if (ip.DimSpace() != D)
-        throw Exception("illegal dim of tangential vector");
-      
       res = static_cast<const DimMappedIntegrationPoint<D>&>(ip).GetTV();
 
       if (consistent)
@@ -533,15 +526,11 @@ namespace ngfem
     
     virtual void Evaluate (const BaseMappedIntegrationPoint & ip, FlatVector<> res) const override 
     {
-      if (ip.DimSpace() != DIMR)
-        throw Exception("illegal dim!");
       res = static_cast<const MappedIntegrationPoint<DIMS,DIMR>&>(ip).GetJacobian().AsVector();
     }
 
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<Complex> res) const override 
     {
-      if (ir[0].DimSpace() != DIMR)
-      	throw Exception("illegal dim!");
       for (int i = 0; i < ir.Size(); i++)
       	res.Row(i).Range(DIMS*DIMR) = static_cast<const MappedIntegrationPoint<DIMS,DIMR>&>(ir[i]).GetJacobian().AsVector();
     }
@@ -605,6 +594,12 @@ namespace ngfem
     void CheckContext (const CFContext & ctx) const override
     {
       CheckGeoDim (D, ctx);
+      if (ctx.dim < 0) return;
+      int eldim = ctx.ElementDim();
+      if (eldim == D && !ctx.OnElementFacet())
+        throw Exception ("on volume elements the Weingarten tensor needs points on facets, use element_boundary=True or skeleton=True");
+      if (eldim < D-1)
+        throw Exception ("needs elements of dimension " + ToString(D-1) + " or " + ToString(D) + ", got dimension " + ToString(eldim));
     }
 
     void DoArchive(Archive& ar) override
@@ -648,17 +643,12 @@ namespace ngfem
 
     static Mat<D,D-1> FacetJacobian (const ElementTransformation & eltrans, int fnr)
     {
-      if (fnr < 0)
-        throw Exception("WeingartenCF: volume point is not on a facet");
       LocalHeapMem<1000> lh("Weingarten-lh");
       return Facet2ElementTrafo(eltrans.GetElementType()).GetJacobian(fnr,lh);
     }
 
     void Evaluate (const BaseMappedIntegrationPoint & bmip, FlatVector<> res) const override
     {
-      if ( (bmip.DimSpace() != D) || D == 1)
-        throw Exception("illegal dim of Weingarten tensor");
-
       const ElementTransformation & eltrans = bmip.GetTransformation();
 
       if (!eltrans.IsCurvedElement())
@@ -789,9 +779,6 @@ namespace ngfem
     
     virtual void Evaluate (const BaseMappedIntegrationPoint & ip, FlatVector<> res) const override
     {
-      if (ip.DimSpace() != D)
-        throw Exception("illegal dim of VertexTangentialVector");
-
       //cout << "in VertexTangentialVectorsCF, VB = " << ip.IP().VB() << endl;
 
       if (ip.IP().VB() == BBND)
@@ -891,9 +878,6 @@ namespace ngfem
     
     virtual void Evaluate (const BaseMappedIntegrationPoint & ip, FlatVector<> res) const override
     {
-      if (ip.DimSpace() != D)
-        throw Exception("illegal dim of EdgeFaceTangentialVector");
-
       //cout << "in EdgeFaceTangentialVectorsCF, VB = " << ip.IP().VB() << endl;
       // assume tets !!!
       
@@ -1018,9 +1002,6 @@ namespace ngfem
     
     virtual void Evaluate (const BaseMappedIntegrationPoint & bmip, FlatVector<> res) const override
     {
-      if (bmip.DimSpace() != D)
-        throw Exception("illegal dim of EdgeCurvatureCF");
-
 
       // kappa = d_s t,  with  v = F tau,  w = tau^T H tau:  kappa = (w - (v.w)/(v.v) v) / (v.v)
       if (bmip.IP().VB() == BND && bmip.DimElement() == 2)

@@ -522,6 +522,13 @@ namespace ngcomp
   {
     shared_ptr<MeshAccess> ma;
     shared_ptr<CoefficientFunction> cf;
+    // evaluated on surface elements: cf, or in 3D through the adjacent volume element
+    shared_ptr<CoefficientFunction> surfcf;
+    // which kinds of elements the context gate accepted
+    bool vol_ok = false, surf_ok = false, seg_ok = false;
+    size_t gate_stamp = size_t(-1);
+    void Gate ();
+    void Regate ();
     // LocalHeap lh;
   public:
     VisualizeCoefficientFunction (shared_ptr<MeshAccess> ama,

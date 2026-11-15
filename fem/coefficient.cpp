@@ -39,7 +39,7 @@ namespace ngfem
 
   string CFContext :: Description () const
   {
-    static const char * pnames[] = { "bilinear form", "linear form", "energy", "evaluation" };
+    static const char * pnames[] = { "bilinear form", "linear form", "energy", "evaluation", "local equation" };
     string s = string(pnames[purpose]) + " on " + ToString(vb);
     if (skeleton) s += ", skeleton";
     if (element_vb != VOL) s += ", element_vb = " + ToString(element_vb);
@@ -47,6 +47,13 @@ namespace ngfem
     return s;
   }
 
+  bool CFContext :: SameAs (const CFContext & c) const
+  {
+    return purpose == c.purpose && mesh == c.mesh && dim == c.dim && vb == c.vb &&
+      element_vb == c.element_vb && skeleton == c.skeleton && pairing == c.pairing && allow_complex == c.allow_complex &&
+      trialspace == c.trialspace && testspace == c.testspace;
+  }
+  
   // returns whether the node introduces complex values (proxies of complex spaces do not)
   static bool CheckContextRec (const CoefficientFunction & cf, const CFContext & ctx,
                                std::map<pair<const CoefficientFunction*,int>,bool> & done)
@@ -848,8 +855,21 @@ namespace ngfem
     for(auto i : Range(Dimensions()))
       if(Dimensions()[i] != _cf->Dimensions()[i])
         throw Exception("Dimensions of function in PlaceholderCF must not change!");
+    // parents have fixed their scalar type
+    if (cf && cf->IsComplex() != _cf->IsComplex())
+      throw Exception("PlaceholderCF: the new function must be "+string(cf->IsComplex() ? "complex" : "real")+" as the old one");
+    // where the old function was accepted, the new one has to be accepted as well
+    for (auto & ctx : contexts)
+      ngfem::CheckContext (*_cf, ctx);
     cf = _cf;
     is_complex = cf->IsComplex();
+  }
+
+  void PlaceholderCoefficientFunction::CheckContext (const CFContext & ctx) const
+  {
+    for (auto & c : contexts)
+      if (c.SameAs(ctx)) return;
+    contexts.Append (ctx);
   }
 
 
@@ -886,16 +906,14 @@ namespace ngfem
         archive & val;
     }
     
-  protected:
-    void CheckRange (int elind) const
+    void CheckContext (const CFContext & ctx) const override
     {
-      if (elind < 0 || elind >= val.Size())
-        {
-          ostringstream ost;
-          ost << "DomainConstantCoefficientFunction: Element index "
-              << elind << " out of range 0 - " << val.Size()-1 << endl;
-          throw Exception (ost.str());
-        }
+      if (!ctx.mesh)
+        throw Exception ("DomainConstantCoefficientFunction needs the region index of a mesh element");
+      int nr = ctx.nregions[ctx.EvalVB()];
+      if (int(val.Size()) < max(nr, 1))
+        throw Exception ("DomainConstantCoefficientFunction: " + ToString(val.Size()) + " values for " +
+                         ToString(nr) + " regions");
     }
   };
 
@@ -909,7 +927,6 @@ namespace ngfem
   double DomainConstantCoefficientFunction :: Evaluate (const BaseMappedIntegrationPoint & ip) const
   {
     int elind = ip.GetTransformation().GetElementIndex();
-    CheckRange (elind);
     return val[elind]; 
   }
 
@@ -917,7 +934,6 @@ namespace ngfem
                                                       BareSliceMatrix<double> values) const
   {
     int elind = ir[0].GetTransformation().GetElementIndex();
-    CheckRange (elind);    
     values.AddSize(ir.Size(), 1) = val[elind];
   }
 
@@ -925,7 +941,6 @@ namespace ngfem
   void DomainConstantCoefficientFunction :: Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const
   {
     int elind = ir[0].GetTransformation().GetElementIndex();
-    CheckRange (elind);        
     values.AddSize(Dimension(), ir.Size()) = val[elind];
   }
   */
@@ -934,7 +949,6 @@ namespace ngfem
   T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const
   {
     int elind = ir[0].GetTransformation().GetElementIndex();
-    CheckRange (elind);        
     // values.AddSize(Dimension(), ir.Size()) = val[elind];
 
     size_t np = ir.Size();    
@@ -947,7 +961,6 @@ namespace ngfem
   void DomainConstantCoefficientFunction :: Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<Complex> values) const
   {
     int elind = ir[0].GetTransformation().GetElementIndex();
-    CheckRange (elind);            
     values.AddSize(ir.Size(), 1) = val[elind]; 
   }
 
@@ -5625,6 +5638,17 @@ public:
     for (auto & cf : ci)
       if (cf)
         SetDimensions(cf->Dimensions());
+    // all entries write into one result
+    auto shape = [] (FlatArray<int> dims)
+      {
+        string s = "(";
+        for (auto d : dims) s += ToString(d) + ",";
+        return s + ")";
+      };
+    for (auto & cf : ci)
+      if (cf && !(cf->Dimensions() == Dimensions()))
+        throw Exception ("domain-wise CoefficientFunction: all entries must have the same shape, got " +
+                         shape(cf->Dimensions()) + " and " + shape(Dimensions()));
 
     elementwise_constant = true;
     for (auto cf : ci)
@@ -5660,8 +5684,11 @@ public:
     VorB evb = ctx.EvalVB();
     if (vb && *vb != evb)
       throw Exception ("defined on " + ToString(*vb) + " regions, but evaluated on " + ToString(evb) + " elements");
+    // evaluation picks ci[region index] without range test
+    if (!ctx.mesh)
+      throw Exception ("needs the region index of a mesh element");
     int nr = ctx.nregions[evb];
-    if (nr >= 0 && int(ci.Size()) < nr)
+    if (int(ci.Size()) < max(nr, 1))
       throw Exception ("list has " + ToString(ci.Size()) + " entries, but the mesh has " + ToString(nr) +
                        " " + ToString(evb) + " regions");
   }
@@ -5780,8 +5807,6 @@ public:
   
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
   {
-    if(vb && ip.GetTransformation().VB() != *vb)
-      throw Exception("Try to evaluate domainwise function defined on " + ToString(*vb) + " on " + ToString(ip.GetTransformation().VB()) + "\n");
     Vec<1> res;
     Evaluate (ip, res);
     return res(0);
@@ -5790,20 +5815,16 @@ public:
   virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
                         FlatVector<> result) const override
   {
-    if(vb && ip.GetTransformation().VB() != *vb)
-      throw Exception("Try to evaluate domainwise function defined on " + ToString(*vb) + " on " + ToString(ip.GetTransformation().VB()) + "\n");
     result = 0;
     int matindex = ip.GetTransformation().GetElementIndex();
-    if (matindex < ci.Size() && ci[matindex])
+    if (ci[matindex])
       ci[matindex] -> Evaluate (ip, result);
   }
 
   virtual void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<Complex> values) const override
   {
-    if(vb && ir[0].GetTransformation().VB() != *vb)
-      throw Exception("Try to evaluate domainwise function defined on " + ToString(*vb) + " on " + ToString(ir[0].GetTransformation().VB()) + "\n");
     int matindex = ir.GetTransformation().GetElementIndex();
-    if (matindex < ci.Size() && ci[matindex])
+    if (ci[matindex])
       ci[matindex] -> Evaluate (ir, values);
     else
       values.AddSize(ir.Size(), Dimension()) = 0.0;
@@ -5812,10 +5833,8 @@ public:
   template <typename MIR, typename T, ORDERING ORD>
   void T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const
   {
-    if(vb && ir[0].GetTransformation().VB() != *vb)
-      throw Exception("Try to evaluate domainwise function defined on " + ToString(*vb) + " on " + ToString(ir[0].GetTransformation().VB()) + "\n");
     int matindex = ir.GetTransformation().GetElementIndex();
-    if (matindex < ci.Size() && ci[matindex])
+    if (ci[matindex])
       ci[matindex] -> Evaluate (ir, values);
     else
       values.AddSize(Dimension(), ir.Size()) = T(0.0);
@@ -5826,10 +5845,8 @@ public:
                    FlatArray<BareSliceMatrix<T,ORD>> input,                       
                    BareSliceMatrix<T,ORD> values) const
   {
-    if(vb && ir[0].GetTransformation().VB() != *vb)
-      throw Exception("Try to evaluate domainwise function defined on " + ToString(*vb) + " on " + ToString(ir[0].GetTransformation().VB()) + "\n");
     int matindex = ir.GetTransformation().GetElementIndex();
-    if (matindex < ci.Size() && ci[matindex])
+    if (ci[matindex])
       values.AddSize(Dimension(), ir.Size()) = input[matindex];
     else
       values.AddSize(Dimension(), ir.Size()) = T(0.0);
@@ -5839,18 +5856,14 @@ public:
   virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
                         FlatVector<Complex> result) const override
   {
-    if(vb && ip.GetTransformation().VB() != *vb)
-      throw Exception("Try to evaluate domainwise function defined on " + ToString(*vb) + " on " + ToString(ip.GetTransformation().VB()) + "\n");
     result = 0;
     int matindex = ip.GetTransformation().GetElementIndex();
-    if (matindex < ci.Size() && ci[matindex])
+    if (ci[matindex])
       ci[matindex] -> Evaluate (ip, result);
   }
   
   virtual Complex EvaluateComplex (const BaseMappedIntegrationPoint & ip) const override
   {
-    if(vb && ip.GetTransformation().VB() != *vb)
-      throw Exception("Try to evaluate domainwise function defined on " + ToString(*vb) + " on " + ToString(ip.GetTransformation().VB()) + "\n");
     Vec<1,Complex> res;
     Evaluate (ip, res);
     return res(0);
@@ -5993,7 +6006,7 @@ public:
   
   void CheckContext (const CFContext & ctx) const override
   {
-    if (!ctx.skeleton && ctx.element_vb == VOL)
+    if (!ctx.skeleton && !ctx.pairing && ctx.element_vb == VOL)
       throw Exception ("Other() needs skeleton=True or element_boundary=True");
   }
 

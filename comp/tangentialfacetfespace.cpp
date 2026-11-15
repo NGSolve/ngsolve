@@ -15,6 +15,14 @@
 
 namespace ngcomp
 {
+  // shape functions live on the facets of the volume element only
+  template <int D>
+  class DiffOpIdTangentialFacet : public DiffOpIdEdge<D>
+  {
+  public:
+    static constexpr bool ONLY_ON_FACETS = true;
+  };
+
 
 
 
@@ -449,12 +457,12 @@ namespace ngcomp
     if (ma->GetDimension() == 2)
       {
         evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundaryEdge<2>>>();
-        evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdEdge<2>>>();
+        evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdTangentialFacet<2>>>();
       }
     else
       {
         evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundaryEdge<3>>>();
-        evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdEdge<3>>>();
+        evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdTangentialFacet<3>>>();
       }
 
     static ConstantCoefficientFunction one(1);

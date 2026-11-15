@@ -1506,27 +1506,33 @@ lot of new non-zero entries in the matrix!\n" << endl;
   }
 
   void CheckPointContext (const CoefficientFunction & cf, const MeshAccess * ma,
-                          VorB vb, int dim, bool on_facet)
+                          VorB vb, int dim, VorB element_vb)
   {
-    int key = int(vb) | (dim << 2) | (int(on_facet) << 6);
-    if (cf.gate_key == key && cf.gate_mesh == ma) return;
+    int key = int(vb) | (dim << 2) | (int(element_vb) << 6);
+    // a refined mesh is a new context
+    size_t stamp = ma ? ma->GetTimeStamp() : 0;
+    if (cf.gate_key == key && cf.gate_mesh == ma && cf.gate_stamp == stamp) return;
     CFContext ctx;
     if (ma)
-      ctx = MakeCFContext (*ma, CFContext::EVALUATE, vb, on_facet ? BND : VOL);
+      ctx = MakeCFContext (*ma, CFContext::EVALUATE, vb, element_vb);
     ctx.purpose = CFContext::EVALUATE;
     ctx.vb = vb;
-    ctx.element_vb = on_facet ? BND : VOL;
+    ctx.element_vb = element_vb;
     ctx.dim = dim;
     ngfem::CheckContext (cf, ctx);
     cf.gate_mesh = ma;
     cf.gate_key = key;
+    cf.gate_stamp = stamp;
   }
 
   void CheckPointContext (const CoefficientFunction & cf, const BaseMappedIntegrationPoint & mip)
   {
     auto & trafo = mip.GetTransformation();
+    VorB eb = VOL;
+    if (mip.IP().FacetNr() != -1)
+      eb = mip.IP().VB() == VOL ? BND : mip.IP().VB();
     CheckPointContext (cf, static_cast<const MeshAccess*> (trafo.GetMesh()), trafo.VB(),
-                       mip.DimSpace(), mip.IP().FacetNr() != -1);
+                       mip.DimSpace(), eb);
   }
 
   void CheckIntegratorContext (const Integrator & igt, CFContext::Purpose purpose,
@@ -1564,6 +1570,14 @@ lot of new non-zero entries in the matrix!\n" << endl;
     
     if (igt.GetDeformation())
       CheckDeformation (*igt.GetDeformation(), ma);
+
+    // coefficients of classic integrators are evaluated on the elements of igt.VB()
+    if (igt.context_coefficients.Size())
+      {
+        CFContext cctx = MakeCFContext (ma, CFContext::EVALUATE, igt.VB(), VOL, false, allow_complex);
+        for (auto & c : igt.context_coefficients)
+          if (c) CheckContext (*c, cctx);
+      }
     
     shared_ptr<CoefficientFunction> cf;
     VorB element_vb = VOL;
@@ -1604,6 +1618,45 @@ lot of new non-zero entries in the matrix!\n" << endl;
     CheckContext (*cf, ctx);
   }
 
+  
+  void FESpace :: CheckDofConsistency (VorB vb, bool all_elements) const
+  {
+    size_t stamp = ma->GetTimeStamp();
+    if (!all_elements && dofcheck_meshstamp[vb] == stamp && dofcheck_ndof[vb] == GetNDof()) return;
+    if (!NeedsDofTransformation() && int(vb) <= ma->GetDimension() && ma->GetNE(vb))
+      {
+        LocalHeap lh(1000*1000, "CheckDofConsistency");
+        Array<DofId> dnums;
+        auto & classes = ma->GetElementsOfClass(vb);
+        // one element per element class and region
+        Array<int> seen;
+        for (size_t i = 0; i < classes.Size(); i++)
+          {
+            seen.SetSize0();
+            for (auto nr : classes[i])
+              {
+                // assembly loops skip elements the space is not defined on
+                ElementId ei(vb, nr);
+                if (!DefinedOn(ei)) continue;
+                int index = ma->GetElIndex(ei);
+                if (!all_elements)
+                  {
+                    if (seen.Contains(index)) continue;
+                    seen.Append(index);
+                  }
+                HeapReset hr(lh);
+                const FiniteElement & fel = GetFE (ei, lh);
+                GetDofNrs (ei, dnums);
+                if (fel.GetNDof() != dnums.Size())
+                  throw Exception (string(GetClassName()) + ": inconsistent number of degrees of freedom on " +
+                                   ToString(ma->GetElType(ei)) + " (" + ToString(vb) + ") elements, the element has " +
+                                   ToString(fel.GetNDof()) + ", the space provides " + ToString(dnums.Size()));
+              }
+          }
+      }
+    dofcheck_meshstamp[vb] = stamp;
+    dofcheck_ndof[vb] = GetNDof();
+  }
   
   void FESpace :: CheckElementFamilies (LocalHeap & lh) const
   {
@@ -2430,7 +2483,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
 			LocalHeap & clh, 
 			const function<void(FESpace::Element,LocalHeap&)> & func)
   {
-    static mutex copyex_mutex;
     const Table<int> & element_coloring = fes.ElementColoring(vb);
 
     const Table<int> & blocks = fes.ElementBlocks(vb);
@@ -2501,43 +2553,13 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
 
 
-    Exception * ex = nullptr;
-
+    // no task manager: serial, the first exception stops the loop and is passed on unchanged
     for (FlatArray<int> els_of_col : element_coloring)
-      ParallelForRange( IntRange(els_of_col.Size()), [&] ( IntRange r )
-      {
-        LocalHeap lh = clh.Split();
-
-        // lh.ClearValues();
-        
-        for (int i : r)
-          {
-            try
-              {
-                HeapReset hr(lh);
-                FESpace::Element el(fes, ElementId (vb, els_of_col[i]), lh);
-                
-                func (std::move(el), lh);
-              }
-	    
-            catch (const Exception & e)
-              {
-                {
-                  lock_guard<mutex> guard(copyex_mutex);
-                  if (!ex)
-		    ex = new Exception (e);
-                }
-              }
-	    catch (...)
-	      { ; }
-          }
-      // cout << "lh, used size = " << lh.UsedSize() << endl;
-    });
-    
-    if (ex)
-      {
-        throw Exception (*ex);
-      }
+      for (int nr : els_of_col)
+        {
+          HeapReset hr(clh);
+          func (FESpace::Element(fes, ElementId (vb, nr), clh), clh);
+        }
   }
   
 
@@ -2708,13 +2730,13 @@ lot of new non-zero entries in the matrix!\n" << endl;
   void FESpace :: SolveM (CoefficientFunction * rho, BaseVector & vec, Region * definedon,
                           LocalHeap & lh) const
   {
-    cout << "SolveM is only available for L2-space, not for " << typeid(*this).name() << endl;
+    throw Exception ("SolveM is only available for L2-type spaces, not for " + GetClassName());
   }
 
   void FESpace :: ApplyM (CoefficientFunction * rho, BaseVector & vec, Region * definedon,
                           LocalHeap & lh) const
   {
-    cout << "ApplyM is only available for L2-space, not for " << typeid(*this).name() << endl;
+    throw Exception ("ApplyM is only available for L2-type spaces, not for " + GetClassName());
   }
 
 
@@ -4560,7 +4582,17 @@ lot of new non-zero entries in the matrix!\n" << endl;
                           bool ainverse,
                           shared_ptr<Region> adefinedon,
                           LocalHeap & alh)
-    : fes(afes), rho(arho), inverse(ainverse), definedon(adefinedon), lh(alh) { ; }
+    : fes(afes), rho(arho), inverse(ainverse), definedon(adefinedon), lh(alh)
+  {
+    CheckMassDensity (*fes, rho.get(), definedon.get());
+  }
+
+  void CheckMassDensity (const FESpace & fes, const CoefficientFunction * rho, const Region * definedon)
+  {
+    if (!rho) return;
+    CheckContext (*rho, MakeCFContext (*fes.GetMeshAccess(), CFContext::EVALUATE,
+                                       definedon ? definedon->VB() : VOL, VOL, false, fes.IsComplex()));
+  }
   
   ApplyMass :: ~ApplyMass()
   { ; } 

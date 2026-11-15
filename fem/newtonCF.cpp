@@ -283,6 +283,19 @@ public:
       allow_fail = *aallow_fail;
   }
 
+  // the expression is evaluated with own userdata, its proxies are the local unknowns
+  void CheckContext (const CFContext & ctx) const override
+  {
+    CFContext local = ctx;
+    local.purpose = CFContext::LOCAL;
+    ngfem::CheckContext (*expression, local);
+    // starting points are evaluated with the local userdata as well
+    CFContext evalctx = ctx;
+    evalctx.purpose = CFContext::EVALUATE;
+    for (auto & sp : startingpoints)
+      if (sp) ngfem::CheckContext (*sp, evalctx);
+  }
+
   double Evaluate(const BaseMappedIntegrationPoint &ip) const override {
     cout << "pw eval not overloaded" << endl;
     return 0;
@@ -743,6 +756,19 @@ public:
       rtol = *artol;
     if (amaxiter)
       maxiter = *amaxiter;
+  }
+
+  // the expression is evaluated with own userdata, its proxies are the local unknowns
+  void CheckContext (const CFContext & ctx) const override
+  {
+    CFContext local = ctx;
+    local.purpose = CFContext::LOCAL;
+    ngfem::CheckContext (*expression, local);
+    // starting points are evaluated with the local userdata as well
+    CFContext evalctx = ctx;
+    evalctx.purpose = CFContext::EVALUATE;
+    for (auto & sp : startingpoints)
+      if (sp) ngfem::CheckContext (*sp, evalctx);
   }
 
   double Evaluate(const BaseMappedIntegrationPoint &ip) const override {

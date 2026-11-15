@@ -883,6 +883,11 @@ namespace ngcomp
   template <int D>
   void VTKOutput<D>::Do(LocalHeap &lh, double time, VorB vb, const BitArray *drawelems)
   {
+    if (vb != VOL && vb != BND)
+      throw Exception ("VTKOutput: only VOL and BND elements can be written");
+    // real-valued point evaluation on the elements of vb
+    for (auto & cf : coefs)
+      CheckContext (*cf, MakeCFContext (*ma, CFContext::EVALUATE, vb, VOL, false, false));
     ostringstream filenamefinal;
     stringstream appended;
     vector<int> datalength;

@@ -69,6 +69,9 @@ namespace ngfem
     void DeleteCurveIPs ( void );
 
   public:
+    /// coefficients of a classic (named) integrator, checked when added to a form
+    Array<shared_ptr<CoefficientFunction>> context_coefficients;
+
     /// constructor
     Integrator() throw ();
 

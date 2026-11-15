@@ -27,6 +27,7 @@ namespace ngcomp
     Array<shared_ptr<LinearFormIntegrator>> parts;
     Array<shared_ptr<LinearFormIntegrator>> VB_parts[4];
     Array<shared_ptr<class PointEvaluationFunctional>> pnteval;
+    size_t gate_meshstamp = 0;
     /// do the integration on independent meshes
     bool independent;
     /// print the assembled vector to testout

@@ -16,7 +16,7 @@ namespace ngfem
 {
 
   string DifferentialOperator :: Name() const
-  { return typeid(*this).name(); }  
+  { return Demangle(typeid(*this).name()); }  
 
   void DifferentialOperator ::
   CalcMatrix (const FiniteElement & fel,

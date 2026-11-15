@@ -602,8 +602,18 @@ namespace ngsbem
   inline tuple < shared_ptr<ProxyFunction>, shared_ptr<CoefficientFunction> >
   GetProxyAndFactor (shared_ptr<CoefficientFunction> cf, bool trial, VorB vb = BND)
   {
+    // the operator of the proxy acts on the elements of vb, without facet points
+    auto proxy_context = [vb] (const ProxyFunction & proxy)
+      {
+        CFContext ctx = MakeCFContext (*proxy.GetFESpace()->GetMeshAccess(), CFContext::BILINEAR, vb);
+        ctx.check_proxy = nullptr;
+        return ctx;
+      };
     if (auto proxy = dynamic_pointer_cast<ProxyFunction>(cf))
-      return { proxy, nullptr };
+      {
+        CheckContext (*proxy, proxy_context(*proxy));
+        return { proxy, nullptr };
+      }
     
     auto proxylin = CreateProxyLinearization (cf, trial, vb);
     if (proxylin.Size() != 1)
@@ -611,6 +621,9 @@ namespace ngsbem
 
     // return proxylin[0];
     auto [proxy,factor] = proxylin[0];
+    CheckContext (*proxy, proxy_context(*proxy));
+    // the factor is evaluated point-wise on the elements, without userdata
+    CheckContext (*factor, MakeCFContext (*proxy->GetFESpace()->GetMeshAccess(), CFContext::EVALUATE, vb));
 
     auto diffopwith = make_shared<DifferentialOperatorWithFactor> (GetEvaluatorForVB(proxy, vb),
                                                                    factor->Reshape(cf->Dimension(), proxy->Dimension()));

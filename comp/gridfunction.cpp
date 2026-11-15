@@ -1314,12 +1314,19 @@ namespace ngcomp
     auto & ma = fes->GetMeshAccess();
     if (gf->GetLevelUpdated() < ma->GetNLevels())
       throw Exception ("GridFunction is not up to date with its mesh (refined without Update)");
-    if (ctx.mesh && ctx.mesh != ma.get()) return;   // other mesh: point search
+    if (ctx.mesh != ma.get())
+      {
+        // other (or no) mesh: point search, evaluation inside volume elements
+        if (!diffop[VOL] || diffop[VOL]->OnlyOnFacets())
+          throw Exception ("GridFunction on " + fes->GetClassName() + " cannot be evaluated on points of another mesh");
+        return;
+      }
+    // Evaluate relies on these, it does not test them
     VorB evb = ctx.EvalVB();
     if (!diffop[evb])
       throw Exception ("GridFunction on " + fes->GetClassName() + " has no evaluator for " + ToString(evb) +
                        " elements, maybe a Trace() is missing");
-    if (evb == VOL && diffop[VOL]->OnlyOnFacets() && !ctx.OnFacet())
+    if (diffop[evb]->OnlyOnFacets() && !ctx.OnElementFacet())
       throw Exception ("GridFunction on " + fes->GetClassName() + " cannot be evaluated inside elements");
   }
 
@@ -1447,14 +1454,11 @@ namespace ngcomp
 
     const shared_ptr<MeshAccess> & ma = fes->GetMeshAccess();
 
-    if (gf->GetLevelUpdated() != ma->GetNLevels())
-    {
-      result = 0.0;
-      return;
-    }
-    
     if (!trafo.BelongsToMesh (ma.get()))
       {
+        // point search: the mesh of the gf may have been refined after the gate
+        if (gf->GetLevelUpdated() < ma->GetNLevels())
+          throw Exception ("GridFunction is not up to date with its mesh (refined without Update)");
         IntegrationPoint rip;
         ElementId elnr2 = ma->FindElementOfPoint 
           // (static_cast<const DimMappedIntegrationPoint<2>&> (ip).GetPoint(),
@@ -1483,10 +1487,7 @@ namespace ngcomp
     VectorMem<50> elu(fel.GetNDof()*dim);
     
     gf->GetElementVector (comp, el, elu);
-    if (diffop[ei.VB()])
-      diffop[ei.VB()] -> Apply(fel, ip, elu, result, lh2);
-    else
-      result = 0.0;
+    diffop[ei.VB()] -> Apply(fel, ip, elu, result, lh2);
   }
 
   void GridFunctionCoefficientFunction :: 
@@ -1497,12 +1498,6 @@ namespace ngcomp
     // static Timer timer ("GFCoeffFunc::Eval-scal", NoTracing, NoTiming);
     // RegionTimer reg (timer);
 
-    if (gf -> GetLevelUpdated() < gf->GetFESpace()->GetMeshAccess()->GetNLevels())
-      {
-        result = 0.0;
-        return;
-      }
-    
     const int elnr = ip.GetTransformation().GetElementNr();
     VorB vb = ip.GetTransformation().VB();
     ElementId ei(vb, elnr);
@@ -1511,6 +1506,8 @@ namespace ngcomp
     
     if (!ip.GetTransformation().BelongsToMesh (ma.get()))
       {
+        if (gf->GetLevelUpdated() < ma->GetNLevels())
+          throw Exception ("GridFunction is not up to date with its mesh (refined without Update)");
         IntegrationPoint rip;
         ElementId elnr = ma->FindElementOfPoint(ip.GetPoint(), rip, true); // buildtree not yet threadsafe (maybe now ?)
         if (elnr.IsInvalid())
@@ -1536,11 +1533,7 @@ namespace ngcomp
     VectorMem<50, Complex> elu(fel.GetNDof()*dim);
 
     gf->GetElementVector (comp, el, elu);
-
-    if (diffop[vb])
-      diffop[vb]->Apply (fel, ip, elu, result, lh2);
-    else
-      result = 0.0;
+    diffop[vb]->Apply (fel, ip, elu, result, lh2);
   }
 
 
@@ -1548,11 +1541,6 @@ namespace ngcomp
   Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<double> hvalues) const
   {
     auto values = hvalues.AddSize(ir.Size(), Dimension());
-    if (gf -> GetLevelUpdated() < gf->GetFESpace()->GetMeshAccess()->GetNLevels())
-      {
-        values = 0.0;
-        return;
-      }
 
     ProxyUserData * ud = (ProxyUserData*)ir.GetTransformation().userdata;
     if (ud)
@@ -1597,10 +1585,7 @@ namespace ngcomp
 
     gf->GetElementVector (comp, el, elu);
 
-    if (diffop[vb])
-      diffop[vb]->Apply (fel, ir, elu, values, lh2);
-    else
-      throw Exception ("don't know how I shall evaluate, vb = "+ToString(vb));
+    diffop[vb]->Apply (fel, ir, elu, values, lh2);
 
 
     if (ud)
@@ -1617,11 +1602,6 @@ namespace ngcomp
   Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<Complex> hvalues) const
   {
     auto values = hvalues.AddSize(ir.Size(), Dimension());    
-    if (gf -> GetLevelUpdated() < gf->GetFESpace()->GetMeshAccess()->GetNLevels())
-      {
-        values = 0.0;
-        return;
-      }
 
     ProxyUserData * ud = (ProxyUserData*)ir.GetTransformation().userdata;
     if (ud)
@@ -1680,10 +1660,7 @@ namespace ngcomp
     else if (fes->GetIntegrator(vb))
       fes->GetIntegrator(vb) ->CalcFlux (fel, ir, elu, values, false, lh2);
     */
-    if (diffop[vb])
-      diffop[vb]->Apply (fel, ir, elu, values, lh2);
-    else
-      throw Exception ("don't know how I shall evaluate complex "+ToString(vb));
+    diffop[vb]->Apply (fel, ir, elu, values, lh2);
 
     if (ud)
       {
@@ -1702,13 +1679,6 @@ namespace ngcomp
   Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
             BareSliceMatrix<SIMD<double>> bvalues) const
   {
-    // if (gf -> GetLevelUpdated() < gf->GetFESpace()->GetMeshAccess()->GetNLevels())
-    if (gf -> GetLevelUpdated() < gf->GetMeshAccess()->GetNLevels())
-      {
-        bvalues.AddSize(Dimension(), ir.Size()) = 0.0;
-        return;
-      }
-    
     ProxyUserData * ud = (ProxyUserData*)ir.GetTransformation().userdata;
     if (ud)
       {
@@ -1767,20 +1737,7 @@ namespace ngcomp
       throw Exception ("GridFunctionCoefficientFunction: SIMD evaluate not possible 2");
       // fes.GetIntegrator(boundary) ->CalcFlux (fel, ir, elu, values, false, lh2);
     */
-    if (diffop[vb])
-      diffop[vb]->Apply (fel, ir, elu, values);
-    else
-      {
-        bool foundone = false;
-        for (auto i : {VOL, BND, BBND, BBBND})
-          if (diffop[i] && diffop[i]->SupportsVB(vb))
-            {
-              diffop[i]->Apply (fel, ir, elu, values);
-              foundone = true;
-            }
-        if (!foundone)
-          throw Exception ("GridFunctionCoefficientFunction: SIMD: don't know how I shall evaluate");
-      }
+    diffop[vb]->Apply (fel, ir, elu, values);
 
     if (ud)
       {
@@ -1800,12 +1757,6 @@ namespace ngcomp
     HeapReset hr(lh2);
 
     auto values = bvalues.AddSize(Dimension(), ir.Size());
-
-    if (gf -> GetLevelUpdated() < gf->GetFESpace()->GetMeshAccess()->GetNLevels())
-      {
-        values = 0.0;
-        return;
-      }
 
     ProxyUserData * ud = (ProxyUserData*)ir.GetTransformation().userdata;
     if (ud)
@@ -1866,10 +1817,7 @@ namespace ngcomp
       throw Exception ("GridFunctionCoefficientFunction: SIMD evaluate not possible 2");
       // fes.GetIntegrator(boundary) ->CalcFlux (fel, ir, elu, values, false, lh2);
       */
-    if (diffop[vb])
-      diffop[vb]->Apply (fel, ir, elu, values);    
-    else
-      throw Exception ("GridFunctionCoefficientFunction: SIMD: don't know how I shall evaluate");    
+    diffop[vb]->Apply (fel, ir, elu, values);    
 
     if (ud)
       {
@@ -2842,7 +2790,58 @@ namespace ngcomp
     : SolutionData ("coef", acf->Dimension(), false /* complex */),
       ma(ama), cf(acf)
   { 
-    ; // cout << "viscoef, con't" << endl;
+    Gate();
+  }
+
+  void VisualizeCoefficientFunction :: Gate ()
+  {
+    int dim = ma->GetDimension();
+    auto accepts = [&] (const CoefficientFunction & c, VorB vb)
+      {
+        try
+          {
+            CheckContext (c, MakeCFContext (*ma, CFContext::EVALUATE, vb));
+            return true;
+          }
+        catch (const Exception &) { return false; }
+      };
+    vol_ok = accepts (*cf, VOL);
+    surfcf = cf;
+    surf_ok = vol_ok;
+    if (dim == 3)
+      {
+        surf_ok = accepts (*cf, BND);
+        if (!surf_ok && vol_ok)
+          {
+            // volume functions without trace are drawn from the volume side
+            auto bcf = MakeBoundaryFromVolumeCoefficientFunction (cf);
+            if (accepts (*bcf, BND))
+              {
+                surfcf = bcf;
+                surf_ok = true;
+              }
+          }
+      }
+    seg_ok = dim >= 2 && accepts (*cf, dim == 2 ? BND : BBND);
+    if (!vol_ok && !surf_ok && !seg_ok)
+      CheckContext (*cf, MakeCFContext (*ma, CFContext::EVALUATE, VOL));
+    gate_stamp = ma->GetTimeStamp();
+  }
+
+  // the mesh was refined since the last gate: a new context
+  void VisualizeCoefficientFunction :: Regate ()
+  {
+    if (gate_stamp == ma->GetTimeStamp()) return;
+    try
+      {
+        Gate();
+      }
+    catch (const Exception & e)
+      {
+        vol_ok = surf_ok = seg_ok = false;
+        gate_stamp = ma->GetTimeStamp();
+        cout << "VisualizeCoefficientFunction: " << e.What() << endl;
+      }
   }
   
   VisualizeCoefficientFunction :: ~VisualizeCoefficientFunction ()
@@ -2854,6 +2853,8 @@ namespace ngcomp
 						 double lam1, double lam2, double lam3,
 						 double * values) 
   {
+    Regate();
+    if (!vol_ok) return false;
     try
       {
     // cout << "viscoef, getval1" << endl;
@@ -2885,6 +2886,8 @@ namespace ngcomp
 	    const double xref[], const double x[], const double dxdxref[],
 	    double * values) 
   {
+    Regate();
+    if (!vol_ok) return false;
     try
       {
     // cout << "viscoef, getval2" << endl;
@@ -2932,6 +2935,8 @@ namespace ngcomp
       }
 
     
+    Regate();
+    if (!vol_ok) return false;
     try
       {
         LocalHeapMem<100000> lh("viscf::GetMultiValue xref");
@@ -2967,6 +2972,8 @@ namespace ngcomp
 		double lam1, double lam2, 
 		double * values) 
   {
+    Regate();
+    if (!surf_ok) return false;
     try
       {
     // cout << "viscoef, getsurfval1" << endl;
@@ -2976,13 +2983,13 @@ namespace ngcomp
     VorB vb = ma->GetDimension() == 3 ? BND : VOL;
     ElementId ei(vb, elnr);
     ElementTransformation & trafo = ma->GetTrafo (ei, lh);
-    if (!cf->DefinedOn(trafo)) return false;    
+    if (!surfcf->DefinedOn(trafo)) return false;    
     BaseMappedIntegrationPoint & mip = trafo(ip, lh);
 
     if (!cf -> IsComplex())
-      cf -> Evaluate (mip, FlatVector<>(GetComponents(), values));
+      surfcf -> Evaluate (mip, FlatVector<>(GetComponents(), values));
     else
-      cf -> Evaluate (mip, FlatVector<Complex>(GetComponents(), (Complex*)values));
+      surfcf -> Evaluate (mip, FlatVector<Complex>(GetComponents(), (Complex*)values));
 
     return true;
 
@@ -2999,6 +3006,8 @@ namespace ngcomp
   bool VisualizeCoefficientFunction ::  
   GetSegmentValue (int segnr, double xref, double * values)
   {
+    Regate();
+    if (!seg_ok) return false;
     try
       {
         LocalHeapMem<100000> lh("viscf::GetSurfValue");
@@ -3044,6 +3053,8 @@ namespace ngcomp
                      const SIMD<double> * dxdxref,
                      SIMD<double> * values)
   {
+    Regate();
+    if (!surf_ok) return false;
     try
       {
         /*   todo
@@ -3060,7 +3071,7 @@ namespace ngcomp
         
         LocalHeapMem<1000000> lh("viscf::getmultisurfvalue");
         ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
-        if (!cf->DefinedOn(eltrans)) return false;
+        if (!surfcf->DefinedOn(eltrans)) return false;
 
         FlatMatrix<SIMD<double>> mvalues(GetComponents(), npts, (SIMD<double>*)values);
 
@@ -3087,7 +3098,7 @@ namespace ngcomp
                     mir[k] = SIMD<MappedIntegrationPoint<2,3>> (ir[k], eltrans, vx, mdxdxref);
                   }
                 
-                cf -> Evaluate (mir, mvalues.Cols(base, base+ni));
+                surfcf -> Evaluate (mir, mvalues.Cols(base, base+ni));
               }
             else
               {
@@ -3102,12 +3113,12 @@ namespace ngcomp
                         mir[k] = SIMD<MappedIntegrationPoint<2,2>> (ir[k], eltrans, vx, mdxdxref);
                       }
                     
-                    cf -> Evaluate (mir, mvalues.Cols(base, base+ni));
+                    surfcf -> Evaluate (mir, mvalues.Cols(base, base+ni));
                   }
                 else
                   {
                     SIMD_MappedIntegrationRule<2,2> mir(ir, eltrans, lh);
-                    cf -> Evaluate (mir, mvalues.Cols(base, base+ni));
+                    surfcf -> Evaluate (mir, mvalues.Cols(base, base+ni));
                   }
               }
           }
@@ -3142,6 +3153,8 @@ namespace ngcomp
         return isdefined;
       }
 
+    Regate();
+    if (!surf_ok) return false;
     try
       {
     
@@ -3153,7 +3166,7 @@ namespace ngcomp
     ElementId ei(vb, selnr);
     LocalHeapMem<100000> lh("viscf::getmultisurfvalue");
     ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
-    if (!cf->DefinedOn(eltrans)) return false;
+    if (!surfcf->DefinedOn(eltrans)) return false;
 
     if (cf -> IsComplex())
       {
@@ -3184,7 +3197,7 @@ namespace ngcomp
           }
 
         // RegionTimer r2(t2);
-        cf -> Evaluate (mir, mvalues1);
+        surfcf -> Evaluate (mir, mvalues1);
       }
     else
       {
@@ -3199,12 +3212,12 @@ namespace ngcomp
                 mir[k] = MappedIntegrationPoint<2,2> (ir[k], eltrans, vx, mdxdxref);
               }
             // RegionTimer r2(t2);            
-            cf -> Evaluate (mir, mvalues1);
+            surfcf -> Evaluate (mir, mvalues1);
           }
         else
           {
             MappedIntegrationRule<2,2> mir(ir, eltrans, lh);
-            cf -> Evaluate (mir, mvalues1);
+            surfcf -> Evaluate (mir, mvalues1);
           }
       }
 

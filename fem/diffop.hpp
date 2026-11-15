@@ -28,7 +28,7 @@ namespace ngfem
   {
   public:
 
-    static string Name() { return typeid(DiffOp<DOP>()).name(); }
+    static string Name() { return Demangle(typeid(DOP).name()); }
     static constexpr bool SUPPORT_PML = false;
     // static Array<int> GetDimensions() { return Array<int> ( { DOP::DIM_DMAT } ); };
     static IVec<1> GetDimensions() { return IVec<1> (DOP::DIM_DMAT); };

@@ -131,8 +131,7 @@ namespace ngfem
                    BareSliceVector<> nshape) const
   {
     Array<int> dnums;
-    int fnr = ip.FacetNr();
-    if (fnr < 0) cerr << "HDivFE::CalcNormalShape: not a facet ip" << endl;
+    int fnr = ip.FacetNr();   // precondition: a facet point
     GetFacetDofs (fnr, dnums);
 
     NORMAL * normals = ElementTopology::GetNormals(ElementType());

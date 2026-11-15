@@ -1124,6 +1124,10 @@ VOL_or_BND : ngsolve.comp.VorB
 
 )raw_string"))
 
+    .def("_CheckDofConsistency", [](shared_ptr<FESpace> self, VorB vb)
+         {
+           self->CheckDofConsistency (vb, true);
+         }, py::arg("vb")=VOL, "test hook: GetFE and GetDofNrs agree on all elements of vb")
     .def("_CheckElementFamilies", [](shared_ptr<FESpace> self)
          {
            LocalHeap lh(10000000, "CheckElementFamilies");
@@ -1325,6 +1329,7 @@ coupling : bool
          {
            shared_ptr<Region> spdefon;
            if (definedon) spdefon = make_shared<Region> (*definedon);
+           CheckMassDensity (*self, rho.get(), spdefon.get());
            // return make_shared<ApplyMass> (self, rho, false, spdefon, glh);
            return self->GetMassOperator(rho, spdefon, glh);
          }, py::arg("rho") = nullptr, py::arg("definedon") = nullptr)
@@ -1333,6 +1338,7 @@ coupling : bool
          [] (const shared_ptr<FESpace> self,
              BaseVector& vec, OptPtr<CoefficientFunction> rho, Region * definedon) 
          { PyCheckSize (vec.Size(), self->GetNDof(), "vector size");
+           CheckMassDensity (*self, rho.get(), definedon);
            self->SolveM(rho.get(), vec, definedon, glh); },
          py::arg("vec"), py::arg("rho")=nullptr, py::arg("definedon")=nullptr, docu_string(R"raw_string(
          Solve with the mass-matrix. Available only for L2-like spaces.
@@ -1350,6 +1356,7 @@ rho : ngsolve.fem.CoefficientFunction
          [] (const shared_ptr<FESpace> self,
              BaseVector& vec, OptPtr<CoefficientFunction> rho, Region * definedon)
          { PyCheckSize (vec.Size(), self->GetNDof(), "vector size");
+           CheckMassDensity (*self, rho.get(), definedon);
            self->ApplyM(rho.get(), vec, definedon, glh); },
          py::arg("vec"), py::arg("rho")=nullptr, py::arg("definedon")=nullptr,
          "Apply mass-matrix. Available only for L2-like spaces")
@@ -2738,6 +2745,10 @@ VOL_or_BND : ngsolve.comp.VorB
             auto evaluator = space->GetEvaluator(vb);
             if (!evaluator)
               throw Exception (space->GetClassName() + " has no evaluator for " + ToString(vb) + " points");
+            if (evaluator->OnlyOnFacets())
+              throw Exception (space->GetClassName() + " cannot be evaluated inside elements");
+            if (self->GetLevelUpdated() < space->GetMeshAccess()->GetNLevels())
+              throw Exception ("GridFunction is not up to date with its mesh (refined without Update)");
             IntegrationPoint ip;
             // int elnr = -1;
             ElementId ei(VOL,-1);
@@ -3524,7 +3535,21 @@ integrator : ngsolve.fem.LFI
          { (*self)+=lfi; return self; }, py::arg("lfi"))
 
     .def("__iadd__",[](shared_ptr<LF> self, shared_ptr<PointEvaluationFunctional> lfi)
-         { (*self)+=lfi; return self; }, py::arg("lfi"))
+         {
+           // evaluated with test-functions at a point inside a volume element of the space
+           if (lfi->cf->Dimension() != 1)
+             throw Exception ("point evaluation functional needs a scalar expression, got dimension " + ToString(lfi->cf->Dimension()));
+           auto fes = self->GetFESpace();
+           CFContext ctx = MakeCFContext (*fes->GetMeshAccess(), CFContext::LINEAR, VOL, VOL, false, fes->IsComplex());
+           ctx.testspace = fes;
+           CheckContext (*lfi->cf, ctx);
+           bool has_test = false;
+           lfi->cf->TraverseDAG ([&] (CoefficientFunction & c)
+             { if (auto p = dynamic_cast<ProxyFunction*> (&c); p && p->IsTestFunction()) has_test = true; });
+           if (!has_test)
+             throw Exception ("point evaluation functional needs a test-function");
+           (*self)+=lfi; return self;
+         }, py::arg("lfi"))
 
     .def("__iadd__", [](shared_ptr<LF> self, shared_ptr<SumOfIntegrals> sum) 
          {

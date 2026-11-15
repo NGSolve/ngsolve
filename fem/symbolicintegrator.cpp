@@ -88,13 +88,18 @@ namespace ngfem
         if (testfunction)
           throw Exception ("an energy (Variation) must not contain a test-function");
         break;
+      case CFContext::LOCAL:
+        return;
       default:
         break;
       }
-    if (is_other && !ctx.skeleton && ctx.element_vb == VOL)
+    if (is_other && !ctx.skeleton && !ctx.pairing && ctx.element_vb == VOL)
       throw Exception ("Other() needs skeleton=True or element_boundary=True");
-    if (evaluator && evaluator->OnlyOnFacets() && !ctx.OnFacet())
-      throw Exception ("functions of a facet space cannot be evaluated inside elements, use element_boundary=True or skeleton=True");
+    // the operator acting on the elements of the context
+    VorB evb = ctx.EvalVB();
+    for (auto op : { evaluator.get(), trace_evaluator.get(), ttrace_evaluator.get() })
+      if (op && op->VB() == evb && op->OnlyOnFacets() && !ctx.OnElementFacet())
+        throw Exception ("functions of a facet space cannot be evaluated inside elements, use element_boundary=True or skeleton=True");
 
     auto & space = testfunction ? ctx.testspace : ctx.trialspace;
     if (space && ctx.check_proxy)
@@ -376,21 +381,20 @@ namespace ngfem
   Evaluate (const BaseMappedIntegrationPoint & mip,
             FlatVector<> result) const
   {
+    // userdata is set by the integrator, the gate keeps proxies out of other contexts
     ProxyUserData * ud = (ProxyUserData*)mip.GetTransformation().userdata;
-    if (!ud) 
-      throw Exception ("cannot evaluate ProxyFunction without userdata");
-   
     
     if (!testfunction && ud->fel)
       {
-        static bool first = true;
-        if (first) cerr << "ProxyFunction::Evaluate (mip) ... should not be here" << endl;
-        first = false;
-        // if (ud->HasMemory (this))
-        // result = ud->GetMemory (this);
-        // else
-        // evaluator->Apply (*ud->fel, mip, *ud->elx, result, *ud->lh);
-        return;
+        if (ud->trial_elvec)
+          {
+            const MixedFiniteElement * mixedfe = AsMixedFE(*ud->fel);
+            const FiniteElement & fel_trial = mixedfe ? mixedfe->FETrial() : *ud->fel;
+            evaluator->Apply (fel_trial, mip, *ud->trial_elvec, result, *ud->lh);
+            return;
+          }
+        throw Exception ("trial-function '" + GetDescription() + "': point-wise evaluation inside a form is not available, "
+                         "an enclosing CoefficientFunction lacks the integration-rule Evaluate");
       }
 
     result = 0;
@@ -407,8 +411,6 @@ namespace ngfem
     auto result = hresult.AddSize(mir.Size(), Dimension());
     
     ProxyUserData * ud = (ProxyUserData*)mir.GetTransformation().userdata;
-    if (!ud) 
-      throw Exception ("cannot evaluate ProxyFunction without userdata");
 
     // for shape-wise evaluate
     if (ud->trial_elvec && !testfunction)
@@ -459,7 +461,7 @@ namespace ngfem
     auto values = result.AddSize(ir.Size(), Dimension());
 
     ProxyUserData * ud = (ProxyUserData*)ir.GetTransformation().userdata;
-    if (ud && ud->HasMemory(this))
+    if (ud->HasMemory(this))
       {
         values = ud->GetMemoryC(this);
         return;
@@ -478,8 +480,6 @@ namespace ngfem
             BareSliceMatrix<SIMD<double>> result) const
   {
     ProxyUserData * ud = (ProxyUserData*)mir.GetTransformation().userdata;
-    if (!ud) 
-      throw Exception ("cannot evaluate ProxyFunction without userdata");
 
     /*
     if (!testfunction && ud->fel)
@@ -507,8 +507,6 @@ namespace ngfem
             BareSliceMatrix<SIMD<Complex>> result) const
   {
     ProxyUserData * ud = (ProxyUserData*)mir.GetTransformation().userdata;
-    if (!ud) 
-      throw Exception ("cannot evaluate ProxyFunction without userdata");
     
     if (!testfunction && ud->fel)
       {
@@ -620,7 +618,6 @@ namespace ngfem
             BareSliceMatrix<AutoDiff<1,double>> values) const
   {
     ProxyUserData * ud = (ProxyUserData*)mir.GetTransformation().userdata;
-    assert (ud);
     // assert (ud->fel);
 
     size_t np = mir.Size();
@@ -656,7 +653,6 @@ namespace ngfem
             BareSliceMatrix<AutoDiff<1,SIMD<double>>> values) const
   {
     ProxyUserData * ud = (ProxyUserData*)mir.GetTransformation().userdata;
-    assert (ud);
     // assert (ud->fel);
 
     size_t np = mir.Size();
@@ -692,7 +688,6 @@ namespace ngfem
   {
     ProxyUserData * ud = (ProxyUserData*)mir.GetTransformation().userdata;
 
-    assert (ud);
     // assert (ud->fel);
 
     size_t np = mir.Size();
@@ -723,7 +718,6 @@ namespace ngfem
   {
     ProxyUserData * ud = (ProxyUserData*)mir.GetTransformation().userdata;
 
-    assert (ud);
     // assert (ud->fel);
 
     size_t np = mir.Size();

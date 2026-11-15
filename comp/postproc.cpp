@@ -492,6 +492,9 @@ namespace ngcomp
          
 	if ( !bli.Size() )
 	  { throw Exception("Error in SetValues: No dual shape Integrators!"); }
+        // the operators of the space act where the dual shapes live
+        for (auto & bfi : bli)
+          CheckIntegratorContext (*bfi, CFContext::BILINEAR, fes, fes, true);
 
         int dimflux = dual_evaluator->Dim();
         
@@ -679,6 +682,10 @@ namespace ngcomp
       {
         if (!diffop)
           diffop = fes->GetEvaluator(vb).get();
+        // the element-wise projection evaluates the space's operator inside the elements
+        if (diffop && diffop->OnlyOnFacets())
+          throw Exception (fes->GetClassName() + " can not be set by an element-wise projection on " + ToString(vb) +
+                           " elements, use Set(..., dual=True)");
         shared_ptr<BilinearFormIntegrator> bli = fes->GetIntegrator(vb);
         shared_ptr<BilinearFormIntegrator> single_bli = bli;
         if (dynamic_pointer_cast<BlockBilinearFormIntegrator> (single_bli))

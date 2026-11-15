@@ -385,9 +385,33 @@ namespace ngcomp
     Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
     { return Array<shared_ptr<CoefficientFunction>>({ func }); }
 
-    // func is evaluated on the elements of the interpolation space
+    // evaluated on the outer element as an element of fes: same mesh, volume elements
+    void CheckContext (const CFContext & ctx) const override
+    {
+      if (ctx.mesh && ctx.mesh != fes->GetMeshAccess().get())
+        throw Exception ("Interpolate: the space lives on another mesh");
+      if (ctx.EvalVB() != vb)
+        throw Exception ("Interpolate: evaluation on " + ToString(ctx.EvalVB()) + " elements, but the interpolation is defined on " +
+                         ToString(vb) + " elements");
+      auto op = opname.has_value() ? fes->GetAdditionalEvaluators()[*opname] : fes->GetEvaluator(vb);
+      if (!op)
+        throw Exception ("Interpolate: " + fes->GetClassName() + " has no evaluator for " + ToString(vb));
+      if (op->OnlyOnFacets() && !ctx.OnElementFacet())
+        throw Exception ("Interpolate: " + fes->GetClassName() + " cannot be evaluated inside elements");
+    }
+
+    // func is evaluated on the same element, also on its facets (dual shapes)
     const CFContext * InputContext (const CFContext & ctx, CFContext & buffer) const override
-    { return nullptr; }
+    {
+      buffer = ctx;
+      buffer.purpose = CFContext::EVALUATE;
+      buffer.element_vb = BND;
+      buffer.skeleton = false;
+      buffer.vb = vb;
+      buffer.trialspace = nullptr;
+      buffer.testspace = nullptr;
+      return &buffer;
+    }
 
     void PrintReport (ostream & ost) const override
     {
@@ -530,6 +554,8 @@ namespace ngcomp
 	}
     }
 
+
+    bool OnlyOnFacets () const override { return diffop->OnlyOnFacets(); }
 
     bool DeclaresElementType () const override
     {

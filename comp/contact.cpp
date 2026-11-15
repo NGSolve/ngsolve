@@ -777,6 +777,8 @@ namespace ngcomp
          if (gf && !cf_gridfunctions.Contains(&nodecf))
            cf_gridfunctions.Append(&nodecf);
        });
+    if (!trial_proxies.Size())
+      throw Exception ("contact energy needs a trial-function");
     fes = trial_proxies[0]->GetFESpace();
   }
 
@@ -1287,9 +1289,19 @@ namespace ngcomp
 #endif // NETGEN_USE_GUI
   }
 
+  // contact terms are evaluated on pairs of elements of the master region
+  static void CheckContactContext (const CoefficientFunction & form, const Region & master,
+                                   bool element_boundary, CFContext::Purpose purpose)
+  {
+    CFContext ctx = MakeCFContext (*master.Mesh(), purpose, master.VB(), element_boundary ? BND : VOL);
+    ctx.pairing = true;
+    CheckContext (form, ctx);
+  }
+
   void ContactBoundary::AddEnergy(shared_ptr<CoefficientFunction> form,
                                   bool deformed)
   {
+    CheckContactContext (*form, master, element_boundary, CFContext::ENERGY);
     energies.Append(make_shared<ContactEnergy>(form, deformed));
     if (deformed)
       deformed_energies.Append (energies.Last());
@@ -1300,6 +1312,7 @@ namespace ngcomp
   void ContactBoundary::AddIntegrator(shared_ptr<CoefficientFunction> form,
                                       bool deformed)
   {
+    CheckContactContext (*form, master, element_boundary, CFContext::BILINEAR);
     integrators.Append(make_shared<ContactIntegrator>(form, deformed));
     if (deformed)
       deformed_integrators.Append (integrators.Last());

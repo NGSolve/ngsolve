@@ -138,14 +138,27 @@ namespace ngcomp
     if (complex_basis) iscomplex = true;
 
     SetNDof(dim);
+    // the basis is evaluated on the elements of each VorB: the context gate decides where
+    CheckContext (*basis, MakeCFContext (*ma, CFContext::EVALUATE, VOL));
     evaluator[VOL] = make_shared<VolDiffOp>(basis);
-    evaluator[BND] = make_shared<VolDiffOp>(basis,BND);
-    evaluator[BBND] = make_shared<VolDiffOp>(basis,BBND);    
-    evaluator[BBBND] = make_shared<VolDiffOp>(basis,BBBND);    
+    for (VorB vb : { BND, BBND, BBBND })
+      {
+        if (int(vb) > ma->GetDimension()) break;
+        try
+          {
+            CheckContext (*basis, MakeCFContext (*ma, CFContext::EVALUATE, vb));
+          }
+        catch (const Exception &)
+          {
+            continue;
+          }
+        evaluator[vb] = make_shared<VolDiffOp>(basis, vb);
+      }
   }
 
   void GlobalSpace :: AddOperator (string name, VorB vb, shared_ptr<CoefficientFunction> dbasis)
   {
+    CheckContext (*dbasis, MakeCFContext (*ma, CFContext::EVALUATE, vb));
     additional_evaluators.Set (name, make_shared<VolDiffOp>(dbasis, vb)); 
   }
   
