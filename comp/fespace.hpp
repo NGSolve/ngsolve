@@ -626,7 +626,7 @@ ANY                  1 1 1 1 | 15
     /// the space producing the elements (wrappers return their base's)
     virtual const FESpace * ElementSpace () const { return this; }
     /// op is one of the space's own evaluators
-    NGS_DLL_HEADER bool OwnsOperator (const DifferentialOperator * op) const;
+    bool OwnsOperator (const DifferentialOperator * op) const;
     shared_ptr<BaseMatrix> LowOrderEmbedding () const { return low_order_embedding; }
     shared_ptr<BaseMatrix> LowOrderRestriction () const { return low_order_restriction; }    
     
