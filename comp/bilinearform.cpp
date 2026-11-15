@@ -7255,9 +7255,15 @@ namespace ngcomp
         {
           auto prolMat = prol->CreateProlongationMatrix (finelevel);
           
-          if (prolMat)					  
-            mats[finelevel-1] = dynamic_cast< const BaseSparseMatrix& >(GetMatrix(finelevel)).
-              Restrict(*prolMat,dynamic_pointer_cast<BaseSparseMatrix>(GetMatrixPtr(finelevel-1)));
+          if (prolMat)
+            {
+              auto & fmat = dynamic_cast< const BaseSparseMatrix& >(GetMatrix(finelevel));
+              auto cmat = fmat.Restrict(*prolMat,dynamic_pointer_cast<BaseSparseMatrix>(GetMatrixPtr(finelevel-1)));
+              // P^T A P keeps the flags (pardiso reads symmetric storage from IsSymmetric)
+              cmat->SetSymmetric (fmat.IsSymmetric());
+              cmat->SetSPD (fmat.IsSPD());
+              mats[finelevel-1] = cmat;
+            }
         }
   }
 

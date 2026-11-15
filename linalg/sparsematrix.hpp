@@ -685,15 +685,15 @@ namespace ngla
 
     SparseMatrixSymmetric (int as, int max_elsperrow)
       : SparseMatrix<TM> (as, max_elsperrow)
-    { ; }
+    { this->SetSymmetric(true); }
   
     SparseMatrixSymmetric (const Array<int> & elsperrow)
       : SparseMatrix<TM> (elsperrow, elsperrow.Size())
-    { ; }
+    { this->SetSymmetric(true); }
 
     SparseMatrixSymmetric (int size, FlatTable<int> rowelements)
       : SparseMatrix<TM> (size, size, rowelements, rowelements, true)
-    { ; }
+    { this->SetSymmetric(true); }
 
     SparseMatrixSymmetric (const MatrixGraph & agraph);
     SparseMatrixSymmetric (MatrixGraph && agraph);    
@@ -701,12 +701,14 @@ namespace ngla
     SparseMatrixSymmetric (const SparseMatrixSymmetric & amat)
       : SparseMatrix<TM> (amat)
     { 
+      this->SetSymmetric(true);
       this->AsVector() = amat.AsVector(); 
     }
 
     SparseMatrixSymmetric (const SparseMatrix<TM> & amat)
       : SparseMatrix<TM> (amat)
       { 
+        this->SetSymmetric(true);
         this->AsVector() = amat.AsVector(); 
       }
     

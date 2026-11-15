@@ -387,16 +387,15 @@ namespace ngfem
     int p=order_inner[0];
     int q=order_inner[1];
 
-    STACK_ARRAY(Tx, mem, p+q+2);
-    Tx * polx = &mem[0];
-    Tx * poly = &mem[p+1];
-      
+    ArrayMem<Tx,20> polx(p+1), poly(q+1);
+
     LegendrePolynomial (p, xi, polx);
     LegendrePolynomial (q, eta, poly);
 
     for (size_t i = 0, ii = 0; i <= p; i++)
       for (size_t j = 0; j <= q; j++)
         shape[ii++] = polx[i] * poly[j];
+
   }
 
 
@@ -540,10 +539,7 @@ namespace ngfem
     int q=order_inner[1];
     int r=order_inner[2];
     
-    STACK_ARRAY(Tx, mem, p+q+r+3);
-    Tx * polx = &mem[0];
-    Tx * poly = &mem[p+1];
-    Tx * polz = &mem[p+q+2];
+    ArrayMem<Tx,20> polx(p+1), poly(q+1), polz(r+1);
 
     LegendrePolynomial (p, 2*x-1, polx);
     LegendrePolynomial (q, 2*y-1, poly);

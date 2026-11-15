@@ -42,8 +42,9 @@ def test_multigrid_skipped_levels(quads, symmetric):
             a.Assemble()
         m.Refine(); m.Refine()
         its, err = cg_solve(a, f, c, fes)
-        assert err < 1e-8
-        assert its < 25
+        info = f"assemble_first={assemble_first}, inverse={a.mat.GetInverseType()}"
+        assert err < 1e-8, info
+        assert its < 25, info
 
     # the prolongation matrix agrees with the prolongation operator
     P = fes.Prolongation()
@@ -58,6 +59,36 @@ def test_multigrid_skipped_levels(quads, symmetric):
         w.data = Pmat * e
         for i in range(nf):
             assert w[i] == pytest.approx(v[i])
+
+
+@pytest.mark.parametrize("quads", [True, False])
+@pytest.mark.parametrize("symmetric", [True, False])
+def test_galerkin_projection_flags(quads, symmetric):
+    # Galerkin coarse matrices equal the assembled ones and keep the symmetry flag
+    # (pardiso reads symmetric storage from it)
+    m = MakeStructured2DMesh(nx=4, ny=4, quads=quads)
+    fes = FESpace("nodal", m, order=1, dirichlet=".*")
+    u, v = fes.TnT()
+    a = BilinearForm(grad(u)*grad(v)*dx, symmetric=symmetric, symmetric_storage=symmetric)
+    c = Preconditioner(a, "multigrid")
+    m.Refine(); m.Refine()
+    a.Assemble()
+    fine = a.GetMatrixLevel(2)
+    for l in range(2):
+        ml = MakeStructured2DMesh(nx=4, ny=4, quads=quads)
+        for r in range(l):
+            ml.Refine()
+        fl = FESpace("nodal", ml, order=1)
+        ul, vl = fl.TnT()
+        ref = BilinearForm(grad(ul)*grad(vl)*dx, symmetric=symmetric, symmetric_storage=symmetric).Assemble().mat
+        mat = a.GetMatrixLevel(l)
+        assert type(mat) == type(ref)
+        assert str(mat.is_symmetric) == str(fine.is_symmetric) == str(ref.is_symmetric)
+        x = ref.CreateColVector()
+        x.SetRandom()
+        y = x.CreateVector()
+        y.data = mat * x - ref * x
+        assert y.Norm() < 1e-10 * x.Norm()
 
 
 def test_precond_not_ready():

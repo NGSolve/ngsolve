@@ -888,7 +888,7 @@ namespace ngla
     // : SparseMatrix<TM> (agraph, stealgraph), 
     // SparseMatrixSymmetricTM<TM> (agraph, stealgraph),
     : SparseMatrix<TM> (agraph)
-  { ; }
+  { this->SetSymmetric(true); }
 
   template <class TM>
   SparseMatrixSymmetric<TM> :: 
@@ -896,7 +896,7 @@ namespace ngla
     // : SparseMatrix<TM> (agraph, stealgraph), 
     // SparseMatrixSymmetricTM<TM> (agraph, stealgraph),
     : SparseMatrix<TM> (std::move(agraph))
-  { ; }
+  { this->SetSymmetric(true); }
 
   
   template <class TM>
