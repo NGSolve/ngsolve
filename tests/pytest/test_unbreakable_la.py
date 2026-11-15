@@ -8,8 +8,10 @@ from ngsolve.eigenvalues import PINVIT, LOBPCG
 from netgen.geom2d import unit_square
 
 
+SparseMatrixD = getattr(la, "SparseMatrixd", None) or getattr(la, "SparseMatrixdouble")  # name from typeid, MSVC: double
+
 def diag_mat(n, val=2.):
-    return la.SparseMatrixd.CreateFromCOO(list(range(n)), list(range(n)), [val]*n, n, n)
+    return SparseMatrixD.CreateFromCOO(list(range(n)), list(range(n)), [val]*n, n, n)
 
 
 @pytest.fixture(scope="module")

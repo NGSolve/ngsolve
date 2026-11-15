@@ -60,7 +60,7 @@ namespace ngfem
       grad = Trans (mip.GetJacobianInverse ()) * 
 	Trans (static_cast<const FEL&>(fel).GetDShape(mip.IP(), lh));
       */
-      mat.AddSize(3, fel.GetNDof())  = TSCAL (0);
+      mat.AddSize(3, DIM*nd) = TSCAL (0);
       for (int i = 0; i < nd; i++)
 	{
 	  mat(0, DIM*i  ) = grad(0, i);
@@ -125,7 +125,7 @@ namespace ngfem
       grad =  Trans (mip.GetJacobianInverse ()) * 
 	Trans (static_cast<const FEL &>(fel).GetDShape(mip.IP(),lh));
       */
-      mat.AddSize(6, nd) = TSCAL (0);
+      mat.AddSize(6, DIM*nd) = TSCAL (0);
       for (int i = 0; i < nd; i++)
 	{
 	  mat(0, DIM*i  ) = grad(0, i);

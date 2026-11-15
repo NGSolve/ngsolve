@@ -80,6 +80,26 @@ def test_named_bfi_space_dimension(m):
     assert a.mat.height == m.nv
 
 
+@pytest.mark.parametrize("dim,order", [(2, 1), (2, 3), (3, 1), (3, 2)])
+def test_named_bfi_elasticity_values(dim, order):
+    if dim == 2:
+        mesh = fresh_mesh()
+    else:
+        from netgen.csg import unit_cube
+        mesh = Mesh(unit_cube.GenerateMesh(maxh=0.5))
+    E, nu = 2.5, 0.3
+    mu, lam = E / 2 / (1 + nu), E * nu / ((1 + nu) * (1 - 2 * nu))
+    fes = H1(mesh, order=order, dim=dim)
+    a = BilinearForm(fes)
+    a += BFI("elasticity", coef=[E, nu])
+    a.Assemble()
+    u, v = fes.TnT()
+    b = BilinearForm(2 * mu * InnerProduct(Sym(Grad(u)), Sym(Grad(v))) * dx
+                     + lam * Trace(Grad(u)) * Trace(Grad(v)) * dx).Assemble()
+    da, db = np.array(a.mat.ToDense()), np.array(b.mat.ToDense())
+    assert np.max(np.abs(da - db)) < 1e-10 * np.max(np.abs(db))
+
+
 def test_mixedfe_mismatch(m):
     with pytest.raises(Exception, match="MixedFE"):
         MixedFE(H1FE(ET.TRIG, 1), H1FE(ET.TET, 2))
