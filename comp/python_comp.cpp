@@ -2622,8 +2622,9 @@ active_dofs : BitArray or None
                                  py::kwargs kwargs)
     {
       auto flags = CreateFlagsFromKwArgs(kwargs, gf_class);
-      if (!(flags.GetNumFlag("multidim", 1) >= 1 && flags.GetNumFlag("multidim", 1) <= std::numeric_limits<int>::max()))
-        throw py::value_error("multidim must be at least 1 and fit into an int");
+      // multidim=0: empty, filled by AddMultiDimComponent
+      if (!(flags.GetNumFlag("multidim", 1) >= 0 && flags.GetNumFlag("multidim", 1) <= std::numeric_limits<int>::max()))
+        throw py::value_error("multidim must be non-negative and fit into an int");
       flags.SetFlag("novisual");
       auto gf = CreateGridFunction(fes, name, flags);
       gf->Update();
@@ -2921,7 +2922,11 @@ bonus_intorder : int
     
     .def_property_readonly("vec",
                            [](shared_ptr<GF> self)
-                           { return self->GetVectorPtr(); },
+                           {
+                             if (self->GetMultiDim() == 0)
+                               throw py::value_error("GridFunction with multidim=0 has no vector, use AddMultiDimComponent");
+                             return self->GetVectorPtr();
+                           },
                            "coefficient vector")
 
     .def_property_readonly("vecs", 
@@ -3099,8 +3104,11 @@ diffop : ngsolve.fem.DifferentialOperator
 
     .def("AddMultiDimComponent", [](GridFunction & self, BaseVector & vec, bool copy)
          {
-           PyCheckSize (vec.Size(), self.GetVector().Size(), "vector size");
-           if (vec.IsComplex() != self.GetVector().IsComplex())
+           auto fes = self.GetFESpace();
+           PyCheckSize (vec.Size(), fes->GetNDof(), "vector size");
+           if (vec.EntrySize() != fes->GetDimension() * (fes->IsComplex() ? 2 : 1))
+             throw py::value_error("vector entry size does not fit the space dimension");
+           if (vec.IsComplex() != fes->IsComplex())
              throw py::value_error("vector must have the same scalar type as the gridfunction");
            self.AddMultiDimComponent (vec, copy);
          },

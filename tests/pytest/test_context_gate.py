@@ -862,6 +862,9 @@ def test_other_boundary_values(m):
     gf.Set(x)
     r = gf.vec.CreateVector()
     a.Apply(gf.vec, r)
-    raises(lambda: BilinearForm(fes).__iadd__(u.Other(bnd=v) * v * ds(skeleton=True)), "can only be used in forms")
+    raises(lambda: BilinearForm(fes).__iadd__(u.Other(bnd=v) * v * ds(skeleton=True)), "trial-functions only")
+    # trial-functions in the boundary values: compatible spaces only
     w = L2(m, order=0).TrialFunction()
-    raises(lambda: BilinearForm(fes).__iadd__(u.Other(bnd=w) * v * ds(skeleton=True)), "can only be used in forms")
+    BilinearForm(fes, nonassemble=True).__iadd__(u.Other(bnd=w + u) * v * ds(skeleton=True)).Apply(gf.vec, r)
+    raises(lambda: BilinearForm(fes).__iadd__(u.Other(bnd=HDiv(m, order=1).TrialFunction()[0]) * v * ds(skeleton=True)))
+    raises(lambda: BilinearForm(fes).__iadd__(u.Other(bnd=u.Other()) * v * ds(skeleton=True)), "trial-functions only")

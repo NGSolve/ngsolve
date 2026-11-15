@@ -3588,7 +3588,8 @@ namespace ngcomp
     auto low_order_restriction = GetTrialSpace()->LowOrderRestriction();
     if (low_order_bilinear_form && low_order_restriction)
       {
-        auto coarsevec = low_order_restriction->CreateColVector();
+        // the restriction is a range of dofs, the entry size comes from the space
+        auto coarsevec = low_order_bilinear_form->CreateRowVector();
         coarsevec = *low_order_restriction*lin;
         low_order_bilinear_form -> AssembleLinearization(coarsevec, clh, reallocate);
       }

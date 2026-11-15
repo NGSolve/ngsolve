@@ -254,10 +254,16 @@ namespace ngcomp
     << "autoupdate = " << autoupdate << endl;
   }
 
+  void GridFunction :: ThrowMultiDim (int comp) const
+  {
+    throw Exception ("GridFunction '" + GetName() + "' has no multidim component " + ToString(comp) +
+                     " (multidim = " + ToString(vec.Size()) + ")");
+  }
+
   Array<MemoryUsage> GridFunction :: GetMemoryUsage () const
   {
     //if (&const_cast<GridFunction&> (*this).GetVector())
-    if (this->GetVectorPtr())
+    if (vec.Size() && vec[0])
       {
 	// int olds = mu.Size();
 	//const_cast<GridFunction&> (*this).GetVector().MemoryUsage (mu);
@@ -1324,6 +1330,9 @@ namespace ngcomp
     auto & ma = fes->GetMeshAccess();
     if (gf->GetLevelUpdated() < ma->GetNLevels())
       throw Exception ("GridFunction is not up to date with its mesh (refined without Update)");
+    if (comp < 0 || comp >= gf->GetMultiDim())
+      throw Exception ("GridFunction has no multidim component " + ToString(comp) +
+                       " (multidim = " + ToString(gf->GetMultiDim()) + ")");
     if (ctx.mesh != ma.get())
       {
         // other (or no) mesh: point search, evaluation inside the found element

@@ -144,10 +144,14 @@ namespace ngcomp
     ///
     virtual void DoArchive (Archive & archive) override;
     ///  
-    virtual BaseVector & GetVector (int comp = 0) { return *vec[comp]; }
-    virtual const BaseVector & GetVector (int comp = 0) const  { return *vec[comp]; }
+    virtual BaseVector & GetVector (int comp = 0) { CheckMultiDim(comp); return *vec[comp]; }
+    virtual const BaseVector & GetVector (int comp = 0) const  { CheckMultiDim(comp); return *vec[comp]; }
     ///  
-    virtual shared_ptr<BaseVector> GetVectorPtr (int comp = 0) const  { return vec[comp]; }
+    virtual shared_ptr<BaseVector> GetVectorPtr (int comp = 0) const  { CheckMultiDim(comp); return vec[comp]; }
+    // multidim=0 GridFunctions have no vectors
+    void CheckMultiDim (int comp) const
+    { if (comp < 0 || comp >= vec.Size()) ThrowMultiDim(comp); }
+    [[noreturn]] void ThrowMultiDim (int comp) const;
     auto GetVectors() const { return MultiVector(vec); }
     ///
     void SetNested (int anested = 1) { nested = anested; }

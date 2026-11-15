@@ -45,7 +45,12 @@ namespace ngcomp
     public:
       VolDiffOp (shared_ptr<CoefficientFunction> abasis, VorB vb = VOL)
         : DifferentialOperator(CalcVecDim(abasis), 1, vb, 0), basis(abasis),
-          dim(CalcDim(abasis)), vecdim(CalcVecDim(abasis)) { ; }
+          dim(CalcDim(abasis)), vecdim(CalcVecDim(abasis))
+      {
+        // scalar basis functions -> scalar space, like H1
+        if (abasis->Dimensions().Size() <= 1)
+          SetDimensions (Array<int>());
+      }
 
       virtual bool SupportsVB (VorB checkvb) const override { return true; }
       void CheckElement (const FiniteElement& fel) const override { }

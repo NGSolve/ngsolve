@@ -1327,7 +1327,8 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     {
       if (m.Height() != m.Width())
         throw py::value_error("Inverse: matrix is not square");
-      if (freedofs) PyCheckSize(freedofs->Size(), m.Height(), "freedofs size");
+      if (freedofs && freedofs->Size() < m.Height())
+        throw py::value_error("freedofs size is " + ToString(freedofs->Size()) + ", needs at least " + ToString(m.Height()));
       if (string * invstr = get_if<string>(&inverse))
         if (*invstr != "")
           {
@@ -1738,7 +1739,8 @@ flags : dict
     .def("CreateSmoother", [](shared_ptr<BaseSparseMatrix> m, shared_ptr<BitArray> ba,
                               bool GS) 
          {
-           if (ba) PyCheckSize(ba->Size(), m->Height(), "freedofs size");
+           if (ba && ba->Size() < m->Height())
+             throw py::value_error("freedofs size is " + ToString(ba->Size()) + ", needs at least " + ToString(m->Height()));
            if (GS) {
              auto pre = make_shared<SymmetricGaussSeidelPrecond>(m, ba);
              py::gil_scoped_acquire acq;

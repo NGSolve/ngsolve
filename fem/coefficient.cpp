@@ -5679,16 +5679,10 @@ public:
       if (cf)
         SetDimensions(cf->Dimensions());
     // all entries write into one result
-    auto shape = [] (FlatArray<int> dims)
-      {
-        string s = "(";
-        for (auto d : dims) s += ToString(d) + ",";
-        return s + ")";
-      };
     for (auto & cf : ci)
-      if (cf && !(cf->Dimensions() == Dimensions()))
-        throw Exception ("domain-wise CoefficientFunction: all entries must have the same shape, got " +
-                         shape(cf->Dimensions()) + " and " + shape(Dimensions()));
+      if (cf && cf->Dimension() != Dimension())
+        throw Exception ("domain-wise CoefficientFunction: all entries must have the same dimension, got " +
+                         ToString(cf->Dimension()) + " and " + ToString(Dimension()));
 
     elementwise_constant = true;
     for (auto cf : ci)

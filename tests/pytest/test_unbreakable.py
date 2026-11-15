@@ -543,3 +543,84 @@ def test_space_dim_positive(m):
         H1(m, order=2, dim=0)
     with pytest.raises(Exception, match="dim"):
         H1(m, order=2, dim=-2)
+
+
+def test_domainwise_dimension(m):
+    # shapes () and (1,) are compatible, only the total dimension must agree
+    cf = m.MaterialCF({".*": CF((x,))}, default=CF(1))
+    assert Integrate(cf, m) == pytest.approx(Integrate(x, m))
+    with pytest.raises(Exception, match="same dimension"):
+        CoefficientFunction([CF((x, y)), CF(1)])
+
+
+def test_freedofs_of_finer_level():
+    # hierarchical dof numbering: fine-level freedofs are used for coarse matrices
+    from ngsolve.meshes import MakeStructured2DMesh
+    mesh = MakeStructured2DMesh(quads=False, nx=2, ny=2)
+    fes = H1(mesh, order=1, dirichlet="left")
+    u, v = fes.TnT()
+    a0 = BilinearForm(grad(u)*grad(v)*dx + u*v*dx).Assemble()
+    coarsemat = a0.mat
+    mesh.Refine()
+    fes.Update()
+    assert fes.FreeDofs().__len__() > coarsemat.height
+    coarsemat.CreateSmoother(fes.FreeDofs())
+    inv = coarsemat.Inverse(fes.FreeDofs())
+    w = coarsemat.CreateColVector()
+    w[:] = 1
+    assert (inv * w).Evaluate().Norm() > 0
+    short = BitArray(coarsemat.height - 1)
+    with pytest.raises(Exception, match="at least"):
+        coarsemat.CreateSmoother(short)
+    with pytest.raises(Exception, match="at least"):
+        coarsemat.Inverse(short)
+
+
+def test_linearization_lowest_order_space_with_dim():
+    # low-order restriction of the linearization point keeps the entry size
+    from ngsolve.meshes import MakeStructured2DMesh
+    mesh = MakeStructured2DMesh(quads=False, nx=4, ny=4)
+    fes = H1(mesh, order=2, dirichlet="left", dim=2)
+    u = fes.TrialFunction()
+    a = BilinearForm(fes, symmetric=True)
+    a += Variation((InnerProduct(Grad(u), Grad(u)) + InnerProduct(u, u)**2) * dx)
+    gfu = GridFunction(fes)
+    gfu.vec[:] = 0.1
+    a.Assemble()
+    pre = Preconditioner(a, "multigrid")
+    a.AssembleLinearization(gfu.vec)
+    w = gfu.vec.CreateVector()
+    w.data = pre.mat * gfu.vec
+    assert w.Norm() > 0
+
+
+def test_other_bnd_with_trial_function():
+    # boundary values of Other() may depend on the trial-function (DG apply)
+    from ngsolve.meshes import MakeStructured2DMesh
+    mesh = MakeStructured2DMesh(quads=False, nx=3, ny=3)
+    fes = L2(mesh, order=1)**2
+    U, V = fes.TnT()
+    h, hu = U
+    ubnd = CF((mesh.BoundaryCF({"left": h}, default=0), mesh.BoundaryCF({"left": -hu}, default=0)))
+    n = specialcf.normal(2)
+    a = BilinearForm(fes, nonassemble=True)
+    a += InnerProduct(U - U.Other(bnd=ubnd), V) * dx(element_boundary=True)
+    gfu = GridFunction(fes)
+    gfu.Set(CF((1+x, y)))
+    res = gfu.vec.CreateVector()
+    a.Apply(gfu.vec, res)
+    assert res.Norm() > 0
+    b = BilinearForm(fes, nonassemble=True)
+    with pytest.raises(Exception, match="trial-functions only"):
+        b += InnerProduct(U - U.Other(bnd=CF((V[0], 0))), V) * dx(element_boundary=True)
+        b.Apply(gfu.vec, res)
+    c = BilinearForm(fes, nonassemble=True)
+    with pytest.raises(Exception, match="trial-functions only"):
+        c += InnerProduct(U - U.Other(bnd=U.Other()), V) * dx(element_boundary=True)
+        c.Apply(gfu.vec, res)
+    # a trial-function of an incompatible space
+    other = HDiv(mesh, order=1)
+    d = BilinearForm(fes, nonassemble=True)
+    with pytest.raises(Exception):
+        d += InnerProduct(U - U.Other(bnd=other.TrialFunction()), V) * dx(element_boundary=True)
+        d.Apply(gfu.vec, res)

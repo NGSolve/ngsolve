@@ -93,6 +93,17 @@ namespace ngfem
       default:
         break;
       }
+    // boundary values of Other() get the trial-function values of the element (Apply)
+    if (boundary_values && ctx.purpose == CFContext::BILINEAR)
+      boundary_values->TraverseDAG ([&] (CoefficientFunction & node)
+        {
+          if (auto p = dynamic_cast<ProxyFunction*> (&node))
+            {
+              if (p->IsTestFunction() || p->IsOther())
+                throw Exception ("boundary values of Other() may contain trial-functions only");
+              p->CheckContext (ctx);
+            }
+        });
     if (is_other && !ctx.skeleton && !ctx.pairing)
       {
         if (ctx.element_vb == VOL)
@@ -117,7 +128,8 @@ namespace ngfem
   {
     if (!boundary_values) return &ctx;
     buffer = ctx;
-    buffer.purpose = CFContext::EVALUATE;
+    // trial-functions inside are checked by the Other() proxy itself
+    buffer.purpose = (ctx.purpose == CFContext::BILINEAR) ? CFContext::LOCAL : CFContext::EVALUATE;
     buffer.vb = BND;
     buffer.element_vb = VOL;
     buffer.skeleton = false;
