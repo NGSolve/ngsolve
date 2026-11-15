@@ -490,8 +490,9 @@ namespace ngfem
       }
 
     size_t dim = Dimension();
-    STACK_ARRAY(double, hmem, ir.Size()*dim);
-    FlatMatrix<> temp(ir.Size(), dim, &hmem[0]);
+    auto & lh = TLHeap();
+    HeapReset hr(lh);
+    FlatMatrix<> temp(ir.Size(), dim, lh);
     Evaluate (ir, temp);
     values = temp;
   }

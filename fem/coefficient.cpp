@@ -121,7 +121,7 @@ namespace ngfem
     string mycode =
       string("// GenerateCode() not overloaded for: ") + Demangle(typeid(*this).name()) + "\n"
       + R"CODE_(    typedef {scal_type} TStack{index};
-    STACK_ARRAY(TStack{index}, hmem{index}, mir.Size()*{dim});
+    TStack{index} * hmem{index} = ngs_tlheap.Alloc<TStack{index}>(mir.Size()*{dim});
     {values_type} {values}({rows}, {cols}, reinterpret_cast<{scal_type}*>(&hmem{index}[0]));
     {
       const CoefficientFunction & cf = *reinterpret_cast<CoefficientFunction*>({this});
@@ -2285,9 +2285,10 @@ public:
   virtual void Evaluate(const BaseMappedIntegrationRule & ir,
                         BareSliceMatrix<Complex> result) const override
   {
-    STACK_ARRAY(double, hmem1, 2*ir.Size());
-    FlatMatrix<Complex> temp1(ir.Size(), 1, reinterpret_cast<Complex*> (&hmem1[0]));
-    
+    auto & lh = TLHeap();
+    HeapReset hr(lh);
+    FlatMatrix<Complex> temp1(ir.Size(), 1, lh);
+
     c1->Evaluate(ir, temp1);
     c2->Evaluate(ir, result);
     for (int i = 0; i < ir.Size(); i++)
@@ -2724,10 +2725,10 @@ public:
   virtual void Evaluate(const BaseMappedIntegrationRule & ir,
                         BareSliceMatrix<Complex> result) const override
   {
-    STACK_ARRAY(double, hmem1, 2*ir.Size()*DIM);
-    FlatMatrix<Complex> temp1(ir.Size(), DIM, (Complex*)hmem1);
-    STACK_ARRAY(double, hmem2, 2*ir.Size()*DIM);
-    FlatMatrix<Complex> temp2(ir.Size(), DIM, (Complex*)hmem2);
+    auto & lh = TLHeap();
+    HeapReset hr(lh);
+    FlatMatrix<Complex> temp1(ir.Size(), DIM, lh);
+    FlatMatrix<Complex> temp2(ir.Size(), DIM, lh);
 
     c1->Evaluate(ir, temp1);
     c2->Evaluate(ir, temp2);
@@ -2927,8 +2928,9 @@ public:
   virtual void Evaluate(const BaseMappedIntegrationRule & ir,
                         BareSliceMatrix<Complex> result) const override
   {
-    STACK_ARRAY(double, hmem1, 2*ir.Size()*DIM);
-    FlatMatrix<Complex> temp1(ir.Size(), DIM, (Complex*)hmem1);
+    auto & lh = TLHeap();
+    HeapReset hr(lh);
+    FlatMatrix<Complex> temp1(ir.Size(), DIM, lh);
 
     c1->Evaluate(ir, temp1);
     for (int i = 0; i < ir.Size(); i++)
@@ -3038,7 +3040,7 @@ public:
   {
     STACK_ARRAY(double,mem, dim1);
     FlatVector<double> vec(dim1, &mem[0]);
-    
+
     cfmat->Evaluate (ip, vec);
 
     FlatMatrix<double> mat(vecdim,vecdim, &mem[0]);
@@ -3313,8 +3315,9 @@ public:
   virtual void Evaluate(const BaseMappedIntegrationRule & ir,
                         BareSliceMatrix<> result) const override
   {
-    STACK_ARRAY(double,hmem,ir.Size()*dim1*sizeof(TIN)/sizeof(double));
-    FlatMatrix<TIN> inval(ir.IR().GetNIP(), dim1, reinterpret_cast<TIN*>(&hmem[0]));
+    auto & lh = TLHeap();
+    HeapReset hr(lh);
+    FlatMatrix<TIN> inval(ir.IR().GetNIP(), dim1, lh);
     c1->Evaluate (ir, inval);
     for (size_t i = 0; i < ir.Size(); i++)
       result(i,0) = L2Norm(inval.Row(i));
@@ -3323,8 +3326,9 @@ public:
 
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const override
   {
-    STACK_ARRAY(SIMD<Complex>,hmem,ir.Size()*dim1);
-    FlatMatrix<SIMD<Complex>> inval(dim1, ir.Size(), &hmem[0]);
+    auto & lh = TLHeap();
+    HeapReset hr(lh);
+    FlatMatrix<SIMD<Complex>> inval(dim1, ir.Size(), lh);
     c1->Evaluate (ir, inval);
     for (size_t i = 0; i < ir.Size(); i++)
       {
@@ -4621,11 +4625,12 @@ public:
                          BareSliceMatrix<Complex> result) const override
   {
     // int dim1 = c1->Dimension();
-    STACK_ARRAY(double, hmem, 2*ir.Size()*dim1);
-    FlatMatrix<Complex> temp(ir.Size(), dim1, (Complex*)hmem);
+    auto & lh = TLHeap();
+    HeapReset hr(lh);
+    FlatMatrix<Complex> temp(ir.Size(), dim1, lh);
     c1->Evaluate (ir, temp);
     result.Col(0).Range(0,ir.Size()) = temp.Col(comp);
-  }  
+  }
 
   template <typename MIR, typename T, ORDERING ORD>
   void T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const
@@ -5989,7 +5994,7 @@ public:
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
     string mycode = R"CODE_(    typedef {scal_type} TStack{index};
-    STACK_ARRAY(TStack{index}, hmem{index}, mir.Size()*{dim});
+    TStack{index} * hmem{index} = ngs_tlheap.Alloc<TStack{index}>(mir.Size()*{dim});
     {values_type} {values}({rows}, {cols}, reinterpret_cast<{scal_type}*>(&hmem{index}[0]));
     {
       const CoefficientFunction & cf = *reinterpret_cast<CoefficientFunction*>({c1});
@@ -6536,11 +6541,16 @@ public:
                         BareSliceMatrix<Complex> result) const override
   {
     int base = 0;
+    size_t maxdim = 0;
+    for (auto & cf : ci)
+      maxdim = max(maxdim, size_t(cf->Dimension()));
+    auto & lh = TLHeap();
+    HeapReset hr(lh);
+    Complex * hmem = lh.Alloc<Complex>(ir.Size()*maxdim);
     for (auto cf : ci)
       {
         int dimi = cf->Dimension();
-        STACK_ARRAY(double, hmem, 2*ir.Size()*dimi);
-        FlatMatrix<Complex> temp(ir.Size(), dimi, (Complex*)hmem);
+        FlatMatrix<Complex> temp(ir.Size(), dimi, hmem);
         cf->Evaluate(ir, temp);
         result.Cols(base,base+dimi).AddSize(ir.Size(), dimi) = temp;
         base += dimi;
@@ -7024,6 +7034,8 @@ class CompiledCoefficientFunction : public CompiledCoefficientFunctionInterface 
                 code.header.insert(0, "ArrayMem<int, 100> gridfunction_dnums;\n");
                 code.header.insert(0, "ArrayMem<double, 100> gridfunction_elu;\n");
             }
+            if(code.header.find("ngs_tlheap") != std::string::npos)
+              code.header.insert(0, "LocalHeap & ngs_tlheap = ngcore::TLHeap();\nHeapReset ngs_tlheap_reset(ngs_tlheap);\n");
 
             // Function name
 #ifdef WIN32
@@ -7334,8 +7346,9 @@ class CompiledCoefficientFunction : public CompiledCoefficientFunctionInterface 
     constexpr bool simd = is_same_v<MIR,SIMD_BaseMappedIntegrationRule>;
     using TC = conditional_t<simd, SIMD<Complex>, Complex>;
     size_t dim = cf.Dimension(), np = ir.Size();
-    STACK_ARRAY(TC, mem, dim*np);
-    FlatMatrix<TC, simd ? RowMajor : ColMajor> tmp(dim, np, &mem[0]);
+    auto & lh = TLHeap();
+    HeapReset hr(lh);
+    FlatMatrix<TC, simd ? RowMajor : ColMajor> tmp(dim, np, lh);
     cf.Evaluate (ir, tmp);
     for (size_t i = 0; i < dim; i++)
       for (size_t j = 0; j < np; j++)

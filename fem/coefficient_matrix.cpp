@@ -1461,8 +1461,9 @@ namespace ngfem
     void T_Evaluate (const MIR & mir,
                      BareSliceMatrix<T,ORD> result) const
     {
-      STACK_ARRAY(T, hmem, mir.Size()*D*D);
-      FlatMatrix<T,ORD> hv(D*D, mir.Size(), &hmem[0]);
+      auto & lh = TLHeap();
+      HeapReset hr(lh);
+      FlatMatrix<T,ORD> hv(D*D, mir.Size(), lh);
       c1->Evaluate (mir, hv);
     
       for (size_t i = 0; i < mir.Size(); i++)
