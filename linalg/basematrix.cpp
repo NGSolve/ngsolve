@@ -456,6 +456,115 @@ namespace ngla
   */
   
 
+  // does a vector of format v fit the operator format f ? open axes accept anything
+  static bool FitsFormat (const VecFormat & f, const VecFormat & v)
+  {
+    if (f.IsBlock() || v.IsBlock())
+      {
+        if (f.IsBlock() && v.IsBlock())
+          {
+            if (f.blocks.size() != v.blocks.size()) return false;
+            for (size_t i = 0; i < f.blocks.size(); i++)
+              if (!FitsFormat (f.blocks[i], v.blocks[i])) return false;
+            return true;
+          }
+        // an operator without size (Identity) takes any block vector
+        if (f.IsBlock() || f.size) return false;
+        for (auto & b : v.blocks)
+          if (!FitsFormat (f, b)) return false;
+        return true;
+      }
+
+    if (f.scal && v.scal)
+      {
+        if (std::holds_alternative<float>(*f.scal) != std::holds_alternative<float>(*v.scal))
+          return false;
+        if (std::holds_alternative<Complex>(*f.scal) && !std::holds_alternative<Complex>(*v.scal))
+          return false;
+      }
+    size_t vsize = v.size.value_or(0);
+    int ves = v.es.value_or(1);
+    if (f.es && *f.es != ves)   // a flat vector of the same total length is fine
+      return f.size && *f.size * *f.es == vsize * ves;
+    if (f.size && *f.size != vsize) return false;
+    return true;
+  }
+
+  void BaseMatrix :: CheckFormats (const BaseVector & x, const BaseVector * y,
+                                   bool trans, bool complex_factor) const
+  {
+    VecFormat fx = trans ? ColFormat() : RowFormat();
+    VecFormat vx = x.GetFormat();
+    bool okx = FitsFormat (fx, vx);
+    bool oky = true;
+    VecFormat fy, vy;
+    if (y)
+      {
+        fy = trans ? RowFormat() : ColFormat();
+        vy = y->GetFormat();
+        oky = FitsFormat (fy, vy) &&
+          (vy.IsComplex() || !(complex_factor || vx.IsComplex() || fy.IsComplex()));
+      }
+    if (okx && oky) return;
+
+    string err = GetName(*this) + (trans ? " (transposed)" : "") + ": vector does not fit the operator";
+    if (!okx)
+      err += "\n  x: expected " + ToString(fx) + ", got " + ToString(vx);
+    if (!oky)
+      err += "\n  y: expected " + ToString(fy) + ", got " + ToString(vy)
+        + ((complex_factor || vx.IsComplex()) ? " (result is complex)" : "");
+    throw Exception (err);
+  }
+
+  void CheckComposable (const BaseMatrix & a, const BaseMatrix & b)
+  {
+    VecFormat fa, fb;
+    try
+      {
+        fa = a.RowFormat();
+        fb = b.ColFormat();
+      }
+    catch (Exception &)
+      {
+        return;   // not known yet
+      }
+    try
+      {
+        VecFormat::Merge (fb, fa);
+      }
+    catch (Exception & e)
+      {
+        throw Exception ("cannot compose operators " + GetName(a) + " * " + GetName(b) + ": "
+                         + e.What() + "\n  width of left: " + ToString(fa)
+                         + "\n  height of right: " + ToString(fb));
+      }
+  }
+
+  void CheckAddable (const BaseMatrix & a, const BaseMatrix & b)
+  {
+    VecFormat ra, rb, ca, cb;
+    try
+      {
+        ra = a.RowFormat(); rb = b.RowFormat();
+        ca = a.ColFormat(); cb = b.ColFormat();
+      }
+    catch (Exception &)
+      {
+        return;
+      }
+    try
+      {
+        VecFormat::Merge (ra, rb);
+        VecFormat::Merge (ca, cb);
+      }
+    catch (Exception & e)
+      {
+        throw Exception ("cannot add operators " + GetName(a) + " + " + GetName(b) + ": "
+                         + e.What() + "\n  formats left: " + ToString(ca) + " x " + ToString(ra)
+                         + "\n  formats right: " + ToString(cb) + " x " + ToString(rb));
+      }
+  }
+
   void VMatVecExpr :: CheckSize (BaseVector & dest_vec) const
   {
     if (m.Height() != dest_vec.Size() || m.Width() != x.Size())
@@ -541,17 +650,7 @@ namespace ngla
              double aa, double ab)
     : bma(*aspbma), bmb(*aspbmb), spbma(aspbma), spbmb(aspbmb), a(aa), b(ab)
   {
-    xbool same = spbma->SameShape(*spbmb);
-    if (same.IsFalse())
-      {
-        cout << "operator A: ";
-        spbma->PrintOperatorInfo(cout);
-        cout << endl;
-        cout << "operator B: ";
-        spbmb->PrintOperatorInfo(cout);
-        cout << endl;
-        throw Exception("matrix sizes don't match");
-      }
+    CheckAddable (bma, bmb);
   }
 
 
@@ -722,6 +821,7 @@ namespace ngla
   shared_ptr<BaseMatrix> ComposeOperators (shared_ptr<BaseMatrix> a,
                                            shared_ptr<BaseMatrix> b)
   {
+    CheckComposable (*a, *b);
     if (auto embb = dynamic_pointer_cast<EmbeddingTranspose> (b))
       {
         // cout << "embeddingT optimization" << endl;

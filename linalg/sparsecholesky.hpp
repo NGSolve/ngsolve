@@ -42,8 +42,14 @@ namespace ngla
 
     virtual void Smooth (BaseVector & u, const BaseVector & f, BaseVector & y) const;
 
-    int VHeight() const override { return matrix.lock()->VWidth();}
-    int VWidth() const override { return matrix.lock()->VHeight();}
+    int VHeight() const override { return LockedMatrix()->VWidth();}
+    int VWidth() const override { return LockedMatrix()->VHeight();}
+    shared_ptr<const BaseSparseMatrix> LockedMatrix() const
+    {
+      auto m = matrix.lock();
+      if (!m) throw Exception ("SparseFactorization: the matrix does not exist anymore");
+      return m;
+    }
 
     bool SmoothIsProjection () const { return smooth_is_projection; }
     

@@ -138,7 +138,13 @@ class LinearSolver(BaseMatrix):
 
     def CreateVector(self,col):
         return self.mat.CreateVector(not col)
-    
+
+    def RowFormat(self):
+        return self.mat.ColFormat()
+
+    def ColFormat(self):
+        return self.mat.RowFormat()
+
     def IsComplex(self) -> bool:
         return self.mat.IsComplex()
 

@@ -214,8 +214,17 @@ void SparseFactorizationInterface::Update() {
   Factor();
 }
 
+void SparseFactorizationInterface::CheckReady(const BaseVector &x,
+                                              const BaseVector &y) const {
+  if (!inner_rhs || !inner_solution)
+    throw Exception(GetName(*this) + ": factorization not computed, call Update() first");
+  if (!is_complex && (x.IsComplex() || y.IsComplex()))
+    throw Exception(GetName(*this) + ": real factorization applied to complex vectors");
+}
+
 void SparseFactorizationInterface::MultAdd(double s, const BaseVector &x,
                                            BaseVector &y) const {
+  CheckReady(x, y);
   if (is_complex)
     return MultAdd(Complex(s), x, y);
 
@@ -235,6 +244,12 @@ void SparseFactorizationInterface::MultAdd(double s, const BaseVector &x,
 
 void SparseFactorizationInterface::MultAdd(Complex s, const BaseVector &x,
                                            BaseVector &y) const {
+  CheckReady(x, y);
+  if (!is_complex) {
+    if (s.imag() != 0)
+      throw Exception(GetName(*this) + ": complex factor for real vectors");
+    return MultAdd(s.real(), x, y);
+  }
   if (map_inner_dofs)
     map_inner_dofs.Project(inner_rhs->FV<Complex>(), x.FV<Complex>());
   else
@@ -250,6 +265,7 @@ void SparseFactorizationInterface::MultAdd(Complex s, const BaseVector &x,
 
 void SparseFactorizationInterface::MultTransAdd(double s, const BaseVector &x,
                                                 BaseVector &y) const {
+  CheckReady(x, y);
   if (is_complex)
     return MultTransAdd(Complex(s), x, y);
 
@@ -271,6 +287,12 @@ void SparseFactorizationInterface::MultTransAdd(double s, const BaseVector &x,
 
 void SparseFactorizationInterface::MultTransAdd(Complex s, const BaseVector &x,
                                                 BaseVector &y) const {
+  CheckReady(x, y);
+  if (!is_complex) {
+    if (s.imag() != 0)
+      throw Exception(GetName(*this) + ": complex factor for real vectors");
+    return MultTransAdd(s.real(), x, y);
+  }
   if (is_symmetric.IsTrue())
     return MultAdd(s, x, y);
 
@@ -290,6 +312,7 @@ void SparseFactorizationInterface::MultTransAdd(Complex s, const BaseVector &x,
 void SparseFactorizationInterface::MultConjTransAdd(Complex s,
                                                     const BaseVector &x,
                                                     BaseVector &y) const {
+  CheckReady(x, y);
   if (!is_complex)
     return MultTransAdd(s.real(), x, y);
 

@@ -194,12 +194,16 @@ namespace ngla
   public:
     NGS_DLL_HEADER Real2ComplexMatrix (shared_ptr<BaseMatrix> arealmatrix = nullptr);
     void SetMatrix (shared_ptr<BaseMatrix> arealmatrix);
-    const BaseMatrix & GetMatrix () const { return *realmatrix; }
+    const BaseMatrix & GetMatrix () const
+    {
+      if (!realmatrix) throw Exception ("Real2ComplexMatrix: no matrix set");
+      return *realmatrix;
+    }
     void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
     void MultAdd (Complex s, const BaseVector & x, BaseVector & y) const override;
 
-    VecFormat RowFormat () const override { return VVectorFormat<TVC> (realmatrix->Width()); }
-    VecFormat ColFormat () const override { return VVectorFormat<TVC> (realmatrix->Width()); }
+    VecFormat RowFormat () const override { return VVectorFormat<TVC> (GetMatrix().Width()); }
+    VecFormat ColFormat () const override { return VVectorFormat<TVC> (GetMatrix().Height()); }
   };
 
 

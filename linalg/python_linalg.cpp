@@ -197,13 +197,11 @@ void ExportSparseMatrix(py::module m)
 
     .def("__matmul__", [] (const SparseMatrix<double> & a, const SparseMatrix<double> & b)
          {
-           PyCheckSize(a.Width(), b.Height(), "left matrix width");
            return MatMult(a,b);
          }, py::arg("mat"))
     .def("__matmul__", [] (const SparseMatrix<std::complex<double>> & a, const SparseMatrix<std::complex<double>> & b)
          ->shared_ptr<BaseMatrix>
          {
-           PyCheckSize(a.Width(), b.Height(), "left matrix width");
            return MatMult(a,b);
          }, py::arg("mat"))
     .def("__matmul__", [](shared_ptr<SparseMatrix<T>> a, shared_ptr<BaseMatrix> mb)
@@ -412,7 +410,8 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                       if (state[1].cast<bool>())
                         {
                           // create basevector with owning pointer and afterwards assign it to mem
-                          auto bptr = make_shared<S_BaseVectorPtr<Complex>>(0, state[2].cast<size_t>());
+                          // the state stores the entry size in doubles
+                          auto bptr = make_shared<S_BaseVectorPtr<Complex>>(0, state[2].cast<size_t>()/2);
                           bptr->AssignMemory(state[0].cast<size_t>(), mv.Ptr());
                           return bptr;
                         }
@@ -1214,21 +1213,23 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                                         return shared_ptr<BaseVector> (&m.AsVector(), NOOP_Deleter);
                                       }, "Interprets the matrix values as a vector")
 
-    .def("Mult",         [](BaseMatrix &m, BaseVector &x, BaseVector &y) { m.Mult(x, y); }, py::call_guard<py::gil_scoped_release>(), py::arg("x"), py::arg("y"))
-    .def("MultAdd",      [](BaseMatrix &m, double s, BaseVector &x, BaseVector &y) { m.MultAdd (s, x, y); }, py::arg("value"), py::arg("x"), py::arg("y"), py::call_guard<py::gil_scoped_release>())
-    .def("MultTrans",    [](BaseMatrix &m, double s, BaseVector &x, BaseVector &y) { y=0; m.MultTransAdd (1.0, x, y); }, py::arg("value"), py::arg("x"), py::arg("y"), py::call_guard<py::gil_scoped_release>())
-    .def("MultTransAdd",  [](BaseMatrix &m, double s, BaseVector &x, BaseVector &y) { m.MultTransAdd (s, x, y); }, py::arg("value"), py::arg("x"), py::arg("y"), py::call_guard<py::gil_scoped_release>())
+    .def("Mult",         [](BaseMatrix &m, BaseVector &x, BaseVector &y) { m.CheckFormats(x, y); m.Mult(x, y); }, py::call_guard<py::gil_scoped_release>(), py::arg("x"), py::arg("y"))
+    .def("MultAdd",      [](BaseMatrix &m, double s, BaseVector &x, BaseVector &y) { m.CheckFormats(x, y); m.MultAdd (s, x, y); }, py::arg("value"), py::arg("x"), py::arg("y"), py::call_guard<py::gil_scoped_release>())
+    .def("MultTrans",    [](BaseMatrix &m, double s, BaseVector &x, BaseVector &y) { m.CheckFormats(x, y, true); y=0; m.MultTransAdd (1.0, x, y); }, py::arg("value"), py::arg("x"), py::arg("y"), py::call_guard<py::gil_scoped_release>())
+    .def("MultTransAdd",  [](BaseMatrix &m, double s, BaseVector &x, BaseVector &y) { m.CheckFormats(x, y, true); m.MultTransAdd (s, x, y); }, py::arg("value"), py::arg("x"), py::arg("y"), py::call_guard<py::gil_scoped_release>())
     .def("MultScale",    [](BaseMatrix &m, double s, BaseVector &x, BaseVector &y)
           {
+              m.CheckFormats(x, y);
               m.Mult (x,y);
               if(s!=1.0)
                   y *= s;
           }, py::arg("value"), py::arg("x"), py::arg("y") , py::call_guard<py::gil_scoped_release>())
-    .def("MultAdd",      [](BaseMatrix &m, Complex s, BaseVector &x, BaseVector &y) { m.MultAdd (s, x, y); }, py::arg("value"), py::arg("x"), py::arg("y"), py::call_guard<py::gil_scoped_release>())
-    .def("MultTrans",    [](BaseMatrix &m, Complex s, BaseVector &x, BaseVector &y) { y=0; m.MultTransAdd (1.0, x, y); }, py::arg("value"), py::arg("x"), py::arg("y"), py::call_guard<py::gil_scoped_release>())
-    .def("MultTransAdd",  [](BaseMatrix &m, Complex s, BaseVector &x, BaseVector &y) { m.MultTransAdd (s, x, y); }, py::arg("value"), py::arg("x"), py::arg("y"), py::call_guard<py::gil_scoped_release>())
+    .def("MultAdd",      [](BaseMatrix &m, Complex s, BaseVector &x, BaseVector &y) { m.CheckFormats(x, y, false, s.imag() != 0); m.MultAdd (s, x, y); }, py::arg("value"), py::arg("x"), py::arg("y"), py::call_guard<py::gil_scoped_release>())
+    .def("MultTrans",    [](BaseMatrix &m, Complex s, BaseVector &x, BaseVector &y) { m.CheckFormats(x, y, true); y=0; m.MultTransAdd (1.0, x, y); }, py::arg("value"), py::arg("x"), py::arg("y"), py::call_guard<py::gil_scoped_release>())
+    .def("MultTransAdd",  [](BaseMatrix &m, Complex s, BaseVector &x, BaseVector &y) { m.CheckFormats(x, y, true, s.imag() != 0); m.MultTransAdd (s, x, y); }, py::arg("value"), py::arg("x"), py::arg("y"), py::call_guard<py::gil_scoped_release>())
     .def("MultScale",    [](BaseMatrix &m, Complex s, BaseVector &x, BaseVector &y)
           {
+              m.CheckFormats(x, y, false, s.imag() != 0);
               m.Mult (x,y);
               if(s!=1.0)
                   y *= s;
@@ -1341,6 +1342,7 @@ flags : dict
       { return mat->IsComplex() ? py::dtype::of<Complex>() : py::dtype::of<double>(); })
     .def("matvec", [](shared_ptr<BM> mat, shared_ptr<BaseVector> x) -> shared_ptr<BaseVector>
          {
+           mat->CheckFormats(*x, nullptr);
            return mat->Evaluate(*x);
            /*
            shared_ptr<BaseVector> y = mat->CreateColVector();
@@ -1350,6 +1352,7 @@ flags : dict
          })
     .def("rmatvec", [](shared_ptr<BM> mat, shared_ptr<BaseVector> x) -> shared_ptr<BaseVector>
          {
+           mat->CheckFormats(*x, nullptr, true);
            return mat->EvaluateTrans(*x);
            /*
            shared_ptr<BaseVector> y = mat->CreateRowVector();
@@ -1947,10 +1950,12 @@ flags : dict
   py::class_<BaseBlockJacobiPrecond, shared_ptr<BaseBlockJacobiPrecond>, BaseMatrix>
     (m, "BlockSmoother",
      "block Jacobi and block Gauss-Seidel smoothing")
-    .def("Smooth", &BaseBlockJacobiPrecond::GSSmooth, py::call_guard<py::gil_scoped_release>(),
+    .def("Smooth", [](BaseBlockJacobiPrecond & self, BaseVector & x, const BaseVector & b, int steps)
+         { self.CheckFormats(b, x); self.GSSmooth(x, b, steps); }, py::call_guard<py::gil_scoped_release>(),
          py::arg("x"), py::arg("b"), py::arg("steps")=1,
          "performs steps block-Gauss-Seidel iterations for the linear system A x = b")
-    .def("SmoothBack", &BaseBlockJacobiPrecond::GSSmoothBack,
+    .def("SmoothBack", [](BaseBlockJacobiPrecond & self, BaseVector & x, const BaseVector & b, int steps)
+         { self.CheckFormats(b, x); self.GSSmoothBack(x, b, steps); },
          py::arg("x"), py::arg("b"), py::arg("steps")=1, py::call_guard<py::gil_scoped_release>(),
          "performs steps block-Gauss-Seidel iterations for the linear system A x = b in reverse order")
     ;
@@ -1959,10 +1964,11 @@ flags : dict
     (m, "Smoother",
      "Jacobi and Gauss-Seidel smoothing")
     .def("Smooth", [&](BaseJacobiPrecond & jac, BaseVector & x, BaseVector & b, int steps)
-    { jac.GSSmooth (x, b, steps); }, py::call_guard<py::gil_scoped_release>(),
+    { jac.CheckFormats(b, x); jac.GSSmooth (x, b, steps); }, py::call_guard<py::gil_scoped_release>(),
       py::arg("x"), py::arg("b"), py::arg("steps")=1, 
          "performs one step Gauss-Seidel iteration for the linear system A x = b")
-    .def("SmoothBack", &BaseJacobiPrecond::GSSmoothBack,
+    .def("SmoothBack", [](BaseJacobiPrecond & jac, BaseVector & x, const BaseVector & b, int steps)
+         { jac.CheckFormats(b, x); jac.GSSmoothBack (x, b, steps); },
          py::arg("x"), py::arg("b"), py::arg("steps")=1,
          py::call_guard<py::gil_scoped_release>(),
          "performs one step Gauss-Seidel iteration for the linear system A x = b in reverse order")
@@ -1973,9 +1979,11 @@ flags : dict
 
   py::class_<BaseMSMPrecond, shared_ptr<BaseMSMPrecond>, BaseMatrix>
     (m, "MSMPrecond", "smoother with forward and backward sweeps")
-    .def("Smooth", &BaseMSMPrecond::Smooth, py::call_guard<py::gil_scoped_release>(),
+    .def("Smooth", [](BaseMSMPrecond & self, BaseVector & x, const BaseVector & b, int steps)
+         { self.CheckFormats(b, x); self.Smooth(x, b, steps); }, py::call_guard<py::gil_scoped_release>(),
          py::arg("x"), py::arg("b"), py::arg("steps")=1)
-    .def("SmoothBack", &BaseMSMPrecond::SmoothBack, py::call_guard<py::gil_scoped_release>(),
+    .def("SmoothBack", [](BaseMSMPrecond & self, BaseVector & x, const BaseVector & b, int steps)
+         { self.CheckFormats(b, x); self.SmoothBack(x, b, steps); }, py::call_guard<py::gil_scoped_release>(),
          py::arg("x"), py::arg("b"), py::arg("steps")=1)
     ;
   py::class_<DeviceBlockGaussSeidel<double>, shared_ptr<DeviceBlockGaussSeidel<double>>, BaseMSMPrecond>
@@ -1990,6 +1998,7 @@ flags : dict
   sparse_fact_cls
     .def("Smooth", [] (SparseFactorization & self, BaseVector & u, BaseVector & y)
          {
+           self.CheckFormats(y, u);
            self.Smooth (u, y /* this is not needed */, y);
          }, py::call_guard<py::gil_scoped_release>(),
          "perform smoothing step (needs non-symmetric storage so symmetric sparse matrix)")

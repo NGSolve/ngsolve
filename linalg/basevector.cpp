@@ -73,6 +73,32 @@ namespace ngla
     return sqrt(double(sum));
   }
 
+  static bool IsComplexVec (const BaseVector & v)
+  { return std::holds_alternative<Complex>(v.GetScalarType()); }
+
+  // sizes and entry sizes (in scalars) must agree, a real vector cannot take complex values
+  static void CheckOperands (const BaseVector & me, const BaseVector & v, const char * name,
+                             bool same_scalar = false)
+  {
+    bool cme = IsComplexVec(me), cv = IsComplexVec(v);
+    int esme = cme ? me.EntrySize()/2 : me.EntrySize();
+    int esv = cv ? v.EntrySize()/2 : v.EntrySize();
+    if (me.Size() == v.Size() && esme == esv && (cme || !cv) && (!same_scalar || cme == cv))
+      return;
+    if (me.Size() != v.Size())
+      throw Exception (string(name) + ": size of me = " + ToString(me.Size()) + " != size of other = " + ToString(v.Size()));
+    if (esme != esv)
+      throw Exception (string(name) + ": entry size of me = " + ToString(esme) + " != entry size of other = " + ToString(esv));
+    throw Exception (string(name) + ": illegal combination of scalar types, me "
+                     + ScalarName(me.GetScalarType()) + ", other " + ScalarName(v.GetScalarType()));
+  }
+
+  static void CheckComplexScalar (const BaseVector & me, Complex scal, const char * name)
+  {
+    if (scal.imag() != 0 && !IsComplexVec(me))
+      throw Exception (string(name) + ": complex value for a vector of " + ScalarName(me.GetScalarType()));
+  }
+
   BaseVector & BaseVector :: Scale (double scal)
   {
     if (scal == 1) return *this;
@@ -107,6 +133,8 @@ namespace ngla
 
   BaseVector & BaseVector :: Scale (Complex scal)
   {
+    CheckComplexScalar (*this, scal, "BaseVector::Scale");
+    if (!IsComplexVec(*this)) return Scale (scal.real());
     FV<Complex>() *= scal;
     return *this;
   }
@@ -140,6 +168,8 @@ namespace ngla
 
   BaseVector & BaseVector :: SetScalar (Complex scal)
   {
+    CheckComplexScalar (*this, scal, "BaseVector::SetScalar");
+    if (!IsComplexVec(*this)) return SetScalar (scal.real());
     FV<Complex>() = scal;
     return *this;
   }
@@ -149,8 +179,7 @@ namespace ngla
     static Timer t("BaseVector::Set");
     RegionTimer reg(t);
 
-    if(Size() != v.Size())
-      throw Exception (string ("BaseVector::Set: size of me = ") + ToString(Size()) + " != size of other = " + ToString(v.Size()));
+    CheckOperands (*this, v, "BaseVector::Set");
 
 
     if (Memory() == v.Memory() && scal == 1.0) return *this;
@@ -188,9 +217,9 @@ namespace ngla
 
   BaseVector & BaseVector :: Set (Complex scal, const BaseVector & v)
   {
-    if (Size() != v.Size())
-      throw Exception (string ("BaseVector::Set: size of me = ") +
-                       ToString(Size()) + " != size of other = " + ToString(v.Size()));
+    CheckComplexScalar (*this, scal, "BaseVector::Set");
+    if (!IsComplexVec(*this)) return Set (scal.real(), v);
+    CheckOperands (*this, v, "BaseVector::Set");
 
     if (v.IsComplex())
       FV<Complex>() = scal * v.FV<Complex>();
@@ -206,10 +235,7 @@ namespace ngla
     static Timer t("BaseVector::Add");
     RegionTimer reg(t);
 
-    if (Size() != v.Size())
-      throw Exception (string ("BaseVector::Add: size of me = ") +
-                       ToString(Size()) + " != size of other = " + ToString(v.Size()));
-    
+    CheckOperands (*this, v, "BaseVector::Add");
     t.AddFlops (Size());
 
     
@@ -246,9 +272,9 @@ namespace ngla
 
   BaseVector & BaseVector :: Add (Complex scal, const BaseVector & v)
   {
-    if(Size() != v.Size())
-      throw Exception (string ("BaseVector::Add: size of me = ") +
-                       ToString(Size()) + " != size of other = " + ToString(v.Size()));
+    CheckComplexScalar (*this, scal, "BaseVector::Add");
+    if (!IsComplexVec(*this)) return Add (scal.real(), v);
+    CheckOperands (*this, v, "BaseVector::Add");
 
     if (v.IsComplex())
       FV<Complex>() += scal * v.FV<Complex>();
@@ -1121,8 +1147,7 @@ namespace ngla
     static Timer t("S_BaseVector::InnerProduct");
     RegionTimer reg(t);
 
-    if(Size() != v2.Size())
-      throw Exception (string ("BaseVector::InnerProduct: size of me = ") + ToString(Size()) + " != size of other = " + ToString(v2.Size()));
+    CheckOperands (*this, v2, "BaseVector::InnerProduct", true);
     
     if (conjugate)
       return ngbla::InnerProduct (FVScal(), Conj(v2.FV<SCAL>()));
@@ -1139,8 +1164,7 @@ namespace ngla
     static Timer t("BaseVector::InnerProduct (taskhandler)");
     RegionTimer reg(t);
 
-    if(Size() != v2.Size())
-      throw Exception (string ("BaseVector::InnerProduct: size of me = ") + ToString(Size()) + " != size of other = " + ToString(v2.Size()));
+    CheckOperands (*this, v2, "BaseVector::InnerProduct", true);
 
     
     auto me = FV<double>();

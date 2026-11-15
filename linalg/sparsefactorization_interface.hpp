@@ -241,8 +241,9 @@ public:
   void SetSubset(shared_ptr<BitArray> inner, shared_ptr<const Array<int>> cluster) override;
 
 
-  VecFormat RowFormat () const override { return matrix.lock()->ColFormat(); }
-  VecFormat ColFormat () const override { return matrix.lock()->RowFormat(); }
+  VecFormat RowFormat () const override { return LockedMatrix()->ColFormat(); }
+  VecFormat ColFormat () const override { return LockedMatrix()->RowFormat(); }
+  void CheckReady (const BaseVector & x, const BaseVector & y) const;
 
   shared_ptr<const BaseSparseMatrix> GetInnerMatrix() const {
     return inner_mat;

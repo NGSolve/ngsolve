@@ -1396,6 +1396,9 @@ namespace ngla
   shared_ptr<SparseMatrix<TM_Res>>
   MatMult (const SparseMatrix<TM1> & mata, const SparseMatrix<TM2> & matb, bool sort_output)
   {
+    if (mata.Width() != matb.Height())
+      throw Exception ("MatMult: width of left matrix " + ToString(mata.Width())
+                       + " != height of right matrix " + ToString(matb.Height()));
     if (auto syma = dynamic_cast<const SparseMatrixSymmetric<TM1>*>(&mata))
       return MatMult<TM_Res,TM1,TM2>(*MakeFullMatrix(*syma), matb, sort_output);
     if (auto symb = dynamic_cast<const SparseMatrixSymmetric<TM2>*>(&matb))

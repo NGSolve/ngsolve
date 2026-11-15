@@ -130,7 +130,15 @@ namespace ngla
       MultTrans (v, res);
       return res;
     }
-    
+
+    // O(1) check of x (and y) against Row/ColFormat, for entry points
+    // (Python, dynamic expressions), not for Mult implementations; throws Exception
+    void CheckFormats (const BaseVector & x, const BaseVector * y,
+                       bool trans = false, bool complex_factor = false) const;
+    void CheckFormats (const BaseVector & x, const BaseVector & y,
+                       bool trans = false, bool complex_factor = false) const
+    { CheckFormats (x, &y, trans, complex_factor); }
+
     /// y = matrix * x. 
     virtual void Mult (const BaseVector & x, BaseVector & y) const;
     ///
@@ -335,25 +343,30 @@ namespace ngla
 
     AutoVector Evaluate() const override
     {
+      m->CheckFormats (*v, nullptr);
       return m->Evaluate(*v);
     }
-    
+
     void AssignTo (double s, BaseVector & v2) const override
     {
+      m->CheckFormats (*v, v2);
       m->Mult(*v, v2);
       v2 *= s;
     }
     void AddTo (double s, BaseVector & v2) const override
     {
+      m->CheckFormats (*v, v2);
       m->MultAdd (s, *v, v2);
     }
     void AssignTo (Complex s, BaseVector & v2) const override
     {
+      m->CheckFormats (*v, v2, false, s.imag() != 0);
       m->Mult(*v, v2);
       v2 *= s;
     }
     void AddTo (Complex s, BaseVector & v2) const override
     {
+      m->CheckFormats (*v, v2, false, s.imag() != 0);
       m->MultAdd (s, *v, v2);
     }
   public:
@@ -496,7 +509,11 @@ namespace ngla
 
   /* ************************** Product ************************* */
 
-  /// action of product of two matrices 
+  // throw if a*b resp. a+b cannot work; open or unknown formats pass
+  NGS_DLL_HEADER void CheckComposable (const BaseMatrix & a, const BaseMatrix & b);
+  NGS_DLL_HEADER void CheckAddable (const BaseMatrix & a, const BaseMatrix & b);
+
+  /// action of product of two matrices
   class NGS_DLL_HEADER ProductMatrix : public BaseMatrix
   {
     const BaseMatrix & bma;
@@ -506,9 +523,9 @@ namespace ngla
   public:
     ///
     ProductMatrix (const BaseMatrix & abma, const BaseMatrix & abmb)
-      : bma(abma), bmb(abmb) { }
+      : bma(abma), bmb(abmb) { CheckComposable (bma, bmb); }
     ProductMatrix (shared_ptr<BaseMatrix> aspbma, shared_ptr<BaseMatrix> aspbmb)
-      : bma(*aspbma), bmb(*aspbmb), spbma(aspbma), spbmb(aspbmb) { }
+      : bma(*aspbma), bmb(*aspbmb), spbma(aspbma), spbmb(aspbmb) { CheckComposable (bma, bmb); }
     // the space between the factors, both sides contribute
     AutoVector CreateTempVector () const
     { return CreateBaseVector (VecFormat::Merge (bmb.ColFormat(), bma.RowFormat()).WithDefaults()); }
@@ -630,7 +647,7 @@ namespace ngla
     SumMatrix (const BaseMatrix & abma, const BaseMatrix & abmb,
                double aa = 1, double ab = 1)
       : bma(abma), bmb(abmb), a(aa), b(ab)
-    { ; }
+    { CheckAddable (bma, bmb); }
     SumMatrix (shared_ptr<BaseMatrix> aspbma, shared_ptr<BaseMatrix> aspbmb,
                double aa = 1, double ab = 1);
 

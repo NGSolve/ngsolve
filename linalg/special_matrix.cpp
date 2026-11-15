@@ -383,8 +383,8 @@ namespace ngla
     realmatrix = arealmatrix;
     if (realmatrix)
       {
-	hx.SetSize (realmatrix->Height());
-	hy.SetSize (realmatrix->Width());
+	hx.SetSize (realmatrix->Width());
+	hy.SetSize (realmatrix->Height());
       }
   }
 
@@ -691,9 +691,11 @@ namespace ngla
   {
     h = mats.Size();
     w = (h > 0) ? mats[0].Size() : 0;
+    if (h == 0 || w == 0)
+      throw Exception("BlockMatrix needs at least one block");
     // check if nr of blocks per row is consistent
     for (auto k:Range(h))
-      if (mats[k].Size()!=h)
+      if (mats[k].Size()!=w)
 	throw Exception("Tried to construct a BlockMatrix with unequal nr. of blocks per row");
     // check if there is at least one block per row/col
     BitArray rowhas(h);
@@ -730,6 +732,30 @@ namespace ngla
 	}
       }
     }
+
+    // blocks of a row share the col space, blocks of a col the row space
+    for (auto k : Range(h))
+      for (auto j : Range(w))
+        if (mats[k][j])
+          {
+            VecFormat c0, c, r0, r;
+            try
+              {
+                c0 = row_reps[k]->ColFormat(); c = mats[k][j]->ColFormat();
+                r0 = col_reps[j]->RowFormat(); r = mats[k][j]->RowFormat();
+              }
+            catch (Exception &) { continue; }
+            try
+              {
+                VecFormat::Merge (c0, c);
+                VecFormat::Merge (r0, r);
+              }
+            catch (Exception & e)
+              {
+                throw Exception ("BlockMatrix: block (" + ToString(k) + "," + ToString(j)
+                                 + ") does not fit its block row/col: " + e.What());
+              }
+          }
   }
   
   void BlockMatrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
