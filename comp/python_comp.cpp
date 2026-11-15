@@ -4064,6 +4064,8 @@ integrator : ngsolve.fem.LFI
           BitArray mask;
           if (definedon)
             {
+              if (definedon->Mesh() != ma)
+                throw Exception ("Integrate: definedon is a region of another mesh");
               vb = VorB(*definedon);
               mask = BitArray((*definedon).Mask());
             }

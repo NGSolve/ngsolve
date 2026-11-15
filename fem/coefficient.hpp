@@ -602,7 +602,7 @@ namespace ngfem
     void Evaluate(const BaseMappedIntegrationPoint & ip,
                   FlatVector<> result) const override
     {
-      FlatMatrix<double,ColMajor> mat(Dimension(), 1, &result(0));
+      FlatMatrix<double,ColMajor> mat(Dimension(), 1, result.Data());
       ip.IntegrationRuleFromPoint([this,mat] (const BaseMappedIntegrationRule & ir)
                                   { static_cast<const TCF*>(this)->T_Evaluate (ir, BareSliceMatrix<double,ColMajor>(mat)); });
     }
@@ -610,7 +610,7 @@ namespace ngfem
     void Evaluate(const BaseMappedIntegrationPoint & ip,
                   FlatVector<Complex> result) const override
     {
-      FlatMatrix<Complex,ColMajor> mat(Dimension(), 1, &result(0));
+      FlatMatrix<Complex,ColMajor> mat(Dimension(), 1, result.Data());
       ip.IntegrationRuleFromPoint([this,mat] (const BaseMappedIntegrationRule & ir)
                                   { static_cast<const TCF*>(this)->T_Evaluate (ir, BareSliceMatrix<Complex,ColMajor>(mat)); });
     }

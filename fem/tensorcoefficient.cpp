@@ -239,27 +239,29 @@ namespace ngfem {
                 if ((idx < 'a' || idx > 'z') && (idx < 'A' || idx > 'Z'))
                     throw NG_EXCEPTION("invalid index character detected -- use only a-z, A-Z");
 
+                auto input_dim = [&] () -> size_t {
+                    auto & cf = *cfs[subset_cnt];
+                    if (cf.Dimensions().Size() <= 1)
+                        if (subset_idx > 1)
+                            throw NG_EXCEPTION("tensor order mismatch");
+                        else
+                            return cf.Dimension();
+                    else if (subset_idx + 1 > cf.Dimensions().Size())
+                        throw NG_EXCEPTION("tensor order mismatch");
+                    else
+                        return cf.Dimensions()[subset_idx];
+                };
+
                 if (!chars.Contains(idx)) {
                     if (result_section)
                         throw NG_EXCEPTION("detected 'result indices' not present in the inputs");
 
-                    size_t subset_dim_i = 1;
-                    if (cfs[subset_cnt]->Dimensions().Size() <= 1)
-                        if (subset_idx > 1)
-                            throw NG_EXCEPTION("tensor order mismatch");
-                        else
-                            subset_dim_i = cfs[subset_cnt]->Dimension();
-                    else if (subset_idx + 1 > cfs[subset_cnt]->Dimensions().Size())
-                        throw NG_EXCEPTION("tensor order mismatch");
-                    else
-                        subset_dim_i = cfs[subset_cnt]->Dimensions()[subset_idx];
-
+                    size_t subset_dim_i = input_dim();
                     full_idx_set.Append(Index{idx, chars.Size(), subset_dim_i});
                     current_idx_set->Append(full_idx_set[chars.Size()]);
                     chars.Append(idx);
                     char_counts.Append(1);
-                } else if (!result_section && cfs[subset_cnt]->Dimensions()[subset_idx] !=
-                                              full_idx_set[chars.Pos(idx)].dim) {
+                } else if (!result_section && input_dim() != full_idx_set[chars.Pos(idx)].dim) {
                     throw NG_EXCEPTION("dimensions of contracted indices do not match");
                 } else {
                     current_idx_set->Append(full_idx_set[chars.Pos(idx)]);

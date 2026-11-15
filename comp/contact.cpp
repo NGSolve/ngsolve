@@ -1251,6 +1251,9 @@ namespace ngcomp
 
     auto mesh = master.Mesh();
     if (!mesh) return;
+    // the gap search runs over the boundary elements of other
+    if (other.VB() != BND)
+      throw Exception ("ContactBoundary: the minion region must be a boundary region, got " + ToString(other.VB()));
     
     if(mesh->GetDimension() == 2)
       {

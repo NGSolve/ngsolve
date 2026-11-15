@@ -483,6 +483,8 @@ public:
     const shared_ptr<CoefficientFunction> & GetIntegrandCF() const { return cf; }
     virtual string Name () const override { return string ("Symbolic LFI"); }
     virtual int GetDimension() const override { return proxies[0]->Evaluator()->BlockDim(); }
+    virtual void CheckElement (const FiniteElement & fel) const override
+    { for (auto proxy : proxies) proxy->Evaluator()->CheckElement(fel); }
 
     virtual void 
     CalcElementVector (const FiniteElement & fel,
@@ -551,6 +553,12 @@ public:
     // virtual SIMD_IntegrationRule Get_SIMD_IntegrationRuleEB (const FiniteElement & fel, int facetnr, LocalHeap & lh) const;
     
     virtual int GetDimension() const override { return trial_proxies[0]->Evaluator()->BlockDim(); }
+    virtual void CheckElement (const FiniteElement & fel) const override
+    {
+      auto mixedfe = AsMixedFE(fel);
+      for (auto proxy : trial_proxies) proxy->Evaluator()->CheckElement(mixedfe ? mixedfe->FETrial() : fel);
+      for (auto proxy : test_proxies) proxy->Evaluator()->CheckElement(mixedfe ? mixedfe->FETest() : fel);
+    }
     void SetLinearization(shared_ptr<BilinearFormIntegrator> _lin)
     { linearization = _lin; }
 
@@ -899,6 +907,8 @@ public:
     const shared_ptr<CoefficientFunction> & GetIntegrandCF() const { return cf; }
     virtual xbool IsSymmetric() const { return true; } 
     virtual string Name () const { return string ("Symbolic Energy"); }
+    virtual void CheckElement (const FiniteElement & fel) const
+    { for (auto proxy : trial_proxies) proxy->Evaluator()->CheckElement(fel); }
 
 
     using Integrator::GetIntegrationRule;

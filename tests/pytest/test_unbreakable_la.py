@@ -205,3 +205,17 @@ def test_eigen_num_validation(sys2d):
         PINVIT(a.mat, m.mat, pre, num=0, printrates=False)
     lams, vecs = PINVIT(a.mat, m.mat, pre, num=2, maxit=20, printrates=False)
     assert len(lams) == 2
+
+
+def test_basevector_entry_size():
+    v = BaseVector(10, entrysize=3)
+    v[:] = 1
+    with pytest.raises(ValueError):
+        v[9] = Vector([5.0] * 1000)
+    with pytest.raises(ValueError):
+        v[3] = Vector([1.0])
+    v[3] = Vector([1.0, 2.0, 3.0])
+    assert list(v.FV()[9:12]) == [1.0, 2.0, 3.0]
+    c = BaseVector(4, entrysize=2, complex=True)
+    with pytest.raises(ValueError):
+        c[1] = Vector([1j, 2j, 3j])

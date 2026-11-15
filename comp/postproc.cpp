@@ -428,6 +428,11 @@ namespace ngcomp
     auto fes = u.GetFESpace();
     shared_ptr<MeshAccess> ma = fes->GetMeshAccess(); 
     int dim   = fes->GetDimension();
+    fes->CheckUpToDate();
+    if (u.GetLevelUpdated() < ma->GetNLevels())
+      throw Exception ("GridFunction is not up to date with its mesh (refined without Update)");
+    if (reg && reg->Mesh() != ma)
+      throw Exception ("Set: definedon is a region of another mesh");
     // dual shapes evaluate coef also on element facets
     CheckContext (*coef, MakeCFContext (*ma, CFContext::EVALUATE, vb, dualdiffop ? BND : VOL, false, fes->IsComplex()));
     PushStatus("setvalues");
@@ -1560,6 +1565,13 @@ namespace ngfem
             defon = reg.Mask();
           }
       }
+    // elements of dx.vb are tested by region index and element number
+    if (defon.Size() && defon.Size() < ma.GetNRegions(dx.vb))
+      throw Exception ("Integrate: definedon has " + ToString(defon.Size()) + " entries, the mesh has " +
+                       ToString(ma.GetNRegions(dx.vb)) + " " + ToString(dx.vb) + " regions");
+    if (dx.definedonelements && dx.definedonelements->Size() < ma.GetNE(dx.vb))
+      throw Exception ("Integrate: definedonelements has size " + ToString(dx.definedonelements->Size()) +
+                       ", the mesh has " + ToString(ma.GetNE(dx.vb)) + " " + ToString(dx.vb) + " elements");
 
     constexpr int max_element_type = std::max(element_types);
     std::array<IntegrationRule*, max_element_type+1> user_ir;

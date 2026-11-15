@@ -2,6 +2,7 @@
 #include <core/array.hpp>
 #include "h1amg.hpp"
 #include "hcurlamg.hpp"
+#include "hcurlhofespace.hpp"
 
 #include <special_matrix.hpp>
 #include <jacobi.hpp>
@@ -1070,6 +1071,16 @@ namespace ngcomp
                       "available are 'direct', 'amg', 'local'\n");
   }
 
+
+  void HCurlAMG :: InitLevel(shared_ptr<BitArray> _freedofs)
+  {
+    // dof numbers are used as edge numbers
+    if (!dynamic_pointer_cast<HCurlHighOrderFESpace>(fes) || fes->GetNDof() != ma->GetNEdges())
+      throw Exception("hcurlamg needs a lowest order HCurl space (one dof per edge), got " +
+                      fes->GetClassName() + " with " + ToString(fes->GetNDof()) + " dofs on " +
+                      ToString(ma->GetNEdges()) + " edges");
+    freedofs = _freedofs; mat = nullptr;
+  }
 
   DocInfo HCurlAMG :: GetDocu()
   {

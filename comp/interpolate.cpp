@@ -201,6 +201,9 @@ namespace ngcomp
       : T_CoefficientFunction<InterpolationCoefficientFunction>(aopname.has_value() ? afes->GetAdditionalEvaluators()[*aopname]->Dim() : f->Dimension(), f->IsComplex()),
         func(f), fes(afes), bonus_intorder(abonus_intorder), opname(aopname)
     {
+      if (auto eval = fes->GetEvaluator(VOL); eval && eval->Dim() != func->Dimension())
+        throw Exception ("Interpolate: the CoefficientFunction has dimension " + ToString(func->Dimension()) +
+                         ", " + fes->GetClassName() + " needs dimension " + ToString(eval->Dim()));
       if(opname.has_value())
         this->SetDimensions(fes->GetAdditionalEvaluators()[*opname]->Dimensions());
       else

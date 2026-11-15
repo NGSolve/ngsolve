@@ -1891,6 +1891,23 @@ extrapolate: bool = True
 
 // *************************************** Export FEM ********************************
 
+// named integrators without dim: pick the one for the element's space dimension
+static shared_ptr<BilinearFormIntegrator> ForTrafo (shared_ptr<BilinearFormIntegrator> bfi,
+                                                    const ElementTransformation & trafo)
+{
+  if (auto a = dynamic_pointer_cast<BilinearFormIntegratorAnyDim> (bfi))
+    return a->GetBFI (trafo.SpaceDim());
+  return bfi;
+}
+
+static shared_ptr<LinearFormIntegrator> ForTrafo (shared_ptr<LinearFormIntegrator> lfi,
+                                                  const ElementTransformation & trafo)
+{
+  if (auto a = dynamic_pointer_cast<LinearFormIntegratorAnyDim> (lfi))
+    return a->GetLFI (trafo.SpaceDim());
+  return lfi;
+}
+
 
 void NGS_DLL_HEADER ExportNgfem(py::module &m) {
 
@@ -2625,6 +2642,8 @@ intrule : ngsolve.fem.Integrationrule
              const FiniteElement & fe, const ElementTransformation &trafo,
              size_t heapsize, bool complex)
          {
+           self = ForTrafo (self, trafo);
+           self->CheckElement (fe);
            while (true)
              {
                LocalHeap lh(heapsize);
@@ -2678,6 +2697,8 @@ complex : bool
              const ElementTransformation &trafo,
              size_t heapsize)
          {
+           self = ForTrafo (self, trafo);
+           self->CheckElement (fe);
            while (true)
              {
                LocalHeap lh(heapsize);
@@ -2721,6 +2742,8 @@ heapsize : int
              const ElementTransformation &trafo,
              size_t heapsize)
          {
+           self = ForTrafo (self, trafo);
+           self->CheckElement (fe);
            while (true)
              {
                LocalHeap lh(heapsize);
@@ -2911,6 +2934,8 @@ ir : ngsolve.fem.IntegrationRule
          [] (shared_ptr<LFI>  self, const FiniteElement & fe, const ElementTransformation& trafo,
              size_t heapsize, bool complex)
          {
+           self = ForTrafo (self, trafo);
+           self->CheckElement (fe);
            while (true)
              {
                try

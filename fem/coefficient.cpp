@@ -4475,6 +4475,9 @@ cl_UnaryOpCF<GenericIdentity>::Operator(const string & name) const
 
   shared_ptr<CoefficientFunction> EigCF (shared_ptr<CoefficientFunction> coef)
   {
+    auto dims = coef->Dimensions();
+    if (dims.Size() != 2 || dims[0] != dims[1])
+      throw Exception ("Eig needs a square matrix-valued CoefficientFunction");
     return make_shared<EigCoefficientFunction> (coef);
   }
   

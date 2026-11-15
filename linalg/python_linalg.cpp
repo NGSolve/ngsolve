@@ -655,9 +655,17 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
           if (ind < 0 || ind >= self.Size())
             throw py::index_error();
           if( self.IsComplex() )
-            self.SV<Complex>()(ind) = v;
+            {
+              auto e = self.SV<Complex>()(ind);
+              PyCheckSize (v.Size(), e.Size(), "vector size");
+              e = v;
+            }
           else
-            self.SV<double>()(ind) = v;
+            {
+              auto e = self.SV<double>()(ind);
+              PyCheckSize (v.Size(), e.Size(), "vector size");
+              e = v;
+            }
       }, py::arg("ind"), py::arg("vec") )
     .def("__setitem__", [](BaseVector & self,  int ind, FlatVector<Complex> & v )
       {
@@ -665,7 +673,11 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
           if (ind < 0 || ind >= self.Size())
             throw py::index_error();
           if( self.IsComplex() )
-            self.SV<Complex>()(ind) = v;
+            {
+              auto e = self.SV<Complex>()(ind);
+              PyCheckSize (v.Size(), e.Size(), "vector size");
+              e = v;
+            }
           else
             throw py::index_error("cannot assign complex values to real vector");
       }, py::arg("ind"), py::arg("vec") )

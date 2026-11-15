@@ -525,6 +525,9 @@ namespace ngcomp
       { throw Exception("Cannot convert between complex and non-complex space!"); }
     if ( space_a->GetMeshAccess() != space_b->GetMeshAccess() )
       { throw Exception("ConvertOperator: the spaces must be defined on the same mesh"); }
+    if ( range_dofs && range_dofs->Size() < space_b->GetNDof() )
+      throw Exception("ConvertOperator: range_dofs has size " + ToString(range_dofs->Size()) +
+                      ", the range space has " + ToString(space_b->GetNDof()) + " dofs");
 
     shared_ptr<BaseMatrix> op;
 

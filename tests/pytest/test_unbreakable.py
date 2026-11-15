@@ -6,7 +6,7 @@ import gc
 import pickle
 import pytest
 import numpy as np
-from netgen.geom2d import unit_square
+from netgen.geom2d import unit_square, SplineGeometry
 from ngsolve import *
 from ngsolve.fem import BFI, LFI, H1FE, MixedFE
 import ngsolve.comp
@@ -388,3 +388,158 @@ def test_hdivdivfacet_dofs_distinct():
     for el in fes.Elements(VOL):
         used.update(el.dofs)
     assert len(used) == fes.ndof
+
+
+# ---------------------------------------------------------------- out-of-bounds accesses found with range checks
+
+def test_todense_block_matrix(m):
+    fes = H1(m, order=1, dim=2)
+    u, v = fes.TnT()
+    a = BilinearForm(InnerProduct(u, v) * dx).Assemble()
+    d = np.array(a.mat.ToDense())
+    assert d.shape == (2 * m.nv, 2 * m.nv)
+    gf = GridFunction(fes)
+    gf.Set(CF((x, y)))
+    w = a.mat.CreateColVector()
+    w.data = a.mat * gf.vec
+    assert np.allclose(d @ gf.vec.FV().NumPy(), w.FV().NumPy())
+
+
+def test_named_bfi_calcelementmatrix_dim(m):
+    trafo = m.GetTrafo(ElementId(VOL, 0))
+    fe = H1FE(ET.TRIG, 1)
+    mat = BFI("elasticity", coef=[1, 0.3]).CalcElementMatrix(fe, trafo)
+    ref = BFI("elasticity", coef=[1, 0.3], dim=2).CalcElementMatrix(fe, trafo)
+    assert mat.h == 6 and mat.w == 6
+    assert np.allclose(np.array(mat), np.array(ref))
+    vec = LFI("source", coef=1).CalcElementVector(fe, trafo)
+    assert len(vec) == 3
+
+
+def test_symbolic_bfi_wrong_element(m):
+    u, v = HCurl(m, order=2).TnT()
+    with pytest.raises(Exception, match="expected"):
+        SymbolicBFI(curl(u) * curl(v)).CalcElementMatrix(H1FE(ET.TRIG, 2), m.GetTrafo(ElementId(VOL, 0)))
+
+
+def test_einsum_scalar_inputs(m):
+    from ngsolve.fem import Einsum
+    c = Einsum("i,i->", x, y)
+    assert c(m(0.2, 0.3)) == pytest.approx(0.06)
+
+
+def test_cf_empty_slice(m):
+    d = CF((1, 2, 3, 4))[3:1]
+    assert d.dim == 0
+    assert d(m(0.2, 0.2)) == ()
+
+
+def test_eig_needs_square_matrix(m):
+    with pytest.raises(Exception, match="square"):
+        CF((1, 2, 3)).Eig()
+    e = CF((2, 0, 0, 3), dims=(2, 2)).Eig()
+    assert e(m(0.2, 0.2))[4:] == pytest.approx((2, 3))
+
+
+def test_definedonelements_short(m):
+    fes = H1(m, order=1)
+    u, v = fes.TnT()
+    a = BilinearForm(fes)
+    with pytest.raises(Exception, match="definedonelements"):
+        a += BFI("laplace", coef=1, definedonelem=BitArray(3))
+    with pytest.raises(Exception, match="definedonelements"):
+        BilinearForm(u * v * dx(definedonelements=BitArray(3)))
+    mesh = fresh_mesh()
+    els = BitArray(mesh.ne)
+    els.Set()
+    mesh.Refine()
+    with pytest.raises(Exception, match="definedonelements"):
+        Integrate(CF(1) * dx(definedonelements=els), mesh)
+
+
+def test_hcurlamg_needs_lowest_order_hcurl(m):
+    fes = H1(m, order=1)
+    u, v = fes.TnT()
+    a = BilinearForm(grad(u) * grad(v) * dx + u * v * dx)
+    c = Preconditioner(a, "hcurlamg")
+    with pytest.raises(Exception, match="hcurlamg"):
+        a.Assemble()
+
+
+def test_stale_spaces_rejected():
+    mesh = fresh_mesh()
+    f1 = H1(mesh, order=2, autoupdate=False)
+    u, v = f1.TnT()
+    mesh.Refine()
+    with pytest.raises(Exception, match="not up to date"):
+        BilinearForm(u * v * dx).Assemble()
+
+    mesh = fresh_mesh()
+    f1 = H1(mesh, order=2, autoupdate=False)
+    g1 = GridFunction(f1, autoupdate=False)
+    mesh.Refine()
+    f1.Update()
+    with pytest.raises(Exception, match="not up to date"):
+        g1.Set(x)
+
+    mesh = fresh_mesh()
+    f1 = H1(mesh, order=2, autoupdate=False)
+    f2 = L2(mesh, order=1, autoupdate=False)
+    X = f1 * f2
+    mesh.Refine()
+    f1.Update()
+    (u, p), (v, q) = X.TnT()
+    with pytest.raises(Exception, match="not up to date"):
+        BilinearForm(u * v * dx + p * q * dx).Assemble()
+
+    mesh = fresh_mesh()
+    fd = VectorH1(mesh, order=1, autoupdate=False)
+    d = GridFunction(fd, autoupdate=False)
+    d.Set(CF((x, y)))
+    mesh.SetDeformation(d)
+    mesh.Refine()
+    with pytest.raises(Exception, match="not up to date"):
+        Integrate(CF(1), mesh)
+
+
+def test_convert_operator_range_dofs_short(m):
+    with pytest.raises(Exception, match="range_dofs"):
+        ConvertOperator(H1(m, order=1), L2(m, order=1), range_dofs=BitArray(3))
+
+
+def test_interpolate_dimension(m):
+    with pytest.raises(Exception, match="dimension"):
+        Interpolate(CF((x, y)), H1(m, order=2))
+    I = Interpolate(CF((x, y)), VectorH1(m, order=2))
+    assert Integrate(I, m) == pytest.approx((0.5, 0.5))
+
+
+def test_contact_minion_must_be_boundary(m):
+    with pytest.raises(Exception, match="boundary region"):
+        ContactBoundary(m.Materials(".*"), m.Materials(".*"))
+
+
+def test_regions_of_other_mesh():
+    g = SplineGeometry()
+    g.AddRectangle((0, 0), (1, 1), bcs=["a", "b", "c", "d"])
+    g.AddCircle((0.5, 0.5), 0.2, leftdomain=2, rightdomain=1, bc="circ")
+    mb = Mesh(g.GenerateMesh(maxh=0.2))
+    m1 = fresh_mesh()
+    with pytest.raises(Exception, match="another mesh"):
+        H1(mb, order=1, dirichlet=m1.Boundaries("left"))
+    with pytest.raises(Exception, match="another mesh"):
+        H1(mb, order=1, definedon=m1.Materials("default"))
+    with pytest.raises(Exception, match="BND"):
+        H1(mb, order=1, dirichlet=mb.Materials(".*"))
+    with pytest.raises(Exception, match="another mesh"):
+        Integrate(CF(1), mb, definedon=m1.Materials("default"))
+    gf = GridFunction(H1(mb, order=1))
+    with pytest.raises(Exception, match="another mesh"):
+        gf.Set(1, definedon=m1.Boundaries("left|right|top|bottom"))
+
+
+def test_space_dim_positive(m):
+    with pytest.raises(Exception, match="dim"):
+        H1(m, order=2, dim=0)
+    with pytest.raises(Exception, match="dim"):
+        H1(m, order=2, dim=-2)

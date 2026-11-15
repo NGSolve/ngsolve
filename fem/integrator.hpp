@@ -1376,6 +1376,7 @@ namespace ngfem
       if (!bfi[dim]) 
         throw Exception (string("BFI for dimension") + ToString(dim)+"not available");
       bfi[dim]->SetDefinedOn(definedon);
+      bfi[dim]->SetDefinedOnElements(definedon_element);
       return bfi[dim];
     }
 
@@ -1893,6 +1894,7 @@ namespace ngfem
       if (!lfi[dim]) 
         throw Exception (string("LFI for dimension") + ToString(dim)+"not available");
       lfi[dim]->SetDefinedOn(definedon);
+      lfi[dim]->SetDefinedOnElements(definedon_element);
       return lfi[dim];
     }
 

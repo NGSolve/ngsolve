@@ -28,6 +28,22 @@ namespace ngcomp
 {
   using namespace ngmg;
 
+  // regions in flags index the region arrays of the space's own mesh
+  static const Region & OwnRegion (const Region & reg, const MeshAccess & ma, const string & what)
+  {
+    if (reg.Mesh().get() != &ma)
+      throw Exception (what + ": the region belongs to another mesh");
+    return reg;
+  }
+
+  static const Region & OwnRegion (const Region & reg, const MeshAccess & ma, VorB vb, const string & what)
+  {
+    OwnRegion (reg, ma, what);
+    if (reg.VB() != vb)
+      throw Exception (what + ": needs a " + ToString(vb) + " region, got a " + ToString(reg.VB()) + " region");
+    return reg;
+  }
+
   FESpace :: FESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool checkflags)
     : NGS_Object (ama, flags, "FESpace")
   {
@@ -75,6 +91,8 @@ namespace ngcomp
     */
     
     dimension = int (flags.GetNumFlag ("dim", 1));
+    if (dimension < 1)
+      throw Exception ("dim must be at least 1, got " + ToString(dimension));
 
     if (flags.GetDefineFlag ("vec"))
       dimension = ma->GetDimension();
@@ -114,7 +132,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     if(flags.AnyFlagDefined("dirichlet"))
       {
-        dirichlet_constraints[BND] = std::any_cast<const Region&>(flags.GetAnyFlag("dirichlet")).Mask();
+        dirichlet_constraints[BND] = OwnRegion(std::any_cast<const Region&>(flags.GetAnyFlag("dirichlet")), *ma, BND, "dirichlet").Mask();
       }
 
     if(flags.NumListFlagDefined("dirichlet"))
@@ -142,7 +160,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     if(flags.AnyFlagDefined("dirichlet_bbnd"))
       {
-        dirichlet_constraints[BBND] = std::any_cast<const Region&>(flags.GetAnyFlag("dirichlet_bbnd")).Mask();
+        dirichlet_constraints[BBND] = OwnRegion(std::any_cast<const Region&>(flags.GetAnyFlag("dirichlet_bbnd")), *ma, BBND, "dirichlet_bbnd").Mask();
       }
 
     if (flags.StringFlagDefined("dirichlet_bbnd"))
@@ -156,7 +174,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     if(flags.AnyFlagDefined("dirichlet_bbbnd"))
       {
-        dirichlet_constraints[BBBND] = std::any_cast<const Region&>(flags.GetAnyFlag("dirichlet_bbbnd")).Mask();
+        dirichlet_constraints[BBBND] = OwnRegion(std::any_cast<const Region&>(flags.GetAnyFlag("dirichlet_bbbnd")), *ma, BBBND, "dirichlet_bbbnd").Mask();
       }
 
     if (flags.StringFlagDefined("dirichlet_bbbnd"))
@@ -218,6 +236,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
                 auto map = std::any_cast<std::map<VorB, Region>>(anydefon);
                 for(const auto& [vb, reg] : map)
                   {
+                    OwnRegion (reg, *ma, vb, "definedon");
                     if(vb == BBND || vb == BBBND)
                       definedon[vb].SetSize(ma->GetNRegions(vb));
                     for(auto i : Range(definedon[vb]))
@@ -229,7 +248,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
               }
             else if(anydefon.type() == typeid(Region))
               {
-                auto reg = std::any_cast<Region>(anydefon);
+                auto reg = OwnRegion(std::any_cast<Region>(anydefon), *ma, "definedon");
                 definedon[reg.VB()].SetSize(reg.Mask().Size());
                 for(auto i : Range(definedon[reg.VB()]))
                   definedon[reg.VB()][i] = reg.Mask().Test(i);
@@ -1491,6 +1510,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
   CFContext MakeCFContext (const MeshAccess & ma, CFContext::Purpose purpose,
                            VorB vb, VorB element_vb, bool skeleton, bool allow_complex)
   {
+    // every element transformation evaluates the deformation
+    if (auto def = ma.GetDeformation())
+      if (def->GetLevelUpdated() < ma.GetNLevels())
+        throw Exception ("the deformation of the mesh is not up to date with its mesh (refined without Update)");
     CFContext ctx;
     ctx.purpose = purpose;
     ctx.mesh = &ma;
@@ -1573,6 +1596,15 @@ lot of new non-zero entries in the matrix!\n" << endl;
     auto space = trialspace ? trialspace : testspace;
     if (!space) return;
     auto & ma = *space->GetMeshAccess();
+
+    // element loops test definedonelements by element number (volume elements for skeleton terms)
+    if (auto doe = igt.GetDefinedOnElements())
+      {
+        VorB evb = igt.SkeletonForm() ? VOL : igt.VB();
+        if (doe->Size() < ma.GetNE(evb))
+          throw Exception ("definedonelements has size " + ToString(doe->Size()) + ", mesh has " +
+                           ToString(ma.GetNE(evb)) + " " + ToString(evb) + " elements");
+      }
     
     if (igt.GetDeformation())
       CheckDeformation (*igt.GetDeformation(), ma);
@@ -1679,6 +1711,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
   
   void FESpace :: CheckDofConsistency (VorB vb, bool all_elements) const
   {
+    CheckUpToDate();
     size_t stamp = ma->GetTimeStamp();
     if (!all_elements && dofcheck_meshstamp[vb] == stamp && dofcheck_ndof[vb] == GetNDof()) return;
     if (!NeedsDofTransformation() && int(vb) <= ma->GetDimension() && ma->GetNE(vb))
@@ -2068,7 +2101,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     if (flags.AnyFlagDefined("additional_dirichlet_constraints"))
       {
-        Region reg = std::any_cast<Region>(flags.GetAnyFlag("additional_dirichlet_constraints"));
+        Region reg = OwnRegion(std::any_cast<Region>(flags.GetAnyFlag("additional_dirichlet_constraints")), *ma, "additional_dirichlet_constraints");
         BitArray dofs = GetDofs(reg);
         dofs.Invert();
         freedofs = make_shared<BitArray>(*freedofs);
