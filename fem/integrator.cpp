@@ -9,6 +9,7 @@
 
 #include "integrator.hpp"
 #include "diffop.hpp"
+#include "coefficient.hpp"
 
 namespace ngfem
 {
@@ -1785,7 +1786,10 @@ namespace ngfem
   void BilinearFormIntegratorAnyDim ::  
   CheckElement (const FiniteElement & el) const
   {
-    ;
+    int dim = ElementTopology::GetSpaceDim(el.ElementType()) + (any_dim->SkeletonForm() ? 0 : int(VB()));
+    if (dim < 0 || dim > 3 || !bfi[dim])
+      throw Exception ("integrator '" + any_dim->Name() + "' is not available in " + ToString(dim) + "D");
+    bfi[dim]->CheckElement (el);
   }
 
   void BilinearFormIntegratorAnyDim ::  
@@ -2455,7 +2459,10 @@ namespace ngfem
   void LinearFormIntegratorAnyDim ::  
   CheckElement (const FiniteElement & el) const
   {
-    ;
+    int dim = ElementTopology::GetSpaceDim(el.ElementType()) + (any_dim->SkeletonForm() ? 0 : int(VB()));
+    if (dim < 0 || dim > 3 || !lfi[dim])
+      throw Exception ("integrator '" + any_dim->Name() + "' is not available in " + ToString(dim) + "D");
+    lfi[dim]->CheckElement (el);
   }
 
   void LinearFormIntegratorAnyDim ::  
@@ -2532,22 +2539,65 @@ namespace ngfem
     throw Exception (string ("GetBFI: Unknown integrator ") + name + "\n");
   }
 
+  // scalar components of the coefficients, compared with the registered numcoeffs
+  static int NumCoefComponents (const Array<shared_ptr<CoefficientFunction>> & coeffs)
+  {
+    int n = 0;
+    for (auto & c : coeffs)
+      {
+        if (!c) throw Exception ("integrator coefficient is None");
+        n += c->Dimension();
+      }
+    return n;
+  }
+
+  template <typename T>
+  static const Integrators::IntegratorInfo<T> *
+  FindIntegrator (const Array<Integrators::IntegratorInfo<T>*> & list, const string & name, int dim,
+                  int ncomp, const char * kind)
+  {
+    string expected;
+    for (auto info : list)
+      if (info->name == name && info->spacedim == dim)
+        {
+          if (info->numcoeffs == ncomp) return info;
+          expected += (expected.size() ? " or " : "") + ToString(info->numcoeffs);
+        }
+    if (expected.size())
+      throw Exception (string(kind) + " '" + name + "' in " + ToString(dim) + "D needs " + expected +
+                       " coefficient components, got " + ToString(ncomp));
+    return nullptr;
+  }
+
   shared_ptr<BilinearFormIntegrator>
   Integrators::CreateBFI(const string & name, int dim, 
 			 const Array<shared_ptr<CoefficientFunction>> & coeffs) const
   {
+    int ncomp = NumCoefComponents (coeffs);
     if (dim == -1)
       {
         shared_ptr<BilinearFormIntegrator> abfi[4];
-        for (int i = 0; i < bfis.Size(); i++)
-          if (name == bfis[i]->name)
+        bool found = false;
+        for (int d = 0; d <= 3; d++)
+          try
             {
-              int spacedim = bfis[i]->spacedim;
-              abfi[spacedim] = bfis[i] -> creator(coeffs);
+              if (auto info = FindIntegrator (bfis, name, d, ncomp, "BilinearFormIntegrator"))
+                {
+                  abfi[d] = info -> creator(coeffs);
+                  abfi[d] -> SetName (name);
+                }
             }
+          catch (const Exception & e) { found = true; }
+        bool any = false;
+        for (auto & bfi : abfi) if (bfi) any = true;
+        if (!any)
+          throw Exception (found ? string("BilinearFormIntegrator '") + name + "': no space dimension takes coefficients with " + ToString(ncomp) + " components"
+                           : string ("Unknown BilinearFormIntegrator ") + name);
         return make_shared<BilinearFormIntegratorAnyDim> (abfi);
       }
-    auto bfi = GetBFI(name, dim)->creator(coeffs);
+    auto info = FindIntegrator (bfis, name, dim, ncomp, "BilinearFormIntegrator");
+    if (!info) GetBFI(name, dim);  // throws
+    auto bfi = info->creator(coeffs);
     bfi -> SetName (name);
     return bfi;
   }
@@ -2597,26 +2647,33 @@ namespace ngfem
     // LinearFormIntegrator * lfi =
     // dynamic_cast<LinearFormIntegrator*> (GetLFI(name, dim)->creator(coeffs));
 
+    int ncomp = NumCoefComponents (coeffs);
     if (dim == -1)
       {
         shared_ptr<LinearFormIntegrator> alfi[4];
-        for (int i = 0; i < lfis.Size(); i++)
-          if (name == lfis[i]->name)
+        bool found = false;
+        for (int d = 0; d <= 3; d++)
+          try
             {
-              int spacedim = lfis[i]->spacedim;
-              try
+              // creates lfi only if dimension of coef-function fits
+              if (auto info = FindIntegrator (lfis, name, d, ncomp, "LinearFormIntegrator"))
                 {
-                  alfi[spacedim] = lfis[i] -> creator(coeffs);
-                }
-              catch (const Exception& e)
-                {
-                  // creates lfi only if dimension of coef-function fits
+                  alfi[d] = info -> creator(coeffs);
+                  alfi[d] -> SetName (name);
                 }
             }
+          catch (const Exception& e) { found = true; }
+        bool any = false;
+        for (auto & lfi : alfi) if (lfi) any = true;
+        if (!any)
+          throw Exception (found ? string("LinearFormIntegrator '") + name + "': no space dimension takes coefficients with " + ToString(ncomp) + " components"
+                           : string ("Unknown LinearFormIntegrator ") + name);
         return make_shared<LinearFormIntegratorAnyDim> (alfi);
       }
 
-    auto lfi = GetLFI(name, dim)->creator(coeffs);
+    auto info = FindIntegrator (lfis, name, dim, ncomp, "LinearFormIntegrator");
+    if (!info) GetLFI(name, dim);  // throws
+    auto lfi = info->creator(coeffs);
     lfi -> SetName (name);
     return lfi;
   }

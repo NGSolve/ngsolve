@@ -506,6 +506,45 @@ public:
   }
 };
 
+// 1D: (q.n) n = q, the point dof is the x-component
+template <typename FEL>
+class DiffOpIdVecHDivBoundary<1,FEL> : public DiffOp<DiffOpIdVecHDivBoundary<1,FEL> >
+{
+public:
+  static constexpr int DIM = 1;
+  static constexpr int DIM_SPACE = 1;
+  static constexpr int DIM_ELEMENT = 0;
+  static constexpr int DIM_DMAT = 1;
+  static constexpr int DIFFORDER = 0;
+  using FiniteElementType = FEL;
+
+  static const FEL & Cast (const FiniteElement & fel)
+  { return static_cast<const FEL&> (fel); }
+
+  template <typename AFEL, typename MIP, typename MAT>
+  static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+			      MAT && mat, LocalHeap & lh)
+  {
+    HeapReset hr(lh);
+    FlatVector<> shape(fel.GetNDof(), lh);
+    Cast(fel).CalcShape (mip.IP(), shape);
+    for (int i = 0; i < fel.GetNDof(); i++)
+      mat(0,i) = shape(i);
+  }
+
+  static void GenerateMatrixSIMDIR (const FiniteElement & fel,
+                                    const SIMD_BaseMappedIntegrationRule & mir, BareSliceMatrix<SIMD<double>> mat)
+  {
+    int nd = fel.GetNDof();
+    STACK_ARRAY(double, mem, nd);
+    FlatVector<> shape(nd, mem);
+    Cast(fel).CalcShape (IntegrationPoint(), shape);
+    for (int i = 0; i < nd; i++)
+      for (size_t k = 0; k < mir.Size(); k++)
+        mat(i,k) = shape(i);
+  }
+};
+
 //Dual diffop
 template <int D>
 class DiffOpHDivDual : public DiffOp<DiffOpHDivDual<D> >

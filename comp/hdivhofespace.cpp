@@ -269,6 +269,9 @@ namespace ngcomp
     biortho = flags.GetDefineFlag("biortho");
     fixed_order = flags.GetDefineFlag ("fixedorder");
     hdiv_ndof::SetupRT (flags, order, et_RT);
+    // 1D: RT unless RT=False, div maps onto L2(order)
+    if (ma->GetDimension() == 1)
+      et_RT[ET_SEGM] = order == 0 || !flags.GetDefineFlagX("RT").IsFalse();
     
     uniform_order_inner = int (flags.GetNumFlag ("orderinner", -1));
     
@@ -279,7 +282,13 @@ namespace ngcomp
 
 
     
-    if (ma->GetDimension() == 2)
+    if (ma->GetDimension() == 1)
+      {
+        evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdHDiv<1>>>();
+        evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdVecHDivBoundary<1>>>();
+        flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpDivHDiv<1>>>();
+      }
+    else if (ma->GetDimension() == 2)
       {
         evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdHDiv<2>>>();
         evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdVecHDivBoundary<2>>>();
@@ -301,6 +310,8 @@ namespace ngcomp
     */
     
     highest_order_dc = flags.GetDefineFlag("highest_order_dc");
+    if (highest_order_dc && ma->GetDimension() == 1)
+      throw Exception("HDiv: highest_order_dc is not supported on 1D meshes");
     if (highest_order_dc) {
       *testout << "highest_order_dc is active!" << endl;
     }
@@ -309,7 +320,10 @@ namespace ngcomp
     switch (ma->GetDimension())
       {
       case 1:
-        additional_evaluators.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHDiv<1>>> ()); break;
+        additional_evaluators.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHDiv<1>>> ());
+	additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHDivDual<1>>> ());
+        additional_evaluators.Set ("normalcomponent",make_shared<T_DifferentialOperator<DiffOpNormalComponentHDiv<1>>> ());
+        break;
       case 2:
         additional_evaluators.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHDiv<2>>> ());
 	additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHDivDual<2>>> ());
@@ -331,6 +345,12 @@ namespace ngcomp
   
   HDivHighOrderFESpace:: ~HDivHighOrderFESpace () { ClearDualInverse(); }
 
+  int HDivHighOrderFESpace :: Segm1DDegree (size_t elnr) const
+  {
+    if (ho_div_free) return 1;
+    return max(int(order_inner[elnr][0]) + (et_RT[ET_SEGM] ? 1 : 0), 1);
+  }
+
   void HDivHighOrderFESpace :: ClearDualInverse ()
   {
     for (auto & row : dual_inverse)
@@ -344,7 +364,8 @@ namespace ngcomp
     docu.Arg("RT") = "bool = unset\n"
       "  Raviart-Thomas type: div maps onto L2(order) instead of L2(order-1).\n"
       "  order = degree of the normal trace. Unset: RT on quads, prisms and hexes,\n"
-      "  BDM type on trigs, tets and pyramids. True/False: on all element types";
+      "  BDM type on trigs, tets and pyramids. True/False: on all element types.\n"
+      "  1D meshes: RT unless RT=False, HDiv(order=k) is continuous P_(k+1)";
     for (auto et : { ET_TRIG, ET_QUAD, ET_TET, ET_PRISM, ET_PYRAMID, ET_HEX })
       docu.Arg(hdiv_ndof::RTFlagName(et)) = "bool = unset\n"
         "  RT for this element type, overrides 'RT'";
@@ -564,6 +585,7 @@ namespace ngcomp
 		order_inner[i][k] = max2(el_orders[k]+rel_order,0);
 	      }
 
+	    if(dim==1) continue;
 	    if(dim==2)
 	      {
 		auto edges = ElementTopology::GetEdges (eltype);
@@ -614,7 +636,7 @@ namespace ngcomp
 	      }
 	  }
 
-	ma->AllReduceNodalData ((ma->GetDimension()==2) ? NT_EDGE : NT_FACE,
+	ma->AllReduceNodalData (StdNodeType(NT_FACET, ma->GetDimension()),
 				fine_facet, NG_MPI_LOR);
 
 	if(uniform_order_inner > -1) order_inner = IVec<3>(uniform_order_inner);
@@ -681,7 +703,18 @@ namespace ngcomp
     size_t ndof = nfa;
     first_facet_dof = ndof; 
 
-    if(dim==2)
+    if(dim==1)
+      {
+        // vertex values only on facets, bubbles inside
+        for (size_t i = 0; i < nel; i++)
+          {
+            first_inner_dof[i] = ndof;
+            ndof += Segm1DDegree(i) - 1;
+          }
+        first_inner_dof[nel] = ndof;
+        dc_pairs.SetSize0();
+      }
+    else if(dim==2)
       {
 	// int dec_hodc = highest_order_dc ? 1 : 0;
         for (auto i : Range(nfa))
@@ -1042,7 +1075,9 @@ namespace ngcomp
         
         switch (eltype)
           {
-            // case ET_SEGM:    return T_GetFE<ET_SEGM> (elnr, false, alloc);
+          case ET_SEGM:
+            if (!DefinedOn(ngel)) return * new (alloc) HDivDummyFE<ET_SEGM>();
+            return * new (alloc) HDivHighOrderSegm (Segm1DDegree(elnr));
             
           case ET_TRIG:    return T_GetFE<ET_TRIG> (elnr, false, alloc);
           case ET_QUAD:    return T_GetFE<ET_QUAD> (elnr, false, alloc);
@@ -1077,6 +1112,9 @@ namespace ngcomp
         
         switch (ma->GetElType(ei))
           {
+          case ET_POINT:
+            if (discont) return * new (alloc) HDivNormalDummyFE<ET_POINT>();
+            return * new (alloc) HDivNormalPoint();
           case ET_SEGM:
             {
               auto fe1 = new (alloc) HDivHighOrderNormalSegm<TrigExtensionMonomial> (porder);
@@ -1479,6 +1517,7 @@ namespace ngcomp
 
   shared_ptr<Table<int>> HDivHighOrderFESpace :: CreateSpecificSmoothingBlocks (const Flags & precflags) const
   {
+    if (ma->GetDimension() == 1) return nullptr;
     int first;
     int ncnt = 0;
     // int ni = ma->GetNE(); //nel;
@@ -1817,11 +1856,25 @@ namespace ngcomp
   void HDivHighOrderFESpace :: GetVertexDofNrs (int vnr, Array<int> & dnums) const
   {
     dnums.SetSize0(); 
+    if (ma->GetDimension() == 1 && !discont)
+      {
+        dnums += vnr;
+        dnums += GetFacetDofs (vnr);
+      }
   }
   
   void HDivHighOrderFESpace :: GetEdgeDofNrs (int ednr, Array<int> & dnums) const
   { 
     dnums.SetSize0();
+    if (ma->GetDimension() == 1)
+      {
+        // the edge is the element
+        Array<int> els;
+        ma->GetEdgeElements (ednr, els);
+        if (els.Size())
+          dnums += GetElementDofs (els[0]);
+        return;
+      }
     if(ma->GetDimension() == 3 || discont) return; 
 
     dnums += ednr;

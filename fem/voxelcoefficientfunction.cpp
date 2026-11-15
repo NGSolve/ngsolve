@@ -31,7 +31,7 @@ namespace ngfem
             if(!linear && coord == end[i])
               coord *= (1-1e-12);
             double pos = (coord - start[i])/len;
-            ind[i] = pos;
+            ind[i] = min2(size_t(pos), dim_vals[i]-1);
             if(linear)
               weight[i] = 1.-(pos-ind[i]);
           }

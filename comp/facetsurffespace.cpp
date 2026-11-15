@@ -1,6 +1,7 @@
 #include "facetsurffespace.hpp"
 
 #include "../fem/l2hofe.hpp"
+#include "../fem/h1lofe.hpp"
 #include "../fem/diffop_impl.hpp"
 #include "../fem/facethofe.hpp"
 #include <bdbequations.hpp>
@@ -485,7 +486,11 @@ namespace ngcomp
 	{
 	  switch (ma->GetElType(ei))
 	    {
-	    case ET_POINT: return *new (lh) ScalarDummyFE<ET_POINT> ();
+	    case ET_POINT:
+              // 2D: the vertex dof of the facet space
+              if (GetEdgeDofs(vnums[0]).Size() == 1)
+                return *new (lh) FE_Point();
+              return *new (lh) ScalarDummyFE<ET_POINT> ();
 	    case ET_SEGM:
               {
                 auto fe1d = new (lh) L2HighOrderFE<ET_SEGM> ();

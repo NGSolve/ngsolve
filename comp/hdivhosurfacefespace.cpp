@@ -742,7 +742,8 @@ void HDivHighOrderSurfaceFESpace :: Average (BaseVector & vec) const
 	    HDivHighOrderNormalFiniteElement<1> * hofe =
               dynamic_cast<HDivHighOrderNormalFiniteElement<1>*> (fe);
 	    	    
-	    hofe -> SetOrderInner(order);
+	    // as many dofs as GetDofNrs provides on the edge
+	    hofe -> SetOrderInner(GetFacetDofs(ma->GetElEdges(ei)[0]).Size());
 	    hofe -> ComputeNDof();
 
 	    return *hofe;

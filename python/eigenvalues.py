@@ -16,9 +16,24 @@ def Orthogonalize (vecs, mat):
         mv.append (hv)
 
 
+def _CheckEigArgs(mata, matm, pre, num, maxit, nblocks):
+    if int(num) != num or num < 1:
+        raise ValueError("num must be an integer >= 1, got {}".format(num))
+    if int(maxit) != maxit or maxit < 0:
+        raise ValueError("maxit must be an integer >= 0, got {}".format(maxit))
+    n = mata.width
+    if mata.height != n or matm.height != n or matm.width != n:
+        raise ValueError("matrices must be square and of equal size")
+    if pre.height != n or pre.width != n:
+        raise ValueError("preconditioner size {}x{} does not match matrix size {}".format(pre.height, pre.width, n))
+    if nblocks * num > n:
+        raise ValueError("num={} too large: need {}*num <= ndof = {}".format(num, nblocks, n))
+
+
 def PINVIT1(mata, matm, pre, num=1, maxit=20, printrates=True, GramSchmidt=False):
     """preconditioned inverse iteration"""
     import scipy.linalg
+    _CheckEigArgs(mata, matm, pre, num, maxit, 2)
 
     r = mata.CreateRowVector()
     Av = mata.CreateRowVector()
@@ -75,6 +90,7 @@ def PINVIT1(mata, matm, pre, num=1, maxit=20, printrates=True, GramSchmidt=False
 def PINVIT(mata, matm, pre, num=1, maxit=20, printrates=True, GramSchmidt=True):
     """preconditioned inverse iteration"""
     import scipy.linalg
+    _CheckEigArgs(mata, matm, pre, num, maxit, 2)
 
     r = mata.CreateRowVector()
     
@@ -113,6 +129,7 @@ def PINVIT(mata, matm, pre, num=1, maxit=20, printrates=True, GramSchmidt=True):
 def LOBPCG(mata, matm, pre, num=1, maxit=20, initial=None, printrates=True, largest=False):
     """Knyazev's cg-like extension of PINVIT"""
     import scipy.linalg
+    _CheckEigArgs(mata, matm, pre, len(initial) if initial else num, maxit, 3)
 
     r = mata.CreateRowVector()
 

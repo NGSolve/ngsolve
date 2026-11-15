@@ -389,6 +389,8 @@ namespace ngcomp
   {
     type = "tangentialfacet";
     name = "TangentialFacetFESpace";
+    if (ma->GetDimension() == 1)
+      throw Exception("TangentialFacetFESpace is not defined on 1D meshes (a point has no tangent space)");
     DefineNumFlag("relorder");
     DefineDefineFlag("variableorder");
 

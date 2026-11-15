@@ -1153,6 +1153,8 @@ for the two neighbouring elements. This allows a simple implementation of the Le
         auto vnums = ma->GetElVertices(ei);
         switch (ma->GetElType(ei))
           {
+          case ET_POINT:
+            return *new (lh) L2HighOrderFE<ET_POINT> (0);
           case ET_SEGM:
             {
               auto fe1d = new (lh) L2HighOrderFE<ET_SEGM> ();

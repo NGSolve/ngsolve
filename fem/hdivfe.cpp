@@ -14,6 +14,7 @@
 #include "hdivfe.hpp"
 #include "h1lofe.hpp"
 #include "hdivlofe.hpp"
+#include "recursive_pol.hpp"
 
 namespace ngfem
 {
@@ -793,11 +794,186 @@ namespace ngfem
     ;
   }
 
-  void HDivNormalSegm0 :: 
-  CalcShape (const IntegrationPoint & ip, 
+  void HDivNormalSegm0 ::
+  CalcShape (const IntegrationPoint & ip,
 	     FlatVector<> shape) const
   {
     shape(0) = 1;
+  }
+
+
+
+  // f(nr, AutoDiff<1,T>): lam0, lam1, then lam0 lam1 * integrated Legendre
+  template <typename T, typename FUNC>
+  INLINE void HDivSegmShapes (int degree, T x, FUNC && f)
+  {
+    AutoDiff<1,T> ax(x, 0);
+    AutoDiff<1,T> lam[2] = { ax, 1-ax };
+    f(0, lam[0]);
+    f(1, lam[1]);
+    if (degree >= 2)
+      {
+        int ii = 2;
+        IntLegNoBubble::EvalMult (degree-2, lam[0]-lam[1], lam[0]*lam[1],
+                                  SBLambda ([&] (int nr, AutoDiff<1,T> val)
+                                            { f(ii++, val); }));
+      }
+  }
+
+  HDivHighOrderSegm :: HDivHighOrderSegm (int degree)
+    : HDivFiniteElement<1> (max(degree,1)+1, max(degree,1)) { ; }
+
+  void HDivHighOrderSegm ::
+  CalcShape (const IntegrationPoint & ip, BareSliceMatrix<> shape) const
+  {
+    HDivSegmShapes (order, ip(0), [shape] (int i, AutoDiff<1> v) { shape(i,0) = v.Value(); });
+  }
+
+  void HDivHighOrderSegm ::
+  CalcDivShape (const IntegrationPoint & ip, BareSliceVector<> divshape) const
+  {
+    HDivSegmShapes (order, ip(0), [divshape] (int i, AutoDiff<1> v) { divshape(i) = v.DValue(0); });
+  }
+
+  void HDivHighOrderSegm ::
+  CalcDShape (const IntegrationPoint & ip, BareSliceMatrix<> dshape) const
+  {
+    HDivSegmShapes (order, ip(0), [dshape] (int i, AutoDiff<1> v) { dshape(i,0) = v.DValue(0); });
+  }
+
+  // 1D Piola: J/det = 1
+  void HDivHighOrderSegm ::
+  CalcMappedShape (const SIMD_BaseMappedIntegrationRule & bmir,
+                   BareSliceMatrix<SIMD<double>> shapes) const
+  {
+    auto & mir = static_cast<const SIMD_MappedIntegrationRule<1,1>&> (bmir);
+    for (size_t k = 0; k < mir.Size(); k++)
+      HDivSegmShapes (order, mir[k].IP()(0), [shapes,k] (int i, AutoDiff<1,SIMD<double>> v)
+                      { shapes(i,k) = v.Value(); });
+  }
+
+  void HDivHighOrderSegm ::
+  CalcMappedNormalShape (const SIMD_BaseMappedIntegrationRule & bmir,
+                         BareSliceMatrix<SIMD<double>> shapes) const
+  {
+    auto & mir = static_cast<const SIMD_MappedIntegrationRule<1,1>&> (bmir);
+    for (size_t k = 0; k < mir.Size(); k++)
+      {
+        SIMD<double> n = mir[k].GetNV()(0);
+        HDivSegmShapes (order, mir[k].IP()(0), [shapes,k,n] (int i, AutoDiff<1,SIMD<double>> v)
+                        { shapes(i,k) = n * v.Value(); });
+      }
+  }
+
+  void HDivHighOrderSegm ::
+  CalcMappedDivShape (const SIMD_BaseMappedIntegrationRule & bmir,
+                      BareSliceMatrix<SIMD<double>> divshapes) const
+  {
+    auto & mir = static_cast<const SIMD_MappedIntegrationRule<1,1>&> (bmir);
+    for (size_t k = 0; k < mir.Size(); k++)
+      {
+        SIMD<double> idet = 1.0 / mir[k].GetJacobiDet();
+        HDivSegmShapes (order, mir[k].IP()(0), [divshapes,k,idet] (int i, AutoDiff<1,SIMD<double>> v)
+                        { divshapes(i,k) = idet * v.DValue(0); });
+      }
+  }
+
+  void HDivHighOrderSegm ::
+  Evaluate (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceVector<> coefs,
+            BareSliceMatrix<SIMD<double>> values) const
+  {
+    auto & mir = static_cast<const SIMD_MappedIntegrationRule<1,1>&> (bmir);
+    for (size_t k = 0; k < mir.Size(); k++)
+      {
+        SIMD<double> sum = 0.0;
+        HDivSegmShapes (order, mir[k].IP()(0), [&sum,coefs] (int i, AutoDiff<1,SIMD<double>> v)
+                        { sum += coefs(i) * v.Value(); });
+        values(0,k) = sum;
+      }
+  }
+
+  void HDivHighOrderSegm ::
+  AddTrans (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> values,
+            BareSliceVector<> coefs) const
+  {
+    auto & mir = static_cast<const SIMD_MappedIntegrationRule<1,1>&> (bmir);
+    for (size_t k = 0; k < mir.Size(); k++)
+      {
+        SIMD<double> val = values(0,k);
+        HDivSegmShapes (order, mir[k].IP()(0), [val,coefs] (int i, AutoDiff<1,SIMD<double>> v)
+                        { coefs(i) += HSum(val * v.Value()); });
+      }
+  }
+
+  void HDivHighOrderSegm ::
+  EvaluateDiv (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceVector<> coefs,
+               BareVector<SIMD<double>> values) const
+  {
+    auto & mir = static_cast<const SIMD_MappedIntegrationRule<1,1>&> (bmir);
+    for (size_t k = 0; k < mir.Size(); k++)
+      {
+        SIMD<double> sum = 0.0;
+        HDivSegmShapes (order, mir[k].IP()(0), [&sum,coefs] (int i, AutoDiff<1,SIMD<double>> v)
+                        { sum += coefs(i) * v.DValue(0); });
+        values(k) = sum / mir[k].GetJacobiDet();
+      }
+  }
+
+  void HDivHighOrderSegm ::
+  AddDivTrans (const SIMD_BaseMappedIntegrationRule & bmir, BareVector<SIMD<double>> values,
+               BareSliceVector<> coefs) const
+  {
+    auto & mir = static_cast<const SIMD_MappedIntegrationRule<1,1>&> (bmir);
+    for (size_t k = 0; k < mir.Size(); k++)
+      {
+        SIMD<double> val = values(k) / mir[k].GetJacobiDet();
+        HDivSegmShapes (order, mir[k].IP()(0), [val,coefs] (int i, AutoDiff<1,SIMD<double>> v)
+                        { coefs(i) += HSum(val * v.DValue(0)); });
+      }
+  }
+
+  void HDivHighOrderSegm :: GetFacetDofs (int i, Array<int> & dnums) const
+  {
+    dnums.SetSize(1);
+    dnums[0] = i;
+  }
+
+  void HDivHighOrderSegm ::
+  CalcDualShape (const BaseMappedIntegrationPoint & bmip, BareSliceMatrix<> shape) const
+  {
+    shape.AddSize(ndof, 1) = 0.0;
+    auto & ip = bmip.IP();
+    if (ip.VB() == BND)
+      {
+        if (ip.FacetNr() >= 0 && ip.FacetNr() < 2)
+          shape(ip.FacetNr(), 0) = 1;
+      }
+    else if (ip.VB() == VOL && order >= 2)
+      {
+        double idet = 1.0 / static_cast<const MappedIntegrationPoint<1,1>&> (bmip).GetJacobiDet();
+        LegendrePolynomial::Eval (order-2, 2*ip(0)-1,
+                                  SBLambda ([shape,idet] (size_t nr, double val)
+                                            { shape(2+nr,0) = idet * val; }));
+      }
+  }
+
+  void HDivNormalPoint ::
+  CalcShape (const IntegrationPoint & ip, FlatVector<> shape) const
+  {
+    shape(0) = 1;
+  }
+
+  void HDivNormalPoint ::
+  Interpolate (const ElementTransformation & trafo,
+               const CoefficientFunction & func, SliceMatrix<> coefs,
+               LocalHeap & lh, int bonus_intorder) const
+  {
+    HeapReset hr(lh);
+    IntegrationRule ir(ET_POINT, 0);
+    auto & mir = trafo(ir, lh);
+    FlatMatrix<> vals(mir.Size(), func.Dimension(), lh);
+    func.Evaluate (mir, vals);
+    coefs(0,0) = vals(0,0);
   }
 
 

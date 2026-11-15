@@ -113,6 +113,62 @@ namespace ngfem
   };
 
 
+  /*
+    H(div) on a segment of a 1D mesh: continuous P_degree, the normal trace
+    is the point value. Dofs: the two vertex values, then degree-1 bubbles.
+   */
+  class NGS_DLL_HEADER HDivHighOrderSegm : public HDivFiniteElement<1>
+  {
+  public:
+    HDivHighOrderSegm (int degree);
+    virtual ELEMENT_TYPE ElementType() const override { return ET_SEGM; }
+    virtual string ClassName() const override { return "HDivHighOrderSegm"; }
+    virtual tuple<int,int,int,int> GetNDofVEFC () const override { return { 2, ndof-2, 0, 0 }; }
+
+    virtual void CalcShape (const IntegrationPoint & ip, BareSliceMatrix<> shape) const override;
+    virtual void CalcDivShape (const IntegrationPoint & ip, BareSliceVector<> divshape) const override;
+    virtual void CalcDShape (const IntegrationPoint & ip, BareSliceMatrix<> dshape) const override;
+
+    using HDivFiniteElement<1>::CalcMappedShape;
+    virtual void CalcMappedShape (const SIMD_BaseMappedIntegrationRule & mir,
+                                  BareSliceMatrix<SIMD<double>> shapes) const override;
+    virtual void CalcMappedNormalShape (const SIMD_BaseMappedIntegrationRule & mir,
+                                        BareSliceMatrix<SIMD<double>> shapes) const override;
+    using HDivFiniteElement<1>::CalcMappedDivShape;
+    virtual void CalcMappedDivShape (const SIMD_BaseMappedIntegrationRule & mir,
+                                     BareSliceMatrix<SIMD<double>> divshapes) const override;
+
+    using HDivFiniteElement<1>::Evaluate;
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs,
+                           BareSliceMatrix<SIMD<double>> values) const override;
+    virtual void AddTrans (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values,
+                           BareSliceVector<> coefs) const override;
+    virtual void EvaluateDiv (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs,
+                              BareVector<SIMD<double>> values) const override;
+    virtual void AddDivTrans (const SIMD_BaseMappedIntegrationRule & ir, BareVector<SIMD<double>> values,
+                              BareSliceVector<> coefs) const override;
+
+    virtual void GetFacetDofs (int i, Array<int> & dnums) const override;
+    // vertex: point value, cell: moments against P_{degree-2}
+    virtual void CalcDualShape (const BaseMappedIntegrationPoint & bmip, BareSliceMatrix<> shape) const override;
+  };
+
+
+  /// trace of HDivHighOrderSegm on a boundary point of a 1D mesh
+  class NGS_DLL_HEADER HDivNormalPoint : public HDivNormalFiniteElement<0>
+  {
+  public:
+    HDivNormalPoint () : HDivNormalFiniteElement<0> (1, 0) { ; }
+    virtual ELEMENT_TYPE ElementType() const override { return ET_POINT; }
+    virtual string ClassName() const override { return "HDivNormalPoint"; }
+    virtual void CalcShape (const IntegrationPoint & ip,
+			    FlatVector<> shape) const override;
+    virtual void Interpolate (const ElementTransformation & trafo,
+                              const class CoefficientFunction & func, SliceMatrix<> coefs,
+                              LocalHeap & lh, int bonus_intorder = 0) const override;
+  };
+
+
 
 
 

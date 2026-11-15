@@ -523,6 +523,8 @@ namespace ngcomp
   {
     if ( space_a->IsComplex() != space_b->IsComplex() ) // b complex and a real could work in principle (?)
       { throw Exception("Cannot convert between complex and non-complex space!"); }
+    if ( space_a->GetMeshAccess() != space_b->GetMeshAccess() )
+      { throw Exception("ConvertOperator: the spaces must be defined on the same mesh"); }
 
     shared_ptr<BaseMatrix> op;
 

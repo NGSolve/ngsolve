@@ -23,6 +23,63 @@ using ngfem::ELEMENT_TYPE;
 #include "gridfunction.hpp"
 #include "linearform.hpp"
 
+// binary input archive that fails cleanly when the data ends early
+class CheckedBinaryInArchive : public BinaryInArchive
+{
+  void Check() { if (!*stream) throw Exception("corrupted archive data (unexpected end)"); }
+  template <typename T> Archive & R (T & v) { BinaryInArchive::operator& (v); Check(); return *this; }
+public:
+  CheckedBinaryInArchive (std::shared_ptr<std::istream> && astream)
+    : BinaryInArchive (std::move(astream)) { }
+  using BinaryInArchive::operator&;
+  Archive & operator & (std::byte & d) override { return R(d); }
+  Archive & operator & (float & d) override { return R(d); }
+  Archive & operator & (double & d) override { return R(d); }
+  Archive & operator & (int & d) override { return R(d); }
+  Archive & operator & (short & d) override { return R(d); }
+  Archive & operator & (long & d) override { return R(d); }
+  Archive & operator & (size_t & d) override { return R(d); }
+  Archive & operator & (unsigned char & d) override { return R(d); }
+  Archive & operator & (bool & d) override { return R(d); }
+  Archive & operator & (std::string & str) override
+  {
+    int len;
+    R(len);
+    if (len < 0) throw Exception("corrupted archive data (negative string length)");
+    str.resize(len);
+    if (len) stream->read(&str[0], len);
+    Check();
+    return *this;
+  }
+  Archive & operator & (char *& str) override
+  {
+    long len;
+    R(len);
+    if (len < -1) throw Exception("corrupted archive data (negative string length)");
+    if (len == -1) { str = nullptr; return *this; }
+    string tmp;
+    tmp.resize(len);
+    if (len) stream->read(&tmp[0], len);
+    Check();
+    str = new char[len+1];
+    memcpy (str, tmp.data(), len);
+    str[len] = '\0';
+    return *this;
+  }
+  Archive & Do (std::byte * d, size_t n) override { BinaryInArchive::Do(d, n); Check(); return *this; }
+  Archive & Do (double * d, size_t n) override { BinaryInArchive::Do(d, n); Check(); return *this; }
+  Archive & Do (int * d, size_t n) override { BinaryInArchive::Do(d, n); Check(); return *this; }
+  Archive & Do (size_t * d, size_t n) override { BinaryInArchive::Do(d, n); Check(); return *this; }
+};
+
+template <int D>
+class MeshlessElementTransformation : public FE_ElementTransformation<D,D>
+{
+public:
+  using FE_ElementTransformation<D,D>::FE_ElementTransformation;
+  bool BelongsToMesh (const void * mesh) const override { return false; }
+};
+
 static void PyCheckInt (int v, int lo, int hi, const char * what)
 {
   if (v < lo || v > hi)
@@ -731,8 +788,9 @@ val : can be one of the following:
                     lst.append(data["data"]);
                     lst.append(data["version_stored"]);
                     lst.append(data["version_needed"]);
-                    PyArchive<BinaryInArchive> ar(lst);
+                    PyArchive<CheckedBinaryInArchive> ar(lst);
                     ar & cf;
+                    if (!cf) throw Exception("CoefficientFunction: archive contains no function");
                     return cf;
                   }))
     .def(py::init([] (py::object val, optional<py::tuple> dims)
@@ -1202,7 +1260,7 @@ keep_files : bool
                             return cf->EquivalenceKey();
                           })
 
-    .def (NGSPickle<CoefficientFunction>())
+    .def (NGSPickle<CoefficientFunction, BinaryOutArchive, CheckedBinaryInArchive>())
     .def("_BuildFieldLines", [](shared_ptr<CoefficientFunction > cf, shared_ptr<ngcomp::MeshAccess> ma,
                 const std::vector<std::tuple<double,double,double>> & start_points,
                 size_t num_fieldlines,
@@ -1520,6 +1578,7 @@ allow_fail : bool
                  LocalHeapMem<10000> lh("CF(MeshPoint)");
                  if(p.nr == -1)
                    throw Exception("Meshpoint not in mesh!");
+                 ngcomp::CheckMeshPoint (p);
                  auto & trafo = p.mesh->GetTrafo(ElementId(p.vb, p.nr), lh);
                  auto ip = IntegrationPoint(p.x, p.y, p.z);
                  ip.SetFacetNr(p.facetnr, p.eb);
@@ -1550,6 +1609,7 @@ allow_fail : bool
                  if (p.nr == -1) continue;
                  if (!p.mesh)
                    throw Exception("Meshpoint " + to_string(i) + " has no mesh");
+                 ngcomp::CheckMeshPoint (p, lastmesh);
                  VorB eb = p.facetnr == -1 ? VOL : (p.eb == VOL ? BND : VorB(p.eb));
                  int key = int(p.vb) | (int(eb) << 2);
                  if (p.mesh == lastmesh && key == lastkey) continue;
@@ -1659,7 +1719,7 @@ value : float
 )raw_string"))
     .def (py::init<double>(),
           py::arg("value"), "Construct a ParameterCF from a scalar")
-    .def(NGSPickle<ParameterCoefficientFunction<double>>())
+    .def(NGSPickle<ParameterCoefficientFunction<double>, BinaryOutArchive, CheckedBinaryInArchive>())
     .def ("Set", [] (spParameterCF cf, double val)  { cf->SetValue (val); }, py::arg("value"),
           docu_string(R"raw_string(
 Modify parameter value.
@@ -1703,7 +1763,7 @@ value : complex
 )raw_string"))
     .def (py::init<Complex>(),
           py::arg("value"), "Construct a ParameterCF from a scalar")
-    .def(NGSPickle<ParameterCoefficientFunction<Complex>>())
+    .def(NGSPickle<ParameterCoefficientFunction<Complex>, BinaryOutArchive, CheckedBinaryInArchive>())
     .def("Set", [] (spParCFC cf, Complex val)
       { cf->SetValue (val); },
       py::arg("value"),
@@ -1821,7 +1881,7 @@ extrapolate: bool = True
           {
             return BinaryOpCF (cx, cy, GenericBSpline2D(sp), "BSpline2D");
           }, py::arg("cx"), py::arg("cy"))
-    .def(NGSPickle<BSpline2D>())
+    .def(NGSPickle<BSpline2D, BinaryOutArchive, CheckedBinaryInArchive>())
     ;
 
   m.def ("LoggingCF", LoggingCF, py::arg("cf"), py::arg("logfile")="stdout");
@@ -1895,7 +1955,13 @@ et : ngsolve.fem.ET
 
   py::class_<MixedFiniteElement, shared_ptr<MixedFiniteElement>, FiniteElement>
     (m, "MixedFE", "pair of finite elements for trial and test-functions")
-    .def(py::init<const FiniteElement&, const FiniteElement&>())
+    .def(py::init([](const FiniteElement & fetrial, const FiniteElement & fetest)
+                  {
+                    if (fetrial.ElementType() != fetest.ElementType())
+                      throw Exception("MixedFE: trial element is "+ToString(fetrial.ElementType())
+                                      +", test element is "+ToString(fetest.ElementType()));
+                    return make_shared<MixedFiniteElement>(fetrial, fetest);
+                  }), py::keep_alive<1,2>(), py::keep_alive<1,3>())
     ;
   
   py::class_<BaseScalarFiniteElement, shared_ptr<BaseScalarFiniteElement>, 
@@ -2273,6 +2339,7 @@ weights : list
                       throw Exception("Meshpoint at (" + to_string(pnt.x) + ", " + to_string(pnt.y) + ", " +
                                       to_string(pnt.z) + ") not in mesh!");
                     }
+                    ngcomp::CheckMeshPoint (pnt);
                     auto& trafo = pnt.mesh->GetTrafo(ElementId(pnt.vb, pnt.nr), global_alloc);
                     auto& mip = trafo(IntegrationPoint(pnt.x,pnt.y,pnt.z),global_alloc);
                     mip.SetOwnsTrafo(true);
@@ -2323,14 +2390,15 @@ weights : list
           for (int i : Range(nv))
             for (int j : Range(dim))
               pmat(i,j) = py::extract<double> (vertices[py::int_(i)][py::int_(j)])();
+          // belongs to no mesh: GridFunctions use the point search
           switch (Dim(et))
             {
             case 1:
-              return make_shared<FE_ElementTransformation<1,1>> (et, pmat);
+              return make_shared<MeshlessElementTransformation<1>> (et, pmat);
             case 2:
-              return make_shared<FE_ElementTransformation<2,2>> (et, pmat);
+              return make_shared<MeshlessElementTransformation<2>> (et, pmat);
             case 3:
-              return make_shared<FE_ElementTransformation<3,3>> (et, pmat);
+              return make_shared<MeshlessElementTransformation<3>> (et, pmat);
             default:
               throw Exception ("cannot create ElementTransformation");
             }
@@ -2340,22 +2408,28 @@ weights : list
     .def_property_readonly("spacedim", &ElementTransformation::SpaceDim, "Space dimension of the element transformation")
     .def_property_readonly("elementid", &ElementTransformation::GetElementId, "Element ID of the element transformation")
     .def_property_readonly("curved", &ElementTransformation::IsCurvedElement, "Is mapping non-affine ?")    
+    // mapped points refer to the trafo; keep_alive by hand, py::keep_alive on overloads
+    // breaks when an overload is rejected
     .def ("__call__", [] (shared_ptr<ElementTransformation> self, double x, double y, double z)
            {
-             return &(*self)(IntegrationPoint(x,y,z), global_alloc);
+             py::object res = py::cast(&(*self)(IntegrationPoint(x,y,z), global_alloc), py::return_value_policy::take_ownership);
+             py::detail::keep_alive_impl (res, py::cast(self));
+             return res;
            },
-          py::arg("x"), py::arg("y")=0, py::arg("z")=0,
-          py::return_value_policy::reference)
+          py::arg("x"), py::arg("y")=0, py::arg("z")=0)
     .def ("__call__", [] (shared_ptr<ElementTransformation> self, IntegrationPoint & ip)
            {
-             return &(*self)(ip, global_alloc);
-           }, py::arg("ip"), py::return_value_policy::take_ownership)
+             py::object res = py::cast(&(*self)(ip, global_alloc), py::return_value_policy::take_ownership);
+             py::detail::keep_alive_impl (res, py::cast(self));
+             return res;
+           }, py::arg("ip"))
     ;
 
   if(have_numpy)
     {
-      eltrans_class.def("__call__", [](ElementTransformation& self, IntegrationRule& ir)
+      eltrans_class.def("__call__", [](shared_ptr<ElementTransformation> pself, IntegrationRule& ir)
                                     {
+                                      auto & self = *pself;
                                       Array<MeshPoint> pts;
                                       pts.SetAllocSize(ir.Size());
                                       for(auto& ip : ir)
@@ -2364,7 +2438,9 @@ weights : list
                                                              (ngcomp::MeshAccess*) self.GetMesh(),
                                                              self.VB(),
                                                              self.GetElementNr()});
-                                      return MoveToNumpyArray(pts);
+                                      py::object res = MoveToNumpyArray(pts);
+                                      py::detail::keep_alive_impl (res, py::cast(pself));
+                                      return res;
                                     });
     }
 
@@ -2387,6 +2463,7 @@ weights : list
 
            if (mp.nr == -1 || !mp.mesh)
              throw Exception("Meshpoint not in mesh!");
+           ngcomp::CheckMeshPoint (mp);
            diffop.CheckElement (fel);
            if (diffop.OnlyOnFacets() && mp.vb == diffop.VB() && mp.facetnr == -1)
              throw Exception("operator '" + diffop.Name() + "' can be evaluated only on element facets");

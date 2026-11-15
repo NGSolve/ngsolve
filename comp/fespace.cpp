@@ -51,6 +51,8 @@ namespace ngcomp
     DefineDefineFlag("autoupdate");
 
     order = int (flags.GetNumFlag ("order", 1));
+    if (flags.GetNumFlag ("order", 1) < 0)
+      throw Exception ("FESpace: order must be non-negative, got " + ToString(flags.GetNumFlag ("order", 1)));
 
     if (flags.NumFlagDefined("order_policy"))
       SetOrderPolicy(ORDER_POLICY(int(flags.GetNumFlag("order_policy",1))));
@@ -431,6 +433,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   void FESpace :: SetHarmonicProlongation (shared_ptr<BilinearForm> bfa, string inverse)
   {
+    if (!bfa)
+      throw Exception ("SetHarmonicProlongation: bilinear form is None");
+    if (bfa->GetFESpace().get() != this)
+      throw Exception ("SetHarmonicProlongation: the bilinear form must be defined on this space");
     prol = make_shared<HarmonicProlongation> (prol, bfa, inverse);
     if (prol) prol->Update(*this);
   }
@@ -1610,7 +1616,53 @@ lot of new non-zero entries in the matrix!\n" << endl;
         element_vb = s->ElementVB();
         purpose = CFContext::ENERGY;
       }
-    if (!cf) return;
+    if (!cf)
+      {
+        // classic integrators: element family, one element per element type
+        if (trialspace && testspace && trialspace != testspace) return;
+        VorB vb = igt.SkeletonForm() ? VOL : igt.VB();
+        if (int(vb) > ma.GetDimension()) return;
+        LocalHeap lh(1000*1000, "CheckIntegratorContext");
+        Array<ELEMENT_TYPE> types;
+        auto & classes = ma.GetElementsOfClass(vb);
+        for (size_t i = 0; i < classes.Size(); i++)
+          for (auto nr : classes[i])
+            {
+              ElementId ei(vb, nr);
+              if (!space->DefinedOn(ei) || !igt.DefinedOn(ma.GetElIndex(ei))) continue;
+              auto et = ma.GetElType(ei);
+              if (!types.Contains(et))
+                {
+                  types.Append (et);
+                  HeapReset hr(lh);
+                  try
+                    {
+                      igt.CheckElement (space->GetFE(ei, lh));
+                    }
+                  catch (const Exception & e)
+                    {
+                      throw Exception ("integrator '" + igt.Name() + "' used with " + space->GetClassName() +
+                                       " on " + ToString(et) + " (" + ToString(vb) + ") elements: " + e.What());
+                    }
+                }
+              break;
+            }
+
+        // classic integrators compute element matrices of size dimension*ndof
+        const Integrator * plain = &igt;
+        shared_ptr<Integrator> hold;
+        if (auto c = dynamic_cast<const ComplexBilinearFormIntegrator*> (plain))
+          plain = (hold = c->GetBFI()).get();
+        if (auto a = dynamic_cast<const BilinearFormIntegratorAnyDim*> (plain))
+          plain = (hold = a->GetBFI(ma.GetDimension())).get();
+        else if (auto a = dynamic_cast<const LinearFormIntegratorAnyDim*> (plain))
+          plain = (hold = a->GetLFI(ma.GetDimension())).get();
+        if (!dynamic_cast<const ComplexLinearFormIntegrator*> (plain) && !dynamic_pointer_cast<CompoundFESpace>(space)
+            && plain->GetDimension() != space->GetDimension())
+          throw Exception ("integrator '" + igt.Name() + "' needs a space of dimension " + ToString(plain->GetDimension()) +
+                           ", " + space->GetClassName() + " has dimension " + ToString(space->GetDimension()));
+        return;
+      }
 
     CFContext ctx = MakeCFContext (ma, purpose, igt.VB(), element_vb, skeleton, allow_complex);
     ctx.trialspace = trialspace;
@@ -1618,6 +1670,12 @@ lot of new non-zero entries in the matrix!\n" << endl;
     CheckContext (*cf, ctx);
   }
 
+  
+  void FESpace :: CheckUpToDate () const
+  {
+    if (level_updated >= 0 && level_updated < ma->GetNLevels())
+      throw Exception (GetClassName() + " is not up to date with its mesh (refined without Update)");
+  }
   
   void FESpace :: CheckDofConsistency (VorB vb, bool all_elements) const
   {

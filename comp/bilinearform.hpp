@@ -337,8 +337,10 @@ namespace ngcomp
     virtual double Energy (const BaseVector & x, LocalHeap & lh) const = 0;
 
     /// returns the assembled matrix
-    const BaseMatrix & GetMatrix () const { return *mats.Last(); }
-    const BaseMatrix & GetMatrix (int level) const { return *mats[level]; }
+    const BaseMatrix & GetMatrix () const { CheckMatrix(int(mats.Size())-1); return *mats.Last(); }
+    const BaseMatrix & GetMatrix (int level) const { CheckMatrix(level); return *mats[level]; }
+    // throws if no matrix is assembled on this level
+    void CheckMatrix (int level) const;
     void DeleteMatrix()
     {
       if(mats.Size())
@@ -352,8 +354,8 @@ namespace ngcomp
     /// returns the assembled matrix on a given level
     shared_ptr<BaseMatrix> GetMatrixPtr (int level) const { return mats[level]; }
 
-    BaseMatrix & GetMatrix ()  { return *mats.Last(); }
-    BaseMatrix & GetMatrix (int level)  { return *mats[level]; }
+    BaseMatrix & GetMatrix ()  { CheckMatrix(int(mats.Size())-1); return *mats.Last(); }
+    BaseMatrix & GetMatrix (int level)  { CheckMatrix(level); return *mats[level]; }
 
     /// reconstruct internal dofs from static condensation 
     /// -A_ii^{-1} A_ib

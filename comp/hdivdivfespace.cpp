@@ -1087,7 +1087,7 @@ namespace ngcomp
     Ngs_Element ngel = ma->GetElement(ei);
     if (!ei.IsVolume())
     {
-      if(!discontinuous)
+      if(!discontinuous && ei.VB() == BND)
       {
         auto feseg = new (alloc) HDivDivSurfaceFE<ET_SEGM> (order);
         auto fetr = new (alloc) HDivDivSurfaceFE<ET_TRIG> (order);
@@ -1244,6 +1244,7 @@ namespace ngcomp
     Ngs_Element ngel = ma->GetElement(ei);
     
     dnums.SetSize0();
+    if (ei.VB() > BND) return;
 
     for(auto f : ngel.Facets())
       dnums += IntRange (first_facet_dof[f],

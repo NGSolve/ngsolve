@@ -5,6 +5,7 @@ from typing import Optional, Callable, Union
 import logging
 from netgen.libngpy._meshing import _PushStatus, _GetStatus, _SetThreadPercentage
 from math import log
+from cmath import isfinite as _isfinite
 import os
 
 
@@ -97,8 +98,13 @@ class LinearSolver(BaseMatrix):
             raise TypeError("unknown arguments: {}".format(list(legacy)))
         if atol is None and tol is None:
             tol = 1e-12
+        self._CheckMaxiter(maxiter)
+        for name, val in (("tol", tol), ("atol", atol)):
+            if val is not None and not (val > 0 and _isfinite(val)):
+                raise ValueError("{} must be positive and finite, got {}".format(name, val))
         self.mat = mat
-        assert (freedofs is None) != (pre is None) # either pre or freedofs must be given
+        if (freedofs is None) == (pre is None):
+            raise ValueError("exactly one of pre and freedofs must be given")
         self.pre = pre if pre else Projector(freedofs, True)
         self.tol = tol
         self.atol = atol
@@ -109,6 +115,11 @@ class LinearSolver(BaseMatrix):
         self.plotrates = plotrates
         self.residuals = []
         self.iterations = 0
+
+    @staticmethod
+    def _CheckMaxiter(val):
+        if isinstance(val, bool) or int(val) != val or val < 1:
+            raise ValueError("maxiter must be an integer >= 1, got {}".format(val))
 
     @TimeFunction
     def Solve(self, rhs : BaseVector, sol : Optional[BaseVector] = None,
@@ -173,9 +184,12 @@ class LinearSolver(BaseMatrix):
 
     @maxsteps.setter
     def maxsteps(self, val : int):
+        self._CheckMaxiter(val)
         self.maxiter = val
 
     def CheckResidual(self, residual):
+        if not _isfinite(residual):
+            raise ArithmeticError("{}: residual is {}, breakdown (nan or inf in matrix, preconditioner or right-hand side)".format(self.name, residual))
         self.iterations += 1
         self.residuals.append(residual)
         if len(self.residuals) == 1:
@@ -1197,6 +1211,8 @@ restart : int = None
                  restart : Optional[int] = None,
                  **kwargs):
         super().__init__(*args, **kwargs)
+        if restart is not None and (int(restart) != restart or restart < 1):
+            raise ValueError("restart must be an integer >= 1, got {}".format(restart))
         if innerproduct is not None:
             self.innerproduct = innerproduct
             self.norm = lambda x: sqrt(innerproduct(x,x).real)

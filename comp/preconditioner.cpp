@@ -124,8 +124,8 @@ namespace ngcomp
   void Preconditioner :: Test () const
   {
     cout << IM(1) << "Compute eigenvalues" << endl;
-    const BaseMatrix & amat = GetAMatrix();
     const BaseMatrix & pre = GetMatrix();
+    const BaseMatrix & amat = GetAMatrix();
     int eigenretval;
 
     if ( !this->uselapack )
@@ -278,6 +278,8 @@ namespace ngcomp
     mgnumber = int(flags.GetNumFlag("mgnumber",1)); 
     
     if (!abfa) return;
+    if (abfa->NonAssemble())
+      throw Exception ("multigrid preconditioner needs an assembled bilinear form, got nonassemble=True");
     
     shared_ptr<MeshAccess> ma = abfa->GetMeshAccess();
     bfa = abfa;
@@ -473,6 +475,21 @@ namespace ngcomp
     static Timer t("MGPreconditioner::Update"); RegionTimer reg(t);
     
     shared_ptr<BilinearForm> lo_bfa = bfa->GetLowOrderBilinearForm();
+    {
+      // missing coarse matrices (mesh refined before assembling): Galerkin projection
+      auto mgbfa = lo_bfa ? lo_bfa : bfa;
+      int nlevels = bfa->GetMeshAccess()->GetNLevels();
+      auto missing = [&] ()
+        {
+          for (int l = 0; l < nlevels; l++)
+            if (l >= mgbfa->GetNLevels() || !mgbfa->GetMatrixPtr(l)) return l;
+          return -1;
+        };
+      if (missing() >= 0 && mgbfa->GetNLevels() == nlevels && mgbfa->GetMatrixPtr(nlevels-1))
+        mgbfa->GalerkinProjection();
+      if (int l = missing(); l >= 0)
+        throw Exception ("multigrid preconditioner: no matrix on mesh level " + ToString(l));
+    }
 
     string invtype = dynamic_cast<const BaseSparseMatrix & > (bfa->GetMatrix()).SetInverseType (inversetype);
     auto & coarsemat = (lo_bfa ? lo_bfa : bfa)->GetMatrix(0);

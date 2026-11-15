@@ -2264,7 +2264,15 @@ global system.
 
     if (!dual_mapping)
       {
-        if (ma->GetDimension() == 2)
+        if (ma->GetDimension() == 1)
+          {
+            // boundary points: no surface gradient
+            evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<1>>>();
+            evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<1>>>(); // for dimension
+            flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradient<1>>>(); // to avoid exception "grad does not exist"
+            additional_evaluators.Set ("Grad", make_shared<T_DifferentialOperator<DiffOpGradient<1>>>());
+          }
+        else if (ma->GetDimension() == 2)
           {
             evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<2>>>();
             evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<2>>>(); // for dimension
@@ -2283,7 +2291,12 @@ global system.
       }
     else
       {
-        if (ma->GetDimension() == 2)
+        if (ma->GetDimension() == 1)
+          {
+            evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdDual<1,1>>>(); // for dimension
+            evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdDual<0,1>>>();
+          }
+        else if (ma->GetDimension() == 2)
           {
             evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdDual<2,2>>>(); // for dimension
             evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdDual<1,2>>>();
@@ -2324,14 +2337,18 @@ global system.
     shared_ptr<DifferentialOperator> dual;
     if (dual_mapping)
       {
-        if (ma->GetDimension() == 2)
+        if (ma->GetDimension() == 1)
+          dual = make_shared<T_DifferentialOperator<DiffOpIdBoundary<1>>>();
+        else if (ma->GetDimension() == 2)
           dual = make_shared<T_DifferentialOperator<DiffOpIdBoundary<2>>>();
         else
           dual = make_shared<T_DifferentialOperator<DiffOpIdBoundary<3>>>();
       }
     else
       {
-        if (ma->GetDimension() == 2)
+        if (ma->GetDimension() == 1)
+          dual = make_shared<T_DifferentialOperator<DiffOpIdDual<0,1>>>();
+        else if (ma->GetDimension() == 2)
           dual = make_shared<T_DifferentialOperator<DiffOpIdDual<1,2>>>();
         else
           dual = make_shared<T_DifferentialOperator<DiffOpIdDual<2,3>>>();
@@ -2425,6 +2442,9 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
 	IVec<3> pi = order_inner[i];
 	switch (ma->GetElType(ElementId(BND, i)))
 	  {
+	  case ET_POINT:
+	    ndof += 1;
+	    break;
 	  case ET_SEGM:
 	    ndof += pi[0]+1;
 	    break;
@@ -2512,6 +2532,8 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
   {
     if (ei.VB() == BND && DefinedOn(ei))
       {
+        if (ma->GetDimension() == 1)
+          return * new (lh) L2HighOrderFE<ET_POINT> (0);   // one value per point, any order
         if (ma->GetDimension() == 2)
           {
             DGFiniteElement<ET_SEGM> * fe1d = 0;
@@ -6088,6 +6110,8 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
     : CompoundFESpace(ama, flags)
   {
     type = "TangentialSurfaceL2";
+    if (ma->GetDimension() == 1)
+      throw Exception("TangentialSurfaceL2 is not defined on 1D meshes (a point has no tangent space)");
     Flags compflags = flags;
     if (flags.GetDefineFlagX("all_dofs_together").IsMaybeTrue())
       compflags.SetFlag("all_dofs_together");

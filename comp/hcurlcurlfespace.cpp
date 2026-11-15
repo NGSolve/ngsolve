@@ -1886,9 +1886,14 @@ Einstein: Einstein tensor Ein_ij(g) = Ric_ij(g)-0.5*S(g) g_ij
 
     if (first_update)
       {
+        // defined on boundaries only, not on any volume region
         bool defonsurf = false;
         for (auto b: definedon[BND])
           defonsurf = defonsurf || b;
+        if (!definedon[VOL].Size())
+          defonsurf = false;
+        for (auto b: definedon[VOL])
+          if (b) defonsurf = false;
         if ((!ma->GetNE() && ma->GetNSE()) || defonsurf)
             issurfacespace = true;
 
@@ -2396,7 +2401,7 @@ Einstein: Einstein tensor Ein_ij(g) = Ric_ij(g)-0.5*S(g) g_ij
         dnums += IntRange (first_facet_dof[f],
                          first_facet_dof[f+1]);
       }
-    else if (ma->GetDimension() == 2)
+    else if (ma->GetDimension() == 2 && ei.VB() <= BND)
       for(auto f : ngel.Facets())
         dnums += IntRange (first_facet_dof[f],
                          first_facet_dof[f+1]);

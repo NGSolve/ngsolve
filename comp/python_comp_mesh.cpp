@@ -189,6 +189,14 @@ nr : int
     MeshNode operator+ (size_t i) { return MeshNode(NodeId::operator+(i), ma); }
   };
 
+  // node ranges refer to the mesh, keep it alive
+  static auto NodeRangeKeepingMesh = [] (shared_ptr<MeshAccess> mesh, T_Range<MeshNode> r)
+    {
+      py::object pr = py::cast(r);
+      py::detail::keep_alive_impl (pr, py::cast(mesh));
+      return pr;
+    };
+
   py::class_<MeshNode, NodeId> (m, "MeshNode", "a node within a mesh")
     .def_property_readonly("vertices", [](MeshNode & node) -> py::tuple
                            {
@@ -328,7 +336,7 @@ nr : int
          { return py::make_iterator(r.begin(), r.end()); },
          py::keep_alive<0,1>())
     .def("__getitem__", [](ngstd::T_Range<MeshNode> & r, py::ssize_t i)
-         { return r.First()+PyWrapIndex(i, r.Size()); })
+         { return r.First()+PyWrapIndex(i, r.Size()); }, py::keep_alive<0,1>())
     ;
 
 
@@ -464,7 +472,7 @@ nr : int
                     else
                       throw Exception("VorB not implemented!");
                     return MeshPoint { ip(0), ip(1), ip(2), reg->Mesh().get(), reg->VB(), elnr };
-                  }, py::arg("x"), py::arg("y")=0., py::arg("z")=0.);
+                  }, py::arg("x"), py::arg("y")=0., py::arg("z")=0., py::keep_alive<0,1>());
 
   py::implicitly_convertible <Region, BitArray> ();
 
@@ -537,20 +545,25 @@ mesh (netgen.Mesh): a mesh generated from Netgen
     */
     
     .def("Elements", static_cast<ElementRange(MeshAccess::*)(VorB)const> (&MeshAccess::Elements),
-	 (py::arg("VOL_or_BND")=VOL),
+	 (py::arg("VOL_or_BND")=VOL), py::keep_alive<0,1>(),
          docu_string("Return an iterator over elements on VOL/BND"))
 
-    .def("__getitem__", [](MeshAccess & self, ElementId ei)
+    // keep_alive by hand: py::keep_alive on overloads breaks when an overload is rejected
+    .def("__getitem__", [](shared_ptr<MeshAccess> self, ElementId ei)
          {
-           PyCheckId (self, ei);
-           return self[ei];
+           PyCheckId (*self, ei);
+           py::object res = py::cast((*self)[ei]);
+           py::detail::keep_alive_impl (res, py::cast(self));
+           return res;
          },
          "Return Ngs_Element from given ElementId")
     
-    .def("__getitem__", [](MeshAccess & self, NodeId ni)
+    .def("__getitem__", [](shared_ptr<MeshAccess> self, NodeId ni)
          {
-           PyCheckId (self, ni);
-           return MeshNode(ni, self);
+           PyCheckId (*self, ni);
+           py::object res = py::cast(MeshNode(ni, *self));
+           py::detail::keep_alive_impl (res, py::cast(self));
+           return res;
          },
          "Return MeshNode from given NodeId")
 
@@ -569,34 +582,34 @@ mesh (netgen.Mesh): a mesh generated from Netgen
     
     .def_property_readonly ("vertices", [] (shared_ptr<MeshAccess> mesh)
           {
-            return T_Range<MeshNode> (MeshNode(NodeId(NT_VERTEX, 0), *mesh),
-                                      MeshNode(NodeId(NT_VERTEX, mesh->GetNNodes(NT_VERTEX)), *mesh));
+            return NodeRangeKeepingMesh (mesh, T_Range<MeshNode> (MeshNode(NodeId(NT_VERTEX, 0), *mesh),
+                                      MeshNode(NodeId(NT_VERTEX, mesh->GetNNodes(NT_VERTEX)), *mesh)));
           }, "iterable of mesh vertices")
     
     .def_property_readonly ("edges", [] (shared_ptr<MeshAccess> mesh)
           {
-            return T_Range<MeshNode> (MeshNode(NodeId(NT_EDGE, 0), *mesh),
-                                      MeshNode(NodeId(NT_EDGE, mesh->GetNNodes(NT_EDGE)), *mesh));
+            return NodeRangeKeepingMesh (mesh, T_Range<MeshNode> (MeshNode(NodeId(NT_EDGE, 0), *mesh),
+                                      MeshNode(NodeId(NT_EDGE, mesh->GetNNodes(NT_EDGE)), *mesh)));
           }, "iterable of mesh edges")
     
     .def_property_readonly ("faces", [] (shared_ptr<MeshAccess> mesh)
           {
-            return T_Range<MeshNode> (MeshNode(NodeId(NT_FACE, 0), *mesh),
-                                      MeshNode(NodeId(NT_FACE, mesh->GetNNodes(NT_FACE)), *mesh));
+            return NodeRangeKeepingMesh (mesh, T_Range<MeshNode> (MeshNode(NodeId(NT_FACE, 0), *mesh),
+                                      MeshNode(NodeId(NT_FACE, mesh->GetNNodes(NT_FACE)), *mesh)));
           }, "iterable of mesh faces")
 
     .def_property_readonly ("facets", [] (shared_ptr<MeshAccess> mesh)
           {
             auto nt = StdNodeType(NT_FACET, mesh->GetDimension());
-            return T_Range<MeshNode> (MeshNode(NodeId(nt, 0), *mesh),
-                                      MeshNode(NodeId(nt, mesh->GetNNodes(nt)), *mesh));
+            return NodeRangeKeepingMesh (mesh, T_Range<MeshNode> (MeshNode(NodeId(nt, 0), *mesh),
+                                      MeshNode(NodeId(nt, mesh->GetNNodes(nt)), *mesh)));
           }, "iterable of mesh facets")
 
     .def("nodes", [] (shared_ptr<MeshAccess> mesh, NODE_TYPE type)
          {
            return T_Range<MeshNode> (MeshNode(NodeId(type, 0), *mesh),
                                      MeshNode(NodeId(type, mesh->GetNNodes(type)),*mesh));
-         }, py::arg("node_type"), "iterable of mesh nodes of type node_type")
+         }, py::arg("node_type"), py::keep_alive<0,1>(), "iterable of mesh nodes of type node_type")
 
     /*
     .def ("GetTrafo", 
@@ -621,7 +634,7 @@ mesh (netgen.Mesh): a mesh generated from Netgen
           [](MeshAccess & ma, ElementId id)
           { PyCheckId (ma, id);
             return &ma.GetTrafo(id, global_alloc); }, py::arg("eid"),
-          py::return_value_policy::take_ownership, "returns element transformation of given element id")
+          py::return_value_policy::take_ownership, py::keep_alive<0,1>(), "returns element transformation of given element id")
 
     .def("SetDeformation", 
 	 [](MeshAccess & ma, shared_ptr<GridFunction> gf)

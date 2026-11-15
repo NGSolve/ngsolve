@@ -292,6 +292,8 @@ ANY                  1 1 1 1 | 15
 
     /// highest level where update/finalize was called
     int GetLevelUpdated() const { return level_updated; }
+    /// throws if the mesh was refined after the last update
+    void CheckUpToDate() const;
 
     const Table<int> & ElementColoring(VorB vb = VOL) const 
     { return element_coloring[vb]; }
@@ -994,6 +996,9 @@ ANY                  1 1 1 1 | 15
                                          VorB vb, int dim, VorB element_vb);
   NGS_DLL_HEADER void CheckPointContext (const CoefficientFunction & cf, const BaseMappedIntegrationPoint & mip);
 
+  /// MeshPoint refers to a live mesh and a valid element (forged numpy records, dead meshes)
+  NGS_DLL_HEADER void CheckMeshPoint (const MeshPoint & mp, const MeshAccess * known_live = nullptr);
+
   /// density rho of the mass operators (Mass, InvM, SolveM, ApplyM)
   NGS_DLL_HEADER void CheckMassDensity (const FESpace & fes, const CoefficientFunction * rho, const Region * definedon);
 
@@ -1372,6 +1377,9 @@ ANY                  1 1 1 1 | 15
     {
       Array<string> dirichlet_comp;
       string dirnames[] = { "dirichletx", "dirichlety", "dirichletz" };
+      if constexpr (requires { typename BASESPACE::vector_needs_tangent_space; })
+        if (ma->GetDimension() == 1)
+          throw Exception ("VectorSurfaceL2 is not defined on 1D meshes (a point has no tangent space)");
       for (int i = 0; i <  ma->GetDimension(); i++)
         {
           Flags tmpflags = flags;

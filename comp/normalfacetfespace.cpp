@@ -215,7 +215,8 @@ namespace ngcomp
     if (IsComplex()) loflags.SetFlag("complex");
 
     loflags.SetFlag ("low_order");
-    if (!flags.GetDefineFlag ("low_order"))
+    // 1D: only lowest order
+    if (!flags.GetDefineFlag ("low_order") && ma->GetDimension() > 1)
       low_order_space = make_shared<NormalFacetFESpace>(ma, loflags);
 
     order = int (flags.GetNumFlag ("order",0)); 
@@ -261,7 +262,12 @@ namespace ngcomp
       }
 
 
-    if (ma->GetDimension() == 2)
+    if (ma->GetDimension() == 1)
+      {
+        evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdNormalFacet<1>>>();
+        evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdVecHDivBoundary<1>>>();
+      }
+    else if (ma->GetDimension() == 2)
       {
         if (flags.GetDefineFlag("normalmapping"))
           evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpNormalMapping<2>>>();
@@ -283,6 +289,8 @@ namespace ngcomp
     // integrator[BND] = GetIntegrators().CreateBFI("robinvectorfacet", ma->GetDimension(), &one); 
 
     highest_order_dc = flags.GetDefineFlag("highest_order_dc");
+    if (highest_order_dc && ma->GetDimension() == 1)
+      throw Exception("NormalFacetFESpace: highest_order_dc is not supported on 1D meshes");
     if (highest_order_dc) {
       *testout << "highest_order_dc is active!" << endl;
     }
@@ -291,6 +299,8 @@ namespace ngcomp
     switch (ma->GetDimension())
       {
       case 1:
+        additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHDivDual<1>>> ());
+        additional_evaluators.Set ("normalcomponent", make_shared<T_DifferentialOperator<DiffOpNormalComponentNormalFacet<1>>> ());
         break;
       case 2:
         additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHDivDual<2>>> ());
@@ -339,6 +349,8 @@ namespace ngcomp
       {
 	int p = 0; 
 	if (!var_order) p = order; 
+        // a point carries the normal value only
+        if (ma->GetDimension() == 1) p = 0;
     
 	order_facet.SetSize(nfacets);
 	fine_facet.SetSize(nfacets);
@@ -365,6 +377,11 @@ namespace ngcomp
 	    ELEMENT_TYPE eltype=ma->GetElType(ei); 
 	    const POINT3D * points = ElementTopology :: GetVertices (eltype);	
 	
+	    if (ma->GetDimension() == 1)
+	      {
+		fine_facet[ma->GetElFacets(ei)] = true;
+		continue;
+	      }
 	    if (ma->GetDimension() == 2)
 	      {
 		auto fanums = ma->GetElEdges (ei);
@@ -430,7 +447,7 @@ namespace ngcomp
 	for (int i = 0; i < fine_facet.Size(); i++)
 	  if (!fine_facet[i]) order_facet[i] = 0;
 
-	ma->AllReduceNodalData ((ma->GetDimension()==2) ? NT_EDGE : NT_FACE, 
+	ma->AllReduceNodalData (StdNodeType(NT_FACET, ma->GetDimension()), 
 				fine_facet, NG_MPI_LOR);
       }
 
@@ -442,6 +459,7 @@ namespace ngcomp
     first_facet_dof.SetSize(nfacets+1);
     first_facet_dof = ndof_lo;
 
+    // 1D: lowest order dofs only
     if ( ma->GetDimension() == 2 )
       {
 	for (size_t i = 0; i < nfacets; i++ )
@@ -469,7 +487,7 @@ namespace ngcomp
 	  }
       }
 
-    else // 3D
+    else if ( ma->GetDimension() == 3 )
       {
 	int inci = 0;
 	for (size_t i = 0; i < nfacets; i++)
@@ -568,9 +586,9 @@ namespace ngcomp
     if (!DefinedOn (ei))
       {
         if (ei.VB() == VOL)
-          return NewTypedDummyFE<HDivDummyFE, ET_TRIG, ET_QUAD, ET_TET, ET_PRISM, ET_PYRAMID, ET_HEX> (ma->GetElType(ei), lh);
+          return NewTypedDummyFE<HDivDummyFE, ET_SEGM, ET_TRIG, ET_QUAD, ET_TET, ET_PRISM, ET_PYRAMID, ET_HEX> (ma->GetElType(ei), lh);
         if (ei.VB() == BND)
-          return NewTypedDummyFE<HDivNormalDummyFE, ET_SEGM, ET_TRIG, ET_QUAD> (ma->GetElType(ei), lh);
+          return NewTypedDummyFE<HDivNormalDummyFE, ET_POINT, ET_SEGM, ET_TRIG, ET_QUAD> (ma->GetElType(ei), lh);
         return
           SwitchET (ma->GetElType(ei), [&] (auto et) -> FiniteElement&
                       {
@@ -578,6 +596,15 @@ namespace ngcomp
                       });
       }
     
+    // 1D: the vertex values of a linear H(div) segment, used on the facets only
+    if (ma->GetDimension() == 1)
+      {
+        if (ei.VB() == VOL)
+          return * new (lh) HDivHighOrderSegm(1);
+        if (ei.VB() == BND)
+          return * new (lh) HDivNormalPoint();
+      }
+
     switch(ei.VB())
       {
       case VOL:
@@ -838,12 +865,14 @@ namespace ngcomp
   void NormalFacetFESpace :: GetVertexDofNrs ( int elnum, Array<int> & dnums ) const
   {
     dnums.SetSize0();
+    if ( ma->GetDimension() == 1 )
+      GetFacetDofNrs (elnum, dnums);
   }
 
   void NormalFacetFESpace :: GetEdgeDofNrs ( int elnum, Array<int> & dnums ) const
   {
     dnums.SetSize0();
-    if ( ma->GetDimension() == 3 )
+    if ( ma->GetDimension() != 2 )
       return;
 
     dnums.Append(elnum);

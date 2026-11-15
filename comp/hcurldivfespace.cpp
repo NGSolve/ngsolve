@@ -942,11 +942,18 @@ namespace ngcomp
 
     if (!ei.IsVolume())
     {
-      if(!discontinuous)
+      // no evaluator for BBND, BBBND
+      if (ei.VB() != BND)
+        switch(ma->GetElType(ei))
+          {
+          case ET_POINT: return *new (alloc) DummyFE<ET_POINT>;
+          case ET_SEGM:  return *new (alloc) DummyFE<ET_SEGM>;
+          default: break;
+          }
+      // GetDofNrs: facets of no defined volume element carry no dofs
+      if(!discontinuous && fine_facet[ngel.Facets()[0]])
       {
-        int facet_nr = ei.Nr();
-        if (ma->GetDimension() == 3)
-          facet_nr = ma->GetSElFace(ei.Nr());
+        int facet_nr = ngel.Facets()[0];
         int surface_order = order_facet[facet_nr];
 
         auto feseg = new (alloc) HCurlDivSurfaceFE<ET_SEGM> (order);
@@ -1056,6 +1063,8 @@ namespace ngcomp
     if (!DefinedOn (ei)) return;
 
     Ngs_Element ngel = ma->GetElement(ei);
+    if (ei.VB() != VOL)
+      if (ei.VB() != BND || discontinuous || !fine_facet[ngel.Facets()[0]]) return;
     for(auto f : ngel.Facets())
       dnums += IntRange (first_facet_dof[f],
                          first_facet_dof[f+1]);

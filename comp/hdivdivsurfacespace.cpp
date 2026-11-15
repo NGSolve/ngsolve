@@ -661,10 +661,12 @@ namespace ngcomp
 
       case BBND:
         {
-          if(!noncontinuous)
+          int ed = ma->GetElEdges(ei)[0];
+          // edges of no defined surface element carry no dofs
+          if(!noncontinuous && first_face_dof[ed+1] > first_face_dof[ed])
             {
               auto vnums = ma->GetElVertices(ei);
-              auto feseg = new (lh) HDivDivSurfaceFE<ET_SEGM> (order_facet[ma->GetElEdges(ei)[0]]);
+              auto feseg = new (lh) HDivDivSurfaceFE<ET_SEGM> (order_facet[ed]);
               feseg->SetVertexNumbers (vnums);
               feseg->ComputeNDof();
               return *feseg;

@@ -23,6 +23,25 @@ Array<T> ArrayFromVector (const std::vector<T> & vec)
 }
 
 
+static void CheckMVCompat (const MultiVector & x, const BaseVector & y)
+{
+  if (!x.RefVec())
+    throw Exception("MultiVector without reference vector");
+  if (x.RefVec()->Size() != y.Size())
+    throw Exception("MultiVector inner product: vector size mismatch");
+  if (x.IsComplex() != y.IsComplex())
+    throw Exception("MultiVector inner product: real and complex operands cannot be mixed");
+}
+
+
+static void CheckMVCompat (const MultiVector & x, const MultiVector & y)
+{
+  if (!y.RefVec())
+    throw Exception("MultiVector without reference vector");
+  CheckMVCompat(x, *y.RefVec());
+}
+
+
 class PyLinearOperator : public BaseMatrix
 {
 protected:
@@ -52,20 +71,31 @@ public:
   VecFormat RowFormat () const override { return VecFormat(w, scal); }
   VecFormat ColFormat () const override { return VecFormat(h, scal); }
 
-  void Mult (const BaseVector & x, BaseVector & y) const override
+  DynamicVectorExpression Apply (const BaseVector & x, py::object & keep) const
   {
     shared_ptr<BaseVector> spx(const_cast<BaseVector*>(&x), &NOOP_Deleter);
-    py::object pyy = pyop * py::cast(spx);
-    auto pyv = py::cast<DynamicVectorExpression> (pyy);
-    pyv.AssignTo (1, y);
+    keep = pyop * py::cast(spx);
+    DynamicVectorExpression pyv;
+    try { pyv = py::cast<DynamicVectorExpression> (keep); }
+    catch (py::cast_error &)
+      { throw Exception("linear operator did not return a vector"); }
+    if (size_t(pyv.CreateVector().Size()) != h)
+      throw Exception("linear operator returned a vector of wrong size");
+    return pyv;
+  }
+
+  void Mult (const BaseVector & x, BaseVector & y) const override
+  {
+    py::gil_scoped_acquire gil;
+    py::object keep;
+    Apply(x, keep).AssignTo (1, y);
   }
 
   void MultAdd (double s, const BaseVector & x, BaseVector & y) const override
   {
-    shared_ptr<BaseVector> spx(const_cast<BaseVector*>(&x), &NOOP_Deleter);
-    py::object pyy = pyop * py::cast(spx);
-    auto pyv = py::cast<DynamicVectorExpression> (pyy);
-    pyv.AddTo (s, y);
+    py::gil_scoped_acquire gil;
+    py::object keep;
+    Apply(x, keep).AddTo (s, y);
   }
 };
 
@@ -888,9 +918,21 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
 	 })
 
     .def(py::pickle([](const MultiVector & mv)
-                    { return py::make_tuple(makePyTuple(ArrayObject(mv))); },
+                    {
+                      py::object ref = mv.Size() ? py::none() : py::cast(mv.RefVec());
+                      return py::make_tuple(makePyTuple(ArrayObject(mv)), ref);
+                    },
                     [](py::tuple state)
-                    { return make_shared<MultiVector>(makeCArray<shared_ptr<BaseVector>>(state[0])); }))
+                    {
+                      auto vecs = makeCArray<shared_ptr<BaseVector>>(state[0]);
+                      if (vecs.Size() == 0)
+                        {
+                          if (state.size() < 2 || state[1].is_none())
+                            throw py::value_error("cannot unpickle empty MultiVector without reference vector");
+                          return make_shared<MultiVector>(state[1].cast<shared_ptr<BaseVector>>(), 0);
+                        }
+                      return make_shared<MultiVector>(vecs);
+                    }))
                     
     .def_property("data",
                   [](shared_ptr<MultiVector> self)
@@ -931,6 +973,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
          }, py::arg("inds"), py::arg("mv2"))
     .def("InnerProduct", [](MultiVector & x, MultiVector & y, bool conjugate)
         { 
+          CheckMVCompat(x, y);
           if( !x.IsComplex() )
             return py::cast(x.InnerProductD(y));
           else
@@ -938,6 +981,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
         }, py::arg("other"), py::arg("conjugate")=py::cast(true))
     .def("InnerProduct", [](MultiVector & x, BaseVector & y, bool conjugate)
         { 
+          CheckMVCompat(x, y);
           if( !x.IsComplex() )
             return py::cast(x.InnerProductD(y));
           else
@@ -946,6 +990,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
 
     .def("InnerProduct", [](MultiVector & x, MultiVectorExpr & y, bool conjugate)
         { 
+          CheckMVCompat(x, *y.CreateVector());
           if( !x.IsComplex() )
             return py::cast(x.InnerProductD(y));
           else
@@ -1208,9 +1253,9 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
             return shared_ptr<BaseVector>(self.CreateRowVector());
         }, py::arg("colvector")=false )
     
-    .def("AsVector", [] (BM & m)
+    .def("AsVector", [] (shared_ptr<BM> m)
                                       {
-                                        return shared_ptr<BaseVector> (&m.AsVector(), NOOP_Deleter);
+                                        return shared_ptr<BaseVector> (&m->AsVector(), [m](BaseVector*) { });
                                       }, "Interprets the matrix values as a vector")
 
     .def("Mult",         [](BaseMatrix &m, BaseVector &x, BaseVector &y) { m.CheckFormats(x, y); m.Mult(x, y); }, py::call_guard<py::gil_scoped_release>(), py::arg("x"), py::arg("y"))
@@ -1775,7 +1820,13 @@ flags : dict
   m.def("ChebyshevIteration", [](shared_ptr<BaseMatrix> mat, shared_ptr<BaseMatrix> pre,
 				 int steps, double lambda_min, double lambda_max)
 	-> shared_ptr<BaseMatrix> {
-	  auto cheb = make_shared<ChebyshevIteration>(*mat, *pre, steps);
+	  struct HoldCheb : ChebyshevIteration
+	  {
+	    shared_ptr<BaseMatrix> hmat, hpre;
+	    HoldCheb (shared_ptr<BaseMatrix> m, shared_ptr<BaseMatrix> p, int st)
+	      : ChebyshevIteration(*m, *p, st), hmat(m), hpre(p) { }
+	  };
+	  auto cheb = make_shared<HoldCheb>(mat, pre, steps);
 	  cheb->SetBounds(lambda_min, lambda_max);
 	  return cheb;
 	}, py::arg("mat"), py::arg("pre"),
@@ -2093,11 +2144,28 @@ flags : dict
       ;
 
   m.def("RegisterInverseType", [](const string &name, py::object creator) {
+    // released at interpreter exit, before the static registry dies
+    struct Holder { py::object obj; };
+    static vector<shared_ptr<Holder>> holders;
+    static bool atexit_set = false;
+    if (!atexit_set)
+      {
+        atexit_set = true;
+        py::module_::import("atexit").attr("register")
+          (py::cpp_function([]() { for (auto & h : holders) h->obj = py::object(); }));
+      }
+    auto holder = make_shared<Holder>();
+    holder->obj = creator;
+    holders.push_back(holder);
     BaseMatrix::RegisterInverseCreator(
-        name, [creator](shared_ptr<BaseMatrix> mat, shared_ptr<BitArray> freedofs,
+        name, [holder](shared_ptr<BaseMatrix> mat, shared_ptr<BitArray> freedofs,
                   shared_ptr<const Array<int>> cluster) {
           py::gil_scoped_acquire gil;
-          auto obj = creator(mat);
+          if (!holder->obj)
+            throw Exception("inverse type creator is no longer available");
+          py::object obj = holder->obj(mat);
+          if (!py::isinstance<SparseFactorizationInterface>(obj))
+            throw Exception("inverse type creator must return a SparseFactorizationInterface");
           auto sf = py::cast<shared_ptr<SparseFactorizationInterface>>(obj);
           sf->SetSubset(freedofs, cluster);
           sf->Update();

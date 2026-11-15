@@ -139,6 +139,9 @@ namespace ngcomp
 
   class NGS_DLL_HEADER L2SurfaceHighOrderFESpace : public FESpace
   {
+  public:
+    // VectorFESpace of it rejects 1D meshes
+    using vector_needs_tangent_space = void;
   protected:
     // Level
     // int level;

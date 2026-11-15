@@ -23,6 +23,8 @@
 #include "../fem/h1lofe.hpp"
 #include <bdbequations.hpp> 
 #include <regex>
+#include <set>
+#include <mutex>
 
 
 namespace ngcomp
@@ -838,10 +840,43 @@ namespace ngcomp
 
 
 
+  // live MeshAccess objects, for validating raw mesh pointers in MeshPoints
+  static std::mutex & LiveMeshMutex() { static auto m = new std::mutex; return *m; }
+  static std::set<const MeshAccess*> & LiveMeshes() { static auto s = new std::set<const MeshAccess*>; return *s; }
+  static void RegisterLiveMesh (const MeshAccess * ma, bool add)
+  {
+    std::lock_guard<std::mutex> guard(LiveMeshMutex());
+    if (add) LiveMeshes().insert(ma);
+    else LiveMeshes().erase(ma);
+  }
+
+  void CheckMeshPoint (const MeshPoint & mp, const MeshAccess * known_live)
+  {
+    if (mp.mesh != known_live)
+      {
+        std::lock_guard<std::mutex> guard(LiveMeshMutex());
+        if (!LiveMeshes().count(mp.mesh))
+          throw Exception ("MeshPoint refers to a mesh that does not exist (any more)");
+      }
+    auto & ma = *mp.mesh;
+    if (int(mp.vb) < 0 || int(mp.vb) > ma.GetDimension())
+      throw Exception ("MeshPoint has illegal VorB " + ToString(int(mp.vb)));
+    if (mp.nr < 0 || size_t(mp.nr) >= ma.GetNE(mp.vb))
+      throw RangeException ("MeshPoint element number", mp.nr, 0, ma.GetNE(mp.vb));
+    if (mp.facetnr != -1)
+      {
+        if (int(mp.eb) < 1 || int(mp.eb) > 3)
+          throw Exception ("MeshPoint has illegal element-boundary VorB " + ToString(int(mp.eb)));
+        int nf = ElementTopology::GetNFacets (ma.GetElType(ElementId(mp.vb, mp.nr)));
+        if (mp.facetnr < 0 || mp.facetnr >= nf)
+          throw RangeException ("MeshPoint facet number", mp.facetnr, 0, nf);
+      }
+  }
+
   MeshAccess :: MeshAccess ()
     : mesh(shared_ptr<netgen::Mesh>())
   {
-    ;
+    RegisterLiveMesh (this, true);
   }
 
 
@@ -855,6 +890,7 @@ namespace ngcomp
 
     mesh.UpdateTopology();  
     UpdateBuffers();
+    RegisterLiveMesh (this, true);
   }
 
   MeshAccess :: MeshAccess (string filename, NgMPI_Comm amesh_comm)
@@ -864,11 +900,12 @@ namespace ngcomp
     // ngstd::printmessage_importance = netgen::printmessage_importance;
 
     UpdateBuffers();
+    RegisterLiveMesh (this, true);
   }
   
   MeshAccess :: ~MeshAccess ()
   {
-    ;
+    RegisterLiveMesh (this, false);
   }
 
   /*

@@ -325,7 +325,7 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
                     PyCheckIndex (range.First(), ma.GetNE(vb)+1, "range start");
                     PyCheckRange (range, ma.GetNE(vb), "element range");
                     return ElementRange(ma, vb, range);
-                  }), py::arg("mesh"), py::arg("vb"), py::arg("range"))
+                  }), py::arg("mesh"), py::arg("vb"), py::arg("range"), py::keep_alive<1,2>())
     .def("__iter__", [] (ElementRange &er)
       { return py::make_iterator(er.begin(), er.end()); },
       py::keep_alive<0,1>()
@@ -1113,7 +1113,13 @@ order : int
     
     .def("Elements", 
          [](shared_ptr<FESpace> self, VorB vb)
-         { return FESpace::ElementRange(self->Elements(vb, glh)); },
+         {
+           self->CheckUpToDate();
+           // keep_alive by hand: py::keep_alive on overloads breaks when an overload is rejected
+           py::object res = py::cast(FESpace::ElementRange(self->Elements(vb, glh)));
+           py::detail::keep_alive_impl (res, py::cast(self));
+           return res;
+         },
          py::arg("VOL_or_BND")=VOL, docu_string(R"raw_string(
 Returns an iterable range of elements.
 
@@ -1137,6 +1143,7 @@ VOL_or_BND : ngsolve.comp.VorB
     .def("GetDofNrs", [](shared_ptr<FESpace> self, ElementId ei)
          {
            PyCheckId (*self->GetMeshAccess(), ei);
+           self->CheckUpToDate();
            Array<DofId> tmp; self->GetDofNrs(ei,tmp);
            return MakePyTuple(tmp);
          }, py::arg("ei"), docu_string(R"raw_string(
@@ -1157,6 +1164,7 @@ ei : ngsolve.comp.ElementId
     .def("GetDofNrs", [](shared_ptr<FESpace> self, NodeId ni)
          {
            PyCheckId (*self->GetMeshAccess(), ni);
+           self->CheckUpToDate();
            Array<DofId> tmp; self->GetDofNrs(ni,tmp);
            return MakePyTuple(tmp);
          }, py::arg("ni"), docu_string(R"raw_string(
@@ -1237,6 +1245,7 @@ coupling_type : ngsolve.comp.COUPLING_TYPE
     .def ("GetFE", [](shared_ptr<FESpace> self, ElementId ei) -> py::object
           {
             PyCheckId (*self->GetMeshAccess(), ei);
+            self->CheckUpToDate();
             auto fe = shared_ptr<FiniteElement> (&self->GetFE(ei, global_alloc));
             
             if (auto scalfe = dynamic_pointer_cast<BaseScalarFiniteElement> (fe))
@@ -3395,6 +3404,8 @@ ulin : ngsolve.la.BaseVector
 
     .def("Flux", [](BF & self, shared_ptr<GridFunction> gf) -> spCF
           {
+            if (self.NumIntegrators() == 0)
+              throw Exception ("BilinearForm.Flux: the form has no integrators");
             return make_shared<GridFunctionCoefficientFunction> (gf, self.GetIntegrator(0));
           }, py::arg("gf"), docu_string(R"raw_string(
 
@@ -4678,10 +4689,17 @@ deformation : ngsolve.comp.GridFunction
 )raw_string")
           );
 
-   m.def("KSpaceCoeffs", [](shared_ptr<GF> gf_tp,shared_ptr<GF> gf_k, double x, double y)
+   auto tpspace_of = [] (shared_ptr<FESpace> fes, const char * what)
+     {
+       auto tp = dynamic_pointer_cast<TPHighOrderFESpace>(fes);
+       if (!tp) throw Exception (string(what) + ": needs a TensorProductFESpace, got " + fes->GetClassName());
+       return tp;
+     };
+
+   m.def("KSpaceCoeffs", [tpspace_of](shared_ptr<GF> gf_tp,shared_ptr<GF> gf_k, double x, double y)
            {
 			 HeapReset hr(glh);
-             auto tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(gf_tp->GetFESpace());
+             auto tpfes = tpspace_of(gf_tp->GetFESpace(), "KSpaceCoeffs");
              IntegrationPoint ip;
              int elnr = tpfes->Spaces(0)[0]->GetMeshAccess()->FindElementOfPoint(Vec<2>(x,y),ip,false).Nr();
              int ndofx = tpfes->Spaces(0)[0]->GetFE(ElementId(VOL,elnr),glh).GetNDof();
@@ -4720,16 +4738,21 @@ deformation : ngsolve.comp.GridFunction
             py::arg("flags")=Flags()
            );
 
-   m.def("TensorProductIntegrate", [](shared_ptr<GF> gf_tp, py::list ax0, spCF coef) -> double
+   m.def("TensorProductIntegrate", [tpspace_of](shared_ptr<GF> gf_tp, std::vector<double> ax0, spCF coef) -> double
            {
              static Timer tall("comp.TensorProductIntegrate - single point"); RegionTimer rall(tall);
-             Array<double> x0_help = makeCArray<double> (ax0);
+             Array<double> x0_help(ax0.size());
+             for (size_t i = 0; i < ax0.size(); i++) x0_help[i] = ax0[i];
              LocalHeap lh(10000000,"TensorProductIntegrate");
-             shared_ptr<TPHighOrderFESpace> tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(gf_tp->GetFESpace());
+             shared_ptr<TPHighOrderFESpace> tpfes = tpspace_of(gf_tp->GetFESpace(), "TensorProductIntegrate");
              const Array<shared_ptr<FESpace> > & spaces = tpfes->Spaces(0);
+             if (x0_help.Size() != size_t(spaces[0]->GetSpatialDimension()))
+               throw Exception ("TensorProductIntegrate: point must have " + ToString(spaces[0]->GetSpatialDimension()) + " coordinates");
              FlatVector<> x0(spaces[0]->GetSpatialDimension(),&x0_help[0]);
              IntegrationPoint ip;
              int elnr = spaces[0]->GetMeshAccess()->FindElementOfPoint(x0,ip,true).Nr();
+             if (elnr < 0)
+               throw Exception ("TensorProductIntegrate: point is outside the mesh");
              auto & felx = spaces[0]->GetFE(ElementId(elnr),lh);
              FlatVector<> shapex(felx.GetNDof(),lh);
              dynamic_cast<const BaseScalarFiniteElement &>(felx).CalcShape(ip,shapex);
@@ -4766,13 +4789,13 @@ deformation : ngsolve.comp.GridFunction
              return return_val;
            },
         py::call_guard<py::gil_scoped_release>());
-   m.def("TensorProductIntegrate",[](shared_ptr<GF> gf_tp, shared_ptr<GF> gf_x, OptPtr<CoefficientFunction> coef)
+   m.def("TensorProductIntegrate",[tpspace_of](shared_ptr<GF> gf_tp, shared_ptr<GF> gf_x, OptPtr<CoefficientFunction> coef)
            {
              static Timer tall("comp.TensorProductIntegrate - total domain integral"); RegionTimer rall(tall);
              BaseVector & vec_in = gf_tp->GetVector();
              BaseVector & vec_out = gf_x->GetVector();
              LocalHeap clh(100000000,"TensorProductIntegrate");
-             shared_ptr<TPHighOrderFESpace> tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(gf_tp->GetFESpace());
+             shared_ptr<TPHighOrderFESpace> tpfes = tpspace_of(gf_tp->GetFESpace(), "TensorProductIntegrate");
              const Array<shared_ptr<FESpace> > & spaces = tpfes->Spaces(0);
              int ndofxspace = spaces[0]->GetNDof();
              auto & meshy = spaces[1]->GetMeshAccess();
@@ -4878,24 +4901,25 @@ deformation : ngsolve.comp.GridFunction
         py::call_guard<py::gil_scoped_release>()
    );
 
-   m.def("ProlongateCoefficientFunction", [](spCF cf_x, int prolongateto, shared_ptr<FESpace> tpfes) -> shared_ptr<CoefficientFunction>
+   m.def("ProlongateCoefficientFunction", [tpspace_of](spCF cf_x, int prolongateto, shared_ptr<FESpace> tpfes) -> shared_ptr<CoefficientFunction>
            {
-             int dimx = dynamic_pointer_cast<TPHighOrderFESpace>(tpfes)->Spaces(0)[0]->GetMeshAccess()->GetDimension();
-             int dimy = dynamic_pointer_cast<TPHighOrderFESpace>(tpfes)->Spaces(0)[1]->GetMeshAccess()->GetDimension();
+             auto tp = tpspace_of(tpfes, "ProlongateCoefficientFunction");
+             int dimx = tp->Spaces(0)[0]->GetMeshAccess()->GetDimension();
+             int dimy = tp->Spaces(0)[1]->GetMeshAccess()->GetDimension();
              auto pcf = make_shared<ProlongateCoefficientFunction>(cf_x,prolongateto,cf_x->Dimension(),dimx,dimy,false);
              pcf->SetDimension(pcf->Dimension());
              return pcf;
            },
         py::call_guard<py::gil_scoped_release>());
-   m.def("Prolongate", [](shared_ptr<GF> gf_x, shared_ptr<GF> gf_tp )
+   m.def("Prolongate", [tpspace_of](shared_ptr<GF> gf_x, shared_ptr<GF> gf_tp )
             {
               static Timer tall("comp.Prolongate"); RegionTimer rall(tall);
-              shared_ptr<TPHighOrderFESpace> tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(gf_tp->GetFESpace());
+              shared_ptr<TPHighOrderFESpace> tpfes = tpspace_of(gf_tp->GetFESpace(), "Prolongate");
               LocalHeap lh(100000,"ProlongateFromXSpace");
               if(gf_x->GetFESpace() == tpfes->Space(-1) )
                 tpfes->ProlongateFromXSpace(gf_x,gf_tp,lh);
               else
-                cout << "GridFunction gf_x is not defined on first space"<<endl;
+                throw Exception ("Prolongate: gf_x must be defined on the first space of the TensorProductFESpace");
             },
          py::call_guard<py::gil_scoped_release>());
    m.def("Transfer2StdMesh", [](const shared_ptr<GF> gfutp,

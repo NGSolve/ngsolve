@@ -11,8 +11,26 @@ namespace ngcomp
 {
   using ngfem::TPHighOrderFE;
 
+  static shared_ptr<MeshAccess> TPMesh (shared_ptr<FESpace> x, FlatArray<shared_ptr<FESpace>> y)
+  {
+    if (!x || y.Size() == 0)
+      throw Exception ("TensorProductFESpace needs at least two spaces");
+    for (auto & s : y)
+      if (!s) throw Exception ("TensorProductFESpace: space is None");
+    return x->GetMeshAccess();
+  }
+
+  static TPHighOrderFESpace & AsTPSpace (const GridFunction * gf, const char * what)
+  {
+    if (!gf) throw Exception (string(what) + ": GridFunction is None");
+    auto tp = dynamic_cast<TPHighOrderFESpace*> (gf->GetFESpace().get());
+    if (!tp) throw Exception (string(what) + ": needs a GridFunction on a TensorProductFESpace, got " +
+                              gf->GetFESpace()->GetClassName());
+    return *tp;
+  }
+
   TPHighOrderFESpace::TPHighOrderFESpace (FlatArray<shared_ptr<FESpace>> spaces, const Flags & flags, bool parseflags, Array<int> * el_counts)
-    : FESpace (spaces[0]->GetMeshAccess(), flags)
+    : FESpace (TPMesh(spaces.Size() ? spaces[0] : nullptr, spaces.Range(min(spaces.Size(), size_t(1)), spaces.Size())), flags)
   {
     nmeshes = spaces.Size();
     fespaces.SetSize(nmeshes);
@@ -70,7 +88,7 @@ namespace ngcomp
   }
 
   TPHighOrderFESpace::TPHighOrderFESpace (shared_ptr<FESpace> aspace_x,FlatArray<shared_ptr<FESpace>> aspaces_y, const Flags & flags, bool parseflags)
-    : FESpace (aspace_x->GetMeshAccess(), flags)
+    : FESpace (TPMesh(aspace_x, aspaces_y), flags)
   {
     nmeshes = 2;
     fespaces.SetSize(nmeshes);
@@ -362,7 +380,9 @@ namespace ngcomp
             const function<void(ElementId,ElementId,LocalHeap&)> & func)
   {
     // static mutex copyex_mutex;
-    const TPHighOrderFESpace & festp = dynamic_cast<const TPHighOrderFESpace &>(fes);
+    auto ptp = dynamic_cast<const TPHighOrderFESpace *>(&fes);
+    if (!ptp) throw Exception ("IterateElementsTP: needs a TensorProductFESpace, got " + fes.GetClassName());
+    const TPHighOrderFESpace & festp = *ptp;
     shared_ptr<FESpace> space_x = festp.Space(-1);
     shared_ptr<FESpace> space_y = festp.Space(0);
     auto & nels = festp.GetNels();
@@ -527,8 +547,19 @@ namespace ngcomp
   void Transfer2StdMesh(const GridFunction * gfutp, GridFunction* gfustd,LocalHeap & lh)
   {
     static Timer tall("TPHighOrderFESpace::Transfer2StdMesh"); RegionTimer rall(tall);
+    if (!gfustd) throw Exception ("Transfer2StdMesh: GridFunction is None");
     const shared_ptr<FESpace> fes = gfustd->GetFESpace();
-    TPHighOrderFESpace * tpfes = dynamic_cast<TPHighOrderFESpace *>(gfutp->GetFESpace().get());
+    TPHighOrderFESpace * tpfes = &AsTPSpace (gfutp, "Transfer2StdMesh");
+    if (dynamic_cast<TPHighOrderFESpace*> (fes.get()))
+      throw Exception ("Transfer2StdMesh: second GridFunction must be on a standard space");
+    {
+      auto & ma = *fes->GetMeshAccess();
+      auto & nels = tpfes->GetNels();
+      int dimtp = tpfes->Space(-1)->GetMeshAccess()->GetDimension() + tpfes->Space(0)->GetMeshAccess()->GetDimension();
+      if (ma.GetDimension() != dimtp || ma.GetNE(VOL) != size_t(nels[0])*size_t(nels[1]))
+        throw Exception ("Transfer2StdMesh: the standard mesh must be the tensor product mesh (dimension " +
+                         ToString(dimtp) + ", " + ToString(size_t(nels[0])*size_t(nels[1])) + " elements)");
+    }
     const shared_ptr<FESpace> & fesx = tpfes->Space(-1);
     const shared_ptr<FESpace> & fesy = tpfes->Space(0);
     auto & meshx = fesx->GetMeshAccess();
@@ -644,6 +675,7 @@ namespace ngcomp
   void Transfer2TPMesh(const CoefficientFunction * cfstd, GridFunction* gfutp,LocalHeap & lh)
   {
     static Timer tall("TPHighOrderFESpace::Transfer2TPMesh"); RegionTimer rall(tall);
+    AsTPSpace (gfutp, "Transfer2TPMesh");
     const shared_ptr<TPHighOrderFESpace> tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(gfutp->GetFESpace());
     const shared_ptr<FESpace> & fesx = tpfes->Space(-1);
     const shared_ptr<FESpace> & fesy = tpfes->Space(0);    

@@ -19,6 +19,12 @@
 
 namespace ngcomp 
 {
+  // 1D: no tangential trace on points
+  class DiffOpHCurlDual1D : public DiffOpHCurlDual<1>
+  {
+  public:
+    typedef void DIFFOP_TRACE;
+  };
 
   // tangential trace u - (u.n) n on element boundaries
   template <int D>
@@ -215,7 +221,9 @@ namespace ngcomp
     if (flags.NumListFlagDefined ("dirichlet")) 
       loflags.SetFlag ("dirichlet", flags.GetNumListFlag ("dirichlet"));
     */
-    if (flags.GetDefineFlag("hoprolongation"))
+    if (ma->GetDimension() == 1)
+      no_low_order_space = true;
+    else if (flags.GetDefineFlag("hoprolongation"))
       {
         no_low_order_space = true;
         prol = CreateVectorL2EmbeddedProlongation (this, "covariant2");
@@ -249,7 +257,9 @@ namespace ngcomp
       integrator[BND] = GetIntegrators().CreateBFI("robinedge", ma->GetDimension(), &one); 
     */
     
-    if (ma->GetDimension() == 2)
+    if (ma->GetDimension() == 1)
+      evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdEdge<1>>>();   // no curl, no trace
+    else if (ma->GetDimension() == 2)
       {
         evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundaryEdge<2>>>();
         evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdEdge<2>>>();
@@ -267,7 +277,9 @@ namespace ngcomp
     switch (ma->GetDimension())
       {
       case 1:
-        additional_evaluators.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHCurl<1>>> ()); break;
+        additional_evaluators.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHCurl<1>>> ());
+        additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHCurlDual1D>> ());
+        break;
       case 2:
         additional_evaluators.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHCurl<2>>> ());
         additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHCurlDual<2>>> ());
@@ -856,6 +868,18 @@ namespace ngcomp
 	return;
       } 
 
+    if (ma->GetDimension() == 1)
+      {
+        // the edge is the element
+        for (int edge = 0; edge < ma->GetNEdges(); edge++)
+          {
+            ctofdof[edge] = fine_edge[edge] ? LOCAL_DOF : UNUSED_DOF;
+            ctofdof.Range (GetEdgeDofs (edge)) = LOCAL_DOF;
+          }
+        ctofdof.Range (first_inner_dof[0], ndof) = LOCAL_DOF;
+        return;
+      }
+
     for (int edge = 0; edge < ma->GetNEdges(); edge++) 
       {
 	ctofdof[edge] = 
@@ -1134,7 +1158,12 @@ namespace ngcomp
           switch (int(ET_trait<ET>::DIM))
             {
             case 1:
-              throw Exception("no 1D elements in H(curl)");
+              {
+                // 1D mesh: the edge is the element
+                hofe -> SetOrderCell (IVec<3>(order_edge[ngel.edges[0]]));  // old style
+                hofe -> SetUseGradCell (usegrad_edge[ngel.edges[0]]);  // old style
+                break;
+              }
             case 2:
               {
                 hofe -> SetOrderCell (order_inner[ei.Nr()]);   // old style
@@ -1678,6 +1707,7 @@ namespace ngcomp
   shared_ptr<Table<int>> HCurlHighOrderFESpace :: 
   CreateSpecificSmoothingBlocks (const Flags & precflags) const
   {
+    if (ma->GetDimension() == 1) return nullptr;
     size_t nv = ma->GetNV();
     size_t ne = ma->GetNE();
     // int nse = ma->GetNSE();

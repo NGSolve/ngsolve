@@ -980,7 +980,8 @@ void HDivDivFacetHOElement<ET_TET> :: CalcShape(const IntegrationPoint &ip, Slic
   void HDivDivFacetSpace::GetDofNrs(ElementId ei, Array<DofId> &dnums) const
   {
     dnums.SetSize(0);
-    if (ei.VB() != VOL && ei.VB() != BND)
+    // boundary elements are typed dummies without dofs
+    if (ei.VB() != VOL)
       return;
     
     if (ma->GetDimension() == 2)
@@ -996,7 +997,7 @@ void HDivDivFacetHOElement<ET_TET> :: CalcShape(const IntegrationPoint &ip, Slic
             dnums.Append(dofs_per_edge * e + i);
         for (auto f : ma->GetElement(ei).Faces())
           for (int i = 0; i < dofs_per_face; i++)
-            dnums.Append(dofs_per_face * f + i);
+            dnums.Append(first_facet_dof + dofs_per_face * f + i);
       }
   }
 

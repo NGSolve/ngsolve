@@ -632,12 +632,21 @@ namespace ngcomp
   
   void BilinearForm :: SetPreconditioner (Preconditioner * pre)
   {
+    if (!pre)
+      throw Exception ("SetPreconditioner: preconditioner is None");
     // cout << "SetPreconditioner, type fes = " << typeid(*fespace).name() << ", type pre = " << typeid(*pre).name() << endl;
     if (preconditioners.Contains(pre))
       throw Exception (string("preconditioner ")+typeid(*pre).name()+ " already registered in bfa");
     if (pre->GetFlags().GetDefineFlag("not_register_for_auto_update"))
       throw Exception (string("'not_register_for_auto_update' set, but preconditioner") + typeid(*pre).name() +" registers anyway");
     preconditioners.Append (pre);
+  }
+
+  void BilinearForm :: CheckMatrix (int level) const
+  {
+    if (level < 0 || size_t(level) >= mats.Size() || !mats[level])
+      throw Exception ("BilinearForm '" + GetName() + "': matrix" + (level >= 0 && size_t(level)+1 < mats.Size() ? " on level " + ToString(level) : string("")) +
+                       " not available, call Assemble first");
   }
 
   void BilinearForm :: UnsetPreconditioner (Preconditioner* pre)

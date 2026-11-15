@@ -850,6 +850,12 @@ namespace ngfem
 
   void PlaceholderCoefficientFunction::Set(shared_ptr<CoefficientFunction> _cf)
   {
+    if (!_cf)
+      throw Exception("PlaceholderCF.Set: function is None");
+    bool cycle = false;
+    _cf->TraverseDAG ([&](CoefficientFunction & node) { if (&node == this) cycle = true; });
+    if (cycle)
+      throw Exception("PlaceholderCF.Set: the new function contains the placeholder itself");
     if(Dimensions().Size() != _cf->Dimensions().Size())
       throw Exception("Dimensions of function in PlaceholderCF must not change!");
     for(auto i : Range(Dimensions()))
@@ -5736,9 +5742,8 @@ public:
       return transformation.replace[thisptr];
     Array<shared_ptr<CoefficientFunction>> cfs;
     for(const auto& c : ci)
-      cfs.Append(c->Transform(transformation));
-    auto newcf =
-      make_shared<DomainWiseCoefficientFunction>(std::move(cfs));
+      cfs.Append(c ? c->Transform(transformation) : nullptr);
+    auto newcf = MakeDomainWiseCoefficientFunction(std::move(cfs), vb);
     transformation.cache[thisptr] = newcf;
     return newcf;
   }
@@ -5920,7 +5925,9 @@ public:
     for(auto cf : aci)
       if(cf)
         return ZeroCF(cf->Dimensions());
-    return nullptr;
+    if (aci.Size() == 0)
+      throw Exception("domain-wise CoefficientFunction: empty list");
+    return ZeroCF(Array<int>());
   }
 
 

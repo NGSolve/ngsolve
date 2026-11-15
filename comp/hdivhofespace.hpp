@@ -67,6 +67,8 @@ namespace ngcomp
     // D^-1 of full-order trigs, tets, per vertex-order class
     mutable std::atomic<double*> dual_inverse[2][64] {};
     void ClearDualInverse ();
+    // polynomial degree of a 1D element
+    int Segm1DDegree (size_t elnr) const;
   public:
     HDivHighOrderFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, 
                           bool parseflags=false);
@@ -128,7 +130,8 @@ namespace ngcomp
     /// 
     virtual void GetFacetDofNrs(int fanr, Array<DofId> & dnums) const
     { 
-      if (ma->GetDimension() == 2) GetEdgeDofNrs(fanr,dnums); 
+      if (ma->GetDimension() == 1) GetVertexDofNrs(fanr,dnums); 
+      else if (ma->GetDimension() == 2) GetEdgeDofNrs(fanr,dnums); 
       else if (ma->GetDimension() == 3) GetFaceDofNrs(fanr,dnums); 
     } 
     ///

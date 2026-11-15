@@ -23,7 +23,37 @@ namespace ngfem
       : CoefficientFunctionNoDerivative(1, is_same_v<SCAL, Complex>),
         start(_start), end(_end), dim_vals(_dim_vals),
         values(std::move(_values)), linear(_linear), trafocf(trafo)
-    { ; }
+    {
+      int dim = start.Size();
+      if (dim < 1 || dim > 3)
+        throw Exception("VoxelCoefficient: start must have 1, 2 or 3 entries, got " + ToString(dim));
+      if (end.Size() != dim)
+        throw Exception("VoxelCoefficient: start has " + ToString(dim) + " entries, end has " + ToString(end.Size()));
+      if (dim_vals.Size() != dim)
+        throw Exception("VoxelCoefficient: values must be a " + ToString(dim) + "-dimensional array, got "
+                        + ToString(dim_vals.Size()) + " dimensions");
+      size_t prod = 1;
+      for (int i = 0; i < dim; i++)
+        {
+          if (dim_vals[i] == 0)
+            throw Exception("VoxelCoefficient: values must not be empty");
+          if (!(start[i] < end[i]))
+            throw Exception("VoxelCoefficient: need start < end in every direction");
+          prod *= dim_vals[i];
+        }
+      if (prod != values.Size())
+        throw Exception("VoxelCoefficient: number of values does not match the shape");
+      if (trafocf && trafocf->Dimension() != dim)
+        throw Exception("VoxelCoefficient: trafocf must have dimension " + ToString(dim) + ", got "
+                        + ToString(trafocf->Dimension()));
+    }
+
+    void CheckContext (const CFContext & ctx) const override
+    {
+      if (!trafocf && ctx.dim >= 0 && ctx.dim < int(start.Size()))
+        throw Exception("VoxelCoefficient of dimension " + ToString(start.Size()) + " evaluated on a mesh of dimension "
+                        + ToString(ctx.dim) + ", use trafocf");
+    }
 
     using CoefficientFunctionNoDerivative::Evaluate;
     double Evaluate(const BaseMappedIntegrationPoint& ip) const override;
