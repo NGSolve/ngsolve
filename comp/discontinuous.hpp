@@ -14,6 +14,17 @@ namespace ngcomp
 
  // A discontinuous wrapper class for fespaces 
 
+  // forwards to op, but supports only the VorB of the discontinuous space
+  class OwnVBDifferentialOperator : public BlockDifferentialOperator
+  {
+    VorB own;
+  public:
+    OwnVBDifferentialOperator (shared_ptr<DifferentialOperator> aop, VorB aown)
+      : BlockDifferentialOperator (aop, 1), own(aown)
+    { SetDimensions (aop->Dimensions()); }
+    bool SupportsVB (VorB checkvb) const override { return checkvb == own && diffop->SupportsVB(checkvb); }
+  };
+
   class DiscontinuousFESpace : public FESpace
   {
   protected:
@@ -50,8 +61,22 @@ namespace ngcomp
     virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const override;
     virtual void GetDofNrs (NodeId ni, Array<DofId> & dnums) const override;
 
+    // elements of other VorB are dummies: operators are restricted to vb
     virtual SymbolTable<shared_ptr<DifferentialOperator>> GetAdditionalEvaluators () const override
-    { return space->GetAdditionalEvaluators (); }
+    {
+      SymbolTable<shared_ptr<DifferentialOperator>> res;
+      auto base = space->GetAdditionalEvaluators ();
+      for (size_t i = 0; i < base.Size(); i++)
+        {
+          auto op = base[i];
+          if (!op->SupportsVB(vb)) continue;
+          bool other = false;
+          for (VorB v : { VOL, BND, BBND, BBBND })
+            if (v != vb && op->SupportsVB(v)) other = true;
+          res.Set (base.GetName(i), other ? make_shared<OwnVBDifferentialOperator>(op, vb) : op);
+        }
+      return res;
+    }
 
     shared_ptr<FESpace> CreateMultiplierSpace (Flags flags) const override
     { return space->CreateMultiplierSpace (flags); }

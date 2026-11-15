@@ -82,6 +82,7 @@ namespace ngcomp
   class DiffOpDual : public DiffOp<DiffOpDual<D> >
   {
   public:
+    using FiniteElementType = BaseScalarFiniteElement;
     enum { DIM = 1 };
     enum { DIM_SPACE = D };
     enum { DIM_ELEMENT = D };
@@ -97,7 +98,7 @@ namespace ngcomp
                                 MAT && mat, LocalHeap & lh)
     {
       mat.AddSize(DIM_DMAT, fel.GetNDof()) = 0.0;
-      static_cast<const ScalarFiniteElement<D>&>(fel).CalcDualShape (mip, mat.Row(0));
+      static_cast<const BaseScalarFiniteElement&>(fel).CalcDualShape (mip, mat.Row(0));
     }
     template <typename AFEL, typename MIP, typename MAT,
               typename std::enable_if<!std::is_convertible<MAT,BareSliceMatrix<double,ColMajor>>::value, int>::type = 0>
@@ -117,7 +118,7 @@ namespace ngcomp
       FlatVector<SIMD<double>> hx(mir.Size(), &memx[0]);
       for (size_t i = 0; i < mir.Size(); i++)
         hx(i) = x(0,i) / mir[i].GetMeasure();
-      static_cast<const ScalarFiniteElement<D>&>(fel).AddDualTrans (mir.IR(), hx, y);
+      static_cast<const BaseScalarFiniteElement&>(fel).AddDualTrans (mir.IR(), hx, y);
     }    
   };
 
@@ -149,6 +150,7 @@ namespace ngcomp
   class DiffOpDualVector : public DiffOp<DiffOpDualVector<D> >
   {
   public:
+    using FiniteElementType = VectorFiniteElement;
     enum { DIM = 1 };
     enum { DIM_SPACE = D };
     enum { DIM_ELEMENT = D };
@@ -191,13 +193,31 @@ namespace ngcomp
   };
   
   template <int _DIM_SPACE>
-  class DiffOpDualVectorH1<_DIM_SPACE,0> : public DiffOpId<_DIM_SPACE>
+  class DiffOpDualVectorH1<_DIM_SPACE,0> : public DiffOp<DiffOpDualVectorH1<_DIM_SPACE,0>>
   {
-  public:    
+  public:
+    using FiniteElementType = VectorFiniteElement;
+    enum { DIM = 1 };
     enum { DIM_SPACE = _DIM_SPACE };
     enum { DIM_ELEMENT = 0 };
+    enum { DIM_DMAT = _DIM_SPACE };
+    enum { DIFFORDER = 0 };
 
+    static bool SupportsVB (VorB checkvb) { return true; }
     typedef void DIFFOP_TRACE;
+
+    template <typename FEL, typename MIP, typename MAT>
+    static void GenerateMatrix (const FEL & bfel, const MIP & mip,
+                                MAT && mat, LocalHeap & lh)
+    {
+      auto & fel = static_cast<const VectorFiniteElement&> (bfel);
+      mat.AddSize(DIM_DMAT, bfel.GetNDof()) = 0.0;
+      for (int i = 0; i < DIM_SPACE; i++)
+        {
+          auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[i]);
+          feli.CalcShape (mip.IP(), mat.Row(i).Range(fel.GetRange(i)));
+        }
+    }
   };
 
   class H1HOProlongation : public Prolongation
@@ -2121,6 +2141,7 @@ into the wirebasket.
   class DiffOpDivFreeReconstructVectorH1 : public DiffOp<DiffOpDivFreeReconstructVectorH1<DIM_SPC> >
   {
   public:
+    using FiniteElementType = VectorFiniteElement;
     enum { DIM = 1 };
     enum { DIM_SPACE = DIM_SPC };
     enum { DIM_ELEMENT = DIM_SPC };

@@ -291,6 +291,7 @@ namespace ngfem
   class DiffOpGradientBBoundary : public DiffOp<DiffOpGradientBBoundary<D, FEL> >
   {
   public:
+    using FiniteElementType = FEL;
     static constexpr int DIM = 1;
     static constexpr int DIM_SPACE = D;
     static constexpr int DIM_ELEMENT = D-2;
@@ -578,6 +579,7 @@ namespace ngfem
   class DiffOpIdSys : public DiffOp<DiffOpIdSys<D,SYSDIM> >
   {
   public:
+    using FiniteElementType = ScalarFiniteElement<D>;
     enum { DIM = SYSDIM };
     enum { DIM_SPACE = D };
     enum { DIM_ELEMENT = D };
@@ -1793,6 +1795,7 @@ namespace ngfem
   class DiffOpDiv : public DiffOp<DiffOpDiv<D> >
   {
   public:
+    using FiniteElementType = ScalarFiniteElement<D>;
     enum { DIM = D };
     enum { DIM_SPACE = D };
     enum { DIM_ELEMENT = D };
@@ -1833,6 +1836,7 @@ namespace ngfem
   class DiffOpCurl : public DiffOp<DiffOpCurl>
   {
   public:
+    using FiniteElementType = ScalarFiniteElement<2>;
     enum { DIM = 2 };
     enum { DIM_SPACE = 2 };
     enum { DIM_ELEMENT = 2 };
@@ -1875,6 +1879,7 @@ namespace ngfem
   class DiffOpCurl3d : public DiffOp<DiffOpCurl3d>
   {
   public:
+    using FiniteElementType = ScalarFiniteElement<3>;
     enum { DIM = 3 };
     enum { DIM_SPACE = 3 };
     enum { DIM_ELEMENT = 3 };
@@ -2068,6 +2073,7 @@ namespace ngfem
   class DiffOpIdDual : public DiffOp<DiffOpIdDual<DIM_EL, DIM_SPC> >
   {
   public:
+    using FiniteElementType = BaseScalarFiniteElement;
     enum { DIM = 1 };
     enum { DIM_SPACE = DIM_SPC };
     enum { DIM_ELEMENT = DIM_EL };
@@ -2487,6 +2493,7 @@ namespace ngfem
   class DiffOpDivVectorH1 : public DiffOp<DiffOpDivVectorH1<DIM_SPC> >
   {
   public:
+    using FiniteElementType = VectorFiniteElement;
     static constexpr int DIM = 1;
     static constexpr int DIM_SPACE = DIM_SPC;
     static constexpr int DIM_ELEMENT = DIM_SPC;
@@ -2572,6 +2579,7 @@ namespace ngfem
   class DiffOpStrainVectorH1 : public DiffOp<DiffOpStrainVectorH1<DIM_SPC> >
   {
   public:
+    using FiniteElementType = VectorFiniteElement;
     static constexpr int DIM = 1;
     static constexpr int DIM_SPACE = DIM_SPC;
     static constexpr int DIM_ELEMENT = DIM_SPC;
@@ -2727,6 +2735,7 @@ namespace ngfem
   class DiffOpDivBoundaryVectorH1 : public DiffOp<DiffOpDivBoundaryVectorH1<DIM_SPC> >
   {
   public:
+    using FiniteElementType = VectorFiniteElement;
     static constexpr int DIM = 1;
     static constexpr int DIM_SPACE = DIM_SPC;
     static constexpr int DIM_ELEMENT = DIM_SPC-1;

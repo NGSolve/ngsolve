@@ -7,6 +7,7 @@
 #include "normalfacetfespace.hpp"
 #include "../fem/hdiv_equations.hpp"
 #include "../fem/normalfacetfe.hpp"
+#include "../fem/hdivlofe.hpp"
 #include <special_matrix.hpp>
 #include "normalfacetfespace.hpp"
 #include <../fem/hcurlhdiv_dshape.hpp> 
@@ -23,6 +24,7 @@ namespace ngcomp
   class DiffOpCurlNormalFacet : public DiffOp<DiffOpCurlNormalFacet<D> >
   {
   public:
+    using FiniteElementType = FEL;
   static constexpr int DIM = 1;
   static constexpr int DIM_SPACE = D;
   static constexpr int DIM_ELEMENT = D;
@@ -84,6 +86,7 @@ namespace ngcomp
   class DiffOpNormalMapping : public DiffOp<DiffOpNormalMapping<D> >
   {
   public:
+    using FiniteElementType = FEL;
   static constexpr int DIM = 1;
   static constexpr int DIM_SPACE = D;
   static constexpr int DIM_ELEMENT = D;
@@ -557,10 +560,14 @@ namespace ngcomp
   {
     if (!DefinedOn (ei))
       {
+        if (ei.VB() == VOL)
+          return NewTypedDummyFE<HDivDummyFE, ET_TRIG, ET_QUAD, ET_TET, ET_PRISM, ET_PYRAMID, ET_HEX> (ma->GetElType(ei), lh);
+        if (ei.VB() == BND)
+          return NewTypedDummyFE<HDivNormalDummyFE, ET_SEGM, ET_TRIG, ET_QUAD> (ma->GetElType(ei), lh);
         return
           SwitchET (ma->GetElType(ei), [&] (auto et) -> FiniteElement&
                       {
-                        return *new (lh) /*HCurl*/DummyFE<et.ElementType()> ();
+                        return *new (lh) DummyFE<et.ElementType()> ();
                       });
       }
     
@@ -622,7 +629,7 @@ namespace ngcomp
           return
             SwitchET (ma->GetElType(ei), [&] (auto et) -> FiniteElement&
             {
-              return *new (lh) /*HCurl*/DummyFE<et.ElementType()> ();
+              return *new (lh) DummyFE<et.ElementType()> ();  // no evaluator for BBND, BBBND
             });
         }
         // throw Exception ("NormalFacetFESpace::GetFE does not support BBND or BBBND");

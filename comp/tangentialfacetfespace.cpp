@@ -22,6 +22,7 @@ namespace ngcomp
   class DiffOpTangentialComponentHCurl: public DiffOp<DiffOpTangentialComponentHCurl<D> >
   {
   public:
+    using FiniteElementType = HCurlFiniteElement<D>;
   static constexpr int DIM = 1;
   static constexpr int DIM_SPACE = D;
   static constexpr int DIM_ELEMENT = D;

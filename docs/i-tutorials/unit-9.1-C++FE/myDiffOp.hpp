@@ -21,6 +21,7 @@ namespace ngfem
   class MyDiffOpId : public DiffOp<MyDiffOpId>
   {
   public:
+    using FiniteElementType = MyBaseElement;
     // some constants for the diffop:
     
     static constexpr int DIM = 1;       // dimension of the input
@@ -53,6 +54,7 @@ namespace ngfem
   class MyDiffOpGradient : public DiffOp<MyDiffOpGradient>
   {
   public:    
+    using FiniteElementType = MyBaseElement;
     static constexpr int DIM = 1;       // dimension of the input
     static constexpr int DIM_SPACE = 2; // dimension of the space
     static constexpr int DIM_ELEMENT = 2; // dimension of the element

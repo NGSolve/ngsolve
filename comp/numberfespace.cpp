@@ -10,15 +10,23 @@ namespace ngcomp
   {
     ELEMENT_TYPE et;
   public:
-    NumberFiniteElement (ELEMENT_TYPE _et)
-      : FiniteElement(1, 0), et(_et) { ; }
+    NumberFiniteElement (ELEMENT_TYPE _et, int andof = 1)
+      : FiniteElement(andof, 0), et(_et) { ; }
     virtual ELEMENT_TYPE ElementType() const { return et; }
+  };
+
+  // typed element with 0 dofs
+  class NumberDummyFE : public NumberFiniteElement
+  {
+  public:
+    NumberDummyFE (ELEMENT_TYPE _et) : NumberFiniteElement(_et, 0) { ; }
   };
 
 
   class NumberDiffOp : public DiffOp<NumberDiffOp>
   {
   public:
+    using FiniteElementType = NumberFiniteElement;
   static constexpr int DIM = 1;
   static constexpr int DIM_SPACE = 0;
   static constexpr int DIM_ELEMENT = 0;
@@ -118,10 +126,7 @@ namespace ngcomp
       if (DefinedOn(ei))
         return *new (lh) NumberFiniteElement(ma->GetElType(ei));
       else
-        return SwitchET (ma->GetElType(ei), [&] (auto et) -> FiniteElement&
-        {
-          return *new (lh) DummyFE<et.ElementType()> ();
-        });
+        return *new (lh) NumberDummyFE(ma->GetElType(ei));
     }
 
   void NumberFESpace::GetDofNrs (ElementId ei, Array<int> & dnums) const

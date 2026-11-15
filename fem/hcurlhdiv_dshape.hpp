@@ -427,6 +427,7 @@ namespace ngfem
   {
     typedef DiffOp<ME> BASE;
   public:
+    using FiniteElementType = FEL;
     static constexpr double eps() { return 1e-4; }
 
     static constexpr int DIM = ORIG::DIM;    

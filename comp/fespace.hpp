@@ -94,6 +94,17 @@ ANY                  1 1 1 1 | 15
   class FESpace;
   class BilinearForm;
 
+  // typed dummy element DUMMY<ET> (0 dofs) for the runtime element type et
+  template <template <ELEMENT_TYPE> class DUMMY, ELEMENT_TYPE ... ETS>
+  FiniteElement & NewTypedDummyFE (ELEMENT_TYPE et, Allocator & alloc)
+  {
+    FiniteElement * res = nullptr;
+    [[maybe_unused]] bool found = ((et == ETS ? (res = new (alloc) DUMMY<ETS>(), true) : false) || ...);
+    if (!res)
+      throw Exception ("no typed dummy element for element type " + ToString(et));
+    return *res;
+  }
+
   // will be size_t some day 
   typedef int DofId;
   enum IRREGULAR_DOF_NR
@@ -471,6 +482,9 @@ ANY                  1 1 1 1 | 15
 
     /// returns finite element. 
     virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const = 0;
+
+    /// test hook: checks that GetFE of all elements matches the families expected by the evaluators
+    NGS_DLL_HEADER void CheckElementFamilies (LocalHeap & lh) const;
 
 
     /// get dof-nrs of domain or boundary element elnr

@@ -199,7 +199,7 @@ namespace ngfem
       Exception::Throw ("shape derivative not implemented for DifferentialOperator", typeid(DOP).name());
     }
 
-    using FiniteElementType = FiniteElement; // comment out this line when implementation is complete
+    using FiniteElementType = FiniteElement; // default: element type not declared
     static void CheckElement(const FiniteElement& fel)
     {
       if constexpr (!std::is_same_v<FiniteElement, typename DOP::FiniteElementType>)
@@ -859,8 +859,10 @@ namespace ngfem
 
     virtual void CheckElement (const FiniteElement& bfel) const override
     {
-      auto & fel = dynamic_cast<const SkewMatrixFiniteElement&> (bfel).ScalFE();    
-      diffop->CheckElement(fel);
+      auto * sfel = dynamic_cast<const SkewMatrixFiniteElement*> (&bfel);
+      if (!sfel)
+        throw Exception (string("SkewMatrixDifferentialOperator: expected SkewMatrixFiniteElement, got ") + typeid(bfel).name());
+      diffop->CheckElement(sfel->ScalFE());
     }
   };
 
@@ -1164,8 +1166,12 @@ namespace ngfem
 
     virtual void CheckElement (const FiniteElement& bfel) const override
     {
-      auto & fel = dynamic_cast<const CompoundFiniteElement&> (bfel);
-      diffop->CheckElement(fel[comp]);
+      auto * cfel = dynamic_cast<const CompoundFiniteElement*> (&bfel);
+      if (!cfel)
+        throw Exception (string("CompoundDifferentialOperator: expected CompoundFiniteElement, got ") + typeid(bfel).name());
+      if (comp < 0 || comp >= cfel->GetNComponents())
+        throw Exception ("CompoundDifferentialOperator: component " + ToString(comp) + " out of range, element has " + ToString(cfel->GetNComponents()) + " components");
+      diffop->CheckElement((*cfel)[comp]);
     }
     
   };

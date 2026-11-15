@@ -17,6 +17,7 @@ namespace ngcomp
   class DiffOpHCurlDivDual : public DiffOp<DiffOpHCurlDivDual<D> >
   {
   public:
+    using FiniteElementType = HCurlDivFiniteElement<D>;
     typedef DiffOp<DiffOpHCurlDivDual<D>> BASE;
   static constexpr int DIM = 1;
   static constexpr int DIM_SPACE = D;
@@ -75,6 +76,7 @@ namespace ngcomp
   class DiffOpGradientHCurlDiv : public DiffOp<DiffOpGradientHCurlDiv<D> >
   {
   public:
+    using FiniteElementType = FEL;
   static constexpr int DIM = 1;
   static constexpr int DIM_SPACE = D;
   static constexpr int DIM_ELEMENT = D;
@@ -130,6 +132,7 @@ namespace ngcomp
   class DiffOpIdBoundaryHCurlDiv: public DiffOp<DiffOpIdBoundaryHCurlDiv<D> >
   {
   public:
+    using FiniteElementType = HCurlDivSurfaceFiniteElement<D>;
   static constexpr int DIM = 1;
   static constexpr int DIM_SPACE = D+1;
   static constexpr int DIM_ELEMENT = D;
@@ -179,6 +182,7 @@ namespace ngcomp
   class DiffOpIdHCurlDiv : public DiffOp<DiffOpIdHCurlDiv<D> >
   { 
   public:
+    using FiniteElementType = HCurlDivFiniteElement<D>;
   static constexpr int DIM = 1;
   static constexpr int DIM_SPACE = D;
   static constexpr int DIM_ELEMENT = D;
@@ -226,6 +230,7 @@ namespace ngcomp
   class DiffOpIdHCurlDiv_old : public DiffOp<DiffOpIdHCurlDiv_old<D> >
   { 
   public:
+    using FiniteElementType = HCurlDivFiniteElement<D>;
   static constexpr int DIM = 1;
   static constexpr int DIM_SPACE = D;
   static constexpr int DIM_ELEMENT = D;
@@ -294,6 +299,7 @@ namespace ngcomp
   {
     
   public:
+    using FiniteElementType = HCurlDivFiniteElement<D>;
     static constexpr int DIM = 1;
     static constexpr int DIM_SPACE = D;
     static constexpr int DIM_ELEMENT = D;
@@ -366,6 +372,7 @@ namespace ngcomp
   {
     
   public:
+    using FiniteElementType = HCurlDivFiniteElement<D>;
     static constexpr int DIM = 1;
     static constexpr int DIM_SPACE = D;
     static constexpr int DIM_ELEMENT = D;
@@ -420,6 +427,7 @@ namespace ngcomp
   {
     
   public:
+    using FiniteElementType = HCurlDivFiniteElement<3>;
     static constexpr int DIM = 1;
     static constexpr int DIM_SPACE = 3;
     static constexpr int DIM_ELEMENT = 3;
@@ -898,6 +906,26 @@ namespace ngcomp
 
     if(!DefinedOn(ngel))
       {
+        if (ei.VB() == VOL)
+          switch(ma->GetElType(ei))
+            {
+            case ET_TRIG:  return *new (alloc) HCurlDivDummyFE<ET_TRIG>;
+            case ET_QUAD:  return *new (alloc) HCurlDivDummyFE<ET_QUAD>;
+            case ET_TET:  return *new (alloc) HCurlDivDummyFE<ET_TET>;
+            case ET_PRISM:  return *new (alloc) HCurlDivDummyFE<ET_PRISM>;
+            case ET_PYRAMID:  return *new (alloc) HCurlDivDummyFE<ET_PYRAMID>;
+            case ET_HEX:  return *new (alloc) HCurlDivDummyFE<ET_HEX>;
+            default: break;
+            }
+        if (ei.VB() == BND)
+          switch(ma->GetElType(ei))
+            {
+            case ET_SEGM:  return *new (alloc) HCurlDivSurfaceDummyFE<ET_SEGM>;
+            case ET_TRIG:  return *new (alloc) HCurlDivSurfaceDummyFE<ET_TRIG>;
+            case ET_QUAD:  return *new (alloc) HCurlDivSurfaceDummyFE<ET_QUAD>;
+            default: break;
+            }
+        // no evaluator for BBND, BBBND
         switch(ma->GetElType(ei))
           {
           case ET_POINT: return *new (alloc) DummyFE<ET_POINT>;
@@ -954,10 +982,10 @@ namespace ngcomp
       
       switch(ma->GetElType(ei))
       {
-        case ET_POINT: return *new (alloc) DummyFE<ET_POINT>;
-        case ET_SEGM:  return *new (alloc) DummyFE<ET_SEGM>; break;
-        case ET_TRIG:  return *new (alloc) DummyFE<ET_TRIG>; break;
-        case ET_QUAD:  return *new (alloc) DummyFE<ET_QUAD>; break;
+        case ET_POINT: return *new (alloc) DummyFE<ET_POINT>;  // no evaluator for points
+        case ET_SEGM:  return *new (alloc) HCurlDivSurfaceDummyFE<ET_SEGM>; break;
+        case ET_TRIG:  return *new (alloc) HCurlDivSurfaceDummyFE<ET_TRIG>; break;
+        case ET_QUAD:  return *new (alloc) HCurlDivSurfaceDummyFE<ET_QUAD>; break;
 
         default:
           stringstream str;

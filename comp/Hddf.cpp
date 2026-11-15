@@ -189,6 +189,18 @@ namespace ngcomp
     }
   };
 
+  // typed element with 0 dofs
+  template <ELEMENT_TYPE ET>
+  class HDivDivFacetDummyFE : public HDivDivFacetElement
+  {
+  public:
+    HDivDivFacetDummyFE() : HDivDivFacetElement(0, 0) { ; }
+    ELEMENT_TYPE ElementType() const override { return ET; }
+    void CalcShape(const IntegrationPoint &ip, SliceMatrix<double> shapes) const override { }
+    void CalcDivShape(const IntegrationPoint &ip, SliceMatrix<double> div_shapes) const override { }
+    void CalcDivShapeJump(const IntegrationPoint &ip, SliceMatrix<double> div_e_shapes) const override { }
+  };
+
   template <ELEMENT_TYPE ET>
   class HDivDivFacetHOElement : public HDivDivFacetElement,
                                 public ET_trait<ET>, public VertexOrientedFE<ET>
@@ -662,6 +674,7 @@ void HDivDivFacetHOElement<ET_TET> :: CalcShape(const IntegrationPoint &ip, Slic
   class DiffOpIdHDDFacet : public DiffOp<DiffOpIdHDDFacet<D>>
   {
   public:
+    using FiniteElementType = HDivDivFacetElement;
     enum
     {
       DIM = 1,
@@ -701,6 +714,7 @@ void HDivDivFacetHOElement<ET_TET> :: CalcShape(const IntegrationPoint &ip, Slic
   class DiffOpIdHDDFacetBND : public DiffOp<DiffOpIdHDDFacetBND>
   {
   public:
+    using FiniteElementType = HDivDivFacetElement;
     enum
     {
       DIM = 1,
@@ -739,6 +753,7 @@ void HDivDivFacetHOElement<ET_TET> :: CalcShape(const IntegrationPoint &ip, Slic
   class DiffOpDivHDDFacet<2> : public DiffOp<DiffOpDivHDDFacet<2>>
   {
   public:
+    using FiniteElementType = HDivDivFacetElement;
     enum
     {
       DIM = 1,
@@ -802,6 +817,7 @@ void HDivDivFacetHOElement<ET_TET> :: CalcShape(const IntegrationPoint &ip, Slic
   class DiffOpDivHDDFacet<3> : public DiffOp<DiffOpDivHDDFacet<3>>
   {
   public:
+    using FiniteElementType = HDivDivFacetElement;
     enum
     {
       DIM = 1,
@@ -1018,6 +1034,10 @@ void HDivDivFacetHOElement<ET_TET> :: CalcShape(const IntegrationPoint &ip, Slic
           }
       }
 
+    if (ei.VB() == BND && ma->GetDimension() == 3)
+      return NewTypedDummyFE<HDivDivFacetDummyFE, ET_TRIG, ET_QUAD> (ma->GetElement(ei).GetType(), alloc);
+
+    // no evaluator for BBND, BBBND
     return SwitchET (ma->GetElement(ei).GetType(), [&] (auto et) -> FiniteElement&
     {
       return *new (alloc) DummyFE<et.ElementType()> ();

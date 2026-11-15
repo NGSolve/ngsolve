@@ -21,6 +21,7 @@ namespace ngcomp
   class DiffOpHCurlCurlDual : public DiffOp<DiffOpHCurlCurlDual<D> >
   {
   public:
+    using FiniteElementType = HCurlCurlFiniteElement<D>;
   typedef DiffOp<DiffOpHCurlCurlDual<D>> BASE;
   static constexpr int DIM = 1;
   static constexpr int DIM_SPACE = D;
@@ -80,6 +81,7 @@ namespace ngcomp
   class DiffOpHCurlCurlDualBoundary : public DiffOp<DiffOpHCurlCurlDualBoundary<D> >
   {
   public:
+    using FiniteElementType = HCurlCurlFiniteElement<D-1>;
   typedef DiffOp<DiffOpHCurlCurlDualBoundary<D>> BASE;
   static constexpr int DIM = 1;
   static constexpr int DIM_SPACE = D;
@@ -140,6 +142,7 @@ namespace ngcomp
   class DiffOpIdHCurlCurl: public DiffOp<DiffOpIdHCurlCurl<D> >
   {
   public:
+    using FiniteElementType = HCurlCurlFiniteElement<D>;
   static constexpr int DIM = 1;
   static constexpr int DIM_SPACE = D;
   static constexpr int DIM_ELEMENT = D;
@@ -194,6 +197,8 @@ namespace ngcomp
   template<int D>
   class DiffOpCurlHCurlCurl: public DiffOp<DiffOpCurlHCurlCurl<D> >
   {
+  public:
+    using FiniteElementType = HCurlCurlFiniteElement<D>;
   };
 
 
@@ -201,6 +206,7 @@ namespace ngcomp
   class DiffOpCurlHCurlCurl<2>: public DiffOp<DiffOpCurlHCurlCurl<2> >
   {
   public:
+    using FiniteElementType = HCurlCurlFiniteElement<2>;
   static constexpr int DIM = 1;
   static constexpr int DIM_SPACE = 2;
   static constexpr int DIM_ELEMENT = 2;
@@ -240,6 +246,7 @@ namespace ngcomp
   class DiffOpCurlHCurlCurl<3>: public DiffOp<DiffOpCurlHCurlCurl<3> >
   {
   public:
+    using FiniteElementType = HCurlCurlFiniteElement<3>;
     static constexpr int DIM = 1;
     static constexpr int DIM_SPACE = 3;
     static constexpr int DIM_ELEMENT = 3;
@@ -281,6 +288,8 @@ namespace ngcomp
   template<int D>
   class DiffOpIncHCurlCurl: public DiffOp<DiffOpIncHCurlCurl<D> >
   {
+  public:
+    using FiniteElementType = HCurlCurlFiniteElement<D>;
   };
 
 
@@ -288,6 +297,7 @@ namespace ngcomp
   class DiffOpIncHCurlCurl<2>: public DiffOp<DiffOpIncHCurlCurl<2> >
   {
   public:
+    using FiniteElementType = HCurlCurlFiniteElement<2>;
     static constexpr int DIM = 1;
     static constexpr int DIM_SPACE = 2;
     static constexpr int DIM_ELEMENT = 2;
@@ -350,6 +360,7 @@ namespace ngcomp
   class DiffOpIncHCurlCurl<3>: public DiffOp<DiffOpIncHCurlCurl<3> >
   {
   public:
+    using FiniteElementType = HCurlCurlFiniteElement<3>;
     static constexpr int DIM = 1;
     static constexpr int DIM_SPACE = 3;
     static constexpr int DIM_ELEMENT = 3;
@@ -453,6 +464,7 @@ namespace ngcomp
   class DiffOpIdBoundaryHCurlCurl: public DiffOp<DiffOpIdBoundaryHCurlCurl<D> >
   {
   public:
+    using FiniteElementType = HCurlCurlFiniteElement<D-1>;
     static constexpr int DIM = 1;
     static constexpr int DIM_SPACE = D;
     static constexpr int DIM_ELEMENT = D-1;
@@ -538,6 +550,7 @@ namespace ngcomp
   class DiffOpIdBBoundaryHCurlCurl: public DiffOp<DiffOpIdBBoundaryHCurlCurl<D> >
   {
   public:
+    using FiniteElementType = HCurlCurlFiniteElement<D-2>;
       static constexpr int DIM = 1;
       static constexpr int DIM_SPACE = D;
       static constexpr int DIM_ELEMENT = D-2;
@@ -605,6 +618,7 @@ namespace ngcomp
   class DiffOpEdgeTTComponentHCurlCurl: public DiffOp<DiffOpEdgeTTComponentHCurlCurl<D> >
   {
   public:
+    using FiniteElementType = HCurlCurlFiniteElement<D>;
     static constexpr int DIM = 1;
     static constexpr int DIM_SPACE = D;
     static constexpr int DIM_ELEMENT = D;
@@ -641,6 +655,7 @@ namespace ngcomp
   class DiffOpGradientHCurlCurl : public DiffOp<DiffOpGradientHCurlCurl<D> >
   {
   public:
+    using FiniteElementType = FEL;
     static constexpr int DIM = 1;
     static constexpr int DIM_SPACE = D;
     static constexpr int DIM_ELEMENT = D;
@@ -694,6 +709,7 @@ namespace ngcomp
   class DiffOpChristoffelHCurlCurl : public DiffOp<DiffOpChristoffelHCurlCurl<D> >
   {
   public:
+    using FiniteElementType = FEL;
     static constexpr int DIM = 1;
     static constexpr int DIM_SPACE = D;
     static constexpr int DIM_ELEMENT = D;
@@ -831,6 +847,7 @@ namespace ngcomp
   class DiffOpChristoffel2HCurlCurl : public DiffOp<DiffOpChristoffel2HCurlCurl<D> >
   {
   public:
+    using FiniteElementType = HCurlCurlFiniteElement<D>;
     static constexpr int DIM = 1;
     static constexpr int DIM_SPACE = D;
     static constexpr int DIM_ELEMENT = D;
@@ -958,6 +975,7 @@ namespace ngcomp
   class DiffOpRiemannHCurlCurl : public DiffOp<DiffOpRiemannHCurlCurl<D> >
   {
   public:
+    using FiniteElementType = HCurlCurlFiniteElement<D>;
     static constexpr int DIM = 1;
     static constexpr int DIM_SPACE = D;
     static constexpr int DIM_ELEMENT = D;
@@ -1146,6 +1164,7 @@ namespace ngcomp
   class DiffOpRicciHCurlCurl : public DiffOp<DiffOpRicciHCurlCurl<D> >
   {
   public:
+    using FiniteElementType = HCurlCurlFiniteElement<D>;
     static constexpr int DIM = 1;
     static constexpr int DIM_SPACE = D;
     static constexpr int DIM_ELEMENT = D;
@@ -1289,6 +1308,7 @@ namespace ngcomp
   class DiffOpScalarHCurlCurl : public DiffOp<DiffOpScalarHCurlCurl<D> >
   {
   public:
+    using FiniteElementType = HCurlCurlFiniteElement<D>;
     static constexpr int DIM = 1;
     static constexpr int DIM_SPACE = D;
     static constexpr int DIM_ELEMENT = D;
@@ -1388,6 +1408,7 @@ namespace ngcomp
   class DiffOpEinsteinHCurlCurl : public DiffOp<DiffOpEinsteinHCurlCurl<D> >
   {
   public:
+    using FiniteElementType = HCurlCurlFiniteElement<D>;
     static constexpr int DIM = 1;
     static constexpr int DIM_SPACE = D;
     static constexpr int DIM_ELEMENT = D;
@@ -1522,6 +1543,7 @@ namespace ngcomp
   class DiffOpCurvatureHCurlCurl : public DiffOp<DiffOpCurvatureHCurlCurl<D> >
   {
   public:
+    using FiniteElementType = HCurlCurlFiniteElement<D>;
     static constexpr int DIM = 1;
     static constexpr int DIM_SPACE = D;
     static constexpr int DIM_ELEMENT = D;
@@ -2222,10 +2244,10 @@ Einstein: Einstein tensor Ein_ij(g) = Ric_ij(g)-0.5*S(g) g_ij
       }
       switch(ma->GetElType(ei))
         {
-        case ET_POINT: return *new (alloc) DummyFE<ET_POINT>; break;
-        case ET_SEGM:  return *new (alloc) DummyFE<ET_SEGM>; break;
-        case ET_TRIG:  return *new (alloc) DummyFE<ET_TRIG>; break;
-        case ET_QUAD:  return *new (alloc) DummyFE<ET_QUAD>; break;
+        case ET_POINT: return *new (alloc) DummyFE<ET_POINT>; break;  // no evaluator for points
+        case ET_SEGM:  return *new (alloc) HCurlCurlDummyFE<ET_SEGM>; break;
+        case ET_TRIG:  return *new (alloc) HCurlCurlDummyFE<ET_TRIG>; break;
+        case ET_QUAD:  return *new (alloc) HCurlCurlDummyFE<ET_QUAD>; break;
           
         default:
           stringstream str;
@@ -2241,11 +2263,11 @@ Einstein: Einstein tensor Ein_ij(g) = Ric_ij(g)-0.5*S(g) g_ij
     {
       switch (ma->GetElType(ei))
       {
-      case ET_TRIG: return *new (alloc) DummyFE<ET_TRIG>; break;
-      case ET_QUAD: return *new (alloc) DummyFE<ET_QUAD>; break;
-      case ET_TET: return *new (alloc) DummyFE<ET_TET>; break;
-      case ET_PRISM: return *new (alloc) DummyFE<ET_PRISM>; break;
-      case ET_HEX: return *new (alloc) DummyFE<ET_HEX>; break;
+      case ET_TRIG: return *new (alloc) HCurlCurlDummyFE<ET_TRIG>; break;
+      case ET_QUAD: return *new (alloc) HCurlCurlDummyFE<ET_QUAD>; break;
+      case ET_TET: return *new (alloc) HCurlCurlDummyFE<ET_TET>; break;
+      case ET_PRISM: return *new (alloc) HCurlCurlDummyFE<ET_PRISM>; break;
+      case ET_HEX: return *new (alloc) HCurlCurlDummyFE<ET_HEX>; break;
       default: throw Exception("Element type "+ToString(ma->GetElType(ei))+" not supported");
       }
     }

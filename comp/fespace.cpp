@@ -1378,6 +1378,46 @@ lot of new non-zero entries in the matrix!\n" << endl;
   {
     return prol;
   }
+
+  void FESpace :: CheckElementFamilies (LocalHeap & lh) const
+  {
+    auto additional = GetAdditionalEvaluators();
+    for (VorB vb : { VOL, BND, BBND, BBBND })
+      {
+        if (int(vb) > ma->GetDimension()) continue;
+
+        Array<pair<string, shared_ptr<DifferentialOperator>>> ops;
+        if (evaluator[vb]) ops.Append ({ "evaluator", evaluator[vb] });
+        if (flux_evaluator[vb]) ops.Append ({ "flux_evaluator", flux_evaluator[vb] });
+        for (size_t i = 0; i < additional.Size(); i++)
+          if (additional[i] && additional[i]->SupportsVB(vb))
+            {
+              // an operator of higher dimension acts on lower-dimensional elements through its trace
+              auto op = additional[i];
+              while (op && op->VB() != vb)
+                op = op->GetTrace();
+              ops.Append ({ "additional evaluator '" + additional.GetName(i) + "'", op ? op : additional[i] });
+            }
+        if (!ops.Size()) continue;
+
+        for (ElementId ei : ma->Elements(vb))
+          {
+            HeapReset hr(lh);
+            const FiniteElement & fel = GetFE (ei, lh);
+            for (auto & [name, op] : ops)
+              try
+                {
+                  op->CheckElement (fel);
+                }
+              catch (Exception & e)
+                {
+                  throw Exception (string(GetClassName()) + ": " + name + " " + op->Name() + ", element " + ToString(ei.Nr()) +
+                                   ", VorB " + ToString(vb) + ", element type " + ToString(ma->GetElType(ei)) +
+                                   ": " + e.What());
+                }
+          }
+      }
+  }
   
   SymbolTable<shared_ptr<DifferentialOperator>> FESpace :: GetAdditionalEvaluators () const
   {
@@ -3445,7 +3485,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
             }
       }
     return SwitchET(et, [&lh] (auto type) -> FiniteElement&
-                    { return * new (lh) DummyFE<type.ElementType()>(); });
+                    { return * new (lh) ScalarDummyFE<type.ElementType()>(); });
   }
   
   

@@ -108,6 +108,34 @@ namespace ngfem
     virtual list<tuple<string,double>> Timing () const;
   };
 
+  // typed element with 0 dofs
+  template <ELEMENT_TYPE ET>
+  class HDivDivDummyFE : public HDivDivFiniteElement<ET_trait<ET>::DIM>
+  {
+    static constexpr int DIM = ET_trait<ET>::DIM;
+  public:
+    HDivDivDummyFE() : HDivDivFiniteElement<DIM> (0,0) { ; }
+    ELEMENT_TYPE ElementType() const override { return ET; }
+
+    void CalcShape (const IntegrationPoint & ip, BareSliceMatrix<double> shape) const override { }
+    void CalcDivShape (const IntegrationPoint & ip, BareSliceMatrix<double> divshape) const override { }
+    void CalcMappedShape_Matrix (const MappedIntegrationPoint<DIM,DIM> & mip, BareSliceMatrix<double> shape) const override { }
+    void CalcMappedShape_Vector (const MappedIntegrationPoint<DIM,DIM> & mip, BareSliceMatrix<double> shape) const override { }
+    void CalcMappedDivShape (const BaseMappedIntegrationPoint & mip, BareSliceMatrix<double> shape) const override { }
+    void CalcMappedShape_Matrix (const SIMD_BaseMappedIntegrationRule & mir, BareSliceMatrix<SIMD<double>> shapes) const override { }
+    void Evaluate_Matrix (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const override { }
+    void AddTrans_Matrix (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values, BareSliceVector<> coefs) const override { }
+    void CalcDualShape (const BaseMappedIntegrationPoint & bmip, BareSliceMatrix<> shape) const override { }
+    void CalcDualShape (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> shape) const override { }
+    void EvaluateDual (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const override { }
+    void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSliceMatrix<SIMD<double>> values, BareSliceVector<double> coefs) const override { }
+    void CalcMappedDivShape (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> divshapes) const override { }
+    void EvaluateDiv (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const override { }
+    void AddDivTrans (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> values, BareSliceVector<> coefs) const override { }
+    void CalcShape_NormalComponent (const SIMD_BaseMappedIntegrationRule & mir, BareSliceMatrix<SIMD<double>> shapes) const override { }
+    void CalcShape_NNComponent (const SIMD_BaseMappedIntegrationRule & mir, BareSliceMatrix<SIMD<double>> shapes) const override { }
+  };
+
   template <int D,typename VEC,typename MAT>
   void VecToSymMat(const VEC & vec,MAT && mat)
   {
@@ -2909,6 +2937,18 @@ namespace ngfem
     virtual void CalcMappedShape_Vector (const MappedIntegrationPoint<DIM,DIM+1> & mip,
       BareSliceMatrix<double> shape) const = 0;
 
+  };
+
+  // typed element with 0 dofs
+  template <ELEMENT_TYPE ET>
+  class HDivDivSurfaceDummyFE : public HDivDivSurfaceFiniteElement<ET_trait<ET>::DIM>
+  {
+    static constexpr int DIM = ET_trait<ET>::DIM;
+  public:
+    HDivDivSurfaceDummyFE() : HDivDivSurfaceFiniteElement<DIM> (0,0) { ; }
+    ELEMENT_TYPE ElementType() const override { return ET; }
+    void CalcMappedShape_Matrix (const MappedIntegrationPoint<DIM,DIM+1> & mip, BareSliceMatrix<double> shape) const override { }
+    void CalcMappedShape_Vector (const MappedIntegrationPoint<DIM,DIM+1> & mip, BareSliceMatrix<double> shape) const override { }
   };
 
 

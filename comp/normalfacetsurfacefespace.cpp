@@ -7,6 +7,7 @@
 #include "normalfacetsurfacefespace.hpp"
 #include <../fem/hdiv_equations.hpp>
 #include <../fem/normalfacetfe.hpp>
+#include <../fem/hdivlofe.hpp>
 #include <normalfacetsurfacefespace.hpp>
 #include <../fem/hcurlhdiv_dshape.hpp> 
 
@@ -164,20 +165,23 @@ namespace ngcomp
 
   FiniteElement & NormalFacetSurfaceFESpace :: GetFE ( ElementId ei, Allocator & lh ) const
   {
+    if (ei.VB() == VOL)
+      return NewTypedDummyFE<HDivDummyFE, ET_TET, ET_PRISM, ET_PYRAMID, ET_HEX> (ma->GetElType(ei), lh);
+
     if (!DefinedOn (ei))
       {
+        if (ei.VB() == BND)
+          return NewTypedDummyFE<HDivDummyFE, ET_TRIG, ET_QUAD> (ma->GetElType(ei), lh);
         return
           SwitchET (ma->GetElType(ei), [&] (auto et) -> FiniteElement&
                       {
-                        return *new (lh) DummyFE<et.ElementType()> ();
+                        return *new (lh) DummyFE<et.ElementType()> ();   // no evaluator for BBND, BBBND
                       });
       }
     switch(ei.VB())
       {
       case VOL:
-        {
-          throw Exception("No volume elements available for NormalFacetSurfaceFESpace. Trace is missing");
-        }
+        break;
       case BND:
         {
           return * SwitchET<ET_TRIG,ET_QUAD>

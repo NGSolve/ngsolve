@@ -14,6 +14,7 @@ template <int D, typename FEL = HDivNormalFiniteElement<D-2> >
 class DiffOpIdVecHDivSurfaceBoundary : public DiffOp<DiffOpIdVecHDivSurfaceBoundary<D, FEL> >
 {
 public:
+    using FiniteElementType = FEL;
     enum { DIM = 1 };
     enum { DIM_SPACE = D };
     enum { DIM_ELEMENT = D-2 };
@@ -50,6 +51,7 @@ template <int D, typename FEL = HDivFiniteElement<D-1> >
 class DiffOpDivHDivSurface : public DiffOp<DiffOpDivHDivSurface<D, FEL> >
 {
 public:
+    using FiniteElementType = FEL;
     enum { DIM = 1 };
     enum { DIM_SPACE = D };
     enum { DIM_ELEMENT = D-1 };
@@ -133,6 +135,7 @@ public:
   class DiffOpGradientHDivSurface : public DiffOp<DiffOpGradientHDivSurface<D> >
   {
   public:
+    using FiniteElementType = FEL;
     enum { DIM = 1 };
     enum { DIM_SPACE = D };
     enum { DIM_ELEMENT = D-1 };
@@ -703,20 +706,19 @@ void HDivHighOrderSurfaceFESpace :: Average (BaseVector & vec) const
   FiniteElement & HDivHighOrderSurfaceFESpace :: GetFE (ElementId ei, Allocator & alloc) const
   {
 
+    if (ei.IsVolume())
+      return NewTypedDummyFE<HDivDummyFE, ET_TET, ET_PRISM, ET_PYRAMID, ET_HEX> (ma->GetElType(ei), alloc);
+
     if (!DefinedOn (ei))
       {
-        return
-          SwitchET (ma->GetElType(ei), [&] (auto et) -> FiniteElement&
-                      {
-                        return *new (alloc) DummyFE<et.ElementType()> ();
-                      });
+        if (ei.VB() == BND)
+          return NewTypedDummyFE<HDivDummyFE, ET_TRIG, ET_QUAD> (ma->GetElType(ei), alloc);
+        if (ei.VB() == BBND)
+          return NewTypedDummyFE<HDivNormalDummyFE, ET_SEGM> (ma->GetElType(ei), alloc);
+        return * new (alloc) DummyFE<ET_POINT>();   // no evaluator for BBBND
       }
     
-     if (ei.IsVolume())
-      {
-	throw Exception("No volume elements available");
-      }
-     else if (ei.VB()  == BND)
+     if (ei.VB()  == BND)
        {
 	 switch (ma->GetElType(ei))
 	   {

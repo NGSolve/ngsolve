@@ -1124,6 +1124,12 @@ VOL_or_BND : ngsolve.comp.VorB
 
 )raw_string"))
 
+    .def("_CheckElementFamilies", [](shared_ptr<FESpace> self)
+         {
+           LocalHeap lh(10000000, "CheckElementFamilies");
+           self->CheckElementFamilies(lh);
+         }, "test hook: verify that GetFE returns the element families expected by all evaluators")
+
     .def("GetDofNrs", [](shared_ptr<FESpace> self, ElementId ei)
          {
            PyCheckId (*self->GetMeshAccess(), ei);

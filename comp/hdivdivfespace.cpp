@@ -524,6 +524,7 @@ namespace ngcomp
   class DiffOpIdHDivDiv_old : public DiffOp<DiffOpIdHDivDiv_old<D> >
   { 
   public:
+    using FiniteElementType = HDivDivFiniteElement<D>;
     static constexpr int DIM = 1;
     static constexpr int DIM_SPACE = D;
     static constexpr int DIM_ELEMENT = D;
@@ -585,6 +586,7 @@ namespace ngcomp
   class DiffOpVecIdHDivDiv_old : public DiffOp<DiffOpVecIdHDivDiv_old<D> >
   { 
   public:
+    using FiniteElementType = HDivDivFiniteElement<D>;
     static constexpr int DIM = 1;
     static constexpr int DIM_SPACE = D;
     static constexpr int DIM_ELEMENT = D;
@@ -663,6 +665,7 @@ namespace ngcomp
   {
     
   public:
+    using FiniteElementType = HDivDivFiniteElement<D>;
     static constexpr int DIM = 1;
     static constexpr int DIM_SPACE = D;
     static constexpr int DIM_ELEMENT = D;

@@ -36,6 +36,7 @@ namespace ngcomp
   class DiffOpNormalComponentHDiv: public DiffOp<DiffOpNormalComponentHDiv<D> >
   {
   public:
+    using FiniteElementType = HDivFiniteElement<D>;
     enum { DIM = 1 };
     enum { DIM_SPACE = D };
     enum { DIM_ELEMENT = D };

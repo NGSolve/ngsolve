@@ -31,6 +31,7 @@ namespace ngcomp
   class IRDiffOp : public DiffOp<IRDiffOp>
   {
   public:
+    using FiniteElementType = FiniteElement;
     enum { DIM = 1 };
     enum { DIM_SPACE = 0 };
     enum { DIM_ELEMENT = 0 };

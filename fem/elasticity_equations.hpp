@@ -29,6 +29,8 @@ namespace ngfem
   template <int D, typename FEL = ScalarFiniteElement<D> > 
   class DiffOpStrain : public DiffOp<DiffOpStrain<D, FEL> >
   {
+  public:
+    using FiniteElementType = FEL;
   };
 
   template <typename FEL>

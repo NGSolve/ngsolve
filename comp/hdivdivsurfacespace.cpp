@@ -11,6 +11,7 @@ namespace ngcomp
   class DiffOpHDivDivSurfaceDual : public DiffOp<DiffOpHDivDivSurfaceDual<D> >
   {
   public:
+    using FiniteElementType = HDivDivFiniteElement<D-1>;
     typedef DiffOp<DiffOpHDivDivSurfaceDual<D>> BASE;
     enum { DIM = 1 };
     enum { DIM_SPACE = D };
@@ -66,6 +67,7 @@ namespace ngcomp
   class DiffOpHDivDivDual : public DiffOp<DiffOpHDivDivDual<D> >
   {
   public:
+    using FiniteElementType = HDivDivFiniteElement<D>;
     typedef DiffOp<DiffOpHDivDivDual<D>> BASE;
     enum { DIM = 1 };
     enum { DIM_SPACE = D };
@@ -92,6 +94,7 @@ namespace ngcomp
   class DiffOpIdHDivDiv: public DiffOp<DiffOpIdHDivDiv<D> >
   {
   public:
+    using FiniteElementType = HDivDivFiniteElement<D>;
     enum { DIM = 1 };
     enum { DIM_SPACE = D };
     enum { DIM_ELEMENT = D };
@@ -130,6 +133,7 @@ namespace ngcomp
   class DiffOpDivHDivDiv: public DiffOp<DiffOpDivHDivDiv<D> >
   {
   public:
+    using FiniteElementType = HDivDivFiniteElement<D>;
     enum { DIM = 1 };
     enum { DIM_SPACE = D };
     enum { DIM_ELEMENT = D };
@@ -160,6 +164,7 @@ namespace ngcomp
   class DiffOpIdHDivDivSurface : public DiffOp<DiffOpIdHDivDivSurface<D, FEL> >
   {
   public:
+    using FiniteElementType = FEL;
     enum { DIM = 1 };
     enum { DIM_SPACE = D };
     enum { DIM_ELEMENT = D-1 };
@@ -254,6 +259,7 @@ namespace ngcomp
   class DiffOpNNComponentHDivDivSurface : public DiffOp<DiffOpNNComponentHDivDivSurface<D, FEL> >
   {
   public:
+    using FiniteElementType = FEL;
     enum { DIM = 1 };
     enum { DIM_SPACE = D };
     enum { DIM_ELEMENT = D-1 };
@@ -310,6 +316,7 @@ namespace ngcomp
   {
   
   public:
+    using FiniteElementType = FEL;
     enum { DIM = 1 };
     enum { DIM_SPACE = D };
     enum { DIM_ELEMENT = D-1 };
@@ -602,8 +609,14 @@ namespace ngcomp
 
   FiniteElement & HDivDivSurfaceSpace::GetFE (ElementId ei, Allocator & lh) const
   {
+    if (ei.VB() == VOL)
+      return NewTypedDummyFE<HDivDivDummyFE, ET_TET, ET_PRISM, ET_PYRAMID, ET_HEX> (ma->GetElType(ei), lh);
+
     if (!DefinedOn (ei))
       {
+        if (ei.VB() == BND)
+          return NewTypedDummyFE<HDivDivDummyFE, ET_TRIG, ET_QUAD> (ma->GetElType(ei), lh);
+        // no evaluator for BBND, BBBND
         return
           SwitchET (ma->GetElType(ei), [&] (auto et) -> FiniteElement&
                       {
@@ -614,7 +627,6 @@ namespace ngcomp
     switch (ei.VB())
       {
       case VOL:
-        throw Exception("Volume elements not available for HDivDivSurfaceSpace");
         break;
 
       case BND:

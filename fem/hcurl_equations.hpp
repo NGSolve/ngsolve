@@ -223,6 +223,8 @@ namespace ngfem
   template <int D, typename FEL = HCurlFiniteElement<D> >
   class DiffOpCurlEdge : public DiffOp<DiffOpCurlEdge<D, FEL> >
   {
+  public:
+    using FiniteElementType = FEL;
   };
 
   template <typename FEL> class DiffOpCurlEdge<2,FEL> 
@@ -470,6 +472,7 @@ namespace ngfem
   class DiffOpTangentialComponentEdge : public DiffOp<DiffOpTangentialComponentEdge<D> >
   {
   public:
+    using FiniteElementType = HCurlFiniteElement<D>;
     static constexpr int DIM = D;
     static constexpr int DIM_SPACE = D;
     static constexpr int DIM_ELEMENT = D;
@@ -800,6 +803,7 @@ template <typename FEL = HCurlFiniteElement<2> >
 class DiffOpCurlBoundaryEdgeVec : public DiffOp<DiffOpCurlBoundaryEdgeVec<FEL> >
 {
 public:
+    using FiniteElementType = FEL;
   static constexpr int DIM = 1;
   static constexpr int DIM_SPACE = 3;
   static constexpr int DIM_ELEMENT = 2;
@@ -1529,6 +1533,7 @@ public:
   class DiffOpGradientBoundaryHCurl : public DiffOp<DiffOpGradientBoundaryHCurl<D> >
   {
   public:
+    using FiniteElementType = FEL;
     static constexpr int DIM = 1;
     static constexpr int DIM_SPACE = D;
     static constexpr int DIM_ELEMENT = D-1;

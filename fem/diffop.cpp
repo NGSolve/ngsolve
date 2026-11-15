@@ -978,7 +978,10 @@ namespace ngfem
 
   void VectorDifferentialOperator :: CheckElement (const FiniteElement& bfel) const
     {
-      auto & fel = dynamic_cast<const VectorFiniteElement&> (bfel)[0];
+      const auto * vfel = dynamic_cast<const VectorFiniteElement*> (&bfel);
+      if (!vfel)
+        throw Exception (string("VectorDifferentialOperator: expected VectorFiniteElement, got ") + typeid(bfel).name());
+      auto & fel = (*vfel)[0];
       diffop->CheckElement(fel);
     }
 
@@ -1222,7 +1225,10 @@ namespace ngfem
 
   void MatrixDifferentialOperator :: CheckElement (const FiniteElement& bfel) const
     {
-      auto & fel = dynamic_cast<const VectorFiniteElement&> (bfel)[0];
+      const auto * vfel = dynamic_cast<const VectorFiniteElement*> (&bfel);
+      if (!vfel)
+        throw Exception (string("MatrixDifferentialOperator: expected VectorFiniteElement, got ") + typeid(bfel).name());
+      auto & fel = (*vfel)[0];
       diffop->CheckElement(fel);
     }
 
@@ -1403,7 +1409,10 @@ namespace ngfem
 
   void SymMatrixDifferentialOperator :: CheckElement (const FiniteElement& bfel) const
     {
-      auto & fel = static_cast<const SymMatrixFiniteElement&> (bfel).ScalFE();          
+      const auto * vfel = dynamic_cast<const SymMatrixFiniteElement*> (&bfel);
+      if (!vfel)
+        throw Exception (string("SymMatrixDifferentialOperator: expected SymMatrixFiniteElement, got ") + typeid(bfel).name());
+      auto & fel = (*vfel).ScalFE();
       diffop->CheckElement(fel);
     }
   
@@ -1777,7 +1786,10 @@ namespace ngfem
   
   void SymDevMatrixDifferentialOperator :: CheckElement (const FiniteElement& bfel) const
     {
-      auto & fel = dynamic_cast<const SymMatrixFiniteElement&> (bfel).ScalFE();          
+      const auto * vfel = dynamic_cast<const SymMatrixFiniteElement*> (&bfel);
+      if (!vfel)
+        throw Exception (string("SymDevMatrixDifferentialOperator: expected SymMatrixFiniteElement, got ") + typeid(bfel).name());
+      auto & fel = (*vfel).ScalFE();
       diffop->CheckElement(fel);
     }
 

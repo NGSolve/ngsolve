@@ -18,6 +18,7 @@ namespace ngsbem
   class DiffOpBoundaryRot : public DiffOp<DiffOpBoundaryRot>
   {
   public:
+    using FiniteElementType = ScalarFiniteElement<2>;
     enum { DIM = 1 };
     enum { DIM_SPACE = 3 };
     enum { DIM_ELEMENT = 2 };
@@ -92,6 +93,7 @@ namespace ngsbem
   class DiffOpRotatedTrace : public DiffOp<DiffOpRotatedTrace>
   {
   public:
+    using FiniteElementType = HCurlFiniteElement<2>;
     enum { DIM = 1 };
     enum { DIM_SPACE = 3 };
     enum { DIM_ELEMENT = 2 };

@@ -20,8 +20,12 @@ namespace ngcomp {
 
     for (VorB vorb : {VOL,BND,BBND})
     {
-      evaluator[vorb] = space->GetEvaluator(vorb);
-      flux_evaluator[vorb] = space->GetFluxEvaluator(vorb);
+      // elements of other VorB are dummies: only the evaluators of vb have a matching element family
+      if (vorb == vb)
+        {
+          evaluator[vorb] = space->GetEvaluator(vorb);
+          flux_evaluator[vorb] = space->GetFluxEvaluator(vorb);
+        }
       integrator[vorb] = space->GetIntegrator(vorb);
     }    
     iscomplex = space->IsComplex();

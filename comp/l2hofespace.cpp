@@ -79,6 +79,7 @@ namespace ngcomp
   class DiffOpNormal : public DiffOp<DiffOpNormal<D> >
   {
   public:
+    using FiniteElementType = ScalarFiniteElement<D>;
   static constexpr int DIM = 1;
   static constexpr int DIM_SPACE = D;
   static constexpr int DIM_ELEMENT = D;
@@ -1195,7 +1196,7 @@ global system.
             return SwitchET<ET_POINT,ET_SEGM,ET_TRIG,ET_QUAD>
               (eltype,
                [&alloc] (auto et) -> FiniteElement&
-               { return * new (alloc) DummyFE<et.ElementType()>; });
+               { return * new (alloc) ScalarDummyFE<et.ElementType()>; });
           }
         catch (const Exception& e)
           {
@@ -2165,6 +2166,7 @@ global system.
   class DiffOpSurfaceGradient : public DiffOp<DiffOpSurfaceGradient<D, FEL> >
   {
   public:
+    using FiniteElementType = FEL;
   static constexpr int DIM = 1;
   static constexpr int DIM_SPACE = D;
   static constexpr int DIM_ELEMENT = D-1;

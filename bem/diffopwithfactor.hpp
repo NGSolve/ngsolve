@@ -31,7 +31,7 @@ namespace ngsbem
 
     auto BaseDiffOp() const { return diffop; }
 
-    void CheckElement (const FiniteElement& fel) const override { }
+    void CheckElement (const FiniteElement& fel) const override { diffop->CheckElement(fel); }
     
     void CalcMatrix (const FiniteElement & fel,
                      const BaseMappedIntegrationPoint & mip,

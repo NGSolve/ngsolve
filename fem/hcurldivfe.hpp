@@ -2049,6 +2049,18 @@ template <> class HCurlDivFE<ET_HEX> : public T_HCurlDivFE<ET_HEX>
                             BareSliceMatrix<double> shape) const = 0;
 
   };
+
+  // typed element with 0 dofs
+  template <ELEMENT_TYPE ET>
+  class HCurlDivSurfaceDummyFE : public HCurlDivSurfaceFiniteElement<ET_trait<ET>::DIM>
+  {
+    static constexpr int DIM = ET_trait<ET>::DIM;
+  public:
+    HCurlDivSurfaceDummyFE() : HCurlDivSurfaceFiniteElement<DIM> (0,0) { ; }
+    ELEMENT_TYPE ElementType() const override { return ET; }
+    void CalcMappedShape (const MappedIntegrationPoint<DIM,DIM+1> & mip, BareSliceMatrix<double> shape) const override { }
+    void CalcShape (const IntegrationPoint & ip, BareSliceMatrix<double> shape) const override { }
+  };
   
 
   template <ELEMENT_TYPE ET> class HCurlDivSurfaceFE;

@@ -16,6 +16,7 @@ namespace ngcomp
   class DiffOpIdFacet_ : public DiffOp<DiffOpIdFacet_<D> >
   {
   public:
+    using FiniteElementType = FacetVolumeFiniteElement<D>;
   static constexpr int DIM = 1;
   static constexpr int DIM_SPACE = D;
   static constexpr int DIM_ELEMENT = D;
@@ -23,7 +24,7 @@ namespace ngcomp
   static constexpr int DIFFORDER = 0;
     static IVec<0> GetDimensions() { return IVec<0>(); };
 
-    static bool SupportsVB (VorB checkvb) { return true; }
+    static bool SupportsVB (VorB checkvb) { return (checkvb==VOL) || (checkvb==BND); }
 
     typedef DiffOpIdFacetSurface<D> DIFFOP_TRACE;
     
@@ -69,6 +70,7 @@ namespace ngcomp
   class DiffOpIdFacetSurface : public DiffOp<DiffOpIdFacetSurface<D> >
   {
   public:
+    using FiniteElementType = FacetVolumeFiniteElement<D-1>;
   static constexpr int DIM = 1;
   static constexpr int DIM_SPACE = D;
   static constexpr int DIM_ELEMENT = D-1;
@@ -164,6 +166,7 @@ namespace ngcomp
   class DiffOpIdFacetSurfaceBoundary : public DiffOp<DiffOpIdFacetSurfaceBoundary<D, FEL> >
   {
   public:
+    using FiniteElementType = FEL;
   static constexpr int DIM = 1;
   static constexpr int DIM_SPACE = D;
   static constexpr int DIM_ELEMENT = D-2;
@@ -200,6 +203,7 @@ namespace ngcomp
   class DiffOpGradFacetSurface : public DiffOp<DiffOpGradFacetSurface<D> >
   {
   public:
+    using FiniteElementType = FacetVolumeFiniteElement<D-1>;
   static constexpr int DIM = 1;
   static constexpr int DIM_SPACE = D;
   static constexpr int DIM_ELEMENT = D-1;
@@ -457,25 +461,14 @@ namespace ngcomp
     switch(ei.VB())
       {
       case VOL:
-        {
-          SwitchET (ma->GetElType(ei), [&] (auto et) -> FiniteElement&
-                      {
-                        return *new (lh) DummyFE<et.ElementType()> ();
-                      });
-        }            
+        return NewTypedDummyFE<FacetVolumeDummyFE, ET_SEGM, ET_TRIG, ET_QUAD, ET_TET, ET_PRISM, ET_PYRAMID, ET_HEX> (ma->GetElType(ei), lh);
       case BND:
         {
 	  //FacetFE<ET_TRIG>* fet = 0;
 	  //FacetFE<ET_QUAD>* feq = 0;
 
     if (!DefinedOn (ei))
-      {
-        return
-          SwitchET (ma->GetElType(ei), [&] (auto et) -> FiniteElement&
-                      {
-                        return *new (lh) DummyFE<et.ElementType()> ();
-                      });
-      }
+      return NewTypedDummyFE<FacetVolumeDummyFE, ET_SEGM, ET_TRIG, ET_QUAD> (ma->GetElType(ei), lh);
 	  switch (ma->GetElType(ei))
 	    {
 	    case ET_TRIG: return T_GetFE<ET_TRIG>(ei.Nr(), lh);//fe = new (lh) FacetFE<ET_TRIG> (); break;
@@ -506,6 +499,7 @@ namespace ngcomp
 	{
 	  switch (ma->GetElType(ei))
 	    {
+	    case ET_POINT: return *new (lh) ScalarDummyFE<ET_POINT> ();
 	    case ET_SEGM:
               {
                 auto fe1d = new (lh) L2HighOrderFE<ET_SEGM> ();
@@ -521,7 +515,7 @@ namespace ngcomp
 	  break;
 	}
       case BBBND:
-        //throw Exception("No BBBND GetFE implemented for FacetSurfaceFESpace");
+        // no evaluator for BBBND
 	return * new (lh) DummyFE<ET_POINT>();
 	break;
 

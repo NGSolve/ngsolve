@@ -1133,6 +1133,9 @@ for the two neighbouring elements. This allows a simple implementation of the Le
   // ------------------------------------------------------------------------
   FiniteElement & FacetFESpace :: GetFE (ElementId ei, Allocator  & lh) const
   {
+    if (!DefinedOn (ei) && ei.VB() == VOL)
+      return NewTypedDummyFE<FacetVolumeDummyFE, ET_SEGM, ET_TRIG, ET_QUAD, ET_TET, ET_PRISM, ET_PYRAMID, ET_HEX> (ma->GetElType(ei), lh);
+
     if (!DefinedOn (ei) || ei.VB() == BBND || ei.VB() == BBBND)
       {
         return

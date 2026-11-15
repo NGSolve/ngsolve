@@ -131,6 +131,28 @@ namespace ngfem
     virtual void ComputeNDof () = 0;
   };
 
+  // typed element with 0 dofs
+  template <ELEMENT_TYPE ET>
+  class FacetVolumeDummyFE : public FacetVolumeFiniteElement<ET_trait<ET>::DIM>
+  {
+    using BASE = FacetVolumeFiniteElement<ET_trait<ET>::DIM>;
+  public:
+    FacetVolumeDummyFE ()
+    {
+      BASE::ndof = 0;
+      BASE::order = 0;
+      for (int i = 0; i < 6; i++) BASE::facet_order[i] = 0;
+      for (int i = 0; i < 7; i++) BASE::first_facet_dof[i] = 0;
+    }
+    ELEMENT_TYPE ElementType() const override { return ET; }
+    void CalcFacetShapeVolIP (int fnr, const IntegrationPoint & ip, BareSliceVector<> shape) const override { }
+    void CalcFacetShapeVolIR (int fnr, const SIMD_IntegrationRule & ir, BareSliceMatrix<SIMD<double>> shape) const override { }
+    void EvaluateFacetVolIp (int fnr, const SIMD_IntegrationRule & ir, BareSliceVector<> coefs, BareVector<SIMD<double>> values) const override { }
+    void AddTransFacetVolIp (int fnr, const SIMD_IntegrationRule & ir, BareVector<SIMD<double>> values, BareSliceVector<> coefs) const override { }
+    void CalcFacetDShapeVolIP (int fnr, const IntegrationPoint & ip, BareSliceMatrix<> shape) const override { }
+    void ComputeNDof () override { }
+  };
+
 
 
 

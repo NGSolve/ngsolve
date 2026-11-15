@@ -110,6 +110,32 @@ namespace ngfem
 
   };
 
+  // typed element with 0 dofs
+  template <ELEMENT_TYPE ET>
+  class HCurlCurlDummyFE : public HCurlCurlFiniteElement<ET_trait<ET>::DIM>
+  {
+  public:
+    HCurlCurlDummyFE() : HCurlCurlFiniteElement<ET_trait<ET>::DIM> (0,0) { ; }
+    ELEMENT_TYPE ElementType() const override { return ET; }
+
+    void CalcMappedShape (const BaseMappedIntegrationPoint & bmip, BareSliceMatrix<double> shape) const override { }
+    void EvaluateMappedShape (const BaseMappedIntegrationPoint & bmip, BareSliceVector<double> coefs, BareSliceMatrix<double> shape) const override { }
+    void CalcMappedCurlShape (const BaseMappedIntegrationPoint & bmip, BareSliceMatrix<double> shape) const override { }
+    void CalcMappedIncShape (const BaseMappedIntegrationPoint & bmip, BareSliceMatrix<double> shape) const override { }
+    void EvaluateMappedIncShape (const BaseMappedIntegrationPoint & bmip, BareSliceVector<double> coefs, BareSliceVector<double> inc) const override { }
+    void CalcMappedIncShape (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> shape) const override { }
+    void EvaluateIncShape (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const override { }
+    void AddTransIncShape (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values, BareSliceVector<> coefs) const override { }
+    void CalcMappedShape (const SIMD<BaseMappedIntegrationPoint> & bmip, BareSliceMatrix<SIMD<double>> shapes) const override { }
+    void CalcMappedShape (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> shapes) const override { }
+    void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const override { }
+    void AddTrans (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values, BareSliceVector<> coefs) const override { }
+    void CalcDualShape (const BaseMappedIntegrationPoint & bmip, BareSliceMatrix<> shape) const override { }
+    void CalcDualShape (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> shape) const override { }
+    void EvaluateDual (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const override { }
+    void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSliceMatrix<SIMD<double>> values, BareSliceVector<double> coefs) const override { }
+  };
+
   template <int D,typename VEC,typename MAT>
   void VecToSymMat(const VEC & vec, MAT & mat)
   {
