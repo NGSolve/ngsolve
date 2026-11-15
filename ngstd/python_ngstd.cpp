@@ -127,18 +127,18 @@ static void ExportGPU (py::module & m)
            auto a = py::module::import("numpy").attr("ascontiguousarray")
              (obj, py::arg("dtype")=self.dtype).cast<py::array>();
            size_t n = a.size();
-           if (offset + n > self.Size())
-             throw Exception("GPUBuffer.H2D: does not fit");
+           if (offset > self.Size() || n > self.Size() - offset)
+             throw py::index_error("GPUBuffer.H2D: does not fit");
            self.buf->H2D (a.data(), n*self.ItemSize(), offset*self.ItemSize());
          }, py::arg("array"), py::arg("offset")=0,
          "upload an array (converted to the buffer's dtype), offset in elements")
     .def("D2H", [](PyGPUBuffer & self, py::object nobj, size_t offset)
          {
            if (offset > self.Size())
-             throw Exception("GPUBuffer.D2H: offset out of range");
+             throw py::index_error("GPUBuffer.D2H: offset out of range");
            size_t n = nobj.is_none() ? self.Size()-offset : py::cast<size_t>(nobj);
-           if (offset + n > self.Size())
-             throw Exception("GPUBuffer.D2H: does not fit");
+           if (n > self.Size() - offset)
+             throw py::index_error("GPUBuffer.D2H: does not fit");
            py::array a(self.dtype, std::vector<py::ssize_t>{ py::ssize_t(n) });
            self.buf->D2H (a.mutable_data(), n*self.ItemSize(), offset*self.ItemSize());
            return a;
@@ -323,7 +323,11 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
   m.def("TestFlagsConversion", []( Flags flags) { cout << flags << endl; }, py::arg("flags") );
 
   py::class_<ngstd::IntRange> (m, "IntRange")
-    .def( py::init<size_t,size_t>())
+    .def( py::init([](size_t first, size_t next)
+                   {
+                     if (first > next) throw py::value_error("IntRange: first > next");
+                     return IntRange(first, next);
+                   }), py::arg("first"), py::arg("next"))
     .def("__str__", &ToString<IntRange>)
     .def("__iter__", [] (ngstd::IntRange & i)
          { return py::make_iterator(i.begin(), i.end()); },

@@ -320,7 +320,12 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
   //////////////////////////////////////////////////////////////////////////////////////////
 
   py::class_<ElementRange, IntRange> (m, "ElementRange")
-    .def(py::init<const MeshAccess&,VorB,IntRange>(), py::arg("mesh"), py::arg("vb"), py::arg("range"))
+    .def(py::init([](const MeshAccess & ma, VorB vb, IntRange range)
+                  {
+                    PyCheckIndex (range.First(), ma.GetNE(vb)+1, "range start");
+                    PyCheckRange (range, ma.GetNE(vb), "element range");
+                    return ElementRange(ma, vb, range);
+                  }), py::arg("mesh"), py::arg("vb"), py::arg("range"))
     .def("__iter__", [] (ElementRange &er)
       { return py::make_iterator(er.begin(), er.end()); },
       py::keep_alive<0,1>()
@@ -734,7 +739,10 @@ kwargs : kwargs
                     }
                     flags.SetFlag("dgjumps", dgjumps);
                     if (spaces.Size() == 0)
-                      throw Exception("Compound space must have at least one space");
+                      throw py::value_error("Compound space must have at least one space");
+                    for (auto space : spaces)
+                      if (space->GetMeshAccess() != spaces[0]->GetMeshAccess())
+                        throw py::value_error("spaces are defined on different meshes");
 
                     bool autoupdate = spaces[0]->DoesAutoUpdate();
                     for (auto space : spaces)
@@ -944,6 +952,7 @@ kwargs : kwargs
              auto compspace = dynamic_pointer_cast<CompoundFESpace> (self);
              if (!compspace)
                throw py::type_error("'components' is available only for product spaces");
+             PyCheckIndex (comp, compspace->GetNSpaces(), "component");
              space = (*compspace)[comp];
              IntRange range = compspace->GetRange(comp);
              for (auto d : range)
@@ -1002,7 +1011,10 @@ kwargs : kwargs
          [] (shared_ptr<FESpace> self, int comp)
          {
            if (auto compspace = dynamic_pointer_cast<CompoundFESpace>(self))
-             return compspace->GetRange(comp);
+             {
+               PyCheckIndex (comp, compspace->GetNSpaces(), "component");
+               return compspace->GetRange(comp);
+             }
            throw Exception("Range only available for ProductSpace");
          }, "deprecated, will be only available for ProductSpace")
 
@@ -1011,6 +1023,7 @@ kwargs : kwargs
                             "number of degrees of freedom")
     .def("GetNDofLevel", [](shared_ptr<FESpace> self, int level)
          {
+           PyCheckIndex (level, self->GetMeshAccess()->GetNLevels(), "level");
            return self->GetNDofLevel(level);
          }, py::arg("level"))
 
@@ -1071,6 +1084,7 @@ order : object
     .def("SetOrder",
          [](shared_ptr<FESpace> self, NodeId ni, int order)
          {
+           PyCheckId (*self->GetMeshAccess(), ni);
            self->SetOrder(ni, order);
          },
          py::arg("nodeid"),
@@ -1090,6 +1104,7 @@ order : int
     .def("GetOrder",
          [](shared_ptr<FESpace> self, NodeId ni) -> int
          {
+           PyCheckId (*self->GetMeshAccess(), ni);
            return self->GetOrder(ni);
          },
          py::arg("nodeid"),
@@ -1111,6 +1126,7 @@ VOL_or_BND : ngsolve.comp.VorB
 
     .def("GetDofNrs", [](shared_ptr<FESpace> self, ElementId ei)
          {
+           PyCheckId (*self->GetMeshAccess(), ei);
            Array<DofId> tmp; self->GetDofNrs(ei,tmp);
            return MakePyTuple(tmp);
          }, py::arg("ei"), docu_string(R"raw_string(
@@ -1130,6 +1146,7 @@ ei : ngsolve.comp.ElementId
 
     .def("GetDofNrs", [](shared_ptr<FESpace> self, NodeId ni)
          {
+           PyCheckId (*self->GetMeshAccess(), ni);
            Array<DofId> tmp; self->GetDofNrs(ni,tmp);
            return MakePyTuple(tmp);
          }, py::arg("ni"), docu_string(R"raw_string(
@@ -1155,7 +1172,8 @@ region : ngsolve.comp.Region
 )raw_string"))
     
     .def("CouplingType", [](shared_ptr<FESpace> self, DofId dofnr) -> COUPLING_TYPE
-         { return self->GetDofCouplingType(dofnr); },
+         { PyCheckIndex (dofnr, self->GetNDof(), "dof number");
+           return self->GetDofCouplingType(dofnr); },
          py::arg("dofnr"), docu_string(R"raw_string(
          Get coupling type of a degree of freedom.
 
@@ -1184,6 +1202,8 @@ coupling_type : ngsolve.comp.COUPLING_TYPE
 
     .def("SetCouplingType", [](shared_ptr<FESpace> self, IntRange dofnrs, COUPLING_TYPE ct)
          {
+           PyCheckIndex (dofnrs.First(), self->GetNDof()+1, "range start");
+           PyCheckRange (dofnrs, self->GetNDof(), "dof range");
            for (auto d : dofnrs)
              self->SetDofCouplingType(DofId(d),ct);
          },
@@ -1206,6 +1226,7 @@ coupling_type : ngsolve.comp.COUPLING_TYPE
     .def_property_readonly("autoupdate", [] (shared_ptr<FESpace> self) {return self->DoesAutoUpdate();})
     .def ("GetFE", [](shared_ptr<FESpace> self, ElementId ei) -> py::object
           {
+            PyCheckId (*self->GetMeshAccess(), ei);
             auto fe = shared_ptr<FiniteElement> (&self->GetFE(ei, global_alloc));
             
             if (auto scalfe = dynamic_pointer_cast<BaseScalarFiniteElement> (fe))
@@ -1287,13 +1308,13 @@ coupling : bool
 
     .def("InvM",
          [] (const shared_ptr<FESpace> self,
-             shared_ptr<CoefficientFunction> rho) -> shared_ptr<BaseMatrix>
+             OptPtr<CoefficientFunction> rho) -> shared_ptr<BaseMatrix>
          {
            return make_shared<ApplyMass> (self, rho, true, nullptr, glh); 
          }, py::arg("rho") = nullptr)
     .def("Mass",
          [] (const shared_ptr<FESpace> self,
-             shared_ptr<CoefficientFunction> rho,
+             OptPtr<CoefficientFunction> rho,
              optional<Region> definedon) -> shared_ptr<BaseMatrix>
          {
            shared_ptr<Region> spdefon;
@@ -1304,8 +1325,9 @@ coupling : bool
     
     .def("SolveM",
          [] (const shared_ptr<FESpace> self,
-             BaseVector& vec, spCF rho, Region * definedon) 
-         { self->SolveM(rho.get(), vec, definedon, glh); },
+             BaseVector& vec, OptPtr<CoefficientFunction> rho, Region * definedon) 
+         { PyCheckSize (vec.Size(), self->GetNDof(), "vector size");
+           self->SolveM(rho.get(), vec, definedon, glh); },
          py::arg("vec"), py::arg("rho")=nullptr, py::arg("definedon")=nullptr, docu_string(R"raw_string(
          Solve with the mass-matrix. Available only for L2-like spaces.
 
@@ -1320,8 +1342,9 @@ rho : ngsolve.fem.CoefficientFunction
 )raw_string"))
     .def("ApplyM",
          [] (const shared_ptr<FESpace> self,
-             BaseVector& vec, spCF rho, Region * definedon)
-         { self->ApplyM(rho.get(), vec, definedon, glh); },
+             BaseVector& vec, OptPtr<CoefficientFunction> rho, Region * definedon)
+         { PyCheckSize (vec.Size(), self->GetNDof(), "vector size");
+           self->ApplyM(rho.get(), vec, definedon, glh); },
          py::arg("vec"), py::arg("rho")=nullptr, py::arg("definedon")=nullptr,
          "Apply mass-matrix. Available only for L2-like spaces")
     .def ("TraceOperator", [] (shared_ptr<FESpace> self, shared_ptr<FESpace> tracespace,
@@ -1337,11 +1360,15 @@ rho : ngsolve.fem.CoefficientFunction
     .def ("GetTrace", [] (shared_ptr<FESpace> self, const FESpace & tracespace,
                           BaseVector & in, BaseVector & out, bool avg)
           {
+            PyCheckSize (in.Size(), self->GetNDof(), "input vector size");
+            PyCheckSize (out.Size(), tracespace.GetNDof(), "output vector size");
             self->GetTrace(tracespace, in, out, avg, glh);
           })
     .def ("GetTraceTrans", [] (shared_ptr<FESpace> self, const FESpace & tracespace,
                                BaseVector & in, BaseVector & out, bool avg)
           {
+            PyCheckSize (in.Size(), tracespace.GetNDof(), "input vector size");
+            PyCheckSize (out.Size(), self->GetNDof(), "output vector size");
             self->GetTraceTrans(tracespace, in, out, avg, glh);
           })
     
@@ -1352,6 +1379,8 @@ rho : ngsolve.fem.CoefficientFunction
          }, py::arg("space"))
     
     .def("__mul__", [] (shared_ptr<FESpace> space1, shared_ptr<FESpace> space2) {
+        if (space1->GetMeshAccess() != space2->GetMeshAccess())
+          throw py::value_error("spaces are defined on different meshes");
         bool is_complex = space1->IsComplex();
         if (is_complex != space2->IsComplex())
           throw Exception("Product space must consist of all real or all complex spaces");
@@ -1390,6 +1419,8 @@ rho : ngsolve.fem.CoefficientFunction
       })
 
     .def("__pow__", [] (shared_ptr<FESpace> space, int p) {
+        if (p <= 0)
+          throw py::value_error("power must be positive");
         bool is_complex = space->IsComplex();
         int dim = space->GetDimension();
         Flags flags;
@@ -1502,7 +1533,10 @@ Example:
             
           Flags flags;
           if (spaces.Size() == 0)
-            throw Exception("Product space must have at least one space");
+            throw py::value_error("Product space must have at least one space");
+          for (auto space : spaces)
+            if (space->GetMeshAccess() != spaces[0]->GetMeshAccess())
+              throw py::value_error("spaces are defined on different meshes");
           /*
           int dim = spaces[0]->GetDimension();
           for (auto space : spaces)
@@ -1562,6 +1596,7 @@ Example:
     .def("Range",
          [] (shared_ptr<CompoundFESpace> self, int comp)
          {
+           PyCheckIndex (comp, self->GetNSpaces(), "component");
            return self->GetRange(comp);
          },
          py::arg("component"), docu_string(R"raw_string(
@@ -1576,6 +1611,7 @@ component : int
 
     .def("Embedding", [] (shared_ptr<CompoundFESpace> self, int comp)
          {
+           PyCheckIndex (comp, self->GetNSpaces(), "component");
            return self->EmbeddingOperator(comp);
            // return make_shared<Embedding> (self->GetNDof(), self->GetRange(comp), self->IsComplex());
          },
@@ -1595,6 +1631,7 @@ component : int
 
     .def("Restriction", [] (shared_ptr<CompoundFESpace> self, int comp)
          {
+           PyCheckIndex (comp, self->GetNSpaces(), "component");
            return self->RestrictionOperator(comp);
            // return make_shared<Embedding> (self->GetNDof(), self->GetRange(comp), self->IsComplex());
          },
@@ -1642,6 +1679,8 @@ component : int
           if (interleaved)
             flags.SetFlag("interleaved");
           int sdim = optdim.value_or (space->GetSpatialDimension());
+          if (sdim < 1)
+            throw py::value_error("dim must be positive");
           auto vecspace = make_shared<CompoundFESpaceAllSame> (space, sdim, flags);
           vecspace->SetDoSubspaceUpdate(false);
           vecspace->Update();
@@ -1681,6 +1720,12 @@ component : int
           if (skewsymmetric) flags.SetFlag("skewsymmetric");          
           flags.SetFlag("autoupdate", autoupdate || space->DoesAutoUpdate());
           int sdim = optdim.value_or (space->GetSpatialDimension());
+          if (sdim < 1)
+            throw py::value_error("dim must be positive");
+          int ncomp = skewsymmetric ? sdim*(sdim-1)/2 : (symmetric ? sdim*(sdim+1)/2 : sdim*sdim);
+          if (deviatoric && !skewsymmetric) ncomp--;
+          if (ncomp < 1)
+            throw py::value_error("matrix space has no components for this dim and symmetry");
           auto matspace = make_shared<MatrixFESpace> (space, sdim, flags);
           matspace->SetDoSubspaceUpdate(false);
           matspace->Update();
@@ -2278,6 +2323,8 @@ active_dofs : BitArray or None
                                  py::kwargs kwargs)
     {
       auto flags = CreateFlagsFromKwArgs(kwargs, gf_class);
+      if (flags.GetNumFlag("multidim", 1) < 1)
+        throw py::value_error("multidim must be at least 1");
       flags.SetFlag("novisual");
       auto gf = CreateGridFunction(fes, name, flags);
       gf->Update();
@@ -2442,6 +2489,11 @@ parallel : bool
            if (py::extract<Region&> (definedon).check())
              reg = &py::extract<Region&>(definedon)();
            
+           PyCheckIndex (mdcomp, self->GetMultiDim(), "mdcomp");
+           PyCheckBonusOrder (bonus_intorder);
+           if (definedonelements)
+             PyCheckSize ((*definedonelements)->Size(),
+                          self->GetMeshAccess()->GetNE(reg ? reg->VB() : vb), "definedonelements size");
            py::gil_scoped_release release;
 
            /*
@@ -2508,6 +2560,7 @@ bonus_intorder : int
          [](shared_ptr<GF> self, spCF cf,
             py::object definedon, int mdcomp, int bonus_intorder)
          {
+           PyCheckIndex (mdcomp, self->GetMultiDim(), "mdcomp");
            Region * reg = nullptr;
            if (py::extract<Region&> (definedon).check())
              reg = &py::extract<Region&>(definedon)();
@@ -2734,7 +2787,13 @@ diffop : ngsolve.fem.DifferentialOperator
 
 )raw_string"))
 
-    .def("AddMultiDimComponent", &GridFunction::AddMultiDimComponent,
+    .def("AddMultiDimComponent", [](GridFunction & self, BaseVector & vec, bool copy)
+         {
+           PyCheckSize (vec.Size(), self.GetVector().Size(), "vector size");
+           if (vec.IsComplex() != self.GetVector().IsComplex())
+             throw py::value_error("vector must have the same scalar type as the gridfunction");
+           self.AddMultiDimComponent (vec, copy);
+         },
          py::arg("vec"), py::arg("copy")=true)
     ;
 
@@ -2804,9 +2863,10 @@ diffop : ngsolve.fem.DifferentialOperator
                         VorB element_vb, bool skeleton,
                         int bonus_intorder,
                         std::map<ELEMENT_TYPE,IntegrationRule> intrules,
-                        shared_ptr<GridFunction> deformation,
+                        OptPtr<GridFunction> deformation,
                         shared_ptr<BitArray> definedonelements)
          {
+           PyCheckBonusOrder (bonus_intorder);
            if (element_boundary) element_vb = BND;
            auto dx = DifferentialSymbol(self.vb, element_vb, skeleton, /* defon, */ bonus_intorder);
            if (definedon)
@@ -3192,7 +3252,10 @@ reallocate : bool
     .def ("GetMatrixLevel", [](shared_ptr<BF> self, optional<int> level)
     {
       if (level)
-        return self->GetMatrixPtr(*level);
+        {
+          PyCheckIndex (*level, self->GetNLevels(), "level");
+          return self->GetMatrixPtr(*level);
+        }
       else
         return self->GetMatrixPtr();
     }, py::arg("level")=nullopt, "returns matrix from multigrid level, default is finest level")
@@ -3222,6 +3285,10 @@ reallocate : bool
     }, py::arg("gfu"))
     .def("__call__", [](BF & self, const GridFunction & u, const GridFunction & v)
           {
+            if (!self.GetNLevels())
+              throw py::type_error("matrix not ready - assemble bilinearform first");
+            PyCheckSize (u.GetVector().Size(), self.GetTrialSpace()->GetNDof(), "gfu vector size");
+            PyCheckSize (v.GetVector().Size(), self.GetTestSpace()->GetNDof(), "gfv vector size");
             auto au = self.GetMatrix().CreateColVector();
             au = self.GetMatrix() * u.GetVector();
             return InnerProduct (au, v.GetVector());
@@ -3229,6 +3296,7 @@ reallocate : bool
 
     .def("Energy",[](BF & self, shared_ptr<BaseVector> x)
           {
+            PyCheckSize (x->Size(), self.GetTrialSpace()->GetNDof(), "vector size");
             return self.Energy(*x, lhp.GetLH());
           }, py::call_guard<py::gil_scoped_release>(), py::arg("x"), docu_string(R"raw_string(
 Computes the energy of EnergyIntegrators like SymbolicEnergy for given input vector.
@@ -3242,6 +3310,8 @@ x : ngsolve.la.BaseVector
     
     .def("Apply", [](BF & self, BaseVector& x, BaseVector & y)
 	  {
+            PyCheckSize (x.Size(), self.GetTrialSpace()->GetNDof(), "x vector size");
+            PyCheckSize (y.Size(), self.GetTestSpace()->GetNDof(), "y vector size");
 	    self.ApplyMatrix (x, y, lhp.GetLH());
 	  }, py::call_guard<py::gil_scoped_release>(),
          py::arg("x"),py::arg("y"), docu_string(R"raw_string(
@@ -3260,12 +3330,15 @@ y : ngsolve.BaseVector
 
     .def ("Apply", [](shared_ptr<BilinearForm> self, shared_ptr<BaseVector> x)
           {
+            PyCheckSize (x->Size(), self->GetTrialSpace()->GetNDof(), "vector size");
             shared_ptr<BaseMatrix> app = make_shared<BilinearFormApplication> (self, glh);
             return DynamicVectorExpression(make_shared<DynamicMatVecExpression>(app,x));
           }, py::arg("u"))
     
     .def("ComputeInternal", [](BF & self, BaseVector & u, BaseVector & f)
 	  {
+            PyCheckSize (u.Size(), self.GetTrialSpace()->GetNDof(), "u vector size");
+            PyCheckSize (f.Size(), self.GetTrialSpace()->GetNDof(), "f vector size");
 	    self.ComputeInternal (u, f, lhp.GetLH() );
 	  }, py::call_guard<py::gil_scoped_release>(),
          py::arg("u"),py::arg("f"), docu_string(R"raw_string(
@@ -3285,6 +3358,7 @@ f : ngsolve.la.BaseVector
     .def("AssembleLinearization", [](BF & self, BaseVector & ulin,
                                      bool reallocate)
 	  {
+            PyCheckSize (ulin.Size(), self.GetTrialSpace()->GetNDof(), "vector size");
 	    self.AssembleLinearization (ulin, lhp.GetLH(), reallocate);
 	  }, py::call_guard<py::gil_scoped_release>(),
          py::arg("ulin"), py::arg("reallocate")=false,
@@ -3498,13 +3572,38 @@ integrator : ngsolve.fem.LFI
 
   ////////////////////////////// Prolongation ///////////////////////////////
 
+  auto check_finelevel = [] (const Prolongation & prol, int finelevel)
+    {
+      if (finelevel < 1)
+        throw py::index_error("finelevel " + std::to_string(finelevel) + " must be at least 1");
+      try { prol.LevelDofs(finelevel); }
+      catch (const Exception &) { throw py::index_error("finelevel " + std::to_string(finelevel) + " out of range"); }
+    };
+
   py::class_<Prolongation, shared_ptr<Prolongation>> (m, "Prolongation")
-    .def ("Prolongate", &Prolongation::ProlongateInline, py::arg("finelevel"), py::arg("vec"))
-    .def ("Restrict", &Prolongation::RestrictInline, py::arg("finelevel"), py::arg("vec"))
-    .def ("CreateMatrix", &Prolongation::CreateProlongationMatrix, py::arg("finelevel"))
-    .def ("LevelDofs", &Prolongation::LevelDofs, py::arg("level"))
-    .def ("Operator", [](shared_ptr<Prolongation> prol, int level) -> shared_ptr<BaseMatrix>
+    .def ("Prolongate", [check_finelevel] (Prolongation & prol, int finelevel, BaseVector & vec)
           {
+            check_finelevel (prol, finelevel);
+            if (vec.Size() < prol.LevelDofs(finelevel).Size())
+              throw py::value_error("vector too short for level " + std::to_string(finelevel));
+            prol.ProlongateInline (finelevel, vec);
+          }, py::arg("finelevel"), py::arg("vec"))
+    .def ("Restrict", [check_finelevel] (Prolongation & prol, int finelevel, BaseVector & vec)
+          {
+            check_finelevel (prol, finelevel);
+            if (vec.Size() < prol.LevelDofs(finelevel).Size())
+              throw py::value_error("vector too short for level " + std::to_string(finelevel));
+            prol.RestrictInline (finelevel, vec);
+          }, py::arg("finelevel"), py::arg("vec"))
+    .def ("CreateMatrix", [check_finelevel] (Prolongation & prol, int finelevel)
+          {
+            check_finelevel (prol, finelevel);
+            return prol.CreateProlongationMatrix (finelevel);
+          }, py::arg("finelevel"))
+    .def ("LevelDofs", &Prolongation::LevelDofs, py::arg("level"))
+    .def ("Operator", [check_finelevel] (shared_ptr<Prolongation> prol, int level) -> shared_ptr<BaseMatrix>
+          {
+            check_finelevel (*prol, level);
             return make_shared<ngmg::ProlongationOperator>(prol, level);
           }, py::arg("finelevel"))
     ;
@@ -3668,7 +3767,7 @@ integrator : ngsolve.fem.LFI
     (m,"LocalPreconditioner", LocalPreconditioner::GetDocu().GetPythonDocString().c_str());
   
   pre_local
-    .def(py::init([pre_local](shared_ptr<BilinearForm> bf, py::kwargs kwargs)
+    .def(py::init([pre_local](OptPtr<BilinearForm> bf, py::kwargs kwargs)
     {
       auto flags = CreateFlagsFromKwArgs(kwargs, pre_local);
       return make_shared<LocalPreconditioner>(bf, flags, "local");
@@ -3681,7 +3780,7 @@ integrator : ngsolve.fem.LFI
     (m,"DirectPreconditioner", DirectPreconditioner::GetDocu().GetPythonDocString().c_str());
   
   pre_direct
-    .def(py::init([pre_direct](shared_ptr<BilinearForm> bf, py::kwargs kwargs)
+    .def(py::init([pre_direct](OptPtr<BilinearForm> bf, py::kwargs kwargs)
     {
       auto flags = CreateFlagsFromKwArgs(kwargs, pre_direct);
       return make_shared<DirectPreconditioner>(bf, flags, "local");
@@ -3696,7 +3795,7 @@ integrator : ngsolve.fem.LFI
   auto pre_bddc = py::class_<BASE_BDDCPreconditioner, shared_ptr<BASE_BDDCPreconditioner>, Preconditioner>
     (m,"BDDCPreconditioner", BASE_BDDCPreconditioner::GetDocu().GetPythonDocString().c_str());
   pre_bddc
-    .def(py::init([pre_bddc](shared_ptr<BilinearForm> bf, py::kwargs kwargs)->shared_ptr<BASE_BDDCPreconditioner>
+    .def(py::init([pre_bddc](OptPtr<BilinearForm> bf, py::kwargs kwargs)->shared_ptr<BASE_BDDCPreconditioner>
     {
       auto flags = CreateFlagsFromKwArgs(kwargs, pre_bddc);
       if (bf && bf->GetFESpace()->IsComplex())
@@ -3720,7 +3819,7 @@ integrator : ngsolve.fem.LFI
   auto prec_multigrid = py::class_<MGPreconditioner, shared_ptr<MGPreconditioner>, Preconditioner>
     (m,"MultiGridPreconditioner");
   prec_multigrid
-    .def(py::init([prec_multigrid](shared_ptr<BilinearForm> bfa, const string& name, optional<shared_ptr<BaseMatrix>> lo_precond, py::kwargs kwargs)
+    .def(py::init([prec_multigrid](OptPtr<BilinearForm> bfa, const string& name, optional<shared_ptr<BaseMatrix>> lo_precond, py::kwargs kwargs)
                   {
                     auto flags = CreateFlagsFromKwArgs(kwargs, prec_multigrid);
                     auto mgpre = make_shared<MGPreconditioner>(bfa,flags, name);
@@ -3751,11 +3850,11 @@ integrator : ngsolve.fem.LFI
 
   py::class_<H1AMG_Preconditioner<double>, shared_ptr<H1AMG_Preconditioner<double>>, Preconditioner>
     (m, "H1AMG")
-    .def(py::init([](shared_ptr<BilinearForm> bf, py::kwargs kwargs)
+    .def(py::init([](OptPtr<BilinearForm> bf, py::kwargs kwargs)
     {
       auto flags = CreateFlagsFromKwArgs(kwargs);
       return make_shared<H1AMG_Preconditioner<double>>(bf, flags, "HCurlAMG");
-    }), py::arg("bf"))
+    }), py::arg("bf")=nullptr)
     .def_static("__flags_doc__", []()
     {
       py::dict flags_doc;
@@ -4230,8 +4329,9 @@ element_wise: bool = False
              bool skeleton, optional<variant<Region, py::list>> definedon,
              IntegrationRule ir, int bonus_intorder, shared_ptr<BitArray> definedonelem,
              bool simd_evaluate, VorB element_vb,
-             shared_ptr<GridFunction> deformation) 
+             OptPtr<GridFunction> deformation) 
            {
+             PyCheckBonusOrder (bonus_intorder);
              if(definedon.has_value())
                if(auto defregion = get_if<Region>(&*definedon); defregion)
                  vb = VorB(*defregion);
@@ -4329,8 +4429,9 @@ deformation : ngsolve.comp.GridFunction
              bool skeleton, optional<variant<Region, py::list>> definedon,
              IntegrationRule ir, int bonus_intorder, shared_ptr<BitArray> definedonelem,
              bool simd_evaluate, VorB element_vb, bool geom_free,
-             shared_ptr<GridFunction> deformation)
+             OptPtr<GridFunction> deformation)
            {
+             PyCheckBonusOrder (bonus_intorder);
              if(definedon.has_value())
                if(auto defregion = get_if<Region>(&*definedon); defregion)
                  vb = VorB(*defregion);
@@ -4481,9 +4582,10 @@ deformation : ngsolve.comp.GridFunction
   m.def("SymbolicEnergy",
         [](spCF cf, VorB vb, py::object definedon, bool element_boundary,
            int bonus_intorder, py::object definedonelem, bool simd_evaluate,
-           VorB element_vb, shared_ptr<GridFunction> deformation)
+           VorB element_vb, OptPtr<GridFunction> deformation)
         -> shared_ptr<BilinearFormIntegrator>
            {
+             PyCheckBonusOrder (bonus_intorder);
              py::extract<Region> defon_region(definedon);
              if (defon_region.check())
                vb = VorB(defon_region());
@@ -4634,7 +4736,7 @@ deformation : ngsolve.comp.GridFunction
              return return_val;
            },
         py::call_guard<py::gil_scoped_release>());
-   m.def("TensorProductIntegrate",[](shared_ptr<GF> gf_tp, shared_ptr<GF> gf_x, spCF coef)
+   m.def("TensorProductIntegrate",[](shared_ptr<GF> gf_tp, shared_ptr<GF> gf_x, OptPtr<CoefficientFunction> coef)
            {
              static Timer tall("comp.TensorProductIntegrate - total domain integral"); RegionTimer rall(tall);
              BaseVector & vec_in = gf_tp->GetVector();
@@ -4792,6 +4894,10 @@ deformation : ngsolve.comp.GridFunction
                       bool same_type_subdivision)
          -> shared_ptr<BaseVTKOutput>
          {
+           if (subdivision < 0 || subdivision > 10)
+             throw py::value_error("subdivision must be in [0, 10]");
+           if (only_element >= 0)
+             PyCheckIndex (only_element, ma->GetNE(), "only_element");
            Array<shared_ptr<CoefficientFunction> > coefs
              = makeCArray<shared_ptr<CoefficientFunction>> (coefs_list);
            Array<string > names
@@ -4942,6 +5048,7 @@ drawelems: BitArray
          {
            if (!fes)
              throw Exception("In Interpolate: invalid space");
+           PyCheckBonusOrder (bonus_intorder);
            return InterpolateCF(cf, fes, bonus_intorder, opname);
          }, py::arg("cf"), py::arg("space"), py::arg("bonus_intorder")=0,
          py::arg("operator")=py::none(),
@@ -4953,7 +5060,7 @@ Interpolation is done on the fly for each element, no global GridFunction is all
     
    
    m.def("ConvertOperator", [&](shared_ptr<FESpace> spacea, shared_ptr<FESpace> spaceb,
-				shared_ptr<ProxyFunction> trial_proxy, shared_ptr<CoefficientFunction> trial_cf,
+				OptPtr<ProxyFunction> trial_proxy, OptPtr<CoefficientFunction> trial_cf,
 				optional<Region> definedon, VorB vb, shared_ptr<BitArray> range_dofs, bool localop, bool parmat, bool use_simd,
 				int bonus_io_ab, int bonus_io_bb, bool geom_free) -> shared_ptr<BaseMatrix> {
 
@@ -5063,7 +5170,10 @@ operations of it are used!
           "form"_a, "deformed"_a = false)
      .def("AddIntegrator", &ContactBoundary::AddIntegrator,
           "form"_a, "deformed"_a = false)
-     .def("Update", &ContactBoundary::Update,
+     .def("Update", [](ContactBoundary & self, OptPtr<GridFunction> gf, OptPtr<BilinearForm> bf,
+                       int intorder, double h, bool both_sides, bool keep_pairs,
+                       OptPtr<ContactBoundary> other_cb, string quadrature)
+          { self.Update(gf, bf, intorder, h, both_sides, keep_pairs, other_cb, quadrature); },
           py::arg("gf") = nullptr, py::arg("bf") = nullptr,
           py::arg("intorder") = 4, py::arg("maxdist") = 0.,
           py::arg("both_sides")=false,
@@ -5115,7 +5225,7 @@ secondary facets against each master element and puts a Gauss rule of order
 
    py::class_<ContactIntegrator2, shared_ptr<ContactIntegrator2>, SpecialElementGroup> (m, "ContactIntegrator")
      .def(py::init([](std::variant<Region,string> primary, std::variant<Region,string> secondary,
-                      shared_ptr<GridFunction> deformation, std::optional<int> intorder,
+                      OptPtr<GridFunction> deformation, std::optional<int> intorder,
                       double maxdist, bool both_sides, string quadrature,
                       bool volume, bool element_boundary, bool draw_pairs) {
        auto ci = make_shared<ContactIntegrator2>(primary, secondary, deformation,

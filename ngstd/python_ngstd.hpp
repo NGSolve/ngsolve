@@ -58,7 +58,110 @@ namespace ngstd {
   }
 }
 
+namespace ngstd
+{
+  // argument checks for bindings, release builds have no range checks
+
+  inline size_t PyCheckIndex (py::ssize_t i, size_t n, const char * what = "index")
+  {
+    if (i < 0 || size_t(i) >= n)
+      throw py::index_error (string(what) + " " + std::to_string(i) + " out of range, size = " + std::to_string(n));
+    return i;
+  }
+
+  // negative index counts from the end
+  inline size_t PyWrapIndex (py::ssize_t i, size_t n, const char * what = "index")
+  {
+    return PyCheckIndex (i < 0 ? i + py::ssize_t(n) : i, n, what);
+  }
+
+  template <typename TR>
+  inline void PyCheckRange (TR r, size_t n, const char * what = "range")
+  {
+    if (r.First() > r.Next() || size_t(r.Next()) > n)
+      throw py::index_error (string(what) + " [" + std::to_string(r.First()) + "," + std::to_string(r.Next())
+                             + ") not within size " + std::to_string(n));
+  }
+
+  inline void PyCheckSize (size_t given, size_t expected, const char * what = "size")
+  {
+    if (given != expected)
+      throw py::value_error (string(what) + " is " + std::to_string(given) + ", expected " + std::to_string(expected));
+  }
+}
+
 using namespace ngstd;
+
+
+// None is no valid shared_ptr argument for NGSolve classes, use OptPtr where None is allowed
+
+namespace ngstd
+{
+  std::true_type PyNonNullArg (const void *);  // found by ADL
+
+  template <typename T>
+  struct OptPtr : std::shared_ptr<T>
+  {
+    OptPtr () = default;
+    OptPtr (std::nullptr_t) { }
+    OptPtr (std::shared_ptr<T> p) : std::shared_ptr<T>(std::move(p)) { }
+  };
+}
+
+namespace ngbla { using ngstd::PyNonNullArg; }
+namespace ngla { using ngstd::PyNonNullArg; }
+namespace ngfem { using ngstd::PyNonNullArg; }
+namespace ngcomp { using ngstd::PyNonNullArg; }
+namespace ngmg { using ngstd::PyNonNullArg; }
+namespace ngsolve { using ngstd::PyNonNullArg; }
+namespace ngsbem { using ngstd::PyNonNullArg; }
+namespace ngparallel { using ngstd::PyNonNullArg; }
+namespace ngs_cuda { using ngstd::PyNonNullArg; }
+namespace ngs_cpu { using ngstd::PyNonNullArg; }
+namespace ngs_gpu { using ngstd::PyNonNullArg; }
+namespace ngsmetal { using ngstd::PyNonNullArg; }
+
+namespace pybind11 {
+namespace detail {
+
+  struct ngs_no_match;
+  void PyNonNullArg (ngs_no_match&);  // blocks ordinary lookup
+
+  template <typename T>
+  concept ngs_nonnull_arg = requires (T * p) { PyNonNullArg(p); };
+
+  template <typename T> requires ngs_nonnull_arg<T>
+  class type_caster<std::shared_ptr<T>> : public copyable_holder_caster<T, std::shared_ptr<T>>
+  {
+  public:
+    bool load (handle src, bool convert)
+    {
+      if (src.is_none()) return false;
+      return copyable_holder_caster<T, std::shared_ptr<T>>::load (src, convert);
+    }
+  };
+
+  template <typename T>
+  struct type_caster<ngstd::OptPtr<T>>
+  {
+    PYBIND11_TYPE_CASTER(ngstd::OptPtr<T>, (make_caster<std::shared_ptr<T>>::name | make_caster<none>::name));
+
+    bool load (handle src, bool convert)
+    {
+      if (src.is_none()) return true;
+      make_caster<std::shared_ptr<T>> sub;
+      if (!sub.load (src, convert)) return false;
+      value = static_cast<std::shared_ptr<T>&> (sub);
+      return true;
+    }
+
+    static handle cast (const ngstd::OptPtr<T> & p, return_value_policy policy, handle parent)
+    {
+      return make_caster<std::shared_ptr<T>>::cast (static_cast<const std::shared_ptr<T>&>(p), policy, parent);
+    }
+  };
+}
+}
 
 namespace pybind11 {
 template <typename T>

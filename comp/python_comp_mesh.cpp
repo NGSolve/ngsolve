@@ -6,6 +6,7 @@
 
 #include "../ngstd/python_ngstd.hpp"
 #include "meshaccess.hpp"
+#include "python_comp.hpp"
 #include "gridfunction.hpp"
 #include "pmltrafo.hpp"
 using namespace ngcomp;
@@ -326,8 +327,8 @@ nr : int
     .def("__iter__", [] (ngstd::T_Range<MeshNode> & r)
          { return py::make_iterator(r.begin(), r.end()); },
          py::keep_alive<0,1>())
-    .def("__getitem__", [](ngstd::T_Range<MeshNode> & r, size_t i)
-         { return r.First()+i; })
+    .def("__getitem__", [](ngstd::T_Range<MeshNode> & r, py::ssize_t i)
+         { return r.First()+PyWrapIndex(i, r.Size()); })
     ;
 
 
@@ -400,7 +401,11 @@ nr : int
   RegisterPyArchiveCaster<Region>();
   auto cls_region = py::class_<Region> (m, "Region", "a subset of volume or boundary elements")
     .def(py::init<shared_ptr<MeshAccess>,VorB,string>(), py::arg("mesh"), py::arg("vb"), py::arg("name"))
-    .def(py::init<shared_ptr<MeshAccess>,VorB,BitArray>(), py::arg("mesh"), py::arg("vb"), py::arg("mask"))
+    .def(py::init([](shared_ptr<MeshAccess> ma, VorB vb, BitArray mask)
+                  {
+                    PyCheckSize (mask.Size(), ma->GetNRegions(vb), "mask size");
+                    return Region(ma, vb, mask);
+                  }), py::arg("mesh"), py::arg("vb"), py::arg("mask"))
     .def("Mask",[](Region & reg) { return reg.MaskPtr(); }, "BitArray mask of the region")
     .def("VB", [](Region & reg) { return VorB(reg); }, "VorB of the region")
     .def(NGSPickle<Region>())
@@ -535,13 +540,16 @@ mesh (netgen.Mesh): a mesh generated from Netgen
 	 (py::arg("VOL_or_BND")=VOL),
          docu_string("Return an iterator over elements on VOL/BND"))
 
-    .def("__getitem__", static_cast<Ngs_Element(MeshAccess::*)(ElementId)const> (&MeshAccess::operator[]),
+    .def("__getitem__", [](MeshAccess & self, ElementId ei)
+         {
+           PyCheckId (self, ei);
+           return self[ei];
+         },
          "Return Ngs_Element from given ElementId")
     
     .def("__getitem__", [](MeshAccess & self, NodeId ni)
          {
-           if (ni.GetNr() >= self.GetNNodes(ni.GetType()))
-             throw py::index_error("illegal node number");
+           PyCheckId (self, ni);
            return MeshNode(ni, self);
          },
          "Return MeshNode from given NodeId")
@@ -611,7 +619,8 @@ mesh (netgen.Mesh): a mesh generated from Netgen
     
     .def ("GetTrafo",
           [](MeshAccess & ma, ElementId id)
-          { return &ma.GetTrafo(id, global_alloc); }, py::arg("eid"),
+          { PyCheckId (ma, id);
+            return &ma.GetTrafo(id, global_alloc); }, py::arg("eid"),
           py::return_value_policy::take_ownership, "returns element transformation of given element id")
 
     .def("SetDeformation", 
@@ -623,14 +632,17 @@ mesh (netgen.Mesh): a mesh generated from Netgen
 
     .def_property("deformation", 
                   &MeshAccess::GetDeformation,
-                  &MeshAccess::SetDeformation, "mesh deformation")
+                  [](MeshAccess & ma, OptPtr<GridFunction> gf) { ma.SetDeformation(gf); },
+                  "mesh deformation (None removes it)")
 
     .def("SetPML", 
 	 [](MeshAccess & ma,  shared_ptr<PML> apml, py::object definedon)
           {
             if (py::extract<int>(definedon).check())
               {
-                ma.SetPML(apml, py::extract<int>(definedon)()-1);
+                int dom = py::extract<int>(definedon)();
+                PyCheckIndex (dom-1, ma.GetNDomains(), "domain number - 1");
+                ma.SetPML(apml, dom-1);
               }
 
             if (py::isinstance<py::str>(definedon))
@@ -648,7 +660,11 @@ mesh (netgen.Mesh): a mesh generated from Netgen
     .def("UnSetPML", [](MeshAccess & ma, py::object definedon)
           {
             if (py::extract<int>(definedon).check())
-                ma.UnSetPML(py::extract<int>(definedon)()-1);
+              {
+                int dom = py::extract<int>(definedon)();
+                PyCheckIndex (dom-1, ma.GetNDomains(), "domain number - 1");
+                ma.UnSetPML(dom-1);
+              }
 
             if (py::isinstance<py::str>(definedon))
               {
@@ -674,6 +690,7 @@ mesh (netgen.Mesh): a mesh generated from Netgen
         "Return list of pml transformations"
     )
     .def("GetPMLTrafo", [](MeshAccess & ma, int domnr) {
+        PyCheckIndex (domnr-1, ma.GetNDomains(), "domain number - 1");
         if (ma.GetPMLTrafos()[domnr-1])
      	  return ma.GetPMLTrafos()[domnr-1];
         else
@@ -799,7 +816,7 @@ mesh (netgen.Mesh): a mesh generated from Netgen
 
     .def("RegionCF", [](MeshAccess& self, VorB vb,
                         py::dict py_svals,
-                        shared_ptr<CoefficientFunction> default_value)
+                        OptPtr<CoefficientFunction> default_value)
     {
       Array<pair<variant<string, Region>, shared_ptr<CoefficientFunction>>> vals;
       for(auto val : py_svals)
@@ -818,7 +835,7 @@ will create a CF being 2e6 on all domains starting with 'steel_' and 0 elsewhere
 
     .def("MaterialCF", [](MeshAccess& self,
                           py::dict py_svals,
-                          shared_ptr<CoefficientFunction> default_value)
+                          OptPtr<CoefficientFunction> default_value)
     {
       Array<pair<variant<string, Region>, shared_ptr<CoefficientFunction>>> vals;
       for(auto val : py_svals)
@@ -836,7 +853,7 @@ will create a CF being 2e6 on all domains starting with 'steel_' and 0 elsewhere
 
     .def("BoundaryCF", [](MeshAccess& self,
                           py::dict py_svals,
-                          shared_ptr<CoefficientFunction> default_value)
+                          OptPtr<CoefficientFunction> default_value)
     {
       Array<pair<variant<string, Region>, shared_ptr<CoefficientFunction>>> vals;
       for(auto val : py_svals)
@@ -901,23 +918,33 @@ will create a CF being 1e6 on the top boundary and 0. elsewhere.
            ma.UpdateBuffers();
          })
     .def("_updateBuffers", &MeshAccess::UpdateBuffers, "Update NGSolve mesh information, needs to be called if Netgen mesh changes")
-    .def("SetRefinementFlag", &MeshAccess::SetRefinementFlag,
+    .def("SetRefinementFlag", [](MeshAccess & ma, ElementId ei, bool refine)
+         {
+           PyCheckId (ma, ei);
+           ma.SetRefinementFlag (ei, refine);
+         },
          py::arg("ei"), py::arg("refine"),
 	 "Set refinementflag for mesh-refinement")
 
     .def("SetRefinementFlags", [&](MeshAccess & ma, std::vector<bool> flags)
          {
+           PyCheckSize (flags.size(), ma.GetNE(VOL), "number of flags");
            for (ElementId ei : ma.Elements(VOL))
              ma.SetRefinementFlag (ei, flags[ei.Nr()]);
          }, py::arg("refine"),
 	 "Set refinementflags for mesh-refinement")
     
-    .def("GetParentElement", static_cast<ElementId(MeshAccess::*)(ElementId)const> (&MeshAccess::GetParentElement),
+    .def("GetParentElement", [](MeshAccess & ma, ElementId ei)
+         {
+           PyCheckId (ma, ei);
+           return ma.GetParentElement (ei);
+         },
          py::arg("ei"),
          "Return parent element id on refined mesh")
 
     .def("GetParentVertices", [](MeshAccess & ma, int vnum)
          {
+            PyCheckIndex (vnum, ma.GetNV(), "vertex number");
             auto parents = ma.GetParentNodes (vnum);
             return py::make_tuple(parents[0], parents[1]);
           },
@@ -926,6 +953,7 @@ will create a CF being 1e6 on the top boundary and 0. elsewhere.
     
     .def("GetParentFaces", [](MeshAccess & ma, int fnum) -> py::tuple
          {
+           PyCheckIndex (fnum, ma.GetNFaces(), "face number");
            auto [info,nrs] = ma.GetParentFaces (fnum);
            if (nrs[1] == -1)
              return py::make_tuple(nrs[0]);
@@ -940,17 +968,23 @@ will create a CF being 1e6 on the top boundary and 0. elsewhere.
     .def("RefineFromTree", &MeshAccess::RefineFromTree,
          py::call_guard<py::gil_scoped_release>())
     
-    .def("GetHPElementLevel", &MeshAccess::GetHPElementLevel,
+    .def("GetHPElementLevel", [](MeshAccess & ma, ElementId ei)
+         {
+           PyCheckId (ma, ei);
+           return ma.GetHPElementLevel (ei);
+         },
          py::arg("ei"),
          "THIS FUNCTION IS WIP!\n Return HP-refinement level of element")
     .def("SetElementOrder",
          [](MeshAccess & ma, ElementId id, int order)
          {
+           PyCheckId (ma, id);
            ma.SetElOrder(id.Nr(), order);
          }, py::arg("eid"), py::arg("order"), "For backward compatibility, not recommended to use")
     .def("SetElementOrders",
          [](MeshAccess & ma, ElementId id, tuple<int,int,int> orders)
          {
+           PyCheckId (ma, id);
            ma.SetElOrders(id.Nr(), get<0>(orders), get<1>(orders), get<2>(orders));
          }, py::arg("eid"), py::arg("orders"), "Set anisotropic element order (expert only)")
     

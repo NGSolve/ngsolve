@@ -16,6 +16,7 @@ namespace pybind11::detail {
 
     bool load (pybind11::handle src, bool b)
     {
+      if (src.is_none()) return false;
       BaseCaster bc;
       bool success = bc.load (src, b);
       if (!success)

@@ -90,6 +90,8 @@ void ExportSparseMatrix(py::module m)
          {
            size_t row = t[0].cast<size_t>();
            size_t col = t[1].cast<size_t>();
+           if(row >= self.Height() || col >= self.Width())
+             throw py::index_error("Access (" + ToString(row) + "," + ToString(col) + ") in " + ToString(self.Height()) + "x" + ToString(self.Width()) + " matrix!");
            self(row,col) = value;
          }, py::arg("pos"), py::arg("value"), "Set value at given position")
 
@@ -148,6 +150,13 @@ void ExportSparseMatrix(py::module m)
     .def_static("CreateFromCOO",
                 [] (const Array<int> & cindi, const Array<int> & cindj, const Array<T> & cvalues, size_t h, size_t w)
                 {
+                  PyCheckSize(cindj.Size(), cindi.Size(), "indj length");
+                  PyCheckSize(cvalues.Size(), cindi.Size(), "values length");
+                  for (size_t k = 0; k < cindi.Size(); k++)
+                    {
+                      PyCheckIndex(cindi[k], h, "row index");
+                      PyCheckIndex(cindj[k], w, "column index");
+                    }
                   // auto cindi = makeCArray<int>(indi);
                   // auto cindj = makeCArray<int>(indj);
                   // auto cvalues = makeCArray<double>(values);
@@ -157,8 +166,18 @@ void ExportSparseMatrix(py::module m)
     .def_static("CreateFromElmat",
                 [] (py::list coldnums, py::list rowdnums, py::list elmats, size_t h, size_t w)
                 {
+                  PyCheckSize(py::len(rowdnums), py::len(coldnums), "row_ind length");
+                  PyCheckSize(py::len(elmats), py::len(coldnums), "matrices length");
                   auto cdnums1 = makeCTable<int>(coldnums);
                   auto rdnums1 = makeCTable<int>(rowdnums);
+                  for (size_t i = 0; i < cdnums1.Size(); i++)
+                    {
+                      const Matrix<double> & m = py::cast<const Matrix<double>&> (elmats[i]);
+                      PyCheckSize(m.Height(), cdnums1[i].Size(), "element matrix height");
+                      PyCheckSize(m.Width(), rdnums1[i].Size(), "element matrix width");
+                      for (auto dof : cdnums1[i]) PyCheckIndex(dof, h, "col_ind dof number");
+                      for (auto dof : rdnums1[i]) PyCheckIndex(dof, w, "row_ind dof number");
+                    }
                   auto sparsemat = make_shared<SparseMatrix<double>>(h, w, cdnums1, rdnums1, false);
                   sparsemat->SetZero();
                   auto cdnums = makeCTable<int>(coldnums);
@@ -177,9 +196,16 @@ void ExportSparseMatrix(py::module m)
     { return sp.CreateTranspose (sorted); }, py::arg("sorted")=true, "Return transposed matrix")
 
     .def("__matmul__", [] (const SparseMatrix<double> & a, const SparseMatrix<double> & b)
-         { return MatMult(a,b); }, py::arg("mat"))
+         {
+           PyCheckSize(a.Width(), b.Height(), "left matrix width");
+           return MatMult(a,b);
+         }, py::arg("mat"))
     .def("__matmul__", [] (const SparseMatrix<std::complex<double>> & a, const SparseMatrix<std::complex<double>> & b)
-         ->shared_ptr<BaseMatrix> { return MatMult(a,b); }, py::arg("mat"))
+         ->shared_ptr<BaseMatrix>
+         {
+           PyCheckSize(a.Width(), b.Height(), "left matrix width");
+           return MatMult(a,b);
+         }, py::arg("mat"))
     .def("__matmul__", [](shared_ptr<SparseMatrix<T>> a, shared_ptr<BaseMatrix> mb)
          ->shared_ptr<BaseMatrix> { return make_shared<ProductMatrix> (a, mb); }, py::arg("mat"))
     ;
@@ -250,7 +276,10 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
 
     m.def("CreateVVector",
           [] (size_t s, bool is_complex, int es) -> shared_ptr<BaseVector>
-          { return CreateBaseVector(s,is_complex, es); },
+          {
+            if (es < 1) throw py::value_error("entrysize must be >= 1");
+            return CreateBaseVector(s,is_complex, es);
+          },
           "size"_a, "complex"_a=false, "entrysize"_a=1);
 
     m.def("CreateParallelVector",
@@ -316,8 +345,12 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                                                  py::dynamic_attr(), // add dynamic attributes
                                                  py::buffer_protocol()
       )
-    .def(py::init([] (size_t s, bool is_complex, int es) -> shared_ptr<BaseVector>
-                  { return CreateBaseVector(s,is_complex, es); }),
+    .def(py::init([] (py::ssize_t s, bool is_complex, int es) -> shared_ptr<BaseVector>
+                  {
+                    if (s < 0) throw py::value_error("size must be >= 0");
+                    if (es < 1) throw py::value_error("entrysize must be >= 1");
+                    return CreateBaseVector(s,is_complex, es);
+                  }),
          "size"_a, "complex"_a=false, "entrysize"_a=1)
     .def(py::init([] (DynamicVectorExpression expr)
                   { cout << IM(5) << "experimental: vector from expression" << endl;
@@ -410,6 +443,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
 
     .def("CreateVectors", [] (BaseVector & self, int num)
          {
+           if (num < 0) throw py::value_error("num must be >= 0");
            std::vector<shared_ptr<BaseVector>> vecs;
            for ([[maybe_unused]] auto i : Range(num))
              vecs.push_back(self.CreateVector());
@@ -511,10 +545,12 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
       }, py::arg("inds"), "Return values at given position" )
     .def("__getitem__", [](BaseVector& self, IntRange range)
          {
+           PyCheckRange(range, self.Size());
            return shared_ptr<BaseVector>(self.Range(range));
          })
     .def("__getitem__", [](BaseVector& self, DofRange range)
          {
+           PyCheckRange(range, self.Size());
            return shared_ptr<BaseVector>(self.Range(range));
          })
     .def("__setitem__", [](BaseVector & self,  int ind, double d )
@@ -566,18 +602,22 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
       }, py::arg("inds"), py::arg("vec") )
     .def("__setitem__", [](BaseVector & self, DofRange range, DynamicVectorExpression expr)
       {
+        PyCheckRange(range, self.Size());
         expr.AssignTo (1, self.Range(range));
       }, py::arg("inds"), py::arg("vec") )    
     .def("__setitem__", [](BaseVector & self,  IntRange range, double d )
       {
+        PyCheckRange(range, self.Size());
         self.Range(range) = d;
       }, py::arg("range"), py::arg("value"), "Set value for range of indices" )
     .def("__setitem__", [](BaseVector & self,  IntRange range, Complex z )
       {
+        PyCheckRange(range, self.Size());
         self.Range(range) = z;
       }, py::arg("range"), py::arg("value"), "Set value for range of indices" )
     .def("__setitem__", [](BaseVector & self, IntRange range, shared_ptr<BaseVector> v )
       {
+        PyCheckRange(range, self.Size());
         self.Range(range) = *v;
       }, py::arg("range"), py::arg("vec") )
     .def("__setitem__", [](BaseVector & self,  int ind, FlatVector<double> & v )
@@ -602,16 +642,19 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
       }, py::arg("ind"), py::arg("vec") )
     .def("__setitem__", [](BaseVector & self, shared_ptr<BitArray> mask, BaseVector & other)
          {
+           PyCheckSize(mask->Size(), self.Size(), "mask size");
+           PyCheckSize(other.Size(), self.Size(), "vector size");
            Projector p(mask, true);
            Projector pnot(mask, false);
            pnot.Project (self);
            self += p * other;
-         })
+         }, py::arg("mask").none(false), py::arg("vec"))
     .def("__setitem__", [](BaseVector & self, shared_ptr<BitArray> mask, double value)
          {
+           PyCheckSize(mask->Size(), self.Size(), "mask size");
            Projector p(mask, true);
            p.SetValues (self, value);
-         })
+         }, py::arg("mask").none(false), py::arg("value"))
     .def("__iadd__", [](BaseVector & self,  BaseVector & other) -> BaseVector& { self += other; return self;}, py::arg("vec"))
     .def("__iadd__", [](BaseVector & self,  DynamicVectorExpression & other) -> BaseVector& { other.AddTo(1, self); return self;}, py::arg("vec"))
     .def("__isub__", [](BaseVector & self,  BaseVector & other) -> BaseVector& { self -= other; return self;}, py::arg("vec"))
@@ -669,6 +712,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def("Norm",  [](BaseVector & self) { return self.L2Norm(); }, "Calculate Norm")
     .def("Range", [](BaseVector & self, int from, int to) -> shared_ptr<BaseVector>
                                    {
+                                     PyCheckRange(IntRange(from, to), self.Size());
                                      return shared_ptr<BaseVector>(self.Range(from,to));
                                    }, py::arg("from"), py::arg("to"), "Return values from given range")
     .def("FV", [] (BaseVector & self)
@@ -680,6 +724,10 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                                 }, py::keep_alive<0,1>())
     .def("Reshape", [] (BaseVector & self, size_t w)
          {
+           if (w < 1 || self.Size() % w != 0)
+             throw py::value_error("width must be >= 1 and divide the vector size");
+           if (self.IsComplex())
+             throw py::value_error("Reshape: complex vectors not supported");
            size_t h = self.Size()/w;
            return FlatMatrix<> (h, w, &self.FV<double>()(0));
          }, py::arg("width"))
@@ -721,7 +769,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                        return make_shared<BlockVector> (v2);
                      }), py::arg("vecs"), "Makes BlockVector by given array of vectors")
     
-    .def("__getitem__", [](BlockVector & self, int ind) { return self[ind]; }, py::arg("ind"), "Return block at given position")
+    .def("__getitem__", [](BlockVector & self, int ind) { return self[PyWrapIndex(ind, self.NBlocks())]; }, py::arg("ind"), "Return block at given position")
     .def_property_readonly ("nblocks", [](const BlockVector & self) 
 			    { return self.NBlocks(); },
                             "number of blocks in BlockVector")
@@ -732,10 +780,16 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def("__rmul__", [] (shared_ptr<MultiVectorExpr> a, Complex scal) { return scal*a; })
     .def("Scale", [](shared_ptr<MultiVectorExpr> e, Vector<double> v)
          -> shared_ptr<MultiVectorExpr>
-         { return make_shared<ScaledMultiVectorExpr<double>> (e, v); })
+         {
+           PyCheckSize(v.Size(), e->Size(), "scale vector size");
+           return make_shared<ScaledMultiVectorExpr<double>> (e, v);
+         })
     .def("Scale", [](shared_ptr<MultiVectorExpr> e, Vector<Complex> v)
          -> shared_ptr<MultiVectorExpr>
-         { return make_shared<ScaledMultiVectorExpr<Complex>> (e, v); })
+         {
+           PyCheckSize(v.Size(), e->Size(), "scale vector size");
+           return make_shared<ScaledMultiVectorExpr<Complex>> (e, v);
+         })
     .def("__add__", [](shared_ptr<MultiVectorExpr> e1, shared_ptr<MultiVectorExpr> e2)
          { return e1+e2; })
     .def("__neg__", [](shared_ptr<MultiVectorExpr> e1)
@@ -762,10 +816,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def("__getitem__",
          [](MultiVector & self, int ind )
          {
-           if (ind < 0) ind+=self.Size();
-           if (ind < 0 || ind >= self.Size()) 
-             throw py::index_error();
-           return self[ind];
+           return self[PyWrapIndex(ind, self.Size())];
          })
     .def("__getitem__", [](MultiVector & self, py::slice inds) {
         auto [start, step, n] = InitSlice (inds, self.Size());
@@ -773,11 +824,14 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
           throw Exception ("slices with non-unit distance not allowed");
         return shared_ptr<MultiVector>(self.Range(IntRange(start, start+n)));
       })
-    .def("__getitem__", [](MultiVector & self, const Array<int> & inds) {
+    .def("__getitem__", [](MultiVector & self, const Array<int> & ainds) {
+        Array<int> inds(ainds);
+        for (auto & i : inds) i = PyWrapIndex(i, self.Size());
         return shared_ptr<MultiVector>(self.SubSet(inds));
       })
     .def("__setitem__", [](MultiVector & x, int nr, DynamicVectorExpression & expr)
         {
+          nr = PyWrapIndex(nr, x.Size());
           if( !x.IsComplex() )
               expr.AssignTo (1, *x[nr]);
           else
@@ -785,10 +839,12 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
         })
     .def("__setitem__", [](MultiVector & x, int nr, double val)
         {
+          nr = PyWrapIndex(nr, x.Size());
           *x[nr] = val;
         })
     .def("__setitem__", [](MultiVector & x, int nr, Complex val)
         {
+          nr = PyWrapIndex(nr, x.Size());
           *x[nr] = val;
         })
     
@@ -802,11 +858,13 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
           auto [start, step, n] = InitSlice (inds, self.Size());
           if (step != 1)
             throw Exception ("slices with non-unit distance not allowed");
+          PyCheckSize(v2.Size(), n, "multivector size");
           auto selfr = self.Range(IntRange(start, start+n));
           Vector<> ones(n); ones = 1;
           v2.AssignTo (ones, *selfr);
       })
     .def("__setitem__", [](MultiVector & self, std::vector<int> inds, MultiVector & v2) {
+        for (auto & i : inds) i = PyWrapIndex(i, self.Size());
         auto selfr = self.SubSet(ArrayFromVector(inds));
         *selfr = v2; })
         /*
@@ -814,6 +872,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
       })
         */
     .def("__setitem__", [](MultiVector & self, std::vector<int> inds, const MultiVectorExpr & v2) {
+        for (auto & i : inds) i = PyWrapIndex(i, self.Size());
         auto selfr = self.SubSet(ArrayFromVector(inds));
         *selfr = v2; })
     .def("__getitem__", [](MultiVector & self, std::tuple<py::slice,py::slice> ind) -> shared_ptr<MultiVector>
@@ -841,9 +900,14 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                   { *self = v2; })
     .def("Expand", &MultiVector::Extend, "deprecated, use Extend instead")
     .def("Extend", &MultiVector::Extend)
-    .def("Append", &MultiVector::Append)
+    .def("Append", [](MultiVector & x, shared_ptr<BaseVector> v)
+         {
+           if (x.RefVec()) PyCheckSize(v->Size(), x.RefVec()->Size(), "vector size");
+           x.Append(v);
+         })
     .def("AppendOrthogonalize", [](MultiVector & mv, shared_ptr<BaseVector> v, BaseMatrix * ip, bool parallel, int iterations)
          {
+           if (mv.RefVec()) PyCheckSize(v->Size(), mv.RefVec()->Size(), "vector size");
            if (!mv.IsComplex())
              return py::cast(mv.T_AppendOrthogonalize<double>(v, ip, parallel, iterations));
            else
@@ -853,10 +917,16 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
          "assumes that existing vectors are orthogonal, and orthogonalize new vector against existing vectors")
     .def("Replace", [](MultiVector & x, int ind, shared_ptr<BaseVector> v2)
          {
+           ind = PyWrapIndex(ind, x.Size());
+           PyCheckSize(v2->Size(), x.RefVec()->Size(), "vector size");
            x.Replace(ind, v2);
          }, py::arg("ind"), py::arg("v2"))
     .def("Replace", [](MultiVector & x, std::vector<int> inds, MultiVector & v2)
          {
+           PyCheckSize(v2.Size(), inds.size(), "multivector size");
+           for (auto & i : inds) i = PyWrapIndex(i, x.Size());
+           if (inds.size() && v2.RefVec()->Size() != x.RefVec()->Size())
+             throw py::value_error("vector size mismatch");
            for (size_t i = 0; i < inds.size(); i++)
              x.Replace(inds[i], v2[i]);
          }, py::arg("inds"), py::arg("mv2"))
@@ -897,10 +967,12 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
          }, py::arg("ipmat")=nullptr,
          "Orthogonalize vectors by modified Gram-Schmidt, returns R-factor of QR decomposition (only ipmat version, for the moment)")
     .def("__mul__", [](shared_ptr<MultiVector> x, Vector<double> a) 
-         { // cout << "in double __mul__" << endl;
+         {
+           PyCheckSize(a.Size(), x->Size(), "vector length");
            return DynamicVectorExpression(make_shared<MultiVecAxpyExpr<double>>(a, x)); })
     .def("__mul__", [](shared_ptr<MultiVector> x, Vector<Complex> a) 
-         { // cout << "in complex __mul__" << endl;
+         {
+           PyCheckSize(a.Size(), x->Size(), "vector length");
            return DynamicVectorExpression(make_shared<MultiVecAxpyExpr<Complex>>(a, x)); })
 
     .def("__mul__", [](shared_ptr<MultiVector> x, Matrix<double> a)
@@ -1171,6 +1243,9 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def("Inverse", [](BM &m, shared_ptr<BitArray> freedofs,
                        std::variant<std::monostate,string,py::object> inverse, std::optional<Flags> flags)
     {
+      if (m.Height() != m.Width())
+        throw py::value_error("Inverse: matrix is not square");
+      if (freedofs) PyCheckSize(freedofs->Size(), m.Height(), "freedofs size");
       if (string * invstr = get_if<string>(&inverse))
         if (*invstr != "")
           {
@@ -1575,6 +1650,7 @@ flags : dict
     .def("CreateSmoother", [](shared_ptr<BaseSparseMatrix> m, shared_ptr<BitArray> ba,
                               bool GS) 
          {
+           if (ba) PyCheckSize(ba->Size(), m->Height(), "freedofs size");
            if (GS) {
              auto pre = make_shared<SymmetricGaussSeidelPrecond>(m, ba);
              py::gil_scoped_acquire acq;
@@ -1617,6 +1693,11 @@ flags : dict
                    row[j++] = val.cast<int>();
                }
            }
+           if (m->Height() != m->Width())
+             throw py::value_error("CreateBlockSmoother: matrix is not square");
+           for (size_t i = 0; i < blocktable->Size(); i++)
+             for (auto dof : (*blocktable)[i])
+               PyCheckIndex(dof, m->Height(), "dof number");
            if (GS)
              return py::cast(make_shared<SymmetricBlockGaussSeidelPrecond>(m, blocktable));  
            else
@@ -1666,6 +1747,17 @@ flags : dict
                      {
                        auto rdofs = makeCTable<int> (pyrdofs);
                        auto cdofs = makeCTable<int> (pycdofs);
+                       PyCheckSize(cdofs.Size(), rdofs.Size(), "number of col_ind rows");
+                       for (size_t i = 0; i < cdofs.Size(); i++)
+                         {
+                           PyCheckSize(cdofs[i].Size(), mat.Height(), "col_ind row length");
+                           for (auto dof : cdofs[i]) PyCheckIndex(dof, h, "col_ind dof number");
+                         }
+                       for (size_t i = 0; i < rdofs.Size(); i++)
+                         {
+                           PyCheckSize(rdofs[i].Size(), mat.Width(), "row_ind row length");
+                           for (auto dof : rdofs[i]) PyCheckIndex(dof, w, "row_ind dof number");
+                         }
                        
                        return make_shared<ConstantElementByElementMatrix<double>> (h, w, mat,
                                                                            std::move(cdofs), std::move(rdofs));
@@ -1683,11 +1775,11 @@ flags : dict
 	  auto cheb = make_shared<ChebyshevIteration>(*mat, *pre, steps);
 	  cheb->SetBounds(lambda_min, lambda_max);
 	  return cheb;
-	}, py::arg("mat") = nullptr, py::arg("pre") = nullptr,
+	}, py::arg("mat"), py::arg("pre"),
 	py::arg("steps") = 3, py::arg("lam_min") = 1, py::arg("lam_max") = 1);
   
   py::class_<BlockMatrix, BaseMatrix, shared_ptr<BlockMatrix>> (m, "BlockMatrix")
-    .def(py::init<> ([] (vector<vector<shared_ptr<BaseMatrix>>> mats)
+    .def(py::init<> ([] (vector<vector<OptPtr<BaseMatrix>>> mats)
                      {
                        Array<Array<shared_ptr<BaseMatrix>>> m2;
                        for (auto mrow : mats)
@@ -1702,8 +1794,8 @@ flags : dict
         if (py::len(inds) != 2)
           throw Exception ("BlockMatrix needs two indices to access block");
 
-        int row = inds[0].cast<int>();
-        int col = inds[1].cast<int>();
+        int row = PyCheckIndex(inds[0].cast<int>(), self.BlockRows(), "block row");
+        int col = PyCheckIndex(inds[1].cast<int>(), self.BlockCols(), "block column");
         return self(row,col); 
       }, py::arg("inds"), "Return value at given position")
     .def_property_readonly("row_nblocks", [](BlockMatrix & mat) { return mat.BlockRows(); })
@@ -2024,16 +2116,19 @@ flags : dict
   
   py::class_<Projector, shared_ptr<Projector>, BaseMatrix> (m, "Projector")
     .def(py::init<shared_ptr<BitArray>,bool>(),
-         py::arg("mask"), py::arg("range"),
+         py::arg("mask").none(false), py::arg("range"),
          "Linear operator projecting to true/false bits of BitArray mask, depending on argument range")
     .def("Project", [](const Projector & proj, shared_ptr<BaseVector> v)
          {
+           PyCheckSize(v->Size(), proj.Mask()->Size(), "vector size");
            proj.Project(*v);
            return v;
          },
          "project vector inline")
     .def("Project", [](const Projector & proj, shared_ptr<MultiVector> mv)
          {
+           for (auto i : Range(*mv))
+             PyCheckSize((*mv)[i]->Size(), proj.Mask()->Size(), "vector size");
            for (auto i : Range(*mv))
              proj.Project(*(*mv)[i]);
            return mv;
@@ -2077,7 +2172,9 @@ flags : dict
   py::class_<ngla::DiagonalMatrix<>, shared_ptr<ngla::DiagonalMatrix<>>, BaseMatrix> (m, "DiagonalMatrix")
     .def(py::init([](shared_ptr<BaseVector> vec)
                   {
-                    return make_shared<DiagonalMatrix<double>> (dynamic_pointer_cast<VVector<double>>(vec));
+                    auto dvec = dynamic_pointer_cast<VVector<double>>(vec);
+                    if (!dvec) throw py::type_error("DiagonalMatrix: expected a real VVector");
+                    return make_shared<DiagonalMatrix<double>> (dvec);
                   }))
     ;
 
@@ -2089,6 +2186,7 @@ flags : dict
   py::class_<PermutationMatrix, shared_ptr<PermutationMatrix>, BaseMatrix> (m, "PermutationMatrix")
     .def(py::init([](size_t w, std::vector<size_t> ind)
                   {
+                    for (auto i : ind) PyCheckIndex(i, w, "index");
                     Array<size_t> inda(ind.size());
                     for (size_t i = 0; i < inda.Size(); i++)
                       inda[i] = ind[i];
@@ -2098,7 +2196,11 @@ flags : dict
     ;
   
   py::class_<Embedding, shared_ptr<Embedding>, BaseMatrix> (m, "Embedding")
-    .def(py::init<size_t, IntRange, bool>(),
+    .def(py::init([](size_t height, IntRange range, bool is_complex)
+                  {
+                    PyCheckRange(range, height);
+                    return make_shared<Embedding>(height, range, is_complex);
+                  }),
          py::arg("height"), py::arg("range"), py::arg("complex")=false,
          "Linear operator embedding a shorter vector into a longer vector")
     /*
@@ -2131,7 +2233,7 @@ flags : dict
     .def("SetAbsolutePrecision", &KrylovSpaceSolver::SetAbsolutePrecision)
     ;
 
-  m.def("CGSolver", [](shared_ptr<BaseMatrix> mat, shared_ptr<BaseMatrix> pre,
+  m.def("CGSolver", [](shared_ptr<BaseMatrix> mat, OptPtr<BaseMatrix> pre,
                        bool iscomplex, bool printrates,
                        double precision, int maxsteps, bool conjugate, optional<int> maxiter)
         {
@@ -2181,7 +2283,7 @@ maxsteps : int
 )raw_string"))
     ;
 
-  m.def("GMRESSolver", [](shared_ptr<BaseMatrix> mat, shared_ptr<BaseMatrix> pre,
+  m.def("GMRESSolver", [](shared_ptr<BaseMatrix> mat, OptPtr<BaseMatrix> pre,
                           bool printrates, 
                           double precision, int maxsteps)
         {
@@ -2239,7 +2341,7 @@ maxsteps : int
   py::class_<QMRSolver<Complex>, shared_ptr<QMRSolver<Complex>>, BaseMatrix> (m, "QMRSolverC")
     ;
 
-  m.def("QMRSolver", [](shared_ptr<BaseMatrix> mat, shared_ptr<BaseMatrix> pre,
+  m.def("QMRSolver", [](shared_ptr<BaseMatrix> mat, OptPtr<BaseMatrix> pre,
                         bool printrates, 
                         double precision, int maxsteps)
         {

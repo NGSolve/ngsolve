@@ -349,7 +349,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     }, py::arg("rowids"), py::arg("colids"))
 
     .def("CalcSubMatrixCapsule", [](std::shared_ptr<IntegralOperator> iop,
-                                    std::shared_ptr<BaseMatrix> add_matrix)
+                                    OptPtr<BaseMatrix> add_matrix)
     {
       using backend_callback_t = void(*)(int, int,
                                          const int*, const int*,

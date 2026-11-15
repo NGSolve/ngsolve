@@ -1,9 +1,29 @@
 #ifdef NGS_PYTHON
 #include <pybind11/numpy.h>
 #include <core/python_ngcore.hpp>
+#include "../ngstd/python_ngstd.hpp"
 #include <bla.hpp>
 
 using namespace ngbla;
+
+template <typename A, typename B>
+void PyCheckSameDims (const A & a, const B & b)
+{
+  if constexpr (requires { a.Height(); })
+    {
+      PyCheckSize (b.Height(), a.Height(), "rows");
+      PyCheckSize (b.Width(), a.Width(), "cols");
+    }
+  else
+    PyCheckSize (b.Size(), a.Size(), "vector size");
+}
+
+template <typename TM>
+void PyCheckSquare (const TM & m)
+{
+  if (m.Height() != m.Width())
+    throw py::value_error ("matrix must be square");
+}
 
 //////////////////////////////////////////////////////////////////////
 // read-only bracket operator
@@ -124,12 +144,13 @@ void PyVecAccess( py::module &m, TCLASS &c )
                 int n = py::len(ind);
                 TNEW res(n);
                 for (int i=0; i<n; i++) {
-                    res[i] = v[ ind[i].cast<int>() ];
+                    res[i] = v[ PyWrapIndex (ind[i].cast<py::ssize_t>(), v.Size()) ];
                 }
                 return res;
           }, py::arg("ind"), "Return values at given positions"  );
         c.def("__setitem__", [](T &self, py::slice inds, const T & rv ) {
             auto [start, step, n] = InitSlice (inds, self.Size());
+            PyCheckSize (rv.Size(), n, "slice length");
             for (int i=0; i<n; i++, start+=step)
               self[start] = rv[i];
           }, py::arg("inds"), py::arg("rv"), "Set values at given positions" );
@@ -142,16 +163,18 @@ void PyVecAccess( py::module &m, TCLASS &c )
         c.def("__setitem__", [](T &self, py::slice inds, py::array_t<TSCAL> bvec ) {
             auto vec = bvec. template unchecked<1>();
             auto [start, step, n] = InitSlice (inds, self.Size());
+            PyCheckSize (vec.shape(0), n, "slice length");
             for (int i=0; i<n; i++, start+=step)
               self[start] = vec(i);
           }, py::arg("inds"), py::arg("value"), "Set value at given positions" );
-        c.def("__add__" , [](T &self, T &v) { return TNEW(self+v); }, py::arg("vec") );
-        c.def("__sub__" , [](T &self, T &v) { return TNEW(self-v); }, py::arg("vec") );
+        c.def("__add__" , [](T &self, T &v) { PyCheckSameDims(self, v); return TNEW(self+v); }, py::arg("vec") );
+        c.def("__sub__" , [](T &self, T &v) { PyCheckSameDims(self, v); return TNEW(self-v); }, py::arg("vec") );
         c.def("__mul__" , [](T &self, TSCAL s) { return TNEW(s*self); }, py::arg("value") );
         c.def("__rmul__" , [](T &self, TSCAL s) { return TNEW(s*self); }, py::arg("value") );
         c.def("__neg__" , [](T &self) { return TNEW(-self); });        
         c.def("InnerProduct",  [](T & x, T & y, bool conjugate)
               {
+                PyCheckSameDims(x, y);
                 if (conjugate)
                   return InnerProduct (x, Conj(y));
                 else
@@ -171,19 +194,25 @@ void PyMatAccess( TCLASS &c )
         typedef Vector<TSCAL> TCOL;
 
         struct PyMatAccessHelper {
+          static void CheckTuple (py::tuple t) {
+            if (py::len(t) != 2)
+              throw py::index_error ("matrix needs exactly two indices");
+          }
+
           static py::object GetTuple( TMAT & self, py::tuple t) {
+            CheckTuple(t);
             py::object rows = t[0];
             py::object cols = t[1];
 
             // First element of tuple is of type int
             if(py::isinstance<py::int_>(rows)) {
-              py::object row = py::cast( self.Row(rows.cast<int>()) );
+              py::object row = py::cast( self.Row(PyWrapIndex (rows.cast<py::ssize_t>(), self.Height(), "row")) );
               return row.attr("__getitem__")(cols);
             }
 
             // Second element of tuple is of type int
             if(py::isinstance<py::int_>(cols)) {
-              py::object col = py::cast( TROW(self.Col(cols.cast<int>())) );
+              py::object col = py::cast( TROW(self.Col(PyWrapIndex (cols.cast<py::ssize_t>(), self.Width(), "column"))) );
               return col.attr("__getitem__")(rows);
             }
 
@@ -200,12 +229,13 @@ void PyMatAccess( TCLASS &c )
           }
 
           static void SetTupleVec( TMAT & self, py::tuple t, const FlatVector<TSCAL> &v) {
+            CheckTuple(t);
             py::object rows = t[0];
             py::object cols = t[1];
 
             // First element of tuple is of type int
             if(py::isinstance<py::int_>(rows)) {
-              py::object row = py::cast( self.Row(rows.cast<int>()) );
+              py::object row = py::cast( self.Row(PyWrapIndex (rows.cast<py::ssize_t>(), self.Height(), "row")) );
               row.attr("__setitem__")(cols, v);
               return;
             }
@@ -213,8 +243,9 @@ void PyMatAccess( TCLASS &c )
             // Second element of tuple is of type int
             if(py::isinstance<py::int_>(cols)) {
               auto row_slice = rows.cast<py::slice>();
-              auto col = self.Col(cols.cast<int>());
+              auto col = self.Col(PyWrapIndex (cols.cast<py::ssize_t>(), self.Width(), "column"));
               auto [start, step, n] = InitSlice (row_slice, self.Height());
+              PyCheckSize (v.Size(), n, "rows");
               for (int i=0; i<n; i++, start+=step)
                 col[start] = v[i];
               return;
@@ -225,12 +256,13 @@ void PyMatAccess( TCLASS &c )
           }
 
           static void SetTupleScal( TMAT & self, py::tuple t, TSCAL val) {
+            CheckTuple(t);
             py::object rows = t[0];
             py::object cols = t[1];
 
             // First element of tuple is of type int
             if(py::isinstance<py::int_>(rows)) {
-              py::object row = py::cast( self.Row(rows.cast<int>()) );
+              py::object row = py::cast( self.Row(PyWrapIndex (rows.cast<py::ssize_t>(), self.Height(), "row")) );
               row.attr("__setitem__")(cols,val);
               return;
             }
@@ -238,7 +270,7 @@ void PyMatAccess( TCLASS &c )
             // Second element of tuple is of type int
             if(py::isinstance<py::int_>(cols)) {
               auto row_slice = rows.cast<py::slice>();
-              auto col = self.Col(cols.cast<int>());
+              auto col = self.Col(PyWrapIndex (cols.cast<py::ssize_t>(), self.Width(), "column"));
               auto [start, step, n] = InitSlice (row_slice, self.Height());
               for (int i=0; i<n; i++, start+=step)
                 col[start] = val;
@@ -261,6 +293,7 @@ void PyMatAccess( TCLASS &c )
           }
 
           static void SetTuple( TMAT & self, py::tuple t, const TMAT & rmat) {
+            CheckTuple(t);
             py::object rows = t[0];
             py::object cols = t[1];
             // Both elements have to be slices
@@ -277,6 +310,8 @@ void PyMatAccess( TCLASS &c )
               */
               auto [rstart, rstep, rn] = InitSlice (row_slice, self.Height());
               auto [cstart, cstep, cn] = InitSlice (col_slice, self.Width());
+              PyCheckSize (rmat.Height(), rn, "rows");
+              PyCheckSize (rmat.Width(), cn, "cols");
               for (int i = 0, ii=rstart; i < rn; i++, ii+=rstep)
                 for (int j = 0, jj = cstart; j < cn; j++, jj+=cstep)
                   self(ii,jj) = rmat(i,j);
@@ -287,7 +322,7 @@ void PyMatAccess( TCLASS &c )
           }
 
           static TROW RowGetInt( TMAT & self,  int ind )  {
-            return self.Row(ind);
+            return self.Row(PyWrapIndex (ind, self.Height(), "row"));
           }
 
           static TNEW RowGetSlice( TMAT & self,  py::slice inds ) {
@@ -299,15 +334,18 @@ void PyMatAccess( TCLASS &c )
           }
 
           static void RowSetInt( TMAT & self,  int ind, const TROW &r ) {
-            self.Row(ind) = r;
+            PyCheckSize (r.Size(), self.Width(), "cols");
+            self.Row(PyWrapIndex (ind, self.Height(), "row")) = r;
           }
 
           static void RowSetIntScal( TMAT & self,  int ind, TSCAL r ) {
-            self.Row(ind) = r;
+            self.Row(PyWrapIndex (ind, self.Height(), "row")) = r;
           }
 
           static void RowSetSlice( TMAT & self,  py::slice inds, const TMAT &r ) {
             auto [start, step, n] = InitSlice (inds, self.Height());
+            PyCheckSize (r.Height(), n, "rows");
+            PyCheckSize (r.Width(), self.Width(), "cols");
             for (int i=0; i<n; i++, start+=step)
               self.Row(start) = r.Row(i);
           }
@@ -319,7 +357,7 @@ void PyMatAccess( TCLASS &c )
           }
 
           static Vector<TSCAL> ColGetInt( TMAT & self,  int ind )  {
-            return Vector<TSCAL>(self.Col(ind));
+            return Vector<TSCAL>(self.Col(PyWrapIndex (ind, self.Width(), "column")));
           }
 
           static TNEW ColGetSlice( const TMAT & self,  py::slice inds ) {
@@ -331,15 +369,18 @@ void PyMatAccess( TCLASS &c )
           }
 
           static void ColSetInt( TMAT & self,  int ind, const TCOL &r ) {
-            self.Col(ind) = r;
+            PyCheckSize (r.Size(), self.Height(), "rows");
+            self.Col(PyWrapIndex (ind, self.Width(), "column")) = r;
           }
 
           static void ColSetIntScal( TMAT & self,  int ind, TSCAL r ) {
-            self.Col(ind) = r;
+            self.Col(PyWrapIndex (ind, self.Width(), "column")) = r;
           }
 
           static void ColSetSlice( TMAT & self,  py::slice inds, const TMAT &r ) {
             auto [start, step, n] = InitSlice (inds, self.Width());
+            PyCheckSize (r.Width(), n, "cols");
+            PyCheckSize (r.Height(), self.Height(), "rows");
             for (int i=0; i<n; i++, start+=step)
               self.Col(start) = r.Col(i);
           }
@@ -363,12 +404,16 @@ void PyMatAccess( TCLASS &c )
         c.def("__setitem__", &PyMatAccessHelper::RowSetSliceScal);
 
         c.def_property("diag",
-                py::cpp_function([](TMAT &self) { return Vector<TSCAL>(self.Diag()); }),
-                py::cpp_function([](TMAT &self, const FlatVector<TSCAL> &v) { self.Diag() = v; }));
-        c.def("__add__" , [](TMAT &self, TMAT &m) { return TNEW(self+m); }, py::arg("mat") );
-        c.def("__sub__" , [](TMAT &self, TMAT &m) { return TNEW(self-m); }, py::arg("mat") );
+                py::cpp_function([](TMAT &self) { return Vector<TSCAL>(SliceVector<TSCAL>(min(self.Height(), self.Width()), self.Width()+1, self.Data())); }),
+                py::cpp_function([](TMAT &self, const FlatVector<TSCAL> &v) {
+                  size_t n = min(self.Height(), self.Width());
+                  PyCheckSize (v.Size(), n, "diagonal size");
+                  SliceVector<TSCAL>(n, self.Width()+1, self.Data()) = v; }));
+        c.def("__add__" , [](TMAT &self, TMAT &m) { PyCheckSameDims(self, m); return TNEW(self+m); }, py::arg("mat") );
+        c.def("__sub__" , [](TMAT &self, TMAT &m) { PyCheckSameDims(self, m); return TNEW(self-m); }, py::arg("mat") );
         c.def("__mul__" , [](TMAT &self, TMAT &m)
               {
+                PyCheckSize (m.Height(), self.Width(), "inner dimension");
                 // return TNEW(self*m);
                 TNEW res(self.Height(), m.Width());
                 if (res.Width() > 1000)
@@ -380,7 +425,7 @@ void PyMatAccess( TCLASS &c )
                   res = self*m;
                 return res;
               }, py::arg("mat") );
-        c.def("__mul__" , [](TMAT &self, FlatVector<TSCAL> &v) { return Vector<TSCAL>(self*v); }, py::arg("vec") );
+        c.def("__mul__" , [](TMAT &self, FlatVector<TSCAL> &v) { PyCheckSize (v.Size(), self.Width(), "vector size"); return Vector<TSCAL>(self*v); }, py::arg("vec") );
         c.def("__mul__" , [](TMAT &self, TSCAL s) { return TNEW(s*self); }, py::arg("values") );
         c.def("__rmul__" , [](TMAT &self, TSCAL s) { return TNEW(s*self); }, py::arg("value") );
         c.def("__neg__" , [](TMAT &self) { return TNEW(-self); });
@@ -394,7 +439,7 @@ void PyMatAccess( TCLASS &c )
         c.def_property_readonly("C", [](TMAT &self) { return TNEW(Conj(self)); }, "return conjugate of matrix" );        
         c.def_property("A",
                        py::cpp_function([](TMAT &self) { return Vector<TSCAL>(FlatVector<TSCAL>( self.Width()* self.Height(), &self(0,0)) ); } ),
-                       py::cpp_function([](TMAT &self, Vector<TSCAL> v) { FlatVector<TSCAL>( self.Width()* self.Height(), &self(0,0)) = v; } ),                       
+                       py::cpp_function([](TMAT &self, Vector<TSCAL> v) { PyCheckSize (v.Size(), self.Width()*self.Height(), "vector size"); FlatVector<TSCAL>( self.Width()* self.Height(), self.Data()) = v; } ),                       
                        "Returns matrix as vector" );
         c.def("__len__", []( TMAT& self) { return self.Height();}, "Return height of matrix"  );
         c.def("Identity", [](TMAT & self) {
@@ -413,8 +458,8 @@ auto ExportVector(py::module &m, const char * name ) -> py::class_<TVEC>
     PyDefVector<TVEC, TSCAL>(m, c);
     PyVecAccess< TVEC, TNEW >(m, c);
     PyDefVecBuffer<TVEC>(c);
-    c.def(py::self+=py::self);
-    c.def(py::self-=py::self);
+    c.def("__iadd__", [] (TVEC &self, const TVEC &rhs) -> TVEC & { PyCheckSameDims(self, rhs); self+=rhs; return self; }, py::is_operator());
+    c.def("__isub__", [] (TVEC &self, const TVEC &rhs) -> TVEC & { PyCheckSameDims(self, rhs); self-=rhs; return self; }, py::is_operator());
     c.def(py::self*=TSCAL());
     c.def("__str__", &ToString<TVEC>);
     c.def("__repr__", &ToString<TVEC>);
@@ -425,10 +470,17 @@ template <typename T, typename TSCAL, typename TPYCLASS>
 void ExportImmediateOperators(TPYCLASS &c)
   {
       // "return self;" is important here!
-      c.def("__iadd__", [] (T &self, T &rhs) { self+=rhs; return self; });
-      c.def("__isub__", [] (T &self, T &rhs) { self-=rhs; return self; });
+      c.def("__iadd__", [] (T &self, T &rhs) { PyCheckSameDims(self, rhs); self+=rhs; return self; });
+      c.def("__isub__", [] (T &self, T &rhs) { PyCheckSameDims(self, rhs); self-=rhs; return self; });
       c.def("__imul__", [] (T &self, TSCAL &rhs) { self*=rhs; return self; });
   }
+
+inline std::pair<size_t,size_t> PyFixedMatIndex (py::tuple i, size_t n)
+{
+  if (py::len(i) != 2)
+    throw py::index_error ("matrix needs exactly two indices");
+  return { PyWrapIndex (i[0].cast<py::ssize_t>(), n, "row"), PyWrapIndex (i[1].cast<py::ssize_t>(), n, "column") };
+}
 
 void NGS_DLL_HEADER ExportNgbla(py::module & m) {
 
@@ -450,7 +502,7 @@ void NGS_DLL_HEADER ExportNgbla(py::module & m) {
     ExportVector< FVD, VD, double>(m, "FlatVectorD")
         .def(py::init<size_t, double *>())
       // .def("Range",    static_cast</* const */ FVD (FVD::*)(size_t,size_t) const> (&FVD::Range ) )
-      .def("Range", [](FVD vec, size_t first, size_t next) { return vec.Range(first,next); })
+      .def("Range", [](FVD vec, size_t first, size_t next) { PyCheckRange (IntRange(first,next), vec.Size(), "Range"); return vec.Range(first,next); })
       .def("MinMax", [](FVD vec, bool ignore_inf)
            {
              double mi = std::numeric_limits<double>::max();
@@ -469,7 +521,7 @@ void NGS_DLL_HEADER ExportNgbla(py::module & m) {
         .def(py::self*=double())
         .def(py::init<size_t, Complex *>())
       // .def("Range",    static_cast</* const */ FVC (FVC::*)(size_t,size_t) const> (&FVC::Range ) )
-      .def("Range", [](FVC vec, size_t first, size_t next) { return vec.Range(first,next); })      
+      .def("Range", [](FVC vec, size_t first, size_t next) { PyCheckRange (IntRange(first,next), vec.Size(), "Range"); return vec.Range(first,next); })      
       .def_property("real", py::cpp_function([] (FVC & self)
                     { return SliceVector<double> (self.Size(), 2, (double*)self.Data()); }, py::keep_alive<0,1>()),
                     [] (FVC & self, double val)
@@ -483,7 +535,7 @@ void NGS_DLL_HEADER ExportNgbla(py::module & m) {
     ExportVector< SVD, VD, double>(m, "SliceVectorD")
       .def(py::init<FlatVector<double>>(), py::keep_alive<0,1>())
       // .def("Range",    static_cast</* const */ SVD (SVD::*)(size_t,size_t) const> (&SVD::Range ) )
-      .def("Range", [](SVD vec, size_t first, size_t next) { return vec.Range(first,next); })            
+      .def("Range", [](SVD vec, size_t first, size_t next) { PyCheckRange (IntRange(first,next), vec.Size(), "Range"); return vec.Range(first,next); })            
       .def("MinMax", [](SVD vec, bool ignore_inf)
            {
              double mi = std::numeric_limits<double>::max();
@@ -501,24 +553,25 @@ void NGS_DLL_HEADER ExportNgbla(py::module & m) {
         ;
     ExportVector< SVC, VC, Complex>(m, "SliceVectorC")
       // .def("Range",    static_cast</* const */ SVC (SVC::*)(size_t,size_t) const> (&SVC::Range ) )
-      .def("Range", [](SVC vec, size_t first, size_t next) { return vec.Range(first,next); })            
+      .def("Range", [](SVC vec, size_t first, size_t next) { PyCheckRange (IntRange(first,next), vec.Size(), "Range"); return vec.Range(first,next); })            
       
         .def(py::self*=double())
         ;
 
     py::class_<VD, FVD> cvd(m, "VectorD", py::buffer_protocol());
     cvd.def(py::init<SliceVector<double>>());
-    cvd.def(py::init( [] (int n) { return new VD(n); }));
+    cvd.def(py::init( [] (int n) { if (n < 0) throw py::value_error ("negative size"); return new VD(n); }));
     PyDefVecBuffer<VD>(cvd);
     ExportImmediateOperators<VD, double>(cvd);
 
     py::class_<VC, FVC > cvc(m, "VectorC", py::buffer_protocol());
-    cvc.def(py::init( [] (int n) { return new VC(n); }));
+    cvc.def(py::init( [] (int n) { if (n < 0) throw py::value_error ("negative size"); return new VC(n); }));
     PyDefVecBuffer<VC>(cvc);
     ExportImmediateOperators<VC, Complex>(cvc);
 
     m.def("Vector",
             [] (int n, bool is_complex) {
+                if (n < 0) throw py::value_error ("negative length");
                 if(is_complex) {
                   return py::cast(Vector<Complex>(n));
                 }
@@ -696,13 +749,15 @@ vals : tuple
     typedef FlatMatrix<double> FMD;
     py::class_<FlatMatrix<double> > class_FMD(m, "FlatMatrixD", py::buffer_protocol());
         PyMatAccess<FMD, Matrix<double> >(class_FMD);
-        class_FMD.def(py::self+=py::self);
-        class_FMD.def(py::self-=py::self);
+        class_FMD.def("__iadd__", [] (FMD &self, const FMD &rhs) -> FMD & { PyCheckSameDims(self, rhs); self+=rhs; return self; }, py::is_operator());
+        class_FMD.def("__isub__", [] (FMD &self, const FMD &rhs) -> FMD & { PyCheckSameDims(self, rhs); self-=rhs; return self; }, py::is_operator());
         class_FMD.def(py::self*=double());
         class_FMD.def("Inverse", [](FMD & self, FMD & inv) {
+	    PyCheckSquare(self);
+	    PyCheckSameDims(self, inv);
 	    CalcInverse(self,inv); return;
 	  });
-        class_FMD.def_property_readonly("I", py::cpp_function([](FMD &self) { return Inverse(self); } ) );        
+        class_FMD.def_property_readonly("I", py::cpp_function([](FMD &self) { PyCheckSquare(self); return Inverse(self); } ) );        
         class_FMD.def("__str__", &ToString<FMD>);
         class_FMD.def("__repr__", &ToString<FMD>);
         PyDefMatBuffer<FMD>(class_FMD);
@@ -713,19 +768,22 @@ vals : tuple
         PyMatAccess<FMC, Matrix<Complex> >(class_FMC);
         class_FMC.def("__str__", &ToString<FMC>);
         class_FMC.def("__repr__", &ToString<FMC>);
-        class_FMC.def(py::self+=py::self)
-        .def(py::self-=py::self)
+        class_FMC.def("__iadd__", [] (FMC &self, const FMC &rhs) -> FMC & { PyCheckSameDims(self, rhs); self+=rhs; return self; }, py::is_operator())
+        .def("__isub__", [] (FMC &self, const FMC &rhs) -> FMC & { PyCheckSameDims(self, rhs); self-=rhs; return self; }, py::is_operator())
         .def(py::self*=Complex())
         .def_property("diag",
-                py::cpp_function([](const FMC &self) { return Vector<Complex>(self.Diag()); }),
-                py::cpp_function([](FMC &self, const FVC &v) { self.Diag() = v; }))
-          .def("__add__" , [](FMC &self, FMD &m) { return Matrix<Complex>(self+m); }, py::arg("mat") )
-        .def("__sub__" , [](FMC &self, FMD &m) { return Matrix<Complex>(self-m); }, py::arg("mat") )
-        .def("__mul__" , [](FMC &self, FMD &m) { return Matrix<Complex>(self*m); }, py::arg("mat") )
-        .def("__radd__" , [](FMC &self, FMD &m) { return Matrix<Complex>(self+m); }, py::arg("mat") )
-        .def("__rsub__" , [](FMC &self, FMD &m) { return Matrix<Complex>(self-m); }, py::arg("mat") )
-        .def("__rmul__" , [](FMC &self, FMD &m) { return Matrix<Complex>(m*self); }, py::arg("mat") )
-          .def("__mul__" , [](FMC &self, FVD &v) { return Vector<Complex>(self*v); }, py::arg("vec") )
+                py::cpp_function([](const FMC &self) { return Vector<Complex>(SliceVector<Complex>(min(self.Height(), self.Width()), self.Width()+1, self.Data())); }),
+                py::cpp_function([](FMC &self, const FVC &v) {
+                  size_t n = min(self.Height(), self.Width());
+                  PyCheckSize (v.Size(), n, "diagonal size");
+                  SliceVector<Complex>(n, self.Width()+1, self.Data()) = v; }))
+          .def("__add__" , [](FMC &self, FMD &m) { PyCheckSameDims(self, m); return Matrix<Complex>(self+m); }, py::arg("mat") )
+        .def("__sub__" , [](FMC &self, FMD &m) { PyCheckSameDims(self, m); return Matrix<Complex>(self-m); }, py::arg("mat") )
+        .def("__mul__" , [](FMC &self, FMD &m) { PyCheckSize (m.Height(), self.Width(), "inner dimension"); return Matrix<Complex>(self*m); }, py::arg("mat") )
+        .def("__radd__" , [](FMC &self, FMD &m) { PyCheckSameDims(self, m); return Matrix<Complex>(self+m); }, py::arg("mat") )
+        .def("__rsub__" , [](FMC &self, FMD &m) { PyCheckSameDims(self, m); return Matrix<Complex>(self-m); }, py::arg("mat") )
+        .def("__rmul__" , [](FMC &self, FMD &m) { PyCheckSize (self.Height(), m.Width(), "inner dimension"); return Matrix<Complex>(m*self); }, py::arg("mat") )
+          .def("__mul__" , [](FMC &self, FVD &v) { PyCheckSize (v.Size(), self.Width(), "vector size"); return Vector<Complex>(self*v); }, py::arg("vec") )
           .def("__mul__" , [](FMC &self, double s) { return Matrix<Complex>(s*self); }, py::arg("value") )
           .def("__rmul__" , [](FMC &self, double s) { return Matrix<Complex>(s*self); }, py::arg("value") )
           .def("Height", &FMC::Height, "Returns height of the matrix" )
@@ -755,18 +813,18 @@ vals : tuple
               */
               return Matrix<Complex> (Trans(Conj(self)));
             }, "Return conjugate and transposed matrix" )
-          .def_property_readonly("I", py::cpp_function([](FMC & self) { return Inverse(self); }))
+          .def_property_readonly("I", py::cpp_function([](FMC & self) { PyCheckSquare(self); return Inverse(self); }))
         ;
     PyDefMatBuffer<FMC>(class_FMC);
 
     auto class_MD = py::class_<Matrix<double>, FMD>(m, "MatrixD", py::buffer_protocol())
-      .def(py::init( [] (int n, int m) { return new Matrix<double>(n, m); }), py::arg("n"), py::arg("m"), "Makes matrix of dimension n x m")
+      .def(py::init( [] (int n, int m) { if (n < 0 || m < 0) throw py::value_error ("negative matrix dimension"); return new Matrix<double>(n, m); }), py::arg("n"), py::arg("m"), "Makes matrix of dimension n x m")
         ;
     PyDefMatBuffer<Matrix<>>(class_MD);
     ExportImmediateOperators<Matrix<double>, double>(class_MD);
 
     auto class_MC = py::class_<Matrix<Complex>, FMC >(m, "MatrixC", py::buffer_protocol())
-      .def(py::init( [] (int n, int m) { return new Matrix<Complex>(n, m); }), py::arg("n"), py::arg("m"), "Makes matrix of dimension n x m")
+      .def(py::init( [] (int n, int m) { if (n < 0 || m < 0) throw py::value_error ("negative matrix dimension"); return new Matrix<Complex>(n, m); }), py::arg("n"), py::arg("m"), "Makes matrix of dimension n x m")
         ;
     PyDefMatBuffer<Matrix<Complex>>(class_MC);
     ExportImmediateOperators<Matrix<Complex>, Complex>(class_MC);
@@ -774,23 +832,24 @@ vals : tuple
     auto class_Mat2D = py::class_<Mat<2,2,double>>(m,"Mat2D", py::buffer_protocol());
     PyDefMatBuffer<Mat<2,2,double>>(class_Mat2D);
     class_Mat2D.def("__getitem__", [](Mat<2,2,double> self, py::tuple i)
-                    { return self(i[0].cast<size_t>(),i[1].cast<size_t>()); });
+                    { auto [r,c] = PyFixedMatIndex(i, 2); return self(r,c); });
     auto class_Mat2C = py::class_<Mat<2,2,Complex>>(m,"Mat2C", py::buffer_protocol());
     PyDefMatBuffer<Mat<2,2,Complex>>(class_Mat2C);
     class_Mat2C.def("__getitem__", [](Mat<2,2,Complex> self, py::tuple i)
-                    { return self(i[0].cast<size_t>(),i[1].cast<size_t>()); });
+                    { auto [r,c] = PyFixedMatIndex(i, 2); return self(r,c); });
     auto class_Mat3D = py::class_<Mat<3,3,double>>(m,"Mat3D", py::buffer_protocol());
     PyDefMatBuffer<Mat<3,3,double>>(class_Mat3D);
     class_Mat3D.def("__getitem__", [](Mat<3,3,double> self, py::tuple i)
-                    { return self(i[0].cast<size_t>(),i[1].cast<size_t>()); });
+                    { auto [r,c] = PyFixedMatIndex(i, 3); return self(r,c); });
     auto class_Mat3C = py::class_<Mat<3,3,Complex>>(m,"Mat3C", py::buffer_protocol());
     PyDefMatBuffer<Mat<3,3,Complex>>(class_Mat3C);
     class_Mat3C.def("__getitem__", [](Mat<3,3,Complex> self, py::tuple i)
-                    { return self(i[0].cast<size_t>(),i[1].cast<size_t>()); });
+                    { auto [r,c] = PyFixedMatIndex(i, 3); return self(r,c); });
 
     m.def("Matrix",
           [] (int h, optional<int> ow, bool is_complex) {
             int w = ow.value_or (h);
+            if (h < 0 || w < 0) throw py::value_error ("negative matrix dimension");
             if(is_complex) return py::cast(Matrix<Complex>(h,w));
             else return py::cast(Matrix<double>(h,w));
           },
@@ -883,7 +942,11 @@ complex : bool
     
     m.def("Matrix", [] (const std::vector<std::vector<double>> & values)
       {
-        Matrix<double> m(values.size(), values[0].size());
+        size_t w = values.empty() ? 0 : values[0].size();
+        for (auto & row : values)
+          if (row.size() != w)
+            throw py::value_error ("rows must have equal length");
+        Matrix<double> m(values.size(), w);
         for (auto i : Range(m.Height()))
           for (auto j : Range(m.Width()))
             m(i,j) = values[i][j];
@@ -891,7 +954,11 @@ complex : bool
       });
     m.def("Matrix", [] (const std::vector<std::vector<Complex>> & values)
       {
-        Matrix<Complex> m(values.size(), values[0].size());
+        size_t w = values.empty() ? 0 : values[0].size();
+        for (auto & row : values)
+          if (row.size() != w)
+            throw py::value_error ("rows must have equal length");
+        Matrix<Complex> m(values.size(), w);
         for (auto i : Range(m.Height()))
           for (auto j : Range(m.Width()))
             m(i,j) = values[i][j];
@@ -902,9 +969,11 @@ complex : bool
     py::class_<SparseVector<double>> (m, "SparseVector")
       .def(py::init( [] (int n) { return new SparseVector<double>(n); }))
       .def("__str__", &ToString<SparseVector<double>>)
-      .def("__setitem__", [](SparseVector<double> & self, size_t i, double v) { self[i] = v; })
-      .def("__getitem__", [](SparseVector<double> & self, size_t i) { return self[i]; })
-      .def("InnerProduct", &SparseVector<double>::InnerProduct)
+      .def("__setitem__", [](SparseVector<double> & self, py::ssize_t i, double v) { self[PyCheckIndex (i, self.Size())] = v; })
+      .def("__getitem__", [](SparseVector<double> & self, py::ssize_t i) { return self[PyCheckIndex (i, self.Size())]; })
+      .def("InnerProduct", [](SparseVector<double> & self, FlatVector<double> v) {
+          PyCheckSize (v.Size(), self.Size(), "vector size");
+          return self.InnerProduct(v); })
       ;
       
 

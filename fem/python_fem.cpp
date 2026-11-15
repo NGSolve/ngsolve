@@ -23,6 +23,42 @@ using ngfem::ELEMENT_TYPE;
 #include "gridfunction.hpp"
 #include "linearform.hpp"
 
+static void PyCheckInt (int v, int lo, int hi, const char * what)
+{
+  if (v < lo || v > hi)
+    throw py::value_error (string(what) + " must be in [" + ToString(lo) + "," + ToString(hi) + "], got " + ToString(v));
+}
+
+static Array<int> PyReshapeDims (const CoefficientFunction & cf, py::tuple tup)
+{
+  Array<int> dims = makeCArray<int> (tup);
+  int cntm1 = 0;
+  bool has0 = false;
+  size_t prod = 1;
+  for (int d : dims)
+    {
+      if (d == -1) cntm1++;
+      else if (d < 0) throw py::value_error ("negative dimension in shape");
+      else
+        {
+          if (d == 0) has0 = true;
+          prod *= d;
+        }
+    }
+  if (cntm1 > 1)
+    throw py::value_error ("only one -1 allowed in shape");
+  if (cntm1 == 1)
+    {
+      if (has0)
+        throw py::value_error ("shape with -1 and 0 is ambiguous");
+      if (cf.Dimension() % prod != 0)
+        throw py::value_error ("Reshape with -1: dimension " + ToString(cf.Dimension()) + " is not divisible");
+      for (int & d : dims)
+        if (d == -1) d = cf.Dimension() / prod;
+    }
+  return dims;
+}
+
 namespace ngfem
 {
   extern SymbolTable<double> * constant_table_for_FEM;
@@ -30,8 +66,12 @@ namespace ngfem
 
   NGS_DLL_HEADER void ExportStdMathFunctions(py::module &m);
 
+  static shared_ptr<CoefficientFunction> MakeCoefficientOrNull (py::object val);
+
   shared_ptr<CoefficientFunction> MakeCoefficient (py::object val)
   {
+    if (val.is_none())
+      throw std::invalid_argument("None is not a valid CoefficientFunction");
     py::extract<shared_ptr<CoefficientFunction>> ecf(val);
     if (ecf.check()) return ecf();
 
@@ -58,7 +98,7 @@ namespace ngfem
         auto el = py::cast<py::list>(val);
         Array<shared_ptr<CoefficientFunction>> cflist(el.size());
         for (int i : Range(cflist.Size()))
-          cflist[i] = MakeCoefficient(el[i]);
+          cflist[i] = MakeCoefficientOrNull(el[i]);
         return MakeDomainWiseCoefficientFunction(std::move(cflist));
       }
 
@@ -72,6 +112,12 @@ namespace ngfem
       }
     // throw std::invalid_argument(string("Cannot make CoefficientFunction from ") + string(py::str(val)) + " of type " + string(py::str(val.get_type())));
     throw std::invalid_argument(string("Cannot make CoefficientFunction from ") + string(py::str(val)) + " of type " + string(py::str(py::type::of(val))));
+  }
+
+  static shared_ptr<CoefficientFunction> MakeCoefficientOrNull (py::object val)
+  {
+    if (val.is_none()) return nullptr;
+    return MakeCoefficient(val);
   }
 
   Array<shared_ptr<CoefficientFunction>> MakeCoefficients (py::object py_coef)
@@ -393,7 +439,10 @@ else_obj : object
   
   m.def("CoordCF", 
         [] (int direction)
-        { return MakeCoordinateCoefficientFunction(direction); }, py::arg("direction"),
+        {
+          if (direction < 0 || direction > 2)
+            throw py::index_error ("direction must be 0, 1 or 2");
+          return MakeCoordinateCoefficientFunction(direction); }, py::arg("direction"),
         docu_string(R"raw_string(
 CoefficientFunction for x, y, z.
 
@@ -507,6 +556,7 @@ direction : int
     
     shared_ptr<CF> GetReferenceCoordinateCF (int dim)
     {
+      PyCheckInt (dim, 1, 3, "dim");
       switch(dim)
 	{
 	case 1:
@@ -520,6 +570,7 @@ direction : int
     
     shared_ptr<CF> GetNormalVectorCF (int dim)
     {
+      PyCheckInt (dim, 1, 6, "dim");
       return NormalVectorCF(dim);
     }
     shared_ptr<CF> GetNormalVectorCF (ngcomp::Region& region)
@@ -546,31 +597,40 @@ direction : int
 
     shared_ptr<CF> GetTangentialVectorCF (int dim, bool consistent)
     {
+      PyCheckInt (dim, 1, 3, "dim");
       return TangentialVectorCF(dim, consistent);
     }
 
     shared_ptr<CF> GetJacobianMatrixCF (int dims, int dimr)
     {
+      PyCheckInt (dims, 1, 3, "dims");
+      PyCheckInt (dimr, 1, 3, "dimr");
+      if (dims > dimr)
+        throw py::value_error ("dims must not exceed dimr");
       return JacobianMatrixCF(dims,dimr);
     }
 
     shared_ptr<CF> GetWeingartenCF (int dim)
     {
+      PyCheckInt (dim, 2, 3, "dim");
       return WeingartenCF(dim);
     }
 
     shared_ptr<CF> GetVertexTangentialVectorsCF (int dim)
     {
+      PyCheckInt (dim, 2, 3, "dim");
       return VertexTangentialVectorsCF(dim);
     }
 
     shared_ptr<CF> GetEdgeFaceTangentialVectorsCF (int dim)
     {
+      PyCheckInt (dim, 3, 3, "dim");
       return EdgeFaceTangentialVectorsCF(dim);
     }
     
     shared_ptr<CF> GetEdgeCurvatureCF (int dim)
     {
+      PyCheckInt (dim, 2, 3, "dim");
       return EdgeCurvatureCF(dim);
     }
     shared_ptr<CF> GetNumElsOnFacetCF()
@@ -689,7 +749,11 @@ val : can be one of the following:
             { // can now reshape without additional wrapper
               auto cdims = makeCArray<int> (*dims);
               int dimension = 1;
-              for (int d : cdims) dimension *= d;
+              for (int d : cdims)
+                {
+                  if (d < 0) throw py::value_error ("negative dimension in dims");
+                  dimension *= d;
+                }
               if (coef->Dimension() != dimension)
                 throw Exception("dims does not fit to dimension of CoefficientFunction");
 
@@ -749,7 +813,7 @@ val : can be one of the following:
                   [] (shared_ptr<CF> self) { return Array<int>(self->Dimensions()); } ,
                   [] (shared_ptr<CF> self, py::tuple tup) { throw Exception("Use cf = cf.Reshape(tuple) instead of cf.dims=tuple"); /*self->SetDimensions(makeCArray<int>(tup));*/ } ,
                   "shape of CF:  (dim) for vector, (h,w) for matrix")
-    .def("Reshape", [] (shared_ptr<CF> self, py::tuple tup) { return self->Reshape(makeCArray<int>(tup)); } ,
+    .def("Reshape", [] (shared_ptr<CF> self, py::tuple tup) { return self->Reshape(PyReshapeDims(*self, tup)); } ,
          "reshape CF:  (dim) for vector, (h,w) for matrix")
     .def_property_readonly("shape",
                            [] (CF& self) { return makePyTuple(self.Dimensions()); },
@@ -777,12 +841,17 @@ val : can be one of the following:
     
     .def("__getitem__",  [](shared_ptr<CF> self, int comp)
                                          {
-                                           if (comp < 0 || comp >= self->Dimension())
-                                             throw py::index_error();
                                            return MakeComponentCoefficientFunction (self, comp);
                                          },
          py::arg("comp"),
          "returns component comp of vectorial CF")
+    .def("__iter__", [](py::object self)
+         {
+           py::list comps;
+           for (int i = 0; i < py::cast<CF&>(self).Dimension(); i++)
+             comps.append (self[py::int_(i)]);
+           return py::iter(comps);
+         })
     .def("__getitem__",  [](shared_ptr<CF> self, py::slice inds)
          {
            FlatArray<int> dims = self->Dimensions();
@@ -818,6 +887,8 @@ val : can be one of the following:
               throw Exception(ToString(ellipse_count) + " ellipses detected, but only one is allowed.");
            else if (ellipse_count == 1)
              {
+               if (comps.size() > dims.Size() + 1)
+                 throw py::index_error ("too many indices");
                py::list new_comps{};
                for (auto i : Range(comps.size()))
                  {
@@ -982,7 +1053,7 @@ cf : ngsolve.CoefficientFunction
           "depricated: use 'Diff' instead", 
           py::arg("variable"), py::arg("direction")=1.0)
     .def ("Diff", // &CoefficientFunction::Diff,
-          [] (shared_ptr<CF> coef, shared_ptr<CF> var, shared_ptr<CF> dir)
+          [] (shared_ptr<CF> coef, shared_ptr<CF> var, OptPtr<CF> dir)
           {
             if (!var->IsVariable())
               cout << IM(1) << "Warning: differentiationg by a variable not marked as Variable, \n"
@@ -1143,6 +1214,8 @@ keep_files : bool
                 double critical_value
                 )
     {
+        if (cf->Dimension() != 3)
+          throw py::value_error ("field lines need a CoefficientFunction of dimension 3");
         Array<netgen::Point<3>> points;
         for(const auto & [x,y,z] : start_points)
             points.Append(netgen::Point<3>{x,y,z});
@@ -1213,11 +1286,22 @@ keep_files : bool
   m.def("Sym", [] (shared_ptr<CF> cf) { return SymmetricCF(cf); });
   m.def("Skew", [] (shared_ptr<CF> cf) { return SkewCF(cf); });
   m.def("Trace", [] (shared_ptr<CF> cf) { return TraceCF(cf); });
-  m.def("Id", [] (int dim) { return IdentityCF(dim); }, py::arg("dim"),
+  m.def("Id", [] (int dim) { PyCheckInt (dim, 1, 1000, "dim"); return IdentityCF(dim); }, py::arg("dim"),
         "Identity matrix of given dimension");
-  m.def("Id", [] (const Array<int>& dims) { return IdentityCF(dims); }, py::arg("dims"),
+  m.def("Id", [] (const Array<int>& dims) {
+      size_t prod = 1;
+      for (int d : dims)
+        {
+          PyCheckInt (d, 1, 1000, "dimension");
+          prod *= d;
+          if (prod > 1000) throw py::value_error ("total dimension must not exceed 1000");
+        }
+      return IdentityCF(dims); }, py::arg("dims"),
         "Identity tensor for a space with dimensions 'dims', ie. the result is of 'dims + dims'");
-  m.def("Zero", [] (const Array<int>& dims) { return ZeroCF(std::move(dims)); });
+  m.def("Zero", [] (const Array<int>& dims) {
+      for (int d : dims)
+        if (d < 0) throw py::value_error ("negative dimension");
+      return ZeroCF(std::move(dims)); });
   m.def("Inv", [] (shared_ptr<CF> cf) { return InverseCF(cf); });
   m.def("Cof", [] (shared_ptr<CF> cf) { return CofactorCF(cf); });
   m.def("Det", [] (shared_ptr<CF> cf) { return DeterminantCF(cf); });
@@ -1334,7 +1418,7 @@ kwargs:
 
 )raw_string"));
   
-  m.def("LeviCivitaSymbol", &LeviCivitaCF);
+  m.def("LeviCivitaSymbol", [] (int dim) { PyCheckInt (dim, 1, 6, "dim"); return LeviCivitaCF(dim); });
   
   m.def("NewtonCF", [](shared_ptr<CF> expr, py::object startingpoint, optional<double> tol,
                        optional<double> rtol, optional<int> maxiter, optional<bool> allow_fail){
@@ -1645,6 +1729,18 @@ vals : list
     .def(py::init
          ([](int order, py::list knots, py::list vals)
           {
+            if (order < 1)
+              throw py::value_error ("order must be >= 1");
+            if (py::len(knots) == 0)
+              throw py::value_error ("knots must not be empty");
+            if (py::len(vals) + 1 < py::len(knots) || py::len(vals) > py::len(knots))
+              throw py::value_error ("len(vals) must be len(knots) or len(knots)-1");
+            {
+              auto ck = makeCArray<double> (knots);
+              for (size_t i = 1; i < ck.Size(); i++)
+                if (ck[i] < ck[i-1])
+                  throw py::value_error ("knots must be sorted");
+            }
             return make_shared<BSpline> (order,
                                          makeCArray<double> (knots),
                                          makeCArray<double> (vals));
@@ -1674,6 +1770,9 @@ Bilinear intepolation of data given on a regular grid
     .def(py::init
          ([](py::list x, py::list y, py::list v, int order, bool extrapolate)
           {
+            if (py::len(x) < 2 || py::len(y) < 2)
+              throw py::value_error ("x and y need at least two grid coordinates");
+            PyCheckSize (py::len(v), py::len(x)*py::len(y), "number of values");
             return make_shared<BSpline2D> (
                                          makeCArray<double> (x),
                                          makeCArray<double> (y),
@@ -1943,6 +2042,7 @@ z : double
 
   m.def("H1FE", [](ELEMENT_TYPE et, int order)
         {
+          PyCheckInt (order, 1, 100, "order");
           return SwitchET (et, [order] (auto et2) -> shared_ptr<BaseScalarFiniteElement>
                     {
                       constexpr ELEMENT_TYPE ET = et2.ElementType();
@@ -1965,6 +2065,7 @@ order : int
 
   m.def("L2FE", [](ELEMENT_TYPE et, int order)
         {
+          PyCheckInt (order, 0, 100, "order");
           return SwitchET (et, [order] (auto et2) -> shared_ptr<BaseScalarFiniteElement>
                     {
                       constexpr ELEMENT_TYPE ET = et2.ElementType();                      
@@ -2024,12 +2125,23 @@ weights : list
 )raw_string"))
     .def(py::init
          ([](ELEMENT_TYPE et, int order)
-          { return new IntegrationRule (et, order); }),
+          {
+            PyCheckInt (order, 0, 1000, "order");
+            return new IntegrationRule (et, order); }),
          py::arg("element type"), py::arg("order"))
     
     .def(py::init
          ([](py::list points, py::list weights)
           {
+            if (len(points) == 0)
+              throw py::value_error ("IntegrationRule needs at least one point");
+            if (len(weights) != 0)
+              PyCheckSize (len(weights), len(points), "number of weights");
+            size_t pdim = len(py::tuple(points[0]));
+            if (pdim < 1 || pdim > 3)
+              throw py::value_error ("points need 1 to 3 coordinates");
+            for (size_t i = 0; i < len(points); i++)
+              PyCheckSize (len(py::tuple(points[i])), pdim, "number of coordinates");
             IntegrationRule * ir = new IntegrationRule ();
             for (size_t i = 0; i < len(points); i++)
               {
@@ -2184,7 +2296,12 @@ weights : list
         -> shared_ptr<ElementTransformation>
         {
           int nv = ElementTopology::GetNVertices(et);
-          int dim = py::len(vertices[0]);
+          if (Dim(et) < 1 || Dim(et) > 3)
+            throw py::value_error ("unsupported element type");
+          PyCheckSize (py::len(vertices), nv, "number of vertices");
+          int dim = Dim(et);
+          for (int i : Range(nv))
+            PyCheckSize (py::len(vertices[py::int_(i)]), dim, "vertex dimension");
           Matrix<> pmat(nv,dim);
           for (int i : Range(nv))
             for (int j : Range(dim))

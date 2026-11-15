@@ -2115,6 +2115,8 @@ public:
     : BASE(ac2->Dimension(), ac1->IsComplex() || ac2->IsComplex()),
       c1(ac1), c2(ac2)
   {
+    if (c1->Dimension() != 1)
+      throw Exception ("MultScalVecCoefficientFunction: first factor must be scalar, dims = " + ToString(c1->Dimensions()));
     SetDimensions (c2->Dimensions());
   }
   
@@ -4432,6 +4434,8 @@ public:
     : BASE(1, ac1->IsComplex()), c1(ac1), comp(acomp)
   {
     dim1 = c1->Dimension();
+    if (comp < 0 || comp >= dim1)
+      throw RangeException ("ComponentCoefficientFunction", comp, 0, dim1);
     elementwise_constant = c1->ElementwiseConstant();
   }
 
@@ -4600,6 +4604,9 @@ MakeConstantCoefficientFunction (Complex c)
 shared_ptr<CoefficientFunction>
 MakeComponentCoefficientFunction (shared_ptr<CoefficientFunction> c1, int comp)
 {
+  if (comp < 0 || comp >= c1->Dimension())
+    throw RangeException ("ComponentCoefficientFunction", comp, 0, c1->Dimension());
+
   if (c1->IsZeroCF())
     return ZeroCF( Array<int>({}) );
 
@@ -4658,6 +4665,11 @@ public:
                                 int afirst, Array<int> anum, Array<int> adist)
     : BASE(1, ac1->IsComplex()), c1(ac1), first(afirst), num(anum), dist(adist)
   {
+    if (num.Size() != dist.Size())
+      throw Exception ("SubTensorCoefficientFunction: num and dist have different sizes");
+    for (int n : num)
+      if (n < 0)
+        throw Exception ("SubTensorCoefficientFunction: negative shape");
     SetDimensions(anum);
     dim1 = c1->Dimension();    
     elementwise_constant = c1->ElementwiseConstant();
@@ -4697,6 +4709,8 @@ public:
             inputindex += indexj*dist[j];
             index /= num[j];
           }
+        if (inputindex < 0 || inputindex >= dim1)
+          throw RangeException ("SubTensorCoefficientFunction", inputindex, 0, dim1);
         mapping.Append (inputindex);
       }
   }

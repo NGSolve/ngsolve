@@ -34,6 +34,22 @@ namespace pybind11
 
 namespace ngcomp
 {
+  inline void PyCheckId (const MeshAccess & ma, ElementId ei)
+  {
+    PyCheckIndex (ei.Nr(), ma.GetNE(ei.VB()), "element number");
+  }
+
+  inline void PyCheckBonusOrder (int order)
+  {
+    if (order < -1000 || order > 1000)
+      throw py::value_error("bonus_intorder " + std::to_string(order) + " out of range [-1000, 1000]");
+  }
+
+  inline void PyCheckId (const MeshAccess & ma, NodeId ni)
+  {
+    PyCheckIndex (ni.GetNr(), ma.GetNNodes(ni.GetType()), "node number");
+  }
+
   // TODO: use Archive structure to pickle fespaces
   inline py::tuple fesPickle (const FESpace& fes)
   {
