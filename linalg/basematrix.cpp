@@ -370,9 +370,9 @@ namespace ngla
     auto vecx = CreateRowVector();
     auto vecy = CreateColVector();
     
-    Matrix<TSCAL> dmat(Height(), Width());
     auto fx = vecx.FV<TSCAL>();
     auto fy = vecy.FV<TSCAL>();
+    Matrix<TSCAL> dmat(fy.Size(), fx.Size());
     for (int i = 0; i < fx.Size(); i++)
       {
         fx = 0.0;
