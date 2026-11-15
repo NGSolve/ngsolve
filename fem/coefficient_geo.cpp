@@ -16,6 +16,12 @@
 namespace ngfem
 
 {
+  static void CheckGeoDim (int D, const CFContext & ctx)
+  {
+    if (ctx.dim >= 0 && D != ctx.dim)
+      throw Exception ("declared for dimension " + ToString(D) + ", but the mesh has dimension " + ToString(ctx.dim));
+  }
+
 
   
   
@@ -184,6 +190,11 @@ namespace ngfem
     virtual string GetDescription() const override
     {
       return "normal vector";
+    }
+
+    void CheckContext (const CFContext & ctx) const override
+    {
+      CheckGeoDim (D, ctx);
     }
     
     using CoefficientFunctionNoDerivative::Evaluate;
@@ -405,6 +416,12 @@ namespace ngfem
   public:
     cl_TangentialVectorCF (bool aconsistent)
       : CoefficientFunctionNoDerivative(D,false), consistent(aconsistent) { ; }
+    string GetDescription () const override { return "tangential vector"; }
+
+    void CheckContext (const CFContext & ctx) const override
+    {
+      CheckGeoDim (D, ctx);
+    }
     // virtual int Dimension() const { return D; }
 
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
@@ -499,6 +516,14 @@ namespace ngfem
     {
       SetDimensions(Array<int>({DIMR,DIMS}));
     }
+    string GetDescription () const override { return "Jacobian matrix"; }
+
+    void CheckContext (const CFContext & ctx) const override
+    {
+      CheckGeoDim (DIMR, ctx);
+      if (ctx.dim >= 0 && DIMS != ctx.ElementDim())
+        throw Exception ("declared for elements of dimension " + ToString(DIMS) + ", but evaluated on elements of dimension " + ToString(ctx.ElementDim()));
+    }
 
     using CoefficientFunctionNoDerivative::Evaluate;
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override 
@@ -574,6 +599,12 @@ namespace ngfem
     cl_WeingartenCF () : CoefficientFunctionNoDerivative(D*D,false)
     {
       SetDimensions(Array<int> ( { D, D } ));
+    }
+    string GetDescription () const override { return "Weingarten tensor"; }
+
+    void CheckContext (const CFContext & ctx) const override
+    {
+      CheckGeoDim (D, ctx);
     }
 
     void DoArchive(Archive& ar) override
@@ -745,6 +776,10 @@ namespace ngfem
     {
       SetDimensions(Array<int> ( { D, 2 } ));
     }
+    string GetDescription () const override { return "vertex tangential vectors"; }
+
+    void CheckContext (const CFContext & ctx) const override
+    { CheckGeoDim (D, ctx); }
 
     using CoefficientFunctionNoDerivative::Evaluate;
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
@@ -843,6 +878,10 @@ namespace ngfem
     {
       SetDimensions(Array<int> ( { D, 2 } ));
     }
+    string GetDescription () const override { return "edge-face tangential vectors"; }
+
+    void CheckContext (const CFContext & ctx) const override
+    { CheckGeoDim (D, ctx); }
 
     using CoefficientFunctionNoDerivative::Evaluate;
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
@@ -966,6 +1005,10 @@ namespace ngfem
   {
   public:
     cl_EdgeCurvatureCF () : CoefficientFunctionNoDerivative(D,false) { ; }
+    string GetDescription () const override { return "edge curvature"; }
+
+    void CheckContext (const CFContext & ctx) const override
+    { CheckGeoDim (D, ctx); }
 
     using CoefficientFunctionNoDerivative :: Evaluate;
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override

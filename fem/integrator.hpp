@@ -1806,6 +1806,8 @@ namespace ngfem
     {
         is_curve_integrator = lfi->IntegrationAlongCurve();
     }
+    shared_ptr<LinearFormIntegrator> GetLFI () const { return lfi; }
+    int GetComponent () const { return comp; }
 
     VorB VB () const override
     { return lfi->VB(); }

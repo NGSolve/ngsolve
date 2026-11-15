@@ -484,7 +484,7 @@ ANY                  1 1 1 1 | 15
     virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const = 0;
 
     /// test hook: checks that GetFE of all elements matches the families expected by the evaluators
-    NGS_DLL_HEADER void CheckElementFamilies (LocalHeap & lh) const;
+    void CheckElementFamilies (LocalHeap & lh) const;
 
 
     /// get dof-nrs of domain or boundary element elnr
@@ -615,6 +615,10 @@ ANY                  1 1 1 1 | 15
     [[deprecated("Use LowOrderFESpacePtr instead!")]]                
     const FESpace & LowOrderFESpace () const { return *low_order_space; }
     shared_ptr<FESpace> LowOrderFESpacePtr () const { return low_order_space; }
+    /// the space producing the elements (wrappers return their base's)
+    virtual const FESpace * ElementSpace () const { return this; }
+    /// op is one of the space's own evaluators
+    NGS_DLL_HEADER bool OwnsOperator (const DifferentialOperator * op) const;
     shared_ptr<BaseMatrix> LowOrderEmbedding () const { return low_order_embedding; }
     shared_ptr<BaseMatrix> LowOrderRestriction () const { return low_order_restriction; }    
     
@@ -959,6 +963,33 @@ ANY                  1 1 1 1 | 15
 			       VorB vb, 
 			       LocalHeap & clh, 
 			       const function<void(FESpace::Element,LocalHeap&)> & func);
+
+  /*
+    Can operator op (of space opspace, may be null) act on the elements of space on elvb ?
+    level 1: same element-producing space (wrappers, low-order space)
+    level 2: op declares its element type, checked on one element per element type
+    level 3: throws (if !strict, undeclared operators are accepted)
+   */
+  NGS_DLL_HEADER void CheckOperatorSpace (const DifferentialOperator & op, const FESpace * opspace,
+                                          const FESpace & space, VorB elvb, bool strict = true);
+
+  /// one element per element type of vb (cached element classes of the mesh)
+  NGS_DLL_HEADER Array<ElementId> RepresentativeElements (const MeshAccess & ma, VorB vb);
+
+  /// context of an integral or evaluation on mesh ma
+  NGS_DLL_HEADER CFContext MakeCFContext (const MeshAccess & ma, CFContext::Purpose purpose,
+                                          VorB vb, VorB element_vb = VOL, bool skeleton = false,
+                                          bool allow_complex = true);
+
+  /// the gate for point evaluation, cached in cf for repeated calls with the same mesh and VorB
+  NGS_DLL_HEADER void CheckPointContext (const CoefficientFunction & cf, const MeshAccess * ma,
+                                         VorB vb, int dim, bool on_facet);
+  NGS_DLL_HEADER void CheckPointContext (const CoefficientFunction & cf, const BaseMappedIntegrationPoint & mip);
+
+  /// the context gate for an integrator added to a form
+  NGS_DLL_HEADER void CheckIntegratorContext (const Integrator & igt, CFContext::Purpose purpose,
+                                              shared_ptr<FESpace> trialspace, shared_ptr<FESpace> testspace,
+                                              bool allow_complex);
 
   // rows of elmat from the local basis of fes to the element dofs: T^T elmat.
   // for the columns call it with Trans(elmat), which flips the ordering

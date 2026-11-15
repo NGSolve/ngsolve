@@ -399,6 +399,8 @@ namespace ngcomp
 
     /// uses mixed spaces (non operational)
     bool MixedSpaces () const { return fespace2 != NULL; }
+    /// interior skeleton terms need dgjumps on the spaces (matrix graph)
+    NGS_DLL_HEADER void CheckDGCoupling () const;
 
     /// returns the second space (form mixed spaces)
     // const FESpace & GetFESpace2() const { return *fespace2; }

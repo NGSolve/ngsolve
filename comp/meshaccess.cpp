@@ -1540,8 +1540,7 @@ namespace ngcomp
   void MeshAccess :: SetDeformation (shared_ptr<GridFunction> def)
   {
     if (def)
-      if (dim != def->Dimension())
-        throw Exception ("Mesh::SetDeformation needs a GridFunction with dim="+ToString(dim));
+      CheckDeformation (*def, *this);
       
     deformation = std::move(def);
   }
@@ -2317,6 +2316,17 @@ namespace ngcomp
     }
 
     ~BoundaryFromVolumeCoefficientFunction() { ; }
+
+    // on boundary elements the input is evaluated on the facet of the volume element
+    const CFContext * InputContext (const CFContext & ctx, CFContext & buffer) const override
+    {
+      if (ctx.EvalVB() != BND) return &ctx;
+      buffer = ctx;
+      buffer.vb = VOL;
+      buffer.element_vb = BND;
+      buffer.skeleton = false;
+      return &buffer;
+    }
     
     void DoArchive(Archive& ar) override
     {
@@ -2448,6 +2458,9 @@ namespace ngcomp
       : CoefficientFunctionNoDerivative(_func->Dimension()),
         func(_func), trafo(_trafo), region(_region)
     {
+      if (trafo->Dimension() != region.Mesh()->GetDimension())
+        throw Exception ("CoordinateTrafo: the mapping has dimension " + ToString(trafo->Dimension()) +
+                         ", the mesh has dimension " + ToString(region.Mesh()->GetDimension()));
     }
 
     using CoefficientFunctionNoDerivative::Evaluate;

@@ -45,6 +45,7 @@ namespace ngcomp
     shared_ptr<Array<int>> GetUsedIdnrs() const { return used_idnrs; }
     virtual string GetClassName() const override { return "Periodic" + space->GetClassName(); }
     shared_ptr<FESpace> GetBaseSpace() const { return space; }
+    const FESpace * ElementSpace () const override { return space->ElementSpace(); }
     
     virtual FiniteElement & GetFE (ElementId ei, Allocator & alloc) const override;
 

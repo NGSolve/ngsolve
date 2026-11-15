@@ -773,6 +773,7 @@ val : can be one of the following:
 
     .def("__call__", [] (CF& self, BaseMappedIntegrationPoint & mip) -> py::object
 	  {
+            ngcomp::CheckPointContext (self, mip);
             auto Eval = [&] (auto vec) -> py::object
               {
                 self.Evaluate (mip, vec);
@@ -1540,6 +1541,9 @@ allow_fail : bool
            auto pts = points.unchecked<1>(); // pts has array access without bounds checks
            size_t npoints = pts.shape(0);
            size_t dim = self->Dimension();
+           for (size_t i = 0; i < npoints; i++)
+             if (pts(i).nr != -1 && pts(i).mesh)
+               ngcomp::CheckPointContext (*self, pts(i).mesh, pts(i).vb, pts(i).mesh->GetDimension(), pts(i).facetnr != -1);
            constexpr size_t maxp = 16;
 
            // collects consecutive points of one element into ir

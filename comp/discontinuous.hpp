@@ -52,6 +52,7 @@ namespace ngcomp
 
     virtual string GetClassName() const override { return "Discontinuous" + space->GetClassName(); }
     shared_ptr<FESpace> GetBaseSpace() const { return space; }
+    const FESpace * ElementSpace () const override { return space->ElementSpace(); }
     
     virtual FiniteElement & GetFE (ElementId ei, Allocator & alloc) const override;
 

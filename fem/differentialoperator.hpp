@@ -317,6 +317,10 @@ namespace ngfem
     NGS_DLL_HEADER virtual list<tuple<string,double>> Timing (const FiniteElement & fel, const BaseMappedIntegrationRule & mir) const;
 
     NGS_DLL_HEADER virtual void CheckElement (const FiniteElement& fel) const { } 
+    // true if CheckElement tests the element family
+    virtual bool DeclaresElementType () const { return false; }
+    // acts on volume elements only at facet points (facet spaces)
+    virtual bool OnlyOnFacets () const { return false; }
   };
 
   

@@ -74,6 +74,33 @@ namespace ngfem
       + ((OrderDt() > 0) ? " order-dt="+ToString(OrderDt()) : string());
   }
 
+  void ProxyFunction :: CheckContext (const CFContext & ctx) const
+  {
+    switch (ctx.purpose)
+      {
+      case CFContext::EVALUATE:
+        throw Exception ("trial- and test-functions can only be used in forms, not in Integrate, Set, Interpolate or point evaluation");
+      case CFContext::LINEAR:
+        if (!testfunction)
+          throw Exception ("a linear form must not contain a trial-function");
+        break;
+      case CFContext::ENERGY:
+        if (testfunction)
+          throw Exception ("an energy (Variation) must not contain a test-function");
+        break;
+      default:
+        break;
+      }
+    if (is_other && !ctx.skeleton && ctx.element_vb == VOL)
+      throw Exception ("Other() needs skeleton=True or element_boundary=True");
+    if (evaluator && evaluator->OnlyOnFacets() && !ctx.OnFacet())
+      throw Exception ("functions of a facet space cannot be evaluated inside elements, use element_boundary=True or skeleton=True");
+
+    auto & space = testfunction ? ctx.testspace : ctx.trialspace;
+    if (space && ctx.check_proxy)
+      ctx.check_proxy (*this, *space, ctx.EvalVB());
+  }
+
   shared_ptr<ProxyFunction> ProxyFunction :: Deriv() const
   {
     int num_dt = 0;
@@ -958,6 +985,11 @@ namespace ngfem
        });
 
     for (auto proxy : proxies)
+      if (!proxy->IsTestFunction())
+        throw Exception ("a linear form integrand must not contain a trial-function");
+    if (proxies.Size() == 0 && !cf->IsZeroCF())
+      throw Exception ("a linear form integrand needs a test-function");
+    for (auto proxy : proxies)
       if (!proxy->Evaluator()->SupportsVB(vb))
         throw Exception ("Testfunction does not support "+ToString(vb)+"-forms, maybe a Trace() operator is missing");
 
@@ -1287,6 +1319,8 @@ namespace ngfem
     for (auto proxy : test_proxies)
       if (!proxy->Evaluator()->SupportsVB(vb))
         throw Exception ("Testfunction does not support "+ToString(vb)+"-forms, maybe a Trace() operator is missing");
+    if (test_proxies.Size() == 0 && !cf->IsZeroCF())
+      throw Exception ("a bilinear form integrand needs a test-function");
     
     cout << IM(6) << "num test_proxies " << test_proxies.Size() << endl;
     cout << IM(6) << "num trial_proxies " << trial_proxies.Size() << endl;
@@ -3930,6 +3964,8 @@ namespace ngfem
       ( [&] (CoefficientFunction & nodecf)
         {
           auto proxy = dynamic_cast<ProxyFunction*> (&nodecf);
+          if (proxy && !proxy->IsTestFunction())
+            throw Exception ("a linear form integrand must not contain a trial-function");
           if (proxy) 
             if (proxy->IsTestFunction())
               if (!proxies.Contains(proxy))
@@ -3938,6 +3974,12 @@ namespace ngfem
                   test_cum.Append(test_cum.Last()+proxy->Dimension());
                 }
         });
+    if (proxies.Size() == 0 && !cf->IsZeroCF())
+      throw Exception ("a linear form integrand needs a test-function");
+    // skeleton terms are evaluated on volume elements
+    for (auto proxy : proxies)
+      if (!proxy->Evaluator()->SupportsVB(VOL))
+        throw Exception ("Testfunction does not support skeleton-forms, type = "+proxy->Evaluator()->Name());
     cache_cfs = FindCacheCF(*cf);
   }
 
@@ -4163,6 +4205,17 @@ namespace ngfem
             if (nodecf.StoreUserData() && !gridfunction_cfs.Contains(&nodecf))
               gridfunction_cfs.Append (&nodecf);
         });
+
+    if (test_proxies.Size() == 0 && !cf->IsZeroCF())
+      throw Exception ("a bilinear form integrand needs a test-function");
+    // skeleton terms are evaluated on volume elements, element-boundary terms on elements of vb
+    VorB evalvb = element_boundary ? vb : VOL;
+    for (auto proxy : trial_proxies)
+      if (!proxy->Evaluator()->SupportsVB(evalvb))
+        throw Exception ("Trialfunction does not support "+ToString(evalvb)+"-forms, maybe a Trace() operator is missing, type = "+proxy->Evaluator()->Name());
+    for (auto proxy : test_proxies)
+      if (!proxy->Evaluator()->SupportsVB(evalvb))
+        throw Exception ("Testfunction does not support "+ToString(evalvb)+"-forms, maybe a Trace() operator is missing, type = "+proxy->Evaluator()->Name());
 
     neighbor_testfunction = false;
     for (auto proxy : test_proxies)
@@ -6401,7 +6454,12 @@ namespace ngfem
       bfi->SetIntegrationRule(both.first, *both.second);
 
     if(linearization)
-      dynamic_pointer_cast<SymbolicBilinearFormIntegrator>(bfi)->SetLinearization(linearization->MakeBilinearFormIntegrator());
+      {
+        auto sbfi = dynamic_pointer_cast<SymbolicBilinearFormIntegrator>(bfi);
+        if (!sbfi)
+          throw Exception ("a linearization is not supported for skeleton or DG-facet integrals");
+        sbfi->SetLinearization(linearization->MakeBilinearFormIntegrator());
+      }
 
     return bfi;
   }

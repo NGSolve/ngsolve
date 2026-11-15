@@ -385,6 +385,10 @@ namespace ngcomp
     Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
     { return Array<shared_ptr<CoefficientFunction>>({ func }); }
 
+    // func is evaluated on the elements of the interpolation space
+    const CFContext * InputContext (const CFContext & ctx, CFContext & buffer) const override
+    { return nullptr; }
+
     void PrintReport (ostream & ost) const override
     {
       ost << "InterpolationCF(";
@@ -431,6 +435,7 @@ namespace ngcomp
     bool testfunction;
 
     shared_ptr<DifferentialOperator> diffop; // the final evaluation
+    Array<shared_ptr<DifferentialOperator>> inner_ops;  // act on the form's element
     
   public:
     InterpolateDiffOp (shared_ptr<CoefficientFunction> afunc,
@@ -474,7 +479,10 @@ namespace ngcomp
       ( [&] (CoefficientFunction & nodecf)
         {
           if (auto proxy = dynamic_cast<ProxyFunction*> (&nodecf))
+            {
               fes_func = proxy->GetFESpace();
+              inner_ops.Append (proxy->Evaluator());
+            }
         });
 
 
@@ -523,7 +531,18 @@ namespace ngcomp
     }
 
 
-    void CheckElement (const FiniteElement& fel) const override { } 
+    bool DeclaresElementType () const override
+    {
+      for (auto & op : inner_ops)
+        if (!op || !op->DeclaresElementType()) return false;
+      return inner_ops.Size() > 0;
+    }
+    
+    void CheckElement (const FiniteElement& fel) const override
+    {
+      for (auto & op : inner_ops)
+        if (op) op->CheckElement (fel);
+    } 
     
     void
     CalcMatrix (const FiniteElement & inner_fel,
@@ -1149,6 +1168,7 @@ namespace ngcomp
 
     bool has_trial = false, has_test = false;
     VorB vb = VOL;
+    shared_ptr<FESpace> proxyspace;
 
     func->TraverseDAG
       ( [&] (CoefficientFunction & nodecf)
@@ -1156,6 +1176,9 @@ namespace ngcomp
           
           if (auto proxy = dynamic_cast<ProxyFunction*> (&nodecf))
             {
+              if (proxyspace && proxy->GetFESpace() != proxyspace)
+                throw Exception ("Interpolate: the expression contains trial/test-functions of different spaces");
+              proxyspace = proxy->GetFESpace();
               if (proxy->IsTestFunction())
                 {
                   // if e.g. H1 without Trace is combined with space where Trace is mandatory

@@ -37,6 +37,63 @@ namespace ngfem
   { ; }
 
 
+  string CFContext :: Description () const
+  {
+    static const char * pnames[] = { "bilinear form", "linear form", "energy", "evaluation" };
+    string s = string(pnames[purpose]) + " on " + ToString(vb);
+    if (skeleton) s += ", skeleton";
+    if (element_vb != VOL) s += ", element_vb = " + ToString(element_vb);
+    if (dim >= 0) s += ", mesh dimension " + ToString(dim);
+    return s;
+  }
+
+  // returns whether the node introduces complex values (proxies of complex spaces do not)
+  static bool CheckContextRec (const CoefficientFunction & cf, const CFContext & ctx,
+                               std::map<pair<const CoefficientFunction*,int>,bool> & done)
+  {
+    int key = int(ctx.vb) | (int(ctx.element_vb) << 2) | (int(ctx.skeleton) << 4);
+    if (auto pos = done.find ({&cf, key}); pos != done.end())
+      return pos->second;
+    done[{&cf, key}] = false;
+
+    try
+      {
+        cf.CheckContext (ctx);
+      }
+    catch (const Exception & e)
+      {
+        string desc = cf.GetDescription();
+        if (desc == typeid(cf).name()) desc = Demangle(desc.c_str());
+        throw Exception ("'" + desc + "' in " + ctx.Description() + ": " + e.What());
+      }
+
+    CFContext buffer;
+    const CFContext * ictx = cf.InputContext (ctx, buffer);
+    bool complex_input = false, rc_input = false;
+    if (ictx)
+      for (auto & in : cf.InputCoefficientFunctions())
+        if (in)
+          {
+            rc_input |= CheckContextRec (*in, *ictx, done);
+            complex_input |= in->IsComplex();
+          }
+
+    bool rc = false;
+    if (cf.IsComplex() && !dynamic_cast<const ProxyFunction*> (&cf))
+      rc = ictx ? (rc_input || !complex_input) : true;
+    done[{&cf, key}] = rc;
+    return rc;
+  }
+
+  void CheckContext (const CoefficientFunction & cf, const CFContext & ctx)
+  {
+    std::map<pair<const CoefficientFunction*,int>,bool> done;
+    bool rc = CheckContextRec (cf, ctx, done);
+    if (rc && !ctx.allow_complex)
+      throw Exception ("complex valued '" + cf.GetDescription() + "' in a real " + ctx.Description());
+  }
+
+
   void CoefficientFunction :: CalcEquivalenceKey()
   {
     stringstream ss;
@@ -5596,6 +5653,19 @@ public:
     return (matindex < ci.Size() && ci[matindex]);
   }
 
+  string GetDescription () const override { return "domain-wise CoefficientFunction"; }
+
+  void CheckContext (const CFContext & ctx) const override
+  {
+    VorB evb = ctx.EvalVB();
+    if (vb && *vb != evb)
+      throw Exception ("defined on " + ToString(*vb) + " regions, but evaluated on " + ToString(evb) + " elements");
+    int nr = ctx.nregions[evb];
+    if (nr >= 0 && int(ci.Size()) < nr)
+      throw Exception ("list has " + ToString(ci.Size()) + " entries, but the mesh has " + ToString(nr) +
+                       " " + ToString(evb) + " regions");
+  }
+
   /*
   bool ElementwiseConstant() const override
   {
@@ -5921,9 +5991,15 @@ public:
   } 
   
   
+  void CheckContext (const CFContext & ctx) const override
+  {
+    if (!ctx.skeleton && ctx.element_vb == VOL)
+      throw Exception ("Other() needs skeleton=True or element_boundary=True");
+  }
+
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
   {
-    throw Exception ("OtherCF::Evaluated (mip) not available");    
+    throw Exception ("OtherCF::Evaluated (mip) not available");
   }
 
   virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
@@ -7169,6 +7245,8 @@ class CompiledCoefficientFunction : public CompiledCoefficientFunctionInterface 
     {
       return Array<shared_ptr<CoefficientFunction>>({ cf });
     }
+
+    bool IsZeroCF() const override { return cf->IsZeroCF(); }
   };
 
   // evaluates complex cf, calls func(i, j, value)

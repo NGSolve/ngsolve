@@ -26,6 +26,7 @@ namespace ngcomp
     virtual ~CompressedFESpace () {};
     void Update() override;
     shared_ptr<FESpace> GetBaseSpace() const { return space; }
+    const FESpace * ElementSpace () const override { return space->ElementSpace(); }
 
     void WrapDofs(Array<DofId> & dnums) const
     {

@@ -428,6 +428,8 @@ namespace ngcomp
     auto fes = u.GetFESpace();
     shared_ptr<MeshAccess> ma = fes->GetMeshAccess(); 
     int dim   = fes->GetDimension();
+    // dual shapes evaluate coef also on element facets
+    CheckContext (*coef, MakeCFContext (*ma, CFContext::EVALUATE, vb, dualdiffop ? BND : VOL, false, fes->IsComplex()));
     PushStatus("setvalues");
 
     Array<int> cnti(fes->GetNDof());
@@ -1530,6 +1532,10 @@ namespace ngfem
   TSCAL Integral :: T_Integrate (const ngcomp::MeshAccess & ma,
                                FlatVector<TSCAL> element_wise)
   {
+    CheckContext (*cf, MakeCFContext (ma, CFContext::EVALUATE, dx.vb, dx.element_vb, dx.skeleton));
+    if (dx.deformation)
+      CheckDeformation (*dx.deformation, ma);
+    
     LocalHeap glh(10000000, "integrate-lh");
     bool use_simd = true;
     TSCAL sum = 0.0;

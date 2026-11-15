@@ -245,48 +245,7 @@ namespace ngcomp
   
   BilinearForm & BilinearForm :: AddIntegrator (shared_ptr<BilinearFormIntegrator> bfi)
   {
-
-    // check if diffops match space:
-    if (auto symbfi = dynamic_pointer_cast<SymbolicBilinearFormIntegrator>(bfi))
-      {
-        for (auto kind : { TRIAL, TEST })
-          for (auto proxy : symbfi->Proxies(kind))
-            {
-              auto space = GetSpace(kind);
-              auto proxyspace = proxy->GetFESpace();
-
-              if (space == proxyspace) break;
-              
-              if (proxyspace)
-                proxyspace = proxyspace->LowOrderFESpacePtr();
-              if (space == proxyspace) break;            
-              
-              static bool firstmsg = true;
-              if (firstmsg)
-                {
-                  cerr << "proxy not matching space, checking if it is working anyway" << endl;
-                  firstmsg = false;
-                }
-              
-              auto evaluator = proxy->Evaluator();
-              
-              try
-                {
-                  LocalHeap lh(1000*1000);
-                  IterateElements(*GetTrialSpace(), symbfi->VB(), lh,
-                                  [&](FESpace::Element el, LocalHeap& lh)
-                                  {
-                                    evaluator -> CheckElement(el.GetFE()); 
-                                  });
-                }
-              catch (Exception & e)
-                {
-                  e.Append ("\nproxy does not match space");
-                  throw e;
-                }
-            }
-      }
-
+    CheckIntegratorContext (*bfi, CFContext::BILINEAR, GetTrialSpace(), GetTestSpace(), fespace->IsComplex());
     
     /*
     auto anydim = dynamic_pointer_cast<BilinearFormIntegratorAnyDim> (bfi);
@@ -365,6 +324,15 @@ namespace ngcomp
 
   BilinearForm :: ~BilinearForm ()
   { ; }
+
+  void BilinearForm :: CheckDGCoupling () const
+  {
+    if (!facetwise_skeleton_parts[VOL].Size()) return;
+    for (auto space : { GetTrialSpace(), GetTestSpace() })
+      if (!space->UsesDGCoupling())
+        throw Exception ("interior skeleton terms (dx(skeleton=True)) need the matrix couplings across facets: create " +
+                         space->GetClassName() + " with dgjumps=True, or use the form only for Apply");
+  }
 
   void BilinearForm :: SetPrint (bool ap)
   { 
@@ -687,7 +655,7 @@ namespace ngcomp
     for (auto seg : se_groups)
       maxind += seg -> GetNElements();
     
-    if (fespace->UsesDGCoupling()) maxind += nf;
+    if (fespace->UsesDGCoupling() || (fespace2 && fespace2->UsesDGCoupling())) maxind += nf;
     
 
     TableCreator<int> creator(maxind);
@@ -2006,25 +1974,7 @@ namespace ngcomp
     timestamp = ++global_timestamp;
     
     mattimer_checkintegrators.Start();
-    // check if integrators fit to space
-    for (VorB vb : ALL_VB)
-      {
-	for(auto bfi : VB_parts[vb])
-	  {
-            /*
-            // does nothing for symbolic integrators anyway
-	    IterateElements
-	      (*fespace,vb,clh, [&] (FESpace::Element el, LocalHeap & lh)
-	       {
-		 if(bfi->DefinedOn(el.GetIndex()) && bfi->DefinedOnElement(el.Nr()))
-		   bfi->CheckElement(el.GetFE());
-	       });
-            */
-	    if(bfi->VB()==VOL && bfi->SkeletonForm())
-	      if (!fespace->UsesDGCoupling())
-		throw Exception("FESpace is not suitable for those integrators (try -dgjumps)");
-	  }
-      }
+    CheckDGCoupling();
     mattimer_checkintegrators.Stop();    
     
     try
@@ -3685,6 +3635,9 @@ namespace ngcomp
       }
 
 
+    
+    if (!nonassemble)
+      CheckDGCoupling();
     
     if (nonassemble) {
       shared_ptr<BaseMatrix> app =

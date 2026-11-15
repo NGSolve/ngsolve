@@ -18,6 +18,7 @@ namespace ngcomp
   static constexpr int DIM_ELEMENT = D;
   static constexpr int DIM_DMAT = 1;
   static constexpr int DIFFORDER = 0;
+  static constexpr bool ONLY_ON_FACETS = true;
     using FiniteElementType = FacetVolumeFiniteElement<D>;
     
     static IVec<0> GetDimensions() { return IVec<0>(); };
@@ -178,6 +179,7 @@ namespace ngcomp
     static constexpr int DIM_ELEMENT = D;
     static constexpr int DIM_DMAT = 1;
     static constexpr int DIFFORDER = 0;
+    static constexpr bool ONLY_ON_FACETS = true;
     
     static IVec<0> GetDimensions() { return IVec<0>(); };
     static bool SupportsVB (VorB checkvb) { return (checkvb==VOL) || (checkvb==BND); }
@@ -358,6 +360,7 @@ namespace ngcomp
     enum { DIM_ELEMENT = D };
     enum { DIM_DMAT = D };
     enum { DIFFORDER = 1 };
+    static constexpr bool ONLY_ON_FACETS = true;
     using FiniteElementType = FacetVolumeFiniteElement<D>;
     static string Name() { return "grad"; }
 

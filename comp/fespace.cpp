@@ -20,6 +20,8 @@
 #include <parallelngs.hpp>
 #include "compressedfespace.hpp"
 #include "periodic.hpp"
+#include "gridfunction.hpp"
+#include "tpfes.hpp"
 
 
 namespace ngcomp
@@ -1379,6 +1381,230 @@ lot of new non-zero entries in the matrix!\n" << endl;
     return prol;
   }
 
+  bool FESpace :: OwnsOperator (const DifferentialOperator * op) const
+  {
+    if (!op) return true;
+    for (VorB vb : { VOL, BND, BBND, BBBND })
+      if (GetEvaluator(vb).get() == op || GetFluxEvaluator(vb).get() == op)
+        return true;
+    auto additional = GetAdditionalEvaluators();
+    for (size_t i = 0; i < additional.Size(); i++)
+      if (additional[i].get() == op)
+        return true;
+    return false;
+  }
+
+  // spaces handing out the same elements: wrappers and low-order spaces
+  static Array<const FESpace*> ElementSpaces (const FESpace & fes)
+  {
+    Array<const FESpace*> list { &fes };
+    for (size_t i = 0; i < list.Size(); i++)
+      {
+        auto add = [&] (const FESpace * s) { if (s && !list.Contains(s)) list.Append(s); };
+        add (list[i]->ElementSpace());
+        add (list[i]->LowOrderFESpacePtr().get());
+      }
+    return list;
+  }
+
+  // one element per element type of vb
+  Array<ElementId> RepresentativeElements (const MeshAccess & ma, VorB vb)
+  {
+    Array<ElementId> reps;
+    Array<ELEMENT_TYPE> types;
+    if (ma.GetNE(vb) == 0) return reps;
+    auto & classes = ma.GetElementsOfClass(vb);
+    for (size_t i = 0; i < classes.Size(); i++)
+      if (classes[i].Size())
+        {
+          ElementId ei(vb, classes[i][0]);
+          auto et = ma.GetElType(ei);
+          if (!types.Contains(et))
+            {
+              types.Append(et);
+              reps.Append(ei);
+            }
+        }
+    return reps;
+  }
+
+  void CheckOperatorSpace (const DifferentialOperator & op, const FESpace * opspace,
+                           const FESpace & space, VorB elvb, bool strict)
+  {
+    // level 1
+    if (opspace)
+      {
+        auto a = ElementSpaces(*opspace);
+        for (auto s : ElementSpaces(space))
+          if (a.Contains(s)) return;
+      }
+    else if (space.OwnsOperator(&op))
+      return;
+
+    auto describe = [&] ()
+    {
+      return "operator '" + op.Name() + "'" + (opspace ? string(" of ") + opspace->GetClassName() : string("")) +
+        " applied to elements of " + space.GetClassName();
+    };
+    
+    // level 3
+    if (!op.DeclaresElementType())
+      {
+        if (!strict) return;
+        throw Exception (describe() + ": the operator does not declare its element type, use trial/test-functions of the form's space");
+      }
+
+    // level 2: the operator acting on elements of elvb
+    shared_ptr<DifferentialOperator> hold;
+    const DifferentialOperator * eop = &op;
+    for (int i = 0; i < 4 && eop && eop->VB() != elvb; i++)
+      {
+        hold = eop->GetTrace();
+        eop = hold.get();
+      }
+    if (!eop || eop->VB() != elvb)
+      eop = &op;
+
+    auto & ma = *space.GetMeshAccess();
+    LocalHeap lh(1000*1000, "CheckOperatorSpace");
+    for (ElementId ei : RepresentativeElements (ma, elvb))
+      {
+        HeapReset hr(lh);
+        const FiniteElement & fel = space.GetFE (ei, lh);
+        try
+          {
+            eop->CheckElement (fel);
+          }
+        catch (const Exception & e)
+          {
+            throw Exception (describe() + " on " + ToString(ma.GetElType(ei)) + " (" + ToString(elvb) + ") elements: " + e.What());
+          }
+      }
+  }
+
+  CFContext MakeCFContext (const MeshAccess & ma, CFContext::Purpose purpose,
+                           VorB vb, VorB element_vb, bool skeleton, bool allow_complex)
+  {
+    CFContext ctx;
+    ctx.purpose = purpose;
+    ctx.mesh = &ma;
+    ctx.dim = ma.GetDimension();
+    ctx.vb = vb;
+    ctx.element_vb = element_vb;
+    ctx.skeleton = skeleton;
+    ctx.allow_complex = allow_complex;
+    for (VorB v : { VOL, BND, BBND, BBBND })
+      ctx.nregions[v] = ma.GetNRegions(v);
+    ctx.check_proxy = [] (const ProxyFunction & proxy, const FESpace & space, VorB elvb)
+      {
+        auto op = proxy.Evaluator();
+        if (!op) op = proxy.TraceEvaluator();
+        if (op)
+          CheckOperatorSpace (*op, proxy.GetFESpace().get(), space, elvb, true);
+      };
+    return ctx;
+  }
+
+  void CheckPointContext (const CoefficientFunction & cf, const MeshAccess * ma,
+                          VorB vb, int dim, bool on_facet)
+  {
+    int key = int(vb) | (dim << 2) | (int(on_facet) << 6);
+    if (cf.gate_key == key && cf.gate_mesh == ma) return;
+    CFContext ctx;
+    if (ma)
+      ctx = MakeCFContext (*ma, CFContext::EVALUATE, vb, on_facet ? BND : VOL);
+    ctx.purpose = CFContext::EVALUATE;
+    ctx.vb = vb;
+    ctx.element_vb = on_facet ? BND : VOL;
+    ctx.dim = dim;
+    ngfem::CheckContext (cf, ctx);
+    cf.gate_mesh = ma;
+    cf.gate_key = key;
+  }
+
+  void CheckPointContext (const CoefficientFunction & cf, const BaseMappedIntegrationPoint & mip)
+  {
+    auto & trafo = mip.GetTransformation();
+    CheckPointContext (cf, static_cast<const MeshAccess*> (trafo.GetMesh()), trafo.VB(),
+                       mip.DimSpace(), mip.IP().FacetNr() != -1);
+  }
+
+  void CheckIntegratorContext (const Integrator & igt, CFContext::Purpose purpose,
+                               shared_ptr<FESpace> trialspace, shared_ptr<FESpace> testspace,
+                               bool allow_complex)
+  {
+    if (auto cbfi = dynamic_cast<const CompoundBilinearFormIntegrator*> (&igt))
+      {
+        auto ctrial = dynamic_pointer_cast<CompoundFESpace> (trialspace);
+        auto ctest = dynamic_pointer_cast<CompoundFESpace> (testspace);
+        int comp = cbfi->GetComponent();
+        if (!ctrial || !ctest || comp < 0 || comp >= ctrial->GetNSpaces() || comp >= ctest->GetNSpaces())
+          throw Exception ("component integrator " + ToString(comp) + " needs a compound space with that component");
+        CheckIntegratorContext (*cbfi->GetBFI(), purpose, (*ctrial)[comp], (*ctest)[comp], allow_complex);
+        return;
+      }
+    if (auto clfi = dynamic_cast<const CompoundLinearFormIntegrator*> (&igt))
+      {
+        auto ctest = dynamic_pointer_cast<CompoundFESpace> (testspace);
+        int comp = clfi->GetComponent();
+        if (!ctest || comp < 0 || comp >= ctest->GetNSpaces())
+          throw Exception ("component integrator " + ToString(comp) + " needs a compound space with that component");
+        CheckIntegratorContext (*clfi->GetLFI(), purpose, nullptr, (*ctest)[comp], allow_complex);
+        return;
+      }
+
+    // tensor-product spaces have their own geometry
+    if (dynamic_pointer_cast<TPHighOrderFESpace> (trialspace) ||
+        dynamic_pointer_cast<TPHighOrderFESpace> (testspace))
+      return;
+    
+    auto space = trialspace ? trialspace : testspace;
+    if (!space) return;
+    auto & ma = *space->GetMeshAccess();
+    
+    if (igt.GetDeformation())
+      CheckDeformation (*igt.GetDeformation(), ma);
+    
+    shared_ptr<CoefficientFunction> cf;
+    VorB element_vb = VOL;
+    bool skeleton = false;
+    if (auto s = dynamic_cast<const SymbolicBilinearFormIntegrator*> (&igt))
+      {
+        cf = s->GetIntegrandCF();
+        element_vb = s->ElementVB();
+      }
+    else if (auto s = dynamic_cast<const SymbolicFacetBilinearFormIntegrator*> (&igt))
+      {
+        cf = s->GetIntegrandCF();
+        bool eb = s->GetDGFormulation().element_boundary;
+        skeleton = !eb;
+        element_vb = eb ? BND : VOL;
+      }
+    else if (auto s = dynamic_cast<const SymbolicLinearFormIntegrator*> (&igt))
+      {
+        cf = s->GetIntegrandCF();
+        element_vb = s->ElementVB();
+      }
+    else if (auto s = dynamic_cast<const SymbolicFacetLinearFormIntegrator*> (&igt))
+      {
+        cf = s->GetIntegrandCF();
+        skeleton = true;
+      }
+    else if (auto s = dynamic_cast<const SymbolicEnergy*> (&igt))
+      {
+        cf = s->GetIntegrandCF();
+        element_vb = s->ElementVB();
+        purpose = CFContext::ENERGY;
+      }
+    if (!cf) return;
+
+    CFContext ctx = MakeCFContext (ma, purpose, igt.VB(), element_vb, skeleton, allow_complex);
+    ctx.trialspace = trialspace;
+    ctx.testspace = testspace;
+    CheckContext (*cf, ctx);
+  }
+
+  
   void FESpace :: CheckElementFamilies (LocalHeap & lh) const
   {
     auto additional = GetAdditionalEvaluators();
@@ -2341,6 +2567,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     shared_ptr<MeshAccess> ma = GetMeshAccess(); 
     int dim   = GetDimension();
+    // dual shapes evaluate cf also on element facets
+    ngfem::CheckContext (cf, MakeCFContext (*ma, CFContext::EVALUATE, reg ? reg->VB() : VOL, BND, false, IsComplex()));
 
     Array<int> cnti(GetNDof());
     cnti = 0;

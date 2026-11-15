@@ -230,6 +230,8 @@ public:
   
   virtual shared_ptr<CoefficientFunction>
   Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const override;
+
+  void CheckContext (const CFContext & ctx) const override;
 };
 
 
@@ -477,6 +479,8 @@ public:
                                                  VorB aelement_vb);
 
     virtual VorB VB() const override { return vb; }
+    VorB ElementVB() const { return element_vb; }
+    const shared_ptr<CoefficientFunction> & GetIntegrandCF() const { return cf; }
     virtual string Name () const override { return string ("Symbolic LFI"); }
     virtual int GetDimension() const override { return proxies[0]->Evaluator()->BlockDim(); }
 
@@ -536,6 +540,7 @@ public:
 
     virtual VorB VB() const override { return vb; }
     virtual VorB ElementVB() const { return element_vb; }
+    const shared_ptr<CoefficientFunction> & GetIntegrandCF() const { return cf; }
     virtual xbool IsSymmetric() const override { return is_symmetric ? xbool(true) : xbool(maybe); } 
     virtual string Name () const override { return string ("Symbolic BFI"); }
 
@@ -708,6 +713,7 @@ public:
 
     virtual VorB VB() const override { return vb; }
     virtual bool BoundaryForm() const override { return vb == BND; }
+    const shared_ptr<CoefficientFunction> & GetIntegrandCF() const { return cf; }
 
     NGS_DLL_HEADER void
     CalcFacetVector (const FiniteElement & volumefel1, int LocalFacetNr1,
@@ -778,6 +784,7 @@ public:
     virtual VorB VB() const { return vb; }
     virtual bool BoundaryForm() const { return vb == BND; }
     virtual xbool IsSymmetric() const { return maybe; } 
+    const shared_ptr<CoefficientFunction> & GetIntegrandCF() const { return cf; }
     
     virtual DGFormulation GetDGFormulation() const { return DGFormulation(neighbor_testfunction,
                                                                           element_boundary); }
@@ -888,6 +895,8 @@ public:
     SymbolicEnergy (shared_ptr<CoefficientFunction> acf, VorB avb, VorB aelement_vb);
 
     virtual VorB VB() const { return vb; }
+    VorB ElementVB() const { return element_vb; }
+    const shared_ptr<CoefficientFunction> & GetIntegrandCF() const { return cf; }
     virtual xbool IsSymmetric() const { return true; } 
     virtual string Name () const { return string ("Symbolic Energy"); }
 

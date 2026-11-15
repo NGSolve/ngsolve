@@ -4,6 +4,7 @@
 #include "gridfunction.hpp"
 #include <multigrid.hpp>
 #include <diagonalmatrix.hpp>  // Projector
+#include <scalarfe.hpp>
 
 
 using namespace ngcomp; 
@@ -113,7 +114,10 @@ namespace ngcomp
   GridFunctionCoefficientFunction (shared_ptr<GridFunction> agf, shared_ptr<ProxyFunction> proxy)
     : GridFunctionCoefficientFunction(agf, proxy->Evaluator(), proxy->TraceEvaluator(),
                                       proxy->TTraceEvaluator())
-  { } 
+  {
+    if (auto op = proxy->Evaluator())
+      CheckOperatorSpace (*op, proxy->GetFESpace().get(), *fes, op->VB(), true);
+  } 
 
   GridFunction :: ~GridFunction()
   { 
@@ -1254,6 +1258,9 @@ namespace ngcomp
       comp (acomp) 
   {
     fes = gf->GetFESpace();
+    for (VorB vb : { VOL, BND, BBND, BBBND })
+      if (diffop[vb])
+        CheckOperatorSpace (*diffop[vb], nullptr, *fes, vb, false);
     if (diffop[VOL] && !diffop[BND])
       diffop[BND] = diffop[VOL]->GetTrace();
     if (diffop[BND] && !diffop[BBND])
@@ -1293,6 +1300,65 @@ namespace ngcomp
   ~GridFunctionCoefficientFunction ()
   {
     ;
+  }
+
+  string GridFunctionCoefficientFunction :: GetDescription () const
+  {
+    if (description.length()) return description;
+    return gf ? "GridFunction '" + gf->GetName() + "'" : string("GridFunctionCoefficientFunction");
+  }
+  
+  void GridFunctionCoefficientFunction :: CheckContext (const CFContext & ctx) const
+  {
+    if (!gf || !fes) return;
+    auto & ma = fes->GetMeshAccess();
+    if (gf->GetLevelUpdated() < ma->GetNLevels())
+      throw Exception ("GridFunction is not up to date with its mesh (refined without Update)");
+    if (ctx.mesh && ctx.mesh != ma.get()) return;   // other mesh: point search
+    VorB evb = ctx.EvalVB();
+    if (!diffop[evb])
+      throw Exception ("GridFunction on " + fes->GetClassName() + " has no evaluator for " + ToString(evb) +
+                       " elements, maybe a Trace() is missing");
+    if (evb == VOL && diffop[VOL]->OnlyOnFacets() && !ctx.OnFacet())
+      throw Exception ("GridFunction on " + fes->GetClassName() + " cannot be evaluated inside elements");
+  }
+
+  void CheckDeformation (const GridFunction & gf, const MeshAccess & ma)
+  {
+    auto fes = gf.GetFESpace();
+    if (fes->GetMeshAccess().get() != &ma)
+      throw Exception ("deformation: the GridFunction lives on another mesh");
+    if (gf.IsComplex())
+      throw Exception ("deformation: the GridFunction must be real");
+    if (gf.Dimension() != ma.GetDimension())
+      throw Exception ("deformation: needs a GridFunction with dim = " + ToString(ma.GetDimension()) +
+                       ", got dim = " + ToString(gf.Dimension()));
+    if (gf.GetLevelUpdated() < ma.GetNLevels())
+      throw Exception ("deformation: the GridFunction is not up to date with its mesh");
+    LocalHeap lh(1000*1000, "CheckDeformation");
+    for (VorB vb : { VOL, BND, BBND })
+      {
+        int dims = ma.GetDimension() - int(vb);
+        if (dims < 1) break;
+        for (ElementId ei : RepresentativeElements (ma, vb))
+          {
+            HeapReset hr(lh);
+            const FiniteElement & fel = fes->GetFE (ei, lh);
+            const FiniteElement * sfel = &fel;
+            if (auto vfel = dynamic_cast<const VectorFiniteElement*> (&fel))
+              sfel = &(*vfel)[0];
+            bool ok = false;
+            switch (dims)
+              {
+              case 1: ok = dynamic_cast<const ScalarFiniteElement<1>*> (sfel); break;
+              case 2: ok = dynamic_cast<const ScalarFiniteElement<2>*> (sfel); break;
+              case 3: ok = dynamic_cast<const ScalarFiniteElement<3>*> (sfel); break;
+              }
+            if (!ok)
+              throw Exception ("deformation: " + fes->GetClassName() + " provides no H1-type elements on " +
+                               ToString(ma.GetElType(ei)) + " (" + ToString(vb) + ") elements");
+          }
+      }
   }
 
   int GridFunctionCoefficientFunction::Dimension() const

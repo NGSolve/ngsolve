@@ -980,7 +980,7 @@ namespace ngfem
     {
       const auto * vfel = dynamic_cast<const VectorFiniteElement*> (&bfel);
       if (!vfel)
-        throw Exception (string("VectorDifferentialOperator: expected VectorFiniteElement, got ") + typeid(bfel).name());
+        throw Exception (string("VectorDifferentialOperator: expected VectorFiniteElement, got ") + Demangle(typeid(bfel).name()));
       auto & fel = (*vfel)[0];
       diffop->CheckElement(fel);
     }
@@ -1227,7 +1227,7 @@ namespace ngfem
     {
       const auto * vfel = dynamic_cast<const VectorFiniteElement*> (&bfel);
       if (!vfel)
-        throw Exception (string("MatrixDifferentialOperator: expected VectorFiniteElement, got ") + typeid(bfel).name());
+        throw Exception (string("MatrixDifferentialOperator: expected VectorFiniteElement, got ") + Demangle(typeid(bfel).name()));
       auto & fel = (*vfel)[0];
       diffop->CheckElement(fel);
     }
@@ -1411,7 +1411,7 @@ namespace ngfem
     {
       const auto * vfel = dynamic_cast<const SymMatrixFiniteElement*> (&bfel);
       if (!vfel)
-        throw Exception (string("SymMatrixDifferentialOperator: expected SymMatrixFiniteElement, got ") + typeid(bfel).name());
+        throw Exception (string("SymMatrixDifferentialOperator: expected SymMatrixFiniteElement, got ") + Demangle(typeid(bfel).name()));
       auto & fel = (*vfel).ScalFE();
       diffop->CheckElement(fel);
     }
@@ -1788,7 +1788,7 @@ namespace ngfem
     {
       const auto * vfel = dynamic_cast<const SymMatrixFiniteElement*> (&bfel);
       if (!vfel)
-        throw Exception (string("SymDevMatrixDifferentialOperator: expected SymMatrixFiniteElement, got ") + typeid(bfel).name());
+        throw Exception (string("SymDevMatrixDifferentialOperator: expected SymMatrixFiniteElement, got ") + Demangle(typeid(bfel).name()));
       auto & fel = (*vfel).ScalFE();
       diffop->CheckElement(fel);
     }

@@ -2733,7 +2733,11 @@ VOL_or_BND : ngsolve.comp.VorB
           {
             HeapReset hr(glh);
             auto space = self->GetFESpace();
-            auto evaluator = space->GetEvaluator();
+            if (vb != VOL && vb != BND)
+              throw Exception ("GridFunction(x,y,z,vb) supports only VOL and BND points");
+            auto evaluator = space->GetEvaluator(vb);
+            if (!evaluator)
+              throw Exception (space->GetClassName() + " has no evaluator for " + ToString(vb) + " points");
             IntegrationPoint ip;
             // int elnr = -1;
             ElementId ei(VOL,-1);
@@ -4036,12 +4040,7 @@ integrator : ngsolve.fem.LFI
           if((region_wise || element_wise) && dim != 1)
             throw Exception("region_wise and element_wise only implemented for 1 dimensional coefficientfunctions");
 
-          cf -> TraverseDAG
-            ([&] (CoefficientFunction & stepcf)
-             {
-               if (dynamic_cast<ProxyFunction*>(&stepcf))
-                 throw Exception("Cannot integrate ProxFunction!");
-             });
+          CheckContext (*cf, MakeCFContext (*ma, CFContext::EVALUATE, vb));
                    
           if (!cf->IsComplex())
             {

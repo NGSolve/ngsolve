@@ -14,6 +14,8 @@
 #include "intrule.hpp"
 #include "elementtransformation.hpp"
 
+namespace ngcomp { class FESpace; }
+
 namespace ngfem
 {
   
@@ -38,7 +40,37 @@ namespace ngfem
     NonZero & operator*= (const NonZero & nz2) { nz = nz && nz2.nz; return *this; }        
   };
 
-  /** 
+  class ProxyFunction;
+  class CoefficientFunction;
+
+  // where a CoefficientFunction is evaluated: checked once before any element is touched
+  struct NGS_DLL_HEADER CFContext
+  {
+    enum Purpose { BILINEAR, LINEAR, ENERGY, EVALUATE };
+    Purpose purpose = EVALUATE;
+    const void * mesh = nullptr;     // MeshAccess*, nullptr if unknown
+    int dim = -1;                    // space dimension, -1 if unknown
+    VorB vb = VOL;                   // VorB of the integral
+    VorB element_vb = VOL;           // BND for element_boundary
+    bool skeleton = false;
+    bool allow_complex = true;
+    int nregions[4] = { -1, -1, -1, -1 };
+    shared_ptr<ngcomp::FESpace> trialspace, testspace;
+    // compatibility of a proxy with the form's space (provided by comp)
+    std::function<void(const ProxyFunction&, const ngcomp::FESpace&, VorB)> check_proxy;
+
+    // VorB of the elements the CF is evaluated on
+    VorB EvalVB() const { return skeleton ? VOL : vb; }
+    int ElementDim() const { return dim - int(EvalVB()); }
+    // points lie on a facet (or a lower dimensional entity)
+    bool OnFacet() const { return skeleton || element_vb != VOL || vb != VOL; }
+    string Description() const;
+  };
+
+  // walks the DAG once, calls CheckContext on every node, prefixes errors with the node
+  NGS_DLL_HEADER void CheckContext (const CoefficientFunction & cf, const CFContext & ctx);
+
+  /**
       coefficient functions
   */
   class NGS_DLL_HEADER CoefficientFunction : public enable_shared_from_this<CoefficientFunction>
@@ -314,6 +346,14 @@ namespace ngfem
     { return Array<shared_ptr<CoefficientFunction>>(); }
     virtual bool StoreUserData() const { return false; }
 
+    // throws if this node cannot be evaluated in the context (no element is touched)
+    virtual void CheckContext (const CFContext & ctx) const { ; }
+    // context of the inputs, nullptr: inputs are not checked
+    virtual const CFContext * InputContext (const CFContext & ctx, CFContext & buffer) const { return &ctx; }
+
+    // last point-evaluation context accepted by the gate
+    mutable const void * gate_mesh = nullptr;
+    mutable int gate_key = -1;
   };
 
   

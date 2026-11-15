@@ -89,6 +89,8 @@ namespace ngcomp
 
     shared_ptr<CoefficientFunction> Primary() const override;
     shared_ptr<GridFunctionCoefficientFunction> GetTrace() const;
+    void CheckContext (const CFContext & ctx) const override;
+    string GetDescription () const override;
   };
 
 
@@ -345,6 +347,9 @@ namespace ngcomp
 
   
   extern NGS_DLL_HEADER void Visualize(shared_ptr<GridFunction> gf, const string & name);
+
+  /// gf can deform mesh ma: real, vector-valued H1-type of the mesh dimension, on ma, up to date
+  extern NGS_DLL_HEADER void CheckDeformation (const GridFunction & gf, const MeshAccess & ma);
   
   template <class SCAL>
   class NGS_DLL_HEADER S_GridFunction : public GridFunction

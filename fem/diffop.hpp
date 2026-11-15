@@ -204,8 +204,8 @@ namespace ngfem
     {
       if constexpr (!std::is_same_v<FiniteElement, typename DOP::FiniteElementType>)
         if (!dynamic_cast<const typename DOP::FiniteElementType*>(&fel))
-          throw Exception(string("expected ") + typeid(typename DOP::FiniteElementType).name() + " got " +
-                          typeid(fel).name());
+          throw Exception(string("expected ") + Demangle(typeid(typename DOP::FiniteElementType).name()) + ", got " +
+                          Demangle(typeid(fel).name()));
     };
 
   };
@@ -238,6 +238,8 @@ namespace ngfem
     virtual string Name() const override { return diffop->Name(); }
     shared_ptr<DifferentialOperator> BaseDiffOp() const { return diffop; }
     virtual bool SupportsVB (VorB checkvb) const override { return diffop->SupportsVB(checkvb); }
+    virtual bool DeclaresElementType () const override { return diffop->DeclaresElementType(); }
+    virtual bool OnlyOnFacets () const override { return diffop->OnlyOnFacets(); }
     
     virtual IntRange UsedDofs(const FiniteElement & fel) const override { return dim*diffop->UsedDofs(fel); }
     virtual IntRange UsedDofs(const FiniteElement & fel, int facetnr) const override { return dim*diffop->UsedDofs(fel, facetnr); }
@@ -352,6 +354,8 @@ namespace ngfem
     virtual string Name() const override { return diffop->Name(); }
     shared_ptr<DifferentialOperator> BaseDiffOp() const { return diffop; }
     virtual bool SupportsVB (VorB checkvb) const override { return diffop->SupportsVB(checkvb); }
+    virtual bool DeclaresElementType () const override { return diffop->DeclaresElementType(); }
+    virtual bool OnlyOnFacets () const override { return diffop->OnlyOnFacets(); }
     
     virtual IntRange UsedDofs(const FiniteElement & fel) const override { return dim*diffop->UsedDofs(fel); }
     virtual IntRange UsedDofs(const FiniteElement & fel, int facetnr) const override { return dim*diffop->UsedDofs(fel, facetnr); }
@@ -458,6 +462,8 @@ namespace ngfem
     virtual string Name() const override { return diffop->Name(); }
     shared_ptr<DifferentialOperator> BaseDiffOp() const { return diffop; }
     virtual bool SupportsVB (VorB checkvb) const override { return diffop->SupportsVB(checkvb); }
+    virtual bool DeclaresElementType () const override { return diffop->DeclaresElementType(); }
+    virtual bool OnlyOnFacets () const override { return diffop->OnlyOnFacets(); }
     
     using DifferentialOperator::UsedDofs;
     virtual IntRange UsedDofs(const FiniteElement & fel) const override { return IntRange(0, fel.GetNDof()); }
@@ -578,6 +584,8 @@ namespace ngfem
     virtual string Name() const override { return diffop->Name(); }
     shared_ptr<DifferentialOperator> BaseDiffOp() const { return diffop; }
     virtual bool SupportsVB (VorB checkvb) const override { return diffop->SupportsVB(checkvb); }
+    virtual bool DeclaresElementType () const override { return diffop->DeclaresElementType(); }
+    virtual bool OnlyOnFacets () const override { return diffop->OnlyOnFacets(); }
     
     using DifferentialOperator::UsedDofs;
     virtual IntRange UsedDofs(const FiniteElement & fel) const override { return IntRange(0, fel.GetNDof()); }
@@ -637,6 +645,8 @@ namespace ngfem
     virtual string Name() const override { return diffop->Name(); }
     shared_ptr<DifferentialOperator> BaseDiffOp() const { return diffop; }
     virtual bool SupportsVB (VorB checkvb) const override { return diffop->SupportsVB(checkvb); }
+    virtual bool DeclaresElementType () const override { return diffop->DeclaresElementType(); }
+    virtual bool OnlyOnFacets () const override { return diffop->OnlyOnFacets(); }
     
     using DifferentialOperator::UsedDofs;
     virtual IntRange UsedDofs(const FiniteElement & fel) const override
@@ -718,6 +728,8 @@ namespace ngfem
     virtual string Name() const override { return diffop->Name(); }
     shared_ptr<DifferentialOperator> BaseDiffOp() const { return diffop; }
     virtual bool SupportsVB (VorB checkvb) const override { return diffop->SupportsVB(checkvb); }
+    virtual bool DeclaresElementType () const override { return diffop->DeclaresElementType(); }
+    virtual bool OnlyOnFacets () const override { return diffop->OnlyOnFacets(); }
     
     using DifferentialOperator::UsedDofs;
     virtual IntRange UsedDofs(const FiniteElement & fel) const override
@@ -810,6 +822,8 @@ namespace ngfem
     virtual string Name() const override { return diffop->Name(); }
     shared_ptr<DifferentialOperator> BaseDiffOp() const { return diffop; }
     virtual bool SupportsVB (VorB checkvb) const override { return diffop->SupportsVB(checkvb); }
+    virtual bool DeclaresElementType () const override { return diffop->DeclaresElementType(); }
+    virtual bool OnlyOnFacets () const override { return diffop->OnlyOnFacets(); }
     
     using DifferentialOperator::UsedDofs;
     virtual IntRange UsedDofs(const FiniteElement & fel) const override
@@ -861,7 +875,7 @@ namespace ngfem
     {
       auto * sfel = dynamic_cast<const SkewMatrixFiniteElement*> (&bfel);
       if (!sfel)
-        throw Exception (string("SkewMatrixDifferentialOperator: expected SkewMatrixFiniteElement, got ") + typeid(bfel).name());
+        throw Exception (string("SkewMatrixDifferentialOperator: expected SkewMatrixFiniteElement, got ") + Demangle(typeid(bfel).name()));
       diffop->CheckElement(sfel->ScalFE());
     }
   };
@@ -893,6 +907,8 @@ namespace ngfem
     shared_ptr<DifferentialOperator> BaseDiffOp() const { return diffop; } 
     int Component () const { return comp; }
     virtual bool SupportsVB (VorB checkvb) const override { return diffop->SupportsVB(checkvb); }
+    virtual bool DeclaresElementType () const override { return diffop->DeclaresElementType(); }
+    virtual bool OnlyOnFacets () const override { return diffop->OnlyOnFacets(); }
   
     shared_ptr<DifferentialOperator> GetTrace() const override
     {
@@ -1168,7 +1184,7 @@ namespace ngfem
     {
       auto * cfel = dynamic_cast<const CompoundFiniteElement*> (&bfel);
       if (!cfel)
-        throw Exception (string("CompoundDifferentialOperator: expected CompoundFiniteElement, got ") + typeid(bfel).name());
+        throw Exception (string("CompoundDifferentialOperator: expected CompoundFiniteElement, got ") + Demangle(typeid(bfel).name()));
       if (comp < 0 || comp >= cfel->GetNComponents())
         throw Exception ("CompoundDifferentialOperator: component " + ToString(comp) + " out of range, element has " + ToString(cfel->GetNComponents()) + " components");
       diffop->CheckElement((*cfel)[comp]);
@@ -1212,6 +1228,15 @@ namespace ngfem
     { return typeid(*this) == typeid(diffop2); }
 
     virtual bool SupportsVB (VorB checkvb) const override { return DIFFOP::SupportsVB(checkvb); }
+    virtual bool DeclaresElementType () const override
+    { return !std::is_same_v<FiniteElement, typename DIFFOP::FiniteElementType>; }
+    virtual bool OnlyOnFacets () const override
+    {
+      if constexpr (requires { DIFFOP::ONLY_ON_FACETS; })
+        return DIFFOP::ONLY_ON_FACETS;
+      else
+        return false;
+    }
 
     using DifferentialOperator::UsedDofs;
     virtual IntRange UsedDofs(const FiniteElement & fel, int facetnr) const override

@@ -27,6 +27,8 @@ namespace ngcomp
     auto anydim = dynamic_pointer_cast<LinearFormIntegratorAnyDim> (lfi);
     if (anydim) lfi = anydim->GetLFI (ma->GetDimension());
 
+    CheckIntegratorContext (*lfi, CFContext::LINEAR, nullptr, fespace, fespace->IsComplex());
+    
     parts.Append (lfi);
     if (!lfi->SkeletonForm() && !lfi->IntegrationAlongCurve())
       VB_parts[lfi->VB()].Append(lfi);
