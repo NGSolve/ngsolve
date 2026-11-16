@@ -355,6 +355,8 @@ namespace ngfem
     virtual void CheckContext (const CFContext & ctx) const { ; }
     // context of the inputs, nullptr: inputs are not checked
     virtual const CFContext * InputContext (const CFContext & ctx, CFContext & buffer) const { return &ctx; }
+    // false: input nr is not evaluated in the context, and not checked
+    virtual bool EvaluatesInput (const CFContext & ctx, int nr) const { return true; }
     // false: the node evaluates its inputs itself (other points or elements), a compiled CF must not
     virtual bool UsesInputValues() const { return true; }
 
@@ -1873,9 +1875,14 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
   NGS_DLL_HEADER bool IsOtherCoefficientFunction (CoefficientFunction & coef);
 
   
+  // one entry per region of the codim vb, without vb the list is used for the regions of every codim
   NGS_DLL_HEADER shared_ptr<CoefficientFunction>
   MakeDomainWiseCoefficientFunction (Array<shared_ptr<CoefficientFunction>> aci,
                                      optional<VorB> vb=nullopt);
+
+  // cfs[vb]: one entry per region of the codim vb, nullptr is undefined, an empty array leaves the codim undefined
+  NGS_DLL_HEADER shared_ptr<CoefficientFunction>
+  MakeRegionCoefficientFunction (const std::array<Array<shared_ptr<CoefficientFunction>>,4> & cfs);
   
 
 

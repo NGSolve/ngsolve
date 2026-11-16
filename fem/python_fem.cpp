@@ -152,6 +152,9 @@ namespace ngfem
 
     if (py::isinstance<py::list>(val))
       {
+        if (PyErr_WarnEx (PyExc_DeprecationWarning, "CoefficientFunction from a list of region values is deprecated, "
+                          "use mesh.MaterialCF, mesh.BoundaryCF or mesh.RegionCF", 1) < 0)
+          throw py::error_already_set();
         auto el = py::cast<py::list>(val);
         Array<shared_ptr<CoefficientFunction>> cflist(el.size());
         for (int i : Range(cflist.Size()))

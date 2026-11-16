@@ -178,6 +178,8 @@ namespace ngcomp
           {
             needs_element_index = true;
             s << "[[maybe_unused]] int domain_index = elidx[i];\n";
+            // volume elements
+            s << "[[maybe_unused]] int domain_vb = 0;\n";
           }
         s << code.body << endl;
         
