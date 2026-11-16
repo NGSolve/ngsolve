@@ -445,7 +445,7 @@ nr : int
     }, py::keep_alive<0,1>())
     .def_property_readonly("mesh", &Region::Mesh)
     .def("__hash__", &Region::Hash)
-    .def("__eq__", &Region::operator==)
+    .def("__eq__", &Region::operator==, py::is_operator())
     .def(py::self + py::self)
     .def(py::self + string())
     .def(py::self - py::self)
@@ -482,6 +482,79 @@ nr : int
                   }, py::arg("x"), py::arg("y")=0., py::arg("z")=0., py::keep_alive<0,1>());
 
   py::implicitly_convertible <Region, BitArray> ();
+
+  RegisterPyArchiveCaster<MixedRegion>();
+  py::class_<MixedRegion> (m, "MixedRegion", docu_string(R"raw_string(
+Selection of regions of all codimensions (VOL, BND, BBND, BBBND), one mask per VorB.
+Holds exactly the listed regions; Closure() adds the incident lower-dimensional ones.
+Created by combining Regions with |, e.g. mesh.Boundaries("left") | mesh.BBBoundaries("pin").
+)raw_string"))
+    .def(py::init([](shared_ptr<MeshAccess> ma, optional<string> vol, optional<string> bnd,
+                     optional<string> bbnd, optional<string> bbbnd)
+                  {
+                    MixedRegion res(ma);
+                    optional<string> patterns[4] = { vol, bnd, bbnd, bbbnd };
+                    for (int i = 0; i < 4; i++)
+                      if (patterns[i])
+                        res = res | MixedRegion(Region(ma, VorB(i), *patterns[i]));
+                    return res;
+                  }), py::arg("mesh"), py::arg("VOL")=nullopt, py::arg("BND")=nullopt,
+         py::arg("BBND")=nullopt, py::arg("BBBND")=nullopt,
+         "regex patterns per VorB, unset VorBs stay empty")
+    .def(py::init<const Region&>(), py::arg("region"))
+    .def("__getitem__", [](const MixedRegion & self, VorB vb) { return self[vb]; },
+         "Region of the given VorB")
+    .def("__or__", [](const MixedRegion & a, const MixedRegion & b) { return a | b; }, py::is_operator())
+    .def("__and__", [](const MixedRegion & a, const MixedRegion & b) { return a & b; }, py::is_operator())
+    .def("__sub__", [](const MixedRegion & a, const MixedRegion & b) { return a - b; }, py::is_operator())
+    .def("__invert__", [](const MixedRegion & a) { return ~a; })
+    // a Region is never equal to a MixedRegion (consistent with the hashes)
+    .def("__eq__", [](const MixedRegion & a, const MixedRegion & b) { return a == b; },
+         py::is_operator(), py::arg("other").noconvert())
+    .def("__hash__", &MixedRegion::Hash)
+    .def("Empty", &MixedRegion::Empty)
+    .def("Boundary", &MixedRegion::Boundary, "incident regions one VorB down")
+    .def("Closure", &MixedRegion::Closure, "this plus all incident lower-dimensional regions")
+    .def("Star", &MixedRegion::Star, "this plus all incident higher-dimensional regions")
+    .def("IsClosed", &MixedRegion::IsClosed)
+    .def("IndicatorCF", &MixedRegion::IndicatorCF,
+         "CoefficientFunction: 1 on elements of the selected regions of any VorB, 0 elsewhere")
+    .def_property_readonly("mesh", &MixedRegion::Mesh)
+    .def(NGSPickle<MixedRegion>())
+    .def("__repr__", [](const MixedRegion & self)
+         {
+           string s = "MixedRegion(";
+           bool first = true;
+           for (int i = 0; i < 4; i++)
+             {
+               auto & mask = self.Mask(VorB(i));
+               if (!mask.NumSet()) continue;
+               s += string(first ? "" : ", ") + ToString(VorB(i)) + ": [";
+               bool firstname = true;
+               for (auto j : Range(mask.Size()))
+                 if (mask[j])
+                   {
+                     s += string(firstname ? "" : ", ") + string(self.Mesh()->GetMaterial(VorB(i), j));
+                     firstname = false;
+                   }
+               s += "]";
+               first = false;
+             }
+           return s + ")";
+         })
+    ;
+  py::implicitly_convertible <Region, MixedRegion> ();
+
+  cls_region
+    .def("__or__", [](const Region & a, const Region & b) -> py::object
+         {
+           if (a.VB() == b.VB())
+             return py::cast(a + b);
+           return py::cast(MixedRegion(a) | MixedRegion(b));
+         }, py::is_operator(), py::arg("other").noconvert(),
+         "union: a Region for regions of the same VorB, a MixedRegion otherwise")
+    .def("__or__", [](const Region & a, const MixedRegion & b) { return MixedRegion(a) | b; },
+         py::is_operator(), py::arg("other").noconvert());
 
 
 /*
@@ -836,6 +909,12 @@ mesh (netgen.Mesh): a mesh generated from Netgen
 	 (py::arg("self"), py::arg("pattern")),
 	 "Return co dim 3 boundary mesh-region matching the given regex pattern")
 
+    .def("MixedRegion", [](py::object self, py::kwargs kwargs)
+         {
+           return py::module::import("ngsolve.comp").attr("MixedRegion")(self, **kwargs);
+         },
+         "MixedRegion from regex patterns per VorB: mesh.MixedRegion(VOL='a', BND='b|c', BBND=..., BBBND=...)")
+
     .def("RegionCF", [](MeshAccess& self, VorB vb,
                         py::dict py_svals,
                         OptPtr<CoefficientFunction> default_value)
@@ -862,16 +941,28 @@ will create a CF being 2e6 on all domains starting with 'steel_' and 0 elsewhere
       Array<pair<Region, shared_ptr<CoefficientFunction>>> vals;
       for(auto val : py_values)
         {
-          if (!py::isinstance<Region>(val.first))
-            throw py::type_error("RegionCF without VorB needs Region objects as keys, e.g. mesh.Materials('iron')");
-          vals.Append(make_pair(py::cast<Region>(val.first),
-                                val.second.is_none() ? nullptr :
-                                py::cast<shared_ptr<CoefficientFunction>>(val.second)));
+          auto cf = val.second.is_none() ? nullptr :
+            py::cast<shared_ptr<CoefficientFunction>>(val.second);
+          if (py::isinstance<Region>(val.first))
+            vals.Append(make_pair(py::cast<Region>(val.first), cf));
+          else if (py::isinstance<MixedRegion>(val.first))
+            {
+              // one entry per VorB part
+              auto mr = py::cast<MixedRegion>(val.first);
+              for (auto vb : { VOL, BND, BBND, BBBND })
+                if (mr.Mask(vb).NumSet())
+                  vals.Append(make_pair(mr[vb], cf));
+            }
+          else
+            throw py::type_error("RegionCF without VorB needs Region or MixedRegion objects as keys, e.g. mesh.Materials('iron')");
         }
+      if (!vals.Size())
+        throw Exception ("RegionCF: no region given (an empty MixedRegion does not select a co-dimension)");
       return self.RegionCF(default_value, vals);
     }, py::arg("values"), py::arg("default") = nullptr,
          R"delimiter(Region wise CoefficientFunction on regions of different co-dimensions.
-The argument is a dict from Region objects to CoefficientFunction (-values).
+The argument is a dict from Region or MixedRegion objects to CoefficientFunction (-values),
+a MixedRegion sets the value in its non-empty co-dimensions.
 Later given regions override earlier values. The optional argument default is
 the value for the other regions of those co-dimensions which have a given region.
 Where no value is given the CoefficientFunction is undefined, evaluation throws.

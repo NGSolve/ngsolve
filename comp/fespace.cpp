@@ -44,6 +44,21 @@ namespace ngcomp
     return reg;
   }
 
+  static const MixedRegion & OwnRegion (const MixedRegion & reg, const MeshAccess & ma, const string & what)
+  {
+    if (reg.Mesh().get() != &ma)
+      throw Exception (what + ": the region belongs to another mesh");
+    for (auto vb : { VOL, BND, BBND, BBBND })
+      if (reg.Mask(vb).Size() != ma.GetNRegions(vb))
+        throw Exception (what + ": " + ToString(vb) + " mask does not fit the mesh, mesh changed after creating the region?");
+    return reg;
+  }
+
+  static bool IsAnyFlagOf (const Flags & flags, const string & name, const std::type_info & type)
+  {
+    return flags.AnyFlagDefined(name) && flags.GetAnyFlag(name).type() == type;
+  }
+
   FESpace :: FESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool checkflags)
     : NGS_Object (ama, flags, "FESpace")
   {
@@ -131,7 +146,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     dirichlet_constraints[BND].SetSize (ma->GetNBoundaries());
     dirichlet_constraints[BND].Clear();
 
-    if(flags.AnyFlagDefined("dirichlet"))
+    if(IsAnyFlagOf(flags, "dirichlet", typeid(Region)))
       {
         dirichlet_constraints[BND] = OwnRegion(std::any_cast<const Region&>(flags.GetAnyFlag("dirichlet")), *ma, BND, "dirichlet").Mask();
       }
@@ -183,6 +198,18 @@ lot of new non-zero entries in the matrix!\n" << endl;
         Region dir(ma, BBBND, flags.GetStringFlag("dirichlet_bbbnd"));
         dirichlet_constraints[BBBND] |= dir.Mask(); // that's what it was before, can we just assign ? 
       }
+
+    // MixedRegion: ORed with the per-VorB flags above
+    if(IsAnyFlagOf(flags, "dirichlet", typeid(MixedRegion)))
+      {
+        const auto & dir = OwnRegion(std::any_cast<const MixedRegion&>(flags.GetAnyFlag("dirichlet")), *ma, "dirichlet");
+        if (dir.Mask(VOL).NumSet())
+          throw Exception ("dirichlet: VOL regions are not supported, use BND, BBND or BBBND regions");
+        for (auto vb : { BND, BBND, BBBND })
+          dirichlet_constraints[vb].Or (dir.Mask(vb));
+      }
+    else if(flags.AnyFlagDefined("dirichlet") && !IsAnyFlagOf(flags, "dirichlet", typeid(Region)))
+      throw Exception ("dirichlet with wrong argument type");
     
     if (flags.NumListFlagDefined("definedon") || 
         flags.NumFlagDefined("definedon") ||
@@ -255,6 +282,18 @@ lot of new non-zero entries in the matrix!\n" << endl;
                   definedon[reg.VB()][i] = reg.Mask().Test(i);
                 for(auto vb = VOL; vb < reg.VB(); vb++)
                   definedon[vb] = false;
+              }
+            else if(anydefon.type() == typeid(MixedRegion))
+              {
+                // like the {VOL: ..., BND: ...} dict; empty BBND/BBBND parts do not restrict
+                const auto & reg = OwnRegion(std::any_cast<const MixedRegion&>(anydefon), *ma, "definedon");
+                for (auto vb : { VOL, BND, BBND, BBBND })
+                  {
+                    if (vb >= BBND && !reg.Mask(vb).NumSet()) continue;
+                    definedon[vb].SetSize(ma->GetNRegions(vb));
+                    for (auto i : Range(definedon[vb]))
+                      definedon[vb][i] = reg.Mask(vb).Test(i);
+                  }
               }
             else
               throw Exception("definedon with wrong argument type!");
@@ -3135,6 +3174,18 @@ lot of new non-zero entries in the matrix!\n" << endl;
         for (size_t i = r.Next(); i < ba.Size(); i++)
           ba.Clear(i);
       }
+    return ba;
+  }
+
+  BitArray FESpace :: GetDofs (const MixedRegion & reg, const DifferentialOperator * diffop) const
+  {
+    if (reg.Mesh() != ma)
+      throw Exception ("GetDofs: region is defined on another mesh");
+    BitArray ba(GetNDof());
+    ba.Clear();
+    for (auto vb : { VOL, BND, BBND, BBBND })
+      if (int(vb) <= ma->GetDimension() && reg.Mask(vb).NumSet())
+        ba.Or (GetDofs(reg[vb], diffop));
     return ba;
   }
 

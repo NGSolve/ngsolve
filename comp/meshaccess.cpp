@@ -1258,108 +1258,22 @@ namespace ngcomp
     RegionTimer reg(timer_neighbours);
 
     const auto& nmesh = *GetNetgenMesh();
-    const auto& topology = nmesh.GetTopology();
-
     for(auto i : Range(4))
       for(auto j : Range(4))
-        neighbours[i][j].SetSize(nregions[i]);
+        neighbours[i][j] = DynamicTable<size_t>(nregions[i]);
 
-    Array<int> edgemap(GetNEdges());
-    edgemap = -1;
-    for(auto seg : Elements(VorB(dim-1)))
-      edgemap[seg.edges[0]] = seg.GetIndex();
-
-    Array<int> vertmap(GetNV());
-    vertmap = -1;
-    for(auto pel : Elements(VorB(dim)))
-      vertmap[pel.Vertices()[0]] = pel.GetIndex();
-
-    if(GetDimension() == 3)
-      {
-        for(auto sei : Range(nmesh.SurfaceElements()))
+    // cross-codim incidence from netgen, indexed by entity dimension dim-vb
+    auto incidence = nmesh.GetRegionIncidence();
+    for(auto i : Range(dim+1))
+      for(auto j : Range(dim+1))
+        if(i != j)
           {
-            netgen::ElementIndex el1, el2;
-            topology.GetSurface2VolumeElement(sei, el1, el2);
-            const auto& sel = nmesh[sei];
-            auto bc = sel.GetIndex().Nr0();   // boundary region = face descriptor
-            if(el1.IsValid())
-              {
-                auto index1 = nmesh[el1].GetIndex().Nr0();
-                neighbours[BND][VOL].AddUnique(bc, index1);
-                neighbours[VOL][BND].AddUnique(index1, bc);
-              }
-            if(el2.IsValid())
-              {
-                auto index2 = nmesh[el2].GetIndex().Nr0();
-                neighbours[BND][VOL].AddUnique(bc, index2);
-                neighbours[VOL][BND].AddUnique(index2, bc);
-              }
+            const auto & tab = incidence[dim-i][dim-j];
+            for(auto r : Range(min(tab.Size(), size_t(nregions[i]))))
+              for(auto o : tab[r])
+                if(o < nregions[j])
+                  neighbours[i][j].Add(r, o);
           }
-        for(auto ei : Elements(VOL))
-          {
-            const auto& el = GetElement(ei);
-            auto index = el.GetIndex();
-            for (auto edge : el.Edges())
-              {
-                if(auto eindex = edgemap[edge]; eindex != -1)
-                  {
-                    neighbours[VOL][BBND].AddUnique(index, eindex);
-                    neighbours[BBND][VOL].AddUnique(eindex, index);
-                  }
-              }
-            for(auto v : el.Vertices())
-              {
-                if(auto vindex = vertmap[v]; vindex != -1)
-                  {
-                    neighbours[BBBND][VOL].AddUnique(vindex, index);
-                    neighbours[VOL][BBBND].AddUnique(index, vindex);
-                  }
-              }
-          }
-      }
-    auto edge_vb = VorB(GetDimension()-1);
-    auto point_vb = VorB(GetDimension());
-    if(GetDimension() >= 2)
-      {
-        auto surf_vb = VorB(GetDimension()-2);
-        for(auto sei : Elements(surf_vb))
-          {
-            const auto& sel = GetElement(sei);
-            auto index = sel.GetIndex();
-            for(auto edge : sel.Edges())
-              {
-                if(auto eindex = edgemap[edge]; eindex != -1)
-                  {
-                    neighbours[surf_vb][edge_vb].AddUnique(index, eindex);
-                    neighbours[edge_vb][surf_vb].AddUnique(eindex, index);
-                  }
-              }
-            for(auto v : sel.Vertices())
-              {
-                if(auto vindex = vertmap[v]; vindex != -1)
-                  {
-                    neighbours[surf_vb][point_vb].AddUnique(index, vindex);
-                    neighbours[point_vb][surf_vb].AddUnique(vindex, index);
-                  }
-              }
-          }
-      }
-    if(GetDimension() >= 1)
-      {
-        for(auto ei : Elements(edge_vb))
-          {
-            const auto& seg = GetElement(ei);
-            auto index = seg.GetIndex();
-            for(auto v : seg.Vertices())
-              {
-                if(auto vindex = vertmap[v]; vindex != -1)
-                  {
-                    neighbours[edge_vb][point_vb].AddUnique(index, vindex);
-                    neighbours[point_vb][edge_vb].AddUnique(vindex, index);
-                  }
-              }
-          }
-      }
 
     // same codim neighbours have common codim-1 neighbour
     for(auto i : Range(4))
@@ -1898,15 +1812,29 @@ namespace ngcomp
       mask->Clear();
   }
 
+  void Region :: CheckCompatible (const Region & r2, const char * op) const
+  {
+    if (mesh != r2.mesh)
+      throw Exception (string("Region ") + op + ": regions belong to different meshes");
+    if (vb != r2.vb)
+      throw Exception (string("Region ") + op + ": cannot combine " + ToString(vb) + " and " + ToString(r2.vb)
+                       + " regions, their indices refer to different region lists");
+    if (mask->Size() != r2.mask->Size())
+      throw Exception (string("Region ") + op + ": masks of different size ("
+                       + ToString(mask->Size()) + " vs " + ToString(r2.mask->Size()) + "), mesh changed in between?");
+  }
+
   Region Region :: GetNeighbours(VorB other_vb)
   {
-    if(mesh->neighbours[vb][other_vb].Size() == 0)
-      {
-        static mutex calc_neighbour_mutex;
-        lock_guard<mutex> guard(calc_neighbour_mutex);
-        if(mesh->neighbours[vb][other_vb].Size() == 0)
+    {
+      static mutex calc_neighbour_mutex;
+      lock_guard<mutex> guard(calc_neighbour_mutex);
+      if(mesh->neighbours_timestamp != mesh->GetTimeStamp())
+        {
           mesh->BuildNeighbours();
-      }
+          mesh->neighbours_timestamp = mesh->GetTimeStamp();
+        }
+    }
     Region neighbours(mesh, other_vb);
     for(auto i : Range(mask->Size()))
       if(mask->Test(i))
@@ -1929,6 +1857,187 @@ namespace ngcomp
     HashArchive ar;
     ar & *mask;
     return ar.GetHash();
+  }
+
+
+  MixedRegion :: MixedRegion (const shared_ptr<MeshAccess> & amesh)
+    : mesh(amesh)
+  {
+    if (!mesh)
+      throw Exception ("MixedRegion needs a mesh");
+    for (int i = 0; i < 4; i++)
+      {
+        masks[i] = make_shared<BitArray>(mesh->GetNRegions(VorB(i)));
+        masks[i]->Clear();
+      }
+  }
+
+  MixedRegion :: MixedRegion (const Region & reg)
+    : MixedRegion (reg.Mesh())
+  {
+    masks[reg.VB()] = make_shared<BitArray>(reg.Mask());
+  }
+
+  MixedRegion MixedRegion :: Copy () const
+  {
+    MixedRegion res(mesh);
+    for (int i = 0; i < 4; i++)
+      *res.masks[i] = *masks[i];
+    return res;
+  }
+
+  Region MixedRegion :: operator[] (VorB vb) const
+  {
+    return Region (mesh, vb, *masks[vb]);
+  }
+
+  bool MixedRegion :: Empty() const
+  {
+    for (auto & m : masks)
+      if (m->NumSet()) return false;
+    return true;
+  }
+
+  void MixedRegion :: CheckCompatible (const MixedRegion & r2, const char * op) const
+  {
+    if (mesh != r2.mesh)
+      throw Exception (string("MixedRegion ") + op + ": regions belong to different meshes");
+    for (int i = 0; i < 4; i++)
+      if (masks[i]->Size() != r2.masks[i]->Size())
+        throw Exception (string("MixedRegion ") + op + ": " + ToString(VorB(i)) + " masks of different size ("
+                         + ToString(masks[i]->Size()) + " vs " + ToString(r2.masks[i]->Size()) + "), mesh changed in between?");
+  }
+
+  MixedRegion MixedRegion :: operator| (const MixedRegion & r2) const
+  {
+    CheckCompatible (r2, "|");
+    MixedRegion res(mesh);
+    for (int i = 0; i < 4; i++)
+      res.masks[i] = make_shared<BitArray>(BitArray(*masks[i]).Or(*r2.masks[i]));
+    return res;
+  }
+
+  MixedRegion MixedRegion :: operator& (const MixedRegion & r2) const
+  {
+    CheckCompatible (r2, "&");
+    MixedRegion res(mesh);
+    for (int i = 0; i < 4; i++)
+      res.masks[i] = make_shared<BitArray>(BitArray(*masks[i]).And(*r2.masks[i]));
+    return res;
+  }
+
+  MixedRegion MixedRegion :: operator- (const MixedRegion & r2) const
+  {
+    CheckCompatible (r2, "-");
+    MixedRegion res(mesh);
+    for (int i = 0; i < 4; i++)
+      res.masks[i] = make_shared<BitArray>(BitArray(*masks[i]).And(BitArray(*r2.masks[i]).Invert()));
+    return res;
+  }
+
+  MixedRegion MixedRegion :: operator~ () const
+  {
+    MixedRegion res(mesh);
+    for (int i = 0; i < 4; i++)
+      res.masks[i] = make_shared<BitArray>(BitArray(*masks[i]).Invert());
+    return res;
+  }
+
+  bool MixedRegion :: operator== (const MixedRegion & r2) const
+  {
+    if (mesh != r2.mesh) return false;
+    for (int i = 0; i < 4; i++)
+      if (masks[i]->Size() != r2.masks[i]->Size() || !(*masks[i] == *r2.masks[i]))
+        return false;
+    return true;
+  }
+
+  size_t MixedRegion :: Hash() const
+  {
+    HashArchive ar;
+    for (auto & m : masks) ar & *m;
+    return ar.GetHash();
+  }
+
+  MixedRegion MixedRegion :: Boundary() const
+  {
+    MixedRegion res(mesh);
+    int dim = mesh->GetDimension();
+    for (int i = 0; i < dim; i++)
+      res.masks[i+1]->Or ((*this)[VorB(i)].GetNeighbours(VorB(i+1)).Mask());
+    return res;
+  }
+
+  MixedRegion MixedRegion :: Closure() const
+  {
+    MixedRegion res = Copy();
+    int dim = mesh->GetDimension();
+    for (int i = 0; i < dim; i++)
+      {
+        Region ri = (*this)[VorB(i)];
+        for (int j = i+1; j <= dim; j++)
+          res.masks[j]->Or (ri.GetNeighbours(VorB(j)).Mask());
+      }
+    return res;
+  }
+
+  class MixedRegionIndicatorCF
+    : public T_CoefficientFunction<MixedRegionIndicatorCF, CoefficientFunctionNoDerivative>
+  {
+    MixedRegion reg;
+    typedef T_CoefficientFunction<MixedRegionIndicatorCF, CoefficientFunctionNoDerivative> BASE;
+  public:
+    MixedRegionIndicatorCF() { elementwise_constant = true; }
+    MixedRegionIndicatorCF (const MixedRegion & areg)
+      : BASE(1, false), reg(areg)
+    { elementwise_constant = true; }
+
+    void CheckContext (const CFContext & ctx) const override
+    {
+      if (!ctx.mesh)
+        throw Exception ("IndicatorCF needs the region index of a mesh element");
+      if (ctx.mesh != reg.Mesh().get())
+        throw Exception ("IndicatorCF: the region belongs to another mesh");
+    }
+
+    double Indicator (const ElementTransformation & trafo) const
+    {
+      auto & mask = reg.Mask(trafo.VB());
+      size_t ind = trafo.GetElementIndex();
+      return (ind < mask.Size() && mask.Test(ind)) ? 1.0 : 0.0;
+    }
+
+    template <typename MIR, typename T, ORDERING ORD>
+    void T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const
+    {
+      double v = Indicator(ir.GetTransformation());
+      for (size_t i = 0; i < ir.Size(); i++)
+        values(0,i) = v;
+    }
+
+    void DoArchive (Archive & ar) override
+    {
+      BASE::DoArchive(ar);
+      ar & reg;
+    }
+  };
+
+  shared_ptr<CoefficientFunction> MixedRegion :: IndicatorCF() const
+  {
+    return make_shared<MixedRegionIndicatorCF> (Copy());
+  }
+
+  MixedRegion MixedRegion :: Star() const
+  {
+    MixedRegion res = Copy();
+    int dim = mesh->GetDimension();
+    for (int i = 1; i <= dim; i++)
+      {
+        Region ri = (*this)[VorB(i)];
+        for (int j = 0; j < i; j++)
+          res.masks[j]->Or (ri.GetNeighbours(VorB(j)).Mask());
+      }
+    return res;
   }
 
   double MeshAccess :: ElementVolume (int elnr) const
@@ -2331,6 +2440,10 @@ namespace ngcomp
             region = *get_if<Region>(&key);
             if(region.VB() != vb)
               throw Exception("Region with false vb given to region wise CF!");
+            if(region.Mesh().get() != this)
+              throw Exception("Region of another mesh given to region wise CF!");
+            if(region.Mask().Size() != cfs.Size())
+              throw Exception("Region does not fit the mesh, mesh changed after creating the region?");
           }
         for(auto i : Range(region.Mask().Size()))
           {
@@ -2356,8 +2469,10 @@ namespace ngcomp
     for (auto & [region, cf] : region_values)
       {
         VorB vb = region.VB();
-        if (region.Mask().Size() != GetNRegions(vb))
+        if (region.Mesh().get() != this)
           throw Exception("Region of another mesh given to region wise CF!");
+        if (region.Mask().Size() != GetNRegions(vb))
+          throw Exception("Region does not fit the mesh, mesh changed after creating the region?");
         if (!cfs[vb].Size())
           {
             cfs[vb].SetSize (GetNRegions(vb));
@@ -2892,5 +3007,7 @@ namespace ngcomp
   
 static RegisterClassForArchive<BoundaryFromVolumeCoefficientFunction, CoefficientFunction> regbfvcf;
 static RegisterClassForArchive<Region> regregion;
+static RegisterClassForArchive<MixedRegion> regmixedregion;
+static RegisterClassForArchive<MixedRegionIndicatorCF, CoefficientFunction> regmixedregionindicator;
 
 }

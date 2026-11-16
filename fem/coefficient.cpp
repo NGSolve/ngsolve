@@ -6049,6 +6049,26 @@ public:
     return MakeRegionCoefficientFunction (std::move(aci), std::move(first), std::move(size));
   }
 
+  // the class before the rename, kept to read old archives (cargs ci, vb)
+  class DomainWiseCoefficientFunction : public RegionCoefficientFunction
+  {
+    optional<VorB> vb;
+    static Array<int> Sizes (size_t n, optional<VorB> vb)
+    {
+      Array<int> size(4);
+      size = int(n);
+      if (vb)
+        for (int i : Range(4))
+          if (i != int(*vb)) size[i] = 0;
+      return size;
+    }
+  public:
+    DomainWiseCoefficientFunction (Array<shared_ptr<CoefficientFunction>> aci, optional<VorB> avb)
+      : RegionCoefficientFunction (Array<shared_ptr<CoefficientFunction>>(aci), Array<int>{0,0,0,0},
+                                   Sizes(aci.Size(), avb)), vb(avb) { ; }
+    auto GetCArgs() const { return tuple { InputCoefficientFunctions(), vb }; }
+  };
+
 
 
 
@@ -8325,6 +8345,8 @@ static RegisterClassForArchive<T_MultVecVecCoefficientFunction<9>, CoefficientFu
 // static RegisterClassForArchive<PolynomialCoefficientFunction, CoefficientFunction> regpolcf;
 // static RegisterClassForArchive<FileCoefficientFunction, CoefficientFunction> regfilecf;
 static RegisterClassForArchive<RegionCoefficientFunction, CoefficientFunction> regdwcf;
+
+static RegisterClassForArchive<DomainWiseCoefficientFunction, CoefficientFunction> regolddwcf;
 static RegisterClassForArchive<VectorialCoefficientFunction, CoefficientFunction> regveccf;
 static RegisterClassForArchive<ComponentCoefficientFunction, CoefficientFunction> regcompcf;
 static RegisterClassForArchive<ScaleCoefficientFunction, CoefficientFunction> regscale;

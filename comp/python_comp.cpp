@@ -742,6 +742,10 @@ when building the system matrices.
     {
       return self->GetFESpace()->GetDofs(reg, self->Evaluator().get());
     })
+    .def("GetDofs", [](spProxy self, const MixedRegion& reg)
+    {
+      return self->GetFESpace()->GetDofs(reg, self->Evaluator().get());
+    })
     /*
     .def("__or__", [](shared_ptr<ProxyFunction> self, VBnName vbn)
     {
@@ -997,6 +1001,8 @@ kwargs : kwargs
                             auto dir_region = py::cast<Region>(dirichlet);
                             flags->SetFlag("dirichlet", dir_region);
                           }
+                        else if(py::isinstance<MixedRegion>(dirichlet))
+                          flags->SetFlag("dirichlet", py::cast<MixedRegion>(dirichlet));
                         else if (py::isinstance<py::str>(dirichlet))
                           {
                             std::regex pattern(dirichlet.cast<string>());
@@ -1047,6 +1053,9 @@ kwargs : kwargs
 
                         if (py::isinstance<py::list> (definedon))
                           flags->SetFlag ("definedon", makeCArray<double> (definedon));
+
+                        if (py::isinstance<MixedRegion> (definedon))
+                          flags->SetFlag ("definedon", py::cast<MixedRegion>(definedon));
 
                         try
                           {
@@ -1370,7 +1379,12 @@ region : ngsolve.comp.Region
   input region
 
 )raw_string"))
-    
+    .def ("GetDofs", [](shared_ptr<FESpace> self, const MixedRegion & reg, DifferentialOperator * diffop)
+          {
+            return self->GetDofs(reg, diffop);
+          }, py::arg("region"), py::arg("diffop")=nullptr,
+          "union of the dofs of all VorB parts of a MixedRegion, no closure")
+
     .def("CouplingType", [](shared_ptr<FESpace> self, DofId dofnr) -> COUPLING_TYPE
          { PyCheckIndex (dofnr, self->GetNDof(), "dof number");
            return self->GetDofCouplingType(dofnr); },

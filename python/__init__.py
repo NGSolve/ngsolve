@@ -70,7 +70,7 @@ from .comp import VOL, BND, BBND, BBBND, COUPLING_TYPE, ElementId, \
     NodalFESpace, VectorNodalFESpace, H1LumpingFESpace, HCT_FESpace, JKM_FESpace, \
     NumberSpace, Periodic, Discontinuous, Hidden, VectorValued, MatrixValued, Compress, \
     CompressCompound, PlateauFESpace, BoundaryFromVolumeCF, Interpolate, Variation, \
-    Integrate, Region, SymbolicLFI, SymbolicBFI, \
+    Integrate, Region, MixedRegion, SymbolicLFI, SymbolicBFI, \
     SymbolicEnergy, Mesh, NodeId, ConvertOperator, ORDER_POLICY, VTKOutput, SetHeapSize, \
     SetTestoutFile, ngsglobals, pml, ContactBoundary, ContactIntegrator, PatchwiseSolve, \
     HCurlAMG, APhiHCurlAMG

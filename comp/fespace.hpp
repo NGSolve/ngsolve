@@ -524,6 +524,8 @@ ANY                  1 1 1 1 | 15
 
     virtual void GetDofNrs (NodeId ni, Array<DofId> & dnums) const;
     BitArray GetDofs (const Region & reg, const DifferentialOperator * diffop = nullptr) const;
+    // union over the VorB slices, no closure
+    BitArray GetDofs (const MixedRegion & reg, const DifferentialOperator * diffop = nullptr) const;
     virtual IntRange GetRange (const DifferentialOperator & diffop) const;
     
     Table<int> CreateDofTable (VorB vorb) const;

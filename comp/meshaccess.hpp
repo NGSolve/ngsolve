@@ -33,6 +33,7 @@ namespace ngcomp
   class MeshAccess;
   class Ngs_Element;
   class Region;
+  class MixedRegion;
 
   class Ngs_Element : public netgen::Ng_Element
   {
@@ -224,6 +225,7 @@ namespace ngcomp
     Array<Array<IVec<2>>> periodic_node_pairs[3];
 
     DynamicTable<size_t> neighbours[4][4];
+    size_t neighbours_timestamp = 0;
     friend class Region;
   public:
     SimpleSignal updateSignal;
@@ -1037,12 +1039,16 @@ namespace ngcomp
     const shared_ptr<MeshAccess> & Mesh() const { return mesh; }
     void DoArchive(Archive& ar)
     { ar.Shallow(mesh) & vb & mask; }
+    // throws unless same mesh, same VorB, same mask size
+    NGS_DLL_HEADER void CheckCompatible (const Region & r2, const char * op) const;
     Region operator+ (const Region & r2) const
     {
+      CheckCompatible (r2, "+");
       return Region (mesh, vb, BitArray(*mask).Or(r2.Mask()));
     }
     Region operator- (const Region & r2) const
     {
+      CheckCompatible (r2, "-");
       return Region (mesh, vb, BitArray(*mask).And(BitArray(r2.Mask()).Invert()));
     }
     Region operator~ () const
@@ -1060,6 +1066,7 @@ namespace ngcomp
 
     Region operator* (const Region& r2) const
     {
+      CheckCompatible (r2, "*");
       return Region(mesh, vb, BitArray(*mask).And(r2.Mask()));
     }
 
@@ -1079,6 +1086,59 @@ namespace ngcomp
     {
       return mesh->Elements(vb)
         | filter([&](auto ei) { return mask->Test(mesh->GetElIndex(ei)); });
+    }
+  };
+
+
+  /*
+    Selection of regions of all codimensions, one mask per VorB.
+    Open: holds exactly the listed regions; Closure() adds lower-dimensional ones.
+  */
+  class MixedRegion
+  {
+    shared_ptr<MeshAccess> mesh;
+    std::array<shared_ptr<BitArray>,4> masks;
+  public:
+    MixedRegion() = default;
+    NGS_DLL_HEADER MixedRegion (const shared_ptr<MeshAccess> & amesh);   // empty
+    NGS_DLL_HEADER MixedRegion (const Region & reg);
+    MixedRegion (const MixedRegion &) = default;
+
+    const shared_ptr<MeshAccess> & Mesh() const { return mesh; }
+    const BitArray & Mask (VorB vb) const { return *masks[vb]; }
+    BitArray & Mask (VorB vb) { return *masks[vb]; }
+    // own masks, a plain copy shares them
+    NGS_DLL_HEADER MixedRegion Copy () const;
+    NGS_DLL_HEADER Region operator[] (VorB vb) const;
+    NGS_DLL_HEADER bool Empty() const;
+    bool Contains (RegionId ri) const
+    {
+      auto & m = *masks[ri.VB()];
+      return ri.Nr() < m.Size() && m[ri.Nr()];
+    }
+
+    NGS_DLL_HEADER void CheckCompatible (const MixedRegion & r2, const char * op) const;
+    NGS_DLL_HEADER MixedRegion operator| (const MixedRegion & r2) const;
+    NGS_DLL_HEADER MixedRegion operator& (const MixedRegion & r2) const;
+    NGS_DLL_HEADER MixedRegion operator- (const MixedRegion & r2) const;
+    NGS_DLL_HEADER MixedRegion operator~ () const;
+    NGS_DLL_HEADER bool operator== (const MixedRegion & r2) const;
+    NGS_DLL_HEADER size_t Hash() const;
+
+    // incident regions one VorB down
+    NGS_DLL_HEADER MixedRegion Boundary() const;
+    // this plus all incident lower-dimensional regions
+    NGS_DLL_HEADER MixedRegion Closure() const;
+    // this plus all incident higher-dimensional regions
+    NGS_DLL_HEADER MixedRegion Star() const;
+    bool IsClosed() const { return *this == Closure(); }
+    // 1 on elements of the selected regions (any VorB), 0 elsewhere
+    NGS_DLL_HEADER shared_ptr<CoefficientFunction> IndicatorCF() const;
+
+    void DoArchive (Archive & ar)
+    {
+      ar.Shallow(mesh);
+      for (auto & m : masks) ar & m;
     }
   };
 
