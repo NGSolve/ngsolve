@@ -219,3 +219,115 @@ def test_basevector_entry_size():
     c = BaseVector(4, entrysize=2, complex=True)
     with pytest.raises(ValueError):
         c[1] = Vector([1j, 2j, 3j])
+
+
+def test_float_device_operator_on_double_vectors(sys2d):
+    # device operators convert between float and double
+    import importlib
+    for backend in ["ngsmetal", "ngscuda"]:
+        try:
+            importlib.import_module("ngsolve." + backend)
+            break
+        except ImportError:
+            pass
+    else:
+        pytest.skip("no device backend")
+    fes, a, m = sys2d
+    u, v = fes.TnT()
+    af = BilinearForm(fes, fp32=True)
+    af += grad(u)*grad(v)*dx + u*v*dx
+    af.Assemble()
+    adev = af.mat.CreateDeviceMatrix()
+    assert "float" in str(adev.RowFormat()) and "device" in str(adev.RowFormat())
+    x = a.mat.CreateRowVector()
+    x.FV().NumPy()[:] = np.linspace(0, 1, fes.ndof)
+    y = x.CreateVector()
+    ref = (a.mat * x).Evaluate()
+    y.data = adev * x
+    assert Norm((y - ref).Evaluate()) < 1e-5 * Norm(ref)
+    adev.Mult(x, y)
+    assert Norm((y - ref).Evaluate()) < 1e-5 * Norm(ref)
+    y.data = ref - adev.T * x
+    assert Norm(y) < 1e-5 * Norm(ref)
+    with pytest.raises(Exception, match="does not fit"):
+        y.data = af.mat * x            # the host matrix does not convert
+    with pytest.raises(Exception, match="does not fit"):
+        BaseVector(fes.ndof + 1).data = adev * x
+
+
+def test_permutation_skip_index():
+    # size_t(-1) marks a row without source (periodic dofs)
+    skip = 2**64 - 1
+    p = la.PermutationMatrix(3, [2, skip, 0, 1])
+    x = BaseVector(3)
+    x.FV().NumPy()[:] = [1, 2, 3]
+    y = (p * x).Evaluate()
+    assert list(y) == [3, 0, 1, 2]
+    z = (p.T * y).Evaluate()
+    assert list(z) == [1, 2, 3]
+    with pytest.raises(IndexError):
+        la.PermutationMatrix(3, [0, 3])
+
+
+def test_mixed_precision_host_operators():
+    # DiagonalMatrix and ConstantEBE dispatch on the vector types, float and double mix
+    mesh = Mesh(unit_square.GenerateMesh(maxh=0.3))
+    fes = L2(mesh, order=1)
+    u, v = fes.TnT()
+    md = BilinearForm(fes, diagonal=True)
+    md += u*v*dx
+    md.Assemble()
+    mf = BilinearForm(fes, diagonal=True, fp32=True)
+    mf += u*v*dx
+    mf.Assemble()
+    assert mf.mat.RowFormat().scalar is not None and mf.mat.RowFormat().mixed_precision
+    xd = md.mat.CreateRowVector()
+    xd.FV().NumPy()[:] = np.linspace(1, 2, fes.ndof)
+    xf = mf.mat.CreateRowVector()
+    xf.data = xd
+    ref = (md.mat * xd).Evaluate()
+    yd = xd.CreateVector()
+    yf = xf.CreateVector()
+    for mat in [md.mat, mf.mat]:
+        for x in [xd, xf]:
+            yd.data = mat * x
+            assert Norm((yd - ref).Evaluate()) < 1e-6 * Norm(ref)
+            yf.data = mat * x
+            yd.data = yf
+            assert Norm((yd - ref).Evaluate()) < 1e-6 * Norm(ref)
+    # composites keep the property, a typed sparse matrix does not convert
+    yd.data = (2 * mf.mat) * xd - mf.mat.T * xd
+    assert Norm((yd - ref).Evaluate()) < 1e-6 * Norm(ref)
+    fesh = H1(mesh, order=1)
+    u, v = fesh.TnT()
+    af = BilinearForm(fesh, fp32=True)
+    af += u*v*dx
+    af.Assemble()
+    assert not af.mat.RowFormat().mixed_precision
+    with pytest.raises(Exception, match="does not fit"):
+        BaseVector(fesh.ndof).data = af.mat * BaseVector(fesh.ndof)
+
+
+def test_evaluate_converting_operator():
+    # (A*x).Evaluate(): a mixed-precision operator returns its own precision
+    mesh = Mesh(unit_square.GenerateMesh(maxh=0.3))
+    fes = L2(mesh, order=1)
+    u, v = fes.TnT()
+    md = BilinearForm(fes, diagonal=True)
+    md += u*v*dx
+    md.Assemble()
+    mf = BilinearForm(fes, diagonal=True, fp32=True)
+    mf += u*v*dx
+    mf.Assemble()
+    xd = md.mat.CreateRowVector()
+    xd.FV().NumPy()[:] = np.linspace(1, 2, fes.ndof)
+    xf = mf.mat.CreateRowVector()
+    xf.data = xd
+    ref = (md.mat * xd).Evaluate()
+    tmp = xd.CreateVector()
+    for mat, x, fac in [(mf.mat, xd, 1), (md.mat, xf, 1), (2*mf.mat, xd, 2), (mf.mat.T, xd, 1)]:
+        y = (mat * x).Evaluate()
+        assert str(y.GetFormat().scalar) == str(mat.ColFormat().scalar)
+        tmp.data = y
+        assert Norm((tmp - fac*ref).Evaluate()) < 1e-6 * Norm(ref)
+    assert Norm(mf.mat * xd) == pytest.approx(Norm(ref), rel=1e-6)

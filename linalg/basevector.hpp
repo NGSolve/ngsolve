@@ -123,6 +123,7 @@ namespace ngla
     shared_ptr<ParallelDofs> pardofs;     // null: sequential or unknown
     PARALLEL_STATUS parstatus = CUMULATED;
     optional<ngs_gpu::MemType> device;    // engaged: DeviceVector
+    bool mixedprec = false;               // operator takes float and double vectors alike
     std::vector<VecFormat> blocks;        // non-empty: BlockVector
 
     VecFormat () = default;
@@ -146,6 +147,7 @@ namespace ngla
     VecFormat WithSize (size_t asize) const;
     VecFormat WithScalar (Scalar ascal) const;
     VecFormat OnDevice (ngs_gpu::MemType mt) const;
+    VecFormat MixedPrecision () const { VecFormat f = *this; f.mixedprec = true; return f; }
     // combine with a scaling factor: real times Complex gives Complex
     VecFormat Promote (Scalar ascal) const;
 
@@ -311,7 +313,7 @@ namespace ngla
     template <typename SCAL = double>
     FlatSysVector<SCAL> SV () const
     {
-      return FlatSysVector<SCAL> (Size(), EntrySize() * sizeof(double)/sizeof(SCAL), (SCAL*)Memory());
+      return FlatSysVector<SCAL> (Size(), EntrySize() * sizeof(typename scal_traits<SCAL>::TSCAL_REAL)/sizeof(SCAL), (SCAL*)Memory());
     }
 
     template <typename T>
@@ -743,7 +745,7 @@ namespace ngla
     { return typeid(SCAL) == typeid(Complex); }
     
     virtual int EntrySizeScal() const throw () override
-    { return EntrySize() * sizeof(double)/sizeof(SCAL); }
+    { return EntrySize() * sizeof(typename scal_traits<SCAL>::TSCAL_REAL)/sizeof(SCAL); }
 
     using BaseVector::InnerProduct;
     virtual SCAL InnerProduct (const BaseVector & v2, bool conjugate = false) const;

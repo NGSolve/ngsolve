@@ -347,7 +347,7 @@ namespace ngcomp
   
   void BilinearForm :: CheckDGCoupling () const
   {
-    if (!facetwise_skeleton_parts[VOL].Size()) return;
+    if (diagonal || !facetwise_skeleton_parts[VOL].Size()) return;   // a diagonal has no couplings
     for (auto space : { GetTrialSpace(), GetTestSpace() })
       if (!space->UsesDGCoupling())
         throw Exception ("interior skeleton terms (dx(skeleton=True)) need the matrix couplings across facets: create " +

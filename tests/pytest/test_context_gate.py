@@ -132,6 +132,30 @@ def test_skeleton_without_dgjumps_apply_only(m):
     assert Norm(r) > 0
 
 
+def test_skeleton_diagonal_without_dgjumps(m):
+    # a diagonal matrix has no couplings across facets
+    n = specialcf.normal(2)
+    L = L2(m, order=1)
+    u, v = L.TnT()
+    a = BilinearForm(L, diagonal=True)
+    a += u * v * dx + (u - u.Other()) * (v - v.Other()) * dx(skeleton=True)
+    a.Assemble()
+    Ldg = L2(m, order=1, dgjumps=True)
+    u, v = Ldg.TnT()
+    full = BilinearForm(Ldg)
+    full += u * v * dx + (u - u.Other()) * (v - v.Other()) * dx(skeleton=True)
+    full.Assemble()
+    one = a.mat.CreateRowVector()
+    one[:] = 1
+    d = (a.mat * one).Evaluate()
+    for i in range(L.ndof):
+        assert d[i] == pytest.approx(full.mat[i, i])
+    b = BilinearForm(L)
+    b += (u - u.Other()) * (v - v.Other()) * dx(skeleton=True)
+    with pytest.raises(Exception, match="dgjumps"):
+        b.Assemble()
+
+
 def test_residual_term_in_bilinearform(m):
     # test-function only terms are residual contributions of nonlinear forms
     V = H1(m, order=2, dirichlet=".*")

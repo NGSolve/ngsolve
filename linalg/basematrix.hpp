@@ -107,16 +107,12 @@ namespace ngla
 
     // result vector: what the operator knows, filled from x.
     // without a size of its own (Identity) it takes x's format entirely
+    // a converting operator (device, mixed precision) keeps its own precision
+    static VecFormat ResultFormat (const VecFormat & f, VecFormat fx);
     AutoVector CreateColVectorFor (const BaseVector & x) const
-    {
-      auto f = ColFormat(), fx = x.GetFormat();
-      return CreateBaseVector (VecFormat::Merge (f, f.HasSize() ? fx.ValueAxes() : fx).WithDefaults());
-    }
+    { return CreateBaseVector (ResultFormat (ColFormat(), x.GetFormat())); }
     AutoVector CreateRowVectorFor (const BaseVector & x) const
-    {
-      auto f = RowFormat(), fx = x.GetFormat();
-      return CreateBaseVector (VecFormat::Merge (f, f.HasSize() ? fx.ValueAxes() : fx).WithDefaults());
-    }
+    { return CreateBaseVector (ResultFormat (RowFormat(), x.GetFormat())); }
 
     virtual AutoVector Evaluate(BaseVector & v) const 
     {
@@ -540,12 +536,16 @@ namespace ngla
     VecFormat RowFormat () const override
     {
       auto fb = bmb.RowFormat(), fmid = bma.RowFormat();
-      return VecFormat::Merge (fb, fb.HasSize() ? fmid.ValueAxes() : fmid);
+      auto f = VecFormat::Merge (fb, fb.HasSize() ? fmid.ValueAxes() : fmid);
+      if (fb.scal) f.mixedprec = fb.mixedprec;   // x meets only the typed right factor
+      return f;
     }
     VecFormat ColFormat () const override
     {
       auto fa = bma.ColFormat(), fmid = bmb.ColFormat();
-      return VecFormat::Merge (fa, fa.HasSize() ? fmid.ValueAxes() : fmid);
+      auto f = VecFormat::Merge (fa, fa.HasSize() ? fmid.ValueAxes() : fmid);
+      if (fa.scal) f.mixedprec = fa.mixedprec;
+      return f;
     }
 
     auto SPtrA() const { return spbma; }

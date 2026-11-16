@@ -149,8 +149,11 @@ namespace ngla
     virtual void MultAdd (TSCAL64 s, const BaseVector & x, BaseVector & y) const override;
     virtual void MultTransAdd (TSCAL64 s, const BaseVector & x, BaseVector & y) const override;
     
-    VecFormat RowFormat () const override { return VVectorFormat<SCAL> (w); }
-    VecFormat ColFormat () const override { return VVectorFormat<SCAL> (h); }
+    // MultAdd dispatches on the vector types, float and double mix freely
+    VecFormat RowFormat () const override
+    { auto f = VVectorFormat<SCAL> (w); return is_same_v<SCAL,Complex> ? f : f.MixedPrecision(); }
+    VecFormat ColFormat () const override
+    { auto f = VVectorFormat<SCAL> (h); return is_same_v<SCAL,Complex> ? f : f.MixedPrecision(); }
 
     virtual shared_ptr<BaseSparseMatrix> CreateSparseMatrix() const override;
     shared_ptr<BaseMatrix> CreateDeviceMatrix () const override;

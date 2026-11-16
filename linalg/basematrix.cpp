@@ -478,9 +478,11 @@ namespace ngla
 
     if (f.scal && v.scal)
       {
+        bool fcomplex = std::holds_alternative<Complex>(*f.scal), vcomplex = std::holds_alternative<Complex>(*v.scal);
         if (std::holds_alternative<float>(*f.scal) != std::holds_alternative<float>(*v.scal))
-          return false;
-        if (std::holds_alternative<Complex>(*f.scal) && !std::holds_alternative<Complex>(*v.scal))
+          // device operators convert between float and double, host operators declare it
+          if (!(f.device || f.mixedprec) || fcomplex || vcomplex) return false;
+        if (fcomplex && !vcomplex)
           return false;
       }
     size_t vsize = v.size.value_or(0);
@@ -489,6 +491,13 @@ namespace ngla
       return f.size && *f.size * *f.es == vsize * ves;
     if (f.size && *f.size != vsize) return false;
     return true;
+  }
+
+  VecFormat BaseMatrix :: ResultFormat (const VecFormat & f, VecFormat fx)
+  {
+    if (f.scal && fx.scal && (f.device || f.mixedprec) && !f.IsComplex() && !fx.IsComplex())
+      fx.scal = f.scal;
+    return VecFormat::Merge (f, f.HasSize() ? fx.ValueAxes() : fx).WithDefaults();
   }
 
   void BaseMatrix :: CheckFormats (const BaseVector & x, const BaseVector * y,

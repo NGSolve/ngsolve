@@ -278,11 +278,17 @@ namespace ngla
 
   template <typename TM>
   VecFormat DiagonalMatrix<TM> :: RowFormat () const 
-  { return VecFormat (diag->Size(), typename mat_traits<TM>::TSCAL(0), ngbla::Width<TM>()); }
+  {
+    VecFormat f (diag->Size(), TSCAL(0), ngbla::Width<TM>());
+    return is_same_v<TSCAL,Complex> ? f : f.MixedPrecision();
+  }
 
   template <typename TM>
   VecFormat DiagonalMatrix<TM> :: ColFormat () const 
-  { return VecFormat (diag->Size(), typename mat_traits<TM>::TSCAL(0), ngbla::Height<TM>()); }
+  {
+    VecFormat f (diag->Size(), TSCAL(0), ngbla::Height<TM>());
+    return is_same_v<TSCAL,Complex> ? f : f.MixedPrecision();
+  }
 
   template <typename TM>    
   shared_ptr<BaseMatrix> DiagonalMatrix<TM> ::

@@ -370,6 +370,8 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def_property_readonly("is_complex", &VecFormat::IsComplex)
     .def_property_readonly("is_parallel", [] (const VecFormat & f) { return bool(f.pardofs); })
     .def_property_readonly("is_device", [] (const VecFormat & f) { return f.device.has_value(); })
+    .def_property_readonly("mixed_precision", [] (const VecFormat & f) { return f.mixedprec; },
+                           "operator format: float and double vectors are both accepted")
     .def_property_readonly("blocks", [] (const VecFormat & f) { return f.blocks; })
     .def("Merge", [] (const VecFormat & a, const VecFormat & b) { return VecFormat::Merge(a, b); })
     .def("WithDefaults", &VecFormat::WithDefaults)
@@ -2309,7 +2311,9 @@ flags : dict
   py::class_<PermutationMatrix, shared_ptr<PermutationMatrix>, BaseMatrix> (m, "PermutationMatrix")
     .def(py::init([](size_t w, std::vector<size_t> ind)
                   {
-                    for (auto i : ind) PyCheckIndex(i, w, "index");
+                    for (auto i : ind)
+                      if (i != size_t(-1))   // row without source, stays zero
+                        PyCheckIndex(i, w, "index");
                     Array<size_t> inda(ind.size());
                     for (size_t i = 0; i < inda.Size(); i++)
                       inda[i] = ind[i];

@@ -1744,6 +1744,7 @@ namespace ngla
     ost << " es=" << (f.es ? ToString(*f.es) : "?");
     if (f.pardofs) ost << " parallel";
     if (f.device) ost << " device";
+    if (f.mixedprec) ost << " mixedprec";
     return ost;
   }
 
@@ -1753,6 +1754,7 @@ namespace ngla
     f.scal = scal;
     f.es = es;
     f.device = device;
+    f.mixedprec = mixedprec;
     return f;
   }
 
@@ -1841,7 +1843,11 @@ namespace ngla
         f.size = b.size;
       }
     if (b.scal)
-      f.scal = f.scal ? MergeScalar (*f.scal, *b.scal) : b.scal;
+      {
+        // comes with the scalar, two typed sides must both convert
+        f.mixedprec = f.scal ? (f.mixedprec && b.mixedprec) : b.mixedprec;
+        f.scal = f.scal ? MergeScalar (*f.scal, *b.scal) : b.scal;
+      }
     if (b.es)
       {
         if (f.es && *f.es != *b.es)
