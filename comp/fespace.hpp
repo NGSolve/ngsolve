@@ -660,7 +660,8 @@ ANY                  1 1 1 1 | 15
 
     void GetFilteredDofs(COUPLING_TYPE doffilter, BitArray & output, bool freedofsonly=true) const;
     /// blocks for block-Jacobi / block-Gauss-Seidel, flag blocktype
-    shared_ptr<Table<int>> CreateSmoothingBlocks (const Flags & flags) const;
+    /// virtual for existing add-ons, new spaces override CreateSpecificSmoothingBlocks
+    virtual shared_ptr<Table<int>> CreateSmoothingBlocks (const Flags & flags) const;
     /// free dofs respecting condense, subassembled and additional constraints
     shared_ptr<BitArray> GetSmoothingFreeDofs (const Flags & flags) const;
     /// blocks from named types: vertex, edge, vertexpatch, ...
