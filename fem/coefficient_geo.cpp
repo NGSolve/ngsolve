@@ -414,9 +414,17 @@ namespace ngfem
     void CheckContext (const CFContext & ctx) const override
     {
       CheckGeoDim (D, ctx);
-      // the consistent tangent uses the facet number of the point
-      if (consistent && !ctx.OnElementFacet())
-        throw Exception ("the consistent tangential vector needs points on element facets, use element_boundary=True or skeleton=True");
+      // FacetNr is an edge number here: a facet of a 2D element, or a
+      // codimension-two entity of a 3D element. A 3D facet is not an edge.
+      if (consistent && ctx.dim >= 0)
+        {
+          bool on_edge = (ctx.ElementDim() == 2 && ctx.OnElementFacet()) ||
+            (ctx.ElementDim() == 3 && !ctx.skeleton && ctx.element_vb == BBND);
+          if (!on_edge)
+            throw Exception ("the consistent tangential vector needs points on element edges: "
+                             "use element_boundary=True or skeleton=True on 2D elements, "
+                             "or dx(element_vb=BBND) on 3D elements (not their facets)");
+        }
     }
     // virtual int Dimension() const { return D; }
 
@@ -433,6 +441,8 @@ namespace ngfem
           auto & trafo = ip.GetTransformation();
           int fnr = ip.IP().FacetNr();
           ELEMENT_TYPE et = trafo.GetElementType();
+          if (et != ET_TRIG && et != ET_TET)
+            throw Exception ("the consistent tangential vector does not support element type " + ToString(et));
           auto e = ElementTopology::GetEdges(et)[fnr];
           int iavnums[] = { 0, 1, 2, 3 };
           FlatArray<int> vnums(4, &iavnums[0]);
