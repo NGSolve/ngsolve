@@ -16,7 +16,9 @@ namespace pybind11::detail {
 
     bool load (pybind11::handle src, bool b)
     {
+#ifdef NGS_PYTHON_NONNULL_ARGS
       if (src.is_none()) return false;
+#endif
       BaseCaster bc;
       bool success = bc.load (src, b);
       if (!success)

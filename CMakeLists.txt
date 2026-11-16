@@ -344,6 +344,8 @@ endif (USE_MUMPS)
 add_library(netgen_python INTERFACE )
 if (NETGEN_USE_PYTHON)
     list(APPEND NGSOLVE_COMPILE_DEFINITIONS NGS_PYTHON)
+    # NGSolve's own bindings reject None for shared_ptr arguments, add-ons keep the pybind11 default
+    add_definitions(-DNGS_PYTHON_NONNULL_ARGS)
     find_package(Python3 REQUIRED COMPONENTS Development.Module)
     find_package(Python3 COMPONENTS Interpreter Development.Embed)
     target_include_directories(netgen_python INTERFACE ${NETGEN_PYBIND_INCLUDE_DIR} ${Python3_INCLUDE_DIRS})

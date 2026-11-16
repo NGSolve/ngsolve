@@ -624,3 +624,15 @@ def test_other_bnd_with_trial_function():
     with pytest.raises(Exception):
         d += InnerProduct(U - U.Other(bnd=other.TrialFunction()), V) * dx(element_boundary=True)
         d.Apply(gfu.vec, res)
+
+
+def test_webgui_deformation_without_trace():
+    # L2 functions have no evaluator on the mesh edges, the edges fall back
+    webgui = pytest.importorskip("ngsolve.webgui")
+    from ngsolve.meshes import MakeStructured2DMesh, MakeStructured3DMesh
+    for mesh in [MakeStructured2DMesh(quads=False, nx=2, ny=2), MakeStructured3DMesh(hexes=False, nx=1, ny=1, nz=1)]:
+        gf = GridFunction(L2(mesh, order=1))
+        gf.Set(x)
+        regions = {vb: mesh.Region(vb, ".*") for vb in [VOL, BND, BBND, BBBND]}
+        d = webgui.BuildRenderData(mesh, gf, deformation=CF((0, 0, 0.02*gf)), regions=regions)
+        assert len(d["edges"]) > 0

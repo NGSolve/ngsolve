@@ -531,12 +531,16 @@ namespace ngcomp
     // which kinds of elements the context gate accepted
     bool vol_ok = false, surf_ok = false, seg_ok = false;
     size_t gate_stamp = size_t(-1);
+    // GridFunctions in cf and their update levels at the last gate
+    Array<const GridFunction*> gate_gfs;
+    Array<int> gate_levels;
     void Gate ();
     void Regate ();
     // LocalHeap lh;
   public:
+    // defer_gate: check at the first draw (GridFunction not yet updated)
     VisualizeCoefficientFunction (shared_ptr<MeshAccess> ama,
-				  shared_ptr<CoefficientFunction> acf);
+				  shared_ptr<CoefficientFunction> acf, bool defer_gate = false);
     
     virtual ~VisualizeCoefficientFunction ();
   

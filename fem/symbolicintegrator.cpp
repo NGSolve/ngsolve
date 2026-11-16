@@ -2829,7 +2829,8 @@ namespace ngfem
                                   bool & symmetric_so_far,
                                   LocalHeap & lh) const
   {
-    if (linearization)
+    // derived integrators may override CalcLinearizedElementMatrix only
+    if (linearization || typeid(*this) != typeid(SymbolicBilinearFormIntegrator))
       {
         BilinearFormIntegrator::CalcLinearizedElementMatrixAdd (fel, trafo, elveclin, elmat, symmetric_so_far, lh);
         return;

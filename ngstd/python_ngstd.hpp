@@ -93,7 +93,8 @@ namespace ngstd
 using namespace ngstd;
 
 
-// None is no valid shared_ptr argument for NGSolve classes, use OptPtr where None is allowed
+// None is no valid shared_ptr argument for NGSolve classes, use OptPtr where None is allowed.
+// Active with NGS_PYTHON_NONNULL_ARGS (set for NGSolve itself); add-ons keep the pybind11 default
 
 namespace ngstd
 {
@@ -124,6 +125,7 @@ namespace ngsmetal { using ngstd::PyNonNullArg; }
 namespace pybind11 {
 namespace detail {
 
+#ifdef NGS_PYTHON_NONNULL_ARGS
   struct ngs_no_match;
   void PyNonNullArg (ngs_no_match&);  // blocks ordinary lookup
 
@@ -140,6 +142,7 @@ namespace detail {
       return copyable_holder_caster<T, std::shared_ptr<T>>::load (src, convert);
     }
   };
+#endif
 
   template <typename T>
   struct type_caster<ngstd::OptPtr<T>>

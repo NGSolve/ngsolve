@@ -361,6 +361,19 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, intpoint
                 raise
             # volume functions without trace (e.g. L2) are evaluated from the volume side
             return ngs.BoundaryFromVolumeCF(func)(pts)
+
+    def eval_edge(func, pts):
+        try:
+            return func(pts)
+        except Exception:
+            pass
+        # deformation without trace on the edges (e.g. L2)
+        if mesh.dim == 2:
+            try:
+                return ngs.BoundaryFromVolumeCF(func)(pts)
+            except Exception:
+                pass
+        return ngs.CF((ngs.x, ngs.y, ngs.z, 0.0))(pts)
     
     d['show_wireframe'] = order2d>0
     d['show_mesh'] = order2d>0
@@ -440,7 +453,7 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, intpoint
         vb = [ngs.VOL, ngs.BND, ngs.BBND][mesh.dim-1]
         reg = regions[vb]
         pts = mesh.MapToAllElements(ir_seg, reg)
-        pmat = cf_edge(pts)
+        pmat = eval_edge(cf_edge, pts)
         pmima = updatePMinMax(pmat)
         pmat = pmat.reshape(-1, og+1, 4)
         edge_data = np.tensordot(iBvals.NumPy(), pmat, axes=(1,1))

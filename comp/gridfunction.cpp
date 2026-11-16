@@ -418,7 +418,8 @@ namespace ngcomp
 
     if (eval_2d || eval_3d)
       {
-        netgen::SolutionData * vis = new VisualizeCoefficientFunction (ma, gf);
+        // called from the GridFunction constructor, before its first Update
+        netgen::SolutionData * vis = new VisualizeCoefficientFunction (ma, gf, true);
         Ng_SolutionData soldata;
         Ng_InitSolutionData (&soldata);
         
@@ -2816,15 +2817,31 @@ namespace ngcomp
 
   VisualizeCoefficientFunction :: 
   VisualizeCoefficientFunction (shared_ptr<MeshAccess> ama,
-				shared_ptr<CoefficientFunction> acf)
+				shared_ptr<CoefficientFunction> acf, bool defer_gate)
     : SolutionData ("coef", acf->Dimension(), false /* complex */),
       ma(ama), cf(acf)
   { 
-    Gate();
+    if (!defer_gate)
+      Gate();
   }
 
   void VisualizeCoefficientFunction :: Gate ()
   {
+    gate_stamp = ma->GetTimeStamp();
+    gate_gfs.SetSize0();
+    gate_levels.SetSize0();
+    cf->TraverseDAG ([&] (CoefficientFunction & node)
+      {
+        const GridFunction * gf = dynamic_cast<const GridFunction*> (&node);
+        if (!gf)
+          if (auto gfcf = dynamic_cast<GridFunctionCoefficientFunction*> (&node))
+            gf = gfcf->GetGridFunctionPtr().get();
+        if (gf && !gate_gfs.Contains(gf))
+          {
+            gate_gfs.Append (gf);
+            gate_levels.Append (gf->GetLevelUpdated());
+          }
+      });
     int dim = ma->GetDimension();
     auto accepts = [&] (const CoefficientFunction & c, VorB vb)
       {
@@ -2855,13 +2872,15 @@ namespace ngcomp
     seg_ok = dim >= 2 && accepts (*cf, dim == 2 ? BND : BBND);
     if (!vol_ok && !surf_ok && !seg_ok)
       CheckContext (*cf, MakeCFContext (*ma, CFContext::EVALUATE, VOL));
-    gate_stamp = ma->GetTimeStamp();
   }
 
   // the mesh was refined since the last gate: a new context
   void VisualizeCoefficientFunction :: Regate ()
   {
-    if (gate_stamp == ma->GetTimeStamp()) return;
+    bool same = gate_stamp == ma->GetTimeStamp();
+    for (size_t i = 0; i < gate_gfs.Size(); i++)
+      if (gate_gfs[i]->GetLevelUpdated() != gate_levels[i]) same = false;
+    if (same) return;
     try
       {
         Gate();
@@ -2869,8 +2888,12 @@ namespace ngcomp
     catch (const Exception & e)
       {
         vol_ok = surf_ok = seg_ok = false;
-        gate_stamp = ma->GetTimeStamp();
-        cout << "VisualizeCoefficientFunction: " << e.What() << endl;
+        // a GridFunction before its first Update is no error
+        bool pending = false;
+        for (auto level : gate_levels)
+          if (level < 0) pending = true;
+        if (!pending)
+          cout << "VisualizeCoefficientFunction: " << e.What() << endl;
       }
   }
   
