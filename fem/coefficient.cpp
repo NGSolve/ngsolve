@@ -5713,6 +5713,13 @@ public:
 
   string GetDescription () const override { return "domain-wise CoefficientFunction"; }
 
+  [[noreturn]] void ThrowUndefined (const ElementTransformation & trafo) const
+  {
+    throw Exception ("domain-wise CoefficientFunction is undefined in " + ToString(trafo.VB()) +
+                     " region with index " + ToString(trafo.GetElementIndex()) +
+                     ", give a value there or use default=...");
+  }
+
   void CheckContext (const CFContext & ctx) const override
   {
     VorB evb = ctx.EvalVB();
@@ -5748,15 +5755,15 @@ public:
     code.body += "switch(domain_index) {\n";
     for(int domain : Range(inputs))
     {
+        if (!ci[domain]) continue;
         code.body += "case " + ToLiteral(domain) + ": \n";
         for (int i = 0; i < Dimension(); i++)
           code.body += "  "+Var(index, i, Dimensions()).Assign(Var(inputs[domain], i, Dimensions()), false);          
         code.body += "  break;\n";
     }
     code.body += "default: \n";
-    for (int i = 0; i < Dimension(); i++)
-      code.body += "  "+Var(index, i, Dimensions()).Assign(string("0.0"), false);      
-    code.body += "  break;\n";
+    code.body += "  throw ngcore::Exception (\"domain-wise CoefficientFunction is undefined in region with index \" + "
+      "std::to_string(domain_index) + \", give a value there or use default=...\");\n";
     code.body += "}\n";
   }
 
@@ -5848,29 +5855,24 @@ public:
   virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
                         FlatVector<> result) const override
   {
-    result = 0;
     int matindex = ip.GetTransformation().GetElementIndex();
-    if (ci[matindex])
-      ci[matindex] -> Evaluate (ip, result);
+    if (!ci[matindex]) ThrowUndefined (ip.GetTransformation());
+    ci[matindex] -> Evaluate (ip, result);
   }
 
   virtual void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<Complex> values) const override
   {
     int matindex = ir.GetTransformation().GetElementIndex();
-    if (ci[matindex])
-      ci[matindex] -> Evaluate (ir, values);
-    else
-      values.AddSize(ir.Size(), Dimension()) = 0.0;
+    if (!ci[matindex]) ThrowUndefined (ir.GetTransformation());
+    ci[matindex] -> Evaluate (ir, values);
   }
 
   template <typename MIR, typename T, ORDERING ORD>
   void T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const
   {
     int matindex = ir.GetTransformation().GetElementIndex();
-    if (ci[matindex])
-      ci[matindex] -> Evaluate (ir, values);
-    else
-      values.AddSize(Dimension(), ir.Size()) = T(0.0);
+    if (!ci[matindex]) ThrowUndefined (ir.GetTransformation());
+    ci[matindex] -> Evaluate (ir, values);
   }
 
   template <typename MIR, typename T, ORDERING ORD>
@@ -5879,20 +5881,17 @@ public:
                    BareSliceMatrix<T,ORD> values) const
   {
     int matindex = ir.GetTransformation().GetElementIndex();
-    if (ci[matindex])
-      values.AddSize(Dimension(), ir.Size()) = input[matindex];
-    else
-      values.AddSize(Dimension(), ir.Size()) = T(0.0);
+    if (!ci[matindex]) ThrowUndefined (ir.GetTransformation());
+    values.AddSize(Dimension(), ir.Size()) = input[matindex];
   }  
 
   
   virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
                         FlatVector<Complex> result) const override
   {
-    result = 0;
     int matindex = ip.GetTransformation().GetElementIndex();
-    if (ci[matindex])
-      ci[matindex] -> Evaluate (ip, result);
+    if (!ci[matindex]) ThrowUndefined (ip.GetTransformation());
+    ci[matindex] -> Evaluate (ip, result);
   }
   
   virtual Complex EvaluateComplex (const BaseMappedIntegrationPoint & ip) const override

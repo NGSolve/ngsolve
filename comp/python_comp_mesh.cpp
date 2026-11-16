@@ -843,6 +843,7 @@ mesh (netgen.Mesh): a mesh generated from Netgen
       Array<pair<variant<string, Region>, shared_ptr<CoefficientFunction>>> vals;
       for(auto val : py_svals)
         vals.Append(make_pair(py::cast<variant<string, Region>>(val.first),
+                              val.second.is_none() ? nullptr :
                               py::cast<shared_ptr<CoefficientFunction>>(val.second)));
       return self.RegionCF(vb, default_value, std::move(vals));
     }, py::arg("VorB"), py::arg("value"), py::arg("default") = nullptr,
@@ -851,6 +852,7 @@ First argument is VorB, defining the co-dimension,
 second argument is a dict from either region names or Region objects to
 CoefficientFunction (-values). Later given names/regions override earlier
 values. Optional last argument (default) is the value for not given regions.
+The value None leaves the region undefined, also if a default is given.
 >>> sigma = mesh.RegionCF(VOL, { "steel_.*" : 2e6 }, default=0)
 will create a CF being 2e6 on all domains starting with 'steel_' and 0 elsewhere.
 )delimiter")
@@ -862,6 +864,7 @@ will create a CF being 2e6 on all domains starting with 'steel_' and 0 elsewhere
       Array<pair<variant<string, Region>, shared_ptr<CoefficientFunction>>> vals;
       for(auto val : py_svals)
         vals.Append(make_pair(py::cast<variant<string, Region>>(val.first),
+                              val.second.is_none() ? nullptr :
                               py::cast<shared_ptr<CoefficientFunction>>(val.second)));
       return self.MaterialCF(default_value, std::move(vals));
     }, py::arg("values"), py::arg("default") = nullptr,
@@ -869,6 +872,7 @@ will create a CF being 2e6 on all domains starting with 'steel_' and 0 elsewhere
 First argument is a dict from either material names or Region objects to
 CoefficientFunction (-values). Later given names/regions override earlier
 values. Optional last argument (default) is the value for not given materials.
+The value None leaves the region undefined, also if a default is given.
 >>> sigma = mesh.MaterialCF({ "steel_.*" : 2e6 }, default=0)
 will create a CF being 2e6 on all domains starting with 'steel_' and 0 elsewhere.
 )delimiter")
@@ -880,6 +884,7 @@ will create a CF being 2e6 on all domains starting with 'steel_' and 0 elsewhere
       Array<pair<variant<string, Region>, shared_ptr<CoefficientFunction>>> vals;
       for(auto val : py_svals)
         vals.Append(make_pair(py::cast<variant<string, Region>>(val.first),
+                              val.second.is_none() ? nullptr :
                               py::cast<shared_ptr<CoefficientFunction>>(val.second)));
       return self.BoundaryCF(default_value, std::move(vals));
     }, py::arg("values"), py::arg("default") = nullptr,
@@ -887,6 +892,7 @@ will create a CF being 2e6 on all domains starting with 'steel_' and 0 elsewhere
 First argument is a dict from either boundary names or Region objects to
 CoefficientFunction (-values). Later given names/regions override earlier
 values. Optional last argument (default) is the value for not given boundaries.
+The value None leaves the region undefined, also if a default is given.
 >>> penalty = mesh.BoundaryCF({ "top" : 1e6 }, default=0)
 will create a CF being 1e6 on the top boundary and 0. elsewhere.
 )delimiter")

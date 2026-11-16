@@ -2317,6 +2317,8 @@ namespace ngcomp
   RegionCF(VorB vb, shared_ptr<CoefficientFunction> default_value, const Array<pair<variant<string, Region>, shared_ptr<CoefficientFunction>>>& region_values)
   {
     Array<shared_ptr<CoefficientFunction>> cfs(GetNRegions(vb));
+    Array<bool> given(cfs.Size());
+    given = false;
     shared_ptr<MeshAccess> spm(this, NOOP_Deleter);
     for(const auto& val : region_values)
       {
@@ -2333,11 +2335,15 @@ namespace ngcomp
         for(auto i : Range(region.Mask().Size()))
           {
             if(region.Mask()[i])
-              cfs[i] = val.second;
+              {
+                cfs[i] = val.second;
+                given[i] = true;
+              }
           }
       }
+    // an explicit nullptr stays undefined
     for(auto i : Range(cfs))
-      if(cfs[i] == nullptr)
+      if(!given[i])
         cfs[i] = default_value;
     return MakeDomainWiseCoefficientFunction(std::move(cfs), vb);
   }
