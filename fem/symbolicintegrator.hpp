@@ -976,7 +976,7 @@ public:
   {
   public:
     shared_ptr<ProxyFunction> proxy;
-    RegionDescriptor vbn;
+    MixedRegionDescriptor vbn;
   };
 
   class DirichletBC 

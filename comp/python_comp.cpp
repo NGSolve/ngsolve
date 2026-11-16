@@ -737,6 +737,10 @@ when building the system matrices.
     {
       return DirichletBoundary { self, vbn };
     })
+    .def("__getitem__", [](spProxy self, MixedRegionDescriptor vbn)
+    {
+      return DirichletBoundary { self, vbn };
+    })
 
     .def("GetDofs", [](spProxy self, const Region& reg)
     {
@@ -776,9 +780,15 @@ when building the system matrices.
   py::class_<DirichletBC> (m, "DirichletBC")
     .def_property_readonly("dirbnd", [](DirichletBC & cond) { return cond.dirbnd; })
     .def_property_readonly("proxy", [](DirichletBC & cond) { return cond.dirbnd.proxy; })
-    .def_property_readonly("vbn", [](DirichletBC & cond) { return cond.dirbnd.vbn; })
-    .def_property_readonly("vb", [](DirichletBC & cond) { return cond.dirbnd.vbn.vb; })
-    .def_property_readonly("name", [](DirichletBC & cond) { return cond.dirbnd.vbn.name; })    
+    .def_property_readonly("vbn", [](DirichletBC & cond) -> py::object
+                           {
+                             // a RegionDescriptor as before, if there is one codimension
+                             if (cond.dirbnd.vbn.NumParts() == 1)
+                               return py::cast(cond.dirbnd.vbn.Single());
+                             return py::cast(cond.dirbnd.vbn);
+                           })
+    .def_property_readonly("vb", [](DirichletBC & cond) { return cond.dirbnd.vbn.Single().vb; })
+    .def_property_readonly("name", [](DirichletBC & cond) { return cond.dirbnd.vbn.Single().name; })
     .def_property_readonly("val", [](DirichletBC & cond) { return cond.val; })    
     ;
   // both may be passed as flag values (e.g. additional_dirbc=[...])
@@ -1003,6 +1013,9 @@ kwargs : kwargs
                           }
                         else if(py::isinstance<MixedRegion>(dirichlet))
                           flags->SetFlag("dirichlet", py::cast<MixedRegion>(dirichlet));
+                        else if(py::isinstance<RegionDescriptor>(dirichlet) || py::isinstance<MixedRegionDescriptor>(dirichlet))
+                          // passed on as it is, the space resolves it on its mesh
+                          flags->SetFlag("dirichlet", py::cast<MixedRegionDescriptor>(dirichlet));
                         else if (py::isinstance<py::str>(dirichlet))
                           {
                             std::regex pattern(dirichlet.cast<string>());
@@ -1056,6 +1069,8 @@ kwargs : kwargs
 
                         if (py::isinstance<MixedRegion> (definedon))
                           flags->SetFlag ("definedon", py::cast<MixedRegion>(definedon));
+                        if (py::isinstance<MixedRegionDescriptor> (definedon))
+                          flags->SetFlag ("definedon", py::cast<MixedRegionDescriptor>(definedon));
 
                         try
                           {
@@ -2895,6 +2910,15 @@ bonus_intorder : int
       Region reg(self->GetFESpace()->GetMeshAccess(), namevb.vb, namevb.name);
       self->GetFESpace()->Interpolate(*cf, self->GetVector(), &reg, lhp.GetLH());
     }, py::arg("namevb"),py::arg("cf"))
+    .def("__setitem__", [](shared_ptr<GF> self, MixedRegionDescriptor rd, spCF cf) {
+      // from the highest dimension down, the lower ones have the last word
+      for (auto vb : { VOL, BND, BBND, BBBND })
+        if (rd.names[vb])
+          {
+            Region reg(self->GetFESpace()->GetMeshAccess(), vb, *rd.names[vb]);
+            self->GetFESpace()->Interpolate(*cf, self->GetVector(), &reg, lhp.GetLH());
+          }
+    }, py::arg("descriptor"),py::arg("cf"))
 
     
     .def_property_readonly("name", &GridFunction::GetName, "Name of the Gridfunction")

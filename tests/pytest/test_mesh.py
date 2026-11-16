@@ -373,6 +373,81 @@ def test_mixedregion_misuse():
     with pytest.raises(Exception, match="no region given"):
         mesh.RegionCF({MixedRegion(mesh.Materials("typo")): 1}, default=0)
 
+def _box_rail_mesh():
+    import netgen.occ as occ
+    box = occ.Box((0,0,0), (1,1,1))
+    box.faces.name = "side"
+    box.faces.Min(occ.Z).name = "bot"
+    box.faces.Max(occ.Z).name = "top"
+    box.edges.Max(occ.X+occ.Z).name = "rail"
+    box.vertices.Max(occ.X+occ.Y+occ.Z).name = "corner"
+    box.solids.name = "air"
+    ball = occ.Sphere((0.5,0.5,0.5), 0.25)
+    ball.faces.name = "sphere"
+    ball.solids.name = "ball"
+    return Mesh(occ.OCCGeometry(occ.Glue([box - ball, ball])).GenerateMesh(maxh=0.3))
+
+def test_mixedregion_descriptor():
+    import pickle
+    mesh = _box_rail_mesh()
+    d = BND("bot") | BBND("rail") | BBBND("corner")
+    assert str(d) == "BND(bot) | BBND(rail) | BBBND(corner)"
+    assert mesh[d] == mesh.Boundaries("bot") | mesh.BBoundaries("rail") | mesh.BBBoundaries("corner")
+    assert mesh[d | BND("top")] == mesh[d] | mesh.Boundaries("top")
+    assert str(d[BND]) == "BND(bot)" and d[VOL] is None
+    assert str(pickle.loads(pickle.dumps(d))) == str(d)
+    # same VorB: stays a RegionDescriptor
+    same = BND("bot") | BND("top")
+    assert not hasattr(same, "__getitem__") and mesh[same] == mesh.Boundaries("bot|top")
+
+    def dofs(fes): return fes.ndof, list(fes.FreeDofs())
+    ref = H1(mesh, order=2, dirichlet="bot", dirichlet_bbnd="rail", dirichlet_bbbnd="corner")
+    fes = H1(mesh, order=2, dirichlet=d)
+    assert dofs(fes) == dofs(ref)
+    assert dofs(pickle.loads(pickle.dumps(fes))) == dofs(ref)
+    assert dofs(H1(mesh, order=2, dirichlet=BND("bot"))) == dofs(H1(mesh, order=2, dirichlet="bot"))
+    assert dofs(H1(mesh, order=2, definedon=VOL("ball") | BND("bot"))) == \
+        dofs(H1(mesh, order=2, definedon={VOL: mesh.Materials("ball"), BND: mesh.Boundaries("bot")}))
+    assert dofs(H1(mesh, order=2, definedon=VOL("ball"))) == dofs(H1(mesh, order=2, definedon="ball"))
+    with pytest.raises(Exception, match="VOL regions are not supported"):
+        H1(mesh, dirichlet=VOL("ball") | BND("bot"))
+
+    gf = GridFunction(fes)
+    gf[d] = 3
+    assert gf(mesh(0.3, 0.3, 0)) == pytest.approx(3) and gf(mesh(1, 0.5, 1)) == pytest.approx(3)
+    assert gf(mesh(1, 1, 1)) == pytest.approx(3) and gf(mesh(0.1, 0.1, 0.9)) == pytest.approx(0)
+
+    cf = mesh.RegionCF({VOL("ball"): 2, VOL("air"): 1, BND("bot") | BBND("rail"): 5}, default=0)
+    assert Integrate(cf, mesh, BND) == pytest.approx(5) and Integrate(cf, mesh, BBND) == pytest.approx(5)
+    assert Integrate(cf, mesh, VOL) == pytest.approx(1 + Integrate(1, mesh, definedon=mesh.Materials("ball")))
+
+def test_mixedregion_descriptor_solve():
+    mesh = _box_rail_mesh()
+    d = BND("bot") | BBND("rail") | BBBND("corner")
+    fref = H1(mesh, order=2, dirichlet="bot", dirichlet_bbnd="rail", dirichlet_bbbnd="corner")
+    ur, vr = fref.TnT()
+    a = BilinearForm(grad(ur)*grad(vr)*dx + ur*vr*ds("top")).Assemble()
+    f = LinearForm(vr*dx).Assemble()
+    gref = GridFunction(fref)
+    gref.vec.data = a.mat.Inverse(fref.FreeDofs()) * f.vec
+
+    fes = H1(mesh, order=2)
+    u, v = fes.TnT()
+    lhs, rhs = grad(u)*grad(v)*dx + u*v*ds("top"), 1*v*dx
+    def err(gf): return sqrt(Integrate((gf-gref)**2, mesh))
+    assert err(Solve(lhs == rhs, u[d] == 0)) < 1e-12
+    for pre in (preconditioners.Local, preconditioners.BDDC, preconditioners.MultiGrid):
+        assert err(Solve(lhs == rhs, u[d] == 0, pre(), solvers.CGSolver.Creator(maxiter=2000, tol=1e-12))) < 1e-10
+    gin = Solve(lhs == rhs, u[d] == 2)
+    assert gin(mesh(0.3, 0.3, 0)) == pytest.approx(2) and gin(mesh(1, 1, 1)) == pytest.approx(2)
+
+    bc = u[d] == 0
+    assert str(bc.vbn) == str(d)
+    with pytest.raises(Exception, match="one is needed"):
+        bc.vb
+    single = u[BND("bot")] == 0
+    assert single.vb == BND and single.name == "bot" and str(single.vbn) == "BND(bot)"
+
 if __name__ == "__main__":
     test_neighbours2d()
     test_neighbours()

@@ -1878,6 +1878,14 @@ namespace ngcomp
     masks[reg.VB()] = make_shared<BitArray>(reg.Mask());
   }
 
+  MixedRegion :: MixedRegion (const shared_ptr<MeshAccess> & amesh, const MixedRegionDescriptor & rd)
+    : MixedRegion (amesh)
+  {
+    for (int i = 0; i < 4; i++)
+      if (rd.names[i])
+        *masks[i] = Region(mesh, VorB(i), *rd.names[i]).Mask();
+  }
+
   MixedRegion MixedRegion :: Copy () const
   {
     MixedRegion res(mesh);

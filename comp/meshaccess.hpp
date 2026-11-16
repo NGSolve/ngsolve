@@ -1102,6 +1102,8 @@ namespace ngcomp
     MixedRegion() = default;
     NGS_DLL_HEADER MixedRegion (const shared_ptr<MeshAccess> & amesh);   // empty
     NGS_DLL_HEADER MixedRegion (const Region & reg);
+    // regions matching the name patterns
+    NGS_DLL_HEADER MixedRegion (const shared_ptr<MeshAccess> & amesh, const MixedRegionDescriptor & rd);
     MixedRegion (const MixedRegion &) = default;
 
     const shared_ptr<MeshAccess> & Mesh() const { return mesh; }

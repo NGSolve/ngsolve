@@ -104,13 +104,52 @@ void ExportNgcompMesh (py::module &m)
     .def("__call__", [](VorB vb, string name) { return RegionDescriptor{vb, name}; })
     ;
 
+  // as flag values they go to the C++ constructors unchanged
+  RegisterPyArchiveCaster<RegionDescriptor>();
+  RegisterPyArchiveCaster<MixedRegionDescriptor>();
   py::class_<RegionDescriptor> (m, "RegionDescriptor")
+    .def(py::pickle([](const RegionDescriptor & rd) { return py::make_tuple(rd.vb, rd.name); },
+                    [](py::tuple state) { return RegionDescriptor { py::cast<VorB>(state[0]), py::cast<string>(state[1]) }; }))
     .def(~py::self)
     .def(py::self+py::self)    
+    .def("__or__", [](const RegionDescriptor & a, const RegionDescriptor & b) -> py::object
+         {
+           if (a.vb == b.vb)
+             return py::cast(a + b);
+           return py::cast(MixedRegionDescriptor(a) | MixedRegionDescriptor(b));
+         }, py::is_operator(), py::arg("other").noconvert(),
+         "union: a RegionDescriptor for the same VorB, a MixedRegionDescriptor otherwise")
+    .def("__or__", [](const RegionDescriptor & a, const MixedRegionDescriptor & b)
+         { return MixedRegionDescriptor(a) | b; }, py::is_operator(), py::arg("other").noconvert())
     .def("__repr__", &ToString<RegionDescriptor>)
     .def_property_readonly("vb", [](RegionDescriptor&rd) { return rd.vb; })
     .def_property_readonly("name", [](RegionDescriptor&rd) { return rd.name; })
     ;
+
+  py::class_<MixedRegionDescriptor> (m, "MixedRegionDescriptor", docu_string(R"raw_string(
+Name patterns for regions of several codimensions, without a mesh:
+BND("bot") | BBBND("pin"). A mesh turns it into a MixedRegion: mesh[descriptor].
+)raw_string"))
+    .def(py::init<const RegionDescriptor&>(), py::arg("descriptor"))
+    .def(py::pickle([](const MixedRegionDescriptor & rd)
+                    { return py::make_tuple(rd.names[0], rd.names[1], rd.names[2], rd.names[3]); },
+                    [](py::tuple state)
+                    {
+                      MixedRegionDescriptor rd;
+                      for (int i = 0; i < 4; i++)
+                        rd.names[i] = py::cast<optional<string>>(state[i]);
+                      return rd;
+                    }))
+    .def("__or__", [](const MixedRegionDescriptor & a, const MixedRegionDescriptor & b) { return a | b; },
+         py::is_operator())
+    .def("__getitem__", [](const MixedRegionDescriptor & self, VorB vb) -> optional<RegionDescriptor>
+         {
+           if (!self.names[vb]) return nullopt;
+           return RegionDescriptor { vb, *self.names[vb] };
+         }, "RegionDescriptor of the given VorB, None if there is none")
+    .def("__repr__", &ToString<MixedRegionDescriptor>)
+    ;
+  py::implicitly_convertible <RegionDescriptor, MixedRegionDescriptor> ();
 
   
   py::class_<ElementId> (m, "ElementId", 
@@ -816,6 +855,12 @@ mesh (netgen.Mesh): a mesh generated from Netgen
 	  },
          py::arg("vbn"),
 	 "Return mesh-region from RegionDescriptor object")
+    .def("__getitem__",
+	 [](const shared_ptr<MeshAccess> & ma, const MixedRegionDescriptor & rd) {
+            return MixedRegion(ma, rd);
+	  },
+         py::arg("descriptor"),
+	 "Return MixedRegion from a MixedRegionDescriptor, e.g. mesh[BND('bot') | BBBND('pin')]")
 
     
     .def("GetMaterials",
@@ -945,23 +990,27 @@ will create a CF being 2e6 on all domains starting with 'steel_' and 0 elsewhere
             py::cast<shared_ptr<CoefficientFunction>>(val.second);
           if (py::isinstance<Region>(val.first))
             vals.Append(make_pair(py::cast<Region>(val.first), cf));
-          else if (py::isinstance<MixedRegion>(val.first))
+          else if (py::isinstance<MixedRegion>(val.first) || py::isinstance<RegionDescriptor>(val.first)
+                   || py::isinstance<MixedRegionDescriptor>(val.first))
             {
               // one entry per VorB part
-              auto mr = py::cast<MixedRegion>(val.first);
+              shared_ptr<MeshAccess> spm(&self, NOOP_Deleter);
+              auto mr = py::isinstance<MixedRegion>(val.first) ? py::cast<MixedRegion>(val.first)
+                : MixedRegion(spm, py::cast<MixedRegionDescriptor>(val.first));
               for (auto vb : { VOL, BND, BBND, BBBND })
                 if (mr.Mask(vb).NumSet())
                   vals.Append(make_pair(mr[vb], cf));
             }
           else
-            throw py::type_error("RegionCF without VorB needs Region or MixedRegion objects as keys, e.g. mesh.Materials('iron')");
+            throw py::type_error("RegionCF without VorB needs Region or MixedRegion objects or region descriptors as keys, e.g. mesh.Materials('iron') or VOL('iron')");
         }
       if (!vals.Size())
         throw Exception ("RegionCF: no region given (an empty MixedRegion does not select a co-dimension)");
       return self.RegionCF(default_value, vals);
     }, py::arg("values"), py::arg("default") = nullptr,
          R"delimiter(Region wise CoefficientFunction on regions of different co-dimensions.
-The argument is a dict from Region or MixedRegion objects to CoefficientFunction (-values),
+The argument is a dict from Region or MixedRegion objects, or from region descriptors
+like VOL("plate") or BND("a") | BBND("b"), to CoefficientFunction (-values),
 a MixedRegion sets the value in its non-empty co-dimensions.
 Later given regions override earlier values. The optional argument default is
 the value for the other regions of those co-dimensions which have a given region.

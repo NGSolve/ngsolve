@@ -134,6 +134,52 @@ namespace ngfem
     return ost;
   }
 
+  // name patterns for regions of several codimensions, without a mesh
+  class MixedRegionDescriptor
+  {
+  public:
+    std::array<optional<string>,4> names;   // by VorB, nullopt: no region of this codimension
+    MixedRegionDescriptor () = default;
+    MixedRegionDescriptor (const RegionDescriptor & rd) { names[rd.vb] = rd.name; }
+    MixedRegionDescriptor operator| (const MixedRegionDescriptor & rd2) const
+    {
+      MixedRegionDescriptor res;
+      for (int i = 0; i < 4; i++)
+        if (names[i] && rd2.names[i])
+          res.names[i] = "(?:"+*names[i]+")|(?:"+*rd2.names[i]+")";
+        else
+          res.names[i] = names[i] ? names[i] : rd2.names[i];
+      return res;
+    }
+    int NumParts () const
+    {
+      int n = 0;
+      for (auto & name : names) if (name) n++;
+      return n;
+    }
+    // the only part, throws for several codimensions
+    RegionDescriptor Single () const
+    {
+      if (NumParts() != 1)
+        throw Exception ("region descriptor of " + ToString(NumParts()) + " codimensions, one is needed");
+      for (int i = 0; i < 4; i++)
+        if (names[i]) return { VorB(i), *names[i] };
+      throw Exception ("empty region descriptor");
+    }
+  };
+
+  inline ostream & operator<< (ostream & ost, const MixedRegionDescriptor& rd)
+  {
+    bool first = true;
+    for (int i = 0; i < 4; i++)
+      if (rd.names[i])
+        {
+          ost << (first ? "" : " | ") << VorB(i) << "(" << *rd.names[i] << ")";
+          first = false;
+        }
+    return ost;
+  }
+
   
 
   class ElementId

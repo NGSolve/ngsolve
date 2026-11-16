@@ -59,6 +59,21 @@ namespace ngcomp
     return flags.AnyFlagDefined(name) && flags.GetAnyFlag(name).type() == type;
   }
 
+  // a MixedRegion flag, or a region descriptor flag resolved on the mesh of the space
+  static optional<MixedRegion> MixedRegionFlag (const Flags & flags, const string & name,
+                                                const shared_ptr<MeshAccess> & ma)
+  {
+    if (!flags.AnyFlagDefined(name)) return nullopt;
+    const std::any & val = flags.GetAnyFlag(name);
+    if (auto reg = std::any_cast<MixedRegion>(&val))
+      return OwnRegion(*reg, *ma, name);
+    if (auto rd = std::any_cast<MixedRegionDescriptor>(&val))
+      return MixedRegion(ma, *rd);
+    if (auto rd = std::any_cast<RegionDescriptor>(&val))
+      return MixedRegion(ma, MixedRegionDescriptor(*rd));
+    return nullopt;
+  }
+
   FESpace :: FESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool checkflags)
     : NGS_Object (ama, flags, "FESpace")
   {
@@ -199,14 +214,13 @@ lot of new non-zero entries in the matrix!\n" << endl;
         dirichlet_constraints[BBBND] |= dir.Mask(); // that's what it was before, can we just assign ? 
       }
 
-    // MixedRegion: ORed with the per-VorB flags above
-    if(IsAnyFlagOf(flags, "dirichlet", typeid(MixedRegion)))
+    // MixedRegion or region descriptor: ORed with the per-VorB flags above
+    if(auto dir = MixedRegionFlag(flags, "dirichlet", ma))
       {
-        const auto & dir = OwnRegion(std::any_cast<const MixedRegion&>(flags.GetAnyFlag("dirichlet")), *ma, "dirichlet");
-        if (dir.Mask(VOL).NumSet())
+        if (dir->Mask(VOL).NumSet())
           throw Exception ("dirichlet: VOL regions are not supported, use BND, BBND or BBBND regions");
         for (auto vb : { BND, BBND, BBBND })
-          dirichlet_constraints[vb].Or (dir.Mask(vb));
+          dirichlet_constraints[vb].Or (dir->Mask(vb));
       }
     else if(flags.AnyFlagDefined("dirichlet") && !IsAnyFlagOf(flags, "dirichlet", typeid(Region)))
       throw Exception ("dirichlet with wrong argument type");
@@ -283,16 +297,15 @@ lot of new non-zero entries in the matrix!\n" << endl;
                 for(auto vb = VOL; vb < reg.VB(); vb++)
                   definedon[vb] = false;
               }
-            else if(anydefon.type() == typeid(MixedRegion))
+            else if(auto reg = MixedRegionFlag(flags, "definedon", ma))
               {
                 // like the {VOL: ..., BND: ...} dict; empty BBND/BBBND parts do not restrict
-                const auto & reg = OwnRegion(std::any_cast<const MixedRegion&>(anydefon), *ma, "definedon");
                 for (auto vb : { VOL, BND, BBND, BBBND })
                   {
-                    if (vb >= BBND && !reg.Mask(vb).NumSet()) continue;
+                    if (vb >= BBND && !reg->Mask(vb).NumSet()) continue;
                     definedon[vb].SetSize(ma->GetNRegions(vb));
                     for (auto i : Range(definedon[vb]))
-                      definedon[vb][i] = reg.Mask(vb).Test(i);
+                      definedon[vb][i] = reg->Mask(vb).Test(i);
                   }
               }
             else
@@ -2225,7 +2238,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
         freedofs = make_shared<BitArray>(*freedofs);
         for (auto dbc : dirbcs)
           {
-            Region reg(ma, dbc.vbn.vb, dbc.vbn.name);
+            MixedRegion reg(ma, dbc.vbn);
             BitArray dofs = GetDofs(reg, dbc.proxy->Evaluator().get());
             dofs.Invert();
             freedofs->And(dofs);

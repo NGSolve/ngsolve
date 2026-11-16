@@ -119,7 +119,7 @@ namespace ngcomp
         freedofs = make_shared<BitArray>(*freedofs);
         for (auto dbc : additional_dirichlet_boundaries)
           {
-            Region reg(ma, dbc.vbn.vb, dbc.vbn.name);
+            MixedRegion reg(ma, dbc.vbn);
             BitArray dofs = bf.lock()->GetFESpace()->GetDofs(reg, dbc.proxy->Evaluator().get());
             dofs.Invert();
             freedofs->And(dofs);
