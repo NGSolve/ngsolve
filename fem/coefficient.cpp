@@ -123,7 +123,8 @@ namespace ngfem
       + R"CODE_(    typedef {scal_type} TStack{index};
     TStack{index} * hmem{index} = ngs_tlheap.Alloc<TStack{index}>(mir.Size()*{dim});
     {values_type} {values}({rows}, {cols}, reinterpret_cast<{scal_type}*>(&hmem{index}[0]));
-    {
+    )CODE_";
+    string evaluate = R"CODE_({
       const CoefficientFunction & cf = *reinterpret_cast<CoefficientFunction*>({this});
       {values} = {scal_type}(0.0);
       cf.Evaluate(mir, {values});
@@ -144,6 +145,11 @@ namespace ngfem
     variables["rows"] = code.is_simd ? rows : cols;
     variables["cols"] = code.is_simd ? cols : rows;
     code.header += Code::Map(mycode, variables);
+    // in a region branch: evaluate with the first point, only if the branch is taken
+    if (code.in_branch)
+      code.body += "if (i == 0)\n" + Code::Map(evaluate, variables);
+    else
+      code.header += Code::Map(evaluate, variables);
 
     // code.Declare(code.res_type, index, Dimensions());
     code.Declare(index, Dimensions(), IsComplex());
@@ -5744,23 +5750,74 @@ public:
   }
   */
   
+  size_t NumRegions () const { return ci.Size(); }
+
+  // number of the input used in the region, -1 if undefined there
+  int SelectedInput (size_t index) const
+  {
+    return (index < ci.Size() && ci[index]) ? int(index) : -1;
+  }
+
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
+    GenerateCode (code, inputs, index, FlatArray<string>(), FlatArray<char>());
+  }
+
+  enum { NEEDED, UNUSED, UNREACHED };
+  // branch[j]: code of the steps needed only where input step j is used, goes into its case block
+  // use: per region, UNUSED: the result is not used there, UNREACHED: the code is not executed there
+  void GenerateCode (Code & code, FlatArray<int> inputs, int index,
+                     FlatArray<string> branch, FlatArray<char> use) const
+  {
     code.body += "// DomainWiseCoefficientFunction:\n";
+    std::map<int,Array<int>> regions;
+    for (int domain : Range(inputs))
+      if (ci[domain] && (size_t(domain) >= use.Size() || use[domain] == NEEDED))
+        regions[inputs[domain]].Append (domain);
+
+    // plain scalar code has one type only
+    bool probes = code.is_simd || code.deriv;
+    bool hidden = false;
     string type = "decltype(0.0";
-    for(int in : inputs)
-      type += "+"+Var(in,0,Dimensions()).S();
+    for (auto & [in, domains] : regions)
+      {
+        string val = Var(in,0,Dimensions()).S();
+        if (size_t(in) < branch.Size() && branch[in].size())
+          {
+            hidden = true;
+            if (!probes) continue;
+            // an input inside of a case block is not visible: a lambda with its code, never called, gives the type
+            string probe = "type_" + ToLiteral(index) + "_" + ToLiteral(in);
+            code.body += "[[maybe_unused]] auto " + probe + " = [&] () {\n" + branch[in] + "return " + val + ";\n};\n";
+            val = probe + "()";
+          }
+        type += "+"+val;
+      }
     type += ")";
+    if (hidden && !probes)
+      type = code.GetType (IsComplex());
     code.Declare (type, index, Dimensions());
     code.body += "switch(domain_index) {\n";
-    for(int domain : Range(inputs))
-    {
-        if (!ci[domain]) continue;
-        code.body += "case " + ToLiteral(domain) + ": \n";
+    for (auto & [in, domains] : regions)
+      {
+        for (int domain : domains)
+          code.body += "case " + ToLiteral(domain) + ":\n";
+        code.body += "{\n";
+        if (size_t(in) < branch.Size())
+          code.body += branch[in];
         for (int i = 0; i < Dimension(); i++)
-          code.body += "  "+Var(index, i, Dimensions()).Assign(Var(inputs[domain], i, Dimensions()), false);          
+          code.body += "  "+Var(index, i, Dimensions()).Assign(Var(in, i, Dimensions()), false);
+        code.body += "}\nbreak;\n";
+      }
+    if (use.Contains(UNUSED))
+      {
+        for (int domain : Range(use))
+          if (use[domain] == UNUSED)
+            code.body += "case " + ToLiteral(domain) + ":\n";
+        for (int i = 0; i < Dimension(); i++)
+          code.body += "  "+Var(index, i, Dimensions()).Assign(string("0.0"), false);
         code.body += "  break;\n";
-    }
+      }
     code.body += "default: \n";
     code.body += "  throw ngcore::Exception (\"domain-wise CoefficientFunction is undefined in region with index \" + "
       "std::to_string(domain_index) + \", give a value there or use default=...\");\n";
@@ -6724,8 +6781,12 @@ class CompiledCoefficientFunction : public CompiledCoefficientFunctionInterface 
     DynamicTable<int> inputs;
     size_t max_inputsize;
     Array<int> dim;
-    int totdim;
     Array<bool> is_complex;
+    // steps needed on the elements of a region: active[stepclass[region index]], active[0]: all steps
+    // selected: for a region-wise step its input of the region (-2 if undefined), -1 for other steps
+    Array<int> stepclass;
+    Array<Array<int>> active, selected;
+    Array<size_t> activedim;
     // Array<Timer*> timers;
     shared_ptr<SharedLibrary> library;
     lib_function compiled_function = nullptr;
@@ -6780,9 +6841,6 @@ class CompiledCoefficientFunction : public CompiledCoefficientFunctionInterface 
              }
          }, visited);
       
-      totdim = 0;
-      for (int d : dim) totdim += d;
-      
       cout << IM(3) << "Compiled CF:" << endl;
       for (auto cf : steps)
         cout << IM(3) << typeid(*cf).name() << endl;
@@ -6795,10 +6853,91 @@ class CompiledCoefficientFunction : public CompiledCoefficientFunctionInterface 
           Array<shared_ptr<CoefficientFunction>> in = EvaluationInputs (*steps[i]);
           max_inputsize = max2(in.Size(), max_inputsize);
           for (auto incf : in)
-            inputs.Add (i, getIndex(*incf.get()));
+            inputs.Add (i, incf ? getIndex(*incf) : -1);
         }
       cout << IM(3) << "inputs = " << endl << inputs << endl;
+      SetupActiveSteps();
+    }
 
+    // a region-wise step needs only the input of the element's region
+    void SetupActiveSteps ()
+    {
+      int n = steps.Size();
+      Array<const DomainWiseCoefficientFunction*> regionwise(n);
+      size_t nregions = 0;
+      for (int i : Range(n))
+        {
+          regionwise[i] = dynamic_cast<const DomainWiseCoefficientFunction*> (steps[i]);
+          if (regionwise[i])
+            nregions = max2 (nregions, regionwise[i]->NumRegions());
+        }
+
+      active.SetSize (0);
+      selected.SetSize (0);
+      activedim.SetSize (0);
+      stepclass.SetSize (nregions);
+      // key: (step, selected input) pairs
+      std::map<std::vector<int>,int> classes;
+      auto addclass = [&] (const std::vector<int> & key)
+      {
+        auto [pos, isnew] = classes.insert ({ key, int(active.Size()) });
+        if (isnew)
+          {
+            Array<int> act(key.size()/2), sel(key.size()/2);
+            size_t d = 0;
+            for (size_t k : Range(act))
+              {
+                act[k] = key[2*k];
+                sel[k] = key[2*k+1];
+                d += dim[act[k]];
+              }
+            active.Append (std::move(act));
+            selected.Append (std::move(sel));
+            activedim.Append (d);
+          }
+        return pos->second;
+      };
+
+      std::vector<int> key;
+      for (int i : Range(n))
+        {
+          key.push_back (i);
+          key.push_back (-1);
+        }
+      addclass (key);
+
+      BitArray live(n);
+      for (size_t index : Range(nregions))
+        {
+          live.Clear();
+          live.SetBit (n-1);
+          key.clear();
+          // inputs come before their consumers
+          for (int i = n-1; i >= 0; i--)
+            {
+              if (!live.Test(i)) continue;
+              int sel = -1;
+              if (regionwise[i])
+                {
+                  int nr = regionwise[i]->SelectedInput (index);
+                  sel = (nr >= 0 && inputs[i][nr] >= 0) ? inputs[i][nr] : -2;
+                  if (sel >= 0) live.SetBit (sel);
+                }
+              else
+                for (int in : inputs[i])
+                  if (in >= 0) live.SetBit (in);
+              key.push_back (sel);
+              key.push_back (i);
+            }
+          std::reverse (key.begin(), key.end());
+          stepclass[index] = addclass (key);
+        }
+    }
+
+    int StepClass (const ElementTransformation & trafo) const
+    {
+      size_t index = trafo.GetElementIndex();
+      return index < stepclass.Size() ? stepclass[index] : 0;
     }
 
 
@@ -6869,8 +7008,6 @@ class CompiledCoefficientFunction : public CompiledCoefficientFunctionInterface 
                    is_complex.Append (stepcf.IsComplex());
                  }
              }, visited);
-          totdim = 0;
-          for (int d : dim) totdim += d;
           inputs = DynamicTable<int> (steps.Size());
           max_inputsize = 0;
 
@@ -6881,6 +7018,7 @@ class CompiledCoefficientFunction : public CompiledCoefficientFunctionInterface 
               for (auto incf : in)
                 inputs.Add (i, steps.Pos(incf.get()));
             }
+          SetupActiveSteps();
         }
     }
 
@@ -6927,15 +7065,106 @@ class CompiledCoefficientFunction : public CompiledCoefficientFunctionInterface 
       if(deriv==1) res_type = "AutoDiff<1," + res_type + ">";
       if(deriv==2) res_type = "AutoDiffDiff<1," + res_type + ">";
       code.res_type = res_type;
-      
-      for (auto i : Range(steps))
+
+      int n = steps.Size();
+      Array<const DomainWiseCoefficientFunction*> regionwise(n);
+      for (int i : Range(n))
+        regionwise[i] = dynamic_cast<const DomainWiseCoefficientFunction*> (steps[i]);
+
+      // a step goes into the innermost block containing all its uses:
+      // the case block (region-wise step, its input step) or the top level
+      typedef pair<int,int> TScope;
+      const TScope top(-1,-1);
+      Array<TScope> scope(n);
+      scope = top;
+      Array<bool> used(n);
+      used = false;
+      auto depth = [&] (TScope sc)
+      {
+        int d = 0;
+        for ( ; sc != top; sc = scope[sc.first]) d++;
+        return d;
+      };
+      auto common = [&] (TScope a, TScope b)
+      {
+        int da = depth(a), db = depth(b);
+        for ( ; da > db; da--) a = scope[a.first];
+        for ( ; db > da; db--) b = scope[b.first];
+        while (a != b)
+          {
+            a = scope[a.first];
+            b = scope[b.first];
+          }
+        return a;
+      };
+      // consumers come after their inputs: scope[i] is final when step i is reached
+      for (int i = n-1; i >= 0; i--)
+        for (int j : inputs[i])
+          if (j >= 0)
+            {
+              TScope use = regionwise[i] ? TScope(i,j) : scope[i];
+              scope[j] = used[j] ? common (scope[j], use) : use;
+              used[j] = true;
+            }
+
+      // the block is executed in the region
+      auto reached = [&] (TScope sc, size_t index)
+      {
+        for ( ; sc != top; sc = scope[sc.first])
+          {
+            int sel = regionwise[sc.first]->SelectedInput (index);
+            if (sel < 0 || inputs[sc.first][sel] != sc.second)
+              return false;
+          }
+        return true;
+      };
+
+      Array<string> stepcode(n), branchcode(n);
+      DynamicTable<int> branchsteps(n);
+      for (int i : Range(n))
         {
           auto& step = *steps[i];
           if (!simd && deriv == 0)              
             cout << IM(3) << "step " << i << ": " << typeid(step).name() << endl;
-          code.body += string("// step ")+ToString(i)+": "+step.GetDescription()+"\n";
-          step.GenerateCode(code, inputs[i],i);
+          code.body = string("// step ")+ToString(i)+": "+step.GetDescription()+"\n";
+          code.in_branch = scope[i] != top;
+          size_t headersize = code.header.size();
+          if (regionwise[i])
+            {
+              for (int j : branchsteps[i])
+                branchcode[scope[j].second] += stepcode[j];
+              // an undefined region throws only where the step is needed
+              Array<char> use(stepclass.Size());
+              for (size_t index : Range(stepclass))
+                {
+                  FlatArray<int> act = active[stepclass[index]];
+                  if (!reached (scope[i], index))
+                    use[index] = DomainWiseCoefficientFunction::UNREACHED;
+                  else if (!std::binary_search (act.begin(), act.end(), i))
+                    use[index] = DomainWiseCoefficientFunction::UNUSED;
+                  else
+                    use[index] = DomainWiseCoefficientFunction::NEEDED;
+                }
+              regionwise[i]->GenerateCode (code, inputs[i], i, branchcode, use);
+              for (int j : branchsteps[i])
+                branchcode[scope[j].second] = "";
+            }
+          else
+            step.GenerateCode(code, inputs[i],i);
+
+          // plain point-wise code of a leaf is for free: it stays at the top level
+          if (inputs[i].Size() == 0 && code.header.size() == headersize)
+            scope[i] = top;
+          stepcode[i] = std::move(code.body);
+          if (scope[i] != top)
+            branchsteps.Add (scope[i].first, i);
         }
+
+      code.body = "";
+      code.in_branch = false;
+      for (int i : Range(n))
+        if (scope[i] == top)
+          code.body += stepcode[i];
       
       return code;
     }
@@ -7150,27 +7379,53 @@ class CompiledCoefficientFunction : public CompiledCoefficientFunctionInterface 
     void T_Evaluate (const MIR & ir,
                      BareSliceMatrix<T,ORD> values) const
     {
-      ArrayMem<T, 1000> hmem(ir.Size()*totdim);
+      int cls = StepClass (ir.GetTransformation());
+      if (cls == 0)
+        T_EvaluateSteps (ir, values, Range(steps.Size()), [] (size_t k) { return -1; }, activedim[0]);
+      else
+        T_EvaluateSteps (ir, values, FlatArray<int>(active[cls]),
+                         [sel = FlatArray<int>(selected[cls])] (size_t k) { return sel[k]; }, activedim[cls]);
+    }
+
+    // act: the steps to evaluate, all of them or the ones needed in a region
+    // selected(k): for a region-wise step act[k] its input of the region (-2 if undefined), else -1
+    template <typename MIR, typename T, ORDERING ORD, typename TACT, typename TSEL>
+    void T_EvaluateSteps (const MIR & ir, BareSliceMatrix<T,ORD> values,
+                          TACT act, TSEL selected, size_t actdim) const
+    {
+      ArrayMem<T, 1000> hmem(ir.Size()*actdim);
       size_t mem_ptr = 0;
       ArrayMem<BareSliceMatrix<T,ORD>,100> temp(steps.Size());
       ArrayMem<BareSliceMatrix<T,ORD>, 100> in(max_inputsize);
 
       // used if nullptr are in tree
       BareSliceMatrix<T,ORD> zeromat(FlatMatrix<T, ORD>(0, ir.Size(), hmem.Data()));
-      for (size_t i = 0; i < steps.Size()-1; i++)
-        {
-          new (&temp[i]) BareSliceMatrix<T,ORD> (FlatMatrix<T,ORD> (dim[i], ir.Size(), &hmem[mem_ptr]));
-          mem_ptr += ir.Size()*dim[i];
-        }
+      for (size_t i : act)
+        if (i+1 < steps.Size())
+          {
+            new (&temp[i]) BareSliceMatrix<T,ORD> (FlatMatrix<T,ORD> (dim[i], ir.Size(), &hmem[mem_ptr]));
+            mem_ptr += ir.Size()*dim[i];
+          }
       
       new (&temp.Last()) BareSliceMatrix<T,ORD>(values);
 
-      for (size_t i = 0; i < steps.Size(); i++)
+      size_t k = 0;
+      for (size_t i : act)
         {
+          int sel = selected(k++);
+          if (sel >= 0)
+            {
+              // region-wise step: its value is the input of the region
+              if (i+1 < steps.Size())
+                new (&temp[i]) BareSliceMatrix<T,ORD> (temp[sel]);
+              else
+                values.AddSize(dim[i], ir.Size()) = temp[sel];
+              continue;
+            }
           auto inputi = inputs[i];
           for (int nr : Range(inputi))
           {
-            if(inputi[nr] == -1)
+            if(inputi[nr] == -1 || sel == -2)
               new (&in[nr]) BareSliceMatrix<T,ORD> (zeromat);
             else
               new (&in[nr]) BareSliceMatrix<T,ORD> (temp[inputi[nr]]);
