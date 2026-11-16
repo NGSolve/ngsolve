@@ -382,6 +382,16 @@ namespace ngsbem
           }
 
         // RegionTimer rgtrafo(*timerstrafo[order]);                    
+        // fold: trafo(m,n+k), trafo(m,n-k) become (T(m,k)+T(m,-k))/2, (T(m,k)-T(m,-k))/2. Both are
+        // symmetric in m,k, so Step 6 mirrors them unchanged; row 0 of the differences vanishes
+        for (int m = 1; m <= n; m++)
+          for (int k = 1; k <= m; k++)
+            {
+              real_type a = trafo(m,n+k), b = trafo(m,n-k);
+              trafo(m,n+k) = 0.5*(a+b);
+              trafo(m,n-k) = 0.5*(a-b);
+            }
+
         // Step 6
         // symmetries in m and mp
         for (int m = 0; m <= n; m++)
@@ -396,15 +406,6 @@ namespace ngsbem
             auto src = trafo.Col(n-m).Range(m, n+1);
             dst = src;
           }
-        /*
-          double errortho = L2Norm( Matrix(trafo*Trans(trafo) - Identity(n+1)));
-          if (errortho > 1e-10)
-          {
-          *testout << "n = " << n << " order = " << Order() << ", alpha = " << alpha << ", errortho = " << errortho << endl;
-          if (n < 10)
-          *testout << trafo*Trans(trafo) << endl;
-          }
-        */
 
         apply(n, trafo, lh);
       };
@@ -441,15 +442,24 @@ namespace ngsbem
     auto apply = [this] (int n, FlatMatrix<real_type,RowMajor> trafo, LocalHeap & lh)
       {
         FlatVector<entry_type> cn = CoefsN(n);
-        FlatVector<entry_type> old = cn | lh;
-
-        cn.Slice(0,1) = Trans(trafo) * old.Range(n, 2*n+1);
-        cn.Slice(0,1).Reversed() += Trans(trafo.Rows(1,n+1)) * old.Range(0,n).Reversed();
-
-        for (int m = 1; m <= n; m+=2)
+        // sums at n+m, differences at n-m of the coefficients of m and -m
+        FlatVector<entry_type> sd(2*n+1, lh);
+        sd(n) = cn(n);
+        for (int m = 1; m <= n; m++)
           {
-            cn(n+m) *= -1;
-            cn(n-m) *= -1;
+            sd(n+m) = cn(n+m) + cn(n-m);
+            sd(n-m) = cn(n+m) - cn(n-m);
+          }
+
+        cn.Range(n, 2*n+1).Slice(0,1) = Trans(trafo.Cols(n, 2*n+1)) * sd.Range(n, 2*n+1);
+        cn.Range(0, n) = Trans(trafo.Rows(1, n+1).Cols(0, n)) * sd.Range(0, n).Reversed();
+
+        for (int m = 1; m <= n; m++)
+          {
+            real_type f = (m % 2) ? -1 : 1;
+            entry_type p = cn(n+m), q = cn(n-m);
+            cn(n+m) = f*(p+q);
+            cn(n-m) = f*(p-q);
           }
       };
 
@@ -479,22 +489,44 @@ namespace ngsbem
     return SliceMatrix<TREAL> (m.Height(), 2*m.Width(), 2*dist, reinterpret_cast<TREAL*>(m.Addr(0,0)));
   }
   
+  // sum = f*(x+y), diff = f*(x-y); may be in place
+  template <typename T>
+  static void Butterfly (FlatVector<T> x, FlatVector<T> y, FlatVector<T> sum, FlatVector<T> diff, T f)
+  {
+    using TS = SIMD<T,FMM_SW>;
+    size_t i = 0;
+    for ( ; i+FMM_SW <= x.Size(); i += FMM_SW)
+      {
+        TS a(&x(i)), b(&y(i));
+        (f*(a+b)).Store(&sum(i));
+        (f*(a-b)).Store(&diff(i));
+      }
+    for ( ; i < x.Size(); i++)
+      {
+        T a = x(i), b = y(i);
+        sum(i) = f*(a+b);
+        diff(i) = f*(a-b);
+      }
+  }
+
   template <typename TSCAL>
   void SphericalHarmonics<Vector<TSCAL>> :: RotateY (double alpha, bool parallel)
   {
     auto apply = [this] (int n, FlatMatrix<real_type,RowMajor> trafo, LocalHeap & lh)
       {
         auto cn = CoefsN(n);
-        FlatMatrix<TSCAL,RowMajor> old = cn | lh;
+        // sums at n+m, differences at n-m of the coefficients of m and -m
+        FlatMatrix<TSCAL,RowMajor> sd(2*n+1, cn.Width(), lh);
+        auto rcn = AsReal(cn), rsd = AsReal(sd);
+        rsd.Row(n) = rcn.Row(n);
+        for (int m = 1; m <= n; m++)
+          Butterfly<real_type> (rcn.Row(n+m), rcn.Row(n-m), rsd.Row(n+m), rsd.Row(n-m), 1);
 
-        AsReal(cn) = Trans(trafo) * AsReal(old.Rows(n, 2*n+1));
-        AsReal(ReversedRows(cn)) += Trans(trafo.Rows(1,n+1)) * AsReal(ReversedRows(old.Rows(0,n)));
+        rcn.Rows(n, 2*n+1) = Trans(trafo.Cols(n, 2*n+1)) * rsd.Rows(n, 2*n+1);
+        rcn.Rows(0, n) = Trans(trafo.Rows(1, n+1).Cols(0, n)) * ReversedRows(rsd.Rows(0, n));
 
-        for (int m = 1; m <= n; m+=2)
-          {
-            cn.Row(n+m) *= -1;
-            cn.Row(n-m) *= -1;
-          }
+        for (int m = 1; m <= n; m++)
+          Butterfly<real_type> (rcn.Row(n+m), rcn.Row(n-m), rcn.Row(n+m), rcn.Row(n-m), (m % 2) ? -1 : 1);
       };
 
     RotateYImpl(*this, alpha, parallel, apply);
