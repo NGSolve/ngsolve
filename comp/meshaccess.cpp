@@ -2348,6 +2348,38 @@ namespace ngcomp
     return MakeDomainWiseCoefficientFunction(std::move(cfs), vb);
   }
 
+  shared_ptr<CoefficientFunction> MeshAccess ::
+  RegionCF(shared_ptr<CoefficientFunction> default_value, const Array<pair<Region, shared_ptr<CoefficientFunction>>>& region_values)
+  {
+    std::array<Array<shared_ptr<CoefficientFunction>>,4> cfs;
+    std::array<Array<bool>,4> given;
+    for (auto & [region, cf] : region_values)
+      {
+        VorB vb = region.VB();
+        if (region.Mask().Size() != GetNRegions(vb))
+          throw Exception("Region of another mesh given to region wise CF!");
+        if (!cfs[vb].Size())
+          {
+            cfs[vb].SetSize (GetNRegions(vb));
+            cfs[vb] = nullptr;
+            given[vb].SetSize (GetNRegions(vb));
+            given[vb] = false;
+          }
+        for (auto i : Range(region.Mask().Size()))
+          if (region.Mask()[i])
+            {
+              cfs[vb][i] = cf;
+              given[vb][i] = true;
+            }
+      }
+    // an explicit nullptr stays undefined, codims without a given region too
+    for (int vb : Range(4))
+      for (auto i : Range(cfs[vb]))
+        if (!given[vb][i])
+          cfs[vb][i] = default_value;
+    return MakeRegionCoefficientFunction (cfs);
+  }
+
   class BoundaryFromVolumeCoefficientFunction :
     public T_CoefficientFunction<BoundaryFromVolumeCoefficientFunction>
   {

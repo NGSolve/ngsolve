@@ -105,11 +105,11 @@ Bstab = BilinearForm(p*(vhdiv*n)*dx(element_boundary=True),  geom_free=True).Ass
 
 nvec = { mat : ((normals[mat][0], normals[mat][1]) if mat in normals else (0,0)) for mat in mesh.GetMaterials() }
 
-cfn = CF( [CF(nvec[mat]) for mat in mesh.GetMaterials()])
+cfn = mesh.MaterialCF({ mat : CF(nvec[mat]) for mat in nvec })
 cft = CF( ( cfn[1], -cfn[0] ) )
 
 pml1d = mesh.Materials("pml_default.*|pml_normal.*")
-eps = CF([eps_r[mat] for mat in mesh.GetMaterials()])
+eps = mesh.MaterialCF({ mat : eps_r[mat] for mat in set(mesh.GetMaterials()) })
 
 
 fes = fes_p*fes_p*fes_u*fes_u*fes_hdiv

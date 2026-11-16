@@ -88,7 +88,7 @@ def ConstantCF(val):
     return CoefficientFunction(val)
 
 def DomainConstantCF(values):
-    print ("Warning: DomainConstantCF deprecated, just use CoefficientFunction([values])")
+    print ("Warning: DomainConstantCF deprecated, use mesh.MaterialCF")
     return CoefficientFunction(values)
 
 

@@ -856,6 +856,29 @@ The value None leaves the region undefined, also if a default is given.
 >>> sigma = mesh.RegionCF(VOL, { "steel_.*" : 2e6 }, default=0)
 will create a CF being 2e6 on all domains starting with 'steel_' and 0 elsewhere.
 )delimiter")
+    .def("RegionCF", [](MeshAccess& self, py::dict py_values,
+                        OptPtr<CoefficientFunction> default_value)
+    {
+      Array<pair<Region, shared_ptr<CoefficientFunction>>> vals;
+      for(auto val : py_values)
+        {
+          if (!py::isinstance<Region>(val.first))
+            throw py::type_error("RegionCF without VorB needs Region objects as keys, e.g. mesh.Materials('iron')");
+          vals.Append(make_pair(py::cast<Region>(val.first),
+                                val.second.is_none() ? nullptr :
+                                py::cast<shared_ptr<CoefficientFunction>>(val.second)));
+        }
+      return self.RegionCF(default_value, vals);
+    }, py::arg("values"), py::arg("default") = nullptr,
+         R"delimiter(Region wise CoefficientFunction on regions of different co-dimensions.
+The argument is a dict from Region objects to CoefficientFunction (-values).
+Later given regions override earlier values. The optional argument default is
+the value for the other regions of those co-dimensions which have a given region.
+Where no value is given the CoefficientFunction is undefined, evaluation throws.
+The value None leaves the region undefined, also if a default is given.
+>>> sigma = mesh.RegionCF({ mesh.Materials("plate") : 5e6, mesh.Boundaries("casing") : 2e6 })
+will create a CF being 5e6 in the domain 'plate' and 2e6 on the boundary 'casing'.
+)delimiter")
 
     .def("MaterialCF", [](MeshAccess& self,
                           py::dict py_svals,

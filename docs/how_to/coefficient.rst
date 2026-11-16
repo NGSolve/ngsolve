@@ -15,12 +15,20 @@ Python objects implicitly convertible to *float* or *Complex* are implicitly con
    f = LinearForm(V)
    f += SymbolicLFI( x * V.TestFunction())
 
-A *CoefficientFunction* initialized with a *list* stores one value per region, depending where the *CoefficientFunction* is used this is a domain or boundary region. Here one usually uses generator expressions in combination with ``mesh.GetMaterials()`` and ``mesh.GetBoundaries()``:
+A *CoefficientFunction* with one value per region is created by the mesh. ``mesh.MaterialCF`` and ``mesh.BoundaryCF`` take a dict from region names (regular expressions) to values:
 
 .. code-block:: python
 
-   alpha_d = {"air" : 1, "box" : 100}
-   alpha = CoefficientFunction([alpha_d[mat] for mat in mesh.GetMaterials()])
+   alpha = mesh.MaterialCF({"air" : 1, "box" : 100})
+   penalty = mesh.BoundaryCF({"top" : 1e6}, default=0)
+
+``mesh.RegionCF`` takes *Region* objects as keys, they may be of different co-dimensions:
+
+.. code-block:: python
+
+   sigma = mesh.RegionCF({mesh.Materials("plate") : 5e6, mesh.Boundaries("casing") : 2e6})
+
+Evaluation in a region without value is an error. The argument ``default`` gives the value for the remaining regions, in ``mesh.RegionCF`` for the remaining regions of those co-dimensions which have a given region. Initializing a *CoefficientFunction* with a *list* of region values is deprecated.
 
 A *CoefficientFunction* initialized with a *tuple* gives a vector coefficient function. Components of the coefficient function can be accessed by the bracket operator:
 

@@ -909,6 +909,9 @@ namespace ngcomp
     shared_ptr<CoefficientFunction> RegionCF(VorB vb, shared_ptr<CoefficientFunction> default_value,
                                              const Array<pair<variant<string, Region>, shared_ptr<CoefficientFunction>>>& region_values);
 
+    shared_ptr<CoefficientFunction> RegionCF(shared_ptr<CoefficientFunction> default_value,
+                                             const Array<pair<Region, shared_ptr<CoefficientFunction>>>& region_values);
+
     shared_ptr<CoefficientFunction> MaterialCF(shared_ptr<CoefficientFunction> default_value,
                                                const Array<pair<variant<string, Region>, shared_ptr<CoefficientFunction>>>& region_values)
     {

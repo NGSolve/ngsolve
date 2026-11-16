@@ -62,6 +62,8 @@ namespace ngfem
     std::vector<string> link_flags;
 
     string pointer;
+    // the step is evaluated only inside the case block of a region-wise CF
+    bool in_branch = false;
 
     NGS_DLL_HEADER string AddPointer(const void *p, string name = "", string type = "void *", string qualifiers = "");
 

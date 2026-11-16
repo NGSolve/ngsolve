@@ -518,6 +518,7 @@ R"(
                   xrefvals(comp) = (*mat_pointvalsref.Addr(locipnr+comp*bs_ipts,locelnr));
 
               const int domain_index = domain[(baseelem + locelnr < ne) ? baseelem + locelnr : 0];
+              const int domain_vb = 0;  // volume elements
 
               $MEASURE
 
@@ -653,6 +654,7 @@ R"(
                   xrefvals(j) = (*mat_pointvalsref.Addr(locipnr+j*numips,locelnr));
 
               const int domain_index = domain[(baseelem + locelnr < ne) ? baseelem + locelnr : 0];
+              const int domain_vb = 0;  // volume elements
 
               $MEASURE
 

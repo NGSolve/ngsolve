@@ -52,12 +52,10 @@ fes = HCurl(mesh, order=4, dirichlet="outer", nograds = True)
 u = fes.TrialFunction()
 v = fes.TestFunction()
 
-mur = { "core" : 1000, "coil" : 1, "air" : 1 }
+mur = mesh.MaterialCF({ "core" : 1000 }, default=1)
 mu0 = 1.257e-6
 
-nu_coef = [ 1/(mu0*mur[mat]) for mat in mesh.GetMaterials() ]
-
-nu = CoefficientFunction(nu_coef)
+nu = 1/(mu0*mur)
 a = BilinearForm(fes, symmetric=True)
 a += SymbolicBFI(nu*curl(u)*curl(v) + 1e-6*nu*u*v)
 
