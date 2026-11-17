@@ -51,8 +51,10 @@ Adding a note
 
 Take the next number ``<year>-<running number>``, create
 ``docs/technotes/<number>_<name>/<name>.tex``, put figures next to it, write
-the number into its ``\date`` line, and add an entry above that links to
-``<number>_<name>.html`` and ``<number>_<name>.pdf``.
+the number and the revision date (``version 2026-11-17``) into its ``\date``
+line, and add an entry above that links to ``<number>_<name>.html`` and
+``<number>_<name>.pdf``. Set the date anew whenever a note is revised, also
+when only the syntax in its listings changed.
 
 The HTML page is made from the same source by ``tex2html.py`` and pandoc.
 Check it in a browser, pandoc knows less LaTeX than LaTeX:
