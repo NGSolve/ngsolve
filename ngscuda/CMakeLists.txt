@@ -17,7 +17,7 @@ include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_library(${lib_name} SHARED
     cuda_linalg.cpp cuda_ngstd.cpp cuda_ngbla.hpp
-    cuda_profiler.cpp cuda_device.cpp
+    cuda_device.cpp
 )
 
 target_link_libraries(${lib_name} PUBLIC CUDA::cudart CUDA::nvrtc CUDA::cuda_driver ngsolve $<BUILD_INTERFACE:netgen_python>)
@@ -36,7 +36,6 @@ endif(NETGEN_USE_PYTHON)
 
 install( FILES
         cuda_linalg.hpp
-        cuda_profiler.hpp
         cuda_core.hpp
         cuda_ngstd.hpp
         cuda_ngbla.hpp

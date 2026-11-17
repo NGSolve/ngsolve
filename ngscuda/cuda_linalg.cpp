@@ -6,15 +6,20 @@
 
 #include <la.hpp>
 #include "cuda_linalg.hpp"
+#include <gpuwrapper.hpp>
+#include <gpukernel.hpp>
 
 namespace ngla
 {
   void InitCuLinalg()
   {
-    // with lazy module loading the first kernel launch of this library
-    // finalizes the whole fatbin (~300ms) - pay that at import, not
+    // pay the first nvrtc compile and module load at import, not
     // inside the user's first operator application
-    ngs_cuda::WarmupCudaModule();
+    auto dev = ngs_gpu::GetDevice();
+    if (!dev) return;
+    auto kernel = dev->CompileSource (ngs_gpu::code_gpukernel + "KERNEL(noop, VALUE(int,n)) { }")->GetKernel ("noop");
+    dev->DefaultQueue()->Launch (*kernel, ngs_gpu::Dim3(1), ngs_gpu::Dim3(1), { ngs_gpu::KernelArg(int(0)) });
+    cudaDeviceSynchronize();
   }
 
 

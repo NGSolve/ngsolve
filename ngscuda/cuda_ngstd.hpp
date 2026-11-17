@@ -5,16 +5,13 @@
 #include <ngstd.hpp>
 
 #include "cuda_core.hpp"
-#include "cuda_profiler.hpp"
 
 namespace ngs_cuda
 {
   using namespace ngstd;
 
   
-  extern int gpu_clock;
   void InitCUDA (int verbose = 2);
-  void WarmupCudaModule ();   // first launch of a kernel of this library
 
 }
 

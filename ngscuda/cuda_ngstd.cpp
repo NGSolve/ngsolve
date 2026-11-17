@@ -1,6 +1,5 @@
 #include <ngstd.hpp>
 #include <cuda_ngstd.hpp>
-#include "cuda_profiler.hpp"
 
 using namespace std;
 
@@ -59,12 +58,6 @@ namespace ngs_cuda
         // Get device properties
         cudaDeviceProp devProp;
         cudaGetDeviceProperties(&devProp, i);
-        int clock_rate;
-        cudaDeviceGetAttribute(&clock_rate, cudaDevAttrClockRate, i);
-
-        if(i==0)
-          gpu_clock = clock_rate * 1000;
-
         if (verbose == 1)
           {
             cout << "CUDA Device " << i << ": " << devProp.name 

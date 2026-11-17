@@ -2,7 +2,6 @@
 
 #include "../ngstd/python_ngstd.hpp"
 #include "cuda_linalg.hpp"
-#include "cuda_profiler.hpp"
 #include "cuda_device.hpp"
 
 // TODO: always use ngs_cuda?
@@ -24,8 +23,6 @@ PYBIND11_MODULE(_ngscuda, m) {
           });
     
 
-  m.def("__time_tracer__", TimeProfiler);
-  m.def("SetCudaTimer", CudaRegionTimer::SetCudaTimer);
 
 
   // ExportDemo(m);
