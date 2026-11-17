@@ -149,7 +149,7 @@ namespace ngcomp
               ElementId ei(vb, nr);
               Ngs_Element el = (*ma)[ei];
               
-              if (DefinedOnX (el).IsTrue())
+              if (DefinedOn (el))
                 {
                   GetDofNrs (ei, dnums);
                   for (auto d : dnums)

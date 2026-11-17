@@ -3784,25 +3784,8 @@ namespace ngcomp
       flags2.SetFlag("orderedge",uniform_order_edge+1);
     auto fesh1 = make_shared<H1HighOrderFESpace>(ma, flags2);
 
-    BitArray h1def(ma->GetNDomains());
-    if(definedon[VOL].Size() == 0)
-      h1def.Set();
-    else
-      h1def.Clear();
-    for(int i=0; i<definedon[VOL].Size(); i++)
-      if(definedon[VOL][i])
-	h1def.SetBit(i);
-    fesh1->SetDefinedOn(VOL,h1def);
-
-    BitArray h1defb(ma->GetNBoundaries());
-    if(definedon[BND].Size() == 0)
-      h1defb.Set();
-    else
-      h1defb.Clear();
-    for(int i=0; i<definedon[BND].Size(); i++)
-      if(definedon[BND][i])
-	h1defb.SetBit(i);
-    fesh1->SetDefinedOn(BND,h1defb);
+    fesh1->SetDefinedOn(VOL, definedon_region.Mask(VOL));
+    fesh1->SetDefinedOn(BND, definedon_region.Mask(BND));
 
     int ne = ma -> GetNE();
     // int ned = ma->GetNEdges();

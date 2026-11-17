@@ -1887,13 +1887,8 @@ Einstein: Einstein tensor Ein_ij(g) = Ric_ij(g)-0.5*S(g) g_ij
     if (first_update)
       {
         // defined on boundaries only, not on any volume region
-        bool defonsurf = false;
-        for (auto b: definedon[BND])
-          defonsurf = defonsurf || b;
-        if (!definedon[VOL].Size())
-          defonsurf = false;
-        for (auto b: definedon[VOL])
-          if (b) defonsurf = false;
+        bool defonsurf = definedon_region.Mask(BND).NumSet() > 0 && !DefinedOnAll(VOL) &&
+          definedon_region.Mask(VOL).NumSet() == 0;
         if ((!ma->GetNE() && ma->GetNSE()) || defonsurf)
             issurfacespace = true;
 

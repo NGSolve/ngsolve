@@ -54,11 +54,6 @@ namespace ngcomp
     return reg;
   }
 
-  static bool IsAnyFlagOf (const Flags & flags, const string & name, const std::type_info & type)
-  {
-    return flags.AnyFlagDefined(name) && flags.GetAnyFlag(name).type() == type;
-  }
-
   // a MixedRegion flag, or a region descriptor flag resolved on the mesh of the space
   static optional<MixedRegion> MixedRegionFlag (const Flags & flags, const string & name,
                                                 const shared_ptr<MeshAccess> & ma)
@@ -67,6 +62,8 @@ namespace ngcomp
     const std::any & val = flags.GetAnyFlag(name);
     if (auto reg = std::any_cast<MixedRegion>(&val))
       return OwnRegion(*reg, *ma, name);
+    if (auto reg = std::any_cast<Region>(&val))
+      return OwnRegion(MixedRegion(*reg), *ma, name);
     if (auto rd = std::any_cast<MixedRegionDescriptor>(&val))
       return MixedRegion(ma, *rd);
     if (auto rd = std::any_cast<RegionDescriptor>(&val))
@@ -158,13 +155,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	  directsolverclustered[static_cast<int>(clusters[i])-1] = true; // 1-based!!
       }
     
-    dirichlet_constraints[BND].SetSize (ma->GetNBoundaries());
-    dirichlet_constraints[BND].Clear();
-
-    if(IsAnyFlagOf(flags, "dirichlet", typeid(Region)))
-      {
-        dirichlet_constraints[BND] = OwnRegion(std::any_cast<const Region&>(flags.GetAnyFlag("dirichlet")), *ma, BND, "dirichlet").Mask();
-      }
+    dirichlet_region.Mask(BND).SetSize (ma->GetNBoundaries());
+    dirichlet_region.Mask(BND).Clear();
 
     if(flags.NumListFlagDefined("dirichlet"))
       {
@@ -172,7 +164,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
           {
 	    int bnd = int(dbi-1);
 	    if (bnd >= 0 && bnd < dirichlet_boundaries.Size())
-	      dirichlet_constraints[BND].SetBit (bnd);
+	      dirichlet_region.Mask(BND).SetBit (bnd);
 	    // else
             //   cerr << "Illegal Dirichlet boundary index " << bnd+1 << endl;
           }
@@ -183,55 +175,56 @@ lot of new non-zero entries in the matrix!\n" << endl;
     if (flags.StringFlagDefined("dirichlet"))
       {
         Region dir(ma, BND, flags.GetStringFlag("dirichlet"));
-        dirichlet_constraints[BND] |= dir.Mask(); // that's what it was before, can we just assign ? 
+        dirichlet_region.Mask(BND) |= dir.Mask(); // that's what it was before, can we just assign ? 
       }
 
-    dirichlet_constraints[BBND].SetSize (ma->GetNRegions(BBND));
-    dirichlet_constraints[BBND].Clear();
+    dirichlet_region.Mask(BBND).SetSize (ma->GetNRegions(BBND));
+    dirichlet_region.Mask(BBND).Clear();
 
     if(flags.AnyFlagDefined("dirichlet_bbnd"))
       {
-        dirichlet_constraints[BBND] = OwnRegion(std::any_cast<const Region&>(flags.GetAnyFlag("dirichlet_bbnd")), *ma, BBND, "dirichlet_bbnd").Mask();
+        dirichlet_region.Mask(BBND) = OwnRegion(std::any_cast<const Region&>(flags.GetAnyFlag("dirichlet_bbnd")), *ma, BBND, "dirichlet_bbnd").Mask();
       }
 
     if (flags.StringFlagDefined("dirichlet_bbnd"))
       {
         Region dir(ma, BBND, flags.GetStringFlag("dirichlet_bbnd"));
-        dirichlet_constraints[BBND] |= dir.Mask(); // that's what it was before, can we just assign ? 
+        dirichlet_region.Mask(BBND) |= dir.Mask(); // that's what it was before, can we just assign ? 
       }
 
-    dirichlet_constraints[BBBND].SetSize (ma->GetNRegions(BBBND));
-    dirichlet_constraints[BBBND].Clear();
+    dirichlet_region.Mask(BBBND).SetSize (ma->GetNRegions(BBBND));
+    dirichlet_region.Mask(BBBND).Clear();
 
     if(flags.AnyFlagDefined("dirichlet_bbbnd"))
       {
-        dirichlet_constraints[BBBND] = OwnRegion(std::any_cast<const Region&>(flags.GetAnyFlag("dirichlet_bbbnd")), *ma, BBBND, "dirichlet_bbbnd").Mask();
+        dirichlet_region.Mask(BBBND) = OwnRegion(std::any_cast<const Region&>(flags.GetAnyFlag("dirichlet_bbbnd")), *ma, BBBND, "dirichlet_bbbnd").Mask();
       }
 
     if (flags.StringFlagDefined("dirichlet_bbbnd"))
       {
         Region dir(ma, BBBND, flags.GetStringFlag("dirichlet_bbbnd"));
-        dirichlet_constraints[BBBND] |= dir.Mask(); // that's what it was before, can we just assign ? 
+        dirichlet_region.Mask(BBBND) |= dir.Mask(); // that's what it was before, can we just assign ? 
       }
 
-    // MixedRegion or region descriptor: ORed with the per-VorB flags above
+    // Region, MixedRegion or region descriptor: ORed with the per-VorB flags above
     if(auto dir = MixedRegionFlag(flags, "dirichlet", ma))
       {
         if (dir->Mask(VOL).NumSet())
           throw Exception ("dirichlet: VOL regions are not supported, use BND, BBND or BBBND regions");
         for (auto vb : { BND, BBND, BBBND })
-          dirichlet_constraints[vb].Or (dir->Mask(vb));
+          dirichlet_region.Mask(vb).Or (dir->Mask(vb));
       }
-    else if(flags.AnyFlagDefined("dirichlet") && !IsAnyFlagOf(flags, "dirichlet", typeid(Region)))
+    else if(flags.AnyFlagDefined("dirichlet"))
       throw Exception ("dirichlet with wrong argument type");
     
+    Array<bool> defon_given[4];
     if (flags.NumListFlagDefined("definedon") || 
         flags.NumFlagDefined("definedon") ||
         flags.StringListFlagDefined("definedon") ||
         flags.AnyFlagDefined("definedon"))
       {
-	definedon[VOL].SetSize (ma->GetNDomains());
-	definedon[VOL] = false;
+	defon_given[VOL].SetSize (ma->GetNDomains());
+	defon_given[VOL] = false;
 	Array<double> defon;
 	if (flags.NumListFlagDefined("definedon")) 
 	  defon = flags.GetNumListFlag("definedon");
@@ -243,11 +236,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
         /*
 	for(int i = 0; i< defon.Size(); i++)
 	  if (defon[i] <= ma->GetNDomains() && defon[i] > 0)
-	    definedon[int(defon[i])-1] = true;
+	    defon_given[int(defon[i])-1] = true;
         */
         for (int di : defon)
           if (di > 0 && di <= ma->GetNDomains())
-            definedon[VOL][di-1] = true;
+            defon_given[VOL][di-1] = true;
           
 	if(flags.StringListFlagDefined("definedon"))
 	  {
@@ -259,7 +252,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 		for(int j = 0; j < dmaterials.Size(); j++)
 		  if(StringFitsPattern(ma->GetMaterial(VOL,i),dmaterials[j]))
 		    {
-		      definedon[VOL][i] = true;
+		      defon_given[VOL][i] = true;
 		      break;
 		    }
 	      }
@@ -267,8 +260,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 	// default:
 	// fespace only defined on boundaries matching definedon-domains
-	definedon[BND].SetSize (ma->GetNBoundaries());
-	definedon[BND] = false;
+	defon_given[BND].SetSize (ma->GetNBoundaries());
+	defon_given[BND] = false;
 
         if(flags.AnyFlagDefined("definedon"))
           {
@@ -280,22 +273,22 @@ lot of new non-zero entries in the matrix!\n" << endl;
                   {
                     OwnRegion (reg, *ma, vb, "definedon");
                     if(vb == BBND || vb == BBBND)
-                      definedon[vb].SetSize(ma->GetNRegions(vb));
-                    for(auto i : Range(definedon[vb]))
-                      definedon[vb][i] = reg.Mask().Test(i);
+                      defon_given[vb].SetSize(ma->GetNRegions(vb));
+                    for(auto i : Range(defon_given[vb]))
+                      defon_given[vb][i] = reg.Mask().Test(i);
                   }
                 // if vol is not in map then definedon vol = empty
                 if(map.find(VOL) == map.end())
-                  definedon[VOL] = false;
+                  defon_given[VOL] = false;
               }
             else if(anydefon.type() == typeid(Region))
               {
                 auto reg = OwnRegion(std::any_cast<Region>(anydefon), *ma, "definedon");
-                definedon[reg.VB()].SetSize(reg.Mask().Size());
-                for(auto i : Range(definedon[reg.VB()]))
-                  definedon[reg.VB()][i] = reg.Mask().Test(i);
+                defon_given[reg.VB()].SetSize(reg.Mask().Size());
+                for(auto i : Range(defon_given[reg.VB()]))
+                  defon_given[reg.VB()][i] = reg.Mask().Test(i);
                 for(auto vb = VOL; vb < reg.VB(); vb++)
-                  definedon[vb] = false;
+                  defon_given[vb] = false;
               }
             else if(auto reg = MixedRegionFlag(flags, "definedon", ma))
               {
@@ -303,9 +296,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
                 for (auto vb : { VOL, BND, BBND, BBBND })
                   {
                     if (vb >= BBND && !reg->Mask(vb).NumSet()) continue;
-                    definedon[vb].SetSize(ma->GetNRegions(vb));
-                    for (auto i : Range(definedon[vb]))
-                      definedon[vb][i] = reg->Mask(vb).Test(i);
+                    defon_given[vb].SetSize(ma->GetNRegions(vb));
+                    for (auto i : Range(defon_given[vb]))
+                      defon_given[vb][i] = reg->Mask(vb).Test(i);
                   }
               }
             else
@@ -320,13 +313,33 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	    ma->GetSElNeighbouringDomains(sel, dom1, dom2);
 	    dom1--; dom2--;
 	    if ( dom1 >= 0 )
-	      if ( definedon[VOL][dom1] )
-		definedon[BND][index] = true;
+	      if ( defon_given[VOL][dom1] )
+		defon_given[BND][index] = true;
 
 	    if ( dom2 >= 0 )
-	      if ( definedon[VOL][dom2] )
-		definedon[BND][index] = true;
+	      if ( defon_given[VOL][dom2] )
+		defon_given[BND][index] = true;
 	  }
+
+        // closed: defined on the sub-entities of the given regions
+        MixedRegion given(ma);
+        for (auto vb : { VOL, BND, BBND, BBBND })
+          for (auto i : Range(min(defon_given[vb].Size(), given.Mask(vb).Size())))
+            if (defon_given[vb][i])
+              given.Mask(vb).SetBit(i);
+        MixedRegion closed = given.Closure();
+        for (auto vb : { BND, BBND, BBBND })
+          {
+            Array<int> on(closed.Mask(vb).Size());
+            for (auto i : Range(on))
+              on[i] = closed.Mask(vb).Test(i);
+            // region incidence is known per rank only
+            if (on.Size())
+              ma->GetCommunicator().AllReduce (on, NG_MPI_MAX);
+            defon_given[vb].SetSize(on.Size());
+            for (auto i : Range(on))
+              defon_given[vb][i] = on[i];
+          }
       }
 
     if(flags.AnyFlagDefined("definedonbound"))
@@ -335,10 +348,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
     // additional boundaries
     if(flags.NumListFlagDefined("definedonbound")|| flags.NumFlagDefined("definedonbound") )
       {
-	if ( definedon[BND].Size() == 0 )
+	if ( defon_given[BND].Size() == 0 )
 	  {
-	    definedon[BND].SetSize (ma->GetNBoundaries());
-	    definedon[BND] = false;
+	    defon_given[BND].SetSize (ma->GetNBoundaries());
+	    defon_given[BND] = false;
 	  }
 	Array<double> defon;
 	if ( flags.NumListFlagDefined("definedonbound") )
@@ -351,16 +364,16 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 	for(int i=0; i< defon.Size(); i++) 
 	  if(defon[i] <= ma->GetNBoundaries() && defon[i] > 0)
-	    definedon[BND][int(defon[i])-1] = true;
+	    defon_given[BND][int(defon[i])-1] = true;
       }
     
 
     else if(flags.StringListFlagDefined("definedonbound") || flags.StringFlagDefined("definedonbound"))
       {
-	if ( definedon[BND].Size() == 0 )
+	if ( defon_given[BND].Size() == 0 )
 	  {
-	    definedon[BND].SetSize (ma->GetNBoundaries());
-	    definedon[BND] = false;
+	    defon_given[BND].SetSize (ma->GetNBoundaries());
+	    defon_given[BND] = false;
 	  }
 
 	Array<string*> defon;
@@ -374,14 +387,14 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	for(int selnum = 0; selnum < ma->GetNSE(); selnum++)
 	  {
             ElementId sei(BND, selnum);
-	    if(definedon[BND][ma->GetElIndex(sei)] == false)
+	    if(defon_given[BND][ma->GetElIndex(sei)] == false)
 	      {
 		for(int i=0; i<defon.Size(); i++)
 		  {
 		    // if(StringFitsPattern(ma->GetSElBCName(selnum),*(defon[i])))
                     if(StringFitsPattern(ma->GetMaterial(ElementId(BND, selnum)),*(defon[i])))	
 		      {		
-		 	definedon[BND][ma->GetElIndex(sei)] = true;
+		 	defon_given[BND][ma->GetElIndex(sei)] = true;
 			continue;
 		      }
 		  }
@@ -390,7 +403,16 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	for(int i=0; i<defon.Size(); i++)
 	  delete defon[i];
       }
-    
+
+    for (auto vb : { VOL, BND, BBND, BBBND })
+      if (defon_given[vb].Size())
+        {
+          auto & mask = definedon_region.Mask(vb);
+          mask.Clear();
+          for (auto i : Range(min(mask.Size(), defon_given[vb].Size())))
+            if (defon_given[vb][i]) mask.SetBit(i);
+        }
+
     level_updated = -1;
 
     for(auto vb : {VOL,BND,BBND})
@@ -442,10 +464,13 @@ lot of new non-zero entries in the matrix!\n" << endl;
       "  order of finite element space";
     docu.Arg("complex") = "bool = False\n"
       "  Set if FESpace should be complex";
-    docu.Arg("dirichlet") = "regexpr\n"
+    docu.Arg("dirichlet") = "regexpr or Region\n"
       "  Regular expression string defining the dirichlet boundary.\n"
       "  More than one boundary can be combined by the | operator,\n"
-      "  i.e.: dirichlet = 'top|right'";
+      "  i.e.: dirichlet = 'top|right'\n"
+      "  A region of BND, BBND or BBBND, also of several codimensions:\n"
+      "  dirichlet = mesh.Boundaries('top') | mesh.BBoundaries('edge'),\n"
+      "  or without mesh: dirichlet = BND('top') | BBND('edge')";
     docu.Arg("dirichlet_bbnd") = "regexpr\n"
       "  Regular expression string defining the dirichlet bboundary,\n"
       "  i.e. points in 2D and edges in 3D.\n"
@@ -459,7 +484,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
     docu.Arg("definedon") = "Region or regexpr\n"
       "  FESpace is only defined on specific Region, created with mesh.Materials('regexpr')\n"
       "  or mesh.Boundaries('regexpr'). If given a regexpr, the region is assumed to be\n"
-      "  mesh.Materials('regexpr').";
+      "  mesh.Materials('regexpr'). Regions of several codimensions can be combined:\n"
+      "  definedon = mesh.Materials('a') | mesh.Boundaries('b'). The space is also\n"
+      "  defined on all sub-entities (faces, edges, vertices) of the given regions.";
     docu.Arg("definedonbound") = "list of int or list of str\n"
       "  Additional boundaries the FESpace is defined on, besides the boundaries\n"
       "  adjacent to the definedon domains. Given as 1-based boundary numbers or\n"
@@ -532,6 +559,15 @@ lot of new non-zero entries in the matrix!\n" << endl;
     
     ma->UpdateBuffers();  // is free if netgen-mesh did not change
     int dim = ma->GetDimension();
+
+    for (auto vb : { VOL, BND, BBND, BBBND })
+      if (auto & mask = definedon_region.Mask(vb); mask.Size() != ma->GetNRegions(vb))
+        {
+          if (!DefinedOnAll(vb))
+            throw Exception("FESpace: number of regions of the mesh changed, definedon is not valid anymore");
+          mask.SetSize(ma->GetNRegions(vb));
+          mask.Set();
+        }
     
     dirichlet_vertex.SetSize (ma->GetNV());
     dirichlet_edge.SetSize (ma->GetNEdges());
@@ -558,10 +594,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
     */
     for (auto vb : { BND, BBND, BBBND })
       {
-        auto & dc = dirichlet_constraints[int(vb)];
+        auto & dc = dirichlet_region.Mask(vb);
         if (dc.Size())
           for (Ngs_Element ngel : ma->Elements(vb)) 
-            if (dc[ngel.GetIndex()])
+            if (DefinedAt(dc, ngel.GetIndex()))
               {
                 dirichlet_vertex[ngel.Vertices()] = true;
                 // if (dim >= 2)
@@ -933,9 +969,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
     */
 
     for (auto vb : { BND, BBND, BBBND })
-      if (auto & dc = dirichlet_constraints[int(vb)]; dc.Size())
+      if (auto & dc = dirichlet_region.Mask(vb); dc.Size())
         for (FESpace::Element el : Elements(vb))
-          if (dc[el.GetIndex()])
+          if (DefinedAt(dc, el.GetIndex()))
             for (int d : el.GetDofs())
               if (IsRegularDof(d)) dirichlet_dofs.SetBit (d);
     
@@ -1973,9 +2009,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	<< "dgjmps= " << dgjumps << endl
     << "autoupdate= " << autoupdate << endl
 	<< "complex = " << iscomplex << endl;
-    ost << "definedon = " << definedon[VOL] << endl;
-    ost << "definedon boundary = " << definedon[BND] << endl;
-    ost << "definedon codim 2 = " << definedon[BBND] << endl;
+    ost << "definedon = " << definedon_region.Mask(VOL) << endl;
+    ost << "definedon boundary = " << definedon_region.Mask(BND) << endl;
+    ost << "definedon codim 2 = " << definedon_region.Mask(BBND) << endl;
     if (!free_dofs) return;
 
     ost << "ndof = " << GetNDof() << endl;
@@ -1997,7 +2033,30 @@ lot of new non-zero entries in the matrix!\n" << endl;
   void FESpace :: DoArchive (Archive & archive)
   {
     archive & order & dimension & iscomplex & dgjumps & autoupdate & print & level_updated;
-    archive & definedon[VOL] & definedon[BND] & definedon[BBND];
+    Array<bool> defon_ar[3];
+    if (archive.Output())
+      for (int i = 0; i < 3; i++)
+        {
+          auto & mask = definedon_region.Mask(VorB(i));
+          defon_ar[i].SetSize(mask.Size());
+          for (auto j : Range(mask.Size()))
+            defon_ar[i][j] = mask.Test(j);
+        }
+    archive & defon_ar[0] & defon_ar[1] & defon_ar[2];
+    if (archive.Input())
+      for (int i = 0; i < 3; i++)
+        {
+          auto & mask = definedon_region.Mask(VorB(i));
+          if (!defon_ar[i].Size())
+            mask.Set();
+          else
+            {
+              mask.SetSize(defon_ar[i].Size());
+              mask.Clear();
+              for (auto j : Range(defon_ar[i]))
+                if (defon_ar[i][j]) mask.SetBit(j);
+            }
+        }
     archive & dirichlet_boundaries & dirichlet_dofs & free_dofs & external_free_dofs;
     archive & dirichlet_vertex & dirichlet_edge & dirichlet_face;
   }
@@ -2671,10 +2730,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
   
   void FESpace :: SetDefinedOn (VorB vb, const BitArray & defon)
   {
-    definedon[vb].SetSize(defon.Size());
-    
-    for (int i = 0; i < defon.Size(); i++)
-      definedon[vb][i] = defon.Test(i);
+    definedon_region.Mask(vb) = defon;
 
     if (low_order_space)
       low_order_space -> SetDefinedOn (vb, defon);
@@ -4818,7 +4874,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     type = string((symmetric) ? "Sym" : "") + string((skewsymmetric) ? "Skew" : "") + (deviatoric ? "Dev" : "") + "Matrix" + (*this)[0]->type;
 
     for (VorB vb : {VOL, BND, BBND, BBBND})
-      definedon[vb] = space->DefinedOn(vb);
+      definedon_region.Mask(vb) = space->DefinedOn(vb);
   }
   
   string MatrixFESpace :: GetClassName () const
@@ -5039,14 +5095,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
     auto fes = CreateFESpace (type, base.GetMeshAccess(), flags);
     if (!flags.AnyFlagDefined("definedon"))
       for (VorB vb : { VOL, BND })
-        if (auto & bdef = base.DefinedOn(vb); bdef.Size())
-          {
-            BitArray defon(bdef.Size());
-            defon.Clear();
-            for (auto i : Range(bdef))
-              if (bdef[i]) defon.SetBit(i);
-            fes->SetDefinedOn(vb, defon);
-          }
+        if (!base.DefinedOnAll(vb))
+          fes->SetDefinedOn(vb, base.DefinedOn(vb));
     fes->Update();
     fes->FinalizeUpdate();
     return fes;

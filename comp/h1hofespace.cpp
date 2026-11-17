@@ -637,7 +637,7 @@ into the wirebasket.
                Ngs_Element el = (*ma)[ei];
            
 	       // if (!DefinedOn (el)) return;
-               if (DefinedOnX (el).IsTrue())
+               if (DefinedOn (el))
                  {
                    used_vertex[el.Vertices()] = true;
                    if (dim >= 2) used_edge[el.Edges()] = true;

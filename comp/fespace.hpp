@@ -92,6 +92,10 @@ ANY                  1 1 1 1 | 15
 
 
   class FESpace;
+
+  inline bool DefinedAt (const BitArray & mask, int index)
+  { return index >= 0 && mask.Test(index); }
+
   class BilinearForm;
 
   // typed dummy element DUMMY<ET> (0 dofs) for the runtime element type et
@@ -185,11 +189,11 @@ ANY                  1 1 1 1 | 15
     int level_updated;
 
     /// on which subdomains is the space defined ?
-    Array<bool> definedon[4];
+    MixedRegion definedon_region = ~MixedRegion(ma);
 
     /// prototype: what are the Dirichlet boundaries ?
-    BitArray dirichlet_constraints[4];
-    BitArray & dirichlet_boundaries = dirichlet_constraints[1];
+    MixedRegion dirichlet_region = MixedRegion(ma);
+    BitArray & dirichlet_boundaries = dirichlet_region.Mask(BND);
 
     /// dofs on Dirichlet boundary
     BitArray dirichlet_dofs;
@@ -398,12 +402,12 @@ ANY                  1 1 1 1 | 15
     {
       const FESpace & fes;
       ElementId ei;
-      const FlatArray<bool> defined_on;
+      const BitArray & defined_on;
       LocalHeap & lh;
       void * heappointer;
     public:
       INLINE ElementIterator (const FESpace & afes, ElementId aei, 
-                              const FlatArray<bool> adefined_on,
+                              const BitArray & adefined_on,
                               LocalHeap & alh)
         : fes(afes), ei(aei), defined_on(adefined_on), 
           lh(alh), heappointer(lh.GetPointer()) { ; }
@@ -412,8 +416,7 @@ ANY                  1 1 1 1 | 15
         lh.CleanUp(heappointer);
         ++ei;
         while (ei.Nr() < fes.GetMeshAccess()->GetNE(VorB(ei)) && 
-               (defined_on.Size() && 
-                !defined_on[fes.GetMeshAccess()->GetElIndex(ei)])
+               !DefinedAt(defined_on, fes.GetMeshAccess()->GetElIndex(ei))
                ) ++ei;
         return *this;
       }
@@ -425,27 +428,27 @@ ANY                  1 1 1 1 | 15
     class ElementRange : public IntRange
     {
       const FESpace & fes;
-      Array<bool> definedon;
+      const BitArray & definedon;
       const VorB vb;
       mutable LocalHeap mylh;
       LocalHeap & lh;
     public:
       INLINE ElementRange (const FESpace & afes, VorB avb, IntRange ar, LocalHeap && lh2) 
         : IntRange(ar), fes(afes),
-          definedon(fes.definedon[avb].Size(),fes.definedon[avb].Addr(0)),
+          definedon(fes.definedon_region.Mask(avb)),
           vb(avb), mylh(std::move(lh2)), lh(mylh)
       { ; }
 
       INLINE ElementRange (const FESpace & afes, VorB avb, IntRange ar, LocalHeap & lh2) 
         : IntRange(ar), fes(afes), 
-          definedon(fes.definedon[avb].Size(),fes.definedon[avb].Addr(0)),
+          definedon(fes.definedon_region.Mask(avb)),
           vb(avb), mylh(), lh(lh2)
       { ; }
 
       ElementRange (const ElementRange & r2) = delete;
 
       INLINE ElementRange (ElementRange && r2) 
-        : IntRange(r2), fes(r2.fes), definedon(std::move(r2.definedon)), vb(r2.vb), 
+        : IntRange(r2), fes(r2.fes), definedon(r2.definedon), vb(r2.vb), 
           mylh(std::move(r2.mylh)),
           lh( (&r2.mylh == &r2.lh) ? mylh : r2.lh)
       { ; }
@@ -458,7 +461,7 @@ ANY                  1 1 1 1 | 15
       {
         ElementId ei = ElementId(vb,First());
         while ((ei.Nr() < IntRange::end()) && 
-               (definedon.Size() && !definedon[fes.GetMeshAccess()->GetElIndex(ei)]))
+               !DefinedAt(definedon, fes.GetMeshAccess()->GetElIndex(ei)))
           ++ei;
         return ElementIterator(fes, ei, definedon, lh);
       }
@@ -574,32 +577,25 @@ ANY                  1 1 1 1 | 15
     void ConnectAutoUpdate();
     
 
-    auto & DefinedOn(VorB vb) const { return definedon[vb]; }
+    const BitArray & DefinedOn(VorB vb) const { return definedon_region.Mask(vb); }
     
     bool DefinedOn(VorB vb, int domnr) const
-    { return !definedon[vb].Size() || definedon[vb][domnr]; }
+    { return DefinedAt(definedon_region.Mask(vb), domnr); }
 
+    bool DefinedOnAll (VorB vb) const
+    {
+      auto & m = definedon_region.Mask(vb);
+      return m.NumSet() == m.Size();
+    }
 
     bool DefinedOn (ElementId id) const
     {
-      if(!definedon[id.VB()].Size()) return true;
-      return definedon[id.VB()][ma->GetElement(id).GetIndex()];
+      return DefinedAt(definedon_region.Mask(id.VB()), ma->GetElement(id).GetIndex());
     }
 
     bool DefinedOn (Ngs_Element el) const
     {
-      if(!definedon[el.VB()].Size()) return true;
-      return definedon[el.VB()][el.GetIndex()];
-    }
-
-    xbool DefinedOnX (Ngs_Element el) const
-    {
-      // a temporary workaround,
-      // clean solution will be to set definedon[BND] correctly
-      if (el.VB() <= BND) return DefinedOn(el);
-      
-      if (!definedon[el.VB()].Size()) return maybe;
-      return definedon[el.VB()][el.GetIndex()];
+      return DefinedAt(definedon_region.Mask(el.VB()), el.GetIndex());
     }
 
     
@@ -613,11 +609,13 @@ ANY                  1 1 1 1 | 15
     void SetDefinedOnBoundary (const BitArray & defon)
      { SetDefinedOn(BND,defon); }
 
-    const Array<bool> & GetDefinedOn (VorB vb) const { return definedon[vb]; }
+    const BitArray & GetDefinedOn (VorB vb) const { return definedon_region.Mask(vb); }
+    MixedRegion GetDefinedOnMixedRegion () const { return definedon_region.Copy(); }
 
     ///
     void SetDirichletBoundaries (const BitArray & dirbnds);
-    const BitArray & GetDirichletBoundaries (VorB vb) const { return dirichlet_constraints[vb]; }
+    const BitArray & GetDirichletBoundaries (VorB vb) const { return dirichlet_region.Mask(vb); }
+    MixedRegion GetDirichletRegion () const { return dirichlet_region.Copy(); }
 
 
     /// Get reference element for tet, prism, trig, etc ..
@@ -863,20 +861,20 @@ ANY                  1 1 1 1 | 15
     /// is the FESpace defined for this sub-domain nr ?
     [[deprecated("Use Definedon(VorB,int) instead")]]
     bool DefinedOn (int domnr) const
-    { return !definedon[VOL].Size() || definedon[VOL][domnr]; }
+    { return DefinedAt(definedon_region.Mask(VOL), domnr); }
     /// is the FESpace defined for this boundary nr ?
     [[deprecated("Use Definedon(VorB,int) instead")]]
     bool DefinedOnBoundary (int bnr) const
-    {return !definedon[BND].Size() || definedon[BND][bnr]; }
+    { return DefinedAt(definedon_region.Mask(BND), bnr); }
 
     /// is the FESpace defined for this sub-domain / boundary nr ?
     [[deprecated("Use DefinedOn(VorB, int) instead")]]
     bool DefinedOn (int index, bool bound) const
     {
       if (bound)
-        return !definedon[BND].Size() || definedon[BND][index];
+        return DefinedAt(definedon_region.Mask(BND), index);
       else
-        return !definedon[VOL].Size() || definedon[VOL][index];
+        return DefinedAt(definedon_region.Mask(VOL), index);
     }
 
     [[deprecated("Use TransformMat with VorB  instead of bool")]]

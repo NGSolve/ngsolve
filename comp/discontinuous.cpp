@@ -31,7 +31,7 @@ namespace ngcomp {
     iscomplex = space->IsComplex();
     needs_transform_vec = space->NeedsTransformVec();
     for(auto vb : Range(4))
-      definedon[vb] = space->DefinedOn(VorB(vb));
+      definedon_region.Mask(VorB(vb)) = space->DefinedOn(VorB(vb));
     /*
       // not yet implemented ...
       if (space->LowOrderFESpacePtr() && false)

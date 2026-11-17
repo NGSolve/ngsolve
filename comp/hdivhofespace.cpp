@@ -409,14 +409,8 @@ namespace ngcomp
     l2flags.SetFlag("order", maxorder);
     auto l2 = make_shared<L2HighOrderFESpace>(ma, l2flags);
 
-    if (definedon[VOL].Size())
-      {
-        BitArray defon(ma->GetNDomains());
-        defon.Clear();
-        for (auto i : Range(definedon[VOL]))
-          if (definedon[VOL][i]) defon.SetBit(i);
-        l2->SetDefinedOn(VOL, defon);
-      }
+    if (!DefinedOnAll(VOL))
+      l2->SetDefinedOn(VOL, definedon_region.Mask(VOL));
 
     l2->Update();
     if (minorder < maxorder)

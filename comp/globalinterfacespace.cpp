@@ -370,12 +370,12 @@ namespace ngcomp
       nitsche_facet.SetSize(ma->GetNNodes(NT_FACET));
       nitsche_facet = false;
 
-      if(definedon[BND].Size() == 0)
+      if(DefinedOnAll(BND) && DefinedOnAll(VOL))
         nitsche_facet = true;
       else
         {
           for (auto el : ma->Elements(BND))
-            if(definedon[BND][el.GetIndex()])
+            if(DefinedOn(el))
               nitsche_facet[el.Facets()] = true;
         }
     }
@@ -388,7 +388,7 @@ namespace ngcomp
         case VOL:
           {
             auto ngel = ma->GetElement(ei);
-            if(definedon[VOL].Size() == 0 || definedon[VOL][ngel.GetIndex()])
+            if(DefinedOn(ngel))
               {
                 dofs += IntRange(GetNDof());
               }

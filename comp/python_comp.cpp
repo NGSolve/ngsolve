@@ -1181,6 +1181,10 @@ kwargs : kwargs
                        }
                      throw Exception("components only available for ProductSpace");                     
                    }, "deprecated, will be only available for ProductSpace")
+    .def_property_readonly("dirichlet", &FESpace::GetDirichletRegion,
+                           "Dirichlet regions of the space (copy) as MixedRegion")
+    .def_property_readonly("definedon", &FESpace::GetDefinedOnMixedRegion,
+                           "Regions the space is defined on (copy) as MixedRegion")
     .def("GetDirichletRegion",
 	 [](shared_ptr<FESpace> self, VorB vb)
 	  {
@@ -1195,10 +1199,7 @@ kwargs : kwargs
 	 [](shared_ptr<FESpace> self, VorB vb)
 	  {
             auto region = Region(self->GetMeshAccess(), vb);
-            region.Mask().Clear();
-            const Array<bool> & definedon = self->GetDefinedOn(vb); 
-            for (int i = 0; i < definedon.Size(); i++)
-              if (definedon[i]) region.Mask().SetBit(i);
+            region.Mask() = self->GetDefinedOn(vb);
             return region;
 	  },
          py::arg("vb") = VOL,

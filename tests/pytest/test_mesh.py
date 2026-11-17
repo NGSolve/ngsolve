@@ -168,6 +168,65 @@ def _box_ball_mesh():
     ball.solids.name = "ball"
     return Mesh(occ.OCCGeometry(occ.Glue([box - ball, ball])).GenerateMesh(maxh=0.3))
 
+def test_definedon_closed():
+    # a space is defined on the closure of its definedon regions
+    mesh = _box_ball_mesh()
+    for reg in [mesh.Materials("ball"), mesh.Boundaries("bot"), mesh.BBoundaries(".*"),
+                mesh.Materials("ball") | mesh.BBBoundaries("corner"),
+                {VOL: mesh.Materials("ball"), BND: mesh.Boundaries("bot")}]:
+        fes = H1(mesh, order=2, definedon=reg)
+        if isinstance(reg, dict):
+            reg = reg[VOL] | reg[BND]
+        if isinstance(reg, Region):
+            reg = MixedRegion(reg)
+        closed = reg.Closure()
+        for vb in [VOL, BND, BBND, BBBND]:
+            for el in mesh.Elements(vb):
+                assert (len(fes.GetDofNrs(ElementId(vb, el.nr))) > 0) == closed[vb].Mask()[el.index]
+
+def test_fespace_definedon_property():
+    mesh = _box_ball_mesh()
+    assert H1(mesh, order=2).definedon == ~MixedRegion(mesh)
+    fes = H1(mesh, order=2, definedon=mesh.Materials("ball"))
+    assert fes.definedon == MixedRegion(mesh.Materials("ball")).Closure()
+    for vb in [VOL, BND, BBND, BBBND]:
+        assert fes.GetDefinedOnRegion(vb) == fes.definedon[vb]
+
+def test_fespace_element_without_region():
+    import netgen.meshing as nm
+    m = nm.Mesh(3)
+    pts = [m.Add(nm.MeshPoint(nm.Pnt(*p))) for p in [(0,0,0),(1,0,0),(0,1,0),(0,0,1)]]
+    m.Add(nm.Element3D(1, pts))
+    fd = m.Add(nm.FaceDescriptor(surfnr=1, domin=1, bc=1))
+    for t in [(0,1,2),(0,1,3),(0,2,3),(1,2,3)]:
+        m.Add(nm.Element2D(fd, [pts[i] for i in t]))
+    m.Add(nm.Element1D([pts[0], pts[1]], index=0))
+    m.SetMaterial(1, "a")
+    mesh = Mesh(m)
+    assert [e.index for e in mesh.Elements(BBND)] == [-1]
+    fes = H1(mesh, order=2)
+    assert fes.ndof == 10
+    assert len(fes.GetDofNrs(ElementId(BBND, 0))) == 0
+    fes = H1(mesh, order=2, definedon=mesh.Materials("a"))
+    assert len(fes.GetDofNrs(ElementId(BBND, 0))) == 0
+
+def test_dirichlet_element_without_region():
+    import netgen.meshing as nm
+    m = nm.Mesh(3)
+    pts = [m.Add(nm.MeshPoint(nm.Pnt(*p))) for p in [(0,0,0),(1,0,0),(0,1,0),(0,0,1)]]
+    m.Add(nm.Element3D(1, pts))
+    fd = m.Add(nm.FaceDescriptor(surfnr=1, domin=1, bc=1))
+    for t in [(0,1,2),(0,1,3),(0,2,3),(1,2,3)]:
+        m.Add(nm.Element2D(fd, [pts[i] for i in t]))
+    m.Add(nm.Element1D([pts[0], pts[1]], index=0))
+    m.Add(nm.Element1D([pts[2], pts[3]], index=1))
+    mesh = Mesh(m)
+    assert [e.index for e in mesh.Elements(BBND)] == [-1, 0]
+    fes = H1(mesh, order=1, dirichlet_bbnd=".*")
+    assert list(fes.FreeDofs()) == [True, True, False, False]
+    fes = H1(mesh, order=1, dirichlet=mesh.BBoundaries(".*"))
+    assert list(fes.FreeDofs()) == [True, True, False, False]
+
 def test_mixedregion_setops():
     import pickle
     mesh = _box_ball_mesh()
@@ -207,6 +266,17 @@ def test_mixedregion_topology():
     iface = MixedRegion(mesh.Materials("air")).Closure() & MixedRegion(mesh.Materials("ball")).Closure()
     assert iface[VOL] == mesh.Materials("") and iface[BND] == mesh.Boundaries("sphere")
 
+def test_mixedregion_fespace_dirichlet_property():
+    mesh = _box_ball_mesh()
+    reg = mesh.Boundaries("bot") | mesh.BBBoundaries("corner")
+    fes = H1(mesh, order=2, dirichlet=reg)
+    assert fes.dirichlet == reg
+    d = fes.dirichlet
+    d = d - MixedRegion(mesh.Boundaries("bot"))
+    assert d != reg and fes.dirichlet == reg
+    with pytest.raises(AttributeError):
+        fes.dirichlet = d
+
 @pytest.mark.parametrize("space", [H1, HCurl])
 def test_mixedregion_fespace_flags(space):
     mesh = _box_ball_mesh()
@@ -217,6 +287,12 @@ def test_mixedregion_fespace_flags(space):
     assert dofs(dirichlet=mesh.Boundaries("bot") | mesh.BBBoundaries("corner")) == \
         dofs(dirichlet="bot", dirichlet_bbbnd="corner")
     assert dofs(dirichlet=MixedRegion(mesh.BBBoundaries("corner"))) == dofs(dirichlet_bbbnd="corner")
+    assert dofs(dirichlet=mesh.BBBoundaries("corner")) == dofs(dirichlet_bbbnd="corner")
+    assert dofs(dirichlet=mesh.BBoundaries(".*")) == dofs(dirichlet_bbnd=".*")
+    assert dofs(dirichlet=mesh.BBoundaries(".*"), dirichlet_bbbnd="corner") == \
+        dofs(dirichlet_bbnd=".*", dirichlet_bbbnd="corner")
+    with pytest.raises(Exception, match="VOL regions are not supported"):
+        space(mesh, order=2, dirichlet=mesh.Materials("ball"))
     assert dofs(dirichlet=MixedRegion(mesh.Boundaries("bot")), dirichlet_bbbnd="corner") == \
         dofs(dirichlet="bot", dirichlet_bbbnd="corner")
     assert dofs(definedon=MixedRegion(mesh.Materials("ball"))) == dofs(definedon=mesh.Materials("ball"))
