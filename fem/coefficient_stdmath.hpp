@@ -6,12 +6,14 @@ namespace ngfem
 {
 
   struct GenericSqrt {
+    static constexpr bool PreservesZero() { return true; }
     template <typename T> T operator() (T x) const { return sqrt(x); }
     static string Name() { return "sqrt"; }
     void DoArchive(Archive& ar) {}
   };
   
   struct GenericSin {
+    static constexpr bool PreservesZero() { return true; }
     template <typename T> T operator() (T x) const { return sin(x); }
     template <typename T> T Diff (T x) const { return cos(x); }    
     static string Name() { return "sin"; }
@@ -26,12 +28,14 @@ namespace ngfem
   };
 
   struct GenericTan {
+    static constexpr bool PreservesZero() { return true; }
     template <typename T> T operator() (T x) const { return tan(x); }
     static string Name() { return "tan"; }
     void DoArchive(Archive& ar) {}
   };
 
   struct GenericATan {
+    static constexpr bool PreservesZero() { return true; }
     template <typename T> T operator() (T x) const { return atan(x); }
     static string Name() { return "atan"; }
     void DoArchive(Archive& ar) {}
@@ -44,6 +48,7 @@ namespace ngfem
   };
   
   struct GenericASin {
+    static constexpr bool PreservesZero() { return true; }
     template <typename T> T operator() (T x) const { return asin(x); }
     static string Name() { return "asin"; }
     void DoArchive(Archive& ar) {}
@@ -53,6 +58,7 @@ namespace ngfem
   
 
   struct GenericSinh {
+    static constexpr bool PreservesZero() { return true; }
     template <typename T> T operator() (T x) const { return sinh(x); }
     template <typename T> T Diff (T x) const { return cosh(x); }            
     static string Name() { return "sinh"; }
@@ -67,6 +73,7 @@ namespace ngfem
   };
 
   struct GenericASinh {
+    static constexpr bool PreservesZero() { return true; }
     template <typename T> T operator() (T x) const { return asinh(x); }
     template <typename T> T Diff (T x) const { return 1.0 / sqrt(1.+x*x); }
     shared_ptr<CoefficientFunction>
@@ -125,6 +132,7 @@ namespace ngfem
 
 
   struct GenericErf {
+    static constexpr bool PreservesZero() { return true; }
     template <typename T> T operator() (T x) const { return erf(x); }
     Complex operator() (Complex x) const { throw Exception("no erf for Complex"); }
     SIMD<Complex> operator() (SIMD<Complex> x) const { throw ExceptionNOSIMD("no erf for simd(complex)"); }  
@@ -135,6 +143,7 @@ namespace ngfem
 
 
 struct GenericFloor {
+  static constexpr bool PreservesZero() { return true; }
   template <typename T> T operator() (T x) const { return floor(x); }
   Complex operator() (Complex x) const { throw Exception("no floor for Complex"); }  
   // SIMD<double> operator() (SIMD<double> x) const { throw ExceptionNOSIMD("no floor for simd"); }
@@ -146,6 +155,7 @@ struct GenericFloor {
   void DoArchive(Archive& ar) {}
 };
 struct GenericCeil {
+  static constexpr bool PreservesZero() { return true; }
   template <typename T> T operator() (T x) const { return ceil(x); }
   Complex operator() (Complex x) const { throw Exception("no ceil for Complex"); }  
   // SIMD<double> operator() (SIMD<double> x) const { throw ExceptionNOSIMD("no ceil for simd"); }

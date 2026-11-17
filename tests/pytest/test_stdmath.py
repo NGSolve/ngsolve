@@ -71,6 +71,16 @@ def test_vector_math_diff(unit_mesh_2d, fun, value, deriv, deriv2):
     assert jac(ip) == approx((deriv(values[0]), 0, 0, deriv(values[1])))
 
 
+def test_unary_tensor_jacobian_native(unit_mesh_2d):
+    variable = CF((2, 3, 4, 5), dims=(2, 2)).MakeVariable()
+    value = exp(CF((variable[0, 0], variable[1, 1])))
+    jacobian = value.Diff(variable)
+    native = jacobian.Compile(realcompile=True, wait=True, maxderiv=0)
+    expected = (math.exp(2), 0, 0, 0, 0, 0, 0, math.exp(5))
+    assert tuple(native.dims) == (2, 2, 2)
+    assert Integrate(native, unit_mesh_2d) == approx(expected)
+
+
 @pytest.mark.parametrize("dims", [(2,), (2, 2)])
 def test_componentwise_diff_replace(unit_mesh_2d, dims):
     ip = unit_mesh_2d(0.2, 0.2)

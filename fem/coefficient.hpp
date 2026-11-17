@@ -1435,9 +1435,14 @@ public:
       }
     else
       {
+        // Unknown functions need not map zero to zero (e.g. exp or a spline).
+        // PreservesZero concerns values only; derivative masks stay conservative.
+        bool preserves_zero = false;
+        if constexpr (requires { OP::PreservesZero(); })
+          preserves_zero = OP::PreservesZero();
         for (size_t i = 0; i < values.Size(); i++)
           {
-            values[i].Value() = v1[i].Value();
+            values[i].Value() = !preserves_zero || v1[i].Value();
             values[i].DValue(0) = v1[i].DValue(0);
             values[i].DDValue(0) = v1[i].DValue(0) || v1[i].DDValue(0);
           }
@@ -1782,7 +1787,8 @@ public:
           values(i) = v1(i) * v2(i);
         else
           {
-            values(i).Value() = v1(i).Value() || v2(i).Value();
+            // A general binary function can be nonzero even at (0,0).
+            values(i).Value() = true;
             values(i).DValue(0) = v1(i).DValue(0) || v2(i).DValue(0);
             values(i).DDValue(0) = v1(i).DValue(0) || v2(i).DValue(0) || v1(i).DDValue(0) || v2(i).DDValue(0);
           }

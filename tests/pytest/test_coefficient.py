@@ -119,6 +119,53 @@ def test_diff_nested(unit_mesh_2d):
                 hkl = h[(k*x2.dim+l)::x1.dim*x2.dim]
                 assert hkl == approx(ref, abs=1e-12)
 
+@pytest.mark.parametrize("dimension", [2, 4])
+def test_inverse_second_variation(unit_mesh_2d, dimension):
+    space = H1(unit_mesh_2d, order=1)
+    trial, test = space.TnT()
+    field = GridFunction(space)
+    energy = Inv((1 + trial) * Id(dimension))[0, 0]
+    if dimension == 2:
+        # d^2 (1+u)^(-1) / du^2 = 2 at u=0.
+        reference = BilinearForm(2 * trial * test * dx).Assemble()
+    for coefficient in (energy, energy.Compile()):
+        form = BilinearForm(space)
+        form += Variation(coefficient * dx)
+        if dimension == 4:
+            # The generic inverse must report its missing second-order AD.
+            with pytest.raises(Exception, match="AutoDiffDiff.*not overloaded"):
+                form.AssembleLinearization(field.vec)
+        else:
+            form.AssembleLinearization(field.vec)
+            assert Norm(form.mat.AsVector() - reference.mat.AsVector()) == approx(
+                0, abs=1e-12
+            )
+
+
+@pytest.mark.parametrize("zero", [False, True])
+def test_eigensystem_einsum(unit_mesh_2d, zero):
+    matrix = CF((0, 0, 0, 0) if zero else (1, 0, 0, 2), dims=(2, 2))
+    # Keep the sparsity map nonempty so the dense fallback cannot hide the bug.
+    augmented = CF((matrix.Eig(), 1))
+    value = fem.Einsum("i,i->i", augmented, CF((1,) * augmented.dim))
+    point = unit_mesh_2d(0.2, 0.3)
+    for coefficient in (value, value.Compile()):
+        assert Integrate(coefficient, unit_mesh_2d) == approx(augmented(point))
+
+
+def test_eigensystem_second_variation_unsupported(unit_mesh_2d):
+    space = H1(unit_mesh_2d, order=1)
+    trial = space.TrialFunction()
+    field = GridFunction(space)
+    energy = CF((2 + trial, trial, trial, 3 - trial), dims=(2, 2)).Eig()[4]
+    # Report the missing second-order AD instead of returning a zero Hessian.
+    for coefficient in (energy, energy.Compile()):
+        form = BilinearForm(space)
+        form += Variation(coefficient * dx)
+        with pytest.raises(Exception, match="AutoDiffDiff.*not overloaded"):
+            form.AssembleLinearization(field.vec)
+
+
 if __name__ == "__main__":
     test_pow()
     test_ParameterCF()

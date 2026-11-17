@@ -440,10 +440,12 @@ namespace ngfem
       FlatArray<int> hdims = Dimensions();
       code.Declare (index, hdims, IsComplex());
       
-      for (int i : Range(hdims[0]))
-        for (int j : Range(hdims[1])) {
-          CodeExpr s = Var(inputs[0], i) * Var(inputs[1], i, j);
-          code.body += Var(index, i, j).Assign(s, false);
+      for (size_t i : Range(c1->Dimension()))
+        for (size_t j : Range(numcols)) {
+          size_t component = i*numcols+j;
+          CodeExpr s = Var(inputs[0], i, c1->Dimensions())
+            * Var(inputs[1], component, c2->Dimensions());
+          code.body += Var(index, component, hdims).Assign(s, false);
         }
     }
 

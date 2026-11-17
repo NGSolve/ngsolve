@@ -3067,8 +3067,12 @@ public:
     AutoDiffDiff<1,NonZero> nz(false);
     for (int i = 0; i < dim1; i++)
       nz += in0[i];
-    for (int i = 0; i < vecdim; i++)
-      values(i) = nz;
+    nz.DDValue(0) = nz.DValue(0) || nz.DDValue(0);
+    values = nz;
+    // The first dim1 entries are eigenvectors, which need not vanish even
+    // for a zero matrix. The remaining vecdim entries are eigenvalues.
+    for (int i = 0; i < dim1; i++)
+      values(i).Value() = true;
   }
 };
 
@@ -4247,6 +4251,7 @@ shared_ptr<CoefficientFunction> operator* (shared_ptr<CoefficientFunction> c1, s
 
 
   struct GenericConj {
+    static constexpr bool PreservesZero() { return true; }
     template <typename T> T operator() (T x) const { return Conj(x); } // from bla
     static string Name() { return "conj"; }
     SIMD<double> operator() (SIMD<double> x) const { return x; }
