@@ -1,6 +1,11 @@
+import pytest
+mpi = pytest.importorskip("mpi4py.MPI")
 from ngsolve import *
 from pyngcore import MPI_Comm
-import mpi4py.MPI as mpi
+
+def need_ranks(comm, n):
+    if comm.size < n:
+        pytest.skip(f"needs >= {n} MPI ranks")
 
 def find_group(comm, groups):
     mg = []
@@ -30,7 +35,7 @@ def test_load_ngs_seq():
 #load ngsolve-mesh into sub-communicator
 def test_load_ngs_sub1():
     comm = MPI_Comm(mpi.COMM_WORLD)
-    assert comm.size>=5
+    need_ranks(comm, 5)
     groups = [[1,2,4]]
     mygrp = find_group(comm, groups)
     sub_comm = comm.SubComm(mygrp)
@@ -53,7 +58,7 @@ def test_load_ng():
 #load netgen-mesh into sub-comm 
 def test_load_ng_sub1():
     comm = MPI_Comm(mpi.COMM_WORLD)
-    assert comm.size>=5
+    need_ranks(comm, 5)
     groups = [[0,2,3,4]]
     sub_comm = comm.SubComm(find_group(comm, groups))
     import netgen.meshing
@@ -123,7 +128,7 @@ def test_mesh_dist():
 def test_mesh_dist_sub1():
     comm = MPI_Comm(mpi.COMM_WORLD)
     groups = [[0,1,3,4]]
-    assert comm.size>=5
+    need_ranks(comm, 5)
     sub_comm = comm.SubComm(find_group(comm, groups))
     import netgen.meshing
     ngmesh2d = netgen.meshing.Mesh(dim=2)

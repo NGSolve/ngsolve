@@ -1,7 +1,8 @@
 from ngsolve import *
 from ngsolve.la import *
 from pyngcore import MPI_Comm
-import mpi4py.MPI as mpi
+import pytest
+mpi = pytest.importorskip("mpi4py.MPI")
 
 # formats of parallel vectors and of agnostic operators next to a ParallelMatrix
 def test_parallel_formats():
