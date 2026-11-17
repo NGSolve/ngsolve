@@ -38,6 +38,14 @@ with the documentation (``make technotes``, needs ``latexmk`` for the PDF and
     ``late``, ``densefac``, ``lastdofs`` and ``waitfrac`` of ``Inverse``,
     and the measured fill.
 
+**2026-06** `Mixed-dimensional regions <2026-06_mixed_regions.html>`_ (`PDF <2026-06_mixed_regions.pdf>`__)
+    *Christopher Lackner, Joachim Schöberl.*
+    One object (``MixedRegion``) for regions of several codimensions: set
+    operations, closure, boundary and star from the region incidence of the
+    mesh. Use in ``dirichlet`` and ``definedon`` of spaces, ``RegionCF`` and
+    mesh-free descriptors such as ``BND("a") | BBND("b")``; the closed
+    ``definedon``.
+
 Adding a note
 -------------
 
