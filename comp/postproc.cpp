@@ -96,10 +96,8 @@ namespace ngcomp
         if (dynamic_pointer_cast<BlockDifferentialOperator>(single_evaluator))
           single_evaluator = dynamic_pointer_cast<BlockDifferentialOperator>(single_evaluator)->BaseDiffOp();
         
-        auto trial = make_shared<ProxyFunction>(fesflux, false, false, single_evaluator,
-                                                nullptr, nullptr, nullptr, nullptr, nullptr);
-        auto test  = make_shared<ProxyFunction>(fesflux, true, false, single_evaluator,
-                                                nullptr, nullptr, nullptr, nullptr, nullptr);
+        auto trial = make_shared<ProxyFunction>(fesflux, false, false, single_evaluator);
+        auto test  = make_shared<ProxyFunction>(fesflux, true, false, single_evaluator);
         fluxbli = make_shared<SymbolicBilinearFormIntegrator> (InnerProduct(trial,test), vb, VOL);
         single_fluxbli = fluxbli;
         // throw Exception ("no integrator available");
@@ -452,12 +450,11 @@ namespace ngcomp
 
 	/** Trial-Proxy **/
         if (!fes->GetEvaluator(vb))
-          throw Exception(fes->GetClassName()+string(" does not have an evaluator for ")+ToString(vb)+string("!"));
+          throw Exception(fes->GetClassName()+string(" does not have an evaluator for ")+ToString(vb)+string(" elements, give the region by definedon"));
         auto single_evaluator =  fes->GetEvaluator(vb);
         if (dynamic_pointer_cast<BlockDifferentialOperator>(single_evaluator))
           single_evaluator = dynamic_pointer_cast<BlockDifferentialOperator>(single_evaluator)->BaseDiffOp();
-        auto trial = make_shared<ProxyFunction>(fes, false, false, single_evaluator,
-                                                nullptr, nullptr, nullptr, nullptr, nullptr);
+        auto trial = make_shared<ProxyFunction>(fes, false, false, single_evaluator);
 
 	/** Test-Proxy (dual) **/
 	auto dual_evaluator = fes->GetAdditionalEvaluators()["dual"];
@@ -472,8 +469,7 @@ namespace ngcomp
 	}
         if (dynamic_pointer_cast<BlockDifferentialOperator>(dual_evaluator))
           single_dual_evaluator = dynamic_pointer_cast<BlockDifferentialOperator>(dual_evaluator)->BaseDiffOp();
-	auto dual = make_shared<ProxyFunction>(fes, true, false, single_dual_evaluator,
-					       nullptr, nullptr, nullptr, nullptr, nullptr);
+	auto dual = make_shared<ProxyFunction>(fes, true, false, single_dual_evaluator);
         /** Set up integrators - may need integrators for multiple node-types **/
         Array<shared_ptr<BilinearFormIntegrator>> bli;
         Array<shared_ptr<BilinearFormIntegrator>> single_bli;
@@ -700,15 +696,13 @@ namespace ngcomp
           {
             cout << IM(5) << "make a symbolic integrator for interpolation" << endl;
             if (!fes->GetEvaluator(vb))
-              throw Exception(fes->GetClassName()+string(" does not have an evaluator for ")+ToString(vb)+string("!"));
+              throw Exception(fes->GetClassName()+string(" does not have an evaluator for ")+ToString(vb)+string(" elements, give the region by definedon"));
             auto single_evaluator =  fes->GetEvaluator(vb);
             if (dynamic_pointer_cast<BlockDifferentialOperator>(single_evaluator))
               single_evaluator = dynamic_pointer_cast<BlockDifferentialOperator>(single_evaluator)->BaseDiffOp();
         
-            auto trial = make_shared<ProxyFunction>(fes, false, false, single_evaluator,
-                                                    nullptr, nullptr, nullptr, nullptr, nullptr);
-            auto test  = make_shared<ProxyFunction>(fes, true, false, single_evaluator,
-                                                    nullptr, nullptr, nullptr, nullptr, nullptr);
+            auto trial = make_shared<ProxyFunction>(fes, false, false, single_evaluator);
+            auto test  = make_shared<ProxyFunction>(fes, true, false, single_evaluator);
             bli = make_shared<SymbolicBilinearFormIntegrator> (InnerProduct(trial,test), vb, VOL);
           
             single_bli = bli;

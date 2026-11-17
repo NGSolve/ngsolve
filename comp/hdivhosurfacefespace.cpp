@@ -244,11 +244,9 @@ public:
       }
     else
       {
-	evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdHDiv<3>>>();	
 	evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdHDivSurface<3>>>();
 	evaluator[BBND] = make_shared<T_DifferentialOperator<DiffOpIdVecHDivSurfaceBoundary<3>>>();
 
-	flux_evaluator[VOL] =  make_shared<T_DifferentialOperator<DiffOpDivHDiv<3>>>();
 	flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpDivHDivSurface<3>>>();
 
         additional_evaluators.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHDivSurface<3>>> ());

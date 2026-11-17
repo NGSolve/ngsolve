@@ -1383,7 +1383,7 @@ keep_files : bool
           py::extract<shared_ptr<ngcomp::GridFunction>> egf(startingpoint);
           if (egf.check()) {
             const auto gf = egf();
-            if (gf->GetFESpace()->GetEvaluator())
+            if (gf->GetFESpace()->GetEvaluator(VOL) || gf->GetFESpace()->GetEvaluator(BND))
               return CreateMinimizationCF(expr, gf, tol, rtol, maxiter, allow_fail);
             else {
               // Probably a GF on a generic compound space
@@ -1496,7 +1496,7 @@ kwargs:
           py::extract<shared_ptr<ngcomp::GridFunction>> egf(startingpoint);
           if (egf.check()) {
             const auto gf = egf();
-            if (gf->GetFESpace()->GetEvaluator())
+            if (gf->GetFESpace()->GetEvaluator(VOL) || gf->GetFESpace()->GetEvaluator(BND))
               return CreateNewtonCF(expr, gf, tol, rtol, maxiter, allow_fail);
             else {
               // Probably a GF on a generic compound space

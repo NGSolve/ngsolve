@@ -74,6 +74,8 @@ namespace ngcomp
     ar.Shallow(fes);
     for (auto i : Range(4))
       ar & diffop[i];
+    if (ar.Input())
+      diffop.SetLevel (diffop.FirstLevel());
     ar & comp;
   }
   
@@ -112,8 +114,7 @@ namespace ngcomp
 
   GridFunctionCoefficientFunction ::
   GridFunctionCoefficientFunction (shared_ptr<GridFunction> agf, shared_ptr<ProxyFunction> proxy)
-    : GridFunctionCoefficientFunction(agf, proxy->Evaluator(), proxy->TraceEvaluator(),
-                                      proxy->TTraceEvaluator())
+    : GridFunctionCoefficientFunction(agf, proxy->Evaluators())
   {
     if (auto op = proxy->Evaluator())
       CheckOperatorSpace (*op, proxy->GetFESpace().get(), *fes, op->VB(), true);
@@ -145,6 +146,8 @@ namespace ngcomp
     static Timer t ("GridFunction Archive"); RegionTimer r (t);
     
     GridFunctionCoefficientFunction::DoArchive(archive);
+    if (archive.Input())
+      diffop.SetLevel (VOL);
 
     archive & name & flags & flaglist;
     archive.Shallow(fespace);
@@ -1246,7 +1249,7 @@ namespace ngcomp
 				   shared_ptr<DifferentialOperator> atttrace_diffop,
                                    int acomp)
     : CoefficientFunctionNoDerivative(1, false),
-      diffop{adiffop,atrace_diffop, attrace_diffop, atttrace_diffop},
+      diffop(adiffop, atrace_diffop, attrace_diffop, atttrace_diffop),
       comp (acomp) 
   {
     ; // SetDimensions (gf->Dimensions());
@@ -1268,10 +1271,19 @@ namespace ngcomp
 				   shared_ptr<DifferentialOperator> attrace_diffop,
 				   shared_ptr<DifferentialOperator> atttrace_diffop,                                   
                                    int acomp)
+    : GridFunctionCoefficientFunction (agf, EvaluatorTable (adiffop, atrace_diffop, attrace_diffop, atttrace_diffop), acomp)
+  {
+    // the first operator given is the function, Trace() goes below it
+    diffop.SetLevel (diffop.FirstLevel());
+  }
+
+  GridFunctionCoefficientFunction :: 
+  GridFunctionCoefficientFunction (shared_ptr<GridFunction> agf,
+                                   const EvaluatorTable & adiffop, int acomp)
     : CoefficientFunctionNoDerivative(1,agf->IsComplex()),
       gf_shared_ptr(agf),
       gf(agf.get()),
-      diffop{adiffop,atrace_diffop,attrace_diffop, atttrace_diffop},
+      diffop(adiffop),
       comp (acomp) 
   {
     fes = gf->GetFESpace();
@@ -1302,6 +1314,7 @@ namespace ngcomp
     fes = gf->GetFESpace();
     SetDimensions (gf->Dimensions());
     diffop[abfi->VB()] = make_shared<CalcFluxDifferentialOperator> (abfi, false);
+    diffop.SetLevel (abfi->VB());
     /*
     if (bfi->VB() == VOL)
     diffop = make_shared<CalcFluxDifferentialOperator> (bfi, false);
@@ -1351,8 +1364,13 @@ namespace ngcomp
     // Evaluate relies on these, it does not test them
     VorB evb = ctx.EvalVB();
     if (!diffop[evb])
-      throw Exception ("GridFunction on " + fes->GetClassName() + " has no evaluator for " + ToString(evb) +
-                       " elements, maybe a Trace() is missing");
+      {
+        // a function living on elements of higher co-dimension is zero here
+        if (evb >= diffop.Level() && evb < diffop.FirstLevel())
+          return;
+        throw Exception ("GridFunction on " + fes->GetClassName() + " has no evaluator for " + ToString(evb) +
+                         " elements, maybe a Trace() is missing");
+      }
     if (diffop[evb]->OnlyOnFacets() && !ctx.OnElementFacet())
       throw Exception ("GridFunction on " + fes->GetClassName() + " cannot be evaluated inside elements");
   }
@@ -1442,7 +1460,8 @@ namespace ngcomp
     
   bool GridFunctionCoefficientFunction :: DefinedOn (const ElementTransformation & trafo)
   {
-    return fes->DefinedOn(trafo.VB(), trafo.GetElementIndex());
+    // no operator: the function lives on elements of another co-dimension
+    return diffop[trafo.VB()] && fes->DefinedOn(trafo.VB(), trafo.GetElementIndex());
   }
     
   bool GridFunctionCoefficientFunction::IsComplex() const
@@ -1501,7 +1520,7 @@ namespace ngcomp
         return Evaluate (trafo2(rip, lh2), result);
       }
     
-    if (!fes->DefinedOn (ei.VB(),trafo.GetElementIndex()))
+    if (!diffop[ei.VB()] || !fes->DefinedOn (ei.VB(),trafo.GetElementIndex()))
       { 
         result = 0.0; 
         return;
@@ -1547,7 +1566,7 @@ namespace ngcomp
         return;
       }
 
-    if (!fes->DefinedOn (vb,ip.GetTransformation().GetElementIndex()))
+    if (!diffop[vb] || !fes->DefinedOn(vb,ip.GetTransformation().GetElementIndex()))
       { 
         result = 0.0; 
         return;
@@ -1597,7 +1616,7 @@ namespace ngcomp
         return;
       }
     
-    if (!fes->DefinedOn(vb, trafo.GetElementIndex())) 
+    if (!diffop[vb] || !fes->DefinedOn(vb, trafo.GetElementIndex())) 
       { 
         values = 0.0; 
         return;
@@ -1661,7 +1680,7 @@ namespace ngcomp
         return;
       }
     
-    if (!fes->DefinedOn(vb, trafo.GetElementIndex())) 
+    if (!diffop[vb] || !fes->DefinedOn(vb, trafo.GetElementIndex())) 
       { 
         values = 0.0; 
         return;
@@ -1737,7 +1756,7 @@ namespace ngcomp
         return;
       }
     
-    if (!fes->DefinedOn(vb,trafo.GetElementIndex())) 
+    if (!diffop[vb] || !fes->DefinedOn(vb,trafo.GetElementIndex())) 
       { 
         values = 0.0; 
         return;
@@ -1815,7 +1834,7 @@ namespace ngcomp
         return;
       }
     
-    if (!fes.DefinedOn(vb, trafo.GetElementIndex())) 
+    if (!diffop[vb] || !fes.DefinedOn(vb, trafo.GetElementIndex())) 
       { 
         values = 0.0; 
         return;
@@ -1878,9 +1897,10 @@ namespace ngcomp
     
     if ( (CoefficientFunction*)gf == var)
       {
-        if (!diffop[0])
+        auto op = diffop.First();
+        if (!op)
           throw Exception ("Diff: operator not available for " + gf->GetFESpace()->GetClassName());
-        return dir->Operator(diffop[0]);
+        return dir->Operator(op);
       }
 
         /*
@@ -1902,14 +1922,10 @@ namespace ngcomp
   {
     // auto tracecf = make_shared<GridFunctionCoefficientFunction> (*this);
     shared_ptr<GridFunction> hgf = gf_shared_ptr ? gf_shared_ptr : dynamic_pointer_cast<GridFunction> (gf->shared_from_this());
-    auto tracecf = make_shared<GridFunctionCoefficientFunction> (hgf, diffop[0], diffop[1], diffop[2], diffop[3]);
-    for (int i = 0; i < 4; i++)
-      if (tracecf->diffop[i])
-        {
-          tracecf->diffop[i] = nullptr;  // clear first diffop
-          break;
-        }
-    return tracecf;
+    auto trace = diffop.Trace();
+    if (!trace.First())
+      throw Exception ("don't have a trace, space is " + fes->GetClassName());
+    return make_shared<GridFunctionCoefficientFunction> (hgf, trace);
   }
 
 

@@ -326,6 +326,66 @@ namespace ngfem
     virtual int DimElement () const { return -1; }
   };
 
+  // one differential operator per co-dimension of the element.
+  // level = number of traces taken, operators of lower co-dimension are dropped
+  class EvaluatorTable
+  {
+    shared_ptr<DifferentialOperator> ops[4];
+    VorB level = VOL;
+  public:
+    EvaluatorTable () = default;
+    EvaluatorTable (shared_ptr<DifferentialOperator> vol, shared_ptr<DifferentialOperator> bnd,
+                    shared_ptr<DifferentialOperator> bbnd, shared_ptr<DifferentialOperator> bbbnd,
+                    VorB alevel = VOL)
+      : ops{vol, bnd, bbnd, bbbnd} { SetLevel(alevel); }
+    // a single operator, at its own co-dimension
+    explicit EvaluatorTable (shared_ptr<DifferentialOperator> op)
+    {
+      if (op)
+        {
+          level = op->VB();
+          ops[level] = op;
+        }
+    }
+
+    shared_ptr<DifferentialOperator> & operator[] (int vb) { return ops[vb]; }
+    // the operator for elements of co-dimension vb
+    const shared_ptr<DifferentialOperator> & operator[] (int vb) const { return ops[vb]; }
+
+    VorB Level() const { return level; }
+    void SetLevel (VorB alevel)
+    {
+      level = alevel;
+      for (int i = 0; i < level; i++)
+        ops[i] = nullptr;
+    }
+    // the operator of the level
+    const shared_ptr<DifferentialOperator> & Active() const { return ops[level]; }
+    // the operator of the level, or the next one below it
+    shared_ptr<DifferentialOperator> First() const
+    {
+      for (int i = level; i < 4; i++)
+        if (ops[i]) return ops[i];
+      return nullptr;
+    }
+    // level of the first operator
+    VorB FirstLevel() const
+    {
+      for (int i = level; i < 4; i++)
+        if (ops[i]) return VorB(i);
+      return level;
+    }
+    bool HasTrace() const { return level < BBBND && ops[level+1]; }
+    // one level down, empty if there is none
+    EvaluatorTable Trace() const
+    {
+      if (level == BBBND) return EvaluatorTable();
+      EvaluatorTable trace(*this);
+      trace.SetLevel (VorB(level+1));
+      return trace;
+    }
+  };
+
   
 
 }

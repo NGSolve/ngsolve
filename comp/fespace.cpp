@@ -1652,10 +1652,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       ctx.nregions[v] = ma.GetNRegions(v);
     ctx.check_proxy = [] (const ProxyFunction & proxy, const FESpace & space, VorB elvb)
       {
-        auto op = proxy.Evaluator();
-        if (!op) op = proxy.TraceEvaluator();
-        if (op)
-          CheckOperatorSpace (*op, proxy.GetFESpace().get(), space, elvb, true);
+        CheckOperatorSpace (*proxy.Evaluator(), proxy.GetFESpace().get(), space, elvb, true);
       };
     return ctx;
   }
@@ -1985,11 +1982,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
         evaluator = block_evaluator->BaseDiffOp();
       }
     auto trial = make_shared<ProxyFunction>(nullptr, // dynamic_pointer_cast<FESpace>(const_cast<FESpace*>(this)->shared_from_this()),
-                                            false, IsComplex(), evaluator,
-                                            nullptr, nullptr, nullptr, nullptr, nullptr);
+                                            false, IsComplex(), evaluator);
     auto test  = make_shared<ProxyFunction>(nullptr, // dynamic_pointer_cast<FESpace>(const_cast<FESpace*>(this)->shared_from_this()),
-                                            true, false, evaluator,
-                                            nullptr, nullptr, nullptr, nullptr, nullptr);
+                                            true, false, evaluator);
     shared_ptr<BilinearFormIntegrator> bli =
       make_shared<SymbolicBilinearFormIntegrator> (InnerProduct(trial,test), vb, VOL);
     
@@ -3109,14 +3104,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
         auto l2evaluator = l2space->GetEvaluator(VOL);
 
         auto trial = make_shared<ProxyFunction>(dynamic_pointer_cast<FESpace>(const_cast<FESpace*>(this)->shared_from_this()),
-                                                false, false, evaluator,
-                                                nullptr, nullptr, nullptr, nullptr, nullptr);
+                                                false, false, evaluator);
         auto trial_l2 = make_shared<ProxyFunction>(l2space, 
-                                                   false, false, l2evaluator,
-                                                   nullptr, nullptr, nullptr, nullptr, nullptr);
+                                                   false, false, l2evaluator);
         auto test_l2  = make_shared<ProxyFunction>(l2space,
-                                                   true, false, l2evaluator,
-                                                   nullptr, nullptr, nullptr, nullptr, nullptr);
+                                                   true, false, l2evaluator);
         shared_ptr<BilinearFormIntegrator> bfi_mass_mixed =
           make_shared<SymbolicBilinearFormIntegrator> (InnerProduct(trial,test_l2), VOL, VOL);
         shared_ptr<BilinearFormIntegrator> bfi_mass_l2 =
@@ -3281,13 +3273,14 @@ lot of new non-zero entries in the matrix!\n" << endl;
   {
     shared_ptr<FESpace> fes = dynamic_pointer_cast<FESpace> (const_cast<FESpace*>(this)->shared_from_this());
 
+    EvaluatorTable evaluators, deriv_evaluators;
+    for (VorB vb : { VOL, BND, BBND, BBBND })
+      {
+        evaluators[vb] = fes->GetEvaluator(vb);
+        deriv_evaluators[vb] = fes->GetFluxEvaluator(vb);
+      }
     auto proxy = make_shared<ProxyFunction>  (fes, testfunction, testfunction ? false : fes->IsComplex(),
-                                              fes->GetEvaluator(),
-                                              fes->GetFluxEvaluator(),
-                                              fes->GetEvaluator(BND),
-                                              fes->GetFluxEvaluator(BND),
-                                              fes->GetEvaluator(BBND),
-                                              fes->GetFluxEvaluator(BBND));
+                                              evaluators, deriv_evaluators);
     
     auto add_diffops = fes->GetAdditionalEvaluators();
     for (int i = 0; i < add_diffops.Size(); i++)
@@ -4373,7 +4366,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
   MakeProxyFunction (bool testfunction,
                      const function<shared_ptr<ProxyFunction>(shared_ptr<ProxyFunction>)> & addblock) const
   {
-    if (this->GetEvaluator())
+    if (GetEvaluator(VOL) || GetEvaluator(BND))
       return FESpace::MakeProxyFunction (testfunction, addblock);
 
     auto fes = dynamic_pointer_cast<CompoundFESpace> (const_cast<CompoundFESpace*>(this)->shared_from_this());    
@@ -4386,30 +4379,16 @@ lot of new non-zero entries in the matrix!\n" << endl;
                      (testfunction,
                       [&] (shared_ptr<ProxyFunction> proxy)
                       {
-                        // auto addcomp = [] (shared_ptr<DifferentialOperator> diffop, int comp) -> shared_ptr<CompoundDifferentialOperator>
-                        // { return diffop ? make_shared<CompoundDifferentialOperator> (diffop, comp) : nullptr; };
-                        
-                        auto block_eval = make_shared<CompoundDifferentialOperator> (proxy->Evaluator(), i);
-
-                        // auto block_deriv_eval = addcomp (proxy->DerivEvaluator(), i);
-                        shared_ptr <CompoundDifferentialOperator> block_deriv_eval = nullptr;
-                        if (proxy->DerivEvaluator() != nullptr)
-                          block_deriv_eval = make_shared<CompoundDifferentialOperator> (proxy->DerivEvaluator(), i);
-                        shared_ptr <CompoundDifferentialOperator> block_trace_eval = nullptr;
-                        if (proxy->TraceEvaluator() != nullptr)
-                          block_trace_eval = make_shared<CompoundDifferentialOperator> (proxy->TraceEvaluator(), i);
-                        shared_ptr <CompoundDifferentialOperator> block_ttrace_eval = nullptr;
-                        if (proxy->TTraceEvaluator() != nullptr)
-                          block_ttrace_eval = make_shared<CompoundDifferentialOperator> (proxy->TTraceEvaluator(),i);
-                        shared_ptr <CompoundDifferentialOperator> block_trace_deriv_eval = nullptr;
-                        if (proxy->TraceDerivEvaluator() != nullptr)
-                          block_trace_deriv_eval = make_shared<CompoundDifferentialOperator> (proxy->TraceDerivEvaluator(), i);
-                        shared_ptr <CompoundDifferentialOperator> block_ttrace_deriv_eval = nullptr;
-                        if (proxy->TTraceDerivEvaluator() != nullptr)
-                          block_ttrace_deriv_eval = make_shared<CompoundDifferentialOperator> (proxy->TTraceDerivEvaluator(),i);
-                        
-                        auto block_proxy = make_shared<ProxyFunction> (fes, testfunction, fes->IsComplex(),                                                                                                                  block_eval, block_deriv_eval, block_trace_eval, block_trace_deriv_eval,
-                                                                       block_ttrace_eval, block_ttrace_deriv_eval);
+                        auto component = [i] (EvaluatorTable table)
+                        {
+                          for (int j = 0; j < 4; j++)
+                            if (table[j])
+                              table[j] = make_shared<CompoundDifferentialOperator> (table[j], i);
+                          return table;
+                        };
+                        auto block_proxy = make_shared<ProxyFunction> (fes, testfunction, fes->IsComplex(),
+                                                                       component(proxy->Evaluators()),
+                                                                       component(proxy->DerivEvaluators()));
                         
                         SymbolTable<shared_ptr<DifferentialOperator>> add = proxy->GetAdditionalEvaluators();
                         for (int j = 0; j < add.Size(); j++)

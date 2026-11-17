@@ -29,13 +29,12 @@ protected:
   // bool is_complex;
   bool is_other;    // neighbour element (DG)
   shared_ptr<ProxyFunction> primaryproxy;   // derivatives and traces point to it
-  shared_ptr<DifferentialOperator> evaluator;
-  shared_ptr<DifferentialOperator> deriv_evaluator;
-  shared_ptr<DifferentialOperator> trace_evaluator;
-  shared_ptr<DifferentialOperator> trace_deriv_evaluator;
-  shared_ptr<DifferentialOperator> ttrace_evaluator;
-  shared_ptr<DifferentialOperator> ttrace_deriv_evaluator;
+  EvaluatorTable evaluators;
+  EvaluatorTable deriv_evaluators;   // canonical derivatives, same level
+  shared_ptr<DifferentialOperator> evaluator;   // evaluators.First(), the active operator
   weak_ptr<ProxyFunction> deriv_proxy;          // weak since we point to the primary proxy
+  weak_ptr<ProxyFunction> trace_proxy;
+  bool is_trace = false;                        // Trace() of the primary proxy
   shared_ptr<CoefficientFunction> boundary_values; // for DG - apply
 
   SymbolTable<shared_ptr<DifferentialOperator>> additional_diffops;
@@ -44,10 +43,25 @@ protected:
   mutable weak_ptr<ProxyFunction> dt;
   mutable shared_ptr<ProxyFunction> anti_dt;
   // int dim;
+
+  shared_ptr<DifferentialOperator> Below (const EvaluatorTable & table, int k) const
+  { return (table.Level()+k < 4) ? table[table.Level()+k] : nullptr; }
 public:
+  // the level of the evaluators is taken for the derivatives
+  ProxyFunction (shared_ptr<ngcomp::FESpace> afes,
+                 bool atestfunction, bool ais_complex,
+                 const EvaluatorTable & aevaluators,
+                 const EvaluatorTable & aderiv_evaluators);
+
+  // one operator, placed at its own co-dimension
+  ProxyFunction (shared_ptr<ngcomp::FESpace> afes,
+                 bool atestfunction, bool ais_complex,
+                 shared_ptr<DifferentialOperator> aevaluator);
+
+  // old interface: operators for VOL, BND, BBND
   ProxyFunction (shared_ptr<ngcomp::FESpace> afes,
                                 bool atestfunction, bool ais_complex,
-                                shared_ptr<DifferentialOperator> aevaluator, 
+                                shared_ptr<DifferentialOperator> aevaluator,
                                 shared_ptr<DifferentialOperator> aderiv_evaluator,
                                 shared_ptr<DifferentialOperator> atrace_evaluator,
                                 shared_ptr<DifferentialOperator> atrace_deriv_evaluator,
@@ -65,16 +79,30 @@ public:
   void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override;
   
   const shared_ptr<DifferentialOperator> & Evaluator() const { return evaluator; }
-  const shared_ptr<DifferentialOperator> & DerivEvaluator() const { return deriv_evaluator; }
-  const shared_ptr<DifferentialOperator> & TraceEvaluator() const { return trace_evaluator; }
-  const shared_ptr<DifferentialOperator> & TraceDerivEvaluator() const { return trace_deriv_evaluator; }
-  const shared_ptr<DifferentialOperator> & TTraceEvaluator() const { return ttrace_evaluator; }
-  const shared_ptr<DifferentialOperator> & TTraceDerivEvaluator() const { return ttrace_deriv_evaluator; }
+  // the operator for elements of co-dimension vb, nullptr if a Trace() is needed
+  shared_ptr<DifferentialOperator> Evaluator (VorB vb) const
+  { return (evaluator && evaluator->SupportsVB(vb)) ? evaluator : nullptr; }
+  shared_ptr<DifferentialOperator> DerivEvaluator() const { return deriv_evaluators.First(); }
+  VorB TraceLevel() const { return evaluators.Level(); }
+  const EvaluatorTable & Evaluators() const { return evaluators; }
+  const EvaluatorTable & DerivEvaluators() const { return deriv_evaluators; }
+
+  // the operator after Trace() down to co-dimension vb
+  const shared_ptr<DifferentialOperator> & TracedEvaluator (VorB vb) const { return evaluators[vb]; }
+
+  // old interface (external packages): operators one and two co-dimensions below the active one
+  shared_ptr<DifferentialOperator> TraceEvaluator() const { return Below(evaluators, 1); }
+  shared_ptr<DifferentialOperator> TraceDerivEvaluator() const { return Below(deriv_evaluators, 1); }
+  shared_ptr<DifferentialOperator> TTraceEvaluator() const { return Below(evaluators, 2); }
+  shared_ptr<DifferentialOperator> TTraceDerivEvaluator() const { return Below(deriv_evaluators, 2); }
 
   shared_ptr<ProxyFunction> Deriv() const;
   shared_ptr<ProxyFunction> Trace() const;
   shared_ptr<CoefficientFunction> Primary() const override
   { return primaryproxy; }
+  // the function itself or its trace, no operator applied
+  bool IsPlain() const
+  { return !primaryproxy || (is_trace && primaryproxy->IsPlain()); }
   
   shared_ptr<ProxyFunction> Dt() const;  
   shared_ptr<ProxyFunction> AntiDt() const;

@@ -2655,6 +2655,28 @@ namespace ngcomp
     }
   };
 
+  Region DefinedOnRegion (CoefficientFunction & cf, const Region & region)
+  {
+    auto & ma = region.Mesh();
+    VorB vb = region.VB();
+    Region defined (ma, vb);
+    BitArray todo (region.Mask());
+    size_t open = todo.NumSet();
+    LocalHeap lh (100000, "definedonregion");
+    for (ElementId ei : ma->Elements(vb))
+      {
+        if (!open) break;
+        int index = ma->GetElIndex(ei);
+        if (!todo.Test(index)) continue;
+        todo.Clear(index);
+        open--;
+        HeapReset hr(lh);
+        if (cf.DefinedOn (ma->GetTrafo(ei, lh)))
+          defined.Mask().SetBit(index);
+      }
+    return defined;
+  }
+
   shared_ptr<CoefficientFunction>
   MakeBoundaryFromVolumeCoefficientFunction  (shared_ptr<CoefficientFunction> avol_cf)
   {

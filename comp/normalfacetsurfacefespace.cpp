@@ -76,7 +76,6 @@ namespace ngcomp
     else
       {
         evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdHDivSurface<3>>>();
-        evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdHDiv<3>>>();
       }
   }
 

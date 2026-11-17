@@ -431,11 +431,6 @@ namespace ngcomp
     if (ma->GetDimension() != 3)
       throw Exception("HDivDivSurface only supports 2D manifolds");
     
-    // for the dimension ..
-    evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdHDivDiv<3>>>();
-    // for div(GridFunction)
-    flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpDivHDivDiv<3>>>();
-
     evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdHDivDivSurface<3>>>();
     flux_evaluator[BND] =  make_shared<T_DifferentialOperator<DiffOpDivHDivDivSurface<3>>>();
 

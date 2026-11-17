@@ -295,6 +295,14 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, intpoint
     d['order3d'] = order3d
 
     d['draw_vol'] = func and mesh.dim==3 and draw_vol and mesh.ne>0
+    if d['draw_vol']:
+        # no volume data where the function is not defined (e.g. surface spaces)
+        volreg = regions[ngs.VOL]
+        if not isinstance(volreg, ngs.comp.Region):
+            volreg = mesh.Materials(".*")
+        volreg = ngs.comp.DefinedOnRegion(func, volreg)
+        regions = { **regions, ngs.VOL : volreg }
+        d['draw_vol'] = any(volreg.Mask())
     d['draw_surf'] = func and draw_surf
 
     d['objects'] = []

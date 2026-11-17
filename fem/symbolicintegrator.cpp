@@ -20,57 +20,64 @@ namespace ngfem
   ProxyFunction ::
   ProxyFunction (shared_ptr<ngcomp::FESpace> afes,
                  bool atestfunction, bool ais_complex,
-                 shared_ptr<DifferentialOperator> aevaluator, 
-                 shared_ptr<DifferentialOperator> aderiv_evaluator,
-                 shared_ptr<DifferentialOperator> atrace_evaluator,
-                 shared_ptr<DifferentialOperator> atrace_deriv_evaluator,
-		 shared_ptr<DifferentialOperator> attrace_evaluator,
-		 shared_ptr<DifferentialOperator> attrace_deriv_evaluator)
-    
-    : CoefficientFunction(aevaluator ? aevaluator->Dim() : 1,  ais_complex),
+                 const EvaluatorTable & aevaluators,
+                 const EvaluatorTable & aderiv_evaluators)
+    : CoefficientFunction(aevaluators.First() ? aevaluators.First()->Dim() : 1,  ais_complex),
       fes(afes),
       testfunction(atestfunction), is_other(false),
-      evaluator(aevaluator), 
-      deriv_evaluator(aderiv_evaluator),
-      trace_evaluator(atrace_evaluator), 
-      trace_deriv_evaluator(atrace_deriv_evaluator),
-      ttrace_evaluator(attrace_evaluator),
-      ttrace_deriv_evaluator(attrace_deriv_evaluator)
+      evaluators(aevaluators), deriv_evaluators(aderiv_evaluators),
+      evaluator(aevaluators.First())
   {
-    /*
-    if (!aevaluator)
-      {
-        cerr << "don't have a primal evaluator" << endl;
-        if (trace_evaluator) cout << "trace-eval = " << typeid(*trace_evaluator).name() << endl;
-        if (deriv_evaluator) cout << "deriv-eval = " << typeid(*deriv_evaluator).name() << endl;
-        throw Exception("don't have a primal evaluator");
-      }
-    */
-    /*
-    if (deriv_evaluator || trace_deriv_evaluator)
-      deriv_proxy = make_shared<ProxyFunction> (fes, testfunction, is_complex,
-                                                deriv_evaluator, nullptr,
-                                                trace_deriv_evaluator, nullptr,
-						ttrace_deriv_evaluator, nullptr);
-    */
-    if (evaluator)
-      SetDimensions (evaluator->Dimensions());
-    else if (trace_evaluator)
-      SetDimensions (trace_evaluator->Dimensions());
-    else if (ttrace_evaluator)
-      SetDimensions (ttrace_evaluator->Dimensions());
-    else
+    deriv_evaluators.SetLevel (evaluators.Level());
+    if (!evaluator)
       throw Exception("a proxy needs at least one evaluator");
+    SetDimensions (evaluator->Dimensions());
     elementwise_constant = true;
 
     SetVariable(true);
   }
 
+  // forms on elements of co-dimension vb need an operator for them
+  static void CheckSupportsVB (const ProxyFunction & proxy, VorB vb, bool skeleton = false)
+  {
+    if (proxy.Evaluator(vb)) return;
+    auto & op = *proxy.Evaluator();
+    string what = "-forms, maybe a Trace() operator is missing";
+    if (skeleton)
+      what = "";
+    else if (op.VB() > vb)
+      what = "-forms, it lives on " + ToString(op.VB()) + " elements";
+    throw Exception (string(proxy.IsTestFunction() ? "Testfunction" : "Trialfunction") + " does not support "
+                     + (skeleton ? string("skeleton-forms") : ToString(vb)) + what
+                     + ", type = " + op.Name());
+  }
+
+  ProxyFunction ::
+  ProxyFunction (shared_ptr<ngcomp::FESpace> afes,
+                 bool atestfunction, bool ais_complex,
+                 shared_ptr<DifferentialOperator> aevaluator)
+    : ProxyFunction (afes, atestfunction, ais_complex,
+                     EvaluatorTable(aevaluator), EvaluatorTable())
+  { ; }
+
+  ProxyFunction ::
+  ProxyFunction (shared_ptr<ngcomp::FESpace> afes,
+                 bool atestfunction, bool ais_complex,
+                 shared_ptr<DifferentialOperator> aevaluator,
+                 shared_ptr<DifferentialOperator> aderiv_evaluator,
+                 shared_ptr<DifferentialOperator> atrace_evaluator,
+                 shared_ptr<DifferentialOperator> atrace_deriv_evaluator,
+		 shared_ptr<DifferentialOperator> attrace_evaluator,
+		 shared_ptr<DifferentialOperator> attrace_deriv_evaluator)
+    : ProxyFunction (afes, atestfunction, ais_complex,
+                     EvaluatorTable (aevaluator, atrace_evaluator, attrace_evaluator, nullptr),
+                     EvaluatorTable (aderiv_evaluator, atrace_deriv_evaluator, attrace_deriv_evaluator, nullptr))
+  { ; }
+
   string ProxyFunction :: GetDescription () const
   {
     return string(testfunction ? "test-function" : "trial-function")
-      + string(" diffop = ")
-      + (evaluator ? evaluator->Name() : (trace_evaluator ? trace_evaluator->Name() : string("???")))
+      + string(" diffop = ") + evaluator->Name()
       + ((OrderDt() > 0) ? " order-dt="+ToString(OrderDt()) : string());
   }
 
@@ -115,8 +122,8 @@ namespace ngfem
     // the operator acting on the elements of the context
     VorB evb = ctx.EvalVB();
     // facet numbers of points must be facets (codimension 1) of the element
-    for (auto op : { evaluator.get(), trace_evaluator.get(), ttrace_evaluator.get() })
-      if (op && op->VB() == evb && op->OnlyOnFacets() && !ctx.OnElementFacet())
+    for (int i = 0; i < 4; i++)
+      if (auto op = evaluators[i].get(); op && op->VB() == evb && op->OnlyOnFacets() && !ctx.OnElementFacet())
         throw Exception ("functions of a facet space cannot be evaluated inside elements or on edges/vertices, only on element facets: use element_boundary=True or skeleton=True");
 
     auto & space = testfunction ? ctx.testspace : ctx.trialspace;
@@ -161,12 +168,10 @@ namespace ngfem
     if (auto sp = deriv_proxy.lock())
       return sp;
     
-    if (deriv_evaluator || trace_deriv_evaluator)
+    if (deriv_evaluators.First())
       {
         auto sp = make_shared<ProxyFunction> (fes, testfunction, is_complex,
-                                              deriv_evaluator, nullptr,
-                                              trace_deriv_evaluator, nullptr,
-                                              ttrace_deriv_evaluator, nullptr);
+                                              deriv_evaluators, EvaluatorTable());
         sp -> primaryproxy = dynamic_pointer_cast<ProxyFunction>(const_cast<ProxyFunction*>(this)->shared_from_this());
         sp->is_other = is_other;
         const_cast<ProxyFunction*>(this)->deriv_proxy = sp;
@@ -178,27 +183,46 @@ namespace ngfem
   
   shared_ptr<ProxyFunction> ProxyFunction :: Trace() const
   {
-    shared_ptr<ProxyFunction> trace_proxy = nullptr;
+    auto self = dynamic_pointer_cast<ProxyFunction> (const_cast<ProxyFunction*>(this)->shared_from_this());
+    if (anti_dt)
+      {
+        int num_dt = 0;
+        auto hproxy = self;
+        for ( ; hproxy->anti_dt; hproxy = hproxy->anti_dt)
+          num_dt++;
+        auto tr = hproxy->Trace();
+        for (int i = 0; i < num_dt; i++)
+          tr = tr->Dt();
+        return tr;
+      }
+
+    if (auto sp = trace_proxy.lock())
+      return sp;
+
+    shared_ptr<ProxyFunction> tr = nullptr;
     
-    if (trace_evaluator)
-      trace_proxy = make_shared<ProxyFunction> (fes, testfunction, is_complex,
-                                                trace_evaluator, trace_deriv_evaluator,
-                                                ttrace_evaluator, ttrace_deriv_evaluator,
-                                                nullptr, nullptr);
-    else if (auto trace_from_diffop = evaluator->GetTrace())
-      trace_proxy = make_shared<ProxyFunction>(fes, testfunction, is_complex,
-                                               trace_from_diffop, nullptr,
-                                               nullptr, nullptr,
-                                               nullptr, nullptr);
+    if (evaluators.HasTrace())
+      tr = make_shared<ProxyFunction> (fes, testfunction, is_complex,
+                                       evaluators.Trace(), deriv_evaluators.Trace());
+    else if (auto trace_from_diffop = (TraceLevel() < BBBND) ? evaluator->GetTrace() : nullptr)
+      {
+        EvaluatorTable traces;
+        traces[TraceLevel()+1] = trace_from_diffop;
+        traces.SetLevel (VorB(TraceLevel()+1));
+        tr = make_shared<ProxyFunction>(fes, testfunction, is_complex, traces, EvaluatorTable());
+      }
     else
       throw Exception (string("don't have a trace, primal evaluator = ")+
                        evaluator->Name());
     
     for (int i = 0; i < additional_diffops.Size(); i++)
       if (auto add_diffop_trace = additional_diffops[i]->GetTrace())
-        trace_proxy->SetAdditionalEvaluator (additional_diffops.GetName(i), add_diffop_trace);
-    trace_proxy->is_other = is_other;
-    return trace_proxy;
+        tr->SetAdditionalEvaluator (additional_diffops.GetName(i), add_diffop_trace);
+    tr->is_other = is_other;
+    tr->primaryproxy = self;
+    tr->is_trace = true;
+    self->trace_proxy = tr;
+    return tr;
   }
 
   shared_ptr<ProxyFunction> ProxyFunction :: Dt() const
@@ -229,7 +253,7 @@ namespace ngfem
   
   shared_ptr<ProxyFunction> ProxyFunction :: Other(shared_ptr<CoefficientFunction> _boundary_values) const
   {
-    auto other = make_shared<ProxyFunction> (fes, testfunction, is_complex, evaluator, deriv_evaluator, trace_evaluator, trace_deriv_evaluator,ttrace_evaluator, ttrace_deriv_evaluator);
+    auto other = make_shared<ProxyFunction> (fes, testfunction, is_complex, evaluators, deriv_evaluators);
     other->is_other = true;
     // if (other->deriv_proxy)
     // other->deriv_proxy->is_other = true;
@@ -268,7 +292,7 @@ namespace ngfem
     
     if (additional_diffops.Used(name))
       {
-        auto adddiffop = make_shared<ProxyFunction> (fes, testfunction, is_complex, additional_diffops[name], nullptr, nullptr, nullptr, nullptr, nullptr);
+        auto adddiffop = make_shared<ProxyFunction> (fes, testfunction, is_complex, additional_diffops[name]);
         if (is_other)
           adddiffop->is_other = true;
         adddiffop -> primaryproxy = dynamic_pointer_cast<ProxyFunction>(const_cast<ProxyFunction*>(this)->shared_from_this());
@@ -896,7 +920,7 @@ namespace ngfem
   shared_ptr<CoefficientFunction> ProxyFunction :: 
   Operator (const string & name) const
   {
-    if (deriv_evaluator && deriv_evaluator->Name() == name)
+    if (DerivEvaluator() && DerivEvaluator()->Name() == name)
       return Deriv();
     if (auto op = GetAdditionalProxy (name))
       return op;
@@ -945,7 +969,7 @@ namespace ngfem
     for (int i = comps.Size()-1; i >= 0; i--)
       diffop = make_shared<CompoundDifferentialOperator> (diffop, comps[i]);
     
-    auto proxy = make_shared<ProxyFunction> (fes, testfunction, is_complex, diffop, nullptr, nullptr, nullptr, nullptr, nullptr);
+    auto proxy = make_shared<ProxyFunction> (fes, testfunction, is_complex, diffop);
     proxy -> primaryproxy = dynamic_pointer_cast<ProxyFunction>(const_cast<ProxyFunction*>(this)->shared_from_this());    
     if (is_other)
       proxy->is_other = true;
@@ -961,8 +985,9 @@ namespace ngfem
     else if (var == this)
       return dir;
 
-    if (primaryproxy.get() == var)
-      return dir -> Operator(evaluator);
+    for (auto p = primaryproxy.get(); p; p = p->primaryproxy.get())
+      if (p == var)
+        return dir -> Operator(evaluator);
     /*
     if (auto proxyvar = dynamic_cast<const ProxyFunction*> (var))
       {
@@ -1022,8 +1047,7 @@ namespace ngfem
     if (proxies.Size() == 0 && !cf->IsZeroCF())
       throw Exception ("a linear form integrand needs a test-function");
     for (auto proxy : proxies)
-      if (!proxy->Evaluator()->SupportsVB(vb))
-        throw Exception ("Testfunction does not support "+ToString(vb)+"-forms, maybe a Trace() operator is missing");
+      CheckSupportsVB (*proxy, vb);
 
     cache_cfs = FindCacheCF(*cf);
     
@@ -1346,11 +1370,9 @@ namespace ngfem
       if (proxy->OrderDt() != 0)
         throw Exception("time-derivatives not allowed in spatial integrators");
     for (auto proxy : trial_proxies)
-      if (!proxy->Evaluator()->SupportsVB(vb))
-        throw Exception ("Trialfunction does not support "+ToString(vb)+"-forms, maybe a Trace() operator is missing, type = "+proxy->Evaluator()->Name());
+      CheckSupportsVB (*proxy, vb);
     for (auto proxy : test_proxies)
-      if (!proxy->Evaluator()->SupportsVB(vb))
-        throw Exception ("Testfunction does not support "+ToString(vb)+"-forms, maybe a Trace() operator is missing");
+      CheckSupportsVB (*proxy, vb);
     if (test_proxies.Size() == 0 && !cf->IsZeroCF())
       throw Exception ("a bilinear form integrand needs a test-function");
     
@@ -4011,8 +4033,7 @@ namespace ngfem
       throw Exception ("a linear form integrand needs a test-function");
     // skeleton terms are evaluated on volume elements
     for (auto proxy : proxies)
-      if (!proxy->Evaluator()->SupportsVB(VOL))
-        throw Exception ("Testfunction does not support skeleton-forms, type = "+proxy->Evaluator()->Name());
+      CheckSupportsVB (*proxy, VOL, true);
     cache_cfs = FindCacheCF(*cf);
   }
 
@@ -4244,11 +4265,9 @@ namespace ngfem
     // skeleton terms are evaluated on volume elements, element-boundary terms on elements of vb
     VorB evalvb = element_boundary ? vb : VOL;
     for (auto proxy : trial_proxies)
-      if (!proxy->Evaluator()->SupportsVB(evalvb))
-        throw Exception ("Trialfunction does not support "+ToString(evalvb)+"-forms, maybe a Trace() operator is missing, type = "+proxy->Evaluator()->Name());
+      CheckSupportsVB (*proxy, evalvb);
     for (auto proxy : test_proxies)
-      if (!proxy->Evaluator()->SupportsVB(evalvb))
-        throw Exception ("Testfunction does not support "+ToString(evalvb)+"-forms, maybe a Trace() operator is missing, type = "+proxy->Evaluator()->Name());
+      CheckSupportsVB (*proxy, evalvb);
 
     neighbor_testfunction = false;
     for (auto proxy : test_proxies)
@@ -5444,8 +5463,7 @@ namespace ngfem
         });
 
     for (auto proxy : trial_proxies)
-      if (!proxy->Evaluator()->SupportsVB(vb))
-        throw Exception ("Trialfunction does not support "+ToString(vb)+"-forms, maybe a Trace() operator is missing, type = "+proxy->Evaluator()->Name());
+      CheckSupportsVB (*proxy, vb);
 
 
     nonzeros = Matrix<bool>(trial_cum.Last(), trial_cum.Last());

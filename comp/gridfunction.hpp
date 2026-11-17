@@ -23,7 +23,7 @@ namespace ngcomp
     shared_ptr<GridFunction> gf_shared_ptr;
     GridFunction* gf;
     shared_ptr<FESpace> fes;
-    shared_ptr<DifferentialOperator> diffop[4];
+    EvaluatorTable diffop;   // the operator is chosen by the co-dimension of the element
     int comp;
     GridFunctionCoefficientFunction (shared_ptr<DifferentialOperator> adiffop,
                                      shared_ptr<DifferentialOperator> atrace_diffop = nullptr,
@@ -39,6 +39,9 @@ namespace ngcomp
 				     shared_ptr<DifferentialOperator> attrace_diffop = nullptr,
 				     shared_ptr<DifferentialOperator> atttrace_diffop = nullptr,
                                      int acomp = 0);
+    // operators and trace level as given
+    GridFunctionCoefficientFunction (shared_ptr<GridFunction> agf,
+                                     const EvaluatorTable & adiffop, int acomp = 0);
     GridFunctionCoefficientFunction (shared_ptr<GridFunction> agf, 
                                      shared_ptr<BilinearFormIntegrator> abfi, int acomp = 0);
     GridFunctionCoefficientFunction (shared_ptr<GridFunction> agf, shared_ptr<ProxyFunction> proxy);
@@ -223,9 +226,9 @@ namespace ngcomp
       // derivcf is not set -> initialize it
       res =
         make_shared<GridFunctionCoefficientFunction> (dynamic_pointer_cast<GridFunction> (shared_from_this()),
-                                                      GetFESpace()->GetFluxEvaluator(),
-                                                      GetFESpace()->GetFluxEvaluator(BND),
-                                                      GetFESpace()->GetFluxEvaluator(BBND));
+                                                      EvaluatorTable (GetFESpace()->GetFluxEvaluator(),
+                                                                      GetFESpace()->GetFluxEvaluator(BND),
+                                                                      GetFESpace()->GetFluxEvaluator(BBND), nullptr));
       res -> generated_from_deriv = true;
       derivcf = res;
       return res;

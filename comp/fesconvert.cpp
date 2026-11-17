@@ -53,16 +53,13 @@ namespace ngcomp
     if (trial_cf != nullptr)
       { trial_a = trial_cf; }
     else if ( diffop != nullptr ) {
-      trial_a = make_shared<ProxyFunction>(space_a, false, false, diffop,
-					   nullptr, nullptr, nullptr, nullptr, nullptr);
+      trial_a = make_shared<ProxyFunction>(space_a, false, false, diffop);
     }
     else { // Probably most of the time
-      trial_a = make_shared<ProxyFunction>(space_a, false, false, space_a->GetEvaluator(vb),
-					   nullptr, nullptr, nullptr, nullptr, nullptr);
+      trial_a = make_shared<ProxyFunction>(space_a, false, false, space_a->GetEvaluator(vb));
     }
 
-    auto trial_b = make_shared<ProxyFunction>(space_b, false, false, space_b->GetEvaluator(vb),
-					      nullptr, nullptr, nullptr, nullptr, nullptr);
+    auto trial_b = make_shared<ProxyFunction>(space_b, false, false, space_b->GetEvaluator(vb));
 
     if (!space_b->GetAdditionalEvaluators().Used("dual"))
       throw Exception(string("Dual diffop does not exist for ") + space_b->GetClassName() + string("!"));
@@ -73,8 +70,7 @@ namespace ngcomp
 	{ throw Exception(space_b->GetClassName() + string(" has no dual trace operator for vb = ")
 			  + to_string(avb) + string(" -> ") + to_string(avb + 1) + string("!")); }
     }
-    auto dual_b = make_shared<ProxyFunction>(space_b, true, false, dual_evaluator,
-					     nullptr, nullptr, nullptr, nullptr, nullptr);
+    auto dual_b = make_shared<ProxyFunction>(space_b, true, false, dual_evaluator);
     
     if ( trial_a->Dimension() != trial_b->Dimension() )
       { throw Exception(string("Cannot convert from ") + space_a->GetClassName() + string(" to ") + space_b->GetClassName() +
@@ -320,16 +316,13 @@ namespace ngcomp
     if (trial_cf != nullptr)
       { trial_a = trial_cf; }
     else if ( diffop != nullptr ) {
-      trial_a = make_shared<ProxyFunction>(space_a, false, false, diffop,
-					   nullptr, nullptr, nullptr, nullptr, nullptr);
+      trial_a = make_shared<ProxyFunction>(space_a, false, false, diffop);
     }
     else { // Probably most of the time
-      trial_a = make_shared<ProxyFunction>(space_a, false, false, space_a->GetEvaluator(vb),
-					   nullptr, nullptr, nullptr, nullptr, nullptr);
+      trial_a = make_shared<ProxyFunction>(space_a, false, false, space_a->GetEvaluator(vb));
     }
 
-    auto trial_b = make_shared<ProxyFunction>(space_b, false, false, space_b->GetEvaluator(vb),
-					      nullptr, nullptr, nullptr, nullptr, nullptr);
+    auto trial_b = make_shared<ProxyFunction>(space_b, false, false, space_b->GetEvaluator(vb));
 
     if (!space_b->GetAdditionalEvaluators().Used("dual"))
       throw Exception(string("Dual diffop does not exist for ") + space_b->GetClassName() + string("!"));
@@ -340,8 +333,7 @@ namespace ngcomp
 	{ throw Exception(space_b->GetClassName() + string(" has no dual trace operator for vb = ")
 			  + to_string(avb) + string(" -> ") + to_string(avb + 1) + string("!")); }
     }
-    auto dual_b = make_shared<ProxyFunction>(space_b, true, false, dual_evaluator,
-					     nullptr, nullptr, nullptr, nullptr, nullptr);
+    auto dual_b = make_shared<ProxyFunction>(space_b, true, false, dual_evaluator);
     
     if ( trial_a->Dimension() != trial_b->Dimension() )
       { throw Exception(string("Cannot convert from ") + space_a->GetClassName() + string(" to ") + space_b->GetClassName() +

@@ -1363,6 +1363,9 @@ namespace ngcomp
   shared_ptr<CoefficientFunction>
   MakeBoundaryFromVolumeCoefficientFunction  (shared_ptr<CoefficientFunction> avol_cf);
 
+  // the part of the region where cf is defined, one element per region index is asked
+  NGS_DLL_HEADER Region DefinedOnRegion (CoefficientFunction & cf, const Region & region);
+
   shared_ptr<CoefficientFunction>
   MakeTrafoCF(shared_ptr<CoefficientFunction> func,
               shared_ptr<CoefficientFunction> trafo,

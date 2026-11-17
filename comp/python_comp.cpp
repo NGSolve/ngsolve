@@ -702,7 +702,7 @@ when building the system matrices.
              l.append (ops.GetName(i));
            return l;
          },"returns list of available differential operators")    
-    .def("__diffop__", &ProxyFunction::Evaluator)
+    .def("__diffop__", [] (const spProxy self) { return self->Evaluator(); })
     .def("VSEmbedding",
          [] (const spProxy self) -> optional<Matrix<double>>
          {
@@ -2618,9 +2618,9 @@ active_dofs : BitArray or None
                       shared_ptr<GridFunctionCoefficientFunction> ret;
                       if (generated_from_deriv)
                         ret = make_shared<GridFunctionCoefficientFunction> (gf,
-                                                                             fes->GetFluxEvaluator(),
-                                                                             fes->GetFluxEvaluator(BND),
-                                                                             fes->GetFluxEvaluator(BBND));
+                                                                             EvaluatorTable (fes->GetFluxEvaluator(),
+                                                                                             fes->GetFluxEvaluator(BND),
+                                                                                             fes->GetFluxEvaluator(BBND), nullptr));
                       
                       else if
                         (fes->GetAdditionalEvaluators().Used(generated_from_operator))
@@ -2631,12 +2631,16 @@ active_dofs : BitArray or None
                             {
                             case VOL:
                               ret = make_shared<GridFunctionCoefficientFunction> (gf, diffop);
+                              break;
                             case BND:
                               ret = make_shared<GridFunctionCoefficientFunction> (gf, nullptr,diffop);
+                              break;
                             case BBND:
                               ret = make_shared<GridFunctionCoefficientFunction> (gf, nullptr,nullptr,diffop);
+                              break;
                             case BBBND:
                               ret = make_shared<GridFunctionCoefficientFunction> (gf, nullptr,nullptr,nullptr,diffop);
+                              break;
                             }
                         }
                       if(!ret)
@@ -5503,15 +5507,7 @@ Interpolation is done on the fly for each element, no global GridFunction is all
 	   if (trial_proxy != nullptr) {
 	     if ( !trial_proxy->IsTrialFunction() )
 	       { throw Exception("Need a trial-proxy, but got a test-proxy!"); }
-	     shared_ptr<DifferentialOperator> eval;
-	     if ( vb == VOL )
-	       { eval = trial_proxy->Evaluator(); }
-	     else if ( vb == BND )
-	       { eval = trial_proxy->TraceEvaluator(); }
-	     else if ( vb == BBND )
-	       { eval = trial_proxy->TTraceEvaluator(); }
-	     else
-	       { throw Exception("ProxyFunction has no BBBND evaluator!"); }
+	     auto eval = trial_proxy->TracedEvaluator(vb);
 	     if ( eval == nullptr )
 	       { throw Exception(string("trial-proxy has no evaluator vor vb = ") + to_string(vb) + string("!")); }
 	     op = ConvertOperator(spacea, spaceb, vb, glh, eval, trial_cf, reg, range_dofs, localop, parmat, use_simd, bonus_io_ab, bonus_io_bb, geom_free);

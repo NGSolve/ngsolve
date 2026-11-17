@@ -218,8 +218,7 @@ namespace ngcomp
       auto single_evaluator =  fes->GetEvaluator(vb);
       if (dynamic_pointer_cast<BlockDifferentialOperator>(single_evaluator))
         single_evaluator = dynamic_pointer_cast<BlockDifferentialOperator>(single_evaluator)->BaseDiffOp();
-      auto trial = make_shared<ProxyFunction>(fes, false, false, single_evaluator,
-                                              nullptr, nullptr, nullptr, nullptr, nullptr);
+      auto trial = make_shared<ProxyFunction>(fes, false, false, single_evaluator);
 
       /** Test-Proxy (dual) **/
       auto dual_evaluator = fes->GetAdditionalEvaluators()["dual"];
@@ -231,8 +230,7 @@ namespace ngcomp
       }
       if (dynamic_pointer_cast<BlockDifferentialOperator>(dual_evaluator))
         dual_evaluator = dynamic_pointer_cast<BlockDifferentialOperator>(dual_evaluator)->BaseDiffOp();
-      auto dual = make_shared<ProxyFunction>(fes, true, false, dual_evaluator,
-                                             nullptr, nullptr, nullptr, nullptr, nullptr);
+      auto dual = make_shared<ProxyFunction>(fes, true, false, dual_evaluator);
 
       dual_diffop = dual_evaluator;
 
@@ -481,8 +479,7 @@ namespace ngcomp
       auto single_evaluator =  fes->GetEvaluator(vb);
       if (dynamic_pointer_cast<BlockDifferentialOperator>(single_evaluator))
         single_evaluator = dynamic_pointer_cast<BlockDifferentialOperator>(single_evaluator)->BaseDiffOp();
-      auto trial = make_shared<ProxyFunction>(fes, false, false, single_evaluator,
-                                              nullptr, nullptr, nullptr, nullptr, nullptr);
+      auto trial = make_shared<ProxyFunction>(fes, false, false, single_evaluator);
 
       /** Test-Proxy (dual) **/
       auto dual_evaluator = fes->GetAdditionalEvaluators()["dual"];
@@ -494,10 +491,8 @@ namespace ngcomp
       }
       if (dynamic_pointer_cast<BlockDifferentialOperator>(dual_evaluator))
         dual_evaluator = dynamic_pointer_cast<BlockDifferentialOperator>(dual_evaluator)->BaseDiffOp();
-      auto dual = make_shared<ProxyFunction>(fes, true, false, dual_evaluator,
-                                             nullptr, nullptr, nullptr, nullptr, nullptr);
-      auto dual_tr = make_shared<ProxyFunction>(fes, false, false, dual_evaluator,
-                                             nullptr, nullptr, nullptr, nullptr, nullptr);
+      auto dual = make_shared<ProxyFunction>(fes, true, false, dual_evaluator);
+      auto dual_tr = make_shared<ProxyFunction>(fes, false, false, dual_evaluator);
 
       dual_diffop = dual_evaluator;
 

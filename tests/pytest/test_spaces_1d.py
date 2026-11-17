@@ -102,7 +102,8 @@ def test_mass(order):
     fes = SurfaceL2(mesh, order=order)
     u, v = fes.TnT()
     check_spd(BilinearForm(u*v*ds).Assemble().mat, fes.ndof, fes.ndof)
-    check_spd(BilinearForm(u*v*dx).Assemble().mat, fes.ndof, 0)
+    with pytest.raises(Exception, match="lives on BND"):
+        BilinearForm(u*v*dx).Assemble()
 
 
 @pytest.mark.parametrize("order", [0, 1, 3])

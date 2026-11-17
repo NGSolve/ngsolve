@@ -526,17 +526,12 @@ namespace ngsbem
   inline shared_ptr<DifferentialOperator>
   GetEvaluatorForVB (const ProxyFunction & proxy, VorB vb)
   {
-    auto ev = proxy.Evaluator();
-    if (ev && ev->SupportsVB(vb)) return ev;
-    if (vb == BND)
-      if (auto tev = proxy.TraceEvaluator(); tev && tev->SupportsVB(vb)) return tev;
+    if (auto ev = proxy.Evaluator(vb)) return ev;
+    // no Trace() given: take it
+    if (auto tev = proxy.TracedEvaluator(vb); tev && tev->SupportsVB(vb)) return tev;
     if (vb == BBND)
-      {
-        if (auto ttev = proxy.TTraceEvaluator(); ttev && ttev->SupportsVB(vb)) return ttev;
-        // no BBND path existed before, so fail loudly instead of returning an incompatible evaluator
-        throw Exception("BEM potential: trial function has no evaluator on curve elements (BBND); use a space with a curve trace such as HCurl or H1");
-      }
-    return ev;
+      throw Exception("BEM potential: trial function has no evaluator on curve elements (BBND); use a space with a curve trace such as HCurl or H1");
+    return proxy.Evaluator();
   }
 
   inline shared_ptr<DifferentialOperator>
@@ -612,6 +607,10 @@ namespace ngsbem
     if (auto proxy = dynamic_pointer_cast<ProxyFunction>(cf))
       {
         CheckContext (*proxy, proxy_context(*proxy));
+        // the proxy handed on carries the operator for the elements of vb
+        if (auto ev = GetEvaluatorForVB (*proxy, vb); ev != proxy->Evaluator())
+          proxy = make_shared<ProxyFunction> (proxy->GetFESpace(), proxy->IsTestFunction(), proxy->IsComplex(),
+                                              ev);
         return { proxy, nullptr };
       }
     
@@ -629,7 +628,7 @@ namespace ngsbem
                                                                    factor->Reshape(cf->Dimension(), proxy->Dimension()));
     
     return { make_shared<ProxyFunction> (proxy->GetFESpace(), proxy->IsTestFunction(), proxy->IsComplex(),
-                                         diffopwith, nullptr, nullptr, nullptr, nullptr, nullptr),
+                                         diffopwith),
              nullptr };
 
     // return { proxy, factor->Reshape(cf->Dimension(), proxy->Dimension()) };

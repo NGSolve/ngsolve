@@ -1327,6 +1327,19 @@ will create a CF being 1e6 on the top boundary and 0. elsewhere.
 	 docu_string("Get a MappedIntegrationPoint in the point (x,y,z) on the matching volume (VorB=VOL, default) or surface (VorB=BND) element. BBND elements aren't supported"));
 
   
+    m.def("DefinedOnRegion",
+          [] (shared_ptr<CoefficientFunction> cf, const Region & region)
+          {
+            if (!cf) throw Exception("DefinedOnRegion: no function given");
+            return DefinedOnRegion (*cf, region);
+          }, py::arg("cf"), py::arg("region"),
+          docu_string(R"raw_string(The part of the region where the function is defined.
+
+A GridFunction is defined where its space is defined and has an operator for
+elements of that co-dimension (a function of a surface space is not defined on
+volume elements), a region-wise function where it has an entry, an expression
+where all its inputs are defined. One element per region index is asked.)raw_string"));
+
     m.def("BoundaryFromVolumeCF", 
           [] (shared_ptr<CoefficientFunction> vol_cf)
           { return MakeBoundaryFromVolumeCoefficientFunction(vol_cf); }, py::arg("vol_cf"),

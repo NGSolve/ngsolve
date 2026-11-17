@@ -4103,7 +4103,7 @@ NormalComponentProxy (const shared_ptr<CoefficientFunction> & c1,
   if (c2->Dimensions().Size() != 1 || !IsNormalVectorCF(*c2)) return nullptr;
 
   auto is_plain = [] (const ProxyFunction & p)
-  { return !p.Primary() && !p.IsOther() && p.OrderDt() == 0; };
+  { return p.IsPlain() && !p.IsOther() && p.OrderDt() == 0; };
 
   if (c1->Dimensions().Size() == 2)
     {

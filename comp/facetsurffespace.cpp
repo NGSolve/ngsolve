@@ -301,14 +301,12 @@ namespace ngcomp
     if (ma->GetDimension() == 2)
       {
         //throw Exception("FacetSurfaceFESpace only implemented for 3d!");
-        evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdFacet_<2>>>();
         evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdFacetSurface<2>>>();
         evaluator[BBND] = make_shared<T_DifferentialOperator<DiffOpIdFacetSurfaceBoundary<2>>>();
 	
       }
     else if (ma->GetDimension() == 3)
       {
-        evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdFacet_<3>>>();
       	evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdFacetSurface<3>>>();
       	evaluator[BBND] = make_shared<T_DifferentialOperator<DiffOpIdFacetSurfaceBoundary<3>>>();
 
@@ -326,7 +324,14 @@ namespace ngcomp
             evaluator[vb] = make_shared<BlockDifferentialOperator> (evaluator[vb], dimension);
       }
 
-    additional_evaluators.Set ("dual", evaluator[VOL]);
+    shared_ptr<DifferentialOperator> dual;
+    if (ma->GetDimension() == 2)
+      dual = make_shared<T_DifferentialOperator<DiffOpIdFacet_<2>>>();
+    else
+      dual = make_shared<T_DifferentialOperator<DiffOpIdFacet_<3>>>();
+    if (dimension > 1)
+      dual = make_shared<BlockDifferentialOperator> (dual, dimension);
+    additional_evaluators.Set ("dual", dual);
     //additional_evaluators.Set ("dual", evaluator[BND]);
   }
   

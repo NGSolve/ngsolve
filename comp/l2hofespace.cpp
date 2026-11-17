@@ -2280,23 +2280,17 @@ global system.
           {
             // boundary points: no surface gradient
             evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<1>>>();
-            evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<1>>>(); // for dimension
-            flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradient<1>>>(); // to avoid exception "grad does not exist"
             additional_evaluators.Set ("Grad", make_shared<T_DifferentialOperator<DiffOpGradient<1>>>());
           }
         else if (ma->GetDimension() == 2)
           {
             evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<2>>>();
-            evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<2>>>(); // for dimension
-            flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradient<2>>>(); // to avoid exception "grad does not exist"
             flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpSurfaceGradient<2>>>();
             additional_evaluators.Set ("Grad", make_shared<T_DifferentialOperator<DiffOpGradient<2>>>());
           }
         else
           {
             evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<3>>>();
-            flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradient<3>>>(); // to avoid exception "grad does not exist"
-            evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<3>>>(); // for dimension
             flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpSurfaceGradient<3>>>();
             additional_evaluators.Set ("Grad", make_shared<T_DifferentialOperator<DiffOpGradient<3>>>());
           }
@@ -2305,17 +2299,14 @@ global system.
       {
         if (ma->GetDimension() == 1)
           {
-            evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdDual<1,1>>>(); // for dimension
             evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdDual<0,1>>>();
           }
         else if (ma->GetDimension() == 2)
           {
-            evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdDual<2,2>>>(); // for dimension
             evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdDual<1,2>>>();
           }
         if (ma->GetDimension() == 3)
           {
-            evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdDual<3,3>>>(); // for dimension
             evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdDual<2,3>>>();
           }
       }
@@ -6348,11 +6339,9 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
         switch (ma->GetDimension())
           {
           case 2:
-            evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdVectorL2Piola<2,BND>>>();   // dummy
             evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdVectorL2Piola<2,BND>>>();
             break;
           case 3:
-            evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdVectorL2Piola<3,BND>>>();   // dummy
             evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdVectorL2Piola<3,BND>>>();
             break;
           }
