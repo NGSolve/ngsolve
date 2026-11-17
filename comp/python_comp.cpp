@@ -741,6 +741,10 @@ when building the system matrices.
     {
       return DirichletBoundary { self, vbn };
     })
+    .def("__getitem__", [](spProxy self, const MixedRegion & reg)
+    {
+      return DirichletBoundary { self, MixedRegionDescriptor(), reg };
+    })
 
     .def("GetDofs", [](spProxy self, const Region& reg)
     {
@@ -773,7 +777,7 @@ when building the system matrices.
       else if (cf->Dimension() != pdim)
         throw Exception ("Dirichlet value has dimension "+ToString(cf->Dimension())
                          +", but the trial function has dimension "+ToString(pdim));
-      return DirichletBC { DirichletBoundary { dir.proxy, dir.vbn }, cf };
+      return DirichletBC { DirichletBoundary { dir.proxy, dir.vbn, dir.region }, cf };
     })
     ;
     
@@ -789,6 +793,12 @@ when building the system matrices.
                            })
     .def_property_readonly("vb", [](DirichletBC & cond) { return cond.dirbnd.vbn.Single().vb; })
     .def_property_readonly("name", [](DirichletBC & cond) { return cond.dirbnd.vbn.Single().name; })
+    .def_property_readonly("region", [](DirichletBC & cond) -> py::object
+                           {
+                             if (auto reg = std::any_cast<MixedRegion>(&cond.dirbnd.region))
+                               return py::cast(*reg);
+                             return py::none();
+                           })
     .def_property_readonly("val", [](DirichletBC & cond) { return cond.val; })    
     ;
   // both may be passed as flag values (e.g. additional_dirbc=[...])
@@ -2920,6 +2930,16 @@ bonus_intorder : int
             self->GetFESpace()->Interpolate(*cf, self->GetVector(), &reg, lhp.GetLH());
           }
     }, py::arg("descriptor"),py::arg("cf"))
+    .def("__setitem__", [](shared_ptr<GF> self, const MixedRegion & mr, spCF cf) {
+      if (mr.Mesh() != self->GetFESpace()->GetMeshAccess())
+        throw Exception("the region belongs to another mesh than the GridFunction");
+      for (auto vb : { VOL, BND, BBND, BBBND })
+        if (mr.Mask(vb).NumSet())
+          {
+            Region reg = mr[vb];
+            self->GetFESpace()->Interpolate(*cf, self->GetVector(), &reg, lhp.GetLH());
+          }
+    }, py::arg("region"),py::arg("cf"))
 
     
     .def_property_readonly("name", &GridFunction::GetName, "Name of the Gridfunction")

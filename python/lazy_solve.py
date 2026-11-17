@@ -48,7 +48,7 @@ class VariationalEquationSolver:
         with TaskManager():
             gf = GridFunction(self.fes)
             for d in self.dirichlet:
-                gf[d.proxy][d.vbn] = d.val
+                gf[d.proxy][d.vbn if d.region is None else d.region] = d.val
 
             self.bf.AssembleLinearization(gf.vec)
 
@@ -57,7 +57,7 @@ class VariationalEquationSolver:
             else:
                 freedofs = self.fes.FreeDofs(self.condense)
                 for dbc in self.dirichlet:
-                    reg = self.mesh[dbc.vbn]
+                    reg = self.mesh[dbc.vbn] if dbc.region is None else dbc.region
                     freedofs =  freedofs & ~dbc.proxy.GetDofs(reg)
                 
                 if hasattr(self, 'sparse_factorization_creator'):

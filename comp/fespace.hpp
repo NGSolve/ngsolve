@@ -1591,6 +1591,8 @@ ANY                  1 1 1 1 | 15
     }
   };
 
+  // region of an additional Dirichlet condition on the mesh ma
+  NGS_DLL_HEADER MixedRegion ResolveRegion (const DirichletBoundary & dbc, const shared_ptr<MeshAccess> & ma);
   
 }
 

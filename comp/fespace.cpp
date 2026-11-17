@@ -2297,13 +2297,25 @@ lot of new non-zero entries in the matrix!\n" << endl;
         freedofs = make_shared<BitArray>(*freedofs);
         for (auto dbc : dirbcs)
           {
-            MixedRegion reg(ma, dbc.vbn);
+            MixedRegion reg = ResolveRegion(dbc, ma);
             BitArray dofs = GetDofs(reg, dbc.proxy->Evaluator().get());
             dofs.Invert();
             freedofs->And(dofs);
           }
       }
     return freedofs;
+  }
+
+
+  MixedRegion ResolveRegion (const DirichletBoundary & dbc, const shared_ptr<MeshAccess> & ma)
+  {
+    if (auto reg = std::any_cast<MixedRegion>(&dbc.region))
+      {
+        if (reg->Mesh() != ma)
+          throw Exception("Dirichlet condition: the region belongs to another mesh");
+        return *reg;
+      }
+    return MixedRegion(ma, dbc.vbn);
   }
 
 

@@ -834,7 +834,7 @@ namespace ngmg
 	BitArray freedofs(*fes.GetFreeDofs(biform.UsesEliminateInternal()));
 	for (auto dbc : additional_dirichlet_boundaries)
 	  {
-	    MixedRegion reg(fes.GetMeshAccess(), dbc.vbn);
+	    MixedRegion reg = ResolveRegion(dbc, fes.GetMeshAccess());
 	    BitArray dofs = fes.GetDofs(reg, dbc.proxy->Evaluator().get());
 	    dofs.Invert();
 	    freedofs.And(dofs);

@@ -977,6 +977,7 @@ public:
   public:
     shared_ptr<ProxyFunction> proxy;
     MixedRegionDescriptor vbn;
+    std::any region;   // ngcomp::MixedRegion, if created from one
   };
 
   class DirichletBC 

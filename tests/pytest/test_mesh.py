@@ -524,6 +524,79 @@ def test_mixedregion_descriptor_solve():
     single = u[BND("bot")] == 0
     assert single.vb == BND and single.name == "bot" and str(single.vbn) == "BND(bot)"
 
+def test_mixedregion_gridfunction_setitem():
+    mesh = _box_rail_mesh()
+    fes = H1(mesh, order=2)
+    cf = 3 + x*y
+    def vec(key):
+        gf = GridFunction(fes)
+        gf[key] = cf
+        return gf.vec.FV().NumPy().copy()
+    d = BND("bot") | BBBND("corner")
+    r = mesh.Boundaries("bot") | mesh.BBBoundaries("corner")
+    assert (vec(r) == vec(d)).all() and abs(vec(r)).max() > 0
+    assert (vec(mesh.Boundaries("bot")) == vec(BND("bot"))).all()
+    assert (vec(mesh.Boundaries("bot")) == vec(mesh.Boundaries("bot") | mesh.Boundaries("bot"))).all()
+    assert (vec(mesh.Materials("ball")) == vec(VOL("ball"))).all()
+    gf = GridFunction(fes)
+    gf[BND("bot")] = 1
+    gf[mesh.Boundaries("bot")] = 2
+    assert gf(mesh(0.3, 0.3, 0)) == pytest.approx(2)
+    other = _box_rail_mesh()
+    with pytest.raises(Exception, match="another mesh"):
+        gf[other.Boundaries("bot")] = cf
+
+def test_mixedregion_dirichlet_solve():
+    mesh = _box_rail_mesh()
+    d = BND("bot") | BBND("rail") | BBBND("corner")
+    r = mesh.Boundaries("bot") | mesh.BBoundaries("rail") | mesh.BBBoundaries("corner")
+    fes = H1(mesh, order=2)
+    u, v = fes.TnT()
+    lhs, rhs = grad(u)*grad(v)*dx + u*v*ds("top"), 1*v*dx
+    def vec(gf): return gf.vec.FV().NumPy().copy()
+    def cg(): return solvers.CGSolver.Creator(maxiter=2000, tol=1e-12)
+    ref = vec(Solve(lhs == rhs, u[d] == 2))
+    assert abs(vec(Solve(lhs == rhs, u[r] == 2)) - ref).max() < 1e-12
+    for pre in (preconditioners.Local, preconditioners.BDDC, preconditioners.MultiGrid):
+        a = vec(Solve(lhs == rhs, u[d] == 2, pre(), cg()))
+        b = vec(Solve(lhs == rhs, u[r] == 2, pre(), cg()))
+        assert abs(a - b).max() < 1e-10
+    sref = vec(Solve(lhs == rhs, u[BND("bot")] == 1))
+    assert abs(vec(Solve(lhs == rhs, u[mesh.Boundaries("bot")] == 1)) - sref).max() < 1e-12
+    bc = u[r] == 0
+    assert bc.region == r and (u[d] == 0).region is None
+    other = _box_rail_mesh()
+    with pytest.raises(Exception, match="another mesh"):
+        Solve(lhs == rhs, u[other.Boundaries("bot")] == 0)
+    for pre in (preconditioners.Local, preconditioners.BDDC, preconditioners.MultiGrid):
+        with pytest.raises(Exception, match="another mesh"):
+            Solve(lhs == rhs, u[other.Boundaries("bot")] == 0, pre(), cg())
+
+def test_mixedregion_dirbc_flag():
+    from ngsolve.comp import RegisterPreconditioner
+    mesh = _box_rail_mesh()
+    d = BND("bot") | BBND("rail")
+    r = mesh.Boundaries("bot") | mesh.BBoundaries("rail")
+    fes = H1(mesh, order=1)
+    u, v = fes.TnT()
+    lhs, rhs = grad(u)*grad(v)*dx + u*v*ds("top"), 1*v*dx
+    def vec(gf): return gf.vec.FV().NumPy().copy()
+    def cg(): return solvers.CGSolver.Creator(maxiter=2000, tol=1e-12)
+    ref = vec(Solve(lhs == rhs, u[d] == 0))
+    for pre in (preconditioners.H1AMG, preconditioners.Local, preconditioners.BDDC):
+        gf = Solve(lhs == rhs, u[r] == 0, pre(), cg())
+        assert abs(vec(gf) - ref).max() < 1e-9
+    seen = []
+    def smoother(mat, freedofs, *args, **kwargs):
+        seen.append(freedofs.NumSet())
+        return mat.CreateSmoother(freedofs)
+    RegisterPreconditioner("test_region_dirbc_smoother", smoother)
+    a = BilinearForm(lhs - rhs)
+    pre = Preconditioner(a, "test_region_dirbc_smoother", additional_dirbc=[u[r] == 0])
+    a.AssembleLinearization(GridFunction(fes).vec)
+    solvers.CGSolver(a.mat, pre, maxiter=2)
+    assert seen[-1] == fes.ndof - fes.GetDofs(r).NumSet()
+
 if __name__ == "__main__":
     test_neighbours2d()
     test_neighbours()
