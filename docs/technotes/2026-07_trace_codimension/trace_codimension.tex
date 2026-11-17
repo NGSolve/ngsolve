@@ -1,0 +1,166 @@
+\documentclass[10pt,a4paper]{article}
+\usepackage[margin=2cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx,booktabs,xcolor}
+\usepackage{listings}
+\usepackage[colorlinks=true,linkcolor=blue!50!black,urlcolor=blue!50!black,citecolor=blue!50!black]{hyperref}
+\usepackage{microtype}
+
+\lstset{language=Python,basicstyle=\ttfamily\small,keywordstyle=\color{blue!60!black}\bfseries,
+  commentstyle=\color{green!40!black},stringstyle=\color{red!50!black},
+  frame=single,framerule=0.3pt,rulecolor=\color{gray!60},backgroundcolor=\color{gray!5},
+  columns=fullflexible,keepspaces=true,showstringspaces=false,
+  numbers=left,numberstyle=\tiny\color{gray},xleftmargin=1.5em,aboveskip=6pt,belowskip=4pt}
+\newcommand{\code}[1]{\texttt{#1}}
+\renewcommand{\labelitemi}{$\bullet$}
+\setlength{\parindent}{0pt}\setlength{\parskip}{4pt}\setlength{\emergencystretch}{3em}\sloppy
+\setlength{\textfloatsep}{8pt}\setlength{\intextsep}{7pt}\setlength{\abovecaptionskip}{4pt}\setlength{\belowcaptionskip}{0pt}
+
+\title{\vspace{-1.2cm}Traces and Co-dimension\\[2pt]
+\large Which operator a trial function, a test function or a GridFunction uses on a boundary element}
+\author{Michael Neunteufel \and Rafael Dorigo \and Joachim Sch\"oberl}
+\date{NGSolve Technical Note 2026-07\quad$\bullet$\quad version 2026-11-18}
+
+\begin{document}
+\maketitle\vspace{-1.2cm}
+
+\section{The problem}
+
+A finite element function of NGSolve \cite{s14} is evaluated on elements of every co-dimension \code{VorB} $\in\{$\code{VOL}, \code{BND}, \code{BBND}, \code{BBBND}$\}$ of the mesh: inside the volume elements, on boundary faces, on edges, in points. What the restriction to a lower dimensional element is depends on the space.
+\begin{itemize}\setlength\itemsep{1pt}
+\item For $H^1$ it is the value. The gradient, however, has only its tangential part on a face, the surface gradient.
+\item For $H(\operatorname{curl})$ only the tangential component is single valued on a face, for $H(\operatorname{div})$ only the normal component. The restriction is a projection.
+\item Some spaces live on the surface only: the stresses and Lagrange multipliers of shell models \cite{ns19,ns21}, the densities of boundary element methods. There is nothing to restrict.
+\end{itemize}
+A space therefore provides one differential operator per co-dimension. This note fixes which of them a trial function, a test function or a \code{GridFunction} uses, and when the user has to ask for it by \code{Trace()}.
+
+\section{The rule}
+
+\begin{enumerate}\setlength\itemsep{1pt}
+\item \textbf{Trial and test functions never project silently.} Where the restriction to the elements of the integral is a projection, the form needs an explicit \code{Trace()}, one for each co-dimension.
+\item \textbf{\code{Trace()} is optional where nothing is projected:} for the value of an $H^1$ function, and for spaces which live on the surface anyway.
+\item \textbf{A \code{GridFunction} gives what the element sees.} It selects the operator by the co-dimension of the element. On elements where it has none it is not defined.
+\end{enumerate}
+
+Table~\ref{tab:spaces} lists the consequences for forms on the boundary faces of a three-dimensional mesh.
+
+\begin{table}[h]\centering\small
+\begin{tabular}{@{}lll@{}}\toprule
+space & value in a \code{ds} form & canonical derivative in a \code{ds} form \\\midrule
+\code{H1}, \code{VectorH1} & as it is, \code{Trace()} optional & \code{Trace()}: surface gradient \\
+\code{HCurl} & \code{Trace()}: tangential component & \code{Trace()} \\
+\code{HDiv} & \code{Trace()}: normal component & not available \\
+\code{HCurlCurl}, \code{HDivDiv} & \code{Trace()} & not available \\
+\code{NumberSpace} & as it is & -- \\
+\code{L2} & no trace & no trace \\\midrule
+\code{SurfaceL2}, \code{HDivSurface}, \code{HDivDivSurface} & as it is, \code{Trace()} optional & as it is, \code{Trace()} optional \\\bottomrule
+\end{tabular}
+\caption{Trial and test functions in forms on boundary faces.}\label{tab:spaces}
+\end{table}
+
+\section{Trial and test functions}
+
+\begin{lstlisting}
+fes = HCurl(mesh, order=1)
+e, f = fes.TnT()
+a = BilinearForm(fes)
+a += e*f*ds                      # error
+a += e.Trace()*f.Trace()*ds      # tangential components on the faces
+
+edges = dx(definedon=mesh.BBoundaries(".*"))
+a += e.Trace().Trace()*f.Trace().Trace()*edges     # tangential component on the edges
+\end{lstlisting}
+Line 4 is refused when the form is built:
+\begin{lstlisting}[numbers=none,xleftmargin=0pt,language={}]
+Trialfunction does not support BND-forms, maybe a Trace() operator is missing,
+type = ngfem::DiffOpIdEdge<3,...>
+\end{lstlisting}
+The message names the remedy only where there is one. A traced function in a volume integral, or a function of a surface space in a volume integral, gives
+\begin{lstlisting}[numbers=none,xleftmargin=0pt,language={}]
+Trialfunction does not support VOL-forms, it lives on BND elements,
+type = ngfem::DiffOpIdBoundaryEdge<3,...>
+\end{lstlisting}
+
+For $H^1$ the value needs no trace, the gradient does:
+\begin{lstlisting}
+fes = H1(mesh, order=2)
+u, v = fes.TnT()
+a += u*v*ds                                 # the same as u.Trace()*v.Trace()*ds
+a += grad(u).Trace()*grad(v).Trace()*ds     # surface gradients
+\end{lstlisting}
+The components of a product space follow the rule of their own space.
+
+\paragraph{Properties of \code{Trace()}.} Each call goes one co-dimension down. The result is cached, \code{u.Trace() is u.Trace()}, and it knows where it comes from: \code{u.Trace().primary} is \code{u}. Symbolic differentiation therefore sees through traces,
+\begin{lstlisting}[numbers=none,xleftmargin=0pt]
+energy = 0.5*grad(u).Trace()*grad(u).Trace()
+energy.Diff(u, v)                  # grad(u).Trace()*grad(v).Trace()
+\end{lstlisting}
+Time derivatives commute with it, \code{u.dt.Trace()} is \code{u.Trace().dt}. A trace which does not exist throws at once.
+
+\section{Spaces on surfaces}
+
+\code{SurfaceL2}, \code{HDivSurface}, \code{HDivDivSurface}, \code{FacetSurface} and their relatives have degrees of freedom on surface elements only and provide no operator for volume elements. Their functions are used on the surface as they are:
+\begin{lstlisting}
+fes = HDivSurface(mesh, order=1)
+s, t = fes.TnT()
+a += s*t*ds + div(s)*div(t)*ds     # no Trace() needed
+a += s*t*dx                        # error: it lives on BND elements
+\end{lstlisting}
+\code{s.Trace()} is still accepted and means the same, so existing scripts keep working. Functions of the facet spaces \code{FacetSurface} and \code{NormalFacetSurface} are used on the element boundaries, \code{ds(element\_boundary=True)}, also without \code{Trace()}. The edges of the surface elements are one co-dimension further down; there \code{Trace()} is needed again where it is a projection.
+
+Setting a function of a surface space needs the region,
+\begin{lstlisting}[numbers=none,xleftmargin=0pt]
+gf.Set(func, definedon=mesh.Boundaries(".*"))
+\end{lstlisting}
+Without \code{definedon} the call is an error.
+
+\section{GridFunctions}
+
+A \code{GridFunction} is evaluated on whatever element it is given: in a volume integral, on a boundary face when drawing, on an edge. It selects the operator for that element.
+\begin{lstlisting}
+gfe = GridFunction(HCurl(mesh, order=1))
+gfe.Set(CF((1, 2, 3)))
+Integrate(gfe*gfe*dx, mesh)     # 14 on the unit cube: the full vector
+Integrate(gfe*gfe*ds, mesh)     # 56: the tangential components on the six faces
+\end{lstlisting}
+On a face the function shows its trace. This is what one wants when drawing: the full vector is not single valued on an interior interface, and it is more expensive to evaluate. The full vector on the boundary is available as \code{BoundaryFromVolumeCF(gfe)}.
+
+\code{gf.Trace()} goes one co-dimension down, as for trial functions: the result is defined on faces and edges, no longer in the volume. \code{p.ReplaceFunction(gf)} applies the operators of a trial function \code{p} to a \code{GridFunction} and keeps its traces.
+
+\paragraph{Where a function is defined.} A \code{GridFunction} of a surface space is not defined on volume elements, where it evaluates to zero. The part of a region where a coefficient function is defined is given by
+\begin{lstlisting}[numbers=none,xleftmargin=0pt]
+from ngsolve.comp import DefinedOnRegion
+DefinedOnRegion(cf, mesh.Materials(".*"))      # a Region
+\end{lstlisting}
+An expression is defined where all its inputs are. The webgui uses this: \code{Draw(gf, mesh)} of a surface function, or of \code{gf.Trace()}, draws the surface and skips the volume data; a function defined on some materials only is drawn there.
+
+\section{Boundary element operators}
+
+A layer potential is built from a density and its integration domain, and the density can only live there. The potentials therefore take the trace themselves, for the trial and for the test function:
+\begin{lstlisting}[numbers=none,xleftmargin=0pt]
+V = HelmholtzSL(e*ds, kappa) * f*ds        # the same as with e.Trace(), f.Trace()
+\end{lstlisting}
+With densities from surface spaces, the usual case, no trace is involved at all.
+
+\section{What changed}
+
+The rule replaces a mixture of conventions. Scripts written for versions before November 2026 keep working with three exceptions, all of them former silent errors:
+\begin{center}\small
+\begin{tabular}{@{}lll@{}}\toprule
+construct & before & now \\\midrule
+\code{a*b*dx} for a surface space & zero matrix & error ``lives on BND elements'' \\
+\code{gf.Set(func)} for a surface space, no \code{definedon} & nothing was set & error with a hint to \code{definedon} \\
+\code{Trace()} with nothing left, e.g.\ of an \code{L2} function & unusable function & error ``don't have a trace'' \\\bottomrule
+\end{tabular}
+\end{center}
+New are the optional \code{Trace()} on surface spaces, also for derivatives, differentiation through traces, and \code{DefinedOnRegion}.
+
+\paragraph{Pitfall.} \code{L2} has no boundary values. A form \code{u*v*ds} with \code{L2} functions is accepted and contributes nothing.
+
+\begin{thebibliography}{9}\small\setlength\itemsep{1pt}
+\bibitem{s14} J.~Sch\"oberl. C++11 implementation of finite elements in NGSolve. ASC Report 30/2014, TU Wien, 2014.
+\bibitem{ns19} M.~Neunteufel and J.~Sch\"oberl. The Hellan--Herrmann--Johnson method for nonlinear shells. \emph{Comput. Struct.} 225:106109, 2019.
+\bibitem{ns21} M.~Neunteufel and J.~Sch\"oberl. Avoiding membrane locking with Regge interpolation. \emph{Comput. Methods Appl. Mech. Engrg.} 373:113524, 2021.
+\end{thebibliography}
+
+\end{document}

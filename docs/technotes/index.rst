@@ -46,6 +46,14 @@ with the documentation (``make technotes``, needs ``latexmk`` for the PDF and
     mesh-free descriptors such as ``BND("a") | BBND("b")``; the closed
     ``definedon``.
 
+**2026-07** `Traces and co-dimension <2026-07_trace_codimension.html>`_ (`PDF <2026-07_trace_codimension.pdf>`__)
+    *Michael Neunteufel, Rafael Dorigo, Joachim Schöberl.*
+    Which operator a trial function, a test function or a ``GridFunction``
+    uses on boundary faces and edges: ``Trace()`` is required where the
+    restriction is a projection (``HCurl``, ``HDiv``, surface gradients) and
+    optional for values of ``H1`` and for surface spaces. ``DefinedOnRegion``,
+    drawing of surface functions, changes for existing scripts.
+
 Adding a note
 -------------
 
