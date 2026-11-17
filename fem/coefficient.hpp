@@ -1429,10 +1429,14 @@ public:
       }
     else
       {
-        // A general unary function can be nonzero at zero (e.g. exp).
+        // Unknown functions need not map zero to zero (e.g. exp or a spline).
+        // PreservesZero concerns values only; derivative masks stay conservative.
+        bool preserves_zero = false;
+        if constexpr (requires { OP::PreservesZero(); })
+          preserves_zero = OP::PreservesZero();
         for (size_t i = 0; i < values.Size(); i++)
           {
-            values[i].Value() = true;
+            values[i].Value() = !preserves_zero || v1[i].Value();
             values[i].DValue(0) = v1[i].DValue(0);
             values[i].DDValue(0) = v1[i].DValue(0) || v1[i].DDValue(0);
           }

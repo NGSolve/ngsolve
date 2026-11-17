@@ -4251,6 +4251,7 @@ shared_ptr<CoefficientFunction> operator* (shared_ptr<CoefficientFunction> c1, s
 
 
   struct GenericConj {
+    static constexpr bool PreservesZero() { return true; }
     template <typename T> T operator() (T x) const { return Conj(x); } // from bla
     static string Name() { return "conj"; }
     SIMD<double> operator() (SIMD<double> x) const { return x; }
