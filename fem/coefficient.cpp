@@ -5861,11 +5861,18 @@ public:
         code.body += "  break;\n";
       }
     code.body += "default: \n";
+    // gpu kernels (tinybla prelude defines TB_HD) have no exceptions
+    code.body += "#ifdef TB_HD\n";
+    for (int i = 0; i < Dimension(); i++)
+      code.body += "  "+Var(index, i, Dimensions()).Assign(string("0.0"), false);
+    code.body += "  break;\n";
+    code.body += "#else\n";
     code.body += "  throw ngcore::Exception (\"region-wise CoefficientFunction is undefined in region with index \" + "
       "std::to_string(domain_index)";
     if (var != "domain_index")
       code.body += " + \" of codim \" + std::to_string(int(domain_vb))";
     code.body += " + \", give a value there or use default=...\");\n";
+    code.body += "#endif\n";
     code.body += "}\n";
   }
 
