@@ -283,6 +283,7 @@ Lucy Weggler and Joachim Schöberl
    unit-11.1-fmm/basisfunctions.ipynb
    unit-11.1-fmm/layerpotentials.ipynb
    unit-11.1-fmm/BiotSavart.ipynb
+   unit-11.1-fmm/fmm_pointclouds.ipynb
 
 
 BEM for the Laplace and Helmhotlz equations

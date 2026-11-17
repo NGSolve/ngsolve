@@ -19,7 +19,7 @@
 #include <variant>
 #include <vector>
 
-namespace ngsbem
+namespace ngsfmm
 {
   // the values must match the variant tests in shiftz_gpu_kernel.h
   enum class FMMTranslation { SS = 0, SR = 1, RR = 2 };

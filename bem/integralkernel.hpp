@@ -9,6 +9,7 @@ namespace ngla { class BaseMatrix; }
 namespace ngsbem
 {
   using namespace ngfem;
+  using namespace ngsfmm;
 
   struct KernelTerm
   {

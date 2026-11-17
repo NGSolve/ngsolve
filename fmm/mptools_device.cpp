@@ -5,7 +5,6 @@
 /*********************************************************************/
 
 #include "mptools.hpp"
-#include "intop_parameters.hpp"
 #include "fmmoperator.hpp"
 #include <gpuwrapper.hpp>
 #include <gpukernel.hpp>
@@ -14,7 +13,7 @@
 #include <map>
 #include <mutex>
 
-namespace ngsbem
+namespace ngsfmm
 {
   // embedded from the kernel headers by ngstd/embed_source.cmake
   extern const std::string code_rotatey_gpu;
@@ -181,7 +180,7 @@ namespace ngsbem
       return ReplaceAll (source, "REAL", fp64 ? "double" : "float");
     }
 
-    // rows and lanes per tile of the gather/scatter (bem/transform_gpu_kernel.h)
+    // rows and lanes per tile of the gather/scatter (fmm/transform_gpu_kernel.h)
     constexpr size_t TRANSFORM_TILE = 32;
 
     auto GetTransformKernels (const std::shared_ptr<ngs_gpu::Device> & device, bool fp64)
@@ -191,7 +190,7 @@ namespace ngsbem
                          { "transform_gather", "transform_scatter", "fmm_zero" });
     }
 
-    // S->R units with max(os,ot) up to FusedMaxOrder run fused (bem/m2l_fused_gpu_kernel.h), FUSED_LANES lanes per group
+    // S->R units with max(os,ot) up to FusedMaxOrder run fused (fmm/m2l_fused_gpu_kernel.h), FUSED_LANES lanes per group
     constexpr int FUSED_M2L_MAX_ORDER = 27;
     constexpr int FUSED_LANES = 2;
 
@@ -420,7 +419,7 @@ namespace ngsbem
     // scratch reals per degree: the (order+1) x (2*order+1) trafo block plus 2*order+1 Dmn values
     int RotateYWorkStride (int order) { return (order+2)*(2*order+1); }
 
-    // rows per item of rotatey_apply_b (bem/rotatey_gpu_kernel.h)
+    // rows per item of rotatey_apply_b (fmm/rotatey_gpu_kernel.h)
     constexpr int ROTATEY_ROWS = 4;
 
     // lanes per block of the multi-group applies: up to this many consecutive lanes of one translation group
@@ -456,7 +455,7 @@ namespace ngsbem
       return std::max (size_t(1), std::min (size_t(65535), budget / per_group));
     }
 
-    // reals of a rotation's folded blocks in a fused unit (FoldOffset(order+1) in bem/m2l_fused_gpu_kernel.h)
+    // reals of a rotation's folded blocks in a fused unit (FoldOffset(order+1) in fmm/m2l_fused_gpu_kernel.h)
     size_t FoldReals (int order)
     {
       size_t n = size_t(order)+1;
@@ -862,7 +861,7 @@ namespace ngsbem
     }
 
     // one unit of G translation groups (hosts[g]) on the lanes of blocks: the per-group tables packed with uniform
-    // strides, one upload per table kind (bem/shiftz_gpu_kernel.h)
+    // strides, one upload per table kind (fmm/shiftz_gpu_kernel.h)
     std::shared_ptr<DeviceShiftZ>
     PackShiftZ (const std::shared_ptr<ngs_gpu::Device> & device, FMMTranslation variant, int os, int ot,
                 FlatArray<const ShiftZGroupHost*> hosts, const LaneBlocks & blocks, bool fp64)
@@ -1145,7 +1144,7 @@ namespace ngsbem
       unit->src_idx = UploadBuffer (device, src_idx.Range(first, first+B));
       unit->tgt_idx = UploadBuffer (device, tgt_idx.Range(first, first+B));
 
-      // gather/scatter work on tiles in group memory (bem/transform_gpu_kernel.h): 256 work-items per tile group, or what
+      // gather/scatter work on tiles in group memory (fmm/transform_gpu_kernel.h): 256 work-items per tile group, or what
       // the compiled kernels allow if a backend reports less (their loops stride over the tile, any count works)
       auto kernels = GetTransformKernels (device, fp64);
       unit->gather = kernels[0];

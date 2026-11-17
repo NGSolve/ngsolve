@@ -16,6 +16,7 @@ void __declspec(dllimport) ExportNgsolve();
 void NGS_DLL_HEADER ExportNgstd(py::module &m);
 void NGS_DLL_HEADER ExportNgbla(py::module &m);
 void NGS_DLL_HEADER ExportNgfem(py::module &m);
+void NGS_DLL_HEADER ExportNgsfmm(py::module &m);
 void NGS_DLL_HEADER ExportNgsbem(py::module &m);
 void NGS_DLL_HEADER ExportNgla(py::module &m);
 void NGS_DLL_HEADER ExportNgcomp(py::module &m);
@@ -84,6 +85,8 @@ PYBIND11_MODULE(ngslib, m)
         
         py::module comp = m.def_submodule("comp", "pybind comp");
         ExportNgcomp(comp);
+        py::module fmm = m.def_submodule("fmm", "pybind fmm");
+        ExportNgsfmm(fmm);
         py::module bem = m.def_submodule("bem", "pybind bem");
         ExportNgsbem(bem);
         

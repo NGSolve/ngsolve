@@ -5,12 +5,15 @@
 #include <bla.hpp>
 #include <variant>
 
-namespace ngsbem
+namespace ngsfmm
 {
   using namespace ngbla;
 
   // None: native path; Cpu/Gpu: device kernels (mptools_device.cpp) on the CPU device or a registered GPU
   enum class FMM_Device { None, Cpu, Gpu };
+
+  // the FMM_Device of the "device" keyword; None without FMM
+  NGS_DLL_HEADER FMM_Device ResolveFMMDevice (const std::string & device, bool fp32, bool use_fmm);
 
   // the device plan of one FMM_Operator direction (mptools_device.hpp)
   class FMMDeviceCache;

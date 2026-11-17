@@ -8,16 +8,13 @@
 
 #include <ngstd.hpp>
 #include <bla.hpp>
-#include <coefficient.hpp>
-#include <recursive_pol.hpp>
+#include "normalized_legendre.hpp"
 #include "fmminterface.hpp"
 #include "besseljs3d.hpp"
 
 
-namespace ngsbem
+namespace ngsfmm
 {
-  using namespace ngfem;
-  
   template<typename T>
   constexpr int VecLength = 1;  // Default: Complex has length 1
 
@@ -29,7 +26,7 @@ namespace ngsbem
   constexpr int FMM_SW = 4;
   constexpr int FMM_DYNAMIC_BATCH_LANES = 48;
 
-  // the FMM passes on a device (FMM_Parameters::device), bem/mptools_device.hpp
+  // the FMM passes on a device (FMM_Parameters::device), fmm/mptools_device.hpp
   template <typename ML> struct FMMDeviceGlue;
   class FMMDeviceTree;
 
@@ -455,7 +452,7 @@ namespace ngsbem
                                      FlatVector<SIMD<std::complex<T>,FMM_SW>> exp_imphi);
 
 
-  // besseljs3d: bem/besseljs3d.hpp
+  // besseljs3d: fmm/besseljs3d.hpp
 
 
   template <typename T, typename U>
@@ -1684,7 +1681,7 @@ namespace ngsbem
             group_thetas.Append(current_theta);
           }
 
-          // with a device, the M2M runs there (bem/mptools_device.hpp): these groups, deepest level first
+          // with a device, the M2M runs there (fmm/mptools_device.hpp): these groups, deepest level first
           if (fmm_params.device != FMM_Device::None)
             FMMDeviceGlue<SingularMLExpansion>::Translate(*this, batch_group, group_lengths, group_thetas);
           else
@@ -2417,7 +2414,7 @@ namespace ngsbem
           
           if (fmm_params.device != FMM_Device::None)
             {
-              // M2L and L2L on the device (bem/mptools_device.hpp), instead of the S->R batches
+              // M2L and L2L on the device (fmm/mptools_device.hpp), instead of the S->R batches
               // below and LocalizeExpansionBatched
               FMMDeviceGlue<RegularMLExpansion>::Translate(*this, batch_group, group_lengths, group_thetas, !onlytargets);
               return;
@@ -2531,5 +2528,7 @@ namespace ngsbem
 }
 
 #include "mptools_device.hpp"
+
+namespace ngsbem { using namespace ngsfmm; }
 
 #endif
