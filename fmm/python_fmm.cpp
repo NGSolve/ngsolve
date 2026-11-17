@@ -78,7 +78,7 @@ Keyword arguments (the numbers as int, float or numpy scalars):
     points stay double, the densities and results float64/complex128 numpy arrays as
     above, op.mat a BaseMatrix on double/complex vectors. Single precision gives about 6 to 7
     significant digits.
-    With kernel="laplace" (run as Helmholtz with kappa 1e-16) single precision needs a point
+    With kernel="laplace" single precision needs a point
     cloud of extent about 1e-2 or more: in smaller clouds the error can grow, down to NaN
     below about 1e-6. Rescale the coordinates of such clouds.
 use_fmm is not accepted.
