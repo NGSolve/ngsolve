@@ -2043,7 +2043,7 @@ namespace ngcomp
             size_t gcnt = 0; //global count (for all cases)
             
             for (auto pre : preconditioners)
-              pre -> InitLevel(fespace->GetFreeDofs(eliminate_internal));
+              pre -> InitLevel(pre->GetFreeDofs(eliminate_internal));
 
 	    mattimer1a.Stop();
 
@@ -3647,7 +3647,7 @@ namespace ngcomp
             cout << IM(3) << "Assemble linearization" << endl;
 
             for (auto pre : preconditioners)
-              pre -> InitLevel(fespace->GetFreeDofs(eliminate_internal));
+              pre -> InitLevel(pre->GetFreeDofs(eliminate_internal));
 
             for (VorB vb : ALL_VB)
               {

@@ -1105,7 +1105,7 @@ namespace ngcomp
 
   DocInfo HCurlAMG :: GetDocu()
   {
-    DocInfo docu;
+    DocInfo docu = Preconditioner::GetDocu();
     docu.short_docu = "AMG-predconditioner for edge elements";
 
     docu.long_docu =

@@ -589,7 +589,7 @@ namespace ngcomp
   template <class SCAL>
   DocInfo H1AMG_Preconditioner<SCAL> :: GetDocu()
   {
-    DocInfo docu;
+    DocInfo docu = Preconditioner::GetDocu();
     docu.short_docu = "Nodal AMG preconditioner for H1-problems";
 
     docu.long_docu =
