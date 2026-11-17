@@ -1429,9 +1429,10 @@ public:
       }
     else
       {
+        // A general unary function can be nonzero at zero (e.g. exp).
         for (size_t i = 0; i < values.Size(); i++)
           {
-            values[i].Value() = v1[i].Value();
+            values[i].Value() = true;
             values[i].DValue(0) = v1[i].DValue(0);
             values[i].DDValue(0) = v1[i].DValue(0) || v1[i].DDValue(0);
           }
@@ -1776,7 +1777,8 @@ public:
           values(i) = v1(i) * v2(i);
         else
           {
-            values(i).Value() = v1(i).Value() || v2(i).Value();
+            // A general binary function can be nonzero even at (0,0).
+            values(i).Value() = true;
             values(i).DValue(0) = v1(i).DValue(0) || v2(i).DValue(0);
             values(i).DDValue(0) = v1(i).DValue(0) || v2(i).DValue(0) || v1(i).DDValue(0) || v2(i).DDValue(0);
           }

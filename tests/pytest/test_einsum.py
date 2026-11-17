@@ -3,6 +3,8 @@
 
 from netgen.csg import unit_cube
 from ngsolve import *
+from ngsolve import pow as ngspow
+from meshes import unit_mesh_2d
 import numpy as np
 import pytest
 
@@ -300,6 +302,50 @@ def test_zero_detection():
     AA = fem.Einsum('ik,jl->ijkl', pF, pF).Diff((2*pF).MakeVariable())
     assert np.max(np.abs(np.array(AA.dims) - [3] * 6)) < 1e-12
     assert str(AA) == "ZeroCoefficientFunction"
+
+
+@pytest.mark.slow
+def test_unary_zero_input_einsum(unit_mesh_2d):
+    value = fem.Einsum("i,->i", CF((1 + x, 2 + y)), exp(CF(0)))
+    native = value.Compile(realcompile=True, wait=True, maxderiv=0)
+    assert Integrate(native, unit_mesh_2d) == pytest.approx((1.5, 2.5))
+
+
+@pytest.mark.parametrize("dims,factor", [((4,), 1.0), ((2, 2), 1j)])
+def test_unary_mixed_zero_components(unit_mesh_2d, dims, factor):
+    first, second = factor * (0.2 + x), factor * (0.2 + y)
+    argument = CF((0, first, 0, second), dims=dims)
+    value = fem.Einsum("i,i->i", exp(argument).Reshape((4,)),
+                       CF((1, 2, 3, 0))).Reshape(dims)
+    expected = CF((1, 2 * exp(first), 3, 0), dims=dims)
+    for coefficient in (value, value.Compile()):
+        assert tuple(coefficient.dims) == dims
+        error = coefficient - expected
+        assert Integrate(InnerProduct(error, error), unit_mesh_2d) == pytest.approx(
+            0, abs=1e-24
+        )
+
+
+@pytest.mark.parametrize(
+    "kind,realcompile",
+    [pytest.param("power", False, id="power-graph"),
+     pytest.param("bspline2d", False, id="bspline2d-graph"),
+     # BSpline2D has no native code generator yet.
+     pytest.param("power", True, id="power-native", marks=pytest.mark.slow)],
+)
+def test_binary_zero_inputs_einsum(unit_mesh_2d, kind, realcompile):
+    if kind == "power":
+        # Vector powers retain the binary node, including the defined 0**0 = 1.
+        coefficient = ngspow(CF((0, 0)), CF((0, 0)))
+        expected = (1.0, 1.0)
+    else:
+        spline = fem.BSpline2D([-1, 1], [-1, 1], [1, 3, 3, 5])
+        coefficient = CF((spline(CF(0), CF(0)), 2))
+        expected = (3.0, 2.0)
+    value = fem.Einsum("i,i->i", coefficient, CF((1, 1)))
+    compiled = value.Compile(realcompile=realcompile, wait=True, maxderiv=0)
+    for expression in (value, compiled):
+        assert Integrate(expression, unit_mesh_2d) == pytest.approx(expected)
 
 
 def impl_test_sparsity_optimization(realcompile):

@@ -1012,6 +1012,8 @@ namespace ngfem
       AutoDiffDiff<1,NonZero> sum(false);
       for (int i = 0; i < v1.Size(); i++)
         sum += v1(i);
+      // D^2(A^-1) also contains products of first derivatives of A.
+      sum.DDValue(0) = sum.DValue(0) || sum.DDValue(0);
       values = sum;
       /*
         AutoDiffDiff<1,NonZero> add(true);
@@ -1140,6 +1142,7 @@ namespace ngfem
       AutoDiffDiff<1,NonZero> sum(false);
       for (auto i : Range(v1))
         sum += v1(i);
+      sum.DDValue(0) = sum.DValue(0) || sum.DDValue(0);
       values = sum;
     }
 
