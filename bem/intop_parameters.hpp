@@ -8,8 +8,7 @@
 
 namespace ngsbem
 {
-  // the FMM_Device of the "device" keyword (see bem_operator_kwargs_doc in python_bem.cpp); None without FMM
-  NGS_DLL_HEADER FMM_Device ResolveFMMDevice (const std::string & device, bool fp32, bool use_fmm);
+  using namespace ngsfmm;
 
   class IntOp_Parameters
   {

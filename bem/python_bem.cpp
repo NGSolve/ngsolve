@@ -24,13 +24,6 @@ namespace
     py::warnings::warn(message.c_str(), PyExc_FutureWarning, 1);
   }
 
-  void CheckSHIndex(int order, tuple<int,int> nm)
-  {
-    auto [n, m] = nm;
-    if (n < 0 || n > order || m < -n || m > n)
-      throw py::index_error("Sphericalharmonics index (n,m)=(" + ToString(n) + "," + ToString(m) + ") out of range for order " + ToString(order));
-  }
-
   template <class Kernel64, class Kernel32, typename... T_ARGS>
   shared_ptr<BasePotentialOperator>
   MakePotentialWithPrecision(shared_ptr<ProxyFunction> proxy, VorB source_vb, optional<Region> definedon, shared_ptr<DifferentialOperator> eval, IntOp_Parameters ioparams, int intorder, bool fp32, T_ARGS... args)
@@ -66,80 +59,6 @@ namespace
     if (auto * pat = std::get_if<string>(&*dx.definedon))
       return Region(ma, dx.vb, *pat);
     return Region(ma, dx.vb, std::get<BitArray>(*dx.definedon));   // Region(ma, vb, const BitArray&), comp/meshaccess.hpp:1013
-  }
-
-  inline py::dict FMMInfoToDict (const FMMOperatorInfo & info)
-  {
-    double abs_kappa = std::visit([](auto k) { return std::abs(k); }, info.kappa);
-    bool has_wavelength = abs_kappa > 1e-14;
-    double wavelength = has_wavelength ? 2.0 * M_PI / abs_kappa : 0.0;
-    auto maybe = [] (bool condition, auto value) -> py::object {
-      return condition ? py::cast(value) : py::none();
-    };
-    auto mean_or_none = [] (double sum, size_t count) -> py::object {
-      return count > 0 ? py::cast(sum / double(count)) : py::none();
-    };
-
-    auto tree_to_dict = [&](const FMMTreeStats & s, double bbox_radius) {
-      py::dict d;
-      d["depth"] = s.max_level;
-      d["num_nodes"] = s.num_nodes;
-      d["num_leaves"] = s.num_leaves;
-      d["active_leaves"] = s.active_leaves;
-      d["active_leaves_fraction"] = (s.num_leaves > 0) ? double(s.active_leaves) / double(s.num_leaves) : 0.0;
-      d["bbox_radius"] = bbox_radius;
-      d["diameter_in_wavelengths"] = maybe(has_wavelength, bbox_radius / wavelength);
-      py::list npl;
-      for (auto n : s.nodes_per_level) npl.append(n);
-      d["nodes_per_level"] = npl;
-      d["leaf_size_min"] = maybe(s.active_leaves > 0, s.leaf_size_min);
-      d["leaf_size_max"] = maybe(s.active_leaves > 0, s.leaf_size_max);
-      d["leaf_size_mean"] = mean_or_none(s.leaf_size_sum, s.active_leaves);
-      d["order_min"] = maybe(s.num_allocated_multipoles > 0, s.order_min);
-      d["order_max"] = maybe(s.num_allocated_multipoles > 0, s.order_max);
-      d["order_mean"] = mean_or_none(s.order_sum, s.num_allocated_multipoles);
-      d["num_allocated_multipoles"] = s.num_allocated_multipoles;
-      d["total_coefficients"] = s.total_coefficients;
-      d["multipole_mb"] = s.multipole_bytes / 1.0e6;
-      return d;
-    };
-
-    auto params_to_dict = [](const FMM_Parameters & p) {
-      py::dict d;
-      d["fmm_maxdirect"] = p.maxdirect;
-      d["fmm_minorder"] = p.minorder;
-      d["fmm_order_factor"] = p.order_factor;
-      d["fmm_separation"] = p.separation;
-      d["fmm_eval_separation"] = p.eval_separation;
-      d["fmm_split_kr"] = p.split_kr;
-      d["fmm_maxlevel"] = p.maxlevel;
-      return d;
-    };
-
-    py::dict d;
-    d["kernel_name"] = info.kernel_name;
-    d["source_size"] = info.source_size;
-    d["target_size"] = info.target_size;
-    d["source_dofs"] = info.source_dofs;
-    d["target_dofs"] = info.target_dofs;
-    if (std::holds_alternative<Complex>(info.kappa))
-      d["kappa"] = std::get<Complex>(info.kappa);
-    else
-      d["kappa"] = std::get<double>(info.kappa);
-    d["wavelength"] = maybe(has_wavelength, wavelength);
-    d["total_num_nodes"] = info.total_num_nodes;
-    d["total_num_leaves"] = info.total_num_leaves;
-    d["total_multipole_coefficients"] = info.total_multipole_coefficients;
-    d["multipole_memory_mb"] = info.total_memory_bytes / 1.0e6;
-    d["num_s2r"] = info.num_s2r;
-    d["num_direct_evaluations"] = info.num_direct_evaluations;
-    d["direct_fallback_fraction"] = info.direct_fallback_fraction;
-    d["nearfield_nze"] = info.nearfield_nze;
-    d["nearfield_fraction"] = info.nearfield_fraction;
-    d["source"] = tree_to_dict(info.source_tree, info.source_bbox_radius);
-    d["target"] = tree_to_dict(info.target_tree, info.target_bbox_radius);
-    d["parameters"] = params_to_dict(info.parameters);
-    return d;
   }
 
   static constexpr const char * bem_operator_kwargs_doc = R"raw_string(
@@ -192,67 +111,105 @@ Keyword arguments:
 
 
 
+namespace
+{
+py::dict FMMInfoToDict (const FMMOperatorInfo & info)
+{
+  double abs_kappa = std::visit([](auto k) { return std::abs(k); }, info.kappa);
+  bool has_wavelength = abs_kappa > 1e-14;
+  double wavelength = has_wavelength ? 2.0 * M_PI / abs_kappa : 0.0;
+  auto maybe = [] (bool condition, auto value) -> py::object {
+    return condition ? py::cast(value) : py::none();
+  };
+  auto mean_or_none = [] (double sum, size_t count) -> py::object {
+    return count > 0 ? py::cast(sum / double(count)) : py::none();
+  };
+
+  auto tree_to_dict = [&](const FMMTreeStats & s, double bbox_radius) {
+    py::dict d;
+    d["depth"] = s.max_level;
+    d["num_nodes"] = s.num_nodes;
+    d["num_leaves"] = s.num_leaves;
+    d["active_leaves"] = s.active_leaves;
+    d["active_leaves_fraction"] = (s.num_leaves > 0) ? double(s.active_leaves) / double(s.num_leaves) : 0.0;
+    d["bbox_radius"] = bbox_radius;
+    d["diameter_in_wavelengths"] = maybe(has_wavelength, bbox_radius / wavelength);
+    py::list npl;
+    for (auto n : s.nodes_per_level) npl.append(n);
+    d["nodes_per_level"] = npl;
+    d["leaf_size_min"] = maybe(s.active_leaves > 0, s.leaf_size_min);
+    d["leaf_size_max"] = maybe(s.active_leaves > 0, s.leaf_size_max);
+    d["leaf_size_mean"] = mean_or_none(s.leaf_size_sum, s.active_leaves);
+    d["order_min"] = maybe(s.num_allocated_multipoles > 0, s.order_min);
+    d["order_max"] = maybe(s.num_allocated_multipoles > 0, s.order_max);
+    d["order_mean"] = mean_or_none(s.order_sum, s.num_allocated_multipoles);
+    d["num_allocated_multipoles"] = s.num_allocated_multipoles;
+    d["total_coefficients"] = s.total_coefficients;
+    d["multipole_mb"] = s.multipole_bytes / 1.0e6;
+    return d;
+  };
+
+  auto params_to_dict = [](const FMM_Parameters & p) {
+    py::dict d;
+    d["fmm_maxdirect"] = p.maxdirect;
+    d["fmm_minorder"] = p.minorder;
+    d["fmm_order_factor"] = p.order_factor;
+    d["fmm_separation"] = p.separation;
+    d["fmm_eval_separation"] = p.eval_separation;
+    d["fmm_split_kr"] = p.split_kr;
+    d["fmm_maxlevel"] = p.maxlevel;
+    return d;
+  };
+
+  py::dict d;
+  d["kernel_name"] = info.kernel_name;
+  d["source_size"] = info.source_size;
+  d["target_size"] = info.target_size;
+  d["source_dofs"] = info.source_dofs;
+  d["target_dofs"] = info.target_dofs;
+  if (std::holds_alternative<Complex>(info.kappa))
+    d["kappa"] = std::get<Complex>(info.kappa);
+  else
+    d["kappa"] = std::get<double>(info.kappa);
+  d["wavelength"] = maybe(has_wavelength, wavelength);
+  d["total_num_nodes"] = info.total_num_nodes;
+  d["total_num_leaves"] = info.total_num_leaves;
+  d["total_multipole_coefficients"] = info.total_multipole_coefficients;
+  d["multipole_memory_mb"] = info.total_memory_bytes / 1.0e6;
+  d["num_s2r"] = info.num_s2r;
+  d["num_direct_evaluations"] = info.num_direct_evaluations;
+  d["direct_fallback_fraction"] = info.direct_fallback_fraction;
+  d["nearfield_nze"] = info.nearfield_nze;
+  d["nearfield_fraction"] = info.nearfield_fraction;
+  d["source"] = tree_to_dict(info.source_tree, info.source_bbox_radius);
+  d["target"] = tree_to_dict(info.target_tree, info.target_bbox_radius);
+  d["parameters"] = params_to_dict(info.parameters);
+  return d;
+}
+}
+
+
 void NGS_DLL_HEADER ExportNgsbem(py::module &m)
 {
 
   // ****************************   Multipole stuff *********************************
   
-  py::class_<SphericalHarmonics<Complex>> (m, "Sphericalharmonics")
-    .def_property_readonly("order", [](SphericalHarmonics<Complex>& self) { return self.Order(); })
-    .def("__setitem__", [](SphericalHarmonics<Complex>& self, tuple<int,int> nm, Complex val)
-    { CheckSHIndex(self.Order(), nm); self.Coef(get<0>(nm), get<1>(nm)) = val; })
-    .def("__getitem__", [](SphericalHarmonics<Complex>& self, tuple<int,int> nm)
-    { CheckSHIndex(self.Order(), nm); return self.Coef(get<0>(nm), get<1>(nm)); })
-    .def_property_readonly("coefs",
-                           py::cpp_function([](SphericalHarmonics<Complex>& self) { return self.Coefs(); },
-                                            py::keep_alive<0,1>()),
-                           "coefficient vector")
-    .def("RotateZ", [](SphericalHarmonics<Complex>& self, double alpha) { self.RotateZ(alpha); })
-    .def("RotateY", [](SphericalHarmonics<Complex>& self, double alpha) { self.RotateY(alpha); })
-    .def("FlipZ", [](SphericalHarmonics<Complex>& self) { self.FlipZ(); })    
-    ;
+  // the generic multipole classes live in ngsolve.fmm (ExportNgsfmm), also under their old names here
+  m.attr("Sphericalharmonics") = py::type::of<SphericalHarmonics<Complex>>();
+  m.attr("SingularMLExpansion") = py::type::of<SingularMLExpansion<Complex>>();
+  m.attr("SingularMLExpansion3") = py::type::of<SingularMLExpansion<Vec<3,Complex>>>();
+  m.attr("RegularMLExpansion") = py::type::of<RegularMLExpansion<Complex>>();
 
-  py::class_<SingularMLExpansion<Complex>, shared_ptr<SingularMLExpansion<Complex>>> (m, "SingularMLExpansion")
-    .def(py::init<Vec<3>,double,double>())
-    .def("AddCharge", &SingularMLExpansion<Complex>::AddCharge)
-    .def("AddDipole", &SingularMLExpansion<Complex>::AddDipole)
+  py::class_<SingularMLExpansion<Complex>, shared_ptr<SingularMLExpansion<Complex>>> (py::type::of<SingularMLExpansion<Complex>>())
     .def("AddChargeDensity", [](SingularMLExpansion<Complex> & mp, shared_ptr<CoefficientFunction> charge,
                                 ngcomp::Region reg, int intorder) { AddChargeDensity(mp,charge,reg,intorder); },
          py::arg("charge"), py::arg("region"), py::arg("intorder")=3)
-    
-    .def("Calc", &SingularMLExpansion<Complex>::CalcMP)
-    .def("Norm", &SingularMLExpansion<Complex>::Norm)    
-    .def("__str__", [](SingularMLExpansion<Complex>& mlmp) { return ToString<>(mlmp); })
-    .def("Print", [](const SingularMLExpansion<Complex> &self) {
-        py::scoped_ostream_redirect stream(
-            std::cout,
-            py::module_::import("sys").attr("stdout")
-        );
-        self.Print(std::cout);
-    })
     ;
 
-  py::class_<SingularMLExpansion<Vec<3,Complex>>, shared_ptr<SingularMLExpansion<Vec<3,Complex>>>> (m, "SingularMLExpansion3")
-    .def(py::init<Vec<3>,double,double>())
-    .def("AddCurrent", &SingularMLExpansion<Vec<3,Complex>>::AddCurrent, py::arg("sp"), py::arg("ep"), py::arg("j"), py::arg("num")=100)
+  py::class_<SingularMLExpansion<Vec<3,Complex>>, shared_ptr<SingularMLExpansion<Vec<3,Complex>>>> (py::type::of<SingularMLExpansion<Vec<3,Complex>>>())
     .def("AddCurrentDensity", [](SingularMLExpansion<Vec<3,Complex>> & mp, shared_ptr<CoefficientFunction> current,
                                  ngcomp::Region reg, int intorder) { AddCurrentDensity(mp,current,reg,intorder); },
          py::arg("current"), py::arg("region"), py::arg("intorder")=3)
-    
-    .def("Calc", &SingularMLExpansion<Vec<3,Complex>>::CalcMP)
-    ;
-
-  
-  py::class_<RegularMLExpansion<Complex>, shared_ptr<RegularMLExpansion<Complex>>> (m, "RegularMLExpansion")
-    .def("Norm", &RegularMLExpansion<Complex>::Norm)    
-    .def("__str__", [](RegularMLExpansion<Complex>& mlmp) { return ToString<>(mlmp); })
-    .def("Print", [](const RegularMLExpansion<Complex> &self) {
-        py::scoped_ostream_redirect stream(
-            std::cout,
-            py::module_::import("sys").attr("stdout")
-        );
-        self.Print(std::cout);
-    })
     ;
 
   

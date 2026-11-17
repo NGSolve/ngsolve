@@ -12,6 +12,8 @@
 
 namespace ngsbem
 {
+  using namespace ngfem;
+  using namespace ngsfmm;
 
   extern void AddChargeDensity (SingularMLExpansion<Complex> & mp, shared_ptr<CoefficientFunction> current, ngcomp::Region reg, int intorder = 3);
   

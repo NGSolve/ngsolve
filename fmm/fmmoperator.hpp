@@ -5,10 +5,10 @@
 #include <bla.hpp>
 #include <variant>
 #include <mutex>
-#include "../linalg/basematrix.hpp"
-#include "../linalg/vvector.hpp"
+#include <basematrix.hpp>
+#include <vvector.hpp>
 
-namespace ngsbem
+namespace ngsfmm
 {
   using namespace ngla;
 

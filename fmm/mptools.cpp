@@ -1,10 +1,8 @@
 #include "mptools.hpp"
-#include "mp_coefficient.hpp"
-#include "meshaccess.hpp"
 
 
 
-namespace ngsbem
+namespace ngsfmm
 {
 
 
@@ -26,6 +24,14 @@ namespace ngsbem
         inv_sqrt_2np1_2np3[n] = 1.0/sqrt( (2*n+1)*(2*n+3) );
       }
   }
+
+
+  Matrix<double,RowMajor> NormalizedLegendreFunctions :: matA;
+  Matrix<double,RowMajor> NormalizedLegendreFunctions :: matB;
+  Vector<double> NormalizedLegendreFunctions :: sqrt2np1;
+  Vector<double> NormalizedLegendreFunctions :: diagfac;
+
+  static bool normalized_legendre_init = (NormalizedLegendreFunctions::Calc(100), true);
 
 
   
@@ -1098,14 +1104,6 @@ namespace ngsbem
   }
 
 
-  
-  template <typename entry_type>
-  shared_ptr<RegularMLExpansionCF<entry_type>>
-  SingularMLExpansionCF<entry_type> :: CreateRegularExpansion(Vec<3> center, double r) const
-  {
-    mlmp->CalcMP();
-    return make_shared<RegularMLExpansionCF<entry_type>> (this->MLExpansion(), center, r);
-  }
 
   template class SphericalHarmonics<Complex>;
   template class SphericalHarmonics<Vector<Complex>>;
@@ -1152,9 +1150,6 @@ namespace ngsbem
   template class SphericalExpansion<Singular, Vec<6,Complex32>, Complex>;
   template class SphericalExpansion<Regular, Vec<6,Complex32>, Complex>;
 
-  
-  template class SingularMLExpansionCF<Complex>;
-  template class SingularMLExpansionCF<Vec<3,Complex>>;
   
 
   template class SingularMLExpansion<Complex>;

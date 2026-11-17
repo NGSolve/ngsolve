@@ -2,10 +2,13 @@
 #define MP_COEFFICIENT
 
 
+#include <coefficient.hpp>
 #include "mptools.hpp"
 
 namespace ngsbem
 {
+  using namespace ngfem;
+  using namespace ngsfmm;
 
   
   // ******************** Coefficient Functions *********************

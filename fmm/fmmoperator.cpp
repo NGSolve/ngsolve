@@ -2,7 +2,7 @@
 #include <map>
 #include <mutex>
 
-namespace ngsbem
+namespace ngsfmm
 {
   namespace
   {
