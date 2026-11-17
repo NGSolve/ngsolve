@@ -118,7 +118,13 @@ namespace ngfem
     virtual void CalcEquivalenceKey();
     const string & EquivalenceKey();
     ///
-    virtual bool DefinedOn (const ElementTransformation & trafo) { return true; }
+    virtual bool DefinedOn (const ElementTransformation & trafo)
+    {
+      if (!UsesInputValues()) return true;
+      for (auto & incf : InputCoefficientFunctions())
+        if (incf && !incf->DefinedOn(trafo)) return false;
+      return true;
+    }
     ///
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const = 0;
     

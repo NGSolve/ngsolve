@@ -5751,7 +5751,9 @@ public:
   {
     VorB vb = trafo.VB();
     size_t index = trafo.GetElementIndex();
-    return index < size_t(size[vb]) && ci[first[vb]+index];
+    if (index >= size_t(size[vb])) return false;
+    auto & cf = ci[first[vb]+index];
+    return cf && cf->DefinedOn(trafo);
   }
 
   string GetDescription () const override { return "region-wise CoefficientFunction"; }
