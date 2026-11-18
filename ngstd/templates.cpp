@@ -25,6 +25,10 @@ namespace ngstd
 #ifdef USE_MKL
   int mkl_max_threads = [] ()
   {
+#if defined(MKL_SDL) && defined(MKL_ILP64)
+      // mkl_rt defaults to LP64
+      MKL_Set_Interface_Layer(MKL_INTERFACE_ILP64);
+#endif
       auto mkl_max = mkl_get_max_threads();
       mkl_set_num_threads(1);
       return mkl_max;
