@@ -52,7 +52,8 @@ namespace ngcomp
     virtual bool IsComplex() const;
     virtual int Dimension() const;
     virtual Array<int> Dimensions() const;
-    virtual bool DefinedOn (const ElementTransformation & trafo) override;
+    bool LocallyDefinedOn (const ElementTransformation & trafo) const override;
+    bool RestrictsDefinition () const override { return true; }
     void SelectComponent (int acomp) { comp = acomp; }
     const GridFunction & GetGridFunction() const { return *gf; }
       using CoefficientFunction::Evaluate;

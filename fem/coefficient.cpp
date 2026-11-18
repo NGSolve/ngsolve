@@ -119,6 +119,40 @@ namespace ngfem
     return equivalence_key; 
   }
 
+  void CoefficientFunction :: FillDefinitionCache () const
+  {
+    Array<CoefficientFunction*> inputs;
+    if (UsesInputValues())
+      for (auto & incf : InputCoefficientFunctions())
+        if (incf && incf->DefinitionRestricted())
+          inputs.Append (incf.get());
+    signed char r = RestrictsDefinition() || inputs.Size();
+    // inputs are computed outside the lock, only the publication is serialized
+    static std::mutex mutex;
+    std::lock_guard<std::mutex> guard(mutex);
+    if (definition_cache.restricted.load (std::memory_order_relaxed) < 0)
+      {
+        definition_cache.inputs = std::move(inputs);
+        definition_cache.restricted.store (r, std::memory_order_release);
+      }
+  }
+
+  bool CoefficientFunction :: DefinitionRestricted () const
+  {
+    if (definition_cache.restricted.load (std::memory_order_acquire) < 0)
+      FillDefinitionCache();
+    return definition_cache.restricted.load (std::memory_order_acquire);
+  }
+
+  bool CoefficientFunction :: DefinedOn (const ElementTransformation & trafo)
+  {
+    if (!DefinitionRestricted()) return true;
+    if (!LocallyDefinedOn (trafo)) return false;
+    for (auto incf : definition_cache.inputs)
+      if (!incf->DefinedOn (trafo)) return false;
+    return true;
+  }
+
   void CoefficientFunction :: GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
     string mycode =
@@ -1924,9 +1958,6 @@ public:
   virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
   { return Array<shared_ptr<CoefficientFunction>>({ c1 }); }
 
-  virtual bool DefinedOn (const ElementTransformation & trafo) override
-  { return c1->DefinedOn(trafo); }
-    
   using BASE::Evaluate;
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
   {
@@ -5752,13 +5783,21 @@ public:
     return nr;
   }
 
-  virtual bool DefinedOn (const ElementTransformation & trafo) override
+  // the entry evaluated on the element, -1 if none
+  int EntryOn (const ElementTransformation & trafo) const
   {
     VorB vb = trafo.VB();
-    size_t index = trafo.GetElementIndex();
-    if (index >= size_t(size[vb])) return false;
-    auto & cf = ci[first[vb]+index];
-    return cf && cf->DefinedOn(trafo);
+    return size[vb] ? SelectedInput (vb, trafo.GetElementIndex()) : -1;
+  }
+
+  bool RestrictsDefinition () const override { return true; }
+  bool LocallyDefinedOn (const ElementTransformation & trafo) const override
+  { return EntryOn (trafo) >= 0; }
+  // only the entry of the region is asked
+  bool DefinedOn (const ElementTransformation & trafo) override
+  {
+    int nr = EntryOn (trafo);
+    return nr >= 0 && ci[nr]->DefinedOn (trafo);
   }
 
   string GetDescription () const override { return "region-wise CoefficientFunction"; }
@@ -6588,13 +6627,6 @@ public:
   }
   
   
-  virtual bool DefinedOn (const ElementTransformation & trafo) override
-  {
-    for (auto & cf : ci)
-      if (!cf->DefinedOn(trafo)) return false;
-    return true;
-  }
-  
 
   using BASE::Evaluate;  
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
@@ -6858,6 +6890,7 @@ class CompiledCoefficientFunction : public CompiledCoefficientFunctionInterface 
       Array<size_t> eval;     // to evaluate: region-wise steps just take the value of their input
       Array<IVec<2>> alias;   // (region-wise step, its input of the region)
       int undefined = -1;     // a region-wise step without value there
+      Array<int> restricted;  // other live steps with an own DefinedOn condition
       size_t dim = 0;         // total dimension of eval
     };
     // classes[stepclass[vb][region index]], classes[0]: all steps
@@ -6970,6 +7003,8 @@ class CompiledCoefficientFunction : public CompiledCoefficientFunctionInterface 
                     if (sel == -2 && cls.undefined == -1) cls.undefined = i;
                     cls.eval.Append (i);
                     cls.dim += dim[i];
+                    if (sel == -1 && steps[i]->RestrictsDefinition())
+                      cls.restricted.Append (i);
                   }
               }
             classes.Append (std::move(cls));
@@ -7027,6 +7062,17 @@ class CompiledCoefficientFunction : public CompiledCoefficientFunctionInterface 
       size_t index = trafo.GetElementIndex();
       auto & cls = stepclass[codimwise ? trafo.VB() : VOL];
       return index < cls.Size() ? cls[index] : 0;
+    }
+
+    // the steps of the element's region, each with its own condition
+    bool DefinedOn (const ElementTransformation & trafo) override
+    {
+      if (!DefinitionRestricted()) return true;
+      auto & cls = classes[StepClass(trafo)];
+      if (cls.undefined >= 0) return false;
+      for (int i : cls.restricted)
+        if (!steps[i]->LocallyDefinedOn (trafo)) return false;
+      return true;
     }
 
 

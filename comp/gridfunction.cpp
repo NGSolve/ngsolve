@@ -1458,7 +1458,7 @@ namespace ngcomp
 
 
     
-  bool GridFunctionCoefficientFunction :: DefinedOn (const ElementTransformation & trafo)
+  bool GridFunctionCoefficientFunction :: LocallyDefinedOn (const ElementTransformation & trafo) const
   {
     // no operator: the function lives on elements of another co-dimension
     return diffop[trafo.VB()] && fes->DefinedOn(trafo.VB(), trafo.GetElementIndex());

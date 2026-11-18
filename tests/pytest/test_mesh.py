@@ -368,6 +368,36 @@ def test_mixed_regioncf():
     with pytest.raises(Exception, match="another mesh"):
         mesh.RegionCF(VOL, {other.Materials("ball"): 1})
 
+def test_regioncf_defined_on():
+    from ngsolve.comp import DefinedOnRegion, BoundaryFromVolumeCF
+    mesh = _box_ball_mesh()
+    mats, bnds = mesh.Materials(".*"), mesh.Boundaries(".*")
+    gball = GridFunction(H1(mesh, order=1, definedon="ball"))
+    gair = GridFunction(H1(mesh, order=1, definedon="air"))
+    cball = mesh.RegionCF({mesh.Materials("ball"): 2})
+
+    def defined(cf, reg):
+        masks = [list(DefinedOnRegion(c, reg).Mask()) for c in (cf, cf.Compile())]
+        assert masks[0] == masks[1]
+        return masks[0]
+
+    # materials: air, ball
+    assert defined(1 + cball*x, mats) == [False, True]
+    assert defined(gair*cball, mats) == [False, False]
+    # only the entry of the region is asked
+    assert defined(mesh.RegionCF({mesh.Materials("ball"): gball, mesh.Materials("air"): 3}), mats) == [True, True]
+    assert defined(mesh.RegionCF({mesh.Materials("ball"): gair, mesh.Materials("air"): 3}) + x, mats) == [True, False]
+    # boundaries: side (5x), bot, side, sphere
+    assert defined(mesh.RegionCF({mesh.Boundaries("bot"): 5})*y, bnds) == [False]*4 + [True] + [False]*2
+    assert defined(BoundaryFromVolumeCF(gball)*x, bnds) == [False]*6 + [True]
+    assert defined(BoundaryFromVolumeCF(gair + cball), bnds) == [False]*7
+    assert defined(BoundaryFromVolumeCF(gair), bnds) == [True]*7
+    # nothing restricted: no check at all
+    deep = CF((x, y, z))
+    for i in range(30):
+        deep = CF((deep[0]+deep[1], deep[1]*deep[2], deep[2]-deep[0]))
+    assert defined(deep[0], mats) == [True, True]
+
 def _brute_neighbours(mesh, vb1, vb2):
     # regions of vb2 touching each region of vb1, from the vertex sets of the elements
     from collections import defaultdict

@@ -2550,7 +2550,9 @@ namespace ngcomp
       ar.Shallow(vol_cf);
     }
 
-    virtual bool DefinedOn (const ElementTransformation & trafo) override
+    // vol_cf is evaluated by the node itself, on boundary elements on the volume neighbours
+    bool RestrictsDefinition () const override { return vol_cf->DefinitionRestricted(); }
+    bool LocallyDefinedOn (const ElementTransformation & trafo) const override
     {
       auto ei = trafo.GetElementId();
       if (ei.IsVolume())

@@ -1166,20 +1166,10 @@ namespace ngcomp
     const Region& GetRegion() const { return reg; }
     shared_ptr<CoefficientFunction> GetCF() const { return cf; }
     
-    virtual bool DefinedOn (const ElementTransformation & trafo) override
-    {
-      if (reg.Contains(trafo.GetRegionId()))
-        return cf->DefinedOn(trafo);
-      return false;
-      /*
-      if(reg.VB() != trafo.VB())
-        return false;
-      int matindex = trafo.GetElementIndex();
-      if (reg.Mask().Test(matindex))
-        return cf->DefinedOn(trafo);
-      return false;
-      */
-    }
+    // cf is no listed input, so it is asked here
+    bool RestrictsDefinition () const override { return true; }
+    bool LocallyDefinedOn (const ElementTransformation & trafo) const override
+    { return reg.Contains(trafo.GetRegionId()) && cf->DefinedOn(trafo); }
 
 
     

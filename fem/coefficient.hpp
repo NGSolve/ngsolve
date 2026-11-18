@@ -118,13 +118,27 @@ namespace ngfem
     virtual void CalcEquivalenceKey();
     const string & EquivalenceKey();
     ///
-    virtual bool DefinedOn (const ElementTransformation & trafo)
+    // can the CF be evaluated on the element: own condition and the evaluated inputs
+    virtual bool DefinedOn (const ElementTransformation & trafo);
+    // own condition of the node, without its inputs
+    virtual bool LocallyDefinedOn (const ElementTransformation & trafo) const { return true; }
+    // false: LocallyDefinedOn is true everywhere
+    virtual bool RestrictsDefinition () const { return false; }
+    // some node of the DAG restricts, cached (the DAG does not change)
+    bool DefinitionRestricted () const;
+  private:
+    // filled once, a copy starts empty
+    struct DefinitionCache
     {
-      if (!UsesInputValues()) return true;
-      for (auto & incf : InputCoefficientFunctions())
-        if (incf && !incf->DefinedOn(trafo)) return false;
-      return true;
-    }
+      std::atomic<signed char> restricted { -1 };
+      Array<CoefficientFunction*> inputs;   // the restricted inputs
+      DefinitionCache () = default;
+      DefinitionCache (const DefinitionCache &) { }
+      DefinitionCache & operator= (const DefinitionCache &) { return *this; }
+    };
+    mutable DefinitionCache definition_cache;
+    void FillDefinitionCache () const;
+  public:
     ///
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const = 0;
     
@@ -1226,8 +1240,6 @@ public:
     return string("unary operation '")+name+"'";
   }
   */
-  virtual bool DefinedOn (const ElementTransformation & trafo) override
-  { return c1->DefinedOn(trafo); } 
 
   // virtual bool ElementwiseConstant () const override { return c1->ElementwiseConstant(); }
 
@@ -1565,9 +1577,6 @@ public:
           }
       }
   }
-
-  virtual bool DefinedOn (const ElementTransformation & trafo) override
-  { return c1->DefinedOn(trafo) && c2->DefinedOn(trafo); }
 
   virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
   { return Array<shared_ptr<CoefficientFunction>>({ c1, c2 }); }
