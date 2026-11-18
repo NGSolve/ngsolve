@@ -162,6 +162,22 @@ def test_trafo_mip_keeps_mesh():
     assert 0 <= val <= 1
 
 
+def test_trafo_mip_views_keep_mip(m):
+    trafo = m.GetTrafo(ElementId(VOL, 0))
+    ref = trafo(0.2, 0.3)
+    p, jac = tuple(ref.point), np.array(ref.jacobi)
+    assert np.linalg.norm(jac) > 0
+    del ref
+    gc.collect()
+    assert tuple(trafo(0.2, 0.3).point) == pytest.approx(p)
+    assert np.array(trafo(0.2, 0.3).jacobi) == pytest.approx(jac)
+    view = trafo(0.2, 0.3).point
+    junk = [trafo(0.7, 0.1) for i in range(10)]
+    assert tuple(view) == pytest.approx(p)
+    ir = IntegrationRule([(0.2, 0.3)], [1.])
+    assert tuple(trafo(ir[0]).point) == pytest.approx(p)
+
+
 def test_standalone_trafo_gf(m):
     from ngsolve.fem import ElementTransformation
     t = ElementTransformation(ET.TRIG, [(0, 0), (1, 0), (0, 1)])

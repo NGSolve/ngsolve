@@ -2390,8 +2390,19 @@ weights : list
             return str.str();
           })
     .def_property_readonly("measure", &BaseMappedIntegrationPoint::GetMeasure, "Measure of the mapped integration point ")
-    .def_property_readonly("point", &BaseMappedIntegrationPoint::GetPoint, "Point of the mapped integration point")
-    .def_property_readonly("jacobi", &BaseMappedIntegrationPoint::GetJacobian, "jacobian of the mapped integration point")
+    // views into the mip: keep it alive (by-value returns get no reference_internal)
+    .def_property_readonly("point", [](py::object self)
+                           {
+                             py::object res = py::cast(self.cast<BaseMappedIntegrationPoint&>().GetPoint());
+                             py::detail::keep_alive_impl (res, self);
+                             return res;
+                           }, "Point of the mapped integration point")
+    .def_property_readonly("jacobi", [](py::object self)
+                           {
+                             py::object res = py::cast(self.cast<BaseMappedIntegrationPoint&>().GetJacobian());
+                             py::detail::keep_alive_impl (res, self);
+                             return res;
+                           }, "jacobian of the mapped integration point")
     // .def_property_readonly("trafo", &BaseMappedIntegrationPoint::GetTransformation)
     .def_property_readonly("trafo", &BaseMappedIntegrationPoint::GetTransformation, "Transformation of the mapped integration point")
     .def_property_readonly("elementid", [](BaseMappedIntegrationPoint & mip)
