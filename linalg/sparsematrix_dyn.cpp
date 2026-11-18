@@ -7,7 +7,6 @@
 
 #include <sparsematrix_dyn.hpp>
 
-#include "pardisoinverse.hpp"
 #include "umfpackinverse.hpp"
 #include "superluinverse.hpp"
 #include "mumpsinverse.hpp"

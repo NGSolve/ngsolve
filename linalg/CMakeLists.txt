@@ -3,7 +3,7 @@ include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 add_library(ngla ${NGS_LIB_TYPE}
         basematrix.cpp basevector.cpp multivector.cpp
         blockjacobi.cpp cg.cpp chebyshev.cpp commutingAMG.cpp eigen.cpp	     
-        jacobi.cpp order.cpp pardisoinverse.cpp sparsecholesky.cpp	     
+        jacobi.cpp order.cpp sparsecholesky.cpp	     
         sparsematrix.cpp sparsematrix_dyn.cpp special_matrix.cpp superluinverse.cpp		     
         mumpsinverse.cpp elementbyelement.cpp arnoldi.cpp paralleldofs.cpp diagonalmatrix.cpp
         python_linalg.cpp umfpackinverse.cpp
@@ -45,7 +45,7 @@ endif()
 install( FILES
         basematrix.hpp basevector.hpp basescalar.hpp blockjacobi.hpp cg.hpp multivector.hpp
         chebyshev.hpp commutingAMG.hpp eigen.hpp jacobi.hpp la.hpp order.hpp   
-        pardisoinverse.hpp sparsecholesky.hpp sparsematrix.hpp
+        sparsecholesky.hpp sparsematrix.hpp
         sparsematrix_impl.hpp sparsematrix_dyn.hpp diagonalmatrix.hpp
         special_matrix.hpp superluinverse.hpp mumpsinverse.hpp
         umfpackinverse.hpp vvector.hpp python_linalg.hpp

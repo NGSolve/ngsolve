@@ -13,7 +13,6 @@
 
 #include <thread>
 #include <meshing/visual_interface.hpp>
-#include "../linalg/pardisoinverse.hpp"
 
 using namespace std;
 using namespace ngsolve;
@@ -688,9 +687,6 @@ int NGSolve_Init (Tcl_Interp * interp)
   cout << "sorry, no lapack" << endl; 
 #endif
 
-
-if(is_pardiso_available)
-  cout << "Including sparse direct solver Pardiso" << endl;
 
 #ifdef USE_UMFPACK
   cout << "Including sparse direct solver UMFPACK" << endl;

@@ -7,6 +7,8 @@
 /* Date:   Feb. 04                                                         */
 /* *************************************************************************/
 
+#include "sparsecholesky.hpp"   // for SparseFactorization
+
 namespace ngla
 {
 

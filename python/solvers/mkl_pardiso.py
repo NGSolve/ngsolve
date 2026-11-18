@@ -4,25 +4,40 @@ import ctypes.util
 from contextlib import contextmanager
 
 from .. import la as ngla
-from .. import config, TimeFunction
+from .. import TimeFunction
 from pyngcore import GetNumThreads, SuspendTaskManager
 
 _mkl_free_buffers = None
 _pardiso = None
 _mkl_set_num_threads_local = None
+# MKL_INT, 64 bit for ILP64 builds
+_mkl_int = ctypes.c_int32
+_mkl_int_np = np.int32
+
+
+def _load_linked_mkl():
+    global _mkl_free_buffers, _pardiso, _mkl_set_num_threads_local, _mkl_int, _mkl_int_np
+
+    funcs = ngla._GetMKLFunctions()
+    if funcs is None:
+        return False
+
+    _pardiso = ctypes.CFUNCTYPE(None)(funcs["pardiso"])
+    _mkl_free_buffers = ctypes.CFUNCTYPE(None)(funcs["mkl_free_buffers"])
+    _mkl_set_num_threads_local = ctypes.CFUNCTYPE(ctypes.c_int, ctypes.c_int)(
+        funcs["mkl_set_num_threads_local"]
+    )
+    if funcs["int_size"] == 8:
+        _mkl_int = ctypes.c_int64
+        _mkl_int_np = np.int64
+    ngla.BaseMatrix.SetDefaultInverseType("pardiso")
+    return True
 
 
 def _find_mkl():
-    # Register the solvers to provide a proper error message if MKL Pardiso is not available
-    ngla.RegisterInverseType("pardiso", MKLPardiso)
-    ngla.RegisterInverseType("pardisospd", MKLPardisoSPD)
-
     import importlib.metadata
 
     global _mkl_free_buffers, _pardiso, _mkl_set_num_threads_local
-
-    if _mkl_free_buffers is not None and _pardiso is not None:
-        return
 
     mkl_from_pip = False
     libname = None
@@ -97,8 +112,6 @@ class MKLPardiso(ngla.SparseFactorizationInterface):
     def __init__(
         self, *args, msglevel=0, params: dict[int, int] | None = None, **kwargs
     ):
-        from ctypes import c_int
-
         if _pardiso is None or _mkl_free_buffers is None:
             raise RuntimeError(
                 "MKL Pardiso is not available. Ensure that MKL is installed: pip install mkl"
@@ -106,7 +119,7 @@ class MKLPardiso(ngla.SparseFactorizationInterface):
 
         super().__init__(*args, **kwargs)
 
-        self._params = (c_int * 64)()
+        self._params = (_mkl_int * 64)()
         for i in range(64):
             self._params[i] = 0
 
@@ -127,11 +140,9 @@ class MKLPardiso(ngla.SparseFactorizationInterface):
         self._params[34] = 1  # 0-based (C-style) indexing
         self._params[59] = 0  # 0..incore
 
-        self._pt = (c_int * 128)()
-        for i in range(128):
-            self._pt[i] = 0
+        self._pt = (ctypes.c_void_p * 64)()
 
-        int_arg_t = c_int * 1
+        int_arg_t = _mkl_int * 1
 
         self._maxfct = int_arg_t(1)
         self._mnum = int_arg_t(1)
@@ -206,7 +217,6 @@ class MKLPardiso(ngla.SparseFactorizationInterface):
             data = [np.array(v.NumPy()) for v in mat.CSR()]
         else:
             data = [v.NumPy() for v in mat.CSR()]
-        data[2] = np.asarray(data[2], dtype=np.int32)
         return data, mat
 
     @TimeFunction
@@ -216,8 +226,9 @@ class MKLPardiso(ngla.SparseFactorizationInterface):
 
         data, self._csr_mat = self.get_csr()
         self._data_np = np.array(data[0])  # writable copy for pardiso
-        self._indices_np = data[1]  # view kept alive by self._csr_mat
-        self._indptr_np = data[2]  # already a copy (dtype conversion)
+        # views kept alive by self._csr_mat or copies with MKL_INT type
+        self._indices_np = np.asarray(data[1], dtype=_mkl_int_np)
+        self._indptr_np = np.asarray(data[2], dtype=_mkl_int_np)
 
         is_symmetric = self.is_symmetric.is_true or self._force_symmetric
         self._params[12] = 0 if is_symmetric else 1  # slicing + matching
@@ -326,6 +337,9 @@ class MKLPardisoSPD(MKLPardiso):
     is_spd = True
 
 
-if not config.USE_MKL and not config.USE_PARDISO:
-    # no pardiso was linked to NGSolve, try to find it at run time
+# registered also without MKL to provide a proper error message
+ngla.RegisterInverseType("pardiso", MKLPardiso)
+ngla.RegisterInverseType("pardisospd", MKLPardisoSPD)
+
+if not _load_linked_mkl():
     _find_mkl()

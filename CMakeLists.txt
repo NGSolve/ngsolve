@@ -16,7 +16,6 @@ option( USE_METAL        "enable metal GPU support")
 option( USE_MKL          "enable MKL")
 option( USE_HYPRE        "enable HYPRE support")
 option( USE_MUMPS        "enable sparse direct solver MUMPS")
-option( USE_PARDISO      "enable pardiso sparse direct solver")
 option( USE_UMFPACK      "enable umfpack sparse direct solver" ON)
 if(APPLE)
   set(USE_ACCELERATE_SPARSE_DEFAULT ON)
@@ -305,7 +304,6 @@ if (USE_MKL)
     find_package(MKL REQUIRED)
     set(USE_MPI ${NG_USE_MPI} CACHE STRING "enable mpi parallelization")
     target_include_directories(ngs_lapack INTERFACE "${MKL_INCLUDE_DIRS}")
-    list(APPEND NGSOLVE_COMPILE_DEFINITIONS USE_PARDISO)
     list(APPEND NGSOLVE_COMPILE_DEFINITIONS_PRIVATE USE_MKL)
 
     if("${MKL_INTERFACE_LAYER}" STREQUAL "_ilp64" OR ${MKL_INTERFACE} STREQUAL "ilp64")
@@ -357,21 +355,6 @@ if (NETGEN_USE_PYTHON)
         set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -undefined dynamic_lookup")
     endif()
 endif (NETGEN_USE_PYTHON)
-
-#######################################################################
-
-if(USE_PARDISO)
-  list(APPEND NGSOLVE_COMPILE_DEFINITIONS USE_PARDISO)
-  list(APPEND NGSOLVE_COMPILE_DEFINITIONS USE_PARDISO400)
-  if(NOT PARDISO_LIB)
-      find_library(PARDISO_LIB NAMES libpardiso500-GNU481-X86-64.so)
-  endif(NOT PARDISO_LIB)
-  if(NOT PARDISO_LIB)
-      message(FATAL_ERROR "Could NOT find Pardiso")
-  endif(NOT PARDISO_LIB)
-  find_package(OpenMP)
-  set(PARDISO_LIBS ${PARDISO_LIB} ${OpenMP_gomp_LIBRARY} ${OpenMP_pthread_LIBRARY})
-endif(USE_PARDISO)
 
 #######################################################################
 
@@ -706,7 +689,6 @@ message("
     CUDA: .............. ${USE_CUDA}
     MUMPS: ............. ${USE_MUMPS}
     Accelerate Sparse: . ${USE_ACCELERATE_SPARSE}
-    PARDISO: ........... ${USE_PARDISO}
     INTEL_MIC: ......... ${INTEL_MIC}
     VTUNE: ............. ${USE_VTUNE}
 

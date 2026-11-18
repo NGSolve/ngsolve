@@ -54,7 +54,6 @@ emcmake cmake /root/ngsolve \
       -DUSE_MPI:BOOL=OFF \
       -DUSE_MUMPS:BOOL=OFF \
       -DUSE_NATIVE_ARCH:UNINITIALIZED=OFF \
-      -DUSE_PARDISO:BOOL=OFF \
       -DUSE_PYTHON:BOOL=ON \
       -DPython3_ROOT_DIR=$TARGETINSTALLDIR \
       -DPython3_INCLUDE_DIR=$TARGETINSTALLDIR/include/python${PYTHON_MAJOR}.${PYTHON_MINOR} \

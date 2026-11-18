@@ -24,7 +24,6 @@ namespace ngla
 #include "sparsematrix_dyn.hpp"
 #include "order.hpp"
 #include "sparsecholesky.hpp"
-#include "pardisoinverse.hpp"
 #include "jacobi.hpp"
 #include "blockjacobi.hpp"
 #include "commutingAMG.hpp"

@@ -7,7 +7,7 @@ install( TARGETS ngsolve ${ngs_install_dir} )
 add_library(solve ALIAS ngsolve)
 
 if (WIN32)
-    target_link_libraries(ngsolve PUBLIC ${MPI_CXX_LIBRARIES} PRIVATE ${VTUNE_LIB} ${PARDISO_LIBS} ${UMFPACK_LIBRARIES} )
+    target_link_libraries(ngsolve PUBLIC ${MPI_CXX_LIBRARIES} PRIVATE ${VTUNE_LIB} ${UMFPACK_LIBRARIES} )
     target_link_libraries(ngsolve ${LAPACK_CMAKE_LINK_INTERFACE} "$<BUILD_INTERFACE:ngs_lapack>")
 
     set_target_properties( ngsolve PROPERTIES OUTPUT_NAME libngsolve )

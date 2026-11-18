@@ -58,8 +58,6 @@ CMake options for building Netgen/NGSolve
    +-----------------------------+--------+-------------------+-----------------------------------------------------+
    |  USE_MUMPS                  | OFF    | Enable sparse direct solver MUMPS                                       |
    +-----------------------------+--------+-------------------+-----------------------------------------------------+
-   |  USE_PARDISO                | OFF    | Enable sparse direct solver PARDISO                                     |
-   +-----------------------------+--------+-------------------+-----------------------------------------------------+
    |  USE_UMFPACK                | OFF    | Enable sparse direct solver SuiteSparse/UMFPACK                         |
    +-----------------------------+--------+-------------------+-----------------------------------------------------+
    |  USE_VTUNE                  | OFF    | Enable Intel VTune pause/resume numproc                                 |

@@ -7,6 +7,11 @@
 #include "sparsefactorization_interface.hpp"
 #include "acceleratesparseinverse.hpp"
 
+#ifdef USE_MKL
+#include <mkl_pardiso.h>
+#include <mkl_service.h>
+#endif // USE_MKL
+
 using namespace ngla;
 // include netgen-header to get access to PyMPI
 #include <myadt.hpp>
@@ -1372,9 +1377,8 @@ inverse : string
   Solver to use, allowed values are:
     sparsecholesky - internal solver of NGSolve for symmetric matrices
     umfpack        - solver by Suitesparse/UMFPACK (if NGSolve was configured with USE_UMFPACK=ON)
-    pardiso        - PARDISO, either provided by libpardiso (USE_PARDISO=ON) or Intel MKL (USE_MKL=ON).
-                     If neither Pardiso nor Intel MKL was linked at compile-time, NGSolve will look
-                     for libmkl_rt in LD_LIBRARY_PATH (Unix) or PATH (Windows) at run-time.
+    pardiso        - Intel MKL PARDISO, linked at compile-time (USE_MKL=ON), otherwise libmkl_rt
+                     from the mkl pip package or the library search path is loaded at run-time.
 
 flags : dict
   Options of the solver. For sparsecholesky (ordering of saddle point matrices):
@@ -2595,10 +2599,21 @@ shift : object
                                          { cout << "output basematrix" << endl;
                                            mat.DoArchive(*arch); return arch; });
 
+  m.def("_GetMKLFunctions", []() -> py::object {
+#ifdef USE_MKL
+    py::dict funcs;
+    funcs["pardiso"] = reinterpret_cast<size_t>(&pardiso);
+    funcs["mkl_free_buffers"] = reinterpret_cast<size_t>(&MKL_Free_Buffers);
+    funcs["mkl_set_num_threads_local"] = reinterpret_cast<size_t>(&MKL_Set_Num_Threads_Local);
+    funcs["int_size"] = sizeof(MKL_INT);
+    return funcs;
+#else // USE_MKL
+    return py::none();
+#endif // USE_MKL
+  }, "Addresses of the MKL functions linked into NGSolve (None without USE_MKL), used by ngsolve.solvers.mkl_pardiso");
+
   m.def("GetAvailableSolvers", []() {
     py::set solvers;
-    if(is_pardiso_available)
-      solvers.add("pardiso");
 #ifdef USE_MUMPS
     solvers.add("mumps");
 #endif // USE_MUMPS

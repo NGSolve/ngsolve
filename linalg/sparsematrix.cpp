@@ -12,7 +12,6 @@
 #include "device_sparsematrix.hpp"
 #include "jacobi.hpp"
 #include "blockjacobi.hpp"
-#include "pardisoinverse.hpp"
 #include "umfpackinverse.hpp"
 #include "superluinverse.hpp"
 #include "mumpsinverse.hpp"
@@ -45,9 +44,6 @@ namespace ngla
                          + ScalarName((*vecs.begin())->GetScalarType()) + " and " + ScalarName(v->GetScalarType()));
   }
 
-#ifdef USE_PARDISO
-  string BaseMatrix::default_inversetype = "pardiso";
-#else
 #ifdef USE_MUMPS
   string BaseMatrix::default_inversetype = "mumps";
 #else
@@ -55,7 +51,6 @@ namespace ngla
   string BaseMatrix::default_inversetype = "umfpack";
 #else
   string BaseMatrix::default_inversetype = "sparsecholesky";
-#endif
 #endif
 #endif
   int UsedBits (size_t nr)
@@ -2209,8 +2204,6 @@ shared_ptr<BaseMatrix> InverseSparseMatrixTM (shared_ptr<const SparseMatrix<TM>>
   #ifdef USE_MUMPS
       if(invtype == "mumps") return make_shared<MumpsInverse<TM>> (*A, subset, clusters);
   #endif
-  if(is_pardiso_available && (invtype == "pardiso" || invtype == "pardisospd"))
-      return make_shared<PardisoInverse<TM>> (A, subset, clusters);
   if(invtype == "sparsecholesky") return make_shared<SparseCholesky<TM>>(A, subset, clusters);
   throw Exception ("SparseMatrix::InverseMatrix:  no inverse available for type " + invtype);
 }
