@@ -81,6 +81,21 @@ def test_h1_trace_chain(mesh):
     assert u.Deriv() is u.Deriv()
 
 
+@pytest.mark.parametrize("make", [lambda m: H1(m, order=1),
+                                  lambda m: H1(m, order=1, dim=2),
+                                  lambda m: H1(m, order=1, dim=2, complex=True),
+                                  lambda m: MatrixValued(H1(m, order=1), dim=3)])
+def test_gridfunction_trace_keeps_dims(mesh, make):
+    # the third trace lives on vertices (BBBND)
+    gf = GridFunction(make(mesh))
+    tr = gf
+    for level in range(3):
+        tr = tr.Trace()
+        assert tuple(tr.dims) == tuple(gf.dims), level
+    if gf.dim > 1:
+        tr[gf.dim-1]
+
+
 # ------------------------------------------------------------ HCurl, HDiv: trace is a projection
 
 def test_hcurl_needs_trace(mesh):
@@ -278,6 +293,41 @@ def test_webgui_skips_the_volume_of_surface_functions(mesh):
         d = webgui.BuildRenderData(mesh, cf, regions=regions)
         assert not d["draw_vol"] and "points3d" not in d
         assert d["funcmax"] == pytest.approx(1, abs=1e-8)
+
+
+def test_webgui_other_mesh():
+    # region numbers of the drawing mesh say nothing about the space's mesh
+    from netgen.occ import Glue
+    from ngsolve.comp import DefinedOnRegion
+    webgui = pytest.importorskip("ngsolve.webgui")
+    left, right = Box((0, 0, 0), (0.5, 1, 1)), Box((0.5, 0, 0), (1, 1, 1))
+    left.mat("left")
+    right.mat("right")
+    source = Mesh(OCCGeometry(Glue([left, right])).GenerateMesh(maxh=0.6))
+    target = Mesh(OCCGeometry(Box((0, 0, 0), (1, 1, 1))).GenerateMesh(maxh=0.6))
+    gf = GridFunction(H1(source, order=1, definedon=source.Materials("right")))
+    gf.Set(1)
+    assert gf(target(0.75, 0.5, 0.5)) == pytest.approx(1)
+    assert list(DefinedOnRegion(gf, target.Materials(".*")).Mask()) == [True]
+    d = webgui.BuildRenderData(target, gf, regions={VOL: VOL, BND: BND, BBND: BBND})
+    assert d["draw_vol"] and "points3d" in d
+
+
+def test_defined_on_region_elements_without_region():
+    import netgen.meshing as nm
+    from ngsolve.comp import DefinedOnRegion
+    raw = nm.Mesh(3)
+    pts = [raw.Add(nm.MeshPoint(nm.Pnt(*p))) for p in [(0, 0, 0), (1, 0, 0), (0, 1, 0), (0, 0, 1)]]
+    raw.Add(nm.Element3D(1, pts))
+    face = raw.Add(nm.FaceDescriptor(surfnr=1, domin=1, bc=1))
+    for t in [(0, 1, 2), (0, 1, 3), (0, 2, 3), (1, 2, 3)]:
+        raw.Add(nm.Element2D(face, [pts[i] for i in t]))
+    # the first segment has no region (index -1)
+    raw.Add(nm.Element1D([pts[0], pts[1]], index=0))
+    raw.Add(nm.Element1D([pts[2], pts[3]], index=1))
+    m = Mesh(raw)
+    assert [el.index for el in m.Elements(BBND)] == [-1, 0]
+    assert list(DefinedOnRegion(CF(1), m.BBoundaries(".*")).Mask()) == [True]
 
 
 # ------------------------------------------------------------ BEM potentials take the trace themselves

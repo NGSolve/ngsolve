@@ -1295,12 +1295,8 @@ namespace ngcomp
     if (diffop[BND] && !diffop[BBND])
       diffop[BBND] = diffop[BND]->GetTrace();
     
-    for (auto vb : { VOL, BND, BBND } )
-      if (diffop[vb])
-        {
-          SetDimensions (diffop[vb]->Dimensions());
-          break;
-        }
+    if (auto op = diffop.First())
+      SetDimensions (op->Dimensions());
 
     SetVariable(true);
   }
@@ -1431,7 +1427,7 @@ namespace ngcomp
 
   Array<int> GridFunctionCoefficientFunction::Dimensions() const
   {
-    for (auto vb : { VOL, BND, BBND })
+    for (auto vb : { VOL, BND, BBND, BBBND })
       if (diffop[vb])
         return Array<int> (diffop[vb]->Dimensions());
     /*
@@ -1460,6 +1456,8 @@ namespace ngcomp
     
   bool GridFunctionCoefficientFunction :: LocallyDefinedOn (const ElementTransformation & trafo) const
   {
+    // another mesh: region numbers don't match, evaluation searches the point
+    if (!trafo.BelongsToMesh (fes->GetMeshAccess().get())) return true;
     // no operator: the function lives on elements of another co-dimension
     return diffop[trafo.VB()] && fes->DefinedOn(trafo.VB(), trafo.GetElementIndex());
   }

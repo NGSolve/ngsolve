@@ -2669,7 +2669,8 @@ namespace ngcomp
       {
         if (!open) break;
         int index = ma->GetElIndex(ei);
-        if (!todo.Test(index)) continue;
+        // elements without region have index -1
+        if (index < 0 || size_t(index) >= todo.Size() || !todo.Test(index)) continue;
         todo.Clear(index);
         open--;
         HeapReset hr(lh);
