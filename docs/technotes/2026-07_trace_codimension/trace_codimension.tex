@@ -75,11 +75,12 @@ Line 4 is refused when the form is built:
 Trialfunction does not support BND-forms, maybe a Trace() operator is missing,
 type = ngfem::DiffOpIdEdge<3,...>
 \end{lstlisting}
-The message names the remedy only where there is one. A traced function in a volume integral, or a function of a surface space in a volume integral, gives
+The message names the remedy only where there is one. A trace which is a projection (tangential or normal component, surface gradient) in a volume integral, or a function of a surface space in a volume integral, gives
 \begin{lstlisting}[numbers=none,xleftmargin=0pt,language={}]
 Trialfunction does not support VOL-forms, it lives on BND elements,
 type = ngfem::DiffOpIdBoundaryEdge<3,...>
 \end{lstlisting}
+A trace which is just the value is accepted there and means the function itself: \code{u.Trace()*v*dx} is \code{u*v*dx} for $H^1$ and \code{NumberSpace}.
 
 For $H^1$ the value needs no trace, the gradient does:
 \begin{lstlisting}
