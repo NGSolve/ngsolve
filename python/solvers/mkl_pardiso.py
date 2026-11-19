@@ -233,7 +233,7 @@ class MKLPardiso(ngla.SparseFactorizationInterface):
         is_symmetric = self.is_symmetric.is_true or self._force_symmetric
         self._params[12] = 0 if is_symmetric else 1  # slicing + matching
 
-        if self.is_complex:
+        if self.is_complex_matrix:
             self._matrixtype[0] = 6 if is_symmetric else 13
         else:
             if self.is_spd:
@@ -247,7 +247,7 @@ class MKLPardiso(ngla.SparseFactorizationInterface):
         self._indices = self._as_ctypes(self._indices_np)
         self._indptr = self._as_ctypes(self._indptr_np)
 
-        dtype = np.complex128 if self.is_complex else np.float64
+        dtype = np.complex128 if self.is_complex_matrix else np.float64
         self._b_np = np.zeros(n, dtype=dtype)
         self._x_np = np.zeros(n, dtype=dtype)
         self._b = self._as_ctypes(self._b_np)
@@ -291,7 +291,7 @@ class MKLPardiso(ngla.SparseFactorizationInterface):
 
     @TimeFunction
     def SolveConjTrans(self, b, sol):
-        if not self.is_complex:
+        if not self.is_complex_matrix:
             return self.SolveTrans(b, sol)
         if self.is_symmetric.is_true:
             self._b_np[:] = np.conj(b.FV().NumPy())

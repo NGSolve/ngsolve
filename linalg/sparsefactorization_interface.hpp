@@ -22,51 +22,30 @@ struct MapInnerDofs {
 
   MapInnerDofs() {}
 
+  // n: matrix height (in blocks), the subset may be larger (e.g. coarse grid matrix)
   void Init(shared_ptr<BitArray> ainner,
-               shared_ptr<const Array<int>> acluster = nullptr,
-               int abs = 1, size_t nblocks = 0)
+            shared_ptr<const Array<int>> acluster,
+            size_t n, int abs = 1)
   {
     inner = ainner;
     cluster = acluster;
     bs = abs;
     have_value_map = false;
-    if (!inner && !cluster) {
-      if (bs == 1) {
-        size = 0;
-        return;
-      }
-      size = nblocks;
-      project.SetSize(size);
-      embed.SetSize(size);
-      for (size_t i : Range(size)) {
-        project[i] = i;
-        embed[i] = i;
-      }
+    project.SetSize0();
+    embed.SetSize0();
+    size = 0;
+    if (!inner && !cluster && bs == 1)
       return;
-    }
-    if (inner) {
-      size = inner->NumSet();
-      project.SetSize(size);
-      embed.SetSize(inner->Size());
-      int j = 0;
-      for (int i = 0; i < inner->Size(); i++) {
-        if ((*inner)[i]) {
-          project[j] = i;
-          embed[i] = j++;
-        } else
-          embed[i] = -1;
-      }
-      return;
-    }
-
-    int j = 0;
-    for (int i = 0; i < cluster->Size(); i++) {
-      if ((*cluster)[i]) {
+    embed.SetSize(n);
+    for (size_t i = 0; i < n; i++) {
+      bool used = true;
+      if (inner)
+        used = i < inner->Size() && (*inner)[i];
+      else if (cluster)
+        used = i < cluster->Size() && (*cluster)[i];
+      embed[i] = used ? project.Size() : -1;
+      if (used)
         project.Append(i);
-        embed.Append(j++);
-      } else {
-        embed.Append(-1);
-      }
     }
     size = project.Size();
   }
@@ -116,10 +95,11 @@ struct MapInnerDofs {
     Array<T> vals;
     // auto &dofs = *inner;
 
+    // i is in project
     auto is_used = [this](int i, int j) {
-      if (inner)
-        return (*inner)[i] && (*inner)[j];
-      return (*cluster)[i] == (*cluster)[j];
+      if (embed[j] < 0)
+        return false;
+      return inner || !cluster || (*cluster)[i] == (*cluster)[j];
     };
 
     for (auto i : project)
@@ -168,12 +148,11 @@ struct MapInnerDofs {
     bool sym_storage =
         dynamic_cast<const SparseMatrixSymmetric<Mat<N, N, T>>*>(m.get()) != nullptr;
 
+    // i is in project
     auto is_used = [this](int i, int j) {
-      if (inner)
-        return bool((*inner)[i] && (*inner)[j]);
-      if (cluster)
-        return bool((*cluster)[i] == (*cluster)[j]);
-      return true;
+      if (embed[j] < 0)
+        return false;
+      return inner || !cluster || (*cluster)[i] == (*cluster)[j];
     };
 
     Array<int> rowi, coli;
@@ -224,11 +203,16 @@ protected:
   shared_ptr<const BaseSparseMatrix> inner_mat;
   shared_ptr<BaseVector> inner_rhs, inner_solution;
   MapInnerDofs map_inner_dofs;
-  bool is_complex = false;
+  bool is_complex = false;      // complex matrix entries
+  bool complex_vectors = false; // real matrix applied to complex vectors
   xbool is_symmetric = maybe;
   bool is_symmetric_storage = false;
   bool is_analyzed = false;
-  int width, height, inner_width, inner_height;
+  int width, height, inner_width = 0, inner_height = 0;
+
+  void ApplyReal(bool trans, double s, FlatVector<double> x, FlatVector<double> y) const;
+  // real matrix, complex vectors: solves for real and imaginary part
+  void ApplyComplexVector(bool trans, Complex s, const BaseVector &x, BaseVector &y) const;
 
 public:
   SparseFactorizationInterface() = delete;
@@ -268,6 +252,7 @@ public:
 
   bool IsSymmetricStorage() const { return is_symmetric_storage; }
   xbool IsSymmetric() const override { return is_symmetric; }
+  bool IsComplexMatrix() const { return is_complex; }
   bool IsSPD() const { return inner_mat && inner_mat->IsSPD(); }
 };
 

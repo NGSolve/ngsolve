@@ -101,12 +101,14 @@ SparseFactorizationInterface::SparseFactorizationInterface(
   width = m->Width();
   height = m->Height();
 
-  is_complex = m->IsComplex();
+  is_complex = m->AsVector().IsComplex();
+  complex_vectors = m->IsComplex() && !is_complex;
+  map_inner_dofs.Init(inner, cluster, height);
 }
 
 void SparseFactorizationInterface::SetSubset(shared_ptr<BitArray> inner, shared_ptr<const Array<int>> cluster) {
     SparseFactorization::SetSubset(inner, cluster);
-    map_inner_dofs.Init(inner, cluster);
+    map_inner_dofs.Init(inner, cluster, height);
 }
 
 void SparseFactorizationInterface::Update() {
@@ -120,7 +122,8 @@ void SparseFactorizationInterface::Update() {
 
   if (entry_h > 1) {
     // blocked matrix - always copied out into scalar storage
-    map_inner_dofs.Init(inner, cluster, entry_h, m->Height());
+    if (map_inner_dofs.bs != entry_h)
+      map_inner_dofs.Init(inner, cluster, m->Height(), entry_h);
 
     shared_ptr<const BaseSparseMatrix> scalar_mat;
     Switch<MAX_SYS_DIM>(entry_h - 1, [&](auto HM) {
@@ -199,13 +202,22 @@ void SparseFactorizationInterface::Update() {
     p_mat = dynamic_pointer_cast<const MatrixGraph>(p_sparse_mat);
   }
 
-  inner_rhs = inner_mat->CreateColVector();
-  inner_solution = inner_mat->CreateColVector();
-
   auto &mat = *p_mat;
 
   inner_height = mat.Height();
   inner_width = mat.Width();
+
+  // not from inner_mat, a real matrix may have complex vectors
+  if (is_complex) {
+    inner_rhs = make_shared<VVector<Complex>>(inner_height);
+    inner_solution = make_shared<VVector<Complex>>(inner_width);
+  } else {
+    inner_rhs = make_shared<VVector<double>>(inner_height);
+    inner_solution = make_shared<VVector<double>>(inner_width);
+  }
+
+  if (inner_height == 0)  // all dofs eliminated, nothing to factor
+    return;
 
   if (!is_analyzed) {
     Analyze();
@@ -218,37 +230,69 @@ void SparseFactorizationInterface::CheckReady(const BaseVector &x,
                                               const BaseVector &y) const {
   if (!inner_rhs || !inner_solution)
     throw Exception(GetName(*this) + ": factorization not computed, call Update() first");
-  if (!is_complex && (x.IsComplex() || y.IsComplex()))
+  if (!is_complex && !complex_vectors && (x.IsComplex() || y.IsComplex()))
     throw Exception(GetName(*this) + ": real factorization applied to complex vectors");
+}
+
+void SparseFactorizationInterface::ApplyReal(bool trans, double s,
+                                             FlatVector<double> x,
+                                             FlatVector<double> y) const {
+  if (map_inner_dofs)
+    map_inner_dofs.Project(inner_rhs->FV<double>(), x);
+  else
+    inner_rhs->FV<double>() = x;
+
+  if (trans && !is_symmetric.IsTrue())
+    SolveTrans(*inner_rhs, *inner_solution);
+  else
+    Solve(*inner_rhs, *inner_solution);
+
+  if (map_inner_dofs)
+    map_inner_dofs.EmbedAdd(y, inner_solution->FV<double>(), s);
+  else
+    y += s * inner_solution->FV<double>();
+}
+
+void SparseFactorizationInterface::ApplyComplexVector(bool trans, Complex s,
+                                              const BaseVector &x,
+                                              BaseVector &y) const {
+  auto fx = x.FV<Complex>();
+  auto fy = y.FV<Complex>();
+  Vector<double> part(fx.Size()), res(fy.Size());
+  for (int k : Range(2)) {
+    for (size_t i : Range(fx))
+      part[i] = k == 0 ? fx[i].real() : fx[i].imag();
+    res = 0.0;
+    ApplyReal(trans, 1.0, part, res);
+    Complex sk = k == 0 ? s : Complex(0, 1) * s;
+    for (size_t i : Range(fy))
+      fy[i] += sk * res[i];
+  }
 }
 
 void SparseFactorizationInterface::MultAdd(double s, const BaseVector &x,
                                            BaseVector &y) const {
   CheckReady(x, y);
+  if (inner_height == 0)
+    return;
   if (is_complex)
     return MultAdd(Complex(s), x, y);
-
-  if (map_inner_dofs)
-    map_inner_dofs.Project(inner_rhs->FV<double>(), x.FV<double>());
-  else
-    inner_rhs->FV<double>() = x.FV<double>();
-
-  Solve(*inner_rhs, *inner_solution);
-
-  if (map_inner_dofs) {
-    map_inner_dofs.EmbedAdd(y.FV<double>(), inner_solution->FV<double>(), s);
-  } else {
-    y.FV<double>() += s * inner_solution->FV<double>();
-  }
+  if (x.IsComplex())
+    return ApplyComplexVector(false, s, x, y);
+  ApplyReal(false, s, x.FV<double>(), y.FV<double>());
 }
 
 void SparseFactorizationInterface::MultAdd(Complex s, const BaseVector &x,
                                            BaseVector &y) const {
   CheckReady(x, y);
+  if (inner_height == 0)
+    return;
   if (!is_complex) {
+    if (x.IsComplex())
+      return ApplyComplexVector(false, s, x, y);
     if (s.imag() != 0)
       throw Exception(GetName(*this) + ": complex factor for real vectors");
-    return MultAdd(s.real(), x, y);
+    return ApplyReal(false, s.real(), x.FV<double>(), y.FV<double>());
   }
   if (map_inner_dofs)
     map_inner_dofs.Project(inner_rhs->FV<Complex>(), x.FV<Complex>());
@@ -266,32 +310,26 @@ void SparseFactorizationInterface::MultAdd(Complex s, const BaseVector &x,
 void SparseFactorizationInterface::MultTransAdd(double s, const BaseVector &x,
                                                 BaseVector &y) const {
   CheckReady(x, y);
+  if (inner_height == 0)
+    return;
   if (is_complex)
     return MultTransAdd(Complex(s), x, y);
-
-  if (is_symmetric.IsTrue())
-    return MultAdd(s, x, y);
-
-  if (map_inner_dofs)
-    map_inner_dofs.Project(inner_rhs->FV<double>(), x.FV<double>());
-  else
-    inner_rhs->FV<double>() = x.FV<double>();
-
-  SolveTrans(*inner_rhs, *inner_solution);
-
-  if (map_inner_dofs)
-    map_inner_dofs.EmbedAdd(y.FV<double>(), inner_solution->FV<double>(), s);
-  else
-    y.FV<double>() += s * inner_solution->FV<double>();
+  if (x.IsComplex())
+    return ApplyComplexVector(true, s, x, y);
+  ApplyReal(true, s, x.FV<double>(), y.FV<double>());
 }
 
 void SparseFactorizationInterface::MultTransAdd(Complex s, const BaseVector &x,
                                                 BaseVector &y) const {
   CheckReady(x, y);
+  if (inner_height == 0)
+    return;
   if (!is_complex) {
+    if (x.IsComplex())
+      return ApplyComplexVector(true, s, x, y);
     if (s.imag() != 0)
       throw Exception(GetName(*this) + ": complex factor for real vectors");
-    return MultTransAdd(s.real(), x, y);
+    return ApplyReal(true, s.real(), x.FV<double>(), y.FV<double>());
   }
   if (is_symmetric.IsTrue())
     return MultAdd(s, x, y);
@@ -313,8 +351,10 @@ void SparseFactorizationInterface::MultConjTransAdd(Complex s,
                                                     const BaseVector &x,
                                                     BaseVector &y) const {
   CheckReady(x, y);
+  if (inner_height == 0)
+    return;
   if (!is_complex)
-    return MultTransAdd(s.real(), x, y);
+    return MultTransAdd(s, x, y);
 
   if (map_inner_dofs)
     map_inner_dofs.Project(inner_rhs->FV<Complex>(), x.FV<Complex>());

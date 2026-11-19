@@ -2189,6 +2189,8 @@ flags : dict
       .def_property_readonly("is_symmetric_storage", &SparseFactorizationInterface::IsSymmetricStorage)
       .def_property_readonly("is_symmetric", &SparseFactorizationInterface::IsSymmetric)
       .def_property_readonly("is_spd", &SparseFactorizationInterface::IsSPD)
+      .def_property_readonly("is_complex_matrix", &SparseFactorizationInterface::IsComplexMatrix,
+                             "complex matrix entries, is_complex is also set for a real matrix on complex vectors")
       ;
 
   m.def("RegisterInverseType", [](const string &name, py::object creator) {
