@@ -100,6 +100,8 @@ SparseFactorizationInterface::SparseFactorizationInterface(
 {
   width = m->Width();
   height = m->Height();
+  row_format = m->ColFormat();
+  col_format = m->RowFormat();
 
   is_complex = m->AsVector().IsComplex();
   complex_vectors = m->IsComplex() && !is_complex;

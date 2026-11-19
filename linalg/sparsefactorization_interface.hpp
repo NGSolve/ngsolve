@@ -209,6 +209,7 @@ protected:
   bool is_symmetric_storage = false;
   bool is_analyzed = false;
   int width, height, inner_width = 0, inner_height = 0;
+  VecFormat row_format, col_format;
 
   void ApplyReal(bool trans, double s, FlatVector<double> x, FlatVector<double> y) const;
   // real matrix, complex vectors: solves for real and imaginary part
@@ -225,8 +226,11 @@ public:
   void SetSubset(shared_ptr<BitArray> inner, shared_ptr<const Array<int>> cluster) override;
 
 
-  VecFormat RowFormat () const override { return LockedMatrix()->ColFormat(); }
-  VecFormat ColFormat () const override { return LockedMatrix()->RowFormat(); }
+  // stored, the matrix may be gone after factorization
+  VecFormat RowFormat () const override { return row_format; }
+  VecFormat ColFormat () const override { return col_format; }
+  int VHeight() const override { return BaseMatrix::VHeight(); }
+  int VWidth() const override { return BaseMatrix::VWidth(); }
   void CheckReady (const BaseVector & x, const BaseVector & y) const;
 
   shared_ptr<const BaseSparseMatrix> GetInnerMatrix() const {
