@@ -176,6 +176,15 @@ namespace ngbla
   extern NGS_DLL_HEADER void CalcSVD (SliceMatrix<double, ColMajor> A, 
                                       SliceMatrix<double, ColMajor> U,
                                       SliceMatrix<double, ColMajor> V);
+
+  // symmetric A = Q diag(lam) Q^T, lam ascending, A is overwritten
+  extern NGS_DLL_HEADER void CalcEigenSymmetric (SliceMatrix<double, ColMajor> A,
+                                                 FlatVector<double> lam,
+                                                 SliceMatrix<double, ColMajor> Q);
+
+  extern NGS_DLL_HEADER void CalcEigenSymmetric (SliceMatrix<double, RowMajor> A,
+                                                 FlatVector<double> lam,
+                                                 SliceMatrix<double, ColMajor> Q);
 }
 
 #endif

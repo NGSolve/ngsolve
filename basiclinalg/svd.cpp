@@ -1029,6 +1029,10 @@ namespace ngbla
   */
   // returns t-lower and upper-t
   // the smaller one is more accurate !
+  tuple<double,double> SolveSecularSplit (FlatArray<double> vpsi, FlatArray<double> lampsi_shift,
+                                          FlatArray<double> vphi, FlatArray<double> lamphi_shift,
+                                          double delta2);
+
   tuple<double,double> SolveSecular (FlatVector<> lams,
                                      FlatVector<> vs, double lower, double upper)
   {
@@ -1053,7 +1057,7 @@ namespace ngbla
     double lower2 = sqr(lower);
     double upper2 = sqr(upper);
     double mid2 = 0.5 * (upper2+lower2);
-    
+
     for (size_t i = 0; i < lams.Size(); i++)
       {
         if (sqr(lams[i]) < mid2)
@@ -1070,10 +1074,17 @@ namespace ngbla
           }
       }
 
-    // RegionTimer rl(tl);
-    
-    double delta2 = upper2-lower2;
+    return SolveSecularSplit (vpsi, lampsi_shift, vphi, lamphi_shift, upper2-lower2);
+  }
 
+  /*
+    1 + sum_psi vpsi_j / (lampsi_shift_j - t2) + sum_phi vphi_j / (lamphi_shift_j + Delta2) = 0,
+    t2 + Delta2 = delta2, poles shifted to the lower / upper end of the interval
+  */
+  tuple<double,double> SolveSecularSplit (FlatArray<double> vpsi, FlatArray<double> lampsi_shift,
+                                          FlatArray<double> vphi, FlatArray<double> lamphi_shift,
+                                          double delta2)
+  {
 
     int maxits = 100;
 
@@ -1161,7 +1172,7 @@ namespace ngbla
               // << " inc = " << incr << endl;
               if (i == maxits-7)
                 {
-                  cout << "lower/upper = " << lower << "/" << upper << endl;
+                  cout << "delta2 = " << delta2 << endl;
                   cout << "vpsi = " << vpsi << endl;
                   cout << "lampsi_shift = " << lampsi_shift << endl;
                   cout << "vphi = " << vphi << endl;
@@ -1178,11 +1189,9 @@ namespace ngbla
 
     if (t2 < 0)
       {
-        cout << "lower/upper = " << lower << "/" << upper << endl;
+        cout << "delta2 = " << delta2 << endl;
         cout << "t2/Delta2 = " << t2 << "/" << Delta2 << endl;
         // cout << "phip1_inv = " << phip1_inv << endl;
-        cout << "lams = " << lams << endl;
-        cout << "vs = " << vs << endl;
         cout << "vpsi = " << vpsi << endl;
         cout << "lampsi_shift = " << lampsi_shift << endl;
         cout << "vphi = " << vphi << endl;
@@ -1191,8 +1200,6 @@ namespace ngbla
       }
     if (Delta2 < 0 && vphi.Size() > 0)
       {
-        cout << "lams = " << lams << endl;
-        cout << "vs = " << vs << endl;
         throw Exception ("Delta2 negative");
       }
 
@@ -1934,5 +1941,348 @@ namespace ngbla
     TCalcSVD (A, U, V);
   }
 
-  
+
+
+  /* ********* symmetric eigenvalue problem, tridiagonal divide and conquer ********* */
+
+  /*
+    eigensystem of diag(D) + rho z z^T, rho >= 0, |z| = 1
+    on entry Q is the outer transformation, on exit Q * eigenvectors
+    lam ascending
+  */
+  static void CalcEigenRankOne (FlatVector<> z, FlatVector<> D, double rho,
+                                FlatVector<> lam, SliceMatrix<double,ColMajor> Q, size_t ksplit)
+  {
+    static Timer t("EigenSym - rank one"); RegionTimer reg(t);
+    size_t n = z.Size();
+    constexpr double eps = numeric_limits<double>::epsilon();
+
+    ArrayMem<int,100> index(n);
+    for (size_t i = 0; i < n; i++) index[i] = i;
+    QuickSortI (FlatArray(n, D.Data()), index);
+
+    VectorMem<100> zs(n), Ds(n);
+    for (size_t i = 0; i < n; i++)
+      {
+        zs(i) = z(index[i]);
+        Ds(i) = D(index[i]);
+      }
+
+    // column types: 1 .. upper rows only, 2 .. lower rows only, 3 .. mixed
+    ArrayMem<int,100> ctype(n);
+    for (size_t i = 0; i < n; i++)
+      ctype[i] = (i < ksplit) ? 1 : 2;
+
+    // deflation as LAPACK dlaed2
+    double maxabs = 0;
+    for (size_t i = 0; i < n; i++)
+      maxabs = max(maxabs, max(fabs(Ds(i)), fabs(zs(i))));
+    double tol = 8 * eps * maxabs;
+
+    ArrayMem<bool,100> deflated(n);
+    deflated = false;
+    int jprev = -1;
+    for (size_t j = 0; j < n; j++)
+      {
+        if (rho*fabs(zs(j)) <= tol)
+          {
+            zs(j) = 0;
+            deflated[j] = true;
+            continue;
+          }
+        if (jprev >= 0 && Ds(j)-Ds(jprev) <= tol)
+          {
+            // rotate z(jprev) into z(j), drop the off-diagonal (Ds(j)-Ds(jprev))*c*s
+            double s = zs(jprev), c = zs(j);
+            double tau = hypot(c, s);
+            c /= tau; s = -s/tau;
+            zs(j) = tau;
+            zs(jprev) = 0;
+            auto qa = Q.Col(index[jprev]);
+            auto qb = Q.Col(index[j]);
+            for (size_t r = 0; r < qa.Size(); r++)
+              {
+                double x = qa(r), y = qb(r);
+                qa(r) = c*x + s*y;
+                qb(r) = c*y - s*x;
+              }
+            double tmp = Ds(jprev)*c*c + Ds(j)*s*s;
+            Ds(j) = Ds(jprev)*s*s + Ds(j)*c*c;
+            Ds(jprev) = tmp;
+            deflated[jprev] = true;
+            if (ctype[index[jprev]] != ctype[index[j]])
+              ctype[index[j]] = 3;
+          }
+        jprev = j;
+      }
+
+    ArrayMem<int,100> nondef, def;
+    for (size_t j = 0; j < n; j++)
+      if (deflated[j])
+        def.Append(j);
+      else
+        nondef.Append(j);
+    size_t K = nondef.Size();
+
+    VectorMem<100> lamall(n);
+    ArrayMem<double,256> memQnew(Q.Height()*n);
+    FlatMatrix<double,ColMajor> Qnew(Q.Height(), n, memQnew.Data());
+
+    if (K > 0)
+      {
+        VectorMem<100> dk(K), zk(K), w(K);
+        for (size_t i = 0; i < K; i++)
+          {
+            dk(i) = Ds(nondef[i]);
+            zk(i) = zs(nondef[i]);
+            w(i) = rho*sqr(zk(i));
+          }
+        double rhoz2 = 0;
+        for (size_t i = 0; i < K; i++) rhoz2 += w(i);
+
+        // eigenvalue i = ref(i)+diff(i), ref(i) is the nearer interval end
+        VectorMem<100> ref(K), diff(K);
+        ArrayMem<double,100> vpsi, vphi, spsi, sphi;
+        for (size_t i = 0; i < K; i++)
+          {
+            double lower = dk(i);
+            double upper = (i+1 < K) ? dk(i+1) : dk(K-1) + rhoz2;
+            double mid = 0.5*(lower+upper);
+            vpsi.SetSize0(); spsi.SetSize0();
+            vphi.SetSize0(); sphi.SetSize0();
+            for (size_t j = 0; j < K; j++)
+              if (dk(j) < mid)
+                {
+                  vpsi.Append(w(j));
+                  spsi.Append(dk(j)-lower);
+                }
+              else
+                {
+                  vphi.Append(w(j));
+                  sphi.Append(dk(j)-upper);
+                }
+            auto [t2, Delta2] = SolveSecularSplit (vpsi, spsi, vphi, sphi, upper-lower);
+            if (t2 < Delta2)
+              { ref(i) = lower; diff(i) = t2; }
+            else
+              { ref(i) = upper; diff(i) = -Delta2; }
+            lamall(i) = ref(i)+diff(i);
+          }
+
+        // Gu-Eisenstat: z such that the computed eigenvalues are exact
+        VectorMem<100> zmod(K);
+        zmod = 1.0;
+        for (size_t j = 0; j+1 < K; j++)
+          {
+            for (size_t i = 0; i <= j; i++)
+              zmod(i) *= ((ref(j)-dk(i))+diff(j)) / (dk(j+1)-dk(i));
+            for (size_t i = j+1; i < K; i++)
+              zmod(i) *= ((ref(j)-dk(i))+diff(j)) / (dk(j)-dk(i));
+          }
+        for (size_t i = 0; i < K; i++)
+          {
+            double val = ((ref(K-1)-dk(i))+diff(K-1)) * zmod(i) / rho;
+            zmod(i) = (zk(i) < 0 ? -1 : 1) * sqrt(max(val, 0.0));
+          }
+
+        ArrayMem<double,256> memMU(K*K);
+        FlatMatrix<double,ColMajor> MU(K, K, memMU.Data());
+        for (size_t i = 0; i < K; i++)
+          {
+            auto col = MU.Col(i);
+            for (size_t j = 0; j < K; j++)
+              col(j) = zmod(j) / ((dk(j)-ref(i)) - diff(i));
+            col /= L2Norm(col);
+          }
+
+        // Q is block-diagonal up to the mixed columns: multiply upper and lower rows separately
+        for (int part = 0; part < 2; part++)
+          {
+            IntRange rows = (part == 0) ? IntRange(0, ksplit) : IntRange(ksplit, n);
+            int skip = (part == 0) ? 2 : 1;
+            ArrayMem<int,100> cols;
+            for (size_t i = 0; i < K; i++)
+              if (ctype[index[nondef[i]]] != skip)
+                cols.Append(i);
+            if (cols.Size() == 0)
+              {
+                Qnew.Rows(rows).Cols(0,K) = 0.0;
+                continue;
+              }
+            ArrayMem<double,256> memQp(rows.Size()*cols.Size()), memMUp(cols.Size()*K);
+            FlatMatrix<double,ColMajor> Qp(rows.Size(), cols.Size(), memQp.Data());
+            FlatMatrix<double,ColMajor> MUp(cols.Size(), K, memMUp.Data());
+            for (size_t c = 0; c < cols.Size(); c++)
+              {
+                Qp.Col(c) = Q.Col(index[nondef[cols[c]]]).Range(rows);
+                MUp.Row(c) = MU.Row(cols[c]);
+              }
+            Qnew.Rows(rows).Cols(0,K) = Qp * MUp;
+          }
+      }
+
+    for (size_t i = 0; i < def.Size(); i++)
+      {
+        lamall(K+i) = Ds(def[i]);
+        Qnew.Col(K+i) = Q.Col(index[def[i]]);
+      }
+
+    ArrayMem<int,100> perm(n);
+    for (size_t i = 0; i < n; i++) perm[i] = i;
+    QuickSortI (FlatArray(n, lamall.Data()), perm);
+    for (size_t i = 0; i < n; i++)
+      {
+        lam(i) = lamall(perm[i]);
+        Q.Col(i) = Qnew.Col(perm[i]);
+      }
+  }
+
+
+  /*
+    T = tridiag(e, d, e) = Q diag(lam) Q^T, lam ascending
+  */
+  static void CalcEigenTriDiagonalRec (FlatVector<> d, FlatVector<> e, FlatVector<> lam,
+                                       SliceMatrix<double,ColMajor> Q)
+  {
+    size_t n = d.Size();
+    if (n == 1)
+      {
+        lam(0) = d(0);
+        Q(0,0) = 1;
+        return;
+      }
+
+    double maxval = 0;
+    for (size_t i = 0; i < n; i++) maxval = max(maxval, fabs(d(i)));
+    for (size_t i = 0; i+1 < n; i++) maxval = max(maxval, fabs(e(i)));
+    if (maxval == 0)
+      {
+        lam = 0.0;
+        Q = 0.0;
+        Q.Diag(0) = 1.0;
+        return;
+      }
+
+    VectorMem<100> ds(n), es(n);
+    ds = (1/maxval) * d;
+    es.Range(0,n-1) = (1/maxval) * e;
+
+    // T = diag(T1,T2) + |beta| v v^T,  v = e_{k-1} + sign(beta) e_k
+    size_t k = n/2;
+    double beta = es(k-1);
+    double rho = fabs(beta);
+    double sgn = (beta < 0) ? -1 : 1;
+    ds(k-1) -= rho;
+    ds(k) -= rho;
+
+    VectorMem<100> D(n);
+    Q = 0.0;
+    CalcEigenTriDiagonalRec (ds.Range(0,k), es.Range(0,k-1), D.Range(0,k), Q.Rows(0,k).Cols(0,k));
+    CalcEigenTriDiagonalRec (ds.Range(k,n), es.Range(k,n-1), D.Range(k,n), Q.Rows(k,n).Cols(k,n));
+
+    VectorMem<100> z(n);
+    z.Range(0,k) = Q.Row(k-1).Range(0,k);
+    z.Range(k,n) = sgn * Q.Row(k).Range(k,n);
+    double nz = L2Norm(z);
+    z *= 1/nz;
+    rho *= sqr(nz);
+
+    CalcEigenRankOne (z, D, rho, lam, Q, k);
+    lam *= maxval;
+  }
+
+
+  /*
+    A = Q T Q^T, Householder vectors stored below the sub-diagonal of A
+    blocked as LAPACK dlatrd: per panel, A -= V W^T + W V^T
+  */
+  static void ReduceTriDiagonal (SliceMatrix<double,ColMajor> A, FlatVector<> d, FlatVector<> e)
+  {
+    static Timer t("EigenSym - tridiagonal"); RegionTimer reg(t);
+    size_t n = A.Height();
+    size_t nb = min(n, size_t(32));
+    ArrayMem<double,512> memVW(n*2*nb), memWV(n*2*nb);
+    FlatMatrix<double,ColMajor> VW(n, 2*nb, memVW.Data()), WV(n, 2*nb, memWV.Data());
+    VectorMem<100> p(n), y1(nb), y2(nb);
+
+    for (size_t i1 = 0; i1+1 < n; i1 += nb)
+      {
+        size_t i2 = min(i1+nb, n-1);
+        auto V = VW.Cols(0, nb);
+        auto W = VW.Cols(nb, 2*nb);
+        VW = 0.0;
+        for (size_t i = i1; i < i2; i++)
+          {
+            size_t j = i-i1;
+            auto col = A.Col(i).Range(i, n);
+            if (j > 0)
+              {
+                y1.Range(0,j) = W.Row(i).Range(0,j);
+                y2.Range(0,j) = V.Row(i).Range(0,j);
+                col -= V.Rows(i,n).Cols(0,j) * y1.Range(0,j);
+                col -= W.Rows(i,n).Cols(0,j) * y2.Range(0,j);
+              }
+            d(i) = col(0);
+
+            auto x = A.Col(i).Range(i+1, n);
+            double signed_norm = CalcHouseholderVectorInPlace (x);
+            e(i) = signed_norm;
+            auto v = V.Col(j).Range(i+1,n);
+            v = x;
+            x(0) = signed_norm;
+            double tau = 2 / L2Norm2(v);
+
+            // p = tau * (A - V W^T - W V^T) v,  w = p - tau/2 (p.v) v
+            auto pi = p.Range(i+1,n);
+            pi = A.Rows(i+1,n).Cols(i+1,n) * v;
+            if (j > 0)
+              {
+                y1.Range(0,j) = Trans(W.Rows(i+1,n).Cols(0,j)) * v;
+                y2.Range(0,j) = Trans(V.Rows(i+1,n).Cols(0,j)) * v;
+                pi -= V.Rows(i+1,n).Cols(0,j) * y1.Range(0,j);
+                pi -= W.Rows(i+1,n).Cols(0,j) * y2.Range(0,j);
+              }
+            pi *= tau;
+            W.Col(j).Range(i+1,n) = pi - (0.5*tau*InnerProduct(pi, v)) * v;
+          }
+
+        size_t r = i2;
+        if (r < n)
+          {
+            size_t nbi = i2-i1;
+            WV.Cols(0,nbi) = W.Cols(0,nbi);
+            WV.Cols(nb,nb+nbi) = V.Cols(0,nbi);
+            WV.Cols(nbi,nb) = 0.0;
+            WV.Cols(nb+nbi,2*nb) = 0.0;
+            A.Rows(r,n).Cols(r,n) -= VW.Rows(r,n) * Trans(WV.Rows(r,n));
+          }
+      }
+    d(n-1) = A(n-1,n-1);
+  }
+
+
+  void CalcEigenSymmetric (SliceMatrix<double,ColMajor> A, FlatVector<double> lam,
+                           SliceMatrix<double,ColMajor> Q)
+  {
+    static Timer t("CalcEigenSymmetric"); RegionTimer reg(t);
+    size_t n = A.Height();
+    if (n == 0) return;
+    if (double norm = L2Norm(A); isnan(norm) || isinf(norm))
+      throw Exception ("CalcEigenSymmetric: matrix has nan or inf entries");
+
+    VectorMem<100> d(n), e(n);
+    ReduceTriDiagonal (A, d, e.Range(0,n-1));
+    CalcEigenTriDiagonalRec (d, e.Range(0,n-1), lam, Q);
+    static Timer tmult("EigenSym - apply Householder"); RegionTimer regm(tmult);
+    if (n > 1)
+      ApplyHouseholderReflectionsTrans (A.Rows(1,n).Cols(0,n-1), Q.Rows(1,n));
+  }
+
+  void CalcEigenSymmetric (SliceMatrix<double,RowMajor> A, FlatVector<double> lam,
+                           SliceMatrix<double,ColMajor> Q)
+  {
+    CalcEigenSymmetric (Trans(A), lam, Q);
+  }
+
+
 }
