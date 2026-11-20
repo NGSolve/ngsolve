@@ -1063,7 +1063,7 @@ public:
 	      elmat = bbmat * Trans (bdbmat); 
 	  }
 	else
-	  elmat = bbmat * Trans(bdbmat) | Lapack;
+	  elmat = bbmat * Trans(bdbmat);
 
 	// timer.AddFlops (long(elmat.Height())*long(elmat.Width())*bbmat.Width());
       } 
@@ -1260,7 +1260,7 @@ public:
 	else
 	  // LapackMultABt (bbmat, bdbmat, elmat);
 	  // LapackMult (bbmat, Trans(bdbmat), elmat);
-          elmat = bbmat * Trans (bdbmat) | Lapack;
+          elmat = bbmat * Trans (bdbmat);
       }
 
     catch (Exception & e)

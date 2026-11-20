@@ -3083,7 +3083,7 @@ namespace ngfem
 
               IntRange r1 = proxy1->Evaluator()->UsedDofs(fel_trial);
               IntRange r2 = proxy2->Evaluator()->UsedDofs(fel_test);
-              elmat.Rows(r2).Cols(r1) += Trans (bbmat2.Cols(r2)) * bdbmat1.Cols(r1) | Lapack;
+              elmat.Rows(r2).Cols(r1) += Trans (bbmat2.Cols(r2)) * bdbmat1.Cols(r1);
             }
         }
   }
@@ -4612,7 +4612,7 @@ namespace ngfem
 
               IntRange r1 = proxy1->Evaluator()->UsedDofs(fel1_trial);
               IntRange r2 = proxy2->Evaluator()->UsedDofs(fel1_test);
-              elmat.Rows(r2).Cols(r1) += Trans (bbmat2.Cols(r2)) * bdbmat1.Cols(r1) | Lapack;
+              elmat.Rows(r2).Cols(r1) += Trans (bbmat2.Cols(r2)) * bdbmat1.Cols(r1);
             }
         }
   }
@@ -4722,7 +4722,7 @@ namespace ngfem
 
               IntRange r1 = proxy1->Evaluator()->UsedDofs(fel1_trial);
               IntRange r2 = proxy2->Evaluator()->UsedDofs(fel1_test);
-              elmat.Rows(r2).Cols(r1) += Trans (bbmat2.Cols(r2)) * bdbmat1.Cols(r1) | Lapack;
+              elmat.Rows(r2).Cols(r1) += Trans (bbmat2.Cols(r2)) * bdbmat1.Cols(r1);
             }
         }
   }

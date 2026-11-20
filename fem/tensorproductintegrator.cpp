@@ -45,7 +45,7 @@ namespace ngfem
       if(!block)
       {
         static_cast<TPDifferentialOperator*>(proxy->Evaluator().get())->GetEvaluators(0)->CalcMatrix(fel,*mirx,bmatx,lh);
-        xevaluations->GetMemory(proxy) = bmatx*elx | Lapack;
+        xevaluations->GetMemory(proxy) = bmatx*elx;
       }
       else
       {
@@ -147,7 +147,7 @@ namespace ngfem
           static_cast<TPDifferentialOperator*>(proxy->Evaluator().get())->GetEvaluators(0)->CalcMatrix(fel,*mirx,bmatx,lh);
         else
           static_cast<TPBlockDifferentialOperator2*>(proxy->Evaluator().get())->GetEvaluators(0)->CalcMatrix(fel,*mirx,bmatx,lh);
-        ely += Trans(bmatx)*ud->GetMemory(proxy) | Lapack;
+        ely += Trans(bmatx)*ud->GetMemory(proxy);
     }
   }
  
@@ -267,7 +267,7 @@ namespace ngfem
         if(!block)
         {
           static_cast<TPDifferentialOperator*>(  proxy->Evaluator().get()  )->GetEvaluators(0)->CalcMatrix(felx2,*mirx2,bmatx,lh);
-          xevaluations->GetMemory(proxy) = bmatx*elx.Rows(trial_range) | Lapack;
+          xevaluations->GetMemory(proxy) = bmatx*elx.Rows(trial_range);
         }
         else
         {
@@ -281,7 +281,7 @@ namespace ngfem
         if(!block)
         {
           static_cast<TPDifferentialOperator*>(proxy->Evaluator().get())->GetEvaluators(0)->CalcMatrix(felx1,*mirx1,bmatx,lh);
-          xevaluations->GetMemory(proxy) = bmatx*elx.Rows(trial_range) | Lapack;
+          xevaluations->GetMemory(proxy) = bmatx*elx.Rows(trial_range);
         }
         else
         {
@@ -387,7 +387,7 @@ namespace ngfem
           static_cast<TPDifferentialOperator*>(proxy->Evaluator().get())->GetEvaluators(0)->CalcMatrix(felx2,*mirx2,bmatx,lh);
         else
           static_cast<TPBlockDifferentialOperator2*>(proxy->Evaluator().get())->GetEvaluators(0)->CalcMatrix(felx2,*mirx2,bmatx,lh);
-        ely.Rows(test_range) += Trans(bmatx)*ud->GetMemory(proxy) | Lapack;
+        ely.Rows(test_range) += Trans(bmatx)*ud->GetMemory(proxy);
       }
       else
       {
@@ -396,7 +396,7 @@ namespace ngfem
           static_cast<TPDifferentialOperator*>(proxy->Evaluator().get())->GetEvaluators(0)->CalcMatrix(felx1,*mirx1,bmatx,lh);
         else
           static_cast<TPBlockDifferentialOperator2*>(proxy->Evaluator().get())->GetEvaluators(0)->CalcMatrix(felx1,*mirx1,bmatx,lh);
-        ely.Rows(test_range) += Trans(bmatx)*ud->GetMemory(proxy) | Lapack;
+        ely.Rows(test_range) += Trans(bmatx)*ud->GetMemory(proxy);
       }
     }
   }
@@ -433,7 +433,7 @@ namespace ngfem
           static_cast<TPDifferentialOperator*>(proxy->Evaluator().get())->GetEvaluators(1)->CalcMatrix(fely2,*miry2,bmaty,lh);
         else
           static_cast<TPBlockDifferentialOperator2*>(proxy->Evaluator().get())->GetEvaluators(1)->CalcMatrix(fely2,*miry2,bmaty,lh);
-        yevaluations->GetMemory(proxy) = Trans(elx.Rows(trial_range))*Trans(bmaty) | Lapack;
+        yevaluations->GetMemory(proxy) = Trans(elx.Rows(trial_range))*Trans(bmaty);
       }
       else
       {
@@ -442,7 +442,7 @@ namespace ngfem
           static_cast<TPDifferentialOperator*>(proxy->Evaluator().get())->GetEvaluators(1)->CalcMatrix(fely1,*miry1,bmaty,lh);
         else
           static_cast<TPBlockDifferentialOperator2*>(proxy->Evaluator().get())->GetEvaluators(1)->CalcMatrix(fely1,*miry1,bmaty,lh);
-        yevaluations->GetMemory(proxy) = Trans(elx.Rows(trial_range))*Trans(bmaty) | Lapack;
+        yevaluations->GetMemory(proxy) = Trans(elx.Rows(trial_range))*Trans(bmaty);
       }
     }
     for (ProxyFunction * proxy : test_proxies)
@@ -538,7 +538,7 @@ namespace ngfem
           static_cast<TPDifferentialOperator*>(proxy->Evaluator().get())->GetEvaluators(1)->CalcMatrix(fely2,*miry2,bmaty,lh);
         else
           static_cast<TPBlockDifferentialOperator2*>(proxy->Evaluator().get())->GetEvaluators(1)->CalcMatrix(fely2,*miry2,bmaty,lh);
-        ely.Rows(test_range) += Trans(bmaty)*Trans(ud->GetMemory(proxy)) | Lapack;
+        ely.Rows(test_range) += Trans(bmaty)*Trans(ud->GetMemory(proxy));
       }
       else
       {
@@ -547,7 +547,7 @@ namespace ngfem
           static_cast<TPDifferentialOperator*>(proxy->Evaluator().get())->GetEvaluators(1)->CalcMatrix(fely1,*miry1,bmaty,lh);
         else
           static_cast<TPBlockDifferentialOperator2*>(proxy->Evaluator().get())->GetEvaluators(1)->CalcMatrix(fely1,*miry1,bmaty,lh);
-        ely.Rows(test_range) += Trans(bmaty)*Trans(ud->GetMemory(proxy)) | Lapack;
+        ely.Rows(test_range) += Trans(bmaty)*Trans(ud->GetMemory(proxy));
       }
     }
     // cout << ely << endl;

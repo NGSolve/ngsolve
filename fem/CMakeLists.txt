@@ -28,7 +28,6 @@ add_library(ngfem ${NGS_LIB_TYPE}
         # DGIntegrators.cpp
         
 target_link_libraries(ngfem PUBLIC ngbla ngstd PRIVATE "$<BUILD_INTERFACE:netgen_python>")
-target_link_libraries(ngfem ${LAPACK_CMAKE_LINK_INTERFACE} "$<BUILD_INTERFACE:ngs_lapack>")
 install( TARGETS ngfem ${ngs_install_dir} )
 
 install( FILES

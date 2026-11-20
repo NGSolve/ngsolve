@@ -168,12 +168,12 @@ namespace ngfem
     if(dimx == 1)
     {
       FlatMatrix<> resultmat(nipx*dimx,x.Width(), &flux(0,0));
-      resultmat = bmatx*x | Lapack;
+      resultmat = bmatx*x;
     }
     else
     {
       FlatMatrix<> resultmat(nipx*dimx,x.Width(), lh);
-      resultmat = bmatx*x | Lapack;
+      resultmat = bmatx*x;
       // cout << "resultmat = "<<endl<<resultmat<<endl;
       for(int k=0;k<flux.Height()/nipy;k++)
         flux.Rows(k*nipy,(k+1)*nipy) = Trans(resultmat.Rows(dimx*k,dimx*(k+1)));
@@ -198,7 +198,7 @@ namespace ngfem
     {
       FlatMatrix<> proxyvaluesasmat(nipx, nipy*dimy, &flux(0,0));
       // cout << "Input as mat = "<<endl<<proxyvaluesasmat<<endl;
-      x = Trans(bmatx)*proxyvaluesasmat | Lapack;
+      x = Trans(bmatx)*proxyvaluesasmat;
     }
     else
     {
@@ -207,7 +207,7 @@ namespace ngfem
       for(int i=0;i<nipy;i++)
         for(int j=0;j<nipx;j++)
           proxyvaluesasmat1.Rows(dimx*j,dimx*(j+1)).Col(i) = (proxyvaluesasmat.Cols(dimx*i,dimx*(i+1)).Row(j));
-      x = proxyvaluesasmat1*bmatx | Lapack;
+      x = proxyvaluesasmat1*bmatx;
     }
   }
 
@@ -253,7 +253,7 @@ namespace ngfem
     if(dimx == 1)
     {
       FlatMatrix<> proxyvaluesasmat(nipx, nipy*dimy, &flux(0,0));
-      x = proxyvaluesasmat*bmaty | Lapack;
+      x = proxyvaluesasmat*bmaty;
     }
     else
     {
@@ -262,7 +262,7 @@ namespace ngfem
       for(int i=0;i<nipy;i++)
         for(int j=0;j<nipx;j++)
           proxyvaluesasmat1.Rows(dimx*j,dimx*(j+1)).Col(i) = (proxyvaluesasmat.Cols(dimx*i,dimx*(i+1)).Row(j));
-      x = proxyvaluesasmat1*bmaty | Lapack;
+      x = proxyvaluesasmat1*bmaty;
     }
   }
 
