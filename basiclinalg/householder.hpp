@@ -185,6 +185,17 @@ namespace ngbla
   extern NGS_DLL_HEADER void CalcEigenSymmetric (SliceMatrix<double, RowMajor> A,
                                                  FlatVector<double> lam,
                                                  SliceMatrix<double, ColMajor> Q);
+
+  // A X = B X diag(lam), B s.p.d., X^T B X = I, lam ascending, A and B are overwritten
+  extern NGS_DLL_HEADER void CalcEigenSymmetricGeneralized (SliceMatrix<double, ColMajor> A,
+                                                            SliceMatrix<double, ColMajor> B,
+                                                            FlatVector<double> lam,
+                                                            SliceMatrix<double, ColMajor> X);
+
+  extern NGS_DLL_HEADER void CalcEigenSymmetricGeneralized (SliceMatrix<double, RowMajor> A,
+                                                            SliceMatrix<double, RowMajor> B,
+                                                            FlatVector<double> lam,
+                                                            SliceMatrix<double, ColMajor> X);
 }
 
 #endif

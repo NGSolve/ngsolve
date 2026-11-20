@@ -2285,4 +2285,31 @@ namespace ngbla
   }
 
 
+  // B = V S V^T,  C = S^-1/2 V^T A V S^-1/2 = Z diag(lam) Z^T,  X = V S^-1/2 Z
+  void CalcEigenSymmetricGeneralized (SliceMatrix<double,ColMajor> A, SliceMatrix<double,ColMajor> B,
+                                      FlatVector<double> lam, SliceMatrix<double,ColMajor> X)
+  {
+    size_t n = A.Height();
+    if (n == 0) return;
+    Vector<> sig(n);
+    Matrix<double,ColMajor> V(n), C(n);
+    CalcEigenSymmetric (B, sig, V);
+    if (!(sig(0) > 0))
+      throw Exception ("CalcEigenSymmetricGeneralized: B is not positive definite");
+    for (size_t j = 0; j < n; j++)
+      V.Col(j) *= 1/sqrt(sig(j));
+    Matrix<double,ColMajor> AV = A * V;
+    C = Trans(V) * AV;
+    CalcEigenSymmetric (C, lam, X);
+    AV = V * X;
+    X = AV;
+  }
+
+  void CalcEigenSymmetricGeneralized (SliceMatrix<double,RowMajor> A, SliceMatrix<double,RowMajor> B,
+                                      FlatVector<double> lam, SliceMatrix<double,ColMajor> X)
+  {
+    CalcEigenSymmetricGeneralized (Trans(A), Trans(B), lam, X);
+  }
+
+
 }

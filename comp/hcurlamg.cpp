@@ -807,7 +807,8 @@ namespace ngcomp
               FlatVector<double> lami(ncf, lh);
 
               // timer_evp.Start();
-              LapackEigenValuesSymmetric(sum, cor_sum, lami);
+              FlatMatrix<double,ColMajor> evecs(ncf, ncf, lh);
+              CalcEigenSymmetricGeneralized(sum, cor_sum, lami, evecs);
               // timer_evp.Stop();
               coll_eweights[ei] = lami[0] + double(e2f[ei].Size())/50.;
             }

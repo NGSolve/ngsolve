@@ -6311,11 +6311,21 @@ namespace ngcomp
       {
         Vector<TSCAL> lami(elmat.Height());
         Matrix<TSCAL> evecs(elmat.Height());
+        if constexpr (is_same_v<TSCAL,double>)
+          {
+            Matrix<double> hmat = elmat;
+            Matrix<double,ColMajor> q(elmat.Height());
+            CalcEigenSymmetric (hmat, lami, q);
+            evecs = Trans(q);
+          }
+        else
+          {
 #ifdef LAPACK
-        LapackEigenValuesSymmetric (elmat, lami, evecs);
+            LapackEigenValuesSymmetric (elmat, lami, evecs);
 #else
-        CalcEigenSystem (elmat, lami, evecs);
+            CalcEigenSystem (elmat, lami, evecs);
 #endif
+          }
         (*testout) << "lami = " 
                    << endl << lami << endl << "evecs: " << endl << evecs << endl;
       }
@@ -6633,11 +6643,21 @@ namespace ngcomp
       {
         Vector<TSCAL> lami(elmat.Height());
         Matrix<TSCAL> evecs(elmat.Height());
+        if constexpr (is_same_v<TSCAL,double>)
+          {
+            Matrix<double> hmat = elmat;
+            Matrix<double,ColMajor> q(elmat.Height());
+            CalcEigenSymmetric (hmat, lami, q);
+            evecs = Trans(q);
+          }
+        else
+          {
 #ifdef LAPACK
-        LapackEigenValuesSymmetric (elmat, lami, evecs);
+            LapackEigenValuesSymmetric (elmat, lami, evecs);
 #else
-        CalcEigenSystem (elmat, lami, evecs);
+            CalcEigenSystem (elmat, lami, evecs);
 #endif
+          }
         (*testout) << "lami = " << endl << lami << endl << "evecs: " << endl << evecs << endl;
       }
     else
