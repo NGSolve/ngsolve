@@ -1219,7 +1219,6 @@ namespace ngbla
   {
     static Timer t("SVD - ArrowHead"); RegionTimer reg(t);
     size_t n = z.Size();
-    double normmat = L2Norm(z) + L2Norm(D) + 1e-40;
 
     ArrayMem<int,100> index(n);
     for (int i : Range(n)) index[i] = i;
@@ -1233,50 +1232,42 @@ namespace ngbla
       }
 
     
-    // deflation  (Gu + Eisenstat, Chap 4.1)
-    // if Ds are the same, rotate up
-
-    ArrayMem<bool,100> sameDs(n);
-    sameDs = false;
-    for (int i = n-2; i >= 0; i--)
-      {
-        if ( (Ds(i+1) - Ds(i)) < 1e-14*normmat)
-          {
-            sameDs[i+1] = true;
-            double c = zs(i), s = -zs(i+1);
-            double r = hypot (c, s);
-            if (r > 1e-20 * normmat)
-              {
-                c /= r; s /= r;
-                GivensRotation G(c, s, index[i], index[i+1]);
-                zs(i) = r;
-                zs(i+1) = 0;
-                G.Apply (AsSliceMatrix(Trans(Q)));
-                if (i > 0)
-                  G.Apply (AsSliceMatrix(Trans(W))); 
-              }
-            else
-              {
-                zs(i) = 0;
-                zs(i+1) = 0;
-              }
-          }
-      }
-    for (size_t i = 1; i < n; i++)
-      if (sameDs[i])
-        Ds(i) = Ds(i-1);
+    // deflation (Gu + Eisenstat, Chap 4.1), tolerance as LAPACK dlasd2
+    double maxabs = 0;
+    for (size_t i = 0; i < n; i++)
+      maxabs = max(maxabs, max(fabs(zs(i)), fabs(Ds(i))));
+    double tol = 8 * numeric_limits<double>::epsilon() * maxabs;
 
     ArrayMem<bool,100> deflated(n);
     deflated = false;
     size_t num_deflated = 0;
-    if (fabs(zs(0)) < 1e-14 * normmat) zs(0) = 1e-14 * normmat; 
-    for (int i = 1; i < n; i++)
-      if (fabs(zs(i)) < 1e-14 * normmat)
-        {
-          zs(i) = 0;
-          deflated[i] = true;
-          num_deflated++;
-        }
+    size_t jprev = 0;   // last kept entry
+    for (size_t i = 1; i < n; i++)
+      {
+        if (fabs(zs(i)) <= tol)
+          {
+            zs(i) = 0;
+            deflated[i] = true;
+            num_deflated++;
+          }
+        else if (Ds(i) - Ds(jprev) <= tol)
+          {
+            // rotate z(i) into z(jprev), D(i) keeps its value
+            double r = hypot (zs(jprev), zs(i));
+            double c = zs(jprev)/r, s = -zs(i)/r;
+            GivensRotation G(c, s, index[jprev], index[i]);
+            G.Apply (AsSliceMatrix(Trans(Q)));
+            if (jprev > 0)
+              G.Apply (AsSliceMatrix(Trans(W)));
+            zs(jprev) = r;
+            zs(i) = 0;
+            deflated[i] = true;
+            num_deflated++;
+          }
+        else
+          jprev = i;
+      }
+    if (fabs(zs(0)) < tol) zs(0) = tol;
 
     
     ArrayMem<int,100> deflated_ind(num_deflated);
@@ -1875,16 +1866,17 @@ namespace ngbla
       }
     */
     
-    Matrix<double,ColMajor> UB(m), VB(n);
-    UB = Identity(m);
+    Matrix<double,ColMajor> UB(n), VB(n);
     // cout << "diag A = " << endl << A.Diag(0) << endl;
     // cout << "super-diag A = " << endl << A.Diag(1) << endl;
-    CalcSVDBiDiagonal (A.Rows(n), UB.Rows(n).Cols(n), VB);
+    CalcSVDBiDiagonal (A.Rows(n), UB, VB);
 
     {
       static Timer tmultUV("CalcSVD, mult U1*UB, V1*VB"); RegionTimer regUV(tmultUV);
-      tmultUV.AddFlops (n*n*n+m*m*m);
-      U = U1*UB;
+      tmultUV.AddFlops (2*(m*n*n+n*n*n));
+      // UB acts on the first n columns only
+      U.Cols(0,n) = U1.Cols(0,n)*UB;
+      U.Cols(n,m) = U1.Cols(n,m);
       V = V1*VB;
     }
 
