@@ -5,7 +5,7 @@ add_library(ngbla ${NGS_LIB_TYPE}
         bandmatrix.cpp triangular.cpp calcinverse.cpp cholesky.cpp
         LUdecomposition.cpp householder.cpp svd.cpp
         eigensystem.cpp LapackGEP.cpp
-        python_bla.cpp ngblas.cpp ngblas32.cpp ngblasc.cpp timing_ngblas.cpp
+        python_bla.cpp ngblas.cpp ngblas32.cpp ngblasc.cpp timing_ngblas.cpp gemm_sme.cpp
         )
 
 target_include_directories(ngbla PUBLIC ${NGSOLVE_INCLUDE_DIRS})

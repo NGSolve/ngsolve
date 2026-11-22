@@ -1715,6 +1715,8 @@ namespace ngbla
 
   /* ***************************** dispatch tables *************************************** */
 
+  void InitGEMM_SME ();   // gemm_sme.cpp, replaces general entries if the CPU has SME
+
   template <> NGS_DLL_HEADER pgemm<double,RowMajor,RowMajor> dispatch_gemm<false,false,RowMajor,RowMajor>[gemm_dispatch_size<RowMajor,RowMajor>];
   template <> NGS_DLL_HEADER pgemm<double,RowMajor,RowMajor> dispatch_gemm<false,true,RowMajor,RowMajor>[gemm_dispatch_size<RowMajor,RowMajor>];
   template <> NGS_DLL_HEADER pgemm<double,RowMajor,RowMajor> dispatch_gemm<true,false,RowMajor,RowMajor>[gemm_dispatch_size<RowMajor,RowMajor>];
@@ -1767,6 +1769,7 @@ namespace ngbla
     InitGEMM<SETNEG>();
     InitGEMM<ADD>();
     InitGEMM<SUB>();
+    InitGEMM_SME();
     return 1;
   }();
 
@@ -3110,15 +3113,29 @@ void T_AddABt (SliceMatrix<Complex> a, SliceMatrix<Complex> b, BareSliceMatrix<C
       }
   }
   
-  void SubAtDB (SliceMatrix<double> a,
-                SliceVector<double> diag,
-                SliceMatrix<double> b, SliceMatrix<double> c) NETGEN_NOEXCEPT
+  void SubAtDB_intern (SliceMatrix<double> a,
+                     SliceVector<double> diag,
+                     SliceMatrix<double> b, SliceMatrix<double> c)
   {
     for (size_t i = 0; i < a.Width(); i += NA)
       {
         size_t i2 = min2(i+NA, a.Width());
         SubAtDB_PM (a.Cols(i,i2), diag, b, c.Rows(i,i2));
       }
+  }
+
+  // replaces the SIMD kernel; set by gemm_sme.cpp if the CPU has SME
+  void (*subatdb_hook) (SliceMatrix<double>, SliceVector<double>,
+                        SliceMatrix<double>, SliceMatrix<double>) = nullptr;
+
+  void SubAtDB (SliceMatrix<double> a,
+                SliceVector<double> diag,
+                SliceMatrix<double> b, SliceMatrix<double> c) NETGEN_NOEXCEPT
+  {
+    if (subatdb_hook)
+      subatdb_hook (a, diag, b, c);
+    else
+      SubAtDB_intern (a, diag, b, c);
   }
 
   // ************************ SubADBt ******************************
