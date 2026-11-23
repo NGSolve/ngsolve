@@ -111,9 +111,10 @@ namespace ngcomp
     { bool elementwise; return CellBaseOrder (ei, ma->GetElIndex(ei), elementwise); }
     ORDER_POLICY GetOrderPolicy () const override { return DerivedOrderPolicy(); }
     
-    void SetEdgeOrder (int enr, int eo) { order_edge[enr] = eo; }
-    void SetFaceOrder (int fnr, IVec<2> fo) { order_face[fnr] = fo; }
-    void SetElementOrder (int elnr, IVec<3> elo) { order_inner[elnr] = elo; }
+    // set resolved orders directly: no fixed order elements anymore
+    void SetEdgeOrder (int enr, int eo) { order_edge[enr] = eo; fixed_order = false; }
+    void SetFaceOrder (int fnr, IVec<2> fo) { order_face[fnr] = fo; fixed_order = false; }
+    void SetElementOrder (int elnr, IVec<3> elo) { order_inner[elnr] = elo; fixed_order = false; }
 
     virtual FlatArray<VorB> GetDualShapeNodes (VorB vb) const override;
 

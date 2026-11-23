@@ -1,4 +1,4 @@
-"""Order specification of H1 and L2: SetOrder for element types, regions, elements and nodes,
+"""Order specification of H1, L2 and HCurl: SetOrder for element types, regions, elements and nodes,
 the minimum rule, orders with a direction, hp-refined meshes, pickling, linked spaces."""
 import gc
 import pickle
@@ -209,7 +209,7 @@ def test_vectorh1_and_errors():
     assert all(V.GetFE(el).ndof == len(el.dofs) for el in V.Elements(VOL))
 
     with pytest.raises(Exception, match="not available"):
-        HCurl(mesh, order=2).SetOrder(mesh.Materials("b"), 4)
+        HDiv(mesh, order=2).SetOrder(mesh.Materials("b"), 4)
     with pytest.raises(Exception, match="different mesh"):
         H1(mesh, order=2).SetOrder(mesh2d().Materials("b"), 4)
     with pytest.raises(Exception, match="variableorder"):
@@ -505,7 +505,7 @@ def test_errors_and_vectorh1():
     with pytest.raises(Exception, match="volume elements"):
         fes.SetOrder(ElementId(BND, 0), 3)
     with pytest.raises(Exception, match="not available"):
-        HCurl(trig, order=2).SetOrder(ElementId(VOL, 0), 3)
+        HDiv(trig, order=2).SetOrder(ElementId(VOL, 0), 3)
     prism = MakeStructured3DMesh(hexes=False, prism=True, nx=1, ny=1, nz=1)
     with pytest.raises(Exception, match="prism"):
         H1(prism, order=2).SetOrder(ElementId(VOL, 0), (2, 3, 4))
@@ -616,7 +616,7 @@ def test_direction_errors():
     with pytest.raises(Exception):
         fes.SetOrder(quad.Materials(".*"), 3, direction=CF((0, 1)))
     with pytest.raises(Exception, match="not available"):
-        HCurl(quad, order=2).SetOrder(quad.Materials(".*"), (2, 4), direction=CF((0, 1)))
+        HDiv(quad, order=2).SetOrder(quad.Materials(".*"), (2, 4), direction=CF((0, 1)))
 
 
 # ---------------------------------------------------------------- hp-refined meshes
@@ -920,7 +920,7 @@ def test_link_errors_and_lifetime():
     with pytest.raises(Exception, match="different mesh"):
         H1(mesh2d(), orderlink=V)
     with pytest.raises(Exception, match="orderlink is not available"):
-        HCurl(mesh, orderlink=V)
+        HDiv(mesh, orderlink=V)
     V.SetOrder(mesh.Materials("b"), 5); V.Update()
     W = H1(mesh, orderlink=V, relorder=-1)
     n = W.ndof
@@ -1150,3 +1150,230 @@ def test_l2_node_orders_kept():
     fes.Update()
     pcell = lambda el: 3 if el.nr % 2 else 2 if el.mat == "b" else 1
     assert fes.ndof == expected_ndof(mesh, pcell) and consistent_vol(fes)
+
+
+# -------------------- HCurl
+
+def tangential_jumps(fes):
+    """squared tangential jumps of a function with arbitrary coefficients over the interior facets"""
+    u, v = fes.TnT()
+    n = specialcf.normal(fes.mesh.dim)
+    def tang(w): return w - (w*n)*n
+    a = BilinearForm(fes, nonassemble=True)
+    a += tang(u-u.Other())*tang(v-v.Other())*dx(skeleton=True)
+    gf = GridFunction(fes)
+    gf.vec.FV().NumPy()[:] = [((7*i) % 11)/11 - 0.4 for i in range(fes.ndof)]
+    res = gf.vec.CreateVector()
+    a.Apply(gf.vec, res)
+    return abs(InnerProduct(res, gf.vec))
+
+
+def hcurl_ok(fes):
+    return consistent(fes) and tangential_jumps(fes) < 1e-20
+
+
+def min_rule_edges(mesh, pcell, offset=0):
+    pe = {}
+    for el in mesh.Elements(VOL):
+        for e in el.edges: pe[e.nr] = min(pe.get(e.nr, 99), pcell(el))
+    return {i: max(0, p+offset) for i, p in pe.items()}
+
+
+def test_jump_control_hcurl():
+    mesh = mesh2d()
+    assert tangential_jumps(HCurl(mesh, order=2)) < 1e-20
+    assert tangential_jumps(HCurl(mesh, order=2, discontinuous=True)) > 1e-3
+
+
+@pytest.mark.parametrize("type1", [False, True])
+@pytest.mark.parametrize("make", [mesh2d, mesh3d])
+def test_hcurl_region_orders(make, type1):
+    mesh = make()
+    fes = HCurl(mesh, order=1, type1=type1)
+    assert fes.GetOrder(ElementId(VOL, 0)) == 1
+    # a region order for all cells is the global order
+    fes.SetOrder(mesh.Materials(".*"), 3)
+    with pytest.raises(Exception, match="order was changed"):
+        fes.GetFE(ElementId(VOL, 0))
+    fes.Update()
+    assert same_space(fes, HCurl(mesh, order=3, type1=type1))
+
+    fes = HCurl(mesh, order=1, type1=type1)
+    fes.SetOrder(mesh.Materials("b"), 3)
+    fes.SetOrder(ElementId(VOL, 0), 2)
+    fes.Update()
+    pcell = lambda el: 2 if el.nr == 0 else 3 if el.mat == "b" else 1
+    pe = min_rule_edges(mesh, pcell, -1 if type1 else 0)
+    assert all(fes.GetOrder(NodeId(EDGE, i)) == p for i, p in pe.items())
+    assert all(fes.GetOrder(el) == pcell(el) for el in mesh.Elements(VOL))
+    assert hcurl_ok(fes)
+    assert HCurl(mesh, order=1, type1=type1).ndof < fes.ndof < HCurl(mesh, order=3, type1=type1).ndof
+    # boundary region, kept by refinement
+    fes.SetOrder(mesh.Boundaries("bot"), 4)
+    fes.Update()
+    bot = {e.nr for el in mesh.Elements(BND) if el.mat == "bot" for e in el.edges}
+    assert all(fes.GetOrder(NodeId(EDGE, i)) == (4 - type1) for i in bot)
+    assert hcurl_ok(fes)
+    n = fes.ndof
+    mesh.Refine()
+    fes.Update()
+    assert fes.ndof > n and hcurl_ok(fes)
+
+
+def test_hcurl_element_orders_inherited():
+    mesh = Mesh(unit_square.GenerateMesh(maxh=0.3))
+    fes = HCurl(mesh, order=1)
+    pattern = lambda el: 1 + (el.nr * 7) % 3
+    for el in mesh.Elements(VOL):
+        fes.SetOrder(el, pattern(el))
+    fes.Update()
+    pe = min_rule_edges(mesh, pattern)
+    assert all(fes.GetOrder(NodeId(EDGE, i)) == p for i, p in pe.items()) and hcurl_ok(fes)
+    for el in mesh.Elements(VOL):
+        mesh.SetRefinementFlag(el, el.nr % 3 == 0)
+    mesh.Refine()
+    fes.Update()
+    assert len({fes.GetOrder(el) for el in mesh.Elements(VOL)}) == 3
+    pe = min_rule_edges(mesh, lambda el: fes.GetOrder(el))
+    assert all(fes.GetOrder(NodeId(EDGE, i)) == p for i, p in pe.items()) and hcurl_ok(fes)
+
+
+@pytest.mark.parametrize("make,direction", [(lambda: MakeStructured2DMesh(quads=True, nx=3, ny=3), (0, 1)),
+                                            (lambda: MakeStructured3DMesh(hexes=True, nx=2, ny=2, nz=2), (0, 0, 1))])
+def test_hcurl_direction(make, direction):
+    mesh = make()
+    fes = HCurl(mesh, order=1)
+    fes.SetOrder(mesh.Materials(".*"), (1, 3), direction=direction)
+    fes.Update()
+    assert [fes.GetOrder(NodeId(EDGE, e.nr)) for e in mesh.edges] == [3 if along(mesh, e, direction) else 1 for e in mesh.edges]
+    assert hcurl_ok(fes)
+    assert HCurl(mesh, order=1).ndof < fes.ndof < HCurl(mesh, order=3).ndof
+
+
+@pytest.mark.parametrize("make", [mesh2d, mesh3d])
+def test_hcurl_linked_to_h1(make):
+    mesh = make()
+    V = H1(mesh, order=3)
+    E = HCurl(mesh, orderlink=V, relorder=-1)
+    assert same_space(E, HCurl(mesh, order=2)) and E.globalorder == 2
+    V.SetOrder(mesh.Materials("b"), 5)
+    V.SetOrder(ElementId(VOL, 0), 2)
+    V.SetOrder(mesh.Boundaries("bot"), 4)
+    V.Update()
+    with pytest.raises(Exception, match="order was changed"):
+        E.GetFE(ElementId(VOL, 0))
+    E.Update()
+    used = sorted({e.nr for el in mesh.Elements(VOL) for e in el.edges})
+    assert all(E.GetOrder(NodeId(EDGE, i)) == V.GetOrder(NodeId(EDGE, i))-1 for i in used)
+    assert all(E.GetOrder(el) == V.GetOrder(el)-1 for el in mesh.Elements(VOL))
+    assert hcurl_ok(E)
+    with pytest.raises(Exception, match="orders belong to"):
+        E.SetOrder(mesh.Materials("b"), 2)
+    # gradients of the H1 space are in the HCurl space, also across the changes of the order
+    gfv = GridFunction(V)
+    gfv.vec.FV().NumPy()[:] = [((5*i) % 13)/13 - 0.3 for i in range(V.ndof)]
+    gfe = GridFunction(E)
+    gfe.Set(grad(gfv))
+    err = Integrate((gfe-grad(gfv))*(gfe-grad(gfv))*dx, mesh)
+    assert err < 1e-18 * Integrate(grad(gfv)*grad(gfv)*dx, mesh)
+    # pickled together they stay linked
+    V2, E2 = pickle.loads(pickle.dumps((V, E)))
+    assert same_space(E2, E)
+    V2.SetOrder(V2.mesh.Materials("a"), 4)
+    V2.Update(); E2.Update()
+    V.SetOrder(mesh.Materials("a"), 4)
+    V.Update(); E.Update()
+    assert same_space(E2, E) and hcurl_ok(E2)
+
+
+def test_hcurl_hp_and_mesh_orders():
+    L = 3
+    mesh = hp2d(L)
+    ref = HCurl(mesh, variableorder=True, relorder=-1)
+    fes = HCurl(mesh, order=L, hpslope=1)
+    assert same_space(fes, ref) and hcurl_ok(fes)
+    V = H1(mesh, order=L+1, hpslope=1)
+    E = HCurl(mesh, orderlink=V, relorder=-1)
+    assert same_space(E, ref)
+
+
+def test_hcurl_node_orders_with_other_calls():
+    for mesh in [Mesh(unit_square.GenerateMesh(maxh=0.4)), Mesh(unit_cube.GenerateMesh(maxh=0.7))]:
+        et = TRIG if mesh.dim == 2 else TET
+        def nodes(fes):
+            for e in mesh.edges:
+                if e.nr % 2: fes.SetOrder(e, 3)
+        a = HCurl(mesh, order=1); a.SetOrder(et, 2); nodes(a); a.Update()
+        b = HCurl(mesh, order=1); nodes(b); b.Update(); b.SetOrder(et, 2); b.Update()
+        assert same_space(a, b) and hcurl_ok(a)
+        assert all(a.GetOrder(NodeId(EDGE, i)) == 3 for i in range(1, mesh.nedge, 2))
+        c = HCurl(mesh, order=1); nodes(c)
+        with pytest.raises(Exception, match="order was changed"):
+            c.GetFE(ElementId(VOL, 0))
+        c.UpdateDofTables()
+        assert consistent(c)
+        f2 = pickle.loads(pickle.dumps(a))
+        assert same_space(f2, a)
+
+
+# -------------------- gradient space of HCurl
+
+def gradient_is_exact(fes):
+    """the discrete gradient maps an H1 function to its gradient, and curl grad = 0"""
+    mesh = fes.mesh
+    gradmat, fesh1 = fes.CreateGradient()
+    assert gradmat.height == fes.ndof and gradmat.width == fesh1.ndof
+    gfv = GridFunction(fesh1)
+    gfv.vec.FV().NumPy()[:] = [((5*i) % 13)/13 - 0.3 for i in range(fesh1.ndof)]
+    gfe = GridFunction(fes)
+    gfe.vec.data = gradmat * gfv.vec
+    err = Integrate((gfe-grad(gfv))*(gfe-grad(gfv))*dx, mesh)
+    nrm = Integrate(grad(gfv)*grad(gfv)*dx, mesh)
+    u, v = fes.TnT()
+    a = BilinearForm(curl(u)*curl(v)*dx).Assemble()
+    w = gfe.vec.CreateVector()
+    w.data = a.mat * gfe.vec
+    return err < 1e-18*nrm and Norm(w) < 1e-9*Norm(gfe.vec)
+
+
+def setups():
+    def regions(f, m): f.SetOrder(m.Materials("b"), 3); f.SetOrder(ElementId(VOL, 0), 2)
+    def bnd(f, m): f.SetOrder(m.Boundaries("bot"), 4)
+    def nodes(f, m):
+        for e in m.edges:
+            if e.nr % 2: f.SetOrder(e, 3)
+    yield "constant", dict(order=2), None
+    yield "constant type1", dict(order=2, type1=True), None
+    yield "regions", dict(order=1), regions
+    yield "regions type1", dict(order=2, type1=True), regions
+    yield "boundary region", dict(order=1), bnd
+    yield "node orders", dict(order=1), nodes
+    yield "orderinner", dict(order=2, orderinner=3), None
+    yield "orderedge", dict(order=3, orderedge=1), None
+
+
+@pytest.mark.parametrize("make", [mesh2d, mesh3d])
+@pytest.mark.parametrize("name", [s[0] for s in setups()])
+def test_gradient_space(make, name):
+    kw, setup = next((s[1], s[2]) for s in setups() if s[0] == name)
+    mesh = make()
+    fes = HCurl(mesh, **kw)
+    if setup:
+        setup(fes, mesh)
+        fes.Update()
+    assert gradient_is_exact(fes)
+
+
+@pytest.mark.parametrize("make,L", [(hp2d, 3), (hp3d, 2)])
+@pytest.mark.parametrize("slope", [0.5, 1])
+def test_gradient_space_hp(make, L, slope):
+    mesh = make(L)
+    assert gradient_is_exact(HCurl(mesh, order=L+1, hpslope=slope))
+
+
+def test_gradient_space_direction():
+    mesh = MakeStructured3DMesh(hexes=True, nx=2, ny=2, nz=2)
+    fes = HCurl(mesh, order=1)
+    fes.SetOrder(mesh.Materials(".*"), (1, 3), direction=(0, 0, 1))
+    fes.Update()
+    assert gradient_is_exact(fes)

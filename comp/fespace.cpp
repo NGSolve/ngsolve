@@ -1273,7 +1273,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
                                  FlatArray<bool> used_edge, FlatArray<bool> used_face,
                                  FlatArray<TO> order_edge,
                                  FlatArray<IVec<2,TO>> order_face,
-                                 FlatArray<IVec<3,TO>> order_cell) const
+                                 FlatArray<IVec<3,TO>> order_cell,
+                                 int edge_offset, bool increments_everywhere) const
   {
     int dim = ma->GetDimension();
     int p = order_spec.base->mesh_orders ? minorder : order;
@@ -1306,7 +1307,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
                      {
                        if (order_edge.Size())
                          for (auto e : el.Edges())
-                           AtomicMin (order_edge[e], TO (max2 (lo, pc[0] + et_bonus_order[ET_SEGM])));
+                           AtomicMin (order_edge[e], TO (max2 (lo, pc[0] + edge_offset + et_bonus_order[ET_SEGM])));
 
                        if (order_face.Size())
                          for (auto f : el.Faces())
@@ -1329,9 +1330,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
                        auto eledges = el.Edges();
                        for (int j = 0; j < eledges.Size(); j++)
                          for (int k = 0; k < dim; k++)
-                           if (points[edges[j][0]][k] != points[edges[j][1]][k])
+                           if (points[edges[j][0]][k] != points[edges[j][1]][k]) // find edge-dir x,y,z
                              {
-                               AtomicMin (order_edge[eledges[j]], TO (max2 (lo, pc[k] + et_bonus_order[ET_SEGM])));
+                               AtomicMin (order_edge[eledges[j]], TO (max2 (lo, pc[k] + edge_offset + et_bonus_order[ET_SEGM])));
                                break;
                              }
                      }
@@ -1358,6 +1359,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
                                IVec<2> f((fmax+3)%4, (fmax+1)%4);
                                if (vnums[faces[j][f[1]]] > vnums[faces[j][f[0]]]) swap (f[0], f[1]);
 
+                               // fmax > f[0] > f[1]
+                               // p[0] for direction fmax,f[0]
+                               // p[1] for direction fmax,f[1]
                                for (int l = 0; l < 2; l++)
                                  for (int k = 0; k < 3; k++)
                                    if (points[faces[j][fmax]][k] != points[faces[j][f[l]]][k])
@@ -1388,9 +1392,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     // edges and faces without a cell of the space
     for (auto & oe : order_edge)
-      if (oe == unset) oe = TO (p);
-    for (auto & of : order_face)
-      if (of[0] == unset) of = IVec<2,TO> (p);
+      if (oe == unset)
+        oe = increments_everywhere ? TO (max2 (0, p + edge_offset + et_bonus_order[ET_SEGM])) : TO (p);
+    for (auto i : Range(order_face))
+      if (order_face[i][0] == unset)
+        order_face[i] = IVec<2,TO> (increments_everywhere ? max2 (0, p + et_bonus_order[ma->GetFaceType(i)]) : p);
 
     // faces and edges of boundary regions, the last region wins
     bool bnd_regions = false;
@@ -1418,7 +1424,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
         for (auto i : Range(edge_reg))
           if (edge_reg[i] >= 0)
-            order_edge[i] = TO (max2 (lobnd, regs[edge_reg[i]].order + order_spec.link_offset + et_bonus_order[ET_SEGM]));
+            order_edge[i] = TO (max2 (lobnd, regs[edge_reg[i]].order + order_spec.link_offset + edge_offset + et_bonus_order[ET_SEGM]));
         for (auto i : Range(face_reg))
           if (face_reg[i] >= 0)
             order_face[i] = IVec<2,TO> (max2 (lobnd, regs[face_reg[i]].order + order_spec.link_offset + et_bonus_order[ma->GetFaceType(i)]));
@@ -1456,7 +1462,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
   }
 
   template void FESpace :: ResolveOrders<unsigned char> (int, FlatArray<bool>, FlatArray<bool>, FlatArray<unsigned char>,
-                                                       FlatArray<IVec<2,unsigned char>>, FlatArray<IVec<3,unsigned char>>) const;
+                                                       FlatArray<IVec<2,unsigned char>>, FlatArray<IVec<3,unsigned char>>,
+                                                       int, bool) const;
+  template void FESpace :: ResolveOrders<short> (int, FlatArray<bool>, FlatArray<bool>, FlatArray<short>,
+                                               FlatArray<IVec<2,short>>, FlatArray<IVec<3,short>>,
+                                               int, bool) const;
 
   void FESpace :: SetNodeOrder (int type, size_t nr, int order)
   {
@@ -1539,6 +1549,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     if (order_spec.base->mesh_orders)
       {
+        // SZ: fuer EE damit ich mit rel_order auch p-ref machen kann :)
         // no element orders in 1D meshes
         IVec<3> o = (ma->GetDimension() >= 2) ? ma->GetElOrders(ei.Nr()) : IVec<3>(1);
         for (int k = 0; k < 3; k++)

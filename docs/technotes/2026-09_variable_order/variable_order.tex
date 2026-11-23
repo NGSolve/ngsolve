@@ -49,7 +49,7 @@
 \title{\vspace{-1.2cm}Variable Polynomial Order\\[2pt]
 \large One order specification for all spaces: regions, elements, the minimum rule, and linked spaces}
 \author{Christopher Lackner \and Edoardo Bonetti \and Astrid Pechstein \and Joachim Sch\"oberl}
-\date{NGSolve Technical Note 2026-09\quad$\bullet$\quad version 2026-11-23\quad$\bullet$\quad implemented for H1 and L2}
+\date{NGSolve Technical Note 2026-09\quad$\bullet$\quad version 2026-11-23\quad$\bullet$\quad implemented for H1, L2 and HCurl}
 
 \begin{document}
 \maketitle\vspace{-1.2cm}
@@ -64,7 +64,7 @@ The high order spaces of NGSolve \cite{s14} carry an individual polynomial order
 \item Anisotropic orders are given in the axes of the reference element. One has to know the local vertex numbering; on simplices and pyramids two of the three numbers are silently ignored.
 \item There is no order per region, and no connection between the orders of two spaces except through the single order field of the mesh.
 \end{itemize}
-This note fixes the design of the replacement. It is implemented for \code{H1}, \code{VectorH1}, \code{L2} and \code{VectorL2}; the other spaces follow with the same interface.
+This note fixes the design of the replacement. It is implemented for \code{H1}, \code{VectorH1}, \code{L2}, \code{VectorL2} and \code{HCurl}; the other spaces follow with the same interface.
 
 \section{Specification and resolved orders}
 
@@ -90,7 +90,7 @@ p^{\text{cell}}_T = p_T + \delta_{S(T)}, \qquad
 p_F = \min_{T \supset F} \, p_T|_F + \delta_{S(F)}, \qquad
 p_E = \min_{T \supset E} \, p_T|_E + \delta_{\text{segm}} .
 \end{equation}
-The minimum is taken over the cells on which the space is defined, and $p_T|_E$ is the component of $p_T$ in the direction of the edge. On the faces and edges of a boundary region with an order of layer 4, this order replaces the minimum. Layers 6 and 7 then replace individual values. These are the explicit ways to leave the rule, as in \code{H1(mesh, order=2, orderinner=3)}. The space itself only supplies the number of dofs for a node of given shape and order, and the lower bound of the order (1 for $H^1$, 0 for $L^2$).
+The minimum is taken over the cells on which the space is defined, and $p_T|_E$ is the component of $p_T$ in the direction of the edge. On the faces and edges of a boundary region with an order of layer 4, this order replaces the minimum. Layers 6 and 7 then replace individual values. These are the explicit ways to leave the rule, as in \code{H1(mesh, order=2, orderinner=3)}. The space itself only supplies the number of dofs for a node of given shape and order, and the lower bound of the order (1 for $H^1$, 0 for $L^2$ and $H(\operatorname{curl})$). The first family of \code{HCurl} (\code{type1}) has its edge orders one lower.
 
 Every \code{SetOrder} marks the specification as changed, and the next \code{Update} resolves again. All calls can therefore be combined, in any sequence. Using a space whose specification is newer than its dof tables is an error, as it is for a refined mesh.
 
@@ -185,7 +185,43 @@ Shared are the base orders $p_T$ and the orders on boundary regions, i.e.\ layer
 
 \paragraph{How the link is held.} The shared layers are in a small reference-counted object with the cell orders, the orders of boundary regions and a time stamp. Each linked space holds a pointer to it, not to the other space. There is no update order: every \code{Update} compares time stamps and resolves if necessary, and the inheritance to the children after a refinement is done once, by the space which updates first. In parallel computations the cell orders are local to the rank, and the resolved orders of shared edges and faces are reduced by the minimum.
 
-\paragraph{Vector valued and derived spaces.} The components of \code{VectorH1} and \code{VectorL2} are linked to the compound space, which sets the orders. A space linked to a linked space shares the same orders; \code{relorder} is always relative to the space which created them. Planned: \code{CreateGradientSpace}, \code{CreateDivergenceSpace}, \code{CreateMultiplierSpace} and \code{CreateStressSpace} return linked spaces. Today they copy the orders once, and the copy is lost with the next refinement.
+\paragraph{Vector valued and derived spaces.} The components of \code{VectorH1} and \code{VectorL2} are linked to the compound space, which sets the orders. A space linked to a linked space shares the same orders; \code{relorder} is always relative to the space which created them. The $H^1$ space of \code{HCurl.CreateGradient} follows the orders node by node: every node gets as many functions as its \code{HCurl} node has gradients. Planned: this space, and the spaces of \code{CreateDivergenceSpace}, \code{CreateMultiplierSpace} and \code{CreateStressSpace}, become linked spaces. Today they copy the orders once, and the copy is lost with the next refinement.
+
+\section{Example: Maxwell eigenvalues on the Fichera corner}
+
+Tutorial 2.4.1 of the NGSolve documentation computes the eigenvalues of $\int \operatorname{curl} u \cdot \operatorname{curl} v = \lambda \int u \cdot v$ on the Fichera corner, with PINVIT, a sparse direct solver as preconditioner and the projection onto the complement of the gradients; the example is from \cite{z06}. The eigenfunctions are singular at the re-entrant edges and at the corner, and the mesh is refined geometrically. With variable order three lines change:
+\begin{lstlisting}
+mesh = fichera.GenerateMesh(maxh=2)         # 25 tets; the tutorial: maxh=0.4, 527 tets
+mesh.RefineHP(levels=5, factor=0.15)        # the tutorial: levels=2, factor=0.2
+fes = HCurl(mesh, order=6, hpslope=1)       # the tutorial: order=3
+gradmat, fesh1 = fes.CreateGradient()       # the H1 space follows the orders of fes
+\end{lstlisting}
+The discrete sequence stays exact: the curl-curl matrix applied to the gradient matrix vanishes up to rounding. Figure~\ref{fig:maxwell} and Table~\ref{tab:maxwell} compare the cost with the setup of the tutorial.
+
+\begin{itemize}\setlength\itemsep{1pt}
+\item \textbf{A coarse base mesh with \code{hpslope=1} is the fastest.} It reaches $10^{-5}$ in 13 seconds with 50\,000 dofs; uniform order needs 20 to 30 seconds and about twice the dofs. After 35 seconds its error is $2.2\cdot 10^{-6}$, against 6 to $8\cdot 10^{-6}$ for uniform order.
+\item \textbf{The base mesh has to be coarse.} On the mesh of the tutorial every level adds 106 elements to 527, the layers are a small part of the mesh, and lowering their order does not pay. On 25 tets every level adds 40 elements, and uniform order pays for each of them.
+\item \textbf{The grading factor matters.} The error is smallest between 0.15 and 0.2, close to the optimal ratio $(\sqrt 2 - 1)^2 \approx 0.17$ of the one-dimensional analysis \cite{gb86}. With 0.4 it is 5 to 60 times larger at the same cost, and \code{hpslope=1} is the most sensitive.
+\end{itemize}
+The errors are relative to the lowest value of all runs, $\lambda_1 = 3.2198918$, which is accurate to about $2\cdot 10^{-6}$. Times are single runs with all phases (assembly, factorization, projection, 40 PINVIT iterations for 12 eigenvalues) on an Apple M4 Pro. With uniform order the timings are the same as before the rework. The rounding error of the discrete sequence grows with every level, faster for smaller factors ($2\cdot 10^{-9}$ for five levels with factor 0.15); this limits the number of levels.
+
+\begin{figure}[ht]\centering
+\includegraphics[width=0.74\textwidth]{maxwell.png}
+\caption{Error of the first eigenvalue against the total time. Labels: $hp$ levels, order. Each line joins the runs which are the most accurate at their cost.}\label{fig:maxwell}
+\end{figure}
+
+\begin{table}[ht]\centering\small
+\begin{tabular}{@{}lccrrrc@{}}\toprule
+base mesh, factor, orders & levels & order & elements & dofs & time (s) & rel.\ error of $\lambda_1$ \\\midrule
+527 tets, 0.2, uniform & 3 & 4 & 853 & 90\,240 & 15.1 & $2.0\cdot 10^{-5}$ \\
+527 tets, 0.2, uniform & 3 & 5 & 853 & 161\,429 & 39.1 & $6.0\cdot 10^{-6}$ \\\midrule
+25 tets, 0.15, uniform & 3 & 6 & 147 & 74\,244 & 32.6 & $8.4\cdot 10^{-6}$ \\
+25 tets, 0.15, \code{hpslope=0.5} & 4 & 6 & 187 & 79\,882 & 30.2 & $5.9\cdot 10^{-6}$ \\
+25 tets, 0.15, \code{hpslope=1} & 5 & 6 & 227 & 49\,625 & 13.4 & $9.7\cdot 10^{-6}$ \\
+25 tets, 0.15, \code{hpslope=1} & 5 & 7 & 227 & 86\,256 & 35.6 & $2.2\cdot 10^{-6}$ \\\bottomrule
+\end{tabular}
+\caption{Maxwell eigenvalue problem, some of the runs of Figure~\ref{fig:maxwell}.}\label{tab:maxwell}
+\end{table}
 
 \section{What changes}
 
@@ -223,6 +259,7 @@ The flags \code{orderinner}, \code{orderface}, \code{orderedge} and \code{trigor
 \bibitem{z06} S.~Zaglmayr. \emph{High Order Finite Element Methods for Electromagnetic Field Computation}. PhD thesis, Johannes Kepler University Linz, 2006.
 \bibitem{s98} C.~Schwab. \emph{$p$- and $hp$-Finite Element Methods}. Oxford University Press, 1998.
 \bibitem{d06} L.~Demkowicz. \emph{Computing with $hp$-Adaptive Finite Elements, Vol.~1: One and Two Dimensional Elliptic and Maxwell Problems}. Chapman \& Hall/CRC, 2006.
+\bibitem{gb86} W.~Gui and I.~Babu\v{s}ka. The $h$, $p$ and $h$-$p$ versions of the finite element method in 1 dimension. Part II: The error analysis of the $h$- and $h$-$p$ versions. \emph{Numer. Math.} 49:613--657, 1986.
 \bibitem{mm14} W.~F.~Mitchell and M.~A.~McClain. A comparison of $hp$-adaptive strategies for elliptic partial differential equations. \emph{ACM Trans. Math. Softw.} 41(1):2, 2014.
 \end{thebibliography}
 

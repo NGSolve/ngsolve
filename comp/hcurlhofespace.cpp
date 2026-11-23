@@ -46,6 +46,7 @@ namespace ngcomp
     DefineNumFlag("orderface");
     DefineNumFlag("orderedge");
     DefineNumFlag("relorder");
+    DefineNumFlag("hpslope");
     DefineNumFlag("augmented");
     DefineDefineFlag("fast"); 
     DefineDefineFlag ("discontinuous");
@@ -158,6 +159,25 @@ namespace ngcomp
     uniform_order_inner = int (flags.GetNumFlag ("orderinner", -1));
     uniform_order_face = int (flags.GetNumFlag ("orderface", -1));
     uniform_order_edge = int (flags.GetNumFlag ("orderedge", -1));
+    order_spec.order_cell = uniform_order_inner;
+    order_spec.order_face = uniform_order_face;
+    order_spec.order_edge = uniform_order_edge;
+
+    if (LinkOrders (flags))
+      var_order = false;
+    else
+      {
+        auto & base = *order_spec.base;
+        base.order = order;
+        base.mesh_orders = var_order;
+        base.rel_order = var_order ? rel_order : 0;
+        base.hp_slope = flags.GetNumFlag ("hpslope", 0);
+        base.hp_minorder = 0;
+        if (base.hp_slope < 0)
+          throw Exception ("HCurlHighOrderFESpace: hpslope must not be negative");
+        if (base.hp_slope > 0 && var_order)
+          throw Exception ("HCurlHighOrderFESpace: hpslope not together with variableorder / relorder");
+      }
 
     wb_loedge = flags.GetDefineFlag("wb_loedge");
         
@@ -254,12 +274,22 @@ namespace ngcomp
       "  Activates relaxed H(curl)-conformity. Allows tangential discontinuity of highest order edge basis functions";
     docu.Arg("orderinner") = "int = None\n"
       "  Polynomial order of element-interior basis functions, default is order";
+    docu.Arg("orderlink") = "FESpace\n"
+      "  Take the orders of regions and elements from this space, offset by relorder.\n"
+      "  Only the given space sets these orders.";
+    docu.Arg("relorder") = "int = 0\n"
+      "  With orderlink: order relative to the linked space.\n"
+      "  Without: order relative to the element orders of the mesh (as variableorder).";
+    docu.Arg("hpslope") = "double = 0\n"
+      "  On meshes refined by RefineHP: the order decreases by hpslope per level\n"
+      "  of geometric refinement, in each local direction of an element.";
     return docu;
   }
 
   
   void HCurlHighOrderFESpace :: Update()
   {
+    bool base_changed = order_spec.base->timestamp > order_base_resolved;
     FESpace::Update();
     ClearDualInverse();
 
@@ -271,16 +301,13 @@ namespace ngcomp
     if (low_order_space)
       low_order_space -> Update();
 
-    bool first_update = GetTimeStamp() < ma->GetTimeStamp();
+    bool first_update = base_changed || GetTimeStamp() < ma->GetTimeStamp();
     if (first_update) timestamp = NGS_Object::GetNextTimeStamp();
 
     int ne = ma->GetNE();
     int nse = ma->GetNSE();
     int ned = ma->GetNEdges();
     int nfa = (ma->GetDimension() == 3 || order_policy == VARIABLE_ORDER) ? ma->GetNFaces() : 0;
-
-    maxorder = -1; 
-    minorder = 99; 
 
     /*
     for(int i = 0; i < specialelements.Size(); i++)
@@ -317,58 +344,12 @@ namespace ngcomp
         fine_edge.SetSize (ned); 
         fine_face.SetSize (nfa); 
         
-        int p = var_order ? 0 : order; 
-        order_edge = max(0, p - (type1 ? 1 : 0) + et_bonus_order[ET_SEGM]);
+        fine_edge = false;
+        fine_face = false;
+        usegrad_edge = false;
+        usegrad_face = false;
+        usegrad_cell = false;
 
-        // order_inner = IVec<3> (p,p,p); 
-        order_inner = IVec<3> (0,0,0); 
-        
-        fine_edge = 0; 
-        // if (nfa > 0)
-        { 
-          fine_face = 0;
-          if (et_bonus_order[ET_TRIG] || et_bonus_order[ET_QUAD])
-            for (auto f : Range(nfa))
-              order_face[f] = p+et_bonus_order[ma->GetFaceType(f)];
-          else
-            order_face = IVec<2> (p,p);
-          usegrad_face = 0; 
-        } 
-        
-        usegrad_edge = false;                                
-        usegrad_cell = false; 
-        
-        Array<int> elfaces;
-        
-        /*
-          for(int i = 0; i < ne; i++) 
-          if(gradientdomains[ma->GetElIndex(i)]) 
-          {
-	  ma->GetElEdges(i,eledges);
-	  
-	  for(int j=0;j<eledges.Size();j++)
-          usegrad_edge[eledges[j]]=1;
-	  
-	  if(ma->GetDimension()==3)
-          {
-          ma->GetElFaces(i, elfaces);
-          for(int j = 0; j < elfaces.Size(); j++)
-          usegrad_face[elfaces[j]]=1; 
-          }
-	  usegrad_cell[i] = 1; 
-          } 
-        */
-        
-        /*
-          for (Ngs_Element el : ma->Elements(VOL))
-          if (gradientdomains[el.GetIndex()]) 
-          {
-          usegrad_edge[el.Edges()] = true;
-          if (ma->GetDimension() == 3)
-          usegrad_face[el.Faces()] = true;
-          usegrad_cell[el.Nr()] = true;
-          }
-        */
         ma -> IterateElements
           (VOL,
            [&](auto el)
@@ -398,99 +379,21 @@ namespace ngcomp
         
         ma->AllReduceNodalData (NT_EDGE, usegrad_edge, NG_MPI_LOR);
         ma->AllReduceNodalData (NT_FACE, usegrad_face, NG_MPI_LOR);
-        
-	
+
+        // edges and faces of the elements of the space
         for (int i = 0; i < ne; i++)
           {
             ElementId ei(VOL, i);
-            int index = ma->GetElIndex(ei);
-            auto et = ma->GetElType(ei);
-            if (!DefinedOn (VOL, index)) continue;
-            auto pi = p + et_bonus_order[et];
-            order_inner[i] = IVec<3> (pi,pi,pi);
-            IVec<3,TORDER> el_orders = ma->GetElOrders(i);
-            
-            ELEMENT_TYPE eltype=ma->GetElType(ei); 
-            const FACE * faces = ElementTopology::GetFaces (eltype).Data();
-            const EDGE * edges = ElementTopology::GetEdges (eltype).Data();
-            const POINT3D * points = ElementTopology :: GetVertices (eltype);
-            auto vnums = ma->GetElVertices (ei);
-            
-            auto eledges = ma->GetElEdges (ei);		
-            for(int j=0;j<eledges.Size();j++) fine_edge[eledges[j]] = 1; 
-            
+            if (!DefinedOn (VOL, ma->GetElIndex(ei))) continue;
+            fine_edge[ma->GetElEdges(ei)] = true;
             if (dim == 3)
-              {
-                auto elfaces = ma->GetElFaces(ei);
-                for(int j=0;j<elfaces.Size();j++) fine_face[elfaces[j]] = 1; 
-              }
-            
-            for(int j=0;j<3;j++)
-              {
-                el_orders[j] = el_orders[j]+rel_order;
-                if(el_orders[j] > maxorder) maxorder=el_orders[j];
-                if(el_orders[j] < minorder) minorder=el_orders[j];
-              }
-            
-            
-            if(!var_order) continue; // for fixed order find only fine-edges-faces! 
-            
-	    
-            
-            for(int j=0;j<eledges.Size();j++)
-              for(int k=0;k<dim;k++)
-                if(points[edges[j][0]][k] != points[edges[j][1]][k]) // find edge-dir x,y,z
-                  { 
-                    order_edge[eledges[j]] = max2(el_orders[k],order_edge[eledges[j]]);
-                    break; 
-                  }
-            
-            for(int j=0;j<dim;j++)
-              order_inner[i][j] = int(max2(order_inner[i][j],el_orders[j]));
-            
-            if(dim==2) continue; 
-            
-            for(int j=0;j<elfaces.Size();j++)
-              {
-                if(faces[j][3]==-1) 
-                  {
-                    
-                    order_face[elfaces[j]][0] = int(max2(order_face[elfaces[j]][0], 
-                                                         el_orders[0]));
-                    order_face[elfaces[j]][1] = order_face[elfaces[j]][0]; 
-                  }
-                else //quad_face
-                  {
-                    int fmax = 0;
-                    for(int k = 1; k < 4; k++) 
-                      if(vnums[faces[j][k]] > vnums[faces[j][fmax]]) fmax = k;   
-                    
-                    
-                    IVec<2> f((fmax+3)%4,(fmax+1)%4); 
-                    if(vnums[faces[j][f[1]]] > vnums[faces[j][f[0]]]) swap(f[0],f[1]);
-                    
-                    // fmax > f[0] > f[1]
-                    // p[0] for direction fmax,f[0] 
-                    // p[1] for direction fmax,f[1] 
-                    for(int l=0;l<2;l++)
-                      for(int k=0;k<3;k++)
-                        if(points[faces[j][fmax]][k] != points[faces[j][f[l] ]][k])
-                          {
-                            order_face[elfaces[j]][l] = int(max2(order_face[elfaces[j]][l], 
-                                                                 el_orders[k]));
-                            break; 
-                          } 
-                  }  
-              }
+              fine_face[ma->GetElFaces(ei)] = true;
           }
-        
+
         for (int i = 0; i < nse; i++)
           {
             ElementId sei(BND, i);
             if (!DefinedOn (BND, ma->GetElIndex (sei))) continue;
-            
-            // auto eledges = ma->GetElEdges (sei);		
-            // for (int j=0;j<eledges.Size();j++) fine_edge[eledges[j]] = 1;
             fine_edge[ma->GetElEdges(sei)] = true;
             if(dim==3) 
               fine_face[ma->GetSElFace(i)] = true; 
@@ -498,31 +401,22 @@ namespace ngcomp
         
         ma->AllReduceNodalData (NT_EDGE, fine_edge, NG_MPI_LOR);
         ma->AllReduceNodalData (NT_FACE, fine_face, NG_MPI_LOR);
-        
-      	
-        if(!var_order) { maxorder = order; minorder = order;} 
-    
-        if(uniform_order_inner>-1) 
-          order_inner = IVec<3> (uniform_order_inner,uniform_order_inner,uniform_order_inner); 
-        if(uniform_order_edge>-1) 
-          order_edge = uniform_order_edge; 
-        if(uniform_order_face>-1 && dim == 3) 
-          order_face = IVec<2> (uniform_order_face, uniform_order_face);
-        /*
-          Array<int> pnums;
-          for (int i = 0; i < order_face.Size(); i++)
-          {
-          ma->GetFacePNums (i,pnums);  
-          if (pnums.Size()==4)
-          order_face[i] = uniform_order_face+1;
-          }
-        */
-        // order of FINE FACES and EDGES for safety reasons set to 0 
-        for(int i=0;i<order_edge.Size();i++) 
-          if(!fine_edge[i]) order_edge[i] = 0;  
-        
-        for(int i=0;i<order_face.Size();i++) 
-          if(!fine_face[i]) order_face[i] = IVec<2> (0,0);  
+
+        // first family: edge order one lower
+        UpdateOrderSpecification();
+        ResolveOrders (0, fine_edge, fine_face, order_edge, order_face, order_inner,
+                       type1 ? -1 : 0, true);
+
+        maxorder = -1;
+        minorder = 99;
+        for (int i = 0; i < ne; i++)
+          if (DefinedOn (VOL, ma->GetElIndex(ElementId(VOL, i))))
+            for (int j = 0; j < dim; j++)
+              {
+                maxorder = max2 (maxorder, int(order_inner[i][j]));
+                minorder = min2 (minorder, int(order_inner[i][j]));
+              }
+        if (maxorder < 0) { maxorder = order; minorder = order; }
       }
 
     UpdateDofTables(); 
@@ -560,6 +454,7 @@ namespace ngcomp
 
   void HCurlHighOrderFESpace :: UpdateDofTables()
   {
+    if (order_stale == 1) order_stale = 0;
     // if (order_policy == VARIABLE_ORDER)
     if(false)
       {
@@ -947,27 +842,28 @@ namespace ngcomp
 
   void HCurlHighOrderFESpace :: SetOrder (NodeId ni, int order) 
   {
-    if (order_policy == CONSTANT_ORDER || order_policy == NODE_TYPE_ORDER)
-      throw Exception("In HCurlHighOrderFESpace::SetOrder. Order policy is constant or node-type!");
-    else if (order_policy == OLDSTYLE_ORDER)
-      order_policy = VARIABLE_ORDER;
+    order_policy = VARIABLE_ORDER;
       
     if (order < 0)
       order = 0;
-    
+
+    // kept in the specification, and set in the resolved orders
     switch (ni.GetType())
       {
       case NT_VERTEX: case NT_GLOBAL:
         break;
       case NT_EDGE:
+        SetNodeOrder (0, ni.GetNr(), order);
         if (ni.GetNr() < order_edge.Size())
           order_edge[ni.GetNr()] = order;
         break;
       case NT_FACE:
+        SetNodeOrder (1, ni.GetNr(), order);
         if (ni.GetNr() < order_face.Size())
           order_face[ni.GetNr()] = order;
         break;
       case NT_CELL: case NT_ELEMENT:
+        SetNodeOrder (2, ni.GetNr(), order);
         if (ni.GetNr() < order_inner.Size())
           order_inner[ni.GetNr()] = order;
         break;
@@ -975,6 +871,7 @@ namespace ngcomp
 	//TODO
         break;
       }
+    if (!order_stale) order_stale = 1;
   }
   
   int HCurlHighOrderFESpace :: GetOrder (NodeId ni) const
@@ -3717,6 +3614,22 @@ namespace ngcomp
     fesh1->Update();
     fesh1->FinalizeUpdate();
 
+    // orders not constant: every node of the H1 space gets as many functions
+    // as its HCurl node has gradients
+    bool variable = DerivedOrderPolicy() != CONSTANT_ORDER;
+    if (variable)
+      {
+        int t = type1 ? 1 : 0;
+        for (auto i : Range(order_edge))
+          fesh1->SetEdgeOrder (i, max(1, order_edge[i]+1));
+        if (ma->GetDimension() == 3)
+          for (auto i : Range(order_face))
+            fesh1->SetFaceOrder (i, IVec<2> (max(1, order_face[i][0]+1-t), max(1, order_face[i][1]+1-t)));
+        for (auto i : Range(order_inner))
+          fesh1->SetElementOrder (i, IVec<3> (max(1, order_inner[i][0]+1-t), max(1, order_inner[i][1]+1-t),
+                                              max(1, order_inner[i][2]+1-t)));
+      }
+
     for(int i=0; i < ne; i++){
       ElementId ei(VOL,i);
       if(!gradientdomains[ma->GetElIndex(ei)]){
@@ -3738,6 +3651,7 @@ namespace ngcomp
 	value = 1;
       }
       else{
+        if (variable) continue;
 	value = order+1 - (type1? 1: 0);
       }
         auto eledges = ma->GetElEdges(sei);

@@ -337,12 +337,15 @@ ANY                  1 1 1 1 | 15
     ORDER_POLICY DerivedOrderPolicy () const;
 
     /// orders of edges, faces and cells from the order specification
+    /// edge_offset: added to all edge orders (first family Nedelec: -1).
+    /// increments_everywhere: edges and faces without a cell of the space get the shape increments, too
     template <typename TO>
     void ResolveOrders (int minorder,
                         FlatArray<bool> used_edge, FlatArray<bool> used_face,
                         FlatArray<TO> order_edge,
                         FlatArray<IVec<2,TO>> order_face,
-                        FlatArray<IVec<3,TO>> order_cell) const;
+                        FlatArray<IVec<3,TO>> order_cell,
+                        int edge_offset = 0, bool increments_everywhere = false) const;
 
     // size_t order_timestamp = 0;
     BitArray is_atomic_dof;
