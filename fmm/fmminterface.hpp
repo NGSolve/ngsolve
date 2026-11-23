@@ -84,6 +84,8 @@ namespace ngsfmm
   public:
     virtual ~BaseSingularMLExpansion() = default;
     virtual void CalcMP() = 0;
+    // CalcMP, but the S->S runs in the next RegularMLExpansion::CalcMP, only into the nodes it reads and below them
+    virtual void CalcMPDeferred() = 0;
     virtual void CollectStatistics(FMMTreeStats & stats) const = 0;
     virtual std::variant<double,Complex> GetKappa() const = 0;
   };

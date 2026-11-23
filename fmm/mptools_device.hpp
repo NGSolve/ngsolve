@@ -405,7 +405,7 @@ namespace ngsfmm
   }
 
 
-  // M2M: called from SingularMLExpansion::CalcMP after P2M and the CPU grouping
+  // M2M: called from SingularMLExpansion::CalcSS (CalcMP, or FinishSS after CalcMPDeferred) after P2M and the CPU grouping
   template <typename entry_type, typename T_Kappa>
   struct FMMDeviceGlue<SingularMLExpansion<entry_type,T_Kappa>>
   {
@@ -528,6 +528,12 @@ namespace ngsfmm
           // FMM_Operator: the plan is recorded once (program A) and replayed per matvec
           auto & side = cache->singular;
           auto fp = Fingerprint (ml.root, N, std::complex<double>(ml.Kappa()));
+          // and the nodes it translates into: after CalcMPDeferred only the ones the RegularMLExpansion needs
+          std::unordered_set<const void*> targets;
+          for (auto & group : groups)
+            for (auto * rec : group)
+              targets.insert (rec->mp_target);
+          ml.root.TraverseTree ([&] (Node & node) { fp.push_back (targets.count (&node.mp) ? 1.0 : 0.0); });
           if (!side.program || !side.tree || side.fingerprint != fp)
             {
               side = {};              // free the old plans first: program B and its L2P read these pools

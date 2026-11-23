@@ -83,7 +83,7 @@ namespace ngsfmm
           ParallelFor (s.pts.Size(), [&](int i){
             s.iface.AddSource(*singmp, s.pts[i], s.nv[i], x.Row(i));
           });
-          singmp->CalcMP();
+          singmp->CalcMPDeferred();
           regmp = t.iface.CreateLocalExpansion(t.c, t.r, params);
           ParallelFor (t.pts.Size(), [&](int i){
             regmp->AddTarget(t.pts[i]);
