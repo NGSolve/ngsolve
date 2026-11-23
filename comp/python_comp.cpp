@@ -493,6 +493,47 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
   //////////////////////////////////////////////////////////////////////////////////////////
 
   
+  // orders shared by linked spaces, only for pickling
+  py::class_<FESpace::BaseOrders, shared_ptr<FESpace::BaseOrders>> (m, "_BaseOrders")
+    .def(py::pickle
+         ([] (const FESpace::BaseOrders & b)
+          {
+            py::list regions;
+            for (auto & ro : b.region_orders)
+              regions.append (py::make_tuple (int(ro.vb), make_shared<BitArray>(ro.mask),
+                                              ro.order, ro.order_dir, ro.direction));
+            return py::make_tuple (b.order, b.mesh_orders, b.rel_order, b.hp_slope, b.hp_minorder,
+                                   b.creator_name, b.has_links, regions,
+                                   py::bytes ((const char*)b.element_order.Data(),
+                                              b.element_order.Size()*sizeof(IVec<3,short>)));
+          },
+          [] (py::tuple t)
+          {
+            auto b = make_shared<FESpace::BaseOrders>();
+            b->order = t[0].cast<int>();
+            b->mesh_orders = t[1].cast<bool>();
+            b->rel_order = t[2].cast<int>();
+            b->hp_slope = t[3].cast<double>();
+            b->hp_minorder = t[4].cast<int>();
+            b->creator_name = t[5].cast<string>();
+            b->has_links = t[6].cast<bool>();
+            for (auto item : t[7].cast<py::list>())
+              {
+                auto r = item.cast<py::tuple>();
+                b->region_orders.Append
+                  (FESpace::RegionOrder
+                   { VorB(r[0].cast<int>()), BitArray(*r[1].cast<shared_ptr<BitArray>>()),
+                     r[2].cast<int>(), r[3].cast<int>(),
+                     r[4].is_none() ? nullptr : r[4].cast<shared_ptr<CoefficientFunction>>() });
+              }
+            std::string s = t[8].cast<std::string>();
+            b->element_order.SetSize (s.size()/sizeof(IVec<3,short>));
+            memcpy ((void*)b->element_order.Data(), s.data(), s.size());
+            return b;
+          }))
+    ;
+  RegisterPyArchiveCaster<FESpace::BaseOrders>();
+
   py::enum_<ORDER_POLICY>(m, "ORDER_POLICY", "Enumeration of all supported order policies")
     .value("CONSTANT", CONSTANT_ORDER)
     .value("NODETYPE", NODE_TYPE_ORDER)
@@ -1157,6 +1198,17 @@ kwargs : kwargs
                      ([] (ORDER_POLICY op, Flags* flags, py::list info)
                       {
                         flags->SetFlag("order_policy", int(op));
+                      }),
+                     py::arg("orderlink") = py::cpp_function
+                     ([] (shared_ptr<FESpace> link, Flags* flags, py::list info)
+                      {
+                        if (link->GetMeshAccess() != py::cast<shared_ptr<MeshAccess>>(info[0]))
+                          throw Exception ("orderlink: the space is on a different mesh");
+                        auto base = link->GetOrderSpecification().base;
+                        if (base->creator_name.empty())
+                          base->creator_name = link->GetClassName();
+                        base->has_links = true;
+                        flags->SetFlag ("orderlink", std::any (base));
                       })
                      );
                      return special;

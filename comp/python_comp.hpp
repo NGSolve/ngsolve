@@ -57,23 +57,23 @@ namespace ngcomp
     auto mesh = fes.GetMeshAccess();
     auto type = fes.type;
 
-    // orders of regions, elements and single nodes are not in the flags
+    // orders of regions, elements and single nodes are not in the flags.
+    // a linked space has the base orders in its flag orderlink
     auto & spec = fes.GetOrderSpecification();
+    auto & base = *spec.base;
     bool nodes = spec.node_order_level == mesh->GetNLevels();
-    if (!spec.region_orders.Size() && !spec.element_order.Size() && !nodes)
+    bool withbase = !flags.AnyFlagDefined ("orderlink") &&
+      (base.region_orders.Size() || base.element_order.Size() || base.has_links);
+    if (!withbase && !nodes)
       return py::make_tuple(type,mesh,flags);
 
-    auto bytes = [] (const auto & a)
-    { return py::bytes ((const char*)a.Data(), a.Size()*sizeof(a[0])); };
-    py::list regions;
-    for (auto & ro : spec.region_orders)
-      regions.append (py::make_tuple (int(ro.vb), make_shared<BitArray>(ro.mask),
-                                      ro.order, ro.order_dir, ro.direction));
     py::list nodeorders;
     for (int i = 0; i < 3; i++)
-      nodeorders.append (nodes ? bytes(spec.node_order[i]) : py::bytes());
+      nodeorders.append (nodes ? py::bytes ((const char*)spec.node_order[i].Data(),
+                                            spec.node_order[i].Size()*sizeof(short)) : py::bytes());
     return py::make_tuple(type,mesh,flags,
-                          py::make_tuple (regions, bytes(spec.element_order), nodes, nodeorders));
+                          py::make_tuple (withbase ? py::cast(spec.base) : py::object(py::none()),
+                                          nodes, nodeorders));
   }
   
   template<typename FESPACE>
@@ -85,31 +85,22 @@ namespace ngcomp
     if (state.size() > 3)
       {
         FESpace::OrderSpecification spec;
-        py::tuple orders = state[3];
-        auto frombytes = [] (py::handle h, auto & a)
-        {
-          std::string s = h.cast<std::string>();
-          a.SetSize (s.size()/sizeof(a[0]));
-          memcpy ((void*)a.Data(), s.data(), a.Size()*sizeof(a[0]));
-        };
-        for (auto item : orders[0].cast<py::list>())
+        py::tuple extra = state[3];
+        bool creator = !extra[0].is_none();
+        spec.base = creator ? extra[0].cast<shared_ptr<FESpace::BaseOrders>>()
+          : fes->GetOrderSpecification().base;
+        if (extra[1].cast<bool>())
           {
-            auto t = item.cast<py::tuple>();
-            spec.region_orders.Append
-              (FESpace::OrderSpecification::RegionOrder
-               { VorB(t[0].cast<int>()), BitArray(*t[1].cast<shared_ptr<BitArray>>()),
-                 t[2].cast<int>(), t[3].cast<int>(),
-                 t[4].is_none() ? nullptr : t[4].cast<shared_ptr<CoefficientFunction>>() });
-          }
-        frombytes (orders[1], spec.element_order);
-        if (orders[2].cast<bool>())
-          {
-            auto nodeorders = orders[3].cast<py::list>();
+            auto nodeorders = extra[2].cast<py::list>();
             for (int i = 0; i < 3; i++)
-              frombytes (nodeorders[i], spec.node_order[i]);
+              {
+                std::string s = nodeorders[i].cast<std::string>();
+                spec.node_order[i].SetSize (s.size()/sizeof(short));
+                memcpy ((void*)spec.node_order[i].Data(), s.data(), s.size());
+              }
             spec.node_order_level = mesh->GetNLevels();
           }
-        fes->SetOrderSpecification (spec);
+        fes->SetOrderSpecification (spec, creator);
       }
     fes->Update();
     fes->FinalizeUpdate();
@@ -143,6 +134,8 @@ namespace ngcomp
                       info.append(ma);
                       auto flags = CreateFlagsFromKwArgs(kwargs, pyspace, info);
                       auto fes = make_shared<FES>(ma,flags);
+                      if (flags.AnyFlagDefined ("orderlink") && !fes->IsOrderLinked())
+                        throw Exception ("orderlink is not available for space " + fes->GetClassName());
                       fes->Update();
                       fes->FinalizeUpdate();
                       // connect_auto_update(fes.get());

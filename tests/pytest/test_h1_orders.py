@@ -1,5 +1,6 @@
-"""Order specification of H1: SetOrder for element types, regions, elements and nodes,
-the minimum rule, orders with a direction, hp-refined meshes, pickling."""
+"""Order specification of H1 and L2: SetOrder for element types, regions, elements and nodes,
+the minimum rule, orders with a direction, hp-refined meshes, pickling, linked spaces."""
+import gc
 import pickle
 from math import cos, sin, floor
 import numpy as np
@@ -208,7 +209,7 @@ def test_vectorh1_and_errors():
     assert all(V.GetFE(el).ndof == len(el.dofs) for el in V.Elements(VOL))
 
     with pytest.raises(Exception, match="not available"):
-        L2(mesh, order=2).SetOrder(mesh.Materials("b"), 4)
+        HCurl(mesh, order=2).SetOrder(mesh.Materials("b"), 4)
     with pytest.raises(Exception, match="different mesh"):
         H1(mesh, order=2).SetOrder(mesh2d().Materials("b"), 4)
     with pytest.raises(Exception, match="variableorder"):
@@ -504,7 +505,7 @@ def test_errors_and_vectorh1():
     with pytest.raises(Exception, match="volume elements"):
         fes.SetOrder(ElementId(BND, 0), 3)
     with pytest.raises(Exception, match="not available"):
-        L2(trig, order=2).SetOrder(ElementId(VOL, 0), 3)
+        HCurl(trig, order=2).SetOrder(ElementId(VOL, 0), 3)
     prism = MakeStructured3DMesh(hexes=False, prism=True, nx=1, ny=1, nz=1)
     with pytest.raises(Exception, match="prism"):
         H1(prism, order=2).SetOrder(ElementId(VOL, 0), (2, 3, 4))
@@ -615,7 +616,7 @@ def test_direction_errors():
     with pytest.raises(Exception):
         fes.SetOrder(quad.Materials(".*"), 3, direction=CF((0, 1)))
     with pytest.raises(Exception, match="not available"):
-        L2(quad, order=2).SetOrder(quad.Materials(".*"), (2, 4), direction=CF((0, 1)))
+        HCurl(quad, order=2).SetOrder(quad.Materials(".*"), (2, 4), direction=CF((0, 1)))
 
 
 # ---------------------------------------------------------------- hp-refined meshes
@@ -767,3 +768,385 @@ def test_unpickled_space_goes_on():
     mesh.Refine()
     fes.Update()
     assert f2.ndof == fes.ndof and consistent(f2)
+
+
+# -------------------- linked spaces
+
+def edge_orders(fes, mesh):
+    used = sorted({e.nr for el in fes.Elements(VOL) for e in el.edges})
+    return [fes.GetOrder(NodeId(EDGE, i)) for i in used]
+
+
+def same_space(a, b):
+    return a.ndof == b.ndof and [tuple(el.dofs) for el in a.Elements(VOL)] == [tuple(el.dofs) for el in b.Elements(VOL)]
+
+
+def test_link_offset():
+    mesh = mesh2d()
+    V = H1(mesh, order=3)
+    W = H1(mesh, orderlink=V, relorder=-1)
+    U = H1(mesh, orderlink=V, relorder=2)
+    assert same_space(W, H1(mesh, order=2)) and W.globalorder == 2
+    assert same_space(U, H1(mesh, order=5)) and U.globalorder == 5
+    assert W.order_policy == ORDER_POLICY.CONSTANT
+
+    V.SetOrder(mesh.Materials("b"), 5)
+    V.SetOrder(mesh.Boundaries("bot"), 6)
+    V.SetOrder(ElementId(VOL, 0), 4)
+    V.Update()
+    # the companions are not up to date
+    for fes in (W, U):
+        with pytest.raises(Exception, match="order was changed"):
+            fes.GetFE(ElementId(VOL, 0))
+        fes.Update()
+    ref = H1(mesh, order=2)
+    ref.SetOrder(mesh.Materials("b"), 4)
+    ref.SetOrder(mesh.Boundaries("bot"), 5)
+    ref.SetOrder(ElementId(VOL, 0), 3)
+    ref.Update()
+    assert same_space(W, ref)
+    assert edge_orders(W, mesh) == [p-1 for p in edge_orders(V, mesh)]
+    assert edge_orders(U, mesh) == [p+2 for p in edge_orders(V, mesh)]
+    assert all(W.GetOrder(el) == V.GetOrder(el)-1 for el in mesh.Elements(VOL))
+    for fes in (V, W, U):
+        assert consistent(fes) and conforming(fes, mesh)
+    assert W.order_policy == ORDER_POLICY.VARIABLE
+
+
+def test_only_the_creator_sets():
+    mesh = mesh2d()
+    V = H1(mesh, order=3)
+    W = H1(mesh, orderlink=V, relorder=-1)
+    with pytest.raises(Exception, match="orders belong to"):
+        W.SetOrder(mesh.Materials("b"), 4)
+    with pytest.raises(Exception, match="orders belong to"):
+        W.SetOrder(ElementId(VOL, 0), 4)
+    with pytest.raises(Exception, match="orders belong to"):
+        W.SetOrder(mesh.Boundaries("bot"), 4)
+    # its own layers
+    W.SetOrder(TRIG, 4)
+    W.SetOrder(NodeId(EDGE, 0), 5)
+    W.Update()
+    ref = H1(mesh, order=2, trigorder=4)
+    ref.SetOrder(NodeId(EDGE, 0), 5)
+    ref.Update()
+    assert same_space(W, ref)
+    assert same_space(V, H1(mesh, order=3))
+    V.SetOrder(mesh.Materials("b"), 5)
+    V.Update(); W.Update()
+    assert W.GetOrder(NodeId(EDGE, 0)) == 5 and consistent(W) and conforming(W, mesh)
+
+
+@pytest.mark.parametrize("first", ["creator", "companion"])
+def test_refinement_update_order(first):
+    mesh = Mesh(unit_square.GenerateMesh(maxh=0.3))
+    V = H1(mesh, order=2)
+    W = H1(mesh, orderlink=V, relorder=1)
+    for el in mesh.Elements(VOL):
+        V.SetOrder(el, 2 + el.nr % 3)
+    V.Update(); W.Update()
+    for el in mesh.Elements(VOL):
+        mesh.SetRefinementFlag(el, el.nr % 3 == 0)
+    mesh.Refine()
+    for fes in ((V, W) if first == "creator" else (W, V)):
+        fes.Update()
+    assert all(W.GetOrder(el) == V.GetOrder(el)+1 for el in mesh.Elements(VOL))
+    assert edge_orders(W, mesh) == [p+1 for p in edge_orders(V, mesh)]
+    assert len({V.GetOrder(el) for el in mesh.Elements(VOL)}) == 3
+    for fes in (V, W):
+        assert consistent(fes) and conforming(fes, mesh)
+
+
+def test_link_hp_and_mesh_orders():
+    mesh = hp2d(3)
+    V = H1(mesh, order=4, hpslope=1)
+    W = H1(mesh, orderlink=V, relorder=1)
+    assert same_space(W, H1(mesh, variableorder=True, relorder=1))
+    assert edge_orders(W, mesh) == [p+1 for p in edge_orders(V, mesh)]
+    V2 = H1(mesh, variableorder=True, relorder=0)
+    W2 = H1(mesh, orderlink=V2, relorder=1)
+    assert same_space(W2, W) and consistent(W2) and conforming(W2, mesh)
+
+
+def test_link_3d_and_low_orders():
+    mesh = mesh3d()
+    V = H1(mesh, order=2)
+    V.SetOrder(mesh.Materials("a"), 4)
+    V.Update()
+    for rel in [-5, -1, 0, 1]:
+        W = H1(mesh, orderlink=V, relorder=rel)
+        assert consistent(W) and conforming(W, mesh)
+    W = H1(mesh, orderlink=V, relorder=1)
+    ref = H1(mesh, order=3); ref.SetOrder(mesh.Materials("a"), 5); ref.Update()
+    assert same_space(W, ref)
+
+
+def test_vectorh1_components_are_linked():
+    mesh = mesh2d()
+    V = VectorH1(mesh, order=2)
+    V.SetOrder(mesh.Materials("b"), 4)
+    V.SetOrder(ElementId(VOL, 0), 5)
+    V.Update()
+    ref = H1(mesh, order=2); ref.SetOrder(mesh.Materials("b"), 4); ref.SetOrder(ElementId(VOL, 0), 5); ref.Update()
+    assert V.ndof == 2*ref.ndof and V.GetOrder(ElementId(VOL, 0)) == 5
+    assert all(same_space(c, ref) for c in V.components)
+    with pytest.raises(Exception, match="orders belong to VectorH1"):
+        V.components[1].SetOrder(mesh.Materials("b"), 3)
+    with pytest.raises(Exception, match="orders belong to VectorH1"):
+        V.components[0].SetOrder(mesh.Materials("b"), 3)
+    # a vector space linked to a scalar one, and the other way round
+    S = H1(mesh, order=3)
+    VV = VectorH1(mesh, orderlink=S, relorder=-1)
+    P = H1(mesh, orderlink=V, relorder=-1)
+    S.SetOrder(mesh.Materials("a"), 5)
+    S.Update(); VV.Update()
+    r2 = H1(mesh, order=2); r2.SetOrder(mesh.Materials("a"), 4); r2.Update()
+    assert VV.ndof == 2*r2.ndof
+    with pytest.raises(Exception, match="orders belong to"):
+        VV.SetOrder(mesh.Materials("a"), 3)
+    r3 = H1(mesh, order=1); r3.SetOrder(mesh.Materials("b"), 3); r3.SetOrder(ElementId(VOL, 0), 4); r3.Update()
+    assert same_space(P, r3)
+    # Taylor-Hood with region orders
+    X = V * P
+    u, p = X.TrialFunction()
+    v, q = X.TestFunction()
+    a = BilinearForm(InnerProduct(grad(u), grad(v))*dx + div(u)*q*dx + div(v)*p*dx).Assemble()
+    assert a.mat.height == V.ndof + P.ndof
+
+
+def test_link_errors_and_lifetime():
+    mesh = mesh2d()
+    V = H1(mesh, order=3)
+    with pytest.raises(Exception, match="different mesh"):
+        H1(mesh2d(), orderlink=V)
+    with pytest.raises(Exception, match="orderlink is not available"):
+        HCurl(mesh, orderlink=V)
+    V.SetOrder(mesh.Materials("b"), 5); V.Update()
+    W = H1(mesh, orderlink=V, relorder=-1)
+    n = W.ndof
+    del V
+    gc.collect()
+    W.Update()
+    assert W.ndof == n and consistent(W)
+
+
+def test_pickle_linked():
+    mesh = mesh2d()
+    V = H1(mesh, order=3)
+    W = H1(mesh, orderlink=V, relorder=-1)
+    V.SetOrder(mesh.Materials("b"), 5)
+    V.SetOrder(ElementId(VOL, 0), 4)
+    V.Update(); W.Update()
+    # together: still linked
+    V2, W2 = pickle.loads(pickle.dumps((V, W)))
+    assert same_space(V2, V) and same_space(W2, W)
+    m2 = V2.mesh
+    V2.SetOrder(m2.Materials("a"), 6)
+    V2.Update(); W2.Update()
+    V.SetOrder(mesh.Materials("a"), 6)
+    V.Update(); W.Update()
+    assert same_space(V2, V) and same_space(W2, W) and consistent(W2)
+    with pytest.raises(Exception, match="orders belong to"):
+        W2.SetOrder(m2.Materials("a"), 2)
+    # the companion first
+    W3, V3 = pickle.loads(pickle.dumps((W, V)))
+    V3.SetOrder(V3.mesh.Materials("b"), 2)
+    V3.Update(); W3.Update()
+    ref = H1(mesh, order=2); ref.SetOrder(mesh.Materials("a"), 5); ref.SetOrder(mesh.Materials("b"), 1)
+    ref.SetOrder(ElementId(VOL, 0), 3); ref.Update()
+    assert W3.ndof == ref.ndof
+    # alone
+    W4 = pickle.loads(pickle.dumps(W))
+    assert same_space(W4, W)
+    W4.Update()
+    assert same_space(W4, W)
+    V4 = pickle.loads(pickle.dumps(V))
+    assert same_space(V4, V)
+    # a product space and its GridFunction
+    X = V * W
+    gf = GridFunction(X)
+    gf.components[0].Set(x*y)
+    g2 = pickle.loads(pickle.dumps(gf))
+    assert len(g2.vec) == len(gf.vec)
+    assert abs(Integrate(g2.components[0]**2*dx, g2.space.mesh) - Integrate(gf.components[0]**2*dx, mesh)) < 1e-14
+    # vector valued
+    VV = VectorH1(mesh, order=2)
+    VV.SetOrder(mesh.Materials("b"), 4); VV.Update()
+    P = H1(mesh, orderlink=VV, relorder=-1)
+    VV2, P2 = pickle.loads(pickle.dumps((VV, P)))
+    assert VV2.ndof == VV.ndof and same_space(P2, P)
+    VV2.SetOrder(VV2.mesh.Materials("a"), 3)
+    VV2.Update(); P2.Update()
+    r = H1(mesh, order=1); r.SetOrder(mesh.Materials("b"), 3); r.SetOrder(mesh.Materials("a"), 2); r.Update()
+    assert same_space(P2, r)
+
+
+# -------------------- L2: own orders, linked to H1
+
+def consistent_vol(fes):
+    return all(fes.GetFE(el).ndof == len(el.dofs) for el in fes.Elements(VOL))
+
+
+def ncell(et, p):
+    if isinstance(p, int): p = (p, p, p)
+    return {ET.TRIG: (p[0]+1)*(p[0]+2)//2, ET.QUAD: (p[0]+1)*(p[1]+1),
+            ET.TET: (p[0]+1)*(p[0]+2)*(p[0]+3)//6}[et]
+
+
+def expected_ndof(mesh, pcell):
+    return sum(ncell(el.type, pcell(el)) for el in mesh.Elements(VOL))
+
+
+@pytest.mark.parametrize("kw", [dict(), dict(all_dofs_together=False), dict(order_policy=ORDER_POLICY.CONSTANT)])
+def test_l2_region_and_element_orders(kw):
+    for mesh in [mesh2d(), mesh3d()]:
+        fes = L2(mesh, order=1, **kw)
+        fes.SetOrder(mesh.Materials("b"), 3)
+        fes.SetOrder(ElementId(VOL, 0), 4)
+        with pytest.raises(Exception, match="order was changed"):
+            fes.GetFE(ElementId(VOL, 0))
+        fes.Update()
+        pcell = lambda el: 4 if el.nr == 0 else 3 if el.mat == "b" else 1
+        assert fes.ndof == expected_ndof(mesh, pcell) and consistent_vol(fes)
+        assert all(fes.GetOrder(el) == pcell(el) for el in mesh.Elements(VOL))
+        mesh.Refine()
+        fes.Update()
+        assert consistent_vol(fes) and fes.ndof > expected_ndof(mesh, lambda el: 3 if el.mat == "b" else 1)
+        # mass matrix works
+        u, v = fes.TnT()
+        BilinearForm(u*v*dx).Assemble()
+
+
+def test_l2_direction():
+    mesh = MakeStructured2DMesh(quads=True, nx=3, ny=2)
+    fes = L2(mesh, order=1)
+    fes.SetOrder(mesh.Materials(".*"), (1, 3), direction=(0, 1))
+    fes.Update()
+    assert fes.ndof == mesh.ne*2*4 and consistent_vol(fes)
+    assert sorted(fes.GetOrder(ElementId(VOL, 0))) == [1, 3, 3] or sorted(set(fes.GetOrder(ElementId(VOL, 0)))) == [1, 3]
+
+
+def test_l2_linked_to_h1():
+    mesh = mesh2d()
+    V = H1(mesh, order=3)
+    Q = L2(mesh, orderlink=V, relorder=-1)
+    assert Q.ndof == L2(mesh, order=2).ndof and Q.globalorder == 2
+    V.SetOrder(mesh.Materials("b"), 5)
+    V.SetOrder(ElementId(VOL, 0), 4)
+    V.Update()
+    with pytest.raises(Exception, match="order was changed"):
+        Q.GetFE(ElementId(VOL, 0))
+    Q.Update()
+    assert all(Q.GetOrder(el) == V.GetOrder(el)-1 for el in mesh.Elements(VOL))
+    assert Q.ndof == expected_ndof(mesh, lambda el: V.GetOrder(el)-1) and consistent_vol(Q)
+    with pytest.raises(Exception, match="orders belong to"):
+        Q.SetOrder(mesh.Materials("b"), 2)
+    with pytest.raises(Exception, match="orders belong to"):
+        Q.SetOrder(ElementId(VOL, 1), 2)
+    Q.SetOrder(TRIG, 6)          # own layer: an increment of 6 - 2 on triangles
+    Q.Update()
+    assert Q.ndof == expected_ndof(mesh, lambda el: V.GetOrder(el)-1 + 4) and consistent_vol(Q)
+
+
+@pytest.mark.parametrize("first", ["creator", "companion"])
+def test_l2_link_refinement(first):
+    mesh = Mesh(unit_square.GenerateMesh(maxh=0.3))
+    V = H1(mesh, order=2)
+    Q = L2(mesh, orderlink=V, relorder=-1)
+    for el in mesh.Elements(VOL):
+        V.SetOrder(el, 2 + el.nr % 3)
+    V.Update(); Q.Update()
+    for el in mesh.Elements(VOL):
+        mesh.SetRefinementFlag(el, el.nr % 3 == 0)
+    mesh.Refine()
+    for fes in ((V, Q) if first == "creator" else (Q, V)):
+        fes.Update()
+    assert all(Q.GetOrder(el) == V.GetOrder(el)-1 for el in mesh.Elements(VOL))
+    assert Q.ndof == expected_ndof(mesh, lambda el: V.GetOrder(el)-1) and consistent_vol(Q)
+    assert len({Q.GetOrder(el) for el in mesh.Elements(VOL)}) == 3
+
+
+def test_h1_linked_to_l2():
+    mesh = mesh2d()
+    Q = L2(mesh, order=1)
+    V = H1(mesh, orderlink=Q, relorder=1)
+    Q.SetOrder(mesh.Materials("b"), 3)
+    Q.Update(); V.Update()
+    ref = H1(mesh, order=2); ref.SetOrder(mesh.Materials("b"), 4); ref.Update()
+    assert V.ndof == ref.ndof
+    with pytest.raises(Exception, match="orders belong to"):
+        V.SetOrder(mesh.Materials("b"), 3)
+
+
+def test_l2_hp():
+    L = 3
+    mesh = hp2d(L)
+    ref = L2(mesh, relorder=-1)              # mesh orders - 1
+    own = L2(mesh, order=L, hpslope=1)
+    V = H1(mesh, order=L+1, hpslope=1)
+    Q = L2(mesh, orderlink=V, relorder=-1)
+    for fes in (own, Q):
+        assert fes.ndof == ref.ndof and consistent_vol(fes)
+        assert [tuple(el.dofs) for el in fes.Elements(VOL)] == [tuple(el.dofs) for el in ref.Elements(VOL)]
+    assert L2(mesh, order=3, hpslope=0.5).ndof > own.ndof
+
+
+def test_vector_spaces():
+    mesh = mesh2d()
+    W = VectorL2(mesh, order=1)
+    W.SetOrder(mesh.Materials("b"), 3)
+    W.Update()
+    s = L2(mesh, order=1); s.SetOrder(mesh.Materials("b"), 3); s.Update()
+    assert W.ndof == 2*s.ndof and W.GetOrder(ElementId(VOL, 0)) in (1, 3)
+    assert all(W.GetFE(el).ndof == len(el.dofs) for el in W.Elements(VOL))
+    with pytest.raises(Exception, match="orders belong to VectorL2"):
+        W.components[0].SetOrder(mesh.Materials("b"), 2)
+
+    # Stokes pair with orders on a region
+    V = VectorH1(mesh, order=2)
+    Q = L2(mesh, orderlink=V, relorder=-2)
+    WL = VectorL2(mesh, orderlink=V, relorder=-1)
+    V.SetOrder(mesh.Materials("b"), 4)
+    for fes in (V, Q, WL): fes.Update()
+    assert Q.ndof == expected_ndof(mesh, lambda el: 2 if el.mat == "b" else 0)
+    assert WL.ndof == 2*expected_ndof(mesh, lambda el: 3 if el.mat == "b" else 1)
+    X = V * Q
+    (u, p), (v, q) = X.TnT()
+    a = BilinearForm(InnerProduct(grad(u), grad(v))*dx + div(u)*q*dx + div(v)*p*dx).Assemble()
+    assert a.mat.height == V.ndof + Q.ndof
+    with pytest.raises(Exception, match="orderlink is not available"):
+        HDiv(mesh, orderlink=V)
+
+
+def test_pickle_h1_l2():
+    mesh = mesh2d()
+    V = H1(mesh, order=3)
+    Q = L2(mesh, orderlink=V, relorder=-1)
+    V.SetOrder(mesh.Materials("b"), 5)
+    V.Update(); Q.Update()
+    V2, Q2 = pickle.loads(pickle.dumps((V, Q)))
+    assert V2.ndof == V.ndof and Q2.ndof == Q.ndof
+    V2.SetOrder(V2.mesh.Materials("a"), 4)
+    V2.Update(); Q2.Update()
+    assert Q2.ndof == expected_ndof(mesh, lambda el: 4 if el.mat == "b" else 3)
+    Q3 = pickle.loads(pickle.dumps(Q))
+    assert Q3.ndof == Q.ndof
+    gf = GridFunction(Q); gf.Set(x*y)
+    g2 = pickle.loads(pickle.dumps(gf))
+    assert len(g2.vec) == len(gf.vec)
+    fes = L2(mesh, order=1); fes.SetOrder(mesh.Materials("b"), 3); fes.SetOrder(ElementId(VOL, 0), 2); fes.Update()
+    f2 = pickle.loads(pickle.dumps(fes))
+    assert f2.ndof == fes.ndof
+    W = VectorL2(mesh, order=1); W.SetOrder(mesh.Materials("b"), 3); W.Update()
+    assert pickle.loads(pickle.dumps(W)).ndof == W.ndof
+
+
+def test_l2_node_orders_kept():
+    mesh = mesh2d()
+    fes = L2(mesh, order=1)
+    for el in mesh.Elements(VOL):
+        if el.nr % 2: fes.SetOrder(el.faces[0], 3)
+    fes.SetOrder(mesh.Materials("b"), 2)
+    fes.Update()
+    pcell = lambda el: 3 if el.nr % 2 else 2 if el.mat == "b" else 1
+    assert fes.ndof == expected_ndof(mesh, pcell) and consistent_vol(fes)

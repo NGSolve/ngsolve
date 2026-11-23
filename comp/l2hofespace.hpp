@@ -26,6 +26,7 @@ namespace ngcomp
     int rel_order;
     // order of elements 
     Array<IVec<3> > order_inner;
+    bool constant_order = false;
     // table of first element dofnumber 
     Array<DofId> first_element_dof;
     bool all_dofs_together;
@@ -82,6 +83,14 @@ namespace ngcomp
     virtual void SetOrder (NodeId ni, int order) override;
     virtual int GetOrder (NodeId ni) const override;
     using FESpace::GetOrder;
+    void SetOrder (const Region & region, int order) override
+    { SetRegionOrder (region, max(order, 0)); }
+    void SetOrder (const Region & region, IVec<2> order, shared_ptr<CoefficientFunction> direction) override
+    { SetRegionOrder (region, max(order[0], 0), max(order[1], 0), direction); }
+    void SetOrder (ElementId ei, IVec<3> order) override
+    { SetCellOrder (ei, IVec<3> (max(order[0],0), max(order[1],0), max(order[2],0))); }
+    IVec<3> GetOrder (ElementId ei) const override
+    { bool elementwise; return CellBaseOrder (ei, ma->GetElIndex(ei), elementwise); }
     
     virtual FlatArray<VorB> GetDualShapeNodes (VorB vb) const override;
 
@@ -240,6 +249,23 @@ namespace ngcomp
     static DocInfo GetDocu ();
     
     void GetDofNrs (ElementId ei, Array<int> & dnums) const override;
+
+    // the components share the orders, this space sets them
+    using FESpace::SetOrder;
+    using FESpace::GetOrder;
+    void SetOrder (const Region & region, int order) override
+    { SetRegionOrder (region, max(order, 0)); }
+    void SetOrder (const Region & region, IVec<2> order, shared_ptr<CoefficientFunction> direction) override
+    { SetRegionOrder (region, max(order[0], 0), max(order[1], 0), direction); }
+    void SetOrder (ElementId ei, IVec<3> order) override
+    { SetCellOrder (ei, IVec<3> (max(order[0],0), max(order[1],0), max(order[2],0))); }
+    IVec<3> GetOrder (ElementId ei) const override
+    { bool elementwise; return CellBaseOrder (ei, ma->GetElIndex(ei), elementwise); }
+    void SetOrderSpecification (const OrderSpecification & spec, bool creator) override
+    {
+      FESpace::SetOrderSpecification (spec, creator);
+      for (auto & spc : spaces) spc->SetOrderSpecification (spec, false);
+    }
 
     virtual shared_ptr<BaseMatrix> GetMassOperator (shared_ptr<CoefficientFunction> rho,
                                                     shared_ptr<Region> defon,

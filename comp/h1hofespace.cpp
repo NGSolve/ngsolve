@@ -382,36 +382,42 @@ namespace ngcomp
         flags.GetDefineFlagX("wb_withedges").IsFalse()) wb_loedge = false;
     wb_edge = flags.GetDefineFlag ("wb_fulledges");
     
-    // Variable order space: 
-    //      in case of (variableorder && order) or (relorder) 
-    order_spec.mesh_orders = flags.GetDefineFlag("variableorder");  
     fixed_order = false;
-    order = int (flags.GetNumFlag ("order",1)); 
-    if (order < 1) order = 1;
-
-    if(flags.NumFlagDefined("relorder") && !flags.NumFlagDefined("order")) 
-      order_spec.mesh_orders = 1; 
-    
-    order_spec.rel_order=int(flags.GetNumFlag("relorder",order-1)); 
-
     print = flags.GetDefineFlag("print");
 
-    if(flags.NumFlagDefined("order") && flags.NumFlagDefined("relorder")) 
+    if (LinkOrders (flags))
+      order = max (order, 1);
+    else
       {
-	if(order_spec.mesh_orders)
-	  cerr << " WARNING: H1HoFeSpace: inconsistent flags: variableorder, order and relorder "
-	       << "-> variable order space with rel_order " << order_spec.rel_order << "is used, but order is ignored " << endl; 
-	else 
-	  cerr << " WARNING: H1HoFeSpace: inconsistent flags: order and rel_order "
-	       << "-> uniform order space with order " << order << " is used " << endl; 
+        // Variable order space: in case of (variableorder && order) or (relorder)
+        auto & base = *order_spec.base;
+        base.mesh_orders = flags.GetDefineFlag("variableorder");
+        order = int (flags.GetNumFlag ("order",1));
+        if (order < 1) order = 1;
+        base.order = order;
+
+        if(flags.NumFlagDefined("relorder") && !flags.NumFlagDefined("order"))
+          base.mesh_orders = 1;
+
+        base.rel_order=int(flags.GetNumFlag("relorder",order-1));
+
+        if(flags.NumFlagDefined("order") && flags.NumFlagDefined("relorder"))
+          {
+            if(base.mesh_orders)
+              cerr << " WARNING: H1HoFeSpace: inconsistent flags: variableorder, order and relorder "
+                   << "-> variable order space with rel_order " << base.rel_order << "is used, but order is ignored " << endl;
+            else
+              cerr << " WARNING: H1HoFeSpace: inconsistent flags: order and rel_order "
+                   << "-> uniform order space with order " << order << " is used " << endl;
+          }
+
+        base.hp_slope = flags.GetNumFlag ("hpslope", 0);
+        base.hp_minorder = 1;
+        if (base.hp_slope < 0)
+          throw Exception ("H1HighOrderFESpace: hpslope must not be negative");
+        if (base.hp_slope > 0 && base.mesh_orders)
+          throw Exception ("H1HighOrderFESpace: hpslope not together with variableorder / relorder");
       }
-    
-    order_spec.hp_slope = flags.GetNumFlag ("hpslope", 0);
-    order_spec.hp_minorder = 1;
-    if (order_spec.hp_slope < 0)
-      throw Exception ("H1HighOrderFESpace: hpslope must not be negative");
-    if (order_spec.hp_slope > 0 && order_spec.mesh_orders)
-      throw Exception ("H1HighOrderFESpace: hpslope not together with variableorder / relorder");
 
     order_spec.order_cell = int (flags.GetNumFlag ("orderinner", -1));
     order_spec.order_face = int (flags.GetNumFlag ("orderface", -1));
@@ -596,6 +602,12 @@ into the wirebasket.
     docu.Arg("hpslope") = "double = 0\n"
       "  On meshes refined by RefineHP: the order decreases by hpslope per level\n"
       "  of geometric refinement, in each local direction of an element.";
+    docu.Arg("orderlink") = "FESpace\n"
+      "  Take the orders of regions and elements from this space, offset by relorder.\n"
+      "  Only the given space sets these orders.";
+    docu.Arg("relorder") = "int = 0\n"
+      "  With orderlink: order relative to the linked space.\n"
+      "  Without: order relative to the element orders of the mesh (as variableorder).";
     return docu;
   }
 
@@ -609,13 +621,14 @@ into the wirebasket.
     RegionTimer reg(timer);
 
     // timer1.Start();
+    bool base_changed = order_spec.base->timestamp > order_base_resolved;
     FESpace::Update();
     ClearDualInverse();
 
 
     if (low_order_space) low_order_space -> Update();
     
-    bool first_update = GetTimeStamp() < ma->GetTimeStamp();
+    bool first_update = base_changed || GetTimeStamp() < ma->GetTimeStamp();
     if (first_update) timestamp = NGS_Object::GetNextTimeStamp();
     
     int dim = ma->GetDimension();
@@ -679,7 +692,7 @@ into the wirebasket.
 
 	if(print) 
 	  {
-	    *testout << " H1HoFESpace order " << order << " , var_order " << order_spec.mesh_orders << " , relorder " << order_spec.rel_order << endl;  
+	    *testout << " H1HoFESpace order " << order << " , var_order " << order_spec.base->mesh_orders << " , relorder " << order_spec.base->rel_order << endl;  
 	    (*testout) << "used_vertex (h1): " << used_vertex << endl;
 	    (*testout) << "used_edge (h1): " << used_edge << endl;
 	    (*testout) << "used_face (h1): " << used_face << endl;
@@ -922,7 +935,7 @@ into the wirebasket.
 
     if (archive.Input())
       UpdateDofTables();
-    archive & order_spec.rel_order & order_spec.mesh_orders & fixed_order & wb_loedge;
+    archive & order_spec.base->rel_order & order_spec.base->mesh_orders & fixed_order & wb_loedge;
     archive & used_vertex & used_edge & used_face;
     archive & order_spec.order_cell & order_spec.order_face 
       & order_spec.order_edge & uniform_order_quad & uniform_order_trig;
@@ -2160,9 +2173,15 @@ into the wirebasket.
       Array<string> dirichlet_comp;
       string dirnames[] = { "dirichletx", "dirichlety", "dirichletz" };
       interleaved = flags.GetDefineFlag("interleaved");
+      bool linked = LinkOrders (flags);
       for (int i = 0; i <  ma->GetDimension(); i++)
         {
           Flags tmpflags = flags;
+          if (!linked && i > 0)
+            {
+              tmpflags.SetFlag ("orderlink", std::any (spaces[0]->GetOrderSpecification().base));
+              tmpflags.SetFlag ("relorder", 0.0);
+            }
           if (flags.StringFlagDefined(dirnames[i]))
             {
               auto dir = flags.GetStringFlag(dirnames[i]);
@@ -2187,6 +2206,13 @@ into the wirebasket.
               tmpflags.SetFlag ("dirichlet_bbbnd", dir);
             }
           AddSpace (make_shared<H1HighOrderFESpace> (ama, tmpflags));
+        }
+      if (!linked && spaces.Size())
+        {
+          // the compound space sets the orders
+          order_spec.base = spaces[0]->GetOrderSpecification().base;
+          order_spec.base->creator = this;
+          order_spec.base->creator_name = "VectorH1";
         }
 
       switch (ma->GetDimension())
@@ -2293,6 +2319,8 @@ in this smaller space, which makes elasticity element matrices considerably chea
     docu.Arg("orderedge");
     docu.Arg("orderface");    
     docu.Arg("hpslope");
+    docu.Arg("orderlink");
+    docu.Arg("relorder");
     
     return docu;
   }
@@ -2347,23 +2375,17 @@ in this smaller space, which makes elasticity element matrices considerably chea
   
   void VectorH1FESpace :: SetOrder (const Region & region, int order)
   {
-    order_stale = 2;
-    for (auto & spc : spaces)
-      spc->SetOrder (region, order);
+    SetRegionOrder (region, max(order, 1));
   }
 
   void VectorH1FESpace :: SetOrder (const Region & region, IVec<2> order, shared_ptr<CoefficientFunction> direction)
   {
-    order_stale = 2;
-    for (auto & spc : spaces)
-      spc->SetOrder (region, order, direction);
+    SetRegionOrder (region, max(order[0], 1), max(order[1], 1), direction);
   }
 
   void VectorH1FESpace :: SetOrder (ElementId ei, IVec<3> order)
   {
-    order_stale = 2;
-    for (auto & spc : spaces)
-      spc->SetOrder (ei, order);
+    SetCellOrder (ei, IVec<3> (max(order[0],1), max(order[1],1), max(order[2],1)));
   }
 
   int VectorH1FESpace :: GetOrder (NodeId ni) const

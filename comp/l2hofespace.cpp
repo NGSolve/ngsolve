@@ -811,6 +811,7 @@ namespace ngcomp
 
     // defined flags
     DefineNumFlag("relorder");
+    DefineNumFlag("hpslope");
     DefineDefineFlag("l2ho");
     DefineDefineFlag("all_dofs_together");
     DefineDefineFlag("hide_all_dofs");
@@ -836,6 +837,22 @@ namespace ngcomp
     if(flags.GetDefineFlag("variableorder") )
       {
 	throw Exception ("Flag 'variableorder' for l2ho is obsolete. \n  Either choose uniform order by -order= .. \n -relorder=.. for relative mesh order ");
+      }
+
+    if (LinkOrders (flags))
+      var_order = false;
+    else
+      {
+        auto & base = *order_spec.base;
+        base.order = order;
+        base.mesh_orders = var_order;
+        base.rel_order = var_order ? rel_order : 0;
+        base.hp_slope = flags.GetNumFlag ("hpslope", 0);
+        base.hp_minorder = 0;
+        if (base.hp_slope < 0)
+          throw Exception ("L2HighOrderFESpace: hpslope must not be negative");
+        if (base.hp_slope > 0 && var_order)
+          throw Exception ("L2HighOrderFESpace: hpslope not together with relorder");
       }
 
 
@@ -947,6 +964,15 @@ namespace ngcomp
   DocInfo L2HighOrderFESpace :: GetDocu ()
   {
     DocInfo docu = FESpace::GetDocu();
+    docu.Arg("orderlink") = "FESpace\n"
+      "  Take the orders of regions and elements from this space, offset by relorder.\n"
+      "  Only the given space sets these orders.";
+    docu.Arg("relorder") = "int = 0\n"
+      "  With orderlink: order relative to the linked space.\n"
+      "  Without: order relative to the element orders of the mesh.";
+    docu.Arg("hpslope") = "double = 0\n"
+      "  On meshes refined by RefineHP: the order decreases by hpslope per level\n"
+      "  of geometric refinement, in each local direction of an element.";
     docu.short_docu = "An L2-conforming finite element space.";
     docu.long_docu =
       R"raw_string(The L2 finite element space consists of element-wise polynomials,
@@ -998,35 +1024,43 @@ global system.
 
   void L2HighOrderFESpace :: Update()
   {
+    bool base_changed = order_spec.base->timestamp > order_base_resolved;
     FESpace::Update();
     if(low_order_space) low_order_space -> Update();
 
     // nel = ma->GetNE();
 
-    bool first_update = GetTimeStamp() < ma->GetTimeStamp();
+    bool first_update = base_changed || GetTimeStamp() < ma->GetTimeStamp();
     if (first_update) timestamp = NGS_Object::GetNextTimeStamp();
 
     if (first_update)
       {
 	order_inner.SetSize(ma->GetNE());
 
-	order_inner = IVec<3>(order);
+        UpdateOrderSpecification();
+        auto & cellorder = order_spec.node_order[2];
+        bool nodes = HasNodeOrders() && cellorder.Size() == ma->GetNE();
 
-	if(var_order)
-	  for (auto i : Range(ma->GetNE()))
-            order_inner[i] = ma->GetElOrders(i)+IVec<3>(rel_order);
-        
         for (auto i : Range(ma->GetNE()))
 	  {
 	    ElementId ei(VOL,i);
-	    order_inner[i] = order_inner[i] + IVec<3> (et_bonus_order[ma->GetElType(ei)]);
-	    order_inner[i] = Max(order_inner[i], IVec<3>(0));
 	    if (!DefinedOn (ei))
-	      order_inner[i] = all_dofs_together ? -1 : 0;
+              {
+                order_inner[i] = all_dofs_together ? -1 : 0;
+                continue;
+              }
+            bool elementwise;
+            IVec<3> pc = CellBaseOrder (ei, ma->GetElIndex(ei), elementwise);
+	    order_inner[i] = Max (pc + IVec<3> (et_bonus_order[ma->GetElType(ei)]), IVec<3>(0));
+            if (nodes && cellorder[i] >= 0)
+              order_inner[i] = IVec<3> (cellorder[i]);
 	  }
 	if(print)
 	  *testout << " order_inner (l2ho) " << order_inner << endl;
       }
+
+    // fixed order elements only if asked for, and if the order is constant
+    constant_order = (order_policy == CONSTANT_ORDER && DerivedOrderPolicy() == CONSTANT_ORDER);
 
     UpdateDofTables();
     /*
@@ -1144,7 +1178,7 @@ global system.
                             { return *new(alloc) ScalarDummyFE<et.ElementType()>(); });
           }
 
-	if (eltype == ET_TRIG && order_policy == CONSTANT_ORDER)
+	if (eltype == ET_TRIG && constant_order)
           return *CreateL2HighOrderFE<ET_TRIG> (order, IVec<3>(ngel.Vertices()), alloc);
 
         if (tensorproduct)
@@ -1156,7 +1190,7 @@ global system.
             if (eltype == ET_HEX)
               return * new (alloc) L2HighOrderFETP<ET_HEX> (order, ngel.Vertices(), alloc);
           }
-        if (eltype == ET_TET && order_policy == CONSTANT_ORDER)
+        if (eltype == ET_TET && constant_order)
           return *CreateL2HighOrderFE<ET_TET> (order, IVec<4>(ngel.Vertices()), alloc);
 
         /*
@@ -1412,10 +1446,16 @@ global system.
 	    Array<int> elnr;
 	    if (auto sel = ma->GetNode<2>(ni.GetNr()).surface_el; sel >= 0) elnr.Append(sel);   // 2D: face -> element
 	    if (elnr.Size() && elnr[0] < order_inner.Size())
-	      order_inner[elnr[0]] = order;
+              {
+                order_inner[elnr[0]] = order;
+                SetNodeOrder (2, elnr[0], order);
+              }
 	  }
         else if (ni.GetNr() < order_inner.Size())
-          order_inner[ni.GetNr()] = order;
+          {
+            order_inner[ni.GetNr()] = order;
+            SetNodeOrder (2, ni.GetNr(), order);
+          }
       }
     else
       throw Exception ("L2HighOrderFESpace::SetOrder requires NodeType of codimension 0!");
@@ -1500,7 +1540,7 @@ global system.
     bool curved = false;
     for (auto el : ma->Elements(VOL))
       if (el.is_curved) curved = true;
-    if ( (!rho || rho->ElementwiseConstant()) && all_dofs_together && order_policy == CONSTANT_ORDER && !curved)
+    if ( (!rho || rho->ElementwiseConstant()) && all_dofs_together && constant_order && !curved)
       {
         return make_shared<ApplyMassL2Const>
           (dynamic_pointer_cast<FESpace>(const_cast<L2HighOrderFESpace*>(this)->shared_from_this()),
@@ -5080,6 +5120,15 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
   DocInfo VectorL2FESpace :: GetDocu ()
   {
     DocInfo docu = FESpace::GetDocu();
+    docu.Arg("orderlink") = "FESpace\n"
+      "  Take the orders of regions and elements from this space, offset by relorder.\n"
+      "  Only the given space sets these orders.";
+    docu.Arg("relorder") = "int = 0\n"
+      "  With orderlink: order relative to the linked space.\n"
+      "  Without: order relative to the element orders of the mesh.";
+    docu.Arg("hpslope") = "double = 0\n"
+      "  On meshes refined by RefineHP: the order decreases by hpslope per level\n"
+      "  of geometric refinement, in each local direction of an element.";
     docu.short_docu = "A vector-valued L2-conforming finite element space.";
     docu.long_docu =
       R"raw_string(The Vector-L2 finite element space is a product-space of L2 spaces,
@@ -5119,8 +5168,23 @@ One can evaluate the vector-valued function, and one can take the gradient.
       Flags compflags = flags;
       if (flags.GetDefineFlagX("all_dofs_together").IsMaybeTrue())
         compflags.SetFlag("all_dofs_together");
+      bool linked = LinkOrders (flags);
       for (int i = 0; i <  ma->GetDimension(); i++)
-        AddSpace (make_shared<L2HighOrderFESpace> (ama, compflags));
+        {
+          if (!linked && i == 1)
+            {
+              compflags.SetFlag ("orderlink", std::any (spaces[0]->GetOrderSpecification().base));
+              compflags.SetFlag ("relorder", 0.0);
+            }
+          AddSpace (make_shared<L2HighOrderFESpace> (ama, compflags));
+        }
+      if (!linked && spaces.Size())
+        {
+          // the compound space sets the orders
+          order_spec.base = spaces[0]->GetOrderSpecification().base;
+          order_spec.base->creator = this;
+          order_spec.base->creator_name = "VectorL2";
+        }
 
       // piola2 is the old name of piola
       piola = flags.GetDefineFlag ("piola") || flags.GetDefineFlag ("piola2");
@@ -5257,7 +5321,8 @@ One can evaluate the vector-valued function, and one can take the gradient.
          << "rho = " << *rho << endl
          << "elwiseconst = " << rho->ElementwiseConstant() << endl;
     */
-    if ((!rho || rho->ElementwiseConstant()) && order_policy == CONSTANT_ORDER && !curved)
+    if ((!rho || rho->ElementwiseConstant()) && order_policy == CONSTANT_ORDER
+        && DerivedOrderPolicy() == CONSTANT_ORDER && !curved)
       // && (covariant || piola || (rho && rho->Dimension() > 1) )
       {
         // cout << "optimized vector-apply-mass" << endl;

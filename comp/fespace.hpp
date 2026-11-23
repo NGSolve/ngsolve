@@ -253,25 +253,35 @@ ANY                  1 1 1 1 | 15
     ORDER_POLICY order_policy = OLDSTYLE_ORDER;
 
   public:
-    /// order specification: with order and et_bonus_order the input of ResolveOrders
-    struct OrderSpecification
+    /// orders on regions, later entries win.
+    /// VOL: order of the cells, BND, BBND: order of the faces and edges of the region.
+    /// order_dir: different order along the direction, or along the axis of prisms
+    struct RegionOrder
     {
+      VorB vb; BitArray mask; int order;
+      int order_dir = -1;
+      shared_ptr<CoefficientFunction> direction;
+    };
+
+    /// base orders of the cells and orders on regions, can be shared by linked spaces
+    struct BaseOrders
+    {
+      BaseOrders () = default;
+      BaseOrders (const BaseOrders &) = delete;
+      // only the space which created the orders sets them
+      const void * creator = nullptr;
+      string creator_name;
+      // another space is linked to these orders
+      bool has_links = false;
+      // last change
+      size_t timestamp = 0;
+      // state of mesh and orders seen by UpdateOrderSpecification
+      size_t prepared_mesh = size_t(-1), prepared_spec = size_t(-1);
+      // global order
+      int order = 1;
       // cell orders are the element orders of the mesh + rel_order
       bool mesh_orders = false;
       int rel_order = 0;
-      // order for all nodes of one type, -1 .. not set
-      int order_edge = -1;
-      int order_face = -1;
-      int order_cell = -1;
-      // orders on regions, later entries win.
-      // VOL: order of the cells, BND, BBND: order of the faces and edges of the region
-      // order_dir: different order along the direction, or along the axis of prisms
-      struct RegionOrder
-      {
-        VorB vb; BitArray mask; int order;
-        int order_dir = -1;
-        shared_ptr<CoefficientFunction> direction;
-      };
       Array<RegionOrder> region_orders;
       // orders in local directions of cells in regions with order_dir, -1 .. none
       Array<IVec<3,short>> region_cell_order;
@@ -281,6 +291,18 @@ ANY                  1 1 1 1 | 15
       int hp_maxmeshorder = 1;
       // orders of cells in their local directions, -1 .. not set; inherited by the children
       Array<IVec<3,short>> element_order;
+    };
+
+    /// order specification: with et_bonus_order the input of ResolveOrders
+    struct OrderSpecification
+    {
+      shared_ptr<BaseOrders> base = make_shared<BaseOrders>();
+      // linked space: its orders are the base orders + link_offset
+      int link_offset = 0;
+      // order for all nodes of one type, -1 .. not set
+      int order_edge = -1;
+      int order_face = -1;
+      int order_cell = -1;
       // orders of single edges, faces, cells, -1 .. not set; valid on mesh level node_order_level
       Array<short> node_order[3];
       int node_order_level = -1;
@@ -290,6 +312,13 @@ ANY                  1 1 1 1 | 15
 
     // order changed: 1 .. dof tables are old, 2 .. orders are not resolved
     int order_stale = 0;
+    // base orders of this time are resolved
+    size_t order_base_resolved = 0;
+    bool order_linked = false;
+
+    /// take the base orders of the space given by the flag orderlink, offset by relorder
+    bool LinkOrders (const Flags & flags);
+    void CheckOrderCreator () const;
 
     void SetNodeOrder (int type, size_t nr, int order);
     void SetRegionOrder (const Region & region, int order, int order_dir = -1,
@@ -297,11 +326,12 @@ ANY                  1 1 1 1 | 15
     /// what the order specification takes from the mesh; before ResolveOrders
     void UpdateOrderSpecification ();
     void SetCellOrder (ElementId ei, IVec<3> order);
-    bool HasElementOrders () const { return order_spec.element_order.Size() > 0; }
+    bool HasElementOrders () const { return order_spec.base->element_order.Size() > 0; }
     /// element orders of a refined mesh from the parent elements
     void InheritElementOrders ();
     /// order of a cell before shape increments. elementwise: from element or mesh orders
     IVec<3> CellBaseOrder (ElementId ei, int index, bool & elementwise) const;
+    IVec<3> UnlinkedCellBaseOrder (ElementId ei, int index, bool & elementwise) const;
     bool HasNodeOrders () const { return order_spec.node_order_level == ma->GetNLevels(); }
     /// order policy following from the order specification
     ORDER_POLICY DerivedOrderPolicy () const;
@@ -404,9 +434,11 @@ ANY                  1 1 1 1 | 15
     virtual void SetOrder (ElementId ei, IVec<3> order);
     virtual IVec<3> GetOrder (ElementId ei) const;
     virtual ORDER_POLICY GetOrderPolicy () const { return order_policy; }
+    /// the space takes its orders from the space given by the flag orderlink
+    bool IsOrderLinked () const { return order_linked; }
     virtual const OrderSpecification & GetOrderSpecification () const { return order_spec; }
     /// takes the orders of regions, elements and single nodes
-    virtual void SetOrderSpecification (const OrderSpecification & spec);
+    virtual void SetOrderSpecification (const OrderSpecification & spec, bool creator);
 
     /// how many components
     int GetDimension () const { return dimension; }
@@ -915,10 +947,10 @@ ANY                  1 1 1 1 | 15
 
     virtual int GetRelOrder() const
     {
-      return order_spec.rel_order;
+      return order_spec.base->rel_order;
     }
 
-    virtual bool VarOrder() const { return order_spec.mesh_orders; }
+    virtual bool VarOrder() const { return order_spec.base->mesh_orders; }
 
     bool timing;
     std::list<std::tuple<std::string,double>> Timing () const;

@@ -152,13 +152,15 @@ namespace ngcomp
     void SetOrder (const Region & region, int order) override;
     void SetOrder (const Region & region, IVec<2> order, shared_ptr<CoefficientFunction> direction) override;
     void SetOrder (ElementId ei, IVec<3> order) override;
-    IVec<3> GetOrder (ElementId ei) const override { return spaces[0]->GetOrder (ei); }
+    IVec<3> GetOrder (ElementId ei) const override
+    { bool elementwise; return CellBaseOrder (ei, ma->GetElIndex(ei), elementwise); }
+    // single node orders are in the components
     const OrderSpecification & GetOrderSpecification () const override
     { return spaces[0]->GetOrderSpecification(); }
-    void SetOrderSpecification (const OrderSpecification & spec) override
+    void SetOrderSpecification (const OrderSpecification & spec, bool creator) override
     {
-      order_stale = 2;
-      for (auto & spc : spaces) spc->SetOrderSpecification (spec);
+      FESpace::SetOrderSpecification (spec, creator);
+      for (auto & spc : spaces) spc->SetOrderSpecification (spec, false);
     }
     virtual int GetOrder (NodeId ni) const override;
     using FESpace::GetOrder;
