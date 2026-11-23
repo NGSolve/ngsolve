@@ -54,6 +54,14 @@ with the documentation (``make technotes``, needs ``latexmk`` for the PDF and
     optional for values of ``H1`` and for surface spaces. ``DefinedOnRegion``,
     drawing of surface functions, changes for existing scripts.
 
+**2026-08** `Form types of proxy functions <2026-08_form_types.html>`_ (`PDF <2026-08_form_types.pdf>`__)
+    *Michael Neunteufel, Kaibo Hu, Jay Gopalakrishnan, Joachim Schöberl.*
+    How the values of trial and test functions transform from the reference
+    element: k-forms counted from the bottom (``VERTEX``, ``EDGE``) and from
+    the top (``FACET``, ``ELEMENT``), tensor-valued proxies as lists of
+    factors, exactness on curved elements, pairings, traces and the dual
+    operators; ``proxy.forms``, ``forms_exact`` and ``forms_detpower``.
+
 Adding a note
 -------------
 

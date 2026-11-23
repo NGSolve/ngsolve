@@ -1,0 +1,198 @@
+\documentclass[10pt,a4paper]{article}
+\usepackage[margin=2cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx,booktabs,xcolor}
+\usepackage{listings}
+\usepackage[colorlinks=true,linkcolor=blue!50!black,urlcolor=blue!50!black,citecolor=blue!50!black]{hyperref}
+\usepackage{microtype}
+
+\lstset{language=Python,basicstyle=\ttfamily\small,keywordstyle=\color{blue!60!black}\bfseries,
+  commentstyle=\color{green!40!black},stringstyle=\color{red!50!black},
+  frame=single,framerule=0.3pt,rulecolor=\color{gray!60},backgroundcolor=\color{gray!5},
+  columns=fullflexible,keepspaces=true,showstringspaces=false,
+  numbers=left,numberstyle=\tiny\color{gray},xleftmargin=1.5em,aboveskip=6pt,belowskip=4pt}
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\VV}{\textsf{V}}
+\newcommand{\EE}{\textsf{E}}
+\newcommand{\FF}{\textsf{F}}
+\newcommand{\LL}{\textsf{L}}
+\newcommand{\CC}{\textsf{C}}
+\renewcommand{\labelitemi}{$\bullet$}
+\setlength{\parindent}{0pt}\setlength{\parskip}{4pt}\setlength{\emergencystretch}{3em}\sloppy
+\setlength{\textfloatsep}{8pt}\setlength{\intextsep}{7pt}\setlength{\abovecaptionskip}{4pt}\setlength{\belowcaptionskip}{0pt}
+
+\title{\vspace{-1.2cm}Form Types of Proxy Functions\\[2pt]
+\large How the values of trial and test functions transform from the reference element}
+\author{Michael Neunteufel \and Kaibo Hu \and Jay Gopalakrishnan \and Joachim Sch\"oberl}
+\date{NGSolve Technical Note 2026-08\quad$\bullet$\quad version 2026-11-23}
+
+\begin{document}
+\maketitle\vspace{-1.2cm}
+
+\section{The problem}
+
+A proxy function of NGSolve \cite{s14} -- a trial function, a test function, or one of their derivatives and traces -- knows the shape of its values, but used not to know how these values are obtained from the reference element. This knowledge existed only implicitly, inside the differential operators: $H(\operatorname{curl})$ shape functions are mapped covariantly, $H(\operatorname{div})$ shape functions by the Piola transformation, \code{HDivDiv} stresses by the double Piola transformation \cite{ps11}, \code{HCurlDiv} stresses by a mixed one \cite{gls1}.
+
+The transformation type is useful
+\begin{itemize}\setlength\itemsep{1pt}
+\item to decide whether an integrand needs the Jacobian $F$ at all, or only its determinant, or nothing -- the basis of reference-element and matrix-free kernels;
+\item to check pairings and spaces for compatibility, for example whether $\operatorname{div}$ of an $H(\operatorname{div})$ function and an $L^2$ function form a commuting pair on curved elements;
+\item to translate between NGSolve and other form languages without per-space tables.
+\end{itemize}
+NGSolve now attaches the transformation type to the differential operators, and shows it in Python as \code{proxy.forms}.
+
+\section{Form types}
+
+Let $F$ be the Jacobian of the element mapping $\Phi : \hat T \to T$, $J = \det F$, and let $\hat u$ be the value on the reference element. The differential forms of degree $0$, $1$, $d-1$ and $d$ have scalar or vector proxies, which transform as in Table~\ref{tab:types} \cite{afw06,bossavit}. The essential point is how the degree is counted: \code{VERTEX} and \code{EDGE} count from the bottom (degree $0$ and $1$), \code{FACET} and \code{ELEMENT} from the top (degree $d-1$ and $d$). The names are the mesh entities which carry the lowest order (Whitney) degrees of freedom.
+
+\begin{table}[h]\centering\small
+\begin{tabular}{@{}lcccll@{}}\toprule
+type & degree & counted from & transformation & index & typical space \\\midrule
+\code{VERTEX}  & $0$   & bottom & $u = \hat u$ & -- & \code{H1} \\
+\code{EDGE}    & $1$   & bottom & $u = F^{-T} \hat u$ & yes & \code{HCurl} \\
+\code{FACET}   & $d-1$ & top    & $u = J^{-1} F \hat u$ & yes & \code{HDiv} \\
+\code{ELEMENT} & $d$   & top    & $u = J^{-1} \hat u$ & -- & $\operatorname{div}$ of \code{HDiv} \\\midrule
+\code{COMP}    & --    & --     & $u = \hat u$ & yes & component index of \code{VectorH1} \\\bottomrule
+\end{tabular}
+\caption{Form types. \code{COMP} is a Cartesian component index, it is not transformed.}\label{tab:types}
+\end{table}
+
+Counting from the bottom or from the top, instead of by the degree, makes the types independent of the dimension:
+\begin{itemize}\setlength\itemsep{1pt}
+\item In two dimensions \code{EDGE} and \code{FACET} are both 1-forms, but their vector proxies differ by a rotation: they are $H(\operatorname{curl})$ and $H(\operatorname{div})$. The degree alone cannot distinguish them.
+\item A type counted from the top is a density: it carries $J^{-1}$, and its index is a Piola index instead of a covariant one. The Hodge star swaps bottom and top: \code{VERTEX} $\leftrightarrow$ \code{ELEMENT}, \code{EDGE} $\leftrightarrow$ \code{FACET}.
+\item On a boundary element the same rules apply with $d$ the dimension of the element, $F$ its rectangular Jacobian, $F^{-T}$ its pseudo-inverse and $J = \sqrt{\det F^TF}$ its measure.
+\end{itemize}
+
+\section{Tensor-valued proxies}
+
+A tensor-valued proxy is described by an ordered list of factors, one form type each. Matrix fields with two form factors are double forms, as in the complexes of \cite{ah21} and the 2-complex of \cite{ghs25}. Factors of type \code{EDGE}, \code{FACET} and \code{COMP} own one tensor index, \code{VERTEX} and \code{ELEMENT} own none, so the index-carrying factors match the dimensions of \code{shape}. The transformation acts factor by factor: an index factor maps its index by $F^{-T}$, $J^{-1}F$ or the identity, every \code{ELEMENT} factor contributes another $J^{-1}$. In addition, a proxy may carry an integer \code{detpower}: the value is multiplied by $J^{\mathrm{detpower}}$. It is $0$ except for the duals of double forms, see Section~\ref{sec:dual}.
+
+Table~\ref{tab:proxies} lists the types NGSolve reports. Every row is checked by \code{tests/pytest/test\_forms.py}: the values of all shape functions on an affine element, and on a curved one, are compared with the transformation built from \code{proxy.forms}.
+
+\begin{table}[h]\centering\small
+\begin{tabular}{@{}lll@{}}\toprule
+space & operator & factors \\\midrule
+\code{H1}, \code{L2} & value, \code{grad}, \code{hesse} & [\VV], [\EE], [\EE,\EE]$^*$ \\
+\code{HCurl} & value, \code{curl} (3D), \code{curl} (2D), \code{grad} & [\EE], [\FF], [\LL], [\EE,\EE]$^*$ \\
+\code{HDiv} & value, \code{div}, \code{grad} & [\FF], [\LL], [\EE,\FF]$^*$ \\
+\code{VectorL2} & value & [\CC,\VV] \\
+\code{VectorL2(piola=True)} & value, \code{div} & [\FF], [\LL] \\
+\code{VectorL2(covariant=True)} & value, \code{curl} & [\EE], [\FF] \\
+\code{SurfaceL2} & value; with \code{dual\_mapping} & [\VV]; [\LL] \\
+\code{L2} & \code{dual} & [\LL] \\
+\code{HCurlCurl} & value, \code{curl}, \code{inc} (3D), \code{inc} (2D) & [\EE,\EE], [\EE,\FF]$^*$, [\FF,\FF]$^*$, [\LL,\LL]$^*$ \\
+\code{HDivDiv} & value, \code{div} & [\FF,\FF], [\FF,\LL]$^*$ \\
+\code{HCurlDiv} & value, \code{div} & [\EE,\FF], [\EE,\LL]$^*$ \\
+\code{VectorH1}, \code{H1(dim=3)} & value, \code{Grad}, \code{hesse} & [\CC,\VV], [\CC,\EE], [\CC,\EE,\EE]$^*$ \\
+\code{VectorValued(HCurl)} & value, \code{curl} & [\CC,\EE], [\CC,\FF] \\
+\code{MatrixValued(H1)} & value, \code{Grad} & [\CC,\CC,\VV], [\CC,\CC,\EE] \\\midrule
+\code{H1}, \code{HCurl}, \code{HCurlCurl} & \code{Trace()} & [\VV], [\EE], [\EE,\EE] \\
+\code{FacetFESpace}, \code{TangentialFacetFESpace} & \code{Trace()} & [\VV], [\EE] \\
+\code{TangentialFacetFESpace}, \code{NormalFacetFESpace} & value on element facets & [\EE], [\FF] \\\bottomrule
+\end{tabular}
+\caption{Factors of the proxies, with \VV, \EE, \FF, \LL, \CC\ for \code{VERTEX}, \code{EDGE}, \code{FACET}, \code{ELEMENT}, \code{COMP}. A $^*$ marks \code{forms\_exact == False}: the transformation holds on affine elements only.}\label{tab:proxies}
+\end{table}
+
+Observations:
+\begin{itemize}\setlength\itemsep{1pt}
+\item \code{SurfaceL2} with \code{dual\_mapping} is mapped like $\operatorname{div}$ of \code{HDiv}, as a density. The scalar \code{L2} space maps by the identity, as a function. On curved elements the types [\VV] and [\LL] differ: $\operatorname{div} H(\operatorname{div}) \subset L^2$ holds exactly on affine elements only.
+\item The operator \code{grad} of \code{HDiv} puts the derivative index first, [\EE,\FF], while \code{Grad} of \code{VectorL2(piola=True)} gives [\FF,\EE].
+\item Double forms with both factors counted from the top carry $J^{-2}$: \code{inc} of a 2D Regge field is [\LL,\LL], and so would be $\operatorname{div}\operatorname{div}$ of \code{HDivDiv}.
+\item The mixed transformation of \code{HCurlDiv} preserves the trace, $\operatorname{tr}(F^{-T}\hat\sigma F^T) = \operatorname{tr}\hat\sigma$. This is why the deviatoric stresses of the MCS method \cite{gls1} stay deviatoric on every element.
+\end{itemize}
+
+\section{Operations on form types}
+
+\textbf{Exterior derivative.} A derivative acts on one factor and raises its degree by one:
+\[
+\begin{array}{ll}
+\text{3D:} & \code{VERTEX} \xrightarrow{\ \operatorname{grad}\ } \code{EDGE} \xrightarrow{\ \operatorname{curl}\ } \code{FACET} \xrightarrow{\ \operatorname{div}\ } \code{ELEMENT}, \\[2pt]
+\text{2D:} & \code{VERTEX} \xrightarrow{\ \operatorname{grad}\ } \code{EDGE} \xrightarrow{\ \operatorname{curl}\ } \code{ELEMENT}, \qquad
+             \code{VERTEX} \xrightarrow{\ \operatorname{rot}\ } \code{FACET} \xrightarrow{\ \operatorname{div}\ } \code{ELEMENT}.
+\end{array}
+\]
+With tensors, $\operatorname{inc} = \operatorname{curl}\,(\cdot)\operatorname{curl}^T$ maps [\EE,\EE] to [\FF,\FF], as in the elasticity complex \cite{ah21}.
+
+\textbf{Exactness on curved elements.} The derivative of a factor is exact if and only if it is an exterior derivative and all other factors are of type \code{COMP} or \code{VERTEX}, since only then no derivatives of $F$ appear. Thus \code{Grad} of \code{VectorH1} is exact, while \code{grad} of \code{HDiv} is exact only up to terms with $\nabla F$. In particular, derivatives of double forms have no algebraic transformation: \code{inc} of \code{HCurlCurl} and \code{hesse} of \code{H1} need the second derivatives of $\Phi$ on curved elements, and their types describe only the leading term. Across element interfaces these second-order operators are understood in the distributional sense, as in the 2-complex of \cite{ghs25}. For the nonlinear second-order operator on Regge metrics, the Riemann curvature, the generalization of \cite{gnsw} combines the angle defect with jumps of the second fundamental form.
+
+\textbf{Pairings.} In an integral $\int_T u \cdot v\,dx$ with all indices contracted, an \code{EDGE} index contracted with a \code{FACET} index, or \code{COMP} with \code{COMP}, leaves no $F$: $(F^{-T}\hat u)\cdot(F\hat v) = \hat u\cdot\hat v$. What remains is a power of $J$: $-1$ for every factor counted from the top, plus the \code{detpower} of $u$ and $v$, plus $1$ from $dx$. The integral is independent of the geometry if all contractions are of this kind and the total power is $0$. $\int \operatorname{div} u\,q\,dx$ with [\LL] and [\VV], and $\int u\cdot e\,dx$ with [\FF] and [\EE], are geometry-free. $\int \sigma : \varepsilon\,dx$ with \code{HDivDiv} [\FF,\FF] and \code{HCurlCurl} [\EE,\EE] contracts without $F$, but leaves $J^{-1}$. For a kernel: the index types decide whether $F$ is needed, the count of top factors the power of $J$.
+
+\textbf{Traces.} The trace keeps the degree. Factors counted from the bottom keep their type: the tangential trace of \code{HCurl} is \code{EDGE} on the boundary element. A factor counted from the top moves up one step: the normal component of an \code{HDiv} function is a density of the boundary element. NGSolve returns the \code{HDiv} trace as this density times the unit normal vector; this product is not a list of form factors, and the trace reports no types.
+
+\section{Dual operators}\label{sec:dual}
+
+The \code{dual} operators provide the functionals of the degrees of freedom, $\psi(u) = \int_T u \cdot q\,dx$. Interpolation commutes with the pullback if these integrals are geometry-free. For a single form this makes the dual the Hodge star of the primal type.
+
+For a double form, the Hodge star on both factors gives two densities, but the integral has room for only one: the double-sided Piola transformation of the \code{HCurlCurl} dual is one volume form off. The commuting duals are therefore the Hodge star on every factor, multiplied by $J$ once for every factor beyond the first. This extra $J$ is the \code{detpower} of the proxy:
+
+\begin{table}[h]\centering\small
+\begin{tabular}{@{}lllll@{}}\toprule
+space & primal & dual & \code{detpower} & transformation of the dual \\\midrule
+\code{H1}, \code{L2} & [\VV] & [\LL] & 0 & $J^{-1}\hat q$ \\
+\code{HCurl} & [\EE] & [\FF] & 0 & $J^{-1}F\hat q$ \\
+\code{HDiv} & [\FF] & [\EE] & 0 & $F^{-T}\hat q$ \\
+\code{VectorH1} & [\CC,\VV] & [\CC,\LL] & 0 & $J^{-1}\hat q$ \\
+\code{HCurlCurl} & [\EE,\EE] & [\FF,\FF] & 1 & $J^{-1} F \hat q F^T$ \\
+\code{HDivDiv} & [\FF,\FF] & [\EE,\EE] & 1 & $J F^{-T} \hat q F^{-1}$ \\
+\code{HCurlDiv} & [\EE,\FF] & [\FF,\EE] & 1 & $F \hat q F^{-1}$ \\\bottomrule
+\end{tabular}
+\caption{Types of the \code{dual} operators. All rows are checked on affine tetrahedra. The dual is evaluated on elements of every co-dimension, and the types are relative to that element; the \code{H1}, \code{HCurl} and \code{HCurlCurl} duals are also checked on boundary faces.}\label{tab:dual}
+\end{table}
+
+With the counting rule for pairings, $\int u : q\,dx$ of a primal proxy and its dual has total power $0$, and all index contractions are \code{EDGE} with \code{FACET}: the functionals are geometry-free. Since the dual operators contain no derivatives, this holds on curved elements as well.
+
+\section{Python interface}
+
+The form types are the enumeration \code{FORM}. A proxy reports its factors in \code{forms}, in the order of its tensor indices:
+\begin{lstlisting}
+u = HCurlCurl(mesh, order=2).TrialFunction()
+print (u.shape, u.forms)              # (3, 3) (FORM.EDGE, FORM.EDGE)
+v = HDiv(mesh, order=2).TestFunction()
+print (div(v).forms)                  # (FORM.ELEMENT,)
+w = VectorH1(mesh, order=2).TrialFunction()
+print (Grad(w).forms, Grad(w).forms_exact)   # (FORM.COMP, FORM.EDGE) True
+print (w.Operator("hesse").forms_exact)      # False
+s = HCurlCurl(mesh, order=2).TestFunction().Operator("dual")
+print (s.forms, s.forms_detpower)     # (FORM.FACET, FORM.FACET) 1
+\end{lstlisting}
+\begin{itemize}\setlength\itemsep{1pt}
+\item \code{FORM} has the members \code{VERTEX}, \code{EDGE}, \code{FACET}, \code{ELEMENT}, \code{COMP}, each with the properties \code{from\_top}, \code{offset} (distance of the degree from $0$ or $d$), \code{has\_index}, \code{star}, and the method \code{degree(dim)}.
+\item \code{forms} is a tuple of \code{FORM} values, \code{forms\_detpower} the integer power of $J$, \code{forms\_exact} tells whether the transformation holds on curved elements, or only up to terms with $\nabla F$. All are \code{None} for operators without types.
+\item Wrapper spaces keep the types of the base space. \code{VectorValued}, \code{H1(dim=...)} and \code{VectorL2} prepend \code{COMP}, \code{MatrixValued} prepends two. Components of product spaces keep their types.
+\end{itemize}
+
+\section{Implementation}
+
+\begin{itemize}\setlength\itemsep{1pt}
+\item \code{fem/differentialoperator.hpp} defines the enum \code{FORM\_TYPE}, the struct \code{FormSignature} (factors, the flag \code{exact} and the integer \code{detpower}) and the virtual \code{DifferentialOperator::Forms()}, which returns \code{nullopt} by default.
+\item A \code{DiffOp} class declares its types by a static member, \code{T\_DifferentialOperator} forwards it:
+\begin{lstlisting}[language=C++,numbers=none,xleftmargin=0pt]
+static FormSignature Forms() { return { { FORM_EDGE, FORM_FACET }, true }; }
+\end{lstlisting}
+\item The wrappers (\code{Block}, \code{BlockTrans}, \code{Vector}, \code{Matrix}, \code{SymMatrix}, \code{SymDevMatrix}, \code{SkewMatrix}, \code{Compound}) combine the types of the base operator with their \code{COMP} indices.
+\item \code{VectorDifferentialOperator} no longer flattens the indices of the base operator: \code{VectorValued(HCurlCurl)} has shape $(3,3,3)$, as does \code{hesse} of \code{VectorH1}. A contraction of the first index with the normal vector reads \code{H[n,:,:]}.
+\end{itemize}
+
+\section{Open points}
+
+\begin{itemize}\setlength\itemsep{1pt}
+\item The boundary and surface variants of the dual operators (\code{dualbnd} of \code{HCurlCurl}, the duals of the surface spaces) report no types yet.
+\item \code{grad} of \code{HCurlCurl} is still flattened to shape $(3,9)$ and has no types.
+\item Contracted components (\code{normalcomponent}, \code{nncomponent}, the \code{HDiv} trace) are products with the normal vector, not lists of form factors.
+\item The types are not yet propagated through \code{CoefficientFunction} expressions. Doing so would allow to check pairings, and to choose reference-element kernels automatically.
+\end{itemize}
+
+{\small
+\begin{thebibliography}{9}\setlength\itemsep{1pt}
+\bibitem{s14} J.~Sch\"oberl. C++11 implementation of finite elements in NGSolve. ASC Report 30/2014, TU Wien, 2014.
+\bibitem{afw06} D.~N.~Arnold, R.~S.~Falk and R.~Winther. Finite element exterior calculus, homological techniques, and applications. \emph{Acta Numer.} 15:1--155, 2006.
+\bibitem{bossavit} A.~Bossavit. Whitney forms: a class of finite elements for three-dimensional computations in electromagnetism. \emph{IEE Proc. A} 135(8):493--500, 1988.
+\bibitem{ah21} D.~N.~Arnold and K.~Hu. Complexes from complexes. \emph{Found. Comput. Math.} 21:1739--1774, 2021.
+\bibitem{ghs25} J.~Gopalakrishnan, K.~Hu and J.~Sch\"oberl. A 2-complex containing Sobolev spaces of matrix fields. arXiv:2507.11869, 2025.
+\bibitem{gnsw} J.~Gopalakrishnan, M.~Neunteufel, J.~Sch\"oberl and M.~Wardetzky. Generalizing Riemann curvature to Regge metrics. arXiv:2311.01603, 2023.
+\bibitem{ps11} A.~Pechstein and J.~Sch\"oberl. Tangential-displacement and normal-normal-stress continuous mixed finite elements for elasticity. \emph{Math. Models Methods Appl. Sci.} 21(8):1761--1782, 2011.
+\bibitem{gls1} J.~Gopalakrishnan, P.~L.~Lederer and J.~Sch\"oberl. A mass conserving mixed stress formulation for the Stokes equations. \emph{IMA J. Numer. Anal.} 40(3):1838--1874, 2020.
+\end{thebibliography}}
+
+\end{document}
