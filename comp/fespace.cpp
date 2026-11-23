@@ -559,6 +559,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     
     ma->UpdateBuffers();  // is free if netgen-mesh did not change
     int dim = ma->GetDimension();
+    order_stale = 0;
 
     for (auto vb : { VOL, BND, BBND, BBBND })
       if (auto & mask = definedon_region.Mask(vb); mask.Size() != ma->GetNRegions(vb))
@@ -1247,6 +1248,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     flags.SetFlag(flagname, order);
     
     timestamp = 0;  // rerun first_update
+    order_stale = 2;
   }
 
 
@@ -1262,6 +1264,501 @@ lot of new non-zero entries in the matrix!\n" << endl;
   }
     
 
+
+  template <typename TO>
+  void FESpace :: ResolveOrders (int minorder,
+                                 FlatArray<bool> used_edge, FlatArray<bool> used_face,
+                                 FlatArray<TO> order_edge,
+                                 FlatArray<IVec<2,TO>> order_face,
+                                 FlatArray<IVec<3,TO>> order_cell) const
+  {
+    int dim = ma->GetDimension();
+    int p = order_spec.mesh_orders ? minorder : order;
+
+    for (auto & ro : order_spec.region_orders)
+      if (ro.mask.Size() != ma->GetNRegions(ro.vb))
+        throw Exception ("FESpace: number of regions of the mesh changed, region orders are not valid anymore");
+
+    // minimum rule: an edge or face takes the lowest order of its cells
+    const TO unset = std::numeric_limits<TO>::max();
+    order_edge = unset;
+    order_face = IVec<2,TO> (unset);
+    order_cell = IVec<3,TO> (p);
+
+    ParallelFor (ma->GetNE(VOL), [&] (size_t nr)
+                 {
+                   Ngs_Element el = (*ma)[ElementId(VOL, nr)];
+                   if (!DefinedOn (el)) return;
+
+                   bool elementwise;
+                   IVec<3> pc = CellBaseOrder (el, el.GetIndex(), elementwise);
+                   int lo = elementwise ? minorder : 0;
+                   ELEMENT_TYPE eltype = el.GetType();
+
+                   for (int k = 0; k < 3; k++)
+                     order_cell[nr][k] = max2 (lo, pc[k] + et_bonus_order[eltype]);
+
+                   if (pc[0] == pc[1] && pc[1] == pc[2])
+                     {
+                       if (order_edge.Size())
+                         for (auto e : el.Edges())
+                           AtomicMin (order_edge[e], TO (max2 (lo, pc[0] + et_bonus_order[ET_SEGM])));
+
+                       if (order_face.Size())
+                         for (auto f : el.Faces())
+                           {
+                             TO pf = max2 (lo, pc[0] + et_bonus_order[ma->GetFaceType(f)]);
+                             AtomicMin (order_face[f][0], pf);
+                             AtomicMin (order_face[f][1], pf);
+                           }
+                       return;
+                     }
+
+                   // different orders in the local directions
+                   auto faces = ElementTopology::GetFaces (eltype);
+                   auto edges = ElementTopology::GetEdges (eltype);
+                   const POINT3D * points = ElementTopology::GetVertices (eltype);
+                   auto vnums = el.Vertices();
+
+                   if (order_edge.Size())
+                     {
+                       auto eledges = el.Edges();
+                       for (int j = 0; j < eledges.Size(); j++)
+                         for (int k = 0; k < dim; k++)
+                           if (points[edges[j][0]][k] != points[edges[j][1]][k])
+                             {
+                               AtomicMin (order_edge[eledges[j]], TO (max2 (lo, pc[k] + et_bonus_order[ET_SEGM])));
+                               break;
+                             }
+                     }
+
+                   if (order_face.Size())
+                     {
+                       auto elfaces = el.Faces();
+                       for (int j = 0; j < elfaces.Size(); j++)
+                         {
+                           auto & of = order_face[elfaces[j]];
+                           if (faces[j][3] == -1)
+                             {
+                               TO pf = max2 (lo, pc[0] + et_bonus_order[ET_TRIG]);
+                               AtomicMin (of[0], pf);
+                               AtomicMin (of[1], pf);
+                             }
+                           else
+                             {
+                               // face directions by global vertex numbers
+                               int fmax = 0;
+                               for (int k = 1; k < 4; k++)
+                                 if (vnums[faces[j][k]] > vnums[faces[j][fmax]]) fmax = k;
+
+                               IVec<2> f((fmax+3)%4, (fmax+1)%4);
+                               if (vnums[faces[j][f[1]]] > vnums[faces[j][f[0]]]) swap (f[0], f[1]);
+
+                               for (int l = 0; l < 2; l++)
+                                 for (int k = 0; k < 3; k++)
+                                   if (points[faces[j][fmax]][k] != points[faces[j][f[l]]][k])
+                                     {
+                                       AtomicMin (of[l], TO (max2 (lo, pc[k] + et_bonus_order[ET_QUAD])));
+                                       break;
+                                     }
+                             }
+                         }
+                     }
+                 });
+
+    if ((order_spec.region_orders.Size() || order_spec.mesh_orders || HasElementOrders() || order_spec.hp_slope > 0)
+        && ma->GetCommunicator().Size() > 1)
+      {
+        // cells of other ranks
+        Array<int> hedge (order_edge.Size()), hface (order_face.Size());
+        for (auto i : Range(hedge)) hedge[i] = order_edge[i];
+        ma->AllReduceNodalData (NT_EDGE, hedge, NG_MPI_MIN);
+        for (auto i : Range(hedge)) order_edge[i] = TO (hedge[i]);
+        for (int k = 0; k < 2; k++)
+          {
+            for (auto i : Range(hface)) hface[i] = order_face[i][k];
+            ma->AllReduceNodalData (NT_FACE, hface, NG_MPI_MIN);
+            for (auto i : Range(hface)) order_face[i][k] = TO (hface[i]);
+          }
+      }
+
+    // edges and faces without a cell of the space
+    for (auto & oe : order_edge)
+      if (oe == unset) oe = TO (p);
+    for (auto & of : order_face)
+      if (of[0] == unset) of = IVec<2,TO> (p);
+
+    // faces and edges of boundary regions, the last region wins
+    bool bnd_regions = false;
+    for (auto & ro : order_spec.region_orders)
+      if (ro.vb != VOL) bnd_regions = true;
+    if (bnd_regions)
+      {
+        auto & regs = order_spec.region_orders;
+        Array<int> edge_reg (order_edge.Size()), face_reg (order_face.Size());
+        edge_reg = -1;
+        face_reg = -1;
+        for (int k : Range(regs))
+          if (regs[k].vb == BND || regs[k].vb == BBND)
+            for (Ngs_Element el : ma->Elements(regs[k].vb))
+              {
+                if (el.GetType() == ET_POINT || !regs[k].mask.Test(el.GetIndex())) continue;
+                if (edge_reg.Size())
+                  for (auto e : el.Edges())
+                    edge_reg[e] = k;
+                if (face_reg.Size() && regs[k].vb == BND)
+                  face_reg[ma->GetSElFace(el.Nr())] = k;
+              }
+        ma->AllReduceNodalData (NT_EDGE, edge_reg, NG_MPI_MAX);
+
+        for (auto i : Range(edge_reg))
+          if (edge_reg[i] >= 0)
+            order_edge[i] = TO (max2 (0, regs[edge_reg[i]].order + et_bonus_order[ET_SEGM]));
+        for (auto i : Range(face_reg))
+          if (face_reg[i] >= 0)
+            order_face[i] = IVec<2,TO> (max2 (0, regs[face_reg[i]].order + et_bonus_order[ma->GetFaceType(i)]));
+      }
+
+    if (order_spec.order_cell > -1)
+      order_cell = IVec<3,TO> (order_spec.order_cell);
+    if (order_spec.order_face > -1 && dim == 3)
+      order_face = IVec<2,TO> (order_spec.order_face);
+    if (order_spec.order_edge > -1)
+      order_edge = TO (order_spec.order_edge);
+
+    for (auto i : Range(order_edge))
+      if (!used_edge[i]) order_edge[i] = minorder;
+
+    for (auto i : Range(order_face))
+      if (!used_face[i]) order_face[i] = IVec<2,TO> (minorder);
+
+    for (ElementId ei : ma->Elements<VOL>())
+      if (!DefinedOn(ei)) order_cell[ei.Nr()] = IVec<3,TO> (minorder);
+
+    if (HasNodeOrders())
+      {
+        auto & no = order_spec.node_order;
+        if (no[0].Size() == order_edge.Size())
+          for (auto i : Range(order_edge))
+            if (no[0][i] >= 0) order_edge[i] = TO (no[0][i]);
+        if (no[1].Size() == order_face.Size())
+          for (auto i : Range(order_face))
+            if (no[1][i] >= 0) order_face[i] = IVec<2,TO> (no[1][i]);
+        if (no[2].Size() == order_cell.Size())
+          for (auto i : Range(order_cell))
+            if (no[2][i] >= 0) order_cell[i] = IVec<3,TO> (no[2][i]);
+      }
+  }
+
+  template void FESpace :: ResolveOrders<unsigned char> (int, FlatArray<bool>, FlatArray<bool>, FlatArray<unsigned char>,
+                                                       FlatArray<IVec<2,unsigned char>>, FlatArray<IVec<3,unsigned char>>) const;
+
+  void FESpace :: SetNodeOrder (int type, size_t nr, int order)
+  {
+    auto & spec = order_spec;
+    if (spec.node_order_level != ma->GetNLevels())
+      {
+        for (auto & a : spec.node_order) a.SetSize(0);
+        spec.node_order_level = ma->GetNLevels();
+      }
+    size_t n = (type == 0) ? ma->GetNEdges() : (type == 1) ? ma->GetNFaces() : ma->GetNE();
+    auto & a = spec.node_order[type];
+    if (a.Size() != n)
+      {
+        a.SetSize (n);
+        a = -1;
+      }
+    if (nr < n) a[nr] = order;
+  }
+
+  void FESpace :: SetRegionOrder (const Region & region, int order, int order_dir,
+                                  shared_ptr<CoefficientFunction> direction)
+  {
+    if (region.Mesh() != ma)
+      throw Exception ("SetOrder: region belongs to a different mesh");
+    if (region.VB() == BBBND)
+      throw Exception ("SetOrder: no order for regions of points");
+    if (region.VB() == VOL && order_spec.mesh_orders)
+      throw Exception ("SetOrder: no order for volume regions together with variableorder / relorder");
+    if (order_dir >= 0)
+      {
+        if (region.VB() != VOL)
+          throw Exception ("SetOrder: different orders in different directions only for volume regions");
+        if (direction && direction->Dimension() != ma->GetDimension())
+          throw Exception ("SetOrder: the direction needs one component per space dimension");
+        for (Ngs_Element el : ma->Elements<VOL>())
+          if (region.Mask().Test(el.GetIndex()))
+            switch (el.GetType())
+              {
+              case ET_PRISM:
+                break;
+              case ET_QUAD: case ET_HEX:
+                if (!direction)
+                  throw Exception ("SetOrder: quadrilaterals and hexahedra need a direction for the second order");
+                break;
+              default:
+                throw Exception ("SetOrder: different orders in different directions only for quadrilaterals, hexahedra and prisms");
+              }
+      }
+
+    auto & regs = order_spec.region_orders;
+    // a repeated call for the same region replaces its entry
+    for (size_t i = 0; i < regs.Size(); i++)
+      if (regs[i].vb == region.VB() && regs[i].mask == region.Mask())
+        {
+          regs.RemoveElement (i);
+          break;
+        }
+    regs.Append (OrderSpecification::RegionOrder { region.VB(), BitArray(region.Mask()), order, order_dir, direction });
+
+    timestamp = 0;
+    order_stale = 2;
+  }
+
+  IVec<3> FESpace :: CellBaseOrder (ElementId ei, int index, bool & elementwise) const
+  {
+    elementwise = true;
+    auto & eo = order_spec.element_order;
+    if (ei.Nr() < eo.Size() && eo[ei.Nr()][0] >= 0)
+      return IVec<3> (int(eo[ei.Nr()][0]), int(eo[ei.Nr()][1]), int(eo[ei.Nr()][2]));
+
+    if (order_spec.mesh_orders)
+      {
+        // no element orders in 1D meshes
+        IVec<3> o = (ma->GetDimension() >= 2) ? ma->GetElOrders(ei.Nr()) : IVec<3>(1);
+        for (int k = 0; k < 3; k++)
+          o[k] += order_spec.rel_order;
+        return o;
+      }
+
+    elementwise = false;
+    auto & rco = order_spec.region_cell_order;
+    if (ei.Nr() < rco.Size() && rco[ei.Nr()][0] >= 0)
+      return IVec<3> (int(rco[ei.Nr()][0]), int(rco[ei.Nr()][1]), int(rco[ei.Nr()][2]));
+
+    int p = order;
+    for (auto & ro : order_spec.region_orders)
+      if (ro.vb == VOL && ro.mask.Test(index))
+        p = ro.order;
+
+    if (order_spec.hp_slope > 0 && ma->GetDimension() >= 2)
+      {
+        // the mesh stores maxorder - level in each local direction
+        elementwise = true;
+        IVec<3> mo = ma->GetElOrders(ei.Nr());
+        if (ma->GetDimension() == 2) mo[2] = mo[1];
+        IVec<3> o;
+        for (int k = 0; k < 3; k++)
+          {
+            int level = max2 (0, order_spec.hp_maxmeshorder - mo[k]);
+            o[k] = max2 (order_spec.hp_minorder, p - int (floor (order_spec.hp_slope*level + 1e-9)));
+          }
+        return o;
+      }
+
+    return IVec<3> (p);
+  }
+
+  template <int D>
+  static int AlignedLocalDirection (const MeshAccess & ma, ElementId ei,
+                                    const CoefficientFunction & direction, LocalHeap & lh)
+  {
+    IntegrationPoint ip (0.5, 0.5, (D == 3) ? 0.5 : 0);
+    ElementTransformation & trafo = ma.GetTrafo (ei, lh);
+    MappedIntegrationPoint<D,D> mip (ip, trafo);
+    Vec<D> dir;
+    direction.Evaluate (mip, FlatVector<> (D, &dir(0)));
+    Mat<D,D> jac = mip.GetJacobian();
+    int best = 0;
+    double bestval = -1;
+    for (int k = 0; k < D; k++)
+      {
+        double sum = 0, len = 0;
+        for (int i = 0; i < D; i++)
+          {
+            sum += dir(i) * jac(i,k);
+            len += sqr (jac(i,k));
+          }
+        double val = fabs(sum) / sqrt(len);
+        if (val > bestval) { bestval = val; best = k; }
+      }
+    return best;
+  }
+
+  void FESpace :: UpdateOrderSpecification ()
+  {
+    InheritElementOrders();
+    auto & spec = order_spec;
+    size_t ne = ma->GetNE();
+
+    if (spec.hp_slope > 0 && ma->GetDimension() >= 2)
+      {
+        int maxorder = 1;
+        for (size_t i = 0; i < ne; i++)
+          {
+            IVec<3> mo = ma->GetElOrders(i);
+            for (int k = 0; k < ma->GetDimension(); k++)
+              maxorder = max2 (maxorder, mo[k]);
+          }
+        spec.hp_maxmeshorder = ma->GetCommunicator().AllReduce (maxorder, NG_MPI_MAX);
+      }
+
+    bool directions = false;
+    for (auto & ro : spec.region_orders)
+      if (ro.order_dir >= 0) directions = true;
+    spec.region_cell_order.SetSize (directions ? ne : 0);
+    if (!directions) return;
+
+    LocalHeap lh (100000, "orderspec");
+    for (Ngs_Element el : ma->Elements<VOL>())
+      {
+        HeapReset hr(lh);
+        auto & rco = spec.region_cell_order[el.Nr()];
+        rco = IVec<3,short> (-1);
+
+        const OrderSpecification::RegionOrder * last = nullptr;
+        for (auto & ro : spec.region_orders)
+          if (ro.vb == VOL && ro.mask.Test(el.GetIndex()))
+            last = &ro;
+        if (!last || last->order_dir < 0) continue;
+
+        short pt = last->order, pn = last->order_dir;
+        switch (el.GetType())
+          {
+          case ET_PRISM:
+            rco = IVec<3,short> (pt, pt, pn);
+            break;
+          case ET_QUAD:
+            {
+              int k = AlignedLocalDirection<2> (*ma, el, *last->direction, lh);
+              rco = (k == 0) ? IVec<3,short> (pn, pt, pt) : IVec<3,short> (pt, pn, pn);
+              break;
+            }
+          case ET_HEX:
+            {
+              int k = AlignedLocalDirection<3> (*ma, el, *last->direction, lh);
+              rco = IVec<3,short> (pt);
+              rco[k] = pn;
+              break;
+            }
+          default:
+            throw Exception ("order with direction only for quadrilaterals, hexahedra and prisms");
+          }
+      }
+  }
+
+  void FESpace :: InheritElementOrders ()
+  {
+    auto & eo = order_spec.element_order;
+    size_t n0 = eo.Size(), n1 = ma->GetNE();
+    if (n0 == 0 || n0 == n1) return;
+
+    // a child with a new number has its parent, a refined element keeps its number
+    Array<IVec<3,short>> neo(n1);
+    bool ok = n1 > n0;
+    for (size_t i = 0; ok && i < n1; i++)
+      {
+        size_t a = i;
+        while (a >= n0)
+          {
+            a = ma->GetParentElement (ElementId(VOL, a)).Nr();
+            if (a >= n1) { ok = false; break; }
+          }
+        if (ok) neo[i] = eo[a];
+      }
+
+    if (ok)
+      eo = std::move(neo);
+    else
+      {
+        eo.SetSize(0);
+        cerr << "WARNING: " << GetClassName() << ": element orders are dropped, "
+             << "this refinement provides no parent elements" << endl;
+      }
+  }
+
+  void FESpace :: SetCellOrder (ElementId ei, IVec<3> o)
+  {
+    if (ei.VB() != VOL)
+      throw Exception ("SetOrder: element orders are for volume elements, use a boundary region or NodeId");
+    size_t ne = ma->GetNE();
+    if (ei.Nr() >= ne)
+      throw Exception ("SetOrder: element number out of range");
+
+    bool isotropic = (o[0] == o[1] && o[1] == o[2]);
+    switch (ma->GetElType(ei))
+      {
+      case ET_SEGM:
+        o = IVec<3> (o[0]); break;
+      case ET_QUAD:
+        o[2] = o[1]; break;
+      case ET_PRISM:
+        if (o[0] != o[1])
+          throw Exception ("SetOrder: a prism has one order in its triangle and one along its axis");
+        break;
+      case ET_HEX:
+        break;
+      default:
+        if (!isotropic)
+          throw Exception ("SetOrder: different orders in different directions only for quadrilaterals, hexahedra and prisms");
+      }
+
+    auto & eo = order_spec.element_order;
+    if (eo.Size() != ne) InheritElementOrders();
+    if (eo.Size() != ne)
+      {
+        eo.SetSize (ne);
+        eo = IVec<3,short> (-1);
+      }
+    eo[ei.Nr()] = IVec<3,short> (short(o[0]), short(o[1]), short(o[2]));
+
+    timestamp = 0;
+    order_stale = 2;
+  }
+
+  void FESpace :: SetOrder (ElementId ei, IVec<3> order)
+  {
+    throw Exception (string("FESpace::SetOrder for elements not available for space ") + GetClassName());
+  }
+
+  IVec<3> FESpace :: GetOrder (ElementId ei) const
+  {
+    throw Exception (string("FESpace::GetOrder for elements not available for space ") + GetClassName());
+  }
+
+  void FESpace :: SetOrderSpecification (const OrderSpecification & spec)
+  {
+    order_spec.region_orders = spec.region_orders;
+    order_spec.element_order = spec.element_order;
+    for (int i = 0; i < 3; i++)
+      order_spec.node_order[i] = spec.node_order[i];
+    order_spec.node_order_level = spec.node_order_level;
+
+    timestamp = 0;
+    order_stale = 2;
+  }
+
+  void FESpace :: SetOrder (const Region & region, int order)
+  {
+    throw Exception (string("FESpace::SetOrder for regions not available for space ") + GetClassName());
+  }
+
+  void FESpace :: SetOrder (const Region & region, IVec<2> order, shared_ptr<CoefficientFunction> direction)
+  {
+    throw Exception (string("FESpace::SetOrder for regions not available for space ") + GetClassName());
+  }
+
+  ORDER_POLICY FESpace :: DerivedOrderPolicy () const
+  {
+    if (order_spec.mesh_orders || HasNodeOrders() || HasElementOrders() || order_spec.region_orders.Size()
+        || order_spec.hp_slope > 0)
+      return VARIABLE_ORDER;
+    for (int bonus : et_bonus_order)
+      if (bonus) return NODE_TYPE_ORDER;
+    if (order_spec.order_edge > -1 || order_spec.order_face > -1 || order_spec.order_cell > -1)
+      return NODE_TYPE_ORDER;
+    return CONSTANT_ORDER;
+  }
 
   /*
   const FiniteElement & FESpace :: GetFE (int elnr, LocalHeap & lh) const
@@ -1865,6 +2362,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
   {
     if (level_updated >= 0 && level_updated < ma->GetNLevels())
       throw Exception (GetClassName() + " is not up to date with its mesh (refined without Update)");
+    if (level_updated >= 0 && order_stale)
+      throw Exception (GetClassName() + " is not up to date, its order was changed without Update");
   }
   
   void FESpace :: CheckDofConsistency (VorB vb, bool all_elements) const

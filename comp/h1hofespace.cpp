@@ -365,6 +365,7 @@ namespace ngcomp
     DefineNumFlag("orderquad");
     DefineNumFlag("ordertrig");
     DefineNumFlag("variableorder"); 
+    DefineNumFlag("hpslope");
     //  DefineNumListFlag("dom_order_min_x");
     //  DefineNumListFlag("dom_order_max_x");
     //  DefineNumListFlag("dom_order_min_y");
@@ -382,32 +383,39 @@ namespace ngcomp
     wb_edge = flags.GetDefineFlag ("wb_fulledges");
     
     // Variable order space: 
-    //      in case of (var_order && order) or (relorder) 
-    var_order = flags.GetDefineFlag("variableorder");  
-    fixed_order = flags.GetDefineFlag("fixedorder");  
+    //      in case of (variableorder && order) or (relorder) 
+    order_spec.mesh_orders = flags.GetDefineFlag("variableorder");  
+    fixed_order = false;
     order = int (flags.GetNumFlag ("order",1)); 
     if (order < 1) order = 1;
 
     if(flags.NumFlagDefined("relorder") && !flags.NumFlagDefined("order")) 
-      var_order = 1; 
+      order_spec.mesh_orders = 1; 
     
-    rel_order=int(flags.GetNumFlag("relorder",order-1)); 
+    order_spec.rel_order=int(flags.GetNumFlag("relorder",order-1)); 
 
     print = flags.GetDefineFlag("print");
 
     if(flags.NumFlagDefined("order") && flags.NumFlagDefined("relorder")) 
       {
-	if(var_order)
+	if(order_spec.mesh_orders)
 	  cerr << " WARNING: H1HoFeSpace: inconsistent flags: variableorder, order and relorder "
-	       << "-> variable order space with rel_order " << rel_order << "is used, but order is ignored " << endl; 
+	       << "-> variable order space with rel_order " << order_spec.rel_order << "is used, but order is ignored " << endl; 
 	else 
 	  cerr << " WARNING: H1HoFeSpace: inconsistent flags: order and rel_order "
 	       << "-> uniform order space with order " << order << " is used " << endl; 
       }
     
-    uniform_order_inner = int (flags.GetNumFlag ("orderinner", -1));
-    uniform_order_face = int (flags.GetNumFlag ("orderface", -1));
-    uniform_order_edge = int (flags.GetNumFlag ("orderedge", -1));
+    order_spec.hp_slope = flags.GetNumFlag ("hpslope", 0);
+    order_spec.hp_minorder = 1;
+    if (order_spec.hp_slope < 0)
+      throw Exception ("H1HighOrderFESpace: hpslope must not be negative");
+    if (order_spec.hp_slope > 0 && order_spec.mesh_orders)
+      throw Exception ("H1HighOrderFESpace: hpslope not together with variableorder / relorder");
+
+    order_spec.order_cell = int (flags.GetNumFlag ("orderinner", -1));
+    order_spec.order_face = int (flags.GetNumFlag ("orderface", -1));
+    order_spec.order_edge = int (flags.GetNumFlag ("orderedge", -1));
     uniform_order_quad = int (flags.GetNumFlag ("orderquad", -1));
     uniform_order_trig = int (flags.GetNumFlag ("ordertrig", -1));
     
@@ -585,6 +593,9 @@ into the wirebasket.
     docu.Arg("orderinner");
     docu.Arg("orderedge");
     docu.Arg("orderface");    
+    docu.Arg("hpslope") = "double = 0\n"
+      "  On meshes refined by RefineHP: the order decreases by hpslope per level\n"
+      "  of geometric refinement, in each local direction of an element.";
     return docu;
   }
 
@@ -601,11 +612,6 @@ into the wirebasket.
     FESpace::Update();
     ClearDualInverse();
 
-    if (order_policy == CONSTANT_ORDER)
-      fixed_order = true;
-    
-    TORDER maxorder = 0;
-    TORDER minorder = 99; 
 
     if (low_order_space) low_order_space -> Update();
     
@@ -667,140 +673,13 @@ into the wirebasket.
 	order_face.SetSize (nfa);
 	order_inner.SetSize (ne);
 
-	int p = var_order ?  1 : order; 
-    
-	order_edge = p; 
-	order_face = IVec<2,TORDER>(p); 
-	order_inner = IVec<3,TORDER>(p);
-	
-	if(var_order) 
-	  for (Ngs_Element el : ma->Elements<VOL>())
-	    {	
-	      if (!DefinedOn (el)) continue;
-	      int i = el.Nr();
-          
-	      ELEMENT_TYPE eltype = el.GetType(); 
-	      auto faces = ElementTopology::GetFaces (eltype);
-	      auto edges = ElementTopology::GetEdges (eltype);
-	      const POINT3D * points = ElementTopology :: GetVertices (eltype);
-
-	      auto vnums = el.Vertices();
-	      auto eledges = el.Edges();
-	
-	      IVec<3,TORDER> el_orders = ma->GetElOrders(i) + IVec<3> (rel_order);
-
-	      maxorder = max2 (maxorder, Max(el_orders));
-	      minorder = min2 (minorder, Min(el_orders));
-	      // for(int l=0;l<3;l++) maxorder = max2(el_orders[l],maxorder); 
-	      // for(int l=0;l<3;l++) minorder = min2(el_orders[l],minorder); 
-          
-	      order_inner[i] = Max (order_inner[i], el_orders + IVec<3,TORDER>(et_bonus_order[eltype]));
-	      // for(int j=0;j<dim;j++) order_inner[i][j] = max2(order_inner[i][j],el_orders[j]);
-
-	      for(int j=0;j<eledges.Size();j++)
-		{
-		  for(int k=0;k<dim;k++)
-		    if(points[edges[j][0]][k] != points[edges[j][1]][k])
-		      { 
-			order_edge[eledges[j]] = max2(order_edge[eledges[j]],
-						      TORDER(el_orders[k]+et_bonus_order[ET_SEGM]));
-			k=dim; 
-		      }
-		}
-          
-	      if(dim==3)
-		{
-		  auto elfaces = el.Faces();              
-		  for(int j=0;j<elfaces.Size();j++)
-		    {
-		      // trig_face
-		      if(faces[j][3]==-1) 
-			{
-			  order_face[elfaces[j]][0] = 
-			    int(max2(order_face[elfaces[j]][0], 
-				     TORDER(el_orders[0]+et_bonus_order[ET_TRIG])));
-			  order_face[elfaces[j]][1] = order_face[elfaces[j]][0]; 
-			}
-		      else //quad_face
-			{
-			  int fmax = 0;
-			  for(int k = 1; k < 4; k++) 
-			    if(vnums[faces[j][k]] > vnums[faces[j][fmax]]) fmax = k;   
-                      
-			  IVec<2> f((fmax+3)%4,(fmax+1)%4); 
-			  if(vnums[faces[j][f[1]]] > vnums[faces[j][f[0]]]) swap(f[0],f[1]);
-                      
-			  for(int l=0;l<2;l++)
-			    for(int k=0;k<3;k++)
-			      if(points[faces[j][fmax]][k] != points[faces[j][f[l] ]][k])
-				{
-				  order_face[elfaces[j]][l] = 
-				    int(max2(order_face[elfaces[j]][l], 
-					     TORDER(el_orders[k]+et_bonus_order[ET_TRIG])));
-				  break;
-				}
-			}
-		    }
-		}
-	    }
-    
-	else  // not var_order
-
-	  {
-	    // for (Ngs_Element el : ma->Elements<VOL>())
-	    ParallelFor (ma->GetNE(VOL), [&] (size_t nr)
-			 {
-			   ElementId ei(VOL, nr);
-			   Ngs_Element el = (*ma)[ei];
-                     
-			   if (!DefinedOn (el)) return; 
-                     
-			   if (dim >= 2)
-			     for (auto e : el.Edges())
-			       order_edge[e] = p + et_bonus_order[ET_SEGM];
-                     
-			   if (dim == 3)
-			     for (auto f : el.Faces())
-			       order_face[f] = p + et_bonus_order[ma->GetFaceType(f)];
-
-			   order_inner[el.Nr()] = p + et_bonus_order[el.GetType()];
-			 });
-	  }
-	/* 
-	   if (ma->GetDimension() == 2 && uniform_order_trig != -1 && uniform_order_quad != -1)
-	   {
-	   for (int i = 0; i < nel; i++)
-	   {
-	   if (ma->GetElType(i) == ET_TRIG)
-	   order_inner = IVec<3> (uniform_order_trig, uniform_order_trig, uniform_order_trig);
-	   else
-	   order_inner = IVec<3> (uniform_order_quad, uniform_order_quad, uniform_order_quad);
-	   }
-	   }
-	*/
-
-	// timer2.Stop();
-	// timer3.Start();
-    
-	if(uniform_order_inner > -1)  
-	  order_inner = IVec<3,TORDER>(uniform_order_inner);
-	if(uniform_order_face > -1 && dim == 3) 
-	  order_face = IVec<2,TORDER>(uniform_order_face);
-	if(uniform_order_edge > -1)   
-	  order_edge = uniform_order_edge; 
-
-	for (auto i : Range(used_edge))
-	  if (!used_edge[i]) order_edge[i] = 1; 
-
-	for (auto i : used_face.Range())
-	  if (!used_face[i]) order_face[i] = 1; 
-
-	for (ElementId ei : ma->Elements<VOL>())
-	  if (!DefinedOn(ei)) order_inner[ei.Nr()] = 1;
+        UpdateOrderSpecification();
+        ResolveOrders (1, used_edge, used_face, order_edge, order_face, order_inner);
+        fixed_order = (DerivedOrderPolicy() == CONSTANT_ORDER);
 
 	if(print) 
 	  {
-	    *testout << " H1HoFESpace order " << order << " , var_order " << var_order << " , relorder " << rel_order << endl;  
+	    *testout << " H1HoFESpace order " << order << " , var_order " << order_spec.mesh_orders << " , relorder " << order_spec.rel_order << endl;  
 	    (*testout) << "used_vertex (h1): " << used_vertex << endl;
 	    (*testout) << "used_edge (h1): " << used_edge << endl;
 	    (*testout) << "used_face (h1): " << used_face << endl;
@@ -811,16 +690,6 @@ into the wirebasket.
 	    (*testout) << "order_face (h1): " << order_face <<  endl;
 	    (*testout) << "order_inner (h1): " << order_inner << endl;
 	  }
-    
-#ifdef SABINE 
-	// fuer EE damit ich mit rel_order auch p-ref machen kann :) 
-	order=order_inner[0][0]; 
-
-	if (!var_order) { maxorder = order; minorder = order; }; 
-	order = maxorder;
-
-	cout << " H1FESPACE : " << minorder << " <= order <= " << maxorder << endl;  
-#endif 
       }
     UpdateDofTables ();
     UpdateCouplingDofArray ();
@@ -852,6 +721,7 @@ into the wirebasket.
   void H1HighOrderFESpace :: UpdateDofTables ()
   {
     static Timer t("H1HighOrderFESpace::UpdateDofTables"); RegionTimer reg(t);
+    if (order_stale == 1) order_stale = 0;
 
     int dim = ma->GetDimension();
     size_t nv = ma->GetNV();
@@ -1052,10 +922,10 @@ into the wirebasket.
 
     if (archive.Input())
       UpdateDofTables();
-    archive & rel_order & var_order & fixed_order & wb_loedge;
+    archive & order_spec.rel_order & order_spec.mesh_orders & fixed_order & wb_loedge;
     archive & used_vertex & used_edge & used_face;
-    archive & uniform_order_inner & uniform_order_face 
-      & uniform_order_edge & uniform_order_quad & uniform_order_trig;
+    archive & order_spec.order_cell & order_spec.order_face 
+      & order_spec.order_edge & uniform_order_quad & uniform_order_trig;
     archive & dom_order_min & dom_order_max;
     // archive & smoother;
     // archive & ndlevel;
@@ -1287,27 +1157,26 @@ into the wirebasket.
   
   void H1HighOrderFESpace :: SetOrder (NodeId ni, int order) 
   {
-    if (order_policy == CONSTANT_ORDER || order_policy == NODE_TYPE_ORDER)
-      throw Exception("In H1HighOrderFESpace::SetOrder. Order policy is constant or node-type!");
-    else if (order_policy == OLDSTYLE_ORDER)
-      order_policy = VARIABLE_ORDER;
-      
     if (order < 1)
       order = 1;
-    
+
+    // kept in the specification, and set in the resolved orders
     switch (ni.GetType())
       {
       case NT_VERTEX:
         break;
       case NT_EDGE:
+        SetNodeOrder (0, ni.GetNr(), order);
         if (ni.GetNr() < order_edge.Size())
           order_edge[ni.GetNr()] = order;
         break;
       case NT_FACE:
+        SetNodeOrder (1, ni.GetNr(), order);
         if (ni.GetNr() < order_face.Size())
           order_face[ni.GetNr()] = order;
         break;
       case NT_CELL: case NT_ELEMENT:
+        SetNodeOrder (2, ni.GetNr(), order);
         if (ni.GetNr() < order_inner.Size())
           order_inner[ni.GetNr()] = order;
         break;
@@ -1316,6 +1185,8 @@ into the wirebasket.
       case NT_GLOBAL:
         break;
       }
+    fixed_order = false;
+    if (!order_stale) order_stale = 1;
   }
   
   int H1HighOrderFESpace :: GetOrder (NodeId ni) const
@@ -2421,6 +2292,7 @@ in this smaller space, which makes elasticity element matrices considerably chea
     docu.Arg("orderinner");
     docu.Arg("orderedge");
     docu.Arg("orderface");    
+    docu.Arg("hpslope");
     
     return docu;
   }
@@ -2468,10 +2340,32 @@ in this smaller space, which makes elasticity element matrices considerably chea
 
   void VectorH1FESpace :: SetOrder (NodeId ni, int order) 
   {
+    if (!order_stale) order_stale = 1;
     for (auto & spc : spaces)
       spc->SetOrder (ni, order);
   }
   
+  void VectorH1FESpace :: SetOrder (const Region & region, int order)
+  {
+    order_stale = 2;
+    for (auto & spc : spaces)
+      spc->SetOrder (region, order);
+  }
+
+  void VectorH1FESpace :: SetOrder (const Region & region, IVec<2> order, shared_ptr<CoefficientFunction> direction)
+  {
+    order_stale = 2;
+    for (auto & spc : spaces)
+      spc->SetOrder (region, order, direction);
+  }
+
+  void VectorH1FESpace :: SetOrder (ElementId ei, IVec<3> order)
+  {
+    order_stale = 2;
+    for (auto & spc : spaces)
+      spc->SetOrder (ei, order);
+  }
+
   int VectorH1FESpace :: GetOrder (NodeId ni) const
   {
     if (GetNSpaces())

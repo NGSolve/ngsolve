@@ -1283,6 +1283,8 @@ kwargs : kwargs
 
     .def_property_readonly("globalorder", [] (shared_ptr<FESpace> self) { return self->GetOrder(); },
                   "query global order of space")    
+    .def_property_readonly("order_policy", [] (shared_ptr<FESpace> self) { return self->GetOrderPolicy(); },
+                  "order policy of the space")
     .def_property_readonly("type", [] (shared_ptr<FESpace> self) { return self->type; },
                   "type of finite element space")
 
@@ -1322,6 +1324,94 @@ order : object
          )
 
     .def("SetOrder",
+         [](shared_ptr<FESpace> self, Region & region, std::variant<int, std::vector<int>> order,
+            py::object direction)
+         {
+           std::vector<int> o;
+           if (auto p = std::get_if<int> (&order)) o.push_back (*p);
+           else o = std::get<std::vector<int>> (order);
+           if (o.size() < 1 || o.size() > 2)
+             throw py::value_error("order must be a number or two numbers");
+           for (int oi : o)
+             {
+               if (oi < 0) throw py::value_error("order must be non-negative");
+               FESpace::CheckOrder (oi);
+             }
+           if (o.size() == 1)
+             {
+               if (!direction.is_none())
+                 throw py::value_error("a direction needs two orders");
+               self->SetOrder (region, o[0]);
+             }
+           else
+             {
+               shared_ptr<CoefficientFunction> dir;
+               if (!direction.is_none())
+                 dir = py::cast<shared_ptr<CoefficientFunction>> (direction);
+               self->SetOrder (region, IVec<2> (o[0], o[1]), dir);
+             }
+         },
+         py::arg("region"),
+         py::arg("order"), py::arg("direction") = py::none(), docu_string(R"raw_string(
+Order on a region. On a volume region it is the order of the cells; edges and
+faces between cells of different order take the lower one. On a boundary region
+it is the order of the faces and edges of the region.
+
+Parameters:
+
+region : ngsolve.comp.Region
+  input region
+
+order : int, or a tuple of two int
+  input polynomial order. Of two orders the second one is used along the
+  direction, the first one in the other directions. Only for quadrilaterals,
+  hexahedra and prisms.
+
+direction : ngsolve.fem.CoefficientFunction
+  vector-valued, evaluated in the centre of each element. Not needed for
+  prisms, where the second order is the one along the axis.
+)raw_string")
+         )
+
+    .def("SetOrder",
+         [](shared_ptr<FESpace> self, ElementId ei, std::variant<int, std::vector<int>> order)
+         {
+           PyCheckId (*self->GetMeshAccess(), ei);
+           IVec<3> o;
+           if (auto p = std::get_if<int> (&order))
+             o = IVec<3> (*p);
+           else
+             {
+               auto & v = std::get<std::vector<int>> (order);
+               if (v.size() < 1 || v.size() > 3)
+                 throw py::value_error("order must be a number or up to three numbers");
+               for (int k = 0; k < 3; k++)
+                 o[k] = v[min(size_t(k), v.size()-1)];
+             }
+           for (int k = 0; k < 3; k++)
+             {
+               if (o[k] < 0) throw py::value_error("order must be non-negative");
+               FESpace::CheckOrder (o[k]);
+             }
+           self->SetOrder (ei, o);
+         },
+         py::arg("ei"),
+         py::arg("order"), docu_string(R"raw_string(
+Order of a volume element. Its edges and faces take the lowest order of their
+elements. After mesh refinement by bisection the children take over the order.
+
+Parameters:
+
+ei : ngsolve.comp.ElementId
+  input element
+
+order : int, or a tuple of int
+  input polynomial order. A tuple gives the orders in the local directions
+  of a quadrilateral, hexahedron or prism.
+)raw_string")
+         )
+
+    .def("SetOrder",
          [](shared_ptr<FESpace> self, NodeId ni, int order)
          {
            PyCheckId (*self->GetMeshAccess(), ni);
@@ -1341,6 +1431,19 @@ order : int
 
 )raw_string")
          )
+
+    .def("GetOrder",
+         [](shared_ptr<FESpace> self, ElementId ei) -> py::object
+         {
+           PyCheckId (*self->GetMeshAccess(), ei);
+           IVec<3> o = self->GetOrder(ei);
+           if (o[0] == o[1] && o[1] == o[2])
+             return py::cast(o[0]);
+           return py::make_tuple(o[0], o[1], o[2]);
+         },
+         py::arg("ei"),
+         "order of a volume element before the increments for element types.\n"
+         "A tuple if the orders in the local directions are different.\n")
 
     .def("GetOrder",
          [](shared_ptr<FESpace> self, NodeId ni) -> int

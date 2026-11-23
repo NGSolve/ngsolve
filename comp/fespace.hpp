@@ -251,7 +251,69 @@ ANY                  1 1 1 1 | 15
     static constexpr int max_dim = 1<<16;
 
     ORDER_POLICY order_policy = OLDSTYLE_ORDER;
-  
+
+  public:
+    /// order specification: with order and et_bonus_order the input of ResolveOrders
+    struct OrderSpecification
+    {
+      // cell orders are the element orders of the mesh + rel_order
+      bool mesh_orders = false;
+      int rel_order = 0;
+      // order for all nodes of one type, -1 .. not set
+      int order_edge = -1;
+      int order_face = -1;
+      int order_cell = -1;
+      // orders on regions, later entries win.
+      // VOL: order of the cells, BND, BBND: order of the faces and edges of the region
+      // order_dir: different order along the direction, or along the axis of prisms
+      struct RegionOrder
+      {
+        VorB vb; BitArray mask; int order;
+        int order_dir = -1;
+        shared_ptr<CoefficientFunction> direction;
+      };
+      Array<RegionOrder> region_orders;
+      // orders in local directions of cells in regions with order_dir, -1 .. none
+      Array<IVec<3,short>> region_cell_order;
+      // hp-refined meshes: order - floor(hp_slope*level), not below hp_minorder
+      double hp_slope = 0;
+      int hp_minorder = 0;
+      int hp_maxmeshorder = 1;
+      // orders of cells in their local directions, -1 .. not set; inherited by the children
+      Array<IVec<3,short>> element_order;
+      // orders of single edges, faces, cells, -1 .. not set; valid on mesh level node_order_level
+      Array<short> node_order[3];
+      int node_order_level = -1;
+    };
+  protected:
+    OrderSpecification order_spec;
+
+    // order changed: 1 .. dof tables are old, 2 .. orders are not resolved
+    int order_stale = 0;
+
+    void SetNodeOrder (int type, size_t nr, int order);
+    void SetRegionOrder (const Region & region, int order, int order_dir = -1,
+                         shared_ptr<CoefficientFunction> direction = nullptr);
+    /// what the order specification takes from the mesh; before ResolveOrders
+    void UpdateOrderSpecification ();
+    void SetCellOrder (ElementId ei, IVec<3> order);
+    bool HasElementOrders () const { return order_spec.element_order.Size() > 0; }
+    /// element orders of a refined mesh from the parent elements
+    void InheritElementOrders ();
+    /// order of a cell before shape increments. elementwise: from element or mesh orders
+    IVec<3> CellBaseOrder (ElementId ei, int index, bool & elementwise) const;
+    bool HasNodeOrders () const { return order_spec.node_order_level == ma->GetNLevels(); }
+    /// order policy following from the order specification
+    ORDER_POLICY DerivedOrderPolicy () const;
+
+    /// orders of edges, faces and cells from the order specification
+    template <typename TO>
+    void ResolveOrders (int minorder,
+                        FlatArray<bool> used_edge, FlatArray<bool> used_face,
+                        FlatArray<TO> order_edge,
+                        FlatArray<IVec<2,TO>> order_face,
+                        FlatArray<IVec<3,TO>> order_cell) const;
+
     // size_t order_timestamp = 0;
     BitArray is_atomic_dof;
 
@@ -334,6 +396,17 @@ ANY                  1 1 1 1 | 15
 
     virtual void SetOrder (NodeId ni, int order); 
     virtual int GetOrder (NodeId ni) const; 
+    /// order on a region: cells of a volume region, faces and edges of a boundary region
+    virtual void SetOrder (const Region & region, int order);
+    /// order[1] along the direction (prisms: along the axis), order[0] in the other directions
+    virtual void SetOrder (const Region & region, IVec<2> order, shared_ptr<CoefficientFunction> direction);
+    /// order of a cell in its local directions
+    virtual void SetOrder (ElementId ei, IVec<3> order);
+    virtual IVec<3> GetOrder (ElementId ei) const;
+    virtual ORDER_POLICY GetOrderPolicy () const { return order_policy; }
+    virtual const OrderSpecification & GetOrderSpecification () const { return order_spec; }
+    /// takes the orders of regions, elements and single nodes
+    virtual void SetOrderSpecification (const OrderSpecification & spec);
 
     /// how many components
     int GetDimension () const { return dimension; }
@@ -841,11 +914,11 @@ ANY                  1 1 1 1 | 15
     size_t GetNDofGlobal() const;
 
     virtual int GetRelOrder() const
-    { 
-      return 0; 
-    } 
+    {
+      return order_spec.rel_order;
+    }
 
-    virtual bool VarOrder() const { return 0; }
+    virtual bool VarOrder() const { return order_spec.mesh_orders; }
 
     bool timing;
     std::list<std::tuple<std::string,double>> Timing () const;
