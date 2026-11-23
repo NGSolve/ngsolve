@@ -1000,6 +1000,7 @@ namespace ngsfmm
       std::mutex node_mutex;
       atomic<bool> have_childs{false};
       bool device_p2m = false;   // its P2M runs on the device, which has its sources (FMMDeviceP2M)
+      mutable bool read = false;   // a RegularMLExpansion reads its mp: an M2L source or in a singnodes list
       
       Node (Vec<3> acenter, double ar, int alevel, T_Kappa akappa, const FMM_Parameters & afmm_params, CoefPool & apool)
         : center(acenter), r(ar), level(alevel),
@@ -1381,18 +1382,12 @@ namespace ngsfmm
         return true;
       }
 
-      void CalcMP(Array<RecordingSS> & recording, Array<Node*> & nodes_to_process)
+      void CalcMP(Array<Node*> & nodes_to_process)
       {
         if (childs[0])
           {
             for (auto & child : childs)
-              child->CalcMP(recording, nodes_to_process);
-
-            
-            for (auto & child : childs){
-              if (child->mp.SH().Coefs().Size() > 0)
-                recording += RecordingSS(&child->mp, &mp, &lock, center-child->center);
-            }
+              child->CalcMP(nodes_to_process);
           }
         else
           {
@@ -1457,6 +1452,19 @@ namespace ngsfmm
           }
       }
       
+      // the S->S into the needed nodes below this one: all (needed = true), or the nodes read and the nodes below them
+      void RecordSS(Array<RecordingSS> & recording, bool needed)
+      {
+        if (!childs[0]) return;
+        needed |= read;
+        for (auto & child : childs)
+          child->RecordSS(recording, needed);
+        if (needed)
+          for (auto & child : childs)
+            if (child->mp.SH().Coefs().Size() > 0)
+              recording += RecordingSS(&child->mp, &mp, &lock, center-child->center);
+      }
+
       // device_order >= 0: the device evaluates the expansions up to this order and the sources of the device_p2m
       // leaves (FMMDeviceL2P), only the rest here
       entry_type EvaluateMP(Vec<3> p, int device_order = -1) const
@@ -1545,6 +1553,7 @@ namespace ngsfmm
     CoefPool pool;
     Node root;    
     bool havemp = false;
+    bool ss_pending = false;   // CalcMPDeferred: the S->S waits for FinishSS
     shared_ptr<FMMDeviceTree> device_tree;   // device pools after a device CalcMP, the M2L sources
     template <typename> friend struct FMMDeviceGlue;
     
@@ -1597,11 +1606,21 @@ namespace ngsfmm
 
     void CalcMP() override
     {
+      CalcUpward(false);
+    }
+
+    // CalcMP without the S->S, which the next RegularMLExpansion::CalcMP runs (FinishSS)
+    void CalcMPDeferred() override
+    {
+      CalcUpward(true);
+    }
+
+  private:
+    void CalcUpward(bool defer_m2m)
+    {
       static Timer t("mptool compute singular MLMP"); RegionTimer rg(t);
       static Timer ts2mp("mptool compute singular MLMP - source2mp");
-      static Timer tS2S("mptool compute singular MLMP - S->S");
       static Timer trec("mptool comput singular recording");
-      static Timer tsort("mptool comput singular sort");
 
       root.CalcTotalSources();
 
@@ -1611,7 +1630,9 @@ namespace ngsfmm
 
           {
             RegionTimer reg(trec);
-            root.CalcMP(recording, nodes_to_process);
+            root.CalcMP(nodes_to_process);
+            if (!defer_m2m)
+              root.RecordSS(recording, true);
           }
       
           {
@@ -1642,69 +1663,91 @@ namespace ngsfmm
                 node->mp.AddCurrent(sp-node->center, ep-node->center, j, num);
             }, TasksPerThread(10));
           }
-          
-          {
-            RegionTimer reg(tsort);
-            QuickSort (recording, [] (auto & a, auto & b)
-            {
-              if (a.len < (1-1e-8) * b.len) return true;
-              if (a.len > (1+1e-8) * b.len) return false;
-              return a.theta < b.theta;
-            });
-          }
-      
-          double current_len = -1e100;
-          double current_theta = -1e100;
-          Array<RecordingSS*> current_batch;
-          Array<Array<RecordingSS*>> batch_group;
-          Array<double> group_lengths;
-          Array<double> group_thetas;
-          for (auto & record : recording)
-            {
-              bool len_changed = fabs(record.len - current_len) > 1e-8;
-              bool theta_changed = fabs(record.theta - current_theta) > 1e-8;
-              if ((len_changed || theta_changed) && current_batch.Size() > 0) {
-                batch_group.Append(current_batch);
-                group_lengths.Append(current_len);
-                group_thetas.Append(current_theta);
-                current_batch.SetSize(0);
-              }
-              
-              current_len = record.len;
-              current_theta = record.theta;
-              current_batch.Append(&record);
-            }
-          
-          if (current_batch.Size() > 0) {
-            batch_group.Append(current_batch);
-            group_lengths.Append(current_len);
-            group_thetas.Append(current_theta);
-          }
 
-          // with a device, the M2M runs there (fmm/mptools_device.hpp): these groups, deepest level first
-          if (fmm_params.device != FMM_Device::None)
-            FMMDeviceGlue<SingularMLExpansion>::Translate(*this, batch_group, group_lengths, group_thetas);
-          else
-          {
-            RegionTimer rS2S(tS2S);
-            // ParallelFor(batch_group.Size(), [&](int i) {
-            for (int i = 0; i < batch_group.Size(); i++){
-              // *testout << "Processing batch " << i << " of size " << batch_group[i].Size() << ", with len = " << group_lengths[i] << ", theta = " << group_thetas[i] << endl;
-              int chunk_size = 24;
-              if (batch_group[i].Size() < chunk_size)
-                ProcessBatchSS(batch_group[i], group_lengths[i], group_thetas[i]);
-              else
-                ParallelForRange(IntRange(batch_group[i].Size()), [&](IntRange range) {
-                  auto sub_batch = batch_group[i].Range(range.First(), range.Next());
-                  ProcessBatchSS(sub_batch, group_lengths[i], group_thetas[i]);
-                }, TasksPerThread(4));
+          if (defer_m2m)
+            {
+              ss_pending = true;
+              return;
             }
-          }
+          CalcSS(recording);
         }
 
       havemp = true;
     }
 
+    void CalcSS(Array<RecordingSS> & recording)
+    {
+      static Timer tS2S("mptool compute singular MLMP - S->S");
+      static Timer tsort("mptool comput singular sort");
+
+      {
+        RegionTimer reg(tsort);
+        QuickSort (recording, [] (auto & a, auto & b)
+        {
+          if (a.len < (1-1e-8) * b.len) return true;
+          if (a.len > (1+1e-8) * b.len) return false;
+          return a.theta < b.theta;
+        });
+      }
+
+      double current_len = -1e100;
+      double current_theta = -1e100;
+      Array<RecordingSS*> current_batch;
+      Array<Array<RecordingSS*>> batch_group;
+      Array<double> group_lengths;
+      Array<double> group_thetas;
+      for (auto & record : recording)
+        {
+          bool len_changed = fabs(record.len - current_len) > 1e-8;
+          bool theta_changed = fabs(record.theta - current_theta) > 1e-8;
+          if ((len_changed || theta_changed) && current_batch.Size() > 0) {
+            batch_group.Append(current_batch);
+            group_lengths.Append(current_len);
+            group_thetas.Append(current_theta);
+            current_batch.SetSize(0);
+          }
+
+          current_len = record.len;
+          current_theta = record.theta;
+          current_batch.Append(&record);
+        }
+
+      if (current_batch.Size() > 0) {
+        batch_group.Append(current_batch);
+        group_lengths.Append(current_len);
+        group_thetas.Append(current_theta);
+      }
+
+      // with a device, the M2M runs there (fmm/mptools_device.hpp): these groups, deepest level first
+      if (fmm_params.device != FMM_Device::None)
+        FMMDeviceGlue<SingularMLExpansion>::Translate(*this, batch_group, group_lengths, group_thetas);
+      else
+      {
+        RegionTimer rS2S(tS2S);
+        for (int i = 0; i < batch_group.Size(); i++){
+          int chunk_size = 24;
+          if (batch_group[i].Size() < chunk_size)
+            ProcessBatchSS(batch_group[i], group_lengths[i], group_thetas[i]);
+          else
+            ParallelForRange(IntRange(batch_group[i].Size()), [&](IntRange range) {
+              auto sub_batch = batch_group[i].Range(range.First(), range.Next());
+              ProcessBatchSS(sub_batch, group_lengths[i], group_thetas[i]);
+            }, TasksPerThread(4));
+        }
+      }
+    }
+
+    // after the recording of a RegularMLExpansion, which marks the nodes it reads
+    void FinishSS()
+    {
+      if (!ss_pending) return;
+      ss_pending = false;
+      Array<RecordingSS> recording;
+      root.RecordSS(recording, false);
+      CalcSS(recording);
+    }
+
+  public:
     entry_type Evaluate (Vec<3> p) const
     {
       if (havemp)
@@ -1971,6 +2014,7 @@ namespace ngsfmm
         // if (L2Norm(singnode.mp.SH().Coefs()) == 0) return;
         if (level > params.maxlevel)
           {
+            singnode.read = true;
             singnodes.Append(&singnode);            
             return;
           }
@@ -1993,6 +2037,7 @@ namespace ngsfmm
               }
 
             // static Timer t("mptool transform Helmholtz-criterion"); RegionTimer r(t);
+            singnode.read = true;
             recording += RecordingSR(&singnode.mp, &mp, &lock, dist);
             return;
           }
@@ -2006,10 +2051,16 @@ namespace ngsfmm
                   if (ch)
                     ch -> AddSingularNode (singnode, allow_refine, recording);
                 if (targets.Size()+vol_targets.Size())
-                  singnodes.Append(&singnode);
+                  {
+                    singnode.read = true;
+                    singnodes.Append(&singnode);
+                  }
               }
             else
-              singnodes.Append(&singnode);
+              {
+                singnode.read = true;
+                singnodes.Append(&singnode);
+              }
             return;
           }
         
@@ -2030,7 +2081,10 @@ namespace ngsfmm
                     ch -> AddSingularNode (singnode, allow_refine, recording);
                 
                 if (targets.Size()+vol_targets.Size())
-                  singnodes.Append(&singnode);
+                  {
+                    singnode.read = true;
+                    singnodes.Append(&singnode);
+                  }
               }
           }
         else
@@ -2343,6 +2397,7 @@ namespace ngsfmm
             RegionTimer rrec(trec);
             root.AddSingularNode(singmp->root, !onlytargets, recording);
           }
+          singmp->FinishSS();
           struct SRKey { int os, ot; double rs, rt, len, theta; RecordingSR * rec; };
           Array<SRKey> keys;
 

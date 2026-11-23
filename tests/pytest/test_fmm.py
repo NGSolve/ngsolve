@@ -1,5 +1,6 @@
 import pytest
 import numpy as np
+import shutil
 
 import ngsolve.bem as bem
 import ngsolve.fmm as fmm
@@ -74,6 +75,30 @@ def test_basematrix():
     y = op.mat.CreateColVector()
     y.data = op.mat * x
     check(y.FV().NumPy(), (op @ Q.real).ravel(), 1e-12)
+
+
+@pytest.mark.parametrize("device", ["none", "cpu", "gpu"])
+def test_coarse_target_leaves(device):
+    if device == "cpu" and shutil.which("c++") is None:
+        pytest.skip("no C++ compiler for the CPU device")
+    if device == "gpu" and pytest.importorskip("ngsolve.gpu").backend == "host":
+        pytest.skip("no GPU device")
+    fp32 = device == "gpu"
+    tol = 1e-5 if fp32 else 1e-6
+    r = np.random.default_rng(20261123)
+    src = 0.05 * r.standard_normal((3000, 3))
+    dirs = r.standard_normal((16, 3))
+    tgt = dirs / np.linalg.norm(dirs, axis=1)[:, None] * np.geomspace(0.1, 1.5, 16)[:, None]
+    op = FMM(src, tgt, kernel="helmholtz", kappa=20.0, **dict(FMM_ARGS, device=device, fp32=fp32))
+    # with a device, the first product records the device programs and the second replays them
+    for _ in range(2):
+        q = r.standard_normal(3000) + 1j * r.standard_normal(3000)
+        check(op @ q, direct(tgt, src, q, 20.0), tol)
+        x = op.mat.CreateColVector()
+        x.FV().NumPy()[:] = q[:16]
+        y = op.mat.CreateRowVector()
+        y.data = op.mat.T * x
+        check(y.FV().NumPy(), direct(src, tgt, q[:16], 20.0), tol)
 
 
 def test_singular_expansion():
