@@ -40,6 +40,7 @@ namespace ngfem
     static constexpr int DIM_ELEMENT = D;
     static constexpr int DIM_DMAT = D;
     static constexpr int DIFFORDER = 1;
+    static FormSignature Forms() { return { { FORM_EDGE }, true }; }
     using FiniteElementType = FEL;
     
     typedef DiffOpGradientBoundary<D> DIFFOP_TRACE;
@@ -218,6 +219,7 @@ namespace ngfem
     static constexpr int DIM_ELEMENT = D-1;
     static constexpr int DIM_DMAT = D;
     static constexpr int DIFFORDER = 1;
+    static FormSignature Forms() { return { { FORM_EDGE }, true }; }
     using FiniteElementType = FEL;
     static string Name() { return "gradboundary"; }
     
@@ -297,6 +299,7 @@ namespace ngfem
     static constexpr int DIM_ELEMENT = D-2;
     static constexpr int DIM_DMAT = D;
     static constexpr int DIFFORDER = 1;
+    static FormSignature Forms() { return { { FORM_EDGE }, true }; }
 
     static string Name() { return "gradbboundary"; }
     static constexpr bool SUPPORT_PML = true;
@@ -371,6 +374,7 @@ namespace ngfem
     static constexpr int DIM_ELEMENT = D;
     static constexpr int DIM_DMAT = 1;
     static constexpr int DIFFORDER = 0;
+    static FormSignature Forms() { return { { FORM_VERTEX }, true }; }
 
     using FiniteElementType = FEL;
     static IVec<0> GetDimensions() { return IVec<0>(); };
@@ -616,6 +620,7 @@ namespace ngfem
     enum { DIM_ELEMENT = D-1 };
     enum { DIM_DMAT = 1 };
     enum { DIFFORDER = 0 };
+    static FormSignature Forms() { return { { FORM_VERTEX }, true }; }
     using FiniteElementType = FEL;
 
     static string Name() { return "IdBoundary"; }
@@ -774,6 +779,7 @@ namespace ngfem
     enum { DIM_ELEMENT = D };
     enum { DIM_DMAT = D*D };
     enum { DIFFORDER = 2 };
+    static FormSignature Forms() { return { { FORM_EDGE, FORM_EDGE }, false }; }
 
     using FiniteElementType = ScalarFiniteElement<D>;
     typedef DiffOpHesseBoundary<D> DIFFOP_TRACE;
@@ -808,6 +814,7 @@ namespace ngfem
     enum { DIM_ELEMENT = D-1 };
     enum { DIM_DMAT = D*D };
     enum { DIFFORDER = 2 };
+    static FormSignature Forms() { return { { FORM_EDGE, FORM_EDGE }, false }; }
     using FiniteElementType = FEL;
     typedef void DIFFOP_TRACE;
 
@@ -999,6 +1006,7 @@ namespace ngfem
     enum { DIM_ELEMENT = 0 };
     enum { DIM_DMAT = 1 };
     enum { DIFFORDER = 2 };
+    static FormSignature Forms() { return { { FORM_EDGE, FORM_EDGE }, false }; }
     using FiniteElementType = FEL;
     typedef void DIFFOP_TRACE;
 
@@ -1950,6 +1958,7 @@ namespace ngfem
     enum { DIM_ELEMENT = DIM_SPC-VB };
     enum { DIM_DMAT = DIM_SPC };
     enum { DIFFORDER = 0 };
+    static FormSignature Forms() { return { { FORM_COMP, FORM_VERTEX }, true }; }
     using FiniteElementType = VectorFiniteElement;
     
     static string Name() { return "Id"; }
@@ -2084,6 +2093,7 @@ namespace ngfem
     static bool SupportsVB (VorB checkvb) { return true; }
 
     static string Name() { return "IdDual"; }
+    static FormSignature Forms() { return { { FORM_ELEMENT }, true }; }
     // static constexpr bool SUPPORT_PML = true;
 
     static const BaseScalarFiniteElement & Cast (const FiniteElement & fel)
@@ -2249,6 +2259,7 @@ namespace ngfem
     enum { DIM_ELEMENT = DIM_SPC };
     enum { DIM_DMAT = DIM_SPC*DIM_SPC };
     enum { DIFFORDER = 1 };
+    static FormSignature Forms() { return { { FORM_COMP, FORM_EDGE }, true }; }
     using FiniteElementType = VectorFiniteElement;
     typedef DiffOpGradBoundaryVectorH1<DIM_SPC> DIFFOP_TRACE;
 
@@ -2377,6 +2388,7 @@ namespace ngfem
     static constexpr int DIM_ELEMENT = DIM_SPC-1;
     static constexpr int DIM_DMAT = DIM_SPC*DIM_SPC;
     static constexpr int DIFFORDER = 1;
+    static FormSignature Forms() { return { { FORM_COMP, FORM_EDGE }, true }; }
     using FiniteElementType = VectorFiniteElement;
     static IVec<2> GetDimensions() { return { DIM_SPC, DIM_SPC }; }
     static constexpr bool SUPPORT_PML = true;

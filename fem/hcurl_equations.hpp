@@ -43,6 +43,7 @@ namespace ngfem
     static constexpr int DIM_ELEMENT = D;
     static constexpr int DIM_DMAT = D;
     static constexpr int DIFFORDER = 0;
+    static FormSignature Forms() { return { { FORM_EDGE }, true }; }
     using FiniteElementType = FEL;
     
     static const FEL & Cast (const FiniteElement & fel) 
@@ -236,6 +237,7 @@ namespace ngfem
     static constexpr int DIM_ELEMENT = 2;
     static constexpr int DIM_DMAT = 1;
     static constexpr int DIFFORDER = 1;
+    static FormSignature Forms() { return { { FORM_ELEMENT }, true }; }
     using FiniteElementType = FEL;
     
     static string Name() { return "curl"; }
@@ -321,6 +323,7 @@ namespace ngfem
     static constexpr int DIM_ELEMENT = 3;
     static constexpr int DIM_DMAT = 3;
     static constexpr int DIFFORDER = 1;
+    static FormSignature Forms() { return { { FORM_FACET }, true }; }
     using FiniteElementType = FEL;
     
     static string Name() { return "curl"; }
@@ -502,6 +505,7 @@ namespace ngfem
     static constexpr int DIM_ELEMENT = D-2;
     static constexpr int DIM_DMAT = D;
     static constexpr int DIFFORDER = 0;
+    static FormSignature Forms() { return { { FORM_EDGE }, true }; }
     static constexpr bool SUPPORT_PML = true;
     using FiniteElementType = FEL;
     
@@ -583,6 +587,7 @@ namespace ngfem
     static constexpr int DIM_ELEMENT = D-1;
     static constexpr int DIM_DMAT = D;
     static constexpr int DIFFORDER = 0;
+    static FormSignature Forms() { return { { FORM_EDGE }, true }; }
     using FiniteElementType = FEL;
     
     static constexpr bool SUPPORT_PML = true;
@@ -897,6 +902,7 @@ public:
   static constexpr int DIM_ELEMENT = D;
   static constexpr int DIM_DMAT = D;
   static constexpr int DIFFORDER = 0;
+  static FormSignature Forms() { return { { FORM_FACET }, true }; }
   using FiniteElementType = HCurlFiniteElement<D>;
 
     typedef DiffOpHCurlDualBoundary<D> DIFFOP_TRACE;
@@ -1282,6 +1288,107 @@ public:
   template <int D, typename FEL = HCurlFiniteElement<D-1> >
   class DiffOpGradientBoundaryHCurl;
   
+  // tangential component u - (u.n) n on element boundaries, HCurl and TangentialFacet spaces
+  template <int D>
+  class DiffOpTangentialComponentHCurl : public DiffOp<DiffOpTangentialComponentHCurl<D>>
+  {
+  public:
+    static constexpr int DIM = 1;
+    static constexpr int DIM_SPACE = D;
+    static constexpr int DIM_ELEMENT = D;
+    static constexpr int DIM_DMAT = D;
+    static constexpr int DIFFORDER = 0;
+    using FiniteElementType = HCurlFiniteElement<D>;
+
+    static string Name() { return "tangentialcomponent"; }
+
+    static int IntOrder (const FiniteElement & fel)
+    { return static_cast<const BaseHCurlFiniteElement&> (fel).TangentialOrder(); }
+
+    template <typename FEL, typename MIP, typename MAT>
+    static void GenerateMatrix (const FEL & bfel, const MIP & mip, MAT && mat, LocalHeap & lh)
+    {
+      HeapReset hr(lh);
+      auto & fel = static_cast<const HCurlFiniteElement<D>&> (bfel);
+      FlatMatrixFixWidth<D> shape(fel.GetNDof(), lh);
+      fel.CalcMappedShape (mip, shape);
+      Vec<D> n = mip.GetNV();
+      for (size_t i = 0; i < fel.GetNDof(); i++)
+        {
+          Vec<D> s = shape.Row(i);
+          mat.Col(i) = s - InnerProduct(s, n) * n;
+        }
+    }
+
+    static int DimRef() { return D; }
+
+    template <typename IP, typename MAT>
+    static void GenerateMatrixRef (const FiniteElement & fel, const IP & ip,
+                                   MAT && mat, LocalHeap & lh)
+    {
+      static_cast<const BaseHCurlFiniteElement&> (fel).CalcShape (ip, Trans(mat));
+    }
+
+    template <typename MIP, typename MAT>
+    static void CalcTransformationMatrix (const MIP & bmip, MAT & mat, LocalHeap & lh)
+    {
+      auto & mip = static_cast<const MappedIntegrationPoint<D,D>&>(bmip);
+      Vec<D> n = mip.GetNV();
+      Mat<D,D> proj = Id<D>();
+      for (int i = 0; i < D; i++)
+        for (int j = 0; j < D; j++)
+          proj(i,j) -= n(i)*n(j);
+      mat = proj * Trans(mip.GetJacobianInverse());
+    }
+
+    static void Project (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> mat, size_t nvec)
+    {
+      auto & mir = static_cast<const SIMD_MappedIntegrationRule<D,D>&> (bmir);
+      for (size_t i = 0; i < mir.Size(); i++)
+        {
+          Vec<D,SIMD<double>> n = mir[i].GetNV();
+          auto col = mat.Col(i);
+          for (size_t j = 0; j < nvec; j++)
+            {
+              SIMD<double> sn = 0.0;
+              for (int k = 0; k < D; k++)
+                sn += col(j*D+k) * n(k);
+              for (int k = 0; k < D; k++)
+                col(j*D+k) -= sn * n(k);
+            }
+        }
+    }
+
+    static void GenerateMatrixSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                                      BareSliceMatrix<SIMD<double>> mat)
+    {
+      static_cast<const HCurlFiniteElement<D>&> (fel).CalcMappedShape (mir, mat);
+      Project (mir, mat, fel.GetNDof());
+    }
+
+    using DiffOp<DiffOpTangentialComponentHCurl<D>>::ApplySIMDIR;
+    static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    {
+      static_cast<const HCurlFiniteElement<D>&> (fel).Evaluate (mir, x, y);
+      Project (mir, y, 1);
+    }
+
+    using DiffOp<DiffOpTangentialComponentHCurl<D>>::AddTransSIMDIR;
+    static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
+    {
+      STACK_ARRAY(SIMD<double>, mem, D*mir.Size());
+      FlatMatrix<SIMD<double>> ty(D, mir.Size(), mem);
+      for (size_t i = 0; i < mir.Size(); i++)
+        for (int k = 0; k < D; k++)
+          ty(k, i) = y(k, i);
+      Project (mir, ty, 1);
+      static_cast<const HCurlFiniteElement<D>&> (fel).AddTrans (mir, ty, x);
+    }
+  };
+
+
   /// Gradient operator for HCurl, grad(u)(j,i) = d u_i / d x_j
   template <int D, typename FEL = HCurlFiniteElement<D> >
   class DiffOpGradientHCurl : public DiffOp<DiffOpGradientHCurl<D,FEL> >
@@ -1292,6 +1399,7 @@ public:
     static constexpr int DIM_ELEMENT = D;
     static constexpr int DIM_DMAT = D*D;
     static constexpr int DIFFORDER = 1;
+    static FormSignature Forms() { return { { FORM_EDGE, FORM_EDGE }, false }; }
     using FiniteElementType = FEL;
 
     static string Name() { return "grad"; }

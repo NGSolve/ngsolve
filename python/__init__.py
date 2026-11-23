@@ -53,7 +53,7 @@ from .la import BaseMatrix, BaseVector, BlockVector, MultiVector, BlockMatrix, \
     CreateVVector, ArnoldiSolver, \
     Projector, DiagonalMatrix, IdentityMatrix, Embedding, PermutationMatrix, \
     ConstEBEMatrix, ParallelMatrix, PARALLEL_STATUS
-from .fem import BFI, LFI, CoefficientFunction, Parameter, ParameterC, ET, \
+from .fem import BFI, LFI, CoefficientFunction, Parameter, ParameterC, ET, FORM, \
     POINT, SEGM, TRIG, QUAD, TET, PRISM, PYRAMID, HEX, CELL, FACE, EDGE, \
     VERTEX, FACET, ELEMENT, sin, cos, tan, atan, acos, asin, sinh, cosh, asinh, acosh, \
     exp, log, sqrt, erf, floor, ceil, Conj, atan2, pow, Sym, Skew, Id, Trace, Inv, Det, Cof, Cross, \

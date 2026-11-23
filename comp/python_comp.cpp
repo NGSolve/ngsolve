@@ -673,6 +673,36 @@ when building the system matrices.
                      if (!self->Deriv() || !self->DerivEvaluator()) return "";
                      return self->DerivEvaluator()->Name();
                    }, "name of the canonical derivative")
+    .def_property_readonly("forms",
+                  [](const spProxy self) -> py::object
+                   {
+                     auto forms = self->Evaluator()->Forms();
+                     if (!forms) return py::none();
+                     int nindex = 0;
+                     for (auto f : forms->factors)
+                       if (HasIndex(f)) nindex++;
+                     auto dims = self->Dimensions();
+                     bool scalar = dims.Size() == 0 || (dims.Size() == 1 && dims[0] == 1);
+                     if (nindex != dims.Size() && !(nindex == 0 && scalar)) return py::none();
+                     py::tuple res(forms->factors.Size());
+                     for (size_t i = 0; i < forms->factors.Size(); i++)
+                       res[i] = py::cast(forms->factors[i]);
+                     return res;
+                   }, "form types of the factors (FORM), None if not declared")
+    .def_property_readonly("forms_exact",
+                  [](const spProxy self) -> py::object
+                   {
+                     auto forms = self->Evaluator()->Forms();
+                     if (!forms) return py::none();
+                     return py::cast(forms->exact);
+                   }, "whether the transformation of 'forms' also holds on curved elements")
+    .def_property_readonly("forms_detpower",
+                  [](const spProxy self) -> py::object
+                   {
+                     auto forms = self->Evaluator()->Forms();
+                     if (!forms) return py::none();
+                     return py::cast(forms->detpower);
+                   }, "the value is additionally multiplied by det(F)^forms_detpower")
     .def("Operator",
          [] (const spProxy self, string name)
           {

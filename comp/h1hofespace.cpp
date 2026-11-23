@@ -88,6 +88,7 @@ namespace ngcomp
     enum { DIM_ELEMENT = D };
     enum { DIM_DMAT = 1 };
     enum { DIFFORDER = 0 };
+    static FormSignature Forms() { return { { FORM_ELEMENT }, true }; }
 
     static bool SupportsVB (VorB checkvb) { return true; }
 
@@ -156,6 +157,7 @@ namespace ngcomp
     enum { DIM_ELEMENT = D };
     enum { DIM_DMAT = D };
     enum { DIFFORDER = 0 };
+    static FormSignature Forms() { return { { FORM_COMP, FORM_ELEMENT }, true }; }
 
     static bool SupportsVB (VorB checkvb) { return true; }
 

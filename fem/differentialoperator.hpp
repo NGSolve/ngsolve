@@ -14,6 +14,40 @@
 namespace ngfem
 {
 
+  /*
+    How one factor of the value transforms from the reference element (NGSolve technical note 2026-08).
+    k-forms counted from the bottom (0, 1) or from the top (n-1, n).
+  */
+  enum FORM_TYPE : uint8_t
+  {
+    FORM_VERTEX = 0,    // 0-form:      1
+    FORM_EDGE = 1,      // 1-form:      F^{-T}
+    FORM_FACET = 2,     // (n-1)-form:  F/J
+    FORM_ELEMENT = 3,   // n-form:      1/J
+    FORM_COMP = 4       // Cartesian component index, not transformed
+  };
+
+  inline bool FromTop (FORM_TYPE f) { return f == FORM_FACET || f == FORM_ELEMENT; }
+  // distance of the degree from 0 (bottom) or n (top)
+  inline int FormOffset (FORM_TYPE f) { return (f == FORM_EDGE || f == FORM_FACET) ? 1 : 0; }
+  inline int FormDegree (FORM_TYPE f, int dim) { return FromTop(f) ? dim-FormOffset(f) : FormOffset(f); }
+  inline bool HasIndex (FORM_TYPE f) { return f == FORM_COMP || FormOffset(f) == 1; }
+
+  struct FormSignature
+  {
+    Array<FORM_TYPE> factors;
+    bool exact = true;      // false: holds only up to terms with grad F on curved elements
+    int detpower = 0;       // value additionally multiplied by J^detpower
+  };
+
+  inline optional<FormSignature> CombineForms (const optional<FormSignature> & base,
+                                               const Array<FORM_TYPE> & before,
+                                               const Array<FORM_TYPE> & after = Array<FORM_TYPE>())
+  {
+    if (!base) return nullopt;
+    return FormSignature { Array<FORM_TYPE>(before + base->factors + after), base->exact, base->detpower };
+  }
+
   /**
      Differential Operator.
      Base-class for run-time polymorphismus.
@@ -83,6 +117,8 @@ namespace ngfem
       return nullptr;
       // throw Exception("GetTrace not overloaded for DifferentialOperator"+string(typeid(*this).name()));
     }
+    /// form types of the factors of the value, nullopt if not declared
+    virtual optional<FormSignature> Forms() const { return nullopt; }
     /// total polynomial degree is reduced by this order (i.e. minimal difforder)
     int DiffOrder() const { return difforder; } 
 

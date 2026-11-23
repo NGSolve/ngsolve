@@ -1938,6 +1938,37 @@ void NGS_DLL_HEADER ExportNgfem(py::module &m) {
     .export_values()
     ;
 
+  py::enum_<FORM_TYPE>(m, "FORM", "How a factor of a proxy value transforms from the reference element:\n"
+                       "k-forms counted from the bottom (VERTEX: 0, EDGE: 1) or from the top (FACET: n-1, ELEMENT: n),\n"
+                       "COMP is an untransformed Cartesian component index.")
+    .value("VERTEX", FORM_VERTEX)
+    .value("EDGE", FORM_EDGE)
+    .value("FACET", FORM_FACET)
+    .value("ELEMENT", FORM_ELEMENT)
+    .value("COMP", FORM_COMP)
+    .def_property_readonly("from_top", [](FORM_TYPE f) { return FromTop(f); },
+                           "degree counted from the top (n-1, n): a density, carries 1/J")
+    .def_property_readonly("offset", [](FORM_TYPE f) { return FormOffset(f); },
+                           "distance of the degree from 0 or from n")
+    .def_property_readonly("has_index", [](FORM_TYPE f) { return HasIndex(f); })
+    .def_property_readonly("star", [](FORM_TYPE f) -> py::object
+                           {
+                             switch (f)
+                               {
+                               case FORM_VERTEX: return py::cast(FORM_ELEMENT);
+                               case FORM_EDGE: return py::cast(FORM_FACET);
+                               case FORM_FACET: return py::cast(FORM_EDGE);
+                               case FORM_ELEMENT: return py::cast(FORM_VERTEX);
+                               default: return py::none();
+                               }
+                           }, "Hodge dual")
+    .def("degree", [](FORM_TYPE f, int dim) -> py::object
+         {
+           if (f == FORM_COMP) return py::none();
+           return py::cast(FormDegree(f, dim));
+         }, py::arg("dim"))
+    ;
+
 
   py::class_<ElementTopology> (m, "ElementTopology", docu_string(R"raw_string(
 Element Topology

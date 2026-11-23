@@ -2184,6 +2184,7 @@ global system.
   static constexpr int DIM_ELEMENT = D-1;
   static constexpr int DIM_DMAT = D;
   static constexpr int DIFFORDER = 1;
+  static FormSignature Forms() { return { { FORM_EDGE }, true }; }
 
     static const FEL & Cast (const FiniteElement & fel) 
     { return static_cast<const FEL&> (fel); }
@@ -3198,6 +3199,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
     static constexpr int DIM_ELEMENT = DIM_SPC-VB;
     static constexpr int DIM_DMAT = DIM_SPC;
     static constexpr int DIFFORDER = 0;
+    static FormSignature Forms() { return { { (std::is_same_v<TRAFO,PiolaBasisTrafo> ? FORM_FACET : FORM_EDGE) }, true }; }
     using FiniteElementType = VectorFiniteElement;
 
 
@@ -3451,6 +3453,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
     static constexpr int DIM_ELEMENT = DIM_SPC;
     static constexpr int DIM_DMAT = 1;
     static constexpr int DIFFORDER = 1;
+    static FormSignature Forms() { return { { FORM_ELEMENT }, true }; }
     using FiniteElementType = VectorFiniteElement;
 
     static string Name() { return "div"; }
@@ -3573,6 +3576,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
     static constexpr int DIM_ELEMENT = DIM_SPC;
     static constexpr int DIM_DMAT = DIM_SPC*DIM_SPC;
     static constexpr int DIFFORDER = 1;
+    static FormSignature Forms() { return { { (std::is_same_v<TRAFO,PiolaBasisTrafo> ? FORM_FACET : FORM_EDGE), FORM_EDGE }, false }; }
     using FiniteElementType = VectorFiniteElement;
 
     static string Name() { return "grad"; }
@@ -3908,6 +3912,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
     static constexpr int DIM_ELEMENT = DIM_SPC-VB;
     static constexpr int DIM_DMAT = DIM_SPC;
     static constexpr int DIFFORDER = 0;
+    static FormSignature Forms() { return { { (std::is_same_v<TRAFO,PiolaBasisTrafo> ? FORM_FACET : FORM_EDGE) }, true }; }
     using FiniteElementType = VectorFiniteElement;
 
     template <typename FEL, typename MIP, typename MAT>
@@ -4034,11 +4039,12 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
   class DiffOpCurlVectorL2Covariant : public DiffOp<DiffOpCurlVectorL2Covariant<TRAFO>>
   {
   public:
-    static constexpr int DIM = 3;
+    static constexpr int DIM = 1;
     static constexpr int DIM_SPACE = 3;
     static constexpr int DIM_ELEMENT = 3;
     static constexpr int DIM_DMAT = 3;
     static constexpr int DIFFORDER = 1;
+    static FormSignature Forms() { return { { FORM_FACET }, true }; }
     using FiniteElementType = VectorFiniteElement;
 
     static string Name() { return "curl"; }

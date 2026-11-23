@@ -28,6 +28,7 @@ namespace ngcomp
   static constexpr int DIM_ELEMENT = D;
   static constexpr int DIM_DMAT = D*D;
   static constexpr int DIFFORDER = 0;
+  static FormSignature Forms() { return { { FORM_FACET, FORM_FACET }, true, 1 }; }
   static constexpr int DIM_STRESS = D*D;
 
     typedef DiffOpHCurlCurlDualBoundary<D> DIFFOP_TRACE;
@@ -148,6 +149,7 @@ namespace ngcomp
   static constexpr int DIM_ELEMENT = D;
   static constexpr int DIM_DMAT = D*D;
   static constexpr int DIFFORDER = 0;
+  static FormSignature Forms() { return { { FORM_EDGE, FORM_EDGE }, true }; }
   static constexpr int DIM_STRESS = D*D;
 
     static Array<int> GetDimensions() { return Array<int> ({D,D}); }
@@ -212,6 +214,7 @@ namespace ngcomp
   static constexpr int DIM_ELEMENT = 2;
   static constexpr int DIM_DMAT = 2;
   static constexpr int DIFFORDER = 1;
+  static FormSignature Forms() { return { { FORM_EDGE, FORM_ELEMENT }, false }; }
 
     static string Name() { return "curl"; }
 
@@ -252,6 +255,7 @@ namespace ngcomp
     static constexpr int DIM_ELEMENT = 3;
     static constexpr int DIM_DMAT = 9;
     static constexpr int DIFFORDER = 1;
+    static FormSignature Forms() { return { { FORM_EDGE, FORM_FACET }, false }; }
 
     static Array<int> GetDimensions() { return Array<int> ({3,3}); }
 
@@ -303,6 +307,7 @@ namespace ngcomp
     static constexpr int DIM_ELEMENT = 2;
     static constexpr int DIM_DMAT = 1;
     static constexpr int DIFFORDER = 2;
+    static FormSignature Forms() { return { { FORM_ELEMENT, FORM_ELEMENT }, false }; }
     
     
     static string Name() { return "inc"; }
@@ -366,6 +371,7 @@ namespace ngcomp
     static constexpr int DIM_ELEMENT = 3;
     static constexpr int DIM_DMAT = 9;
     static constexpr int DIFFORDER = 2;
+    static FormSignature Forms() { return { { FORM_FACET, FORM_FACET }, false }; }
 
     static Array<int> GetDimensions() { return Array<int> ({3,3}); }
 
@@ -470,6 +476,7 @@ namespace ngcomp
     static constexpr int DIM_ELEMENT = D-1;
     static constexpr int DIM_DMAT = D*D;
     static constexpr int DIFFORDER = 0;
+    static FormSignature Forms() { return { { FORM_EDGE, FORM_EDGE }, true }; }
 
     static Array<int> GetDimensions() { return Array<int> ({D,D}); }
 
@@ -556,6 +563,7 @@ namespace ngcomp
       static constexpr int DIM_ELEMENT = D-2;
       static constexpr int DIM_DMAT = D*D;
       static constexpr int DIFFORDER = 0;
+      static FormSignature Forms() { return { { FORM_EDGE, FORM_EDGE }, true }; }
 
     static Array<int> GetDimensions() { return Array<int> ({D,D}); }
 

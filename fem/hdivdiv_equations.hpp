@@ -18,6 +18,7 @@ namespace ngfem
   static constexpr int DIM_ELEMENT = D;
   static constexpr int DIM_DMAT = D*D;
   static constexpr int DIFFORDER = 0;
+  static FormSignature Forms() { return { { FORM_EDGE, FORM_EDGE }, true, 1 }; }
   static constexpr int DIM_STRESS = D*D;
   using FiniteElementType = HDivDivFiniteElement<D>;
 
@@ -115,6 +116,7 @@ namespace ngfem
   static constexpr int DIFFORDER = 0;
   static constexpr int DIM_STRESS = D*D;
     using FiniteElementType = HDivDivFiniteElement<D>;
+    static FormSignature Forms() { return { { FORM_FACET, FORM_FACET }, true }; }
 
     static Array<int> GetDimensions() { return Array<int> ({D,D}); }
 
@@ -189,6 +191,7 @@ namespace ngfem
     static constexpr int DIFFORDER = 1;
     static constexpr int DIM_STRESS = (D*(D+1))/2;
     using FiniteElementType = HDivDivFiniteElement<D>;
+    static FormSignature Forms() { return { { FORM_FACET, FORM_ELEMENT }, false }; }
 
     static string Name() { return "div"; }
 

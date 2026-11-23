@@ -35,6 +35,7 @@ public:
   static constexpr int DIM_ELEMENT = D;
   static constexpr int DIM_DMAT = D;
   static constexpr int DIFFORDER = 0;
+  static FormSignature Forms() { return { { FORM_FACET }, true }; }
   using FiniteElementType = FEL;
   
   static const FEL & Cast (const FiniteElement & fel) 
@@ -302,6 +303,7 @@ public:
   static constexpr int DIM_ELEMENT = D;
   static constexpr int DIM_DMAT = 1;
   static constexpr int DIFFORDER = 1;
+  static FormSignature Forms() { return { { FORM_ELEMENT }, true }; }
   using FiniteElementType = FEL;
   static string Name() { return "div"; }
 
@@ -556,6 +558,7 @@ public:
   static constexpr int DIM_ELEMENT = D;
   static constexpr int DIM_DMAT = D;
   static constexpr int DIFFORDER = 0;
+  static FormSignature Forms() { return { { FORM_EDGE }, true }; }
   using FiniteElementType = HDivFiniteElement<D>;
   
   static auto & Cast (const FiniteElement & fel) 
@@ -654,6 +657,7 @@ public:
     static constexpr int DIM_ELEMENT = D;
     static constexpr int DIM_DMAT = D*D;
     static constexpr int DIFFORDER = 1;
+    static FormSignature Forms() { return { { FORM_EDGE, FORM_FACET }, false }; }   // derivative index first
     using FiniteElementType = FEL;
 
     static Array<int> GetDimensions() { return Array<int> ( { D, D } ); };

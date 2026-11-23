@@ -236,6 +236,13 @@ namespace ngfem
     NGS_DLL_HEADER virtual ~BlockDifferentialOperator ();
     
     virtual string Name() const override { return diffop->Name(); }
+    virtual optional<FormSignature> Forms() const override
+    {
+      if (diffop->BlockDim() != 1 || diffop->Dimensions().Size() > 1) return nullopt;
+      if (Dimensions().Size() == 1)  // scalar base
+        return CombineForms (diffop->Forms(), { FORM_COMP });
+      return CombineForms (diffop->Forms(), Array<FORM_TYPE>(), { FORM_COMP });
+    }
     shared_ptr<DifferentialOperator> BaseDiffOp() const { return diffop; }
     virtual bool SupportsVB (VorB checkvb) const override { return diffop->SupportsVB(checkvb); }
     virtual bool DeclaresElementType () const override { return diffop->DeclaresElementType(); }
@@ -354,6 +361,11 @@ namespace ngfem
     NGS_DLL_HEADER virtual ~BlockDifferentialOperatorTrans ();
     
     virtual string Name() const override { return diffop->Name(); }
+    virtual optional<FormSignature> Forms() const override
+    {
+      if (diffop->BlockDim() != 1 || diffop->Dimensions().Size() > 1) return nullopt;
+      return CombineForms (diffop->Forms(), { FORM_COMP });
+    }
     shared_ptr<DifferentialOperator> BaseDiffOp() const { return diffop; }
     virtual bool SupportsVB (VorB checkvb) const override { return diffop->SupportsVB(checkvb); }
     virtual bool DeclaresElementType () const override { return diffop->DeclaresElementType(); }
@@ -453,17 +465,14 @@ namespace ngfem
                              adiffop->VB(), adiffop->DiffOrder()),
         diffop(adiffop), dim(adim)
     {
-      if (adiffop->Dimensions().Size() == 0)
-        // dimensions = Array<int> ( { adim });
-        SetDimensions ( { adim } );
-      else
-        // dimensions = Array<int> ( { adim, adiffop->Dim() });
-        SetDimensions ( { adim, adiffop->Dim() } );
+      SetDimensions ( Array<int> (Array<int> { adim } + adiffop->Dimensions()) );
     }
 
     NGS_DLL_HEADER virtual ~VectorDifferentialOperator ();
     
     virtual string Name() const override { return diffop->Name(); }
+    virtual optional<FormSignature> Forms() const override
+    { return CombineForms (diffop->Forms(), { FORM_COMP }); }
     shared_ptr<DifferentialOperator> BaseDiffOp() const { return diffop; }
     virtual bool SupportsVB (VorB checkvb) const override { return diffop->SupportsVB(checkvb); }
     virtual bool DeclaresElementType () const override { return diffop->DeclaresElementType(); }
@@ -588,6 +597,8 @@ namespace ngfem
     NGS_DLL_HEADER virtual ~MatrixDifferentialOperator ();
     
     virtual string Name() const override { return diffop->Name(); }
+    virtual optional<FormSignature> Forms() const override
+    { return CombineForms (diffop->Forms(), { FORM_COMP, FORM_COMP }); }
     shared_ptr<DifferentialOperator> BaseDiffOp() const { return diffop; }
     virtual bool SupportsVB (VorB checkvb) const override { return diffop->SupportsVB(checkvb); }
     virtual bool DeclaresElementType () const override { return diffop->DeclaresElementType(); }
@@ -651,6 +662,11 @@ namespace ngfem
     NGS_DLL_HEADER virtual ~SymMatrixDifferentialOperator ();
     
     virtual string Name() const override { return diffop->Name(); }
+    virtual optional<FormSignature> Forms() const override
+    {
+      if (diffop->Dimensions().Size() > 0) return nullopt;
+      return CombineForms (diffop->Forms(), { FORM_COMP, FORM_COMP });
+    }
     shared_ptr<DifferentialOperator> BaseDiffOp() const { return diffop; }
     virtual bool SupportsVB (VorB checkvb) const override { return diffop->SupportsVB(checkvb); }
     virtual bool DeclaresElementType () const override { return diffop->DeclaresElementType(); }
@@ -736,6 +752,11 @@ namespace ngfem
     NGS_DLL_HEADER virtual ~SymDevMatrixDifferentialOperator ();
     
     virtual string Name() const override { return diffop->Name(); }
+    virtual optional<FormSignature> Forms() const override
+    {
+      if (diffop->Dimensions().Size() > 0) return nullopt;
+      return CombineForms (diffop->Forms(), { FORM_COMP, FORM_COMP });
+    }
     shared_ptr<DifferentialOperator> BaseDiffOp() const { return diffop; }
     virtual bool SupportsVB (VorB checkvb) const override { return diffop->SupportsVB(checkvb); }
     virtual bool DeclaresElementType () const override { return diffop->DeclaresElementType(); }
@@ -832,6 +853,11 @@ namespace ngfem
     NGS_DLL_HEADER virtual ~SkewMatrixDifferentialOperator ();
     
     virtual string Name() const override { return diffop->Name(); }
+    virtual optional<FormSignature> Forms() const override
+    {
+      if (diffop->Dimensions().Size() > 0) return nullopt;
+      return CombineForms (diffop->Forms(), { FORM_COMP, FORM_COMP });
+    }
     shared_ptr<DifferentialOperator> BaseDiffOp() const { return diffop; }
     virtual bool SupportsVB (VorB checkvb) const override { return diffop->SupportsVB(checkvb); }
     virtual bool DeclaresElementType () const override { return diffop->DeclaresElementType(); }
@@ -920,6 +946,7 @@ namespace ngfem
     virtual ~CompoundDifferentialOperator () = default;
     shared_ptr<DifferentialOperator> BaseDiffOp() const { return diffop; } 
     int Component () const { return comp; }
+    virtual optional<FormSignature> Forms() const override { return diffop->Forms(); }
     virtual bool SupportsVB (VorB checkvb) const override { return diffop->SupportsVB(checkvb); }
     virtual bool DeclaresElementType () const override { return diffop->DeclaresElementType(); }
     virtual bool OnlyOnFacets () const override { return diffop->OnlyOnFacets(); }
@@ -1255,6 +1282,13 @@ namespace ngfem
     }
     virtual int DimSpace () const override { return DIM_SPACE; }
     virtual int DimElement () const override { return DIM_ELEMENT; }
+    virtual optional<FormSignature> Forms() const override
+    {
+      if constexpr (requires { DIFFOP::Forms(); })
+        return DIFFOP::Forms();
+      else
+        return nullopt;
+    }
 
     using DifferentialOperator::UsedDofs;
     virtual IntRange UsedDofs(const FiniteElement & fel, int facetnr) const override
