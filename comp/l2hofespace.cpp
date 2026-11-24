@@ -2360,6 +2360,8 @@ global system.
     if (dimension > 1)
       dual = make_shared<BlockDifferentialOperator> (dual, dimension);
     additional_evaluators.Set ("dual", make_shared<TraceDifferentialHolder> (dual));
+
+    needs_transform_vec = false;
   }
 
   L2SurfaceHighOrderFESpace :: ~L2SurfaceHighOrderFESpace ()
