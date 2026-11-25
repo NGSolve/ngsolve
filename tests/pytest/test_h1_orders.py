@@ -1,4 +1,4 @@
-"""Order specification of H1, L2 and HCurl: SetOrder for element types, regions, elements and nodes,
+"""Order specification of H1, L2, HCurl and HDiv: SetOrder for element types, regions, elements and nodes,
 the minimum rule, orders with a direction, hp-refined meshes, pickling, linked spaces."""
 import gc
 import pickle
@@ -209,7 +209,7 @@ def test_vectorh1_and_errors():
     assert all(V.GetFE(el).ndof == len(el.dofs) for el in V.Elements(VOL))
 
     with pytest.raises(Exception, match="not available"):
-        HDiv(mesh, order=2).SetOrder(mesh.Materials("b"), 4)
+        HDivDiv(mesh, order=2).SetOrder(mesh.Materials("b"), 4)
     with pytest.raises(Exception, match="different mesh"):
         H1(mesh, order=2).SetOrder(mesh2d().Materials("b"), 4)
     with pytest.raises(Exception, match="variableorder"):
@@ -505,7 +505,7 @@ def test_errors_and_vectorh1():
     with pytest.raises(Exception, match="volume elements"):
         fes.SetOrder(ElementId(BND, 0), 3)
     with pytest.raises(Exception, match="not available"):
-        HDiv(trig, order=2).SetOrder(ElementId(VOL, 0), 3)
+        HDivDiv(trig, order=2).SetOrder(ElementId(VOL, 0), 3)
     prism = MakeStructured3DMesh(hexes=False, prism=True, nx=1, ny=1, nz=1)
     with pytest.raises(Exception, match="prism"):
         H1(prism, order=2).SetOrder(ElementId(VOL, 0), (2, 3, 4))
@@ -616,7 +616,7 @@ def test_direction_errors():
     with pytest.raises(Exception):
         fes.SetOrder(quad.Materials(".*"), 3, direction=CF((0, 1)))
     with pytest.raises(Exception, match="not available"):
-        HDiv(quad, order=2).SetOrder(quad.Materials(".*"), (2, 4), direction=CF((0, 1)))
+        HDivDiv(quad, order=2).SetOrder(quad.Materials(".*"), (2, 4), direction=CF((0, 1)))
 
 
 # ---------------------------------------------------------------- hp-refined meshes
@@ -920,7 +920,7 @@ def test_link_errors_and_lifetime():
     with pytest.raises(Exception, match="different mesh"):
         H1(mesh2d(), orderlink=V)
     with pytest.raises(Exception, match="orderlink is not available"):
-        HDiv(mesh, orderlink=V)
+        HDivDiv(mesh, orderlink=V)
     V.SetOrder(mesh.Materials("b"), 5); V.Update()
     W = H1(mesh, orderlink=V, relorder=-1)
     n = W.ndof
@@ -1115,7 +1115,7 @@ def test_vector_spaces():
     a = BilinearForm(InnerProduct(grad(u), grad(v))*dx + div(u)*q*dx + div(v)*p*dx).Assemble()
     assert a.mat.height == V.ndof + Q.ndof
     with pytest.raises(Exception, match="orderlink is not available"):
-        HDiv(mesh, orderlink=V)
+        HDivDiv(mesh, orderlink=V)
 
 
 def test_pickle_h1_l2():
@@ -1377,3 +1377,262 @@ def test_gradient_space_direction():
     fes.SetOrder(mesh.Materials(".*"), (1, 3), direction=(0, 0, 1))
     fes.Update()
     assert gradient_is_exact(fes)
+
+
+# -------------------- HDiv
+
+def normal_jumps(fes):
+    """squared normal jumps of a function with arbitrary coefficients over the interior facets"""
+    u, v = fes.TnT()
+    n = specialcf.normal(fes.mesh.dim)
+    a = BilinearForm(fes, nonassemble=True)
+    a += ((u-u.Other())*n)*((v-v.Other())*n)*dx(skeleton=True)
+    gf = GridFunction(fes)
+    gf.vec.FV().NumPy()[:] = [((7*i) % 11)/11 - 0.4 for i in range(fes.ndof)]
+    res = gf.vec.CreateVector()
+    a.Apply(gf.vec, res)
+    return abs(InnerProduct(res, gf.vec))
+
+
+def hdiv_ok(fes):
+    return consistent(fes) and normal_jumps(fes) < 1e-20
+
+
+def facet_type(mesh):
+    return EDGE if mesh.dim == 2 else FACE
+
+
+def min_rule_facets(mesh, pcell):
+    pf = {}
+    for el in mesh.Elements(VOL):
+        for f in el.facets: pf[f.nr] = min(pf.get(f.nr, 99), pcell(el))
+    return pf
+
+
+def facet_orders_are(fes, pf):
+    nt = facet_type(fes.mesh)
+    return all(fes.GetOrder(NodeId(nt, i)) == p for i, p in pf.items())
+
+
+def test_jump_control_hdiv():
+    mesh = mesh2d()
+    assert normal_jumps(HDiv(mesh, order=2)) < 1e-20
+    assert normal_jumps(HDiv(mesh, order=2, discontinuous=True)) > 1e-3
+
+
+@pytest.mark.parametrize("RT", [False, True])
+@pytest.mark.parametrize("make", [mesh2d, mesh3d])
+def test_hdiv_region_orders(make, RT):
+    mesh = make()
+    fes = HDiv(mesh, order=1, RT=RT)
+    assert fes.GetOrder(ElementId(VOL, 0)) == 1
+    # a region order for all cells is the global order
+    fes.SetOrder(mesh.Materials(".*"), 3)
+    with pytest.raises(Exception, match="order was changed"):
+        fes.GetFE(ElementId(VOL, 0))
+    fes.Update()
+    assert same_space(fes, HDiv(mesh, order=3, RT=RT))
+
+    fes = HDiv(mesh, order=1, RT=RT)
+    fes.SetOrder(mesh.Materials("b"), 3)
+    fes.SetOrder(ElementId(VOL, 0), 2)
+    fes.Update()
+    pcell = lambda el: 2 if el.nr == 0 else 3 if el.mat == "b" else 1
+    assert facet_orders_are(fes, min_rule_facets(mesh, pcell))
+    assert all(fes.GetOrder(el) == pcell(el) for el in mesh.Elements(VOL))
+    assert hdiv_ok(fes)
+    assert HDiv(mesh, order=1, RT=RT).ndof < fes.ndof < HDiv(mesh, order=3, RT=RT).ndof
+    # boundary region, kept by refinement
+    fes.SetOrder(mesh.Boundaries("bot"), 4)
+    fes.Update()
+    bot = {f.nr: 4 for el in mesh.Elements(BND) if el.mat == "bot" for f in (el.edges if mesh.dim == 2 else el.faces)}
+    assert len(bot) and facet_orders_are(fes, bot) and hdiv_ok(fes)
+    gf = GridFunction(fes)
+    gf.Set(CF((x*x*y, y*y*y, x)[:mesh.dim]), definedon=mesh.Boundaries("bot"))
+    n = specialcf.normal(mesh.dim)
+    assert Integrate((BoundaryFromVolumeCF(gf)*n - CF((x*x*y, y*y*y, x)[:mesh.dim])*n)**2 * ds("bot"), mesh) < 1e-20
+    n0 = fes.ndof
+    mesh.Refine()
+    fes.Update()
+    assert fes.ndof > n0 and hdiv_ok(fes)
+
+
+def test_hdiv_element_orders_inherited():
+    mesh = Mesh(unit_square.GenerateMesh(maxh=0.3))
+    fes = HDiv(mesh, order=1)
+    pattern = lambda el: 1 + (el.nr * 7) % 3
+    for el in mesh.Elements(VOL):
+        fes.SetOrder(el, pattern(el))
+    fes.Update()
+    assert facet_orders_are(fes, min_rule_facets(mesh, pattern)) and hdiv_ok(fes)
+    for el in mesh.Elements(VOL):
+        mesh.SetRefinementFlag(el, el.nr % 3 == 0)
+    mesh.Refine()
+    fes.Update()
+    assert len({fes.GetOrder(el) for el in mesh.Elements(VOL)}) == 3
+    assert facet_orders_are(fes, min_rule_facets(mesh, lambda el: fes.GetOrder(el))) and hdiv_ok(fes)
+
+
+@pytest.mark.parametrize("make,direction", [(lambda: MakeStructured2DMesh(quads=True, nx=3, ny=3), (0, 1)),
+                                            (lambda: MakeStructured3DMesh(hexes=True, nx=2, ny=2, nz=2), (0, 0, 1)),
+                                            (lambda: MakeStructured3DMesh(hexes=False, prism=True, nx=2, ny=2, nz=2), None)])
+def test_hdiv_direction(make, direction):
+    mesh = make()
+    fes = HDiv(mesh, order=1)
+    fes.SetOrder(mesh.Materials(".*"), (1, 3), direction=direction)
+    fes.Update()
+    if mesh.dim == 2:
+        assert [fes.GetOrder(NodeId(EDGE, e.nr)) for e in mesh.edges] == [3 if along(mesh, e, direction) else 1 for e in mesh.edges]
+    assert hdiv_ok(fes)
+    assert HDiv(mesh, order=1).ndof < fes.ndof < HDiv(mesh, order=3).ndof
+    # the trace on boundary quads has both orders
+    gf = GridFunction(fes)
+    f = CF((y*y*y, x)) if mesh.dim == 2 else CF((z*z*z*y, z*z*z*x, x+y))
+    gf.Set(f, definedon=mesh.Boundaries(".*"))
+    n = specialcf.normal(mesh.dim)
+    assert Integrate((BoundaryFromVolumeCF(gf)*n - f*n)**2 * ds, mesh) < 1e-20
+
+
+@pytest.mark.parametrize("make", [mesh2d, mesh3d])
+def test_hdiv_linked(make):
+    mesh = make()
+    V = H1(mesh, order=3)
+    D = HDiv(mesh, orderlink=V, relorder=-2)
+    assert same_space(D, HDiv(mesh, order=1)) and D.globalorder == 1
+    V.SetOrder(mesh.Materials("b"), 5)
+    V.SetOrder(ElementId(VOL, 0), 2)
+    V.Update()
+    with pytest.raises(Exception, match="order was changed"):
+        D.GetFE(ElementId(VOL, 0))
+    D.Update()
+    nt = facet_type(mesh)
+    used = sorted({f.nr for el in mesh.Elements(VOL) for f in el.facets})
+    def orders_follow():
+        return all(D.GetOrder(NodeId(nt, i)) == V.GetOrder(NodeId(nt, i))-2 for i in used) and \
+            all(D.GetOrder(el) == V.GetOrder(el)-2 for el in mesh.Elements(VOL))
+    assert orders_follow() and hdiv_ok(D)
+    with pytest.raises(Exception, match="orders belong to"):
+        D.SetOrder(mesh.Materials("b"), 2)
+
+    # the sequence H1 - HCurl - HDiv - L2 with linked orders
+    Q = L2(mesh, orderlink=V, relorder=-3)
+    gfd = GridFunction(D)
+    if mesh.dim == 3:
+        E = HCurl(mesh, orderlink=V, relorder=-1)
+        gfe = GridFunction(E)
+        gfe.vec.FV().NumPy()[:] = [((5*i) % 13)/13 - 0.3 for i in range(E.ndof)]
+        gfd.Set(curl(gfe))
+        err = Integrate((gfd-curl(gfe))*(gfd-curl(gfe))*dx, mesh)
+        assert err < 1e-18 * Integrate(curl(gfe)*curl(gfe)*dx, mesh)
+    else:
+        # rotated gradients, one order higher
+        R = HDiv(mesh, orderlink=V, relorder=-1)
+        gfv = GridFunction(V)
+        gfv.vec.FV().NumPy()[:] = [((5*i) % 13)/13 - 0.3 for i in range(V.ndof)]
+        rot = CF((grad(gfv)[1], -grad(gfv)[0]))
+        gfr = GridFunction(R)
+        gfr.Set(rot)
+        assert Integrate((gfr-rot)*(gfr-rot)*dx, mesh) < 1e-18 * Integrate(rot*rot*dx, mesh)
+    gfd.vec.FV().NumPy()[:] = [((3*i) % 17)/17 - 0.4 for i in range(D.ndof)]
+    gfq = GridFunction(Q)
+    gfq.Set(div(gfd))
+    assert Integrate((gfq-div(gfd))**2*dx, mesh) < 1e-18 * Integrate(div(gfd)**2*dx, mesh)
+
+    # boundary region
+    V.SetOrder(mesh.Boundaries("bot"), 4)
+    V.Update(); D.Update()
+    assert orders_follow() and hdiv_ok(D)
+
+    # pickled together they stay linked
+    V2, D2 = pickle.loads(pickle.dumps((V, D)))
+    assert same_space(D2, D)
+    V2.SetOrder(V2.mesh.Materials("a"), 4)
+    V2.Update(); D2.Update()
+    V.SetOrder(mesh.Materials("a"), 4)
+    V.Update(); D.Update()
+    assert same_space(D2, D) and hdiv_ok(D2)
+
+
+def test_hdiv_creates_the_orders():
+    mesh = mesh2d()
+    S = HDiv(mesh, order=2)
+    Q = L2(mesh, orderlink=S, relorder=-1)
+    S.SetOrder(mesh.Materials("b"), 4)
+    S.SetOrder(ElementId(VOL, 0), 1)
+    S.Update(); Q.Update()
+    assert all(Q.GetOrder(el) == S.GetOrder(el)-1 for el in mesh.Elements(VOL))
+    gfs = GridFunction(S)
+    gfs.vec.FV().NumPy()[:] = [((3*i) % 17)/17 - 0.4 for i in range(S.ndof)]
+    gfq = GridFunction(Q)
+    gfq.Set(div(gfs))
+    assert Integrate((gfq-div(gfs))**2*dx, mesh) < 1e-18 * Integrate(div(gfs)**2*dx, mesh)
+    f2 = pickle.loads(pickle.dumps(S))
+    assert same_space(f2, S)
+
+
+def test_hdiv_hp_and_mesh_orders():
+    L = 3
+    mesh = hp2d(L)
+    ref = HDiv(mesh, variableorder=True, relorder=-1)
+    fes = HDiv(mesh, order=L, hpslope=1)
+    assert same_space(fes, ref) and hdiv_ok(fes)
+    V = H1(mesh, order=L+1, hpslope=1)
+    D = HDiv(mesh, orderlink=V, relorder=-1)
+    assert same_space(D, ref)
+    # hexes next to prisms, faces with two orders
+    mesh = hp3d(2)
+    fes = HDiv(mesh, order=3, hpslope=1)
+    assert same_space(fes, HDiv(mesh, relorder=0)) and hdiv_ok(fes)
+    assert fes.ndof < HDiv(mesh, order=3).ndof
+    with pytest.raises(Exception, match="hpslope"):
+        HDiv(mesh, relorder=0, hpslope=1)
+
+
+def test_hdiv_mesh_orders_minimum_rule():
+    mesh = MakeStructured3DMesh(hexes=True, nx=2, ny=2, nz=1)
+    for i, el in enumerate(mesh.Elements(VOL)):
+        mesh.SetElementOrders(el, (1 + i % 3, 2 + (i // 2) % 2, 1 + (i * 7) % 4))
+    fes = HDiv(mesh, relorder=0)
+    assert hdiv_ok(fes)
+    gf = GridFunction(fes)
+    f = CF((x*y*z, y*y, z*x))
+    gf.Set(f, definedon=mesh.Boundaries(".*"))
+    n = specialcf.normal(3)
+    # the boundary elements carry the orders of both directions of their face
+    assert Integrate((BoundaryFromVolumeCF(gf)*n - gf*n)**2 * ds, mesh) < 1e-20
+
+
+def test_hdiv_node_orders_with_other_calls():
+    for mesh in [Mesh(unit_square.GenerateMesh(maxh=0.4)), Mesh(unit_cube.GenerateMesh(maxh=0.7))]:
+        nt = facet_type(mesh)
+        nfacets = mesh.nedge if mesh.dim == 2 else mesh.nface
+        def nodes(fes):
+            for i in range(1, nfacets, 2): fes.SetOrder(NodeId(nt, i), 3)
+        # works for every order policy
+        a = HDiv(mesh, order=1); a.SetOrder(TRIG, 2); nodes(a); a.Update()
+        b = HDiv(mesh, order=1); nodes(b); b.Update(); b.SetOrder(TRIG, 2); b.Update()
+        assert same_space(a, b) and hdiv_ok(a)
+        assert all(a.GetOrder(NodeId(nt, i)) == 3 for i in range(1, nfacets, 2))
+        assert a.ndof > HDiv(mesh, order=1).ndof
+        c = HDiv(mesh, order=1); nodes(c)
+        with pytest.raises(Exception, match="order was changed"):
+            c.GetFE(ElementId(VOL, 0))
+        c.UpdateDofTables()
+        assert consistent(c)
+        f2 = pickle.loads(pickle.dumps(a))
+        assert same_space(f2, a)
+
+
+def test_hdiv_1d_and_errors():
+    from ngsolve.meshes import Make1DMesh
+    mesh = Make1DMesh(4)
+    fes = HDiv(mesh, order=1)
+    fes.SetOrder(ElementId(VOL, 1), 3)
+    fes.Update()
+    assert consistent(fes) and fes.ndof == HDiv(mesh, order=1).ndof + 2
+    mesh = mesh2d()
+    fes = HDiv(mesh, order=2)
+    fes.SetOrder(mesh.Materials("b"), 3)
+    fes.Update()
+    with pytest.raises(Exception, match="only uniform order"):
+        fes.CreateStressSpace()

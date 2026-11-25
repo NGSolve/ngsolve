@@ -1274,9 +1274,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
                                  FlatArray<TO> order_edge,
                                  FlatArray<IVec<2,TO>> order_face,
                                  FlatArray<IVec<3,TO>> order_cell,
-                                 int edge_offset, bool increments_everywhere) const
+                                 int edge_offset, bool increments_everywhere, bool use_increments) const
   {
     int dim = ma->GetDimension();
+    static const int no_bonus[30] = { 0 };
+    const int * bonus = use_increments ? et_bonus_order : no_bonus;
     int p = order_spec.base->mesh_orders ? minorder : order;
 
     for (auto & ro : order_spec.base->region_orders)
@@ -1301,18 +1303,18 @@ lot of new non-zero entries in the matrix!\n" << endl;
                    ELEMENT_TYPE eltype = el.GetType();
 
                    for (int k = 0; k < 3; k++)
-                     order_cell[nr][k] = max2 (lo, pc[k] + et_bonus_order[eltype]);
+                     order_cell[nr][k] = max2 (lo, pc[k] + bonus[eltype]);
 
                    if (pc[0] == pc[1] && pc[1] == pc[2])
                      {
                        if (order_edge.Size())
                          for (auto e : el.Edges())
-                           AtomicMin (order_edge[e], TO (max2 (lo, pc[0] + edge_offset + et_bonus_order[ET_SEGM])));
+                           AtomicMin (order_edge[e], TO (max2 (lo, pc[0] + edge_offset + bonus[ET_SEGM])));
 
                        if (order_face.Size())
                          for (auto f : el.Faces())
                            {
-                             TO pf = max2 (lo, pc[0] + et_bonus_order[ma->GetFaceType(f)]);
+                             TO pf = max2 (lo, pc[0] + bonus[ma->GetFaceType(f)]);
                              AtomicMin (order_face[f][0], pf);
                              AtomicMin (order_face[f][1], pf);
                            }
@@ -1332,7 +1334,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
                          for (int k = 0; k < dim; k++)
                            if (points[edges[j][0]][k] != points[edges[j][1]][k]) // find edge-dir x,y,z
                              {
-                               AtomicMin (order_edge[eledges[j]], TO (max2 (lo, pc[k] + edge_offset + et_bonus_order[ET_SEGM])));
+                               AtomicMin (order_edge[eledges[j]], TO (max2 (lo, pc[k] + edge_offset + bonus[ET_SEGM])));
                                break;
                              }
                      }
@@ -1345,7 +1347,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
                            auto & of = order_face[elfaces[j]];
                            if (faces[j][3] == -1)
                              {
-                               TO pf = max2 (lo, pc[0] + et_bonus_order[ET_TRIG]);
+                               TO pf = max2 (lo, pc[0] + bonus[ET_TRIG]);
                                AtomicMin (of[0], pf);
                                AtomicMin (of[1], pf);
                              }
@@ -1366,7 +1368,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
                                  for (int k = 0; k < 3; k++)
                                    if (points[faces[j][fmax]][k] != points[faces[j][f[l]]][k])
                                      {
-                                       AtomicMin (of[l], TO (max2 (lo, pc[k] + et_bonus_order[ET_QUAD])));
+                                       AtomicMin (of[l], TO (max2 (lo, pc[k] + bonus[ET_QUAD])));
                                        break;
                                      }
                              }
@@ -1380,9 +1382,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
         // cells of other ranks
         Array<int> hedge (order_edge.Size()), hface (order_face.Size());
         for (auto i : Range(hedge)) hedge[i] = order_edge[i];
-        ma->AllReduceNodalData (NT_EDGE, hedge, NG_MPI_MIN);
+        if (hedge.Size())
+          ma->AllReduceNodalData (NT_EDGE, hedge, NG_MPI_MIN);
         for (auto i : Range(hedge)) order_edge[i] = TO (hedge[i]);
-        for (int k = 0; k < 2; k++)
+        for (int k = 0; k < 2 && hface.Size(); k++)
           {
             for (auto i : Range(hface)) hface[i] = order_face[i][k];
             ma->AllReduceNodalData (NT_FACE, hface, NG_MPI_MIN);
@@ -1393,10 +1396,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
     // edges and faces without a cell of the space
     for (auto & oe : order_edge)
       if (oe == unset)
-        oe = increments_everywhere ? TO (max2 (0, p + edge_offset + et_bonus_order[ET_SEGM])) : TO (p);
+        oe = increments_everywhere ? TO (max2 (0, p + edge_offset + bonus[ET_SEGM])) : TO (p);
     for (auto i : Range(order_face))
       if (order_face[i][0] == unset)
-        order_face[i] = IVec<2,TO> (increments_everywhere ? max2 (0, p + et_bonus_order[ma->GetFaceType(i)]) : p);
+        order_face[i] = IVec<2,TO> (increments_everywhere ? max2 (0, p + bonus[ma->GetFaceType(i)]) : p);
 
     // faces and edges of boundary regions, the last region wins
     bool bnd_regions = false;
@@ -1419,15 +1422,16 @@ lot of new non-zero entries in the matrix!\n" << endl;
                 if (face_reg.Size() && regs[k].vb == BND)
                   face_reg[ma->GetSElFace(el.Nr())] = k;
               }
-        ma->AllReduceNodalData (NT_EDGE, edge_reg, NG_MPI_MAX);
+        if (edge_reg.Size())
+          ma->AllReduceNodalData (NT_EDGE, edge_reg, NG_MPI_MAX);
         int lobnd = order_spec.link_offset ? minorder : 0;
 
         for (auto i : Range(edge_reg))
           if (edge_reg[i] >= 0)
-            order_edge[i] = TO (max2 (lobnd, regs[edge_reg[i]].order + order_spec.link_offset + edge_offset + et_bonus_order[ET_SEGM]));
+            order_edge[i] = TO (max2 (lobnd, regs[edge_reg[i]].order + order_spec.link_offset + edge_offset + bonus[ET_SEGM]));
         for (auto i : Range(face_reg))
           if (face_reg[i] >= 0)
-            order_face[i] = IVec<2,TO> (max2 (lobnd, regs[face_reg[i]].order + order_spec.link_offset + et_bonus_order[ma->GetFaceType(i)]));
+            order_face[i] = IVec<2,TO> (max2 (lobnd, regs[face_reg[i]].order + order_spec.link_offset + bonus[ma->GetFaceType(i)]));
       }
 
     if (order_spec.order_cell > -1)
@@ -1463,10 +1467,13 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   template void FESpace :: ResolveOrders<unsigned char> (int, FlatArray<bool>, FlatArray<bool>, FlatArray<unsigned char>,
                                                        FlatArray<IVec<2,unsigned char>>, FlatArray<IVec<3,unsigned char>>,
-                                                       int, bool) const;
+                                                       int, bool, bool) const;
   template void FESpace :: ResolveOrders<short> (int, FlatArray<bool>, FlatArray<bool>, FlatArray<short>,
                                                FlatArray<IVec<2,short>>, FlatArray<IVec<3,short>>,
-                                               int, bool) const;
+                                               int, bool, bool) const;
+  template void FESpace :: ResolveOrders<int> (int, FlatArray<bool>, FlatArray<bool>, FlatArray<int>,
+                                             FlatArray<IVec<2,int>>, FlatArray<IVec<3,int>>,
+                                             int, bool, bool) const;
 
   void FESpace :: SetNodeOrder (int type, size_t nr, int order)
   {

@@ -49,7 +49,7 @@
 \title{\vspace{-1.2cm}Variable Polynomial Order\\[2pt]
 \large One order specification for all spaces: regions, elements, the minimum rule, and linked spaces}
 \author{Christopher Lackner \and Edoardo Bonetti \and Astrid Pechstein \and Joachim Sch\"oberl}
-\date{NGSolve Technical Note 2026-09\quad$\bullet$\quad version 2026-11-23\quad$\bullet$\quad implemented for H1, L2 and HCurl}
+\date{NGSolve Technical Note 2026-09\quad$\bullet$\quad version 2026-11-25\quad$\bullet$\quad implemented for H1, L2, HCurl and HDiv}
 
 \begin{document}
 \maketitle\vspace{-1.2cm}
@@ -64,7 +64,7 @@ The high order spaces of NGSolve \cite{s14} carry an individual polynomial order
 \item Anisotropic orders are given in the axes of the reference element. One has to know the local vertex numbering; on simplices and pyramids two of the three numbers are silently ignored.
 \item There is no order per region, and no connection between the orders of two spaces except through the single order field of the mesh.
 \end{itemize}
-This note fixes the design of the replacement. It is implemented for \code{H1}, \code{VectorH1}, \code{L2}, \code{VectorL2} and \code{HCurl}; the other spaces follow with the same interface.
+This note fixes the design of the replacement. It is implemented for \code{H1}, \code{VectorH1}, \code{L2}, \code{VectorL2}, \code{HCurl} and \code{HDiv}; the other spaces follow with the same interface.
 
 \section{Specification and resolved orders}
 
@@ -223,6 +223,15 @@ base mesh, factor, orders & levels & order & elements & dofs & time (s) & rel.\ 
 \caption{Maxwell eigenvalue problem, some of the runs of Figure~\ref{fig:maxwell}.}\label{tab:maxwell}
 \end{table}
 
+\paragraph{The sequence.} With one creating space the four spaces of the de~Rham sequence follow the same orders:
+\begin{lstlisting}
+V = H1(mesh, order=p)
+E = HCurl(mesh, orderlink=V, relorder=-1)
+D = HDiv(mesh, orderlink=V, relorder=-2)
+Q = L2(mesh, orderlink=V, relorder=-3)
+\end{lstlisting}
+For orders on regions and elements, with \code{hpslope} and with the orders of the mesh, the gradient, the curl and the divergence map each space into the next one; the tests check this. In \code{HDiv} the facets take the role of the edges and faces, \code{orderfacet} is their order for all of them (layer 6), and shape increments are not used.
+
 \section{What changes}
 
 \begin{center}\small
@@ -248,6 +257,7 @@ The flags \code{orderinner}, \code{orderface}, \code{orderedge} and \code{trigor
 \item \textbf{Maximum rule} as an option. It would be a property of the shared orders, since linked spaces need the same rule, and it is one comparison in the resolve function. We add it only if it is needed, for example to reproduce old results.
 \item \textbf{Levels of the mesh.} For now the space recovers the levels from the orders which \code{RefineHP} stores in the mesh. An interface of the mesh for the levels themselves is to follow.
 \item \textbf{Pyramids and seven-node hexahedra} of $hp$-refined meshes: which level a pyramid takes, and directions for the degenerated hexahedron. Postponed.
+\item \textbf{Faces above their cells.} A boundary region can raise the order of a face above the order of its cell. Gradient and divergence still map into the next space of the sequence, the curl does not in 3D: the face functions of the \code{HDiv} elements are not the curls of the face functions of \code{HCurl}, the difference is a cell function of the higher order. It needs a change of the \code{HDiv} face functions.
 \item The names \code{orderlink} and \code{hpslope}, and whether the link can also be given to \code{order} directly.
 \end{itemize}
 

@@ -1081,8 +1081,9 @@ template <typename MIP, typename TFA>
 	  }
 	else
 	  {
-	    for (int j = 0; j <= p[1]-1; j++)
-	      for (int k = 0; k <= p[0]-1; k++, ii++)
+	    // first face direction is z
+	    for (int j = 0; j <= p[0]-1; j++)
+	      for (int k = 0; k <= p[1]-1; k++, ii++)
 		shape[ii] = Du_Cross_Dv (adpolxy1[k],  2*adpolz[j]);
 	  }
 	  

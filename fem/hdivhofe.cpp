@@ -456,6 +456,8 @@ namespace ngfem
     if (ET != ET_TRIG && ET != ET_TET) order++;
     if (ET == ET_PYRAMID) order++;
     if (RT) order++;
+    // the lowest order functions are linear
+    order = max(order, 1);
   }
 
 

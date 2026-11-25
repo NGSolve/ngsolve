@@ -339,13 +339,15 @@ ANY                  1 1 1 1 | 15
     /// orders of edges, faces and cells from the order specification
     /// edge_offset: added to all edge orders (first family Nedelec: -1).
     /// increments_everywhere: edges and faces without a cell of the space get the shape increments, too
+    /// use_increments: false for spaces without shape increments
     template <typename TO>
     void ResolveOrders (int minorder,
                         FlatArray<bool> used_edge, FlatArray<bool> used_face,
                         FlatArray<TO> order_edge,
                         FlatArray<IVec<2,TO>> order_face,
                         FlatArray<IVec<3,TO>> order_cell,
-                        int edge_offset = 0, bool increments_everywhere = false) const;
+                        int edge_offset = 0, bool increments_everywhere = false,
+                        bool use_increments = true) const;
 
     // size_t order_timestamp = 0;
     BitArray is_atomic_dof;
