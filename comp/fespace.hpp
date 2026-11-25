@@ -349,6 +349,12 @@ ANY                  1 1 1 1 | 15
                         int edge_offset = 0, bool increments_everywhere = false,
                         bool use_increments = true) const;
 
+    /// spaces with one order per facet: minimum rule, a face with two orders takes the smaller one.
+    /// order_1d: order of the points of a 1D mesh
+    void ResolveFacetOrders (FlatArray<bool> fine_facet, FlatArray<IVec<2>> order_facet, int order_1d);
+    /// link by the flag orderlink (returns true), or fill the base orders from the flags
+    bool InitBaseOrders (const Flags & flags, bool mesh_orders, int rel_order);
+
     // size_t order_timestamp = 0;
     BitArray is_atomic_dof;
 

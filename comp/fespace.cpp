@@ -1475,6 +1475,48 @@ lot of new non-zero entries in the matrix!\n" << endl;
                                              FlatArray<IVec<2,int>>, FlatArray<IVec<3,int>>,
                                              int, bool, bool) const;
 
+  void FESpace :: ResolveFacetOrders (FlatArray<bool> fine_facet, FlatArray<IVec<2>> order_facet, int order_1d)
+  {
+    int dim = ma->GetDimension();
+    UpdateOrderSpecification();
+    Array<IVec<3>> order_cell (ma->GetNE());
+    FlatArray<bool> no_used;
+    FlatArray<int> no_edges;
+    FlatArray<IVec<2>> no_faces;
+    if (dim == 3)
+      {
+        ResolveOrders<int> (0, no_used, fine_facet, no_edges, order_facet, order_cell, 0, false, false);
+        for (auto & of : order_facet)
+          of = IVec<2> (min2 (of[0], of[1]));
+      }
+    else if (dim == 2)
+      {
+        Array<int> order_edge (order_facet.Size());
+        ResolveOrders<int> (0, fine_facet, no_used, order_edge, no_faces, order_cell, 0, false, false);
+        for (auto i : Range(order_facet))
+          order_facet[i] = IVec<2> (order_edge[i]);
+      }
+    else
+      for (auto i : Range(order_facet))
+        order_facet[i] = IVec<2> (fine_facet[i] ? order_1d : 0);
+  }
+
+  bool FESpace :: InitBaseOrders (const Flags & flags, bool mesh_orders, int rel_order)
+  {
+    if (LinkOrders (flags)) return true;
+    auto & base = *order_spec.base;
+    base.order = order;
+    base.mesh_orders = mesh_orders;
+    base.rel_order = mesh_orders ? rel_order : 0;
+    base.hp_slope = flags.GetNumFlag ("hpslope", 0);
+    base.hp_minorder = 0;
+    if (base.hp_slope < 0)
+      throw Exception (type + ": hpslope must not be negative");
+    if (base.hp_slope > 0 && mesh_orders)
+      throw Exception (type + ": hpslope not together with variableorder / relorder");
+    return false;
+  }
+
   void FESpace :: SetNodeOrder (int type, size_t nr, int order)
   {
     auto & spec = order_spec;

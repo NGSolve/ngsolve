@@ -1,4 +1,4 @@
-"""Order specification of H1, L2, HCurl and HDiv: SetOrder for element types, regions, elements and nodes,
+"""Order specification of H1, L2, HCurl, HDiv and the facet spaces: SetOrder for element types, regions, elements and nodes,
 the minimum rule, orders with a direction, hp-refined meshes, pickling, linked spaces."""
 import gc
 import pickle
@@ -1636,3 +1636,205 @@ def test_hdiv_1d_and_errors():
     fes.Update()
     with pytest.raises(Exception, match="only uniform order"):
         fes.CreateStressSpace()
+
+
+# -------------------- facet spaces
+
+facet_spaces = [FacetFESpace, NormalFacetFESpace, TangentialFacetFESpace]
+
+
+@pytest.mark.parametrize("space", facet_spaces)
+@pytest.mark.parametrize("make", [mesh2d, mesh3d])
+def test_facet_region_orders(make, space):
+    mesh = make()
+    fes = space(mesh, order=1)
+    assert fes.GetOrder(ElementId(VOL, 0)) == 1
+    # a region order for all cells is the global order
+    fes.SetOrder(mesh.Materials(".*"), 3)
+    with pytest.raises(Exception, match="order was changed"):
+        fes.GetFE(ElementId(VOL, 0))
+    fes.Update()
+    assert same_space(fes, space(mesh, order=3))
+
+    fes = space(mesh, order=1)
+    fes.SetOrder(mesh.Materials("b"), 3)
+    fes.SetOrder(ElementId(VOL, 0), 2)
+    fes.Update()
+    pcell = lambda el: 2 if el.nr == 0 else 3 if el.mat == "b" else 1
+    assert facet_orders_are(fes, min_rule_facets(mesh, pcell))
+    assert consistent(fes)
+    assert space(mesh, order=1).ndof < fes.ndof < space(mesh, order=3).ndof
+    # boundary region, kept by refinement
+    fes.SetOrder(mesh.Boundaries("bot"), 4)
+    fes.Update()
+    bot = {f.nr: 4 for el in mesh.Elements(BND) if el.mat == "bot" for f in (el.edges if mesh.dim == 2 else el.faces)}
+    assert len(bot) and facet_orders_are(fes, bot) and consistent(fes)
+    n0 = fes.ndof
+    mesh.Refine()
+    fes.Update()
+    assert fes.ndof > n0 and consistent(fes)
+    f2 = pickle.loads(pickle.dumps(fes))
+    assert same_space(f2, fes)
+
+
+def test_facet_element_orders_inherited():
+    mesh = Mesh(unit_square.GenerateMesh(maxh=0.3))
+    fes = FacetFESpace(mesh, order=1)
+    pattern = lambda el: 1 + (el.nr * 7) % 3
+    for el in mesh.Elements(VOL):
+        fes.SetOrder(el, pattern(el))
+    fes.Update()
+    assert facet_orders_are(fes, min_rule_facets(mesh, pattern)) and consistent(fes)
+    for el in mesh.Elements(VOL):
+        mesh.SetRefinementFlag(el, el.nr % 3 == 0)
+    mesh.Refine()
+    fes.Update()
+    assert len({fes.GetOrder(el) for el in mesh.Elements(VOL)}) == 3
+    assert facet_orders_are(fes, min_rule_facets(mesh, lambda el: fes.GetOrder(el))) and consistent(fes)
+
+
+@pytest.mark.parametrize("space", facet_spaces)
+def test_facet_one_order_per_face(space):
+    # a face with two orders takes the smaller one
+    mesh = MakeStructured3DMesh(hexes=True, nx=2, ny=2, nz=2)
+    def znormal(f):
+        pts = [mesh[v].point for v in mesh[f].vertices]
+        return max(p[2] for p in pts) - min(p[2] for p in pts) < 1e-10
+    fes = space(mesh, order=1)
+    fes.SetOrder(mesh.Materials(".*"), (3, 1), direction=(0, 0, 1))
+    fes.Update()
+    assert all(fes.GetOrder(NodeId(FACE, f.nr)) == (3 if znormal(f) else 1) for f in mesh.faces) and consistent(fes)
+    fes.SetOrder(mesh.Materials(".*"), (1, 3), direction=(0, 0, 1))
+    fes.Update()
+    assert same_space(fes, space(mesh, order=1))
+    mesh = MakeStructured2DMesh(quads=True, nx=3, ny=3)
+    fes = space(mesh, order=1)
+    fes.SetOrder(mesh.Materials(".*"), (1, 3), direction=(0, 1))
+    fes.Update()
+    assert [fes.GetOrder(NodeId(EDGE, e.nr)) for e in mesh.edges] == [3 if along(mesh, e, (0, 1)) else 1 for e in mesh.edges]
+    assert consistent(fes)
+
+
+@pytest.mark.parametrize("make", [mesh2d, mesh3d])
+def test_facet_linked_hdg(make):
+    mesh = make()
+    V = L2(mesh, order=3)
+    F = FacetFESpace(mesh, orderlink=V)
+    N = NormalFacetFESpace(mesh, orderlink=V, relorder=-1)
+    T = TangentialFacetFESpace(mesh, orderlink=V, relorder=1)
+    assert same_space(F, FacetFESpace(mesh, order=3)) and F.globalorder == 3
+    assert same_space(N, NormalFacetFESpace(mesh, order=2)) and same_space(T, TangentialFacetFESpace(mesh, order=4))
+    V.SetOrder(mesh.Materials("b"), 5)
+    V.SetOrder(ElementId(VOL, 0), 1)
+    V.SetOrder(mesh.Boundaries("bot"), 2)
+    V.Update()
+    with pytest.raises(Exception, match="order was changed"):
+        F.GetFE(ElementId(VOL, 0))
+    for fes in (F, N, T): fes.Update()
+    pf = min_rule_facets(mesh, lambda el: V.GetOrder(el))
+    pf.update({f.nr: 2 for el in mesh.Elements(BND) if el.mat == "bot" for f in (el.edges if mesh.dim == 2 else el.faces)})
+    for fes, offset in ((F, 0), (N, -1), (T, 1)):
+        assert facet_orders_are(fes, {i: p+offset for i, p in pf.items()}) and consistent(fes)
+    with pytest.raises(Exception, match="orders belong to"):
+        F.SetOrder(mesh.Materials("b"), 2)
+    V2, F2 = pickle.loads(pickle.dumps((V, F)))
+    V2.SetOrder(V2.mesh.Materials("a"), 4); V2.Update(); F2.Update()
+    V.SetOrder(mesh.Materials("a"), 4); V.Update(); F.Update()
+    assert same_space(F2, F)
+
+
+@pytest.mark.parametrize("make", [mesh2d, lambda: mesh3d(maxh=0.8)])
+def test_facet_hybrid_mixed(make):
+    """the linked facet space is the normal trace of HDiv: the hybridized mixed method gives the mixed solution"""
+    mesh = make()
+    S = HDiv(mesh, order=2)
+    S.SetOrder(mesh.Materials("b"), 3)
+    S.SetOrder(ElementId(VOL, 0), 1)
+    S.Update()
+    Q = L2(mesh, orderlink=S, relorder=-1)
+    Sd = HDiv(mesh, orderlink=S, discontinuous=True)
+    F = FacetFESpace(mesh, orderlink=S)
+    nt = facet_type(mesh)
+    nel = {}
+    for el in mesh.Elements(VOL):
+        for f in el.facets: nel[f.nr] = nel.get(f.nr, 0) + 1
+    assert all(F.GetOrder(NodeId(nt, i)) == S.GetOrder(NodeId(nt, i)) for i in nel)
+    n = specialcf.normal(mesh.dim)
+    f = CF(1 + x)
+
+    X = S * Q
+    (sigma, u), (tau, v) = X.TnT()
+    a = BilinearForm(sigma*tau*dx + div(sigma)*v*dx + div(tau)*u*dx).Assemble()
+    rhs = LinearForm(-f*v*dx).Assemble()
+    gf = GridFunction(X)
+    gf.vec.data = a.mat.Inverse(X.FreeDofs(), inverse="sparsecholesky") * rhs.vec
+
+    Xh = Sd * Q * F
+    (sigma, u, lam), (tau, v, mu) = Xh.TnT()
+    ah = BilinearForm(Xh, condense=True)
+    ah += sigma*tau*dx + div(sigma)*v*dx + div(tau)*u*dx
+    ah += -(sigma*n)*mu*dx(element_boundary=True) - (tau*n)*lam*dx(element_boundary=True)
+    ah.Assemble()
+    rhsh = LinearForm(-f*v*dx).Assemble()
+    gfh = GridFunction(Xh)
+    rhsh.vec.data += ah.harmonic_extension_trans * rhsh.vec
+    # multiplier zero on the outer boundary
+    free = BitArray(Xh.FreeDofs(True))
+    for i in nel:
+        if nel[i] == 1:
+            for d in F.GetDofNrs(NodeId(nt, i)): free[Sd.ndof + Q.ndof + d] = False
+    gfh.vec.data = ah.mat.Inverse(free, inverse="sparsecholesky") * rhsh.vec
+    gfh.vec.data += ah.harmonic_extension * gfh.vec
+    gfh.vec.data += ah.inner_solve * rhsh.vec
+
+    ds_, dsh = gf.components[0], gfh.components[0]
+    assert Integrate((ds_-dsh)*(ds_-dsh)*dx, mesh) < 1e-16 * Integrate(ds_*ds_*dx, mesh)
+    assert Integrate((gf.components[1]-gfh.components[1])**2*dx, mesh) < 1e-16
+
+
+def test_facet_hp_and_mesh_orders():
+    L = 3
+    mesh = hp2d(L)
+    for space in facet_spaces:
+        ref = space(mesh, relorder=-1)
+        fes = space(mesh, order=L, hpslope=1)
+        assert same_space(fes, ref) and consistent(fes)
+    V = H1(mesh, order=L+1, hpslope=1)
+    F = FacetFESpace(mesh, orderlink=V, relorder=-1)
+    assert same_space(F, FacetFESpace(mesh, relorder=-1))
+    mesh = hp3d(2)
+    fes = FacetFESpace(mesh, order=3, hpslope=1)
+    assert same_space(fes, FacetFESpace(mesh, relorder=0)) and consistent(fes)
+    assert fes.ndof < FacetFESpace(mesh, order=3).ndof
+    S = HDiv(mesh, order=3, hpslope=1)
+    assert all(fes.GetOrder(NodeId(FACE, f.nr)) <= S.GetOrder(NodeId(FACE, f.nr)) for el in mesh.Elements(VOL) for f in el.faces)
+
+
+@pytest.mark.parametrize("space", facet_spaces)
+def test_facet_node_orders_with_other_calls(space):
+    for mesh in [Mesh(unit_square.GenerateMesh(maxh=0.4)), Mesh(unit_cube.GenerateMesh(maxh=0.7))]:
+        nt = facet_type(mesh)
+        nfacets = mesh.nedge if mesh.dim == 2 else mesh.nface
+        def nodes(fes):
+            for i in range(1, nfacets, 2): fes.SetOrder(NodeId(nt, i), 3)
+        a = space(mesh, order=1); a.SetOrder(TRIG, 2); nodes(a); a.Update()
+        b = space(mesh, order=1); nodes(b); b.Update(); b.SetOrder(TRIG, 2); b.Update()
+        assert same_space(a, b) and consistent(a)
+        assert all(a.GetOrder(NodeId(nt, i)) == 3 for i in range(1, nfacets, 2))
+        assert a.ndof > space(mesh, order=1).ndof
+        c = space(mesh, order=1); nodes(c)
+        with pytest.raises(Exception, match="order was changed"):
+            c.GetFE(ElementId(VOL, 0))
+        c.Update()
+        assert same_space(c, a)
+        f2 = pickle.loads(pickle.dumps(a))
+        assert same_space(f2, a)
+
+
+@pytest.mark.parametrize("space", facet_spaces)
+def test_facet_highest_order_dc_needs_one_order(space):
+    mesh = mesh2d()
+    fes = space(mesh, order=2, highest_order_dc=True)
+    fes.SetOrder(mesh.Materials("b"), 3)
+    with pytest.raises(Exception, match="highest_order_dc"):
+        fes.Update()

@@ -204,6 +204,7 @@ namespace ngcomp
     type = "normalfacet";
     name = "NormalFacetFESpace";
     DefineNumFlag("relorder");
+    DefineNumFlag("hpslope");
     DefineDefineFlag("variableorder");
 
     if (parseflags) CheckFlags(flags);
@@ -259,6 +260,12 @@ namespace ngcomp
       {
 	rel_order = -1;  
 	order = 0;  
+      }
+
+    if (InitBaseOrders (flags, var_order, rel_order))
+      {
+        var_order = false;
+        rel_order = order-1;
       }
 
 
@@ -326,17 +333,27 @@ namespace ngcomp
       "  Splits highest order facet functions into two which are associated with\n  the corresponding neighbors and are local dofs on the corresponding element\n (used to realize projected jumps)";
     docu.Arg("hide_highest_order_dc") = "bool = False\n"
       "  if highest_order_dc is used this flag marks the corresponding local dofs\n  as hidden dofs (reduces number of non-zero entries in a matrix). These dofs\n  can also be compressed.";
+    docu.Arg("orderlink") = "FESpace\n"
+      "  Take the orders of regions and elements from this space, offset by relorder.\n"
+      "  Only the given space sets these orders.";
+    docu.Arg("relorder") = "int\n"
+      "  With orderlink: order relative to the linked space.\n"
+      "  Without: order relative to the element orders of the mesh (as variableorder).";
+    docu.Arg("hpslope") = "double = 0\n"
+      "  On meshes refined by RefineHP: the order decreases by hpslope per level\n"
+      "  of geometric refinement.";
     return docu;
   }
 
   void NormalFacetFESpace :: Update()
   {
+    bool base_changed = order_spec.base->timestamp > order_base_resolved;
     FESpace::Update();
     if ( print ) 
       *testout << "NormalFacetFESpace, order " << order << endl 
 	       << "rel_order " << rel_order << ", var_order " << var_order << endl;
 
-    bool first_update = GetTimeStamp() < ma->GetTimeStamp();
+    bool first_update = base_changed || GetTimeStamp() < ma->GetTimeStamp();
     if (first_update) timestamp = NGS_Object::GetNextTimeStamp();
     
     if ( low_order_space ) 
@@ -347,108 +364,25 @@ namespace ngcomp
 
     if (first_update)
       {
-	int p = 0; 
-	if (!var_order) p = order; 
-        // a point carries the normal value only
-        if (ma->GetDimension() == 1) p = 0;
-    
 	order_facet.SetSize(nfacets);
 	fine_facet.SetSize(nfacets);
+	fine_facet = false;
 
-	order_facet = IVec<2>(p);
-	fine_facet = 0; 
-    
 	for (Ngs_Element el : ma->Elements<BND>())
 	  if (DefinedOn(el))
 	    fine_facet[el.Facets()] = true;
-#ifdef PARALLEL
-	if(var_order)
-	  throw Exception("MPI + variable order for NormalFacetFESpace is not implemented.");
-#endif
-
-
-	for (size_t i = 0; i < nel; i++)
-	  {
-	    ElementId ei(VOL,i);
-	    if (!DefinedOn (ei))
-	      continue;
-	    IVec<3> el_orders = ma->GetElOrders(i); 
-
-	    ELEMENT_TYPE eltype=ma->GetElType(ei); 
-	    const POINT3D * points = ElementTopology :: GetVertices (eltype);	
-	
-	    if (ma->GetDimension() == 1)
-	      {
-		fine_facet[ma->GetElFacets(ei)] = true;
-		continue;
-	      }
-	    if (ma->GetDimension() == 2)
-	      {
-		auto fanums = ma->GetElEdges (ei);
-		for (int j=0;j<fanums.Size();j++) 
-		  fine_facet[fanums[j]] = 1; 
-	    
-		if(var_order)
-		  {
-		    auto edges = ElementTopology::GetEdges (eltype);
-		    for(int j=0; j<fanums.Size(); j++)
-		      for(int k=0;k<2;k++)
-			if(points[edges[j][0]][k] != points[edges[j][1]][k])
-			  { 
-			    order_facet[fanums[j]] = IVec<2>(max2(el_orders[k]+rel_order, order_facet[fanums[j]][0]),0);
-			    break; 
-			  }
-		  }
-	      }
-	    else
-	      {
-		auto elfaces = ma->GetElFaces(ei);
-		for (int j=0;j<elfaces.Size();j++) fine_facet[elfaces[j]] = 1; 
-	    
-		if(var_order) 
-		  {
-		    auto vnums = ma->GetElVertices (ei);
-		    const FACE * faces = ElementTopology::GetFaces (eltype).Data();
-		    for(int j=0;j<elfaces.Size();j++)
-		      {
-			if(faces[j][3]==-1) // trig  
-			  {
-			    order_facet[elfaces[j]][0] = max2(order_facet[elfaces[j]][0],el_orders[0]+rel_order);
-			    order_facet[elfaces[j]][1] = order_facet[elfaces[j]][0]; 
-			  }
-			else //quad_face
-			  {
-			    int fmax = 0;
-			    for(int k = 1; k < 4; k++) 
-			      if(vnums[faces[j][k]] > vnums[faces[j][fmax]]) fmax = k;   
-					
-			    IVec<2> f((fmax+3)%4,(fmax+1)%4); 
-			    if(vnums[faces[j][f[1]]] > vnums[faces[j][f[0]]]) swap(f[0],f[1]);
-			
-			    // fmax > f[0] > f[1]
-			    // p[0] for direction fmax,f[0] 
-			    // p[1] for direction fmax,f[1] 
-			    for(int l=0;l<2;l++)
-			      for(int k=0;k<3;k++)
-				if(points[faces[j][fmax]][k] != points[faces[j][f[l] ]][k])
-				  {
-				    order_facet[elfaces[j]][l] = max2(order_facet[elfaces[j]][l], rel_order + el_orders[k]);
-				    break; 
-				  } 
-			
-			  }
-		      }
-		  }
-	    
-	      }
-	
-	  }
-
-	for (int i = 0; i < fine_facet.Size(); i++)
-	  if (!fine_facet[i]) order_facet[i] = 0;
-
-	ma->AllReduceNodalData (StdNodeType(NT_FACET, ma->GetDimension()), 
+	for (Ngs_Element el : ma->Elements<VOL>())
+	  if (DefinedOn(el))
+	    fine_facet[el.Facets()] = true;
+	ma->AllReduceNodalData (StdNodeType(NT_FACET, ma->GetDimension()),
 				fine_facet, NG_MPI_LOR);
+
+	ResolveFacetOrders (fine_facet, order_facet, 0);
+
+	if (highest_order_dc)
+	  for (auto i : Range(order_facet))
+	    if (fine_facet[i] && order_facet[i][0] != order)
+	      throw Exception ("NormalFacetFESpace: highest_order_dc needs the same order on all facets");
       }
 
     // dof tables
@@ -794,17 +728,21 @@ namespace ngcomp
 
   void NormalFacetFESpace :: SetOrder (NodeId ni, int order) 
   {
-    if (order_policy == CONSTANT_ORDER || order_policy == NODE_TYPE_ORDER)
-      throw Exception("In NormalFacetFESpace::SetOrder. Order policy is constant or node-type!");
-    else if (order_policy == OLDSTYLE_ORDER)
-      order_policy = VARIABLE_ORDER;
+    order_policy = VARIABLE_ORDER;
       
     if (order < 0)
       order = 0;
     
-    if (CoDimension(ni.GetType(), ma->GetDimension()) == 1)
+    // kept in the specification, and set in the resolved orders
+    int dim = ma->GetDimension();
+    if (CoDimension(ni.GetType(), dim) == 1)
       if (ni.GetNr() < order_facet.Size())
-	order_facet[ni.GetNr()] = fine_facet[ni.GetNr()] ? order : 0;
+        {
+          if (dim >= 2 && fine_facet[ni.GetNr()])
+            SetNodeOrder (dim-2, ni.GetNr(), order);
+          order_facet[ni.GetNr()] = fine_facet[ni.GetNr()] ? order : 0;
+        }
+    if (!order_stale) order_stale = 1;
   }
   
   int NormalFacetFESpace :: GetOrder (NodeId ni) const

@@ -50,6 +50,14 @@ namespace ngcomp
 
     virtual void SetOrder (NodeId ni, int order) override;
     virtual int GetOrder (NodeId ni) const override;
+    void SetOrder (const Region & region, int order) override
+    { SetRegionOrder (region, max(order, 0)); }
+    void SetOrder (const Region & region, IVec<2> order, shared_ptr<CoefficientFunction> direction) override
+    { SetRegionOrder (region, max(order[0], 0), max(order[1], 0), direction); }
+    void SetOrder (ElementId ei, IVec<3> order) override
+    { SetCellOrder (ei, IVec<3> (max(order[0],0), max(order[1],0), max(order[2],0))); }
+    IVec<3> GetOrder (ElementId ei) const override
+    { bool elementwise; return CellBaseOrder (ei, ma->GetElIndex(ei), elementwise); }
     
     // virtual size_t GetNDof() const throw() override { return ndof; }
     // virtual size_t GetNDofLevel ( int i ) const override { return ndlevel[i]; }
