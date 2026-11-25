@@ -3591,6 +3591,8 @@ namespace ngcomp
       flags2.SetFlag("complex");
 
     flags2.SetFlag("order", order+1 - (type1? 1: 0));
+    // linked to the orders of this space, one order higher (first family: the same order)
+    SetLinkFlags (flags2, type1 ? 0 : 1);
     
     flags2.SetFlag("print");
     if(uniform_order_inner>-1)
@@ -3637,9 +3639,10 @@ namespace ngcomp
 	for(auto edge : ma->GetElement(ei).Edges()) {
 	  fesh1->SetEdgeOrder(edge,1);
 	}
-	for(auto face : ma->GetElement(ei).Faces()) {
-	  fesh1->SetFaceOrder(face, IVec<2>(1));
-	}
+        if (ma->GetDimension() == 3)
+          for(auto face : ma->GetElement(ei).Faces()) {
+            fesh1->SetFaceOrder(face, IVec<2>(1));
+          }
       }
     }
 

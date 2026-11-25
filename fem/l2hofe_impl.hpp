@@ -384,8 +384,10 @@ namespace ngfem
     Tx xi = sigma[f[0]]-sigma[f[1]]; 
     Tx eta = sigma[f[0]]-sigma[f[3]]; 
 
+    // order_inner is in the local axes, xi is along x or y
     int p=order_inner[0];
     int q=order_inner[1];
+    if ((f[0]^f[1]) != 1) swap (p, q);
 
     ArrayMem<Tx,20> polx(p+1), poly(q+1);
 
@@ -449,7 +451,7 @@ namespace ngfem
     Tx z = ip.z; // hx[2];
 
     int p=order_inner[0];
-    int q=order_inner[1];
+    int q=order_inner[2];
 
     ArrayMem<Tx, 20> memx(sqr(p+1));
     FlatMatrix<Tx> polsx(p+1, &memx[0]);

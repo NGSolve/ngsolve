@@ -1517,6 +1517,16 @@ lot of new non-zero entries in the matrix!\n" << endl;
     return false;
   }
 
+  void FESpace :: SetLinkFlags (Flags & flags, int offset) const
+  {
+    auto & base = *order_spec.base;
+    base.has_links = true;
+    if (base.creator_name.empty())
+      base.creator_name = GetClassName();
+    flags.SetFlag ("orderlink", std::any (order_spec.base));
+    flags.SetFlag ("relorder", double (order_spec.link_offset + offset));
+  }
+
   void FESpace :: SetNodeOrder (int type, size_t nr, int order)
   {
     auto & spec = order_spec;

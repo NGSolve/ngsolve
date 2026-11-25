@@ -1431,10 +1431,7 @@ global system.
 
   void L2HighOrderFESpace :: SetOrder (NodeId ni, int order)
   {
-    if (order_policy == CONSTANT_ORDER || order_policy == NODE_TYPE_ORDER)
-      throw Exception("In L2HighOrderFESpace::SetOrder. Order policy is constant or node-type!");
-    else if (order_policy == OLDSTYLE_ORDER)
-      order_policy = VARIABLE_ORDER;
+    order_policy = VARIABLE_ORDER;
 
     if (order < 0)
       order = 0;

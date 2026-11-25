@@ -1838,3 +1838,227 @@ def test_facet_highest_order_dc_needs_one_order(space):
     fes.SetOrder(mesh.Materials("b"), 3)
     with pytest.raises(Exception, match="highest_order_dc"):
         fes.Update()
+
+
+# -------------------- derived spaces: divergence, multiplier and gradient space are linked
+
+def div_is_exact(S, Q):
+    """div maps S onto Q"""
+    mesh = S.mesh
+    gf = GridFunction(S)
+    gf.vec.FV().NumPy()[:] = [((3*i) % 17)/17 - 0.4 for i in range(S.ndof)]
+    gq = GridFunction(Q)
+    gq.Set(div(gf))
+    contained = Integrate((gq-div(gf))**2*dx, mesh) < 1e-18 * Integrate(div(gf)**2*dx, mesh)
+    u, q = S.TrialFunction(), Q.TestFunction()
+    b = BilinearForm(div(u)*q*dx).Assemble()
+    return contained and np.linalg.matrix_rank(b.mat.ToDense().NumPy(), tol=1e-9) == Q.ndof
+
+
+@pytest.mark.parametrize("RT", [None, True, False])
+@pytest.mark.parametrize("make", [mesh2d, lambda: mesh2d(quads=True), lambda: mesh3d(maxh=0.8)])
+def test_divergence_space(make, RT):
+    mesh = make()
+    kw = {} if RT is None else dict(RT=RT)
+    S = HDiv(mesh, order=2, **kw)
+    Q = S.CreateDivergenceSpace()
+    assert div_is_exact(S, Q)
+    # the divergence space follows the orders
+    S.SetOrder(mesh.Materials("b"), 3)
+    S.SetOrder(ElementId(VOL, 0), 1)
+    S.Update()
+    with pytest.raises(Exception, match="order was changed"):
+        Q.GetFE(ElementId(VOL, 0))
+    Q.Update()
+    assert div_is_exact(S, Q)
+    assert same_space(Q, S.CreateDivergenceSpace())
+    with pytest.raises(Exception, match="orders belong to"):
+        Q.SetOrder(mesh.Materials("b"), 2)
+    # pickled together they stay linked
+    S2, Q2 = pickle.loads(pickle.dumps((S, Q)))
+    assert same_space(Q2, Q)
+    S2.SetOrder(S2.mesh.Materials("a"), 4); S2.Update(); Q2.Update()
+    assert div_is_exact(S2, Q2) and Q2.ndof > Q.ndof
+    assert same_space(pickle.loads(pickle.dumps(Q)), Q)
+
+
+@pytest.mark.parametrize("make,direction", [(lambda: MakeStructured2DMesh(quads=True, nx=3, ny=3), (0, 1)),
+                                            (lambda: MakeStructured3DMesh(hexes=True, nx=2, ny=2, nz=2), (0, 0, 1)),
+                                            (lambda: MakeStructured3DMesh(hexes=False, prism=True, nx=2, ny=2, nz=2), None)])
+def test_divergence_space_directions(make, direction):
+    for RT in [True, False]:
+        for orders in [(1, 3), (3, 1)]:
+            mesh = make()
+            S = HDiv(mesh, order=1, RT=RT)
+            S.SetOrder(mesh.Materials(".*"), orders, direction=direction)
+            S.Update()
+            assert div_is_exact(S, S.CreateDivergenceSpace())
+
+
+def test_divergence_space_single_orders():
+    mesh = mesh2d()
+    S = HDiv(mesh, order=3, orderinner=1)
+    assert div_is_exact(S, S.CreateDivergenceSpace())
+    S = HDiv(mesh, order=2)
+    for el in mesh.Elements(VOL):
+        if el.nr % 2: S.SetOrder(NodeId(FACE, el.faces[0].nr), 4)
+    S.Update()
+    Q = S.CreateDivergenceSpace()
+    assert div_is_exact(S, Q) and Q.ndof > HDiv(mesh, order=2).CreateDivergenceSpace().ndof
+    S = HDiv(mesh, order=3, hodivfree=True)
+    assert same_space(S.CreateDivergenceSpace(), L2(mesh, order=0))
+
+
+def hybrid_is_mixed(S, Q, Sd, F):
+    """hybridized mixed method against the mixed method"""
+    mesh = S.mesh
+    nt = facet_type(mesh)
+    nel = {}
+    for el in mesh.Elements(VOL):
+        for f in el.facets: nel[f.nr] = nel.get(f.nr, 0) + 1
+    n = specialcf.normal(mesh.dim)
+    f = CF(1 + x)
+    X = S * Q
+    (sigma, u), (tau, v) = X.TnT()
+    a = BilinearForm(sigma*tau*dx + div(sigma)*v*dx + div(tau)*u*dx).Assemble()
+    rhs = LinearForm(-f*v*dx).Assemble()
+    gf = GridFunction(X)
+    gf.vec.data = a.mat.Inverse(X.FreeDofs(), inverse="sparsecholesky") * rhs.vec
+    Xh = Sd * Q * F
+    (sigma, u, lam), (tau, v, mu) = Xh.TnT()
+    ah = BilinearForm(Xh, condense=True)
+    ah += sigma*tau*dx + div(sigma)*v*dx + div(tau)*u*dx
+    ah += -(sigma*n)*mu*dx(element_boundary=True) - (tau*n)*lam*dx(element_boundary=True)
+    ah.Assemble()
+    rhsh = LinearForm(-f*v*dx).Assemble()
+    gfh = GridFunction(Xh)
+    rhsh.vec.data += ah.harmonic_extension_trans * rhsh.vec
+    free = BitArray(Xh.FreeDofs(True))
+    for i in nel:
+        if nel[i] == 1:
+            for d in F.GetDofNrs(NodeId(nt, i)): free[Sd.ndof + Q.ndof + d] = False
+    gfh.vec.data = ah.mat.Inverse(free, inverse="sparsecholesky") * rhsh.vec
+    gfh.vec.data += ah.harmonic_extension * gfh.vec
+    gfh.vec.data += ah.inner_solve * rhsh.vec
+    ds_, dsh = gf.components[0], gfh.components[0]
+    return Integrate((ds_-dsh)*(ds_-dsh)*dx, mesh) < 1e-16 * Integrate(ds_*ds_*dx, mesh)
+
+
+@pytest.mark.parametrize("make", [mesh2d, lambda: mesh3d(maxh=0.8)])
+def test_multiplier_space(make):
+    mesh = make()
+    S = HDiv(mesh, order=2)
+    S.SetOrder(mesh.Materials("b"), 3)
+    S.Update()
+    Sd = Discontinuous(S)
+    Q = S.CreateDivergenceSpace()
+    F = Sd.CreateMultiplierSpace()
+    nt = facet_type(mesh)
+    used = sorted({f.nr for el in mesh.Elements(VOL) for f in el.facets})
+    assert all(F.GetOrder(NodeId(nt, i)) == S.GetOrder(NodeId(nt, i)) for i in used)
+    assert hybrid_is_mixed(S, Q, Sd, F)
+    # all four follow a change of the orders, also through the wrapper
+    Sd.SetOrder(ElementId(VOL, 0), 1)
+    with pytest.raises(Exception, match="order was changed"):
+        Sd.GetFE(ElementId(VOL, 0))
+    for fes in (S, Sd, Q, F): fes.Update()
+    assert all(F.GetOrder(NodeId(nt, i)) == S.GetOrder(NodeId(nt, i)) for i in used)
+    assert S.GetOrder(ElementId(VOL, 0)) == 1 and Sd.GetOrder(ElementId(VOL, 0)) == 1
+    assert hybrid_is_mixed(S, Q, Sd, F)
+    # an explicit order is kept, orders of single facets are taken over
+    assert same_space(S.CreateDivergenceSpace(), Q)
+    assert same_space(Sd.CreateMultiplierSpace(order=1), FacetFESpace(mesh, order=1))
+    S.SetOrder(NodeId(nt, used[0]), 5)
+    S.Update()
+    assert Sd.CreateMultiplierSpace().GetOrder(NodeId(nt, used[0])) == 5
+
+
+@pytest.mark.parametrize("make", [mesh2d, mesh3d])
+def test_gradient_space_linked(make):
+    mesh = make()
+    E = HCurl(mesh, order=2)
+    E.SetOrder(mesh.Materials("b"), 3)
+    E.Update()
+    assert gradient_is_exact(E)
+    gradmat, V = E.CreateGradient()
+    E.SetOrder(ElementId(VOL, 0), 1)
+    E.Update(); V.Update()
+    assert same_space(V, E.CreateGradient()[1])
+    with pytest.raises(Exception, match="orders belong to"):
+        V.SetOrder(mesh.Materials("b"), 2)
+    # regions without gradients, 2D and 3D
+    E = HCurl(mesh, order=2, nograds=True)
+    gradmat, V = E.CreateGradient()
+    assert V.ndof == mesh.nv and gradmat.shape == (E.ndof, V.ndof)
+    E = HCurl(mesh, order=2, gradientdomains="a")
+    assert gradient_is_exact(E)
+
+
+def test_wrappers_forward_orders():
+    mesh = mesh2d()
+    V = H1(mesh, order=2)
+    D = Discontinuous(V)
+    D.SetOrder(mesh.Materials("b"), 4)
+    with pytest.raises(Exception, match="order was changed"):
+        D.GetFE(ElementId(VOL, 0))
+    D.Update()
+    ref = H1(mesh, order=2); ref.SetOrder(mesh.Materials("b"), 4); ref.Update()
+    assert same_space(V, ref) and D.ndof == Discontinuous(ref).ndof
+    assert [D.GetOrder(el) for el in mesh.Elements(VOL)] == [V.GetOrder(el) for el in mesh.Elements(VOL)]
+    Q = L2(mesh, orderlink=D, relorder=-1)
+    assert all(Q.GetOrder(el) == V.GetOrder(el)-1 for el in mesh.Elements(VOL))
+
+    from netgen.occ import IdentificationType
+    rect = Rectangle(1, 1).Face()
+    rect.edges.Max(X).Identify(rect.edges.Min(X), "per", IdentificationType.PERIODIC)
+    pmesh = Mesh(OCCGeometry(rect, dim=2).GenerateMesh(maxh=0.3))
+    P = Periodic(H1(pmesh, order=2))
+    P.SetOrder(pmesh.Materials(".*"), 3)
+    P.Update()
+    assert P.ndof == Periodic(H1(pmesh, order=3)).ndof and P.GetOrder(ElementId(VOL, 0)) == 3
+
+
+def test_l2_orders_in_local_axes():
+    import itertools
+    import netgen.meshing as nm
+    pts = [(0, 0, 0), (1, 0, 0), (1, 1, 0), (0, 1, 0)]
+    for perm in itertools.permutations(range(4)):
+        for rot in (0, 1):
+            m = nm.Mesh(dim=2)
+            pid = {pts[i]: m.Add(nm.MeshPoint(nm.Pnt(*pts[i]))) for i in perm}
+            fd = m.Add(nm.FaceDescriptor(surfnr=1, domin=1, bc=1))
+            cyc = [pts[(rot+i) % 4] for i in range(4)]
+            m.Add(nm.Element2D(fd, [pid[p] for p in cyc]))
+            mesh = Mesh(m)
+            fes = L2(mesh, order=1)
+            fes.SetOrder(ElementId(VOL, 0), (1, 3))      # order 3 along the second local axis
+            fes.Update()
+            t = y if cyc[3][1] != cyc[0][1] else x
+            s = x if t is y else y
+            def contains(f):
+                gf = GridFunction(fes); gf.Set(f, bonus_intorder=8)
+                return Integrate((gf-f)**2*dx(bonus_intorder=8), mesh) < 1e-16
+            assert contains(t**3) and contains(s*t**3) and not contains(s**2) and not contains(t**4)
+
+    mesh = MakeStructured3DMesh(hexes=False, prism=True, nx=1, ny=1, nz=1)
+    for orders in [(1, 3), (3, 1), (0, 2), (2, 0)]:
+        fes = L2(mesh, order=1)
+        fes.SetOrder(mesh.Materials(".*"), orders)
+        fes.Update()
+        def contains(f):
+            gf = GridFunction(fes); gf.Set(f, bonus_intorder=8)
+            return Integrate((gf-f)**2*dx(bonus_intorder=8), mesh) < 1e-16
+        pt, pz = orders
+        assert consistent(fes)
+        assert contains(x**pt*z**pz) and not contains(z**(pz+1)) and not contains(x**(pt+1))
+
+
+def test_l2_node_orders_any_policy():
+    mesh = mesh2d()
+    fes = L2(mesh, order=1, order_policy=ORDER_POLICY.CONSTANT)
+    fes.SetOrder(TRIG, 2)
+    for el in mesh.Elements(VOL):
+        if el.nr % 2: fes.SetOrder(NodeId(FACE, el.faces[0].nr), 4)
+    fes.Update()
+    assert consistent(fes)
+    assert {fes.GetOrder(NodeId(FACE, el.faces[0].nr)) for el in mesh.Elements(VOL)} == {2, 4}

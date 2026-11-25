@@ -37,6 +37,17 @@ namespace ngcomp
     
     virtual ~DiscontinuousFESpace () { ; }
     void Update () override;
+    // orders belong to the wrapped space
+    void SetOrder (const Region & region, int order) override
+    { space->SetOrder (region, order); timestamp = 0; order_stale = 2; }
+    void SetOrder (const Region & region, IVec<2> order, shared_ptr<CoefficientFunction> direction) override
+    { space->SetOrder (region, order, direction); timestamp = 0; order_stale = 2; }
+    void SetOrder (ElementId ei, IVec<3> order) override
+    { space->SetOrder (ei, order); timestamp = 0; order_stale = 2; }
+    IVec<3> GetOrder (ElementId ei) const override { return space->GetOrder (ei); }
+    using FESpace::GetOrder;
+    const OrderSpecification & GetOrderSpecification () const override
+    { return space->GetOrderSpecification(); }
     
     void FinalizeUpdate() override
     {

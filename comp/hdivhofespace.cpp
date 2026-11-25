@@ -422,36 +422,51 @@ namespace ngcomp
 
   shared_ptr<FESpace> HDivHighOrderFESpace :: CreateDivergenceSpace(Flags l2flags) const
   {
-    auto divorder = [&](ElementId ei)
-    {
-      if (ho_div_free) return 0;
-      int p = order_inner[ei.Nr()][0];
-      return et_RT[ma->GetElType(ei)] ? p : max(p-1, 0);
-    };
+    // BDM: one order lower
+    auto shift = [&](ELEMENT_TYPE et) { return et_RT[et] ? 0 : -1; };
 
     if (iscomplex) l2flags.SetFlag("complex");
     // element constants are not controlled by local velocity dofs: keep them global for condensation
     if (!l2flags.GetDefineFlagX("lowest_order_wb").IsFalse())
       l2flags.SetFlag("lowest_order_wb");
-    int minorder = std::numeric_limits<int>::max(), maxorder = 0;
+
+    bool types[30] = { false };
+    int minshift = 0, maxshift = -1;
     for (auto ei : ma->Elements(VOL))
-      if (DefinedOn(ei))
+      if (DefinedOn(ei) && !types[ma->GetElType(ei)])
         {
-          minorder = min(minorder, divorder(ei));
-          maxorder = max(maxorder, divorder(ei));
+          types[ma->GetElType(ei)] = true;
+          minshift = min(minshift, shift(ma->GetElType(ei)));
+          maxshift = max(maxshift, shift(ma->GetElType(ei)));
         }
-    l2flags.SetFlag("order", maxorder);
+    if (minshift > maxshift) minshift = maxshift = 0;   // no elements
+
+    // linked to the orders of this space; orderinner and hodivfree give one order
+    bool linked = !ho_div_free && uniform_order_inner < 0;
+    if (linked)
+      SetLinkFlags (l2flags, maxshift);
+    else
+      l2flags.SetFlag("order", ho_div_free ? 0 : max(uniform_order_inner+maxshift, 0));
     auto l2 = make_shared<L2HighOrderFESpace>(ma, l2flags);
 
     if (!DefinedOnAll(VOL))
       l2->SetDefinedOn(VOL, definedon_region.Mask(VOL));
 
+    // element types of BDM and of RT type in one mesh
+    if (!ho_div_free && minshift < maxshift)
+      for (auto et : { ET_SEGM, ET_TRIG, ET_QUAD, ET_TET, ET_PRISM, ET_PYRAMID, ET_HEX })
+        if (types[et] && shift(et) < maxshift)
+          l2->FESpace::SetOrder (et, l2->FESpace::GetOrder() + shift(et) - maxshift);
+
     l2->Update();
-    if (minorder < maxorder)
+
+    // orders of single cells
+    auto & cellorder = order_spec.node_order[2];
+    if (!ho_div_free && HasNodeOrders() && cellorder.Size() == ma->GetNE())
       {
         for (auto ei : ma->Elements(VOL))
-          if (DefinedOn(ei))
-            l2->SetOrder(NodeId(NT_ELEMENT, ei.Nr()), divorder(ei));
+          if (DefinedOn(ei) && cellorder[ei.Nr()] >= 0)
+            l2->SetOrder(NodeId(NT_ELEMENT, ei.Nr()), max(cellorder[ei.Nr()] + shift(ma->GetElType(ei)), 0));
         l2->UpdateDofTables();
         l2->UpdateCouplingDofArray();
       }
@@ -461,9 +476,30 @@ namespace ngcomp
 
   shared_ptr<FESpace> HDivHighOrderFESpace :: CreateMultiplierSpace(Flags flags) const
   {
-    if (!flags.NumFlagDefined("order"))
-      flags.SetFlag("order", uniform_order_facet > -1 ? uniform_order_facet : order);
-    return CreateCompanionSpace(*this, "facet", flags);
+    // the normal traces: linked to the orders of this space
+    bool linked = !flags.NumFlagDefined("order") && uniform_order_facet < 0;
+    if (linked)
+      SetLinkFlags (flags, 0);
+    else if (!flags.NumFlagDefined("order"))
+      flags.SetFlag("order", uniform_order_facet);
+    auto fes = CreateCompanionSpace(*this, "facet", flags);
+
+    // orders of single facets
+    int dim = ma->GetDimension();
+    if (linked && dim >= 2 && HasNodeOrders())
+      {
+        auto & facetorder = order_spec.node_order[dim-2];
+        if (facetorder.Size() == order_facet.Size())
+          {
+            auto nt = StdNodeType(NT_FACET, dim);
+            for (auto i : Range(facetorder))
+              if (facetorder[i] >= 0)
+                fes->SetOrder (NodeId(nt, i), facetorder[i]);
+            fes->Update();
+            fes->FinalizeUpdate();
+          }
+      }
+    return fes;
   }
 
   shared_ptr<FESpace> HDivHighOrderFESpace :: CreateStressSpace (Flags flags) const

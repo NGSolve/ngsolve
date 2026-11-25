@@ -185,7 +185,15 @@ Shared are the base orders $p_T$ and the orders on boundary regions, i.e.\ layer
 
 \paragraph{How the link is held.} The shared layers are in a small reference-counted object with the cell orders, the orders of boundary regions and a time stamp. Each linked space holds a pointer to it, not to the other space. There is no update order: every \code{Update} compares time stamps and resolves if necessary, and the inheritance to the children after a refinement is done once, by the space which updates first. In parallel computations the cell orders are local to the rank, and the resolved orders of shared edges and faces are reduced by the minimum.
 
-\paragraph{Vector valued and derived spaces.} The components of \code{VectorH1} and \code{VectorL2} are linked to the compound space, which sets the orders. A space linked to a linked space shares the same orders; \code{relorder} is always relative to the space which created them. The $H^1$ space of \code{HCurl.CreateGradient} follows the orders node by node: every node gets as many functions as its \code{HCurl} node has gradients. Planned: this space, and the spaces of \code{CreateDivergenceSpace}, \code{CreateMultiplierSpace} and \code{CreateStressSpace}, become linked spaces. Today they copy the orders once, and the copy is lost with the next refinement.
+\paragraph{Vector valued and derived spaces.} The components of \code{VectorH1} and \code{VectorL2} are linked to the compound space, which sets the orders. A space linked to a linked space shares the same orders; \code{relorder} is always relative to the space which created them. The wrappers \code{Periodic}, \code{Discontinuous} and \code{Hidden} pass \code{SetOrder} on to the space they wrap.
+
+The spaces created from a space are linked to it:
+\begin{itemize}\setlength\itemsep{1pt}
+\item \code{HDiv.CreateDivergenceSpace()} is \code{L2} with the same orders for element types of Raviart-Thomas type and one order lower for those of BDM type; in a mesh with both the difference is a shape increment. The divergence maps onto this space, also with different orders in the directions of quadrilaterals, hexahedra and prisms.
+\item \code{CreateMultiplierSpace()} of \code{HDiv} is the linked \code{FacetFESpace} of the normal traces.
+\item \code{HCurl.CreateGradient()} returns an $H^1$ space one order higher (first family: the same order).
+\end{itemize}
+They follow a later change of the orders with their next \code{Update}. Orders of single nodes, and for the gradient space the regions without gradients, are copied node by node when the space is created; this copy is not kept by an \code{Update}. \code{CreateStressSpace} supports a uniform order only.
 
 \section{Example: Maxwell eigenvalues on the Fichera corner}
 
