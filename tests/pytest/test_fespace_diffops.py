@@ -149,7 +149,7 @@ def test_fespaces_3d():
     Test(mesh=mesh, space=FacetFESpace, order=2, trace = lambda cf : cf, vb=VOL, set_dual=[True], facet=True)
     Test(mesh=mesh, space=FacetFESpace, order=2, trace = lambda cf : cf, vb=VOL, set_dual=[True], facet=True, dim=3)
     Test(mesh=mesh, space=VectorFacetFESpace, order=2, trace = lambda cf : cf, vb=VOL, set_dual=[True], facet=True)
-    Test(mesh=mesh, space=NormalFacetFESpace, order=2, idop = lambda cf : Pn_3d*cf, trace = lambda cf : Pn_3d*cf, vb=VOL, set_dual=[], facet=True)# dual=True: missing TET element for CalcDual
+    Test(mesh=mesh, space=NormalFacetFESpace, order=2, idop = lambda cf : Pn_3d*cf, trace = lambda cf : Pn_3d*cf, vb=VOL, set_dual=[True], facet=True)
     
     
     """

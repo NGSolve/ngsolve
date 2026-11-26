@@ -348,7 +348,37 @@ namespace ngfem
   }
 
 
-  template<> template<typename Tx, typename TFA>  
+  template <> template<typename MIP, typename TFA>
+  void NormalFacetVolumeFE<ET_TET>::
+  CalcDualShape2 (MIP mip, int fanr, TFA & shape) const
+  {
+    auto & ip = mip.IP();
+    typedef typename std::remove_const<typename std::remove_reference<decltype(mip.IP()(0))>::type>::type T;
+    T x = ip(0), y = ip(1), z = ip(2);
+    T lami[4] = { x, y, z, 1-x-y-z };
+    Vec<3,T> pnts[4] = { { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 0, 0, 0 } };
+
+    int first = first_facet_dof[fanr];
+    int p = facet_order[fanr][0];
+
+    if (ip.VB() == BND)
+      {
+        IVec<4> f = GetVertexOrientedFace(fanr);
+        Vec<3,T> nvref = Cross (Vec<3,T>(pnts[f[0]]-pnts[f[2]]), Vec<3,T>(pnts[f[1]]-pnts[f[2]]));
+        Vec<3,T> nvphys = Cof(mip.GetJacobian()) * nvref;
+        Vec<3,T> nv = L2Norm(nvref) / L2Norm(nvphys) * nvphys;
+
+        DubinerBasis::Eval
+          (p, lami[f[0]], lami[f[1]],
+           SBLambda([&] (size_t nr, T val)
+                    {
+                      shape[first+nr] = val * nv;
+                    }));
+      }
+  }
+
+
+  template<> template<typename Tx, typename TFA>
   void NormalFacetVolumeFE<ET_TET> ::
   T_CalcShape (Tx hx[DIM], int fanr, TFA & shape ) const
   {
