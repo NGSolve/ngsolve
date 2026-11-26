@@ -94,6 +94,7 @@ namespace ngfem
     using HDivFiniteElement<ET_trait<ET>::DIM>::order;
     using VertexOrientedFE<ET>::vnums;
     using VertexOrientedFE<ET>::GetVertexOrientedEdge;
+    using VertexOrientedFE<ET>::GetVertexOrientedFace;
     enum { DIM = ET_trait<ET>::DIM };
     typedef T_HDivFiniteElement<NormalFacetVolumeFE_Shape<ET>, ET> TBASE;
     
