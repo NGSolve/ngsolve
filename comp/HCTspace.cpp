@@ -248,6 +248,7 @@ namespace ngcomp
   HCT_FESpace::HCT_FESpace(shared_ptr<MeshAccess> ama, const Flags &flags, bool checkflags)
     : FESpace(ama, flags)
   {
+    needs_transform_vec = false;
     order = int(flags.GetNumFlag("order", 3));
     // order >= 4 has linearly dependent shape functions
     if (order < 1 || order > 3)

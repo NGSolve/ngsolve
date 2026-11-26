@@ -66,6 +66,7 @@ namespace ngcomp
                                              const Flags& flags)
     : FESpace(ama, flags)
   {
+    needs_transform_vec = false;
     order = int(flags.GetNumFlag("order", 3));
     periodic[0] = periodic[1] = false;
     polar = flags.GetDefineFlag("polar");

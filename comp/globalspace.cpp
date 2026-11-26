@@ -127,6 +127,7 @@ namespace ngcomp
                            const Flags& flags)
     : FESpace(ama, flags)
   {
+    needs_transform_vec = false;
     if (!flags.NumFlagDefined("order"))
       order = 5;
     

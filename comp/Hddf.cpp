@@ -889,6 +889,7 @@ void HDivDivFacetHOElement<ET_TET> :: CalcShape(const IntegrationPoint &ip, Slic
   HDivDivFacetSpace::HDivDivFacetSpace(shared_ptr<MeshAccess> ama, const Flags &flags)
       : FESpace(ama, flags)
   {
+    needs_transform_vec = false;
     order = int(flags.GetNumFlag("order", 0));
     JKM = flags.GetDefineFlag("JKM");
 
@@ -1122,6 +1123,7 @@ void HDivDivFacetHOElement<ET_TET> :: CalcShape(const IntegrationPoint &ip, Slic
     DivConstraintSpace(shared_ptr<MeshAccess> ama, const Flags &flags)
       : FESpace(ama, flags)
     {
+      needs_transform_vec = false;
       nfacedofs = 2*(order+1);
       nedgedofs = 1;
 

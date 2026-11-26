@@ -122,6 +122,7 @@ namespace ngcomp
   IntegrationRuleSpace::IntegrationRuleSpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool checkflags)
       : FESpace (ama, flags)
     {
+      needs_transform_vec = false;
       type = "irspace";
       evaluator[VOL] = make_shared<T_DifferentialOperator<IRDiffOp>>();
       
@@ -195,6 +196,7 @@ namespace ngcomp
     IntegrationRuleSpaceSurface::IntegrationRuleSpaceSurface (shared_ptr<MeshAccess> ama, const Flags & flags, bool checkflags)
       : FESpace (ama, flags)
     {
+      needs_transform_vec = false;
       type = "irspacesurface";
       evaluator[VOL] = make_shared<T_DifferentialOperator<IRDiffOp>>();
       evaluator[BND] = make_shared<T_DifferentialOperator<IRDiffOp>>();

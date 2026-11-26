@@ -18,6 +18,7 @@ namespace ngcomp
   JKM_FESpace::JKM_FESpace(shared_ptr<MeshAccess> ama, const Flags &flags, bool checkflags)
     : FESpace(ama, flags)
   {
+    needs_transform_vec = false;
     order = int(flags.GetNumFlag("order", 1));
 
     evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdHDivDiv<2>>>();

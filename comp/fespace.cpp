@@ -3920,6 +3920,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
                                 bool parseflags)
     : FESpace (ama, flags)
   {
+    needs_transform_vec = false;
     name="NodalFESpace";
     type = "nodal";
     if (order != 1 && order != 2)
@@ -4224,6 +4225,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
   NonconformingFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool parseflags)
     : FESpace (ama, flags)
   {
+    needs_transform_vec = false;
     name="NonconformingFESpace(nonconforming)";
     // defined flags
     DefineDefineFlag("nonconforming");
@@ -4372,6 +4374,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
   NonconformingSurfaceFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool parseflags)
     : FESpace (ama, flags)
   {
+    needs_transform_vec = false;
     name="NonconformingSurfaceFESpace(nonconforming)";
     // defined flags
     DefineDefineFlag("nonconforming");
@@ -4456,6 +4459,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
                                     bool parseflags)
     : FESpace (ama, flags)
   {
+    needs_transform_vec = false;
     name="ElementFESpace(l2)";
     if (parseflags) CheckFlags(flags);
     
@@ -4568,6 +4572,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       SurfaceElementFESpace (shared_ptr<MeshAccess> ama, const Flags& flags, bool parseflags)
   : FESpace (ama, flags)
   {
+    needs_transform_vec = false;
     name="SurfaceElementFESpace(surfl2)";
     if(parseflags) CheckFlags(flags);
     

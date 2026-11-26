@@ -278,6 +278,7 @@ namespace ngcomp
     if (parseflags) CheckFlags(flags);
 
     print = flags.GetDefineFlag("print");
+    needs_transform_vec = false;
 
     // ndlevel.SetSize(0);
 

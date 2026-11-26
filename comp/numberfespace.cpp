@@ -97,6 +97,7 @@ namespace ngcomp
   NumberFESpace::NumberFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool checkflags)
       : FESpace (ama, flags)
     {
+      needs_transform_vec = false;
       type = "number";
       evaluator[VOL] = make_shared<T_DifferentialOperator<NumberDiffOp>>();
       evaluator[BND] = make_shared<T_DifferentialOperator<NumberDiffOp>>();

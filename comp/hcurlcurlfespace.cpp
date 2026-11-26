@@ -1781,6 +1781,7 @@ namespace ngcomp
   HCurlCurlFESpace :: HCurlCurlFESpace (shared_ptr<MeshAccess> ama,const Flags & flags,bool checkflags)
     : FESpace(ama,flags), issurfacespace(false)
   {
+    needs_transform_vec = false;
     type  = "hcurlcurl";
     order = int (flags.GetNumFlag ("order", 0));
     discontinuous = flags.GetDefineFlag("discontinuous");

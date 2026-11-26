@@ -201,6 +201,7 @@ namespace ngcomp
 					    bool parseflags )
     : FESpace(ama, flags )
   {
+    needs_transform_vec = false;
     type = "normalfacet";
     name = "NormalFacetFESpace";
     DefineNumFlag("relorder");

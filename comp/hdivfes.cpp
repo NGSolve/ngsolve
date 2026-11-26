@@ -747,6 +747,7 @@ namespace ngcomp
     BDM1FESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool parseflags=false)
       : FESpace(ama, flags)
       {
+        needs_transform_vec = false;
         name="BDM1FESpace";
         
         if (ma->GetDimension() == 2)

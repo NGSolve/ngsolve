@@ -236,6 +236,7 @@ namespace ngcomp
   FacetSurfaceFESpace ::  FacetSurfaceFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool checkflags)
     : FESpace(ama, flags)
   {
+    needs_transform_vec = false;
     name="FacetSurfaceFESpace(facet)";
     type = "facetsurface";
     // defined flags
