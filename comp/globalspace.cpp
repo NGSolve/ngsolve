@@ -1,4 +1,5 @@
 #include "globalspace.hpp"
+#include "gridfunction.hpp"
 
 namespace ngcomp
 {
@@ -131,7 +132,11 @@ namespace ngcomp
     if (!flags.NumFlagDefined("order"))
       order = 5;
     
-    basis = std::any_cast<shared_ptr<CoefficientFunction>>(flags.GetAnyFlag("basis"));
+    const std::any & anybasis = flags.GetAnyFlag("basis");
+    if (auto gf = std::any_cast<shared_ptr<GridFunction>>(&anybasis))
+      basis = *gf;
+    else
+      basis = std::any_cast<shared_ptr<CoefficientFunction>>(anybasis);
 
     dim = CalcDim(basis);
     vecdim = CalcVecDim(basis);

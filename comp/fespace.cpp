@@ -71,6 +71,37 @@ namespace ngcomp
     return nullopt;
   }
 
+  // deprecated definedon = {VOL: mats, BND: bnds}, arrives as nested flags keyed 'VorB.VOL', ...
+  static optional<MixedRegion> DefinedOnDictFlag (const Flags & flags, const shared_ptr<MeshAccess> & ma)
+  {
+    if (!flags.FlagsFlagDefined("definedon")) return nullopt;
+    GetLogger("Flags")->warn("WARNING: definedon = {VOL: mats, BND: bnds} is deprecated, use definedon = mats | bnds");
+    const Flags & dict = flags.GetFlagsFlag("definedon");
+    MixedRegion reg(ma);
+    int found = 0;
+    for (auto vb : { VOL, BND, BBND, BBBND })
+      for (string key : { "VorB."+ToString(vb), ToString(vb) })
+        {
+          if (dict.AnyFlagDefined(key))
+            {
+              auto pval = std::any_cast<Region>(&dict.GetAnyFlag(key));
+              if (!pval)
+                throw Exception ("definedon dict: value for " + key + " must be a Region or a regexpr");
+              reg.Mask(vb) = OwnRegion(*pval, *ma, vb, "definedon").Mask();
+            }
+          else if (dict.StringFlagDefined(key))
+            reg.Mask(vb) = Region(ma, vb, dict.GetStringFlag(key)).Mask();
+          else
+            continue;
+          found++;
+        }
+    int nentries = dict.GetNStringFlags() + dict.GetNNumFlags() + dict.GetNFlagsFlags() + dict.GetNDefineFlags()
+      + dict.GetNStringListFlags() + dict.GetNNumListFlags() + dict.GetNAnyFlags();
+    if (found != nentries)
+      throw Exception ("definedon dict: keys must be VOL, BND, BBND or BBBND");
+    return reg;
+  }
+
   FESpace :: FESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool checkflags)
     : NGS_Object (ama, flags, "FESpace")
   {
@@ -223,6 +254,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
     if (flags.NumListFlagDefined("definedon") || 
         flags.NumFlagDefined("definedon") ||
         flags.StringListFlagDefined("definedon") ||
+        flags.StringFlagDefined("definedon") ||
+        flags.FlagsFlagDefined("definedon") ||
         flags.AnyFlagDefined("definedon"))
       {
 	defon_given[VOL].SetSize (ma->GetNDomains());
@@ -260,30 +293,38 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	      }
 	  }
 
+        if (flags.StringFlagDefined("definedon"))
+          {
+            Region reg(ma, VOL, flags.GetStringFlag("definedon"));
+            for (auto i : Range(defon_given[VOL]))
+              if (reg.Mask().Test(i))
+                defon_given[VOL][i] = true;
+          }
+
 	// default:
 	// fespace only defined on boundaries matching definedon-domains
 	defon_given[BND].SetSize (ma->GetNBoundaries());
 	defon_given[BND] = false;
 
+        auto set_mixed = [&] (const MixedRegion & reg)
+          {
+            // empty BBND/BBBND parts do not restrict
+            for (auto vb : { VOL, BND, BBND, BBBND })
+              {
+                if (vb >= BBND && !reg.Mask(vb).NumSet()) continue;
+                defon_given[vb].SetSize(ma->GetNRegions(vb));
+                for (auto i : Range(defon_given[vb]))
+                  defon_given[vb][i] = reg.Mask(vb).Test(i);
+              }
+          };
+
+        if (auto reg = DefinedOnDictFlag(flags, ma))
+          set_mixed(*reg);
+
         if(flags.AnyFlagDefined("definedon"))
           {
             std::any anydefon = flags.GetAnyFlag("definedon");
-            if(anydefon.type() == typeid(std::map<VorB, Region>))
-              {
-                auto map = std::any_cast<std::map<VorB, Region>>(anydefon);
-                for(const auto& [vb, reg] : map)
-                  {
-                    OwnRegion (reg, *ma, vb, "definedon");
-                    if(vb == BBND || vb == BBBND)
-                      defon_given[vb].SetSize(ma->GetNRegions(vb));
-                    for(auto i : Range(defon_given[vb]))
-                      defon_given[vb][i] = reg.Mask().Test(i);
-                  }
-                // if vol is not in map then definedon vol = empty
-                if(map.find(VOL) == map.end())
-                  defon_given[VOL] = false;
-              }
-            else if(anydefon.type() == typeid(Region))
+            if(anydefon.type() == typeid(Region))
               {
                 auto reg = OwnRegion(std::any_cast<Region>(anydefon), *ma, "definedon");
                 defon_given[reg.VB()].SetSize(reg.Mask().Size());
@@ -293,16 +334,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
                   defon_given[vb] = false;
               }
             else if(auto reg = MixedRegionFlag(flags, "definedon", ma))
-              {
-                // like the {VOL: ..., BND: ...} dict; empty BBND/BBBND parts do not restrict
-                for (auto vb : { VOL, BND, BBND, BBBND })
-                  {
-                    if (vb >= BBND && !reg->Mask(vb).NumSet()) continue;
-                    defon_given[vb].SetSize(ma->GetNRegions(vb));
-                    for (auto i : Range(defon_given[vb]))
-                      defon_given[vb][i] = reg->Mask(vb).Test(i);
-                  }
-              }
+              set_mixed(*reg);
             else
               throw Exception("definedon with wrong argument type!");
           }
@@ -345,7 +377,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
 
     if(flags.AnyFlagDefined("definedonbound"))
-        throw Exception("definedonbound with Region is not supported, use definedon= {VOL: mats, BND: bnds}");
+        throw Exception("definedonbound with Region is not supported, use definedon = mats | bnds");
 
     // additional boundaries
     if(flags.NumListFlagDefined("definedonbound")|| flags.NumFlagDefined("definedonbound") )
@@ -493,7 +525,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       "  Additional boundaries the FESpace is defined on, besides the boundaries\n"
       "  adjacent to the definedon domains. Given as 1-based boundary numbers or\n"
       "  wildcard patterns ('*', '?') of boundary names. Region is not supported,\n"
-      "  use definedon = {VOL: mats, BND: bnds} instead.";
+      "  use definedon = mats | bnds instead.";
     docu.Arg("dim") = "int = 1\n"
       "  Create multi dimensional FESpace (i.e. [H1]^3)";
     docu.Arg("dgjumps") = "bool = False\n"
@@ -1835,7 +1867,20 @@ lot of new non-zero entries in the matrix!\n" << endl;
   bool FESpace :: LinkOrders (const Flags & flags)
   {
     if (!flags.AnyFlagDefined ("orderlink")) return false;
-    order_spec.base = std::any_cast<shared_ptr<BaseOrders>> (flags.GetAnyFlag ("orderlink"));
+    const std::any & link = flags.GetAnyFlag ("orderlink");
+    if (auto pfes = std::any_cast<shared_ptr<FESpace>> (&link))
+      {
+        auto & fes = **pfes;
+        if (fes.GetMeshAccess() != ma)
+          throw Exception ("orderlink: the space is on a different mesh");
+        auto & base = *fes.GetOrderSpecification().base;
+        if (base.creator_name.empty())
+          base.creator_name = fes.GetClassName();
+        base.has_links = true;
+        order_spec.base = fes.GetOrderSpecification().base;
+      }
+    else
+      order_spec.base = std::any_cast<shared_ptr<BaseOrders>> (link);
     order_spec.link_offset = int (flags.GetNumFlag ("relorder", 0));
     order = max2 (0, order_spec.base->order + order_spec.link_offset);
     order_linked = true;

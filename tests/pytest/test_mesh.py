@@ -513,7 +513,7 @@ def test_mixedregion_descriptor():
     assert dofs(pickle.loads(pickle.dumps(fes))) == dofs(ref)
     assert dofs(H1(mesh, order=2, dirichlet=BND("bot"))) == dofs(H1(mesh, order=2, dirichlet="bot"))
     assert dofs(H1(mesh, order=2, definedon=VOL("ball") | BND("bot"))) == \
-        dofs(H1(mesh, order=2, definedon={VOL: mesh.Materials("ball"), BND: mesh.Boundaries("bot")}))
+        dofs(H1(mesh, order=2, definedon=mesh.Materials("ball") | mesh.Boundaries("bot")))
     assert dofs(H1(mesh, order=2, definedon=VOL("ball"))) == dofs(H1(mesh, order=2, definedon="ball"))
     with pytest.raises(Exception, match="VOL regions are not supported"):
         H1(mesh, dirichlet=VOL("ball") | BND("bot"))

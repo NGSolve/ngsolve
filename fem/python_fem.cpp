@@ -2577,7 +2577,15 @@ kwargs : kwargs
                       string filename, py::kwargs kwargs)
         -> shared_ptr<BilinearFormIntegrator>
         {
-          auto flags = CreateFlagsFromKwArgs(kwargs, bfi_class);
+          // definedon/definedonelem are set by __initialize__, not as flags
+          py::kwargs flagkwargs;
+          for (auto item : kwargs)
+            {
+              auto key = item.first.cast<string>();
+              if (key != "definedon" && key != "definedonelem")
+                flagkwargs[item.first] = item.second;
+            }
+          auto flags = CreateFlagsFromKwArgs(flagkwargs, bfi_class);
           Array<shared_ptr<CoefficientFunction>> coef = MakeCoefficients(py_coef);
           auto bfi = GetIntegrators().CreateBFI (name, dim, coef);
 
@@ -2612,14 +2620,6 @@ kwargs : kwargs
               "integration is done on all volume elements",
               py::arg("definedonelem") = "ngsolve.BitArray\n"
               "Element wise integrator definition."
-              );
-         })
-    .def_static("__special_treated_flags__", [] ()
-         {
-           return py::dict
-             (
-              py::arg("definedonelem") = py::cpp_function([](py::object,Flags*,py::list) { ; }),
-              py::arg("definedon") = py::cpp_function ([] (py::object, Flags*, py::list) { ; })
               );
          })
     .def("__initialize__", [] (shared_ptr<BFI> self, py::kwargs kwargs)

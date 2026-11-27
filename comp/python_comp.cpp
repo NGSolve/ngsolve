@@ -168,13 +168,12 @@ static GlobalDummyVariables globvar;
 
 // create a companion space, kwargs are checked against the class of the created space
 template <typename F>
-static shared_ptr<FESpace> CreateWithClassFlags (py::object fes_class, shared_ptr<MeshAccess> ma,
+static shared_ptr<FESpace> CreateWithClassFlags (shared_ptr<MeshAccess> ma,
                                                  py::kwargs kwargs, F create)
 {
   auto keys = [kwargs] () { py::dict d; for (auto item : kwargs) d[item.first] = py::none(); return d; };
   auto proxy = py::module::import("types").attr("SimpleNamespace")
-    (py::arg("__flags_doc__") = py::cpp_function(keys),
-     py::arg("__special_treated_flags__") = fes_class.attr("__special_treated_flags__"));
+    (py::arg("__flags_doc__") = py::cpp_function(keys));
   py::list info;
   info.append(ma);
   shared_ptr<FESpace> fes = create(CreateFlagsFromKwArgs(kwargs, proxy, info));
@@ -1069,150 +1068,6 @@ kwargs : kwargs
              flags_doc[get<0> (flagdoc).c_str()] = get<1> (flagdoc);
            return flags_doc;
          })
-    .def_static("__special_treated_flags__", [] ()
-                {
-                  // CAUTION: Do not use references as arguments for cpp function lambdas
-                  // pybind11 somehow removes the references and creates copies!
-                  // pass arguments either by value or by pointer!
-                  py::dict special
-                    (
-                     py::arg("dirichlet") = py::cpp_function
-                     ([] (py::object dirichlet, Flags* flags, py::list info)
-                      {
-                        auto ma = py::cast<shared_ptr<MeshAccess>>(info[0]);
-                        if(py::isinstance<py::list>(dirichlet))
-                          {
-                            flags->SetFlag("dirichlet",
-                                           makeCArray<double>(py::list(dirichlet)));
-                            return;
-                          }
-                        else if(py::isinstance<Region>(dirichlet))
-                          {
-                            Array<double> dir_indices;
-                            auto dir_region = py::cast<Region>(dirichlet);
-                            flags->SetFlag("dirichlet", dir_region);
-                          }
-                        else if(py::isinstance<MixedRegion>(dirichlet))
-                          flags->SetFlag("dirichlet", py::cast<MixedRegion>(dirichlet));
-                        else if(py::isinstance<RegionDescriptor>(dirichlet) || py::isinstance<MixedRegionDescriptor>(dirichlet))
-                          // passed on as it is, the space resolves it on its mesh
-                          flags->SetFlag("dirichlet", py::cast<MixedRegionDescriptor>(dirichlet));
-                        else if (py::isinstance<py::str>(dirichlet))
-                          {
-                            std::regex pattern(dirichlet.cast<string>());
-                            Array<double> dirlist;
-                            for (int i = 0; i < ma->GetNBoundaries(); i++)
-                              if (std::regex_match (string(ma->GetMaterial(BND, i)), pattern))
-                                {
-                                  dirlist.Append (i+1);
-                                }
-                            flags->SetFlag("dirichlet", dirlist);
-                          }
-                        else
-                          throw py::type_error("dirichlet parameter has wrong type!");
-                      }),
-                     py::arg("dirichlet_bbnd") = py::cpp_function
-                     ([](py::object dirichlet_bbnd, Flags* flags, py::list info)
-                     {
-                       if(py::isinstance<py::str>(dirichlet_bbnd))
-                         flags->SetFlag("dirichlet_bbnd", py::cast<std::string>(dirichlet_bbnd));
-                       else if(py::isinstance<Region>(dirichlet_bbnd))
-                         flags->SetFlag("dirichlet_bbnd", py::cast<Region>(dirichlet_bbnd));
-                       else
-                         throw py::type_error("dirichlet_bbnd has wrong type!");
-                     }),
-                     py::arg("dirichlet_bbbnd") = py::cpp_function
-                     ([](py::object dirichlet_bbbnd, Flags* flags, py::list info)
-                     {
-                       if(py::isinstance<py::str>(dirichlet_bbbnd))
-                         flags->SetFlag("dirichlet_bbbnd", py::cast<std::string>(dirichlet_bbbnd));
-                       else if(py::isinstance<Region>(dirichlet_bbbnd))
-                         flags->SetFlag("dirichlet_bbbnd", py::cast<Region>(dirichlet_bbbnd));
-                       else
-                         throw py::type_error("dirichlet_bbbnd has wrong type!");
-                     }),
-                     py::arg("definedon") = py::cpp_function
-                     ([] (py::object definedon, Flags* flags, py::list info)
-                      {
-                        auto ma = py::cast<shared_ptr<MeshAccess>>(info[0]);
-                        if (py::isinstance<py::str>(definedon))
-                          {
-                            std::regex pattern(definedon.cast<string>());
-                            Array<double> defonlist;
-                            for (int i = 0; i < ma->GetNDomains(); i++)
-                              if (regex_match(string(ma->GetMaterial(VOL,i)), pattern))
-                                defonlist.Append(i+1);
-                            flags->SetFlag ("definedon", defonlist);
-                          }
-
-                        if (py::isinstance<py::list> (definedon))
-                          flags->SetFlag ("definedon", makeCArray<double> (definedon));
-
-                        if (py::isinstance<MixedRegion> (definedon))
-                          flags->SetFlag ("definedon", py::cast<MixedRegion>(definedon));
-                        if (py::isinstance<MixedRegionDescriptor> (definedon))
-                          flags->SetFlag ("definedon", py::cast<MixedRegionDescriptor>(definedon));
-
-                        try
-                          {
-                            auto reg = py::cast<Region>(definedon);
-                            flags->SetFlag("definedon", reg);
-                          }
-                        catch(const py::cast_error&)
-                          {}
-                        try
-                          {
-                            auto map = py::cast<std::map<VorB, Region>>(definedon);
-                            flags->SetFlag("definedon", map);
-                          }
-                        catch(const py::cast_error&)
-                          {}
-                        try
-                          {
-                            auto rd = py::cast<RegionDescriptor>(definedon);
-                            flags->SetFlag("definedon", Region(ma, rd.vb, rd.name));
-                          }
-                        catch(const py::cast_error&)
-                          {}
-                        
-                        // py::extract<Region> definedon_reg(definedon);
-                        // if (definedon_reg.check() && definedon_reg().IsVolume())
-                        //   {
-                        //     Array<double> defonlist;
-                        //     for (int i = 0; i < definedon_reg().Mask().Size(); i++)
-                        //       if (definedon_reg().Mask().Test(i))
-                        //         defonlist.Append(i+1);
-                        //     flags->SetFlag ("definedon", defonlist);
-                        //   }
-                        // if (definedon_reg.check() && definedon_reg().VB()==BND)
-                        //   {
-                        //     Array<double> defonlist;
-                        //     flags->SetFlag("definedon", defonlist); //empty
-                        //     for (auto i : Range(definedon_reg().Mask().Size()))
-                        //       if(definedon_reg().Mask().Test(i))
-                        //         defonlist.Append(i+1);
-                        //     flags->SetFlag("definedonbound", defonlist);
-                        //   }
-                      }),
-                     py::arg("order_policy") = py::cpp_function
-                     ([] (ORDER_POLICY op, Flags* flags, py::list info)
-                      {
-                        flags->SetFlag("order_policy", int(op));
-                      }),
-                     py::arg("orderlink") = py::cpp_function
-                     ([] (shared_ptr<FESpace> link, Flags* flags, py::list info)
-                      {
-                        if (link->GetMeshAccess() != py::cast<shared_ptr<MeshAccess>>(info[0]))
-                          throw Exception ("orderlink: the space is on a different mesh");
-                        auto base = link->GetOrderSpecification().base;
-                        if (base->creator_name.empty())
-                          base->creator_name = link->GetClassName();
-                        base->has_links = true;
-                        flags->SetFlag ("orderlink", std::any (base));
-                      })
-                     );
-                     return special;
-                     })
     .def(py::pickle(&fesPickle, (shared_ptr<FESpace>(*)(py::tuple)) fesUnpickle<FESpace>))
     .def("Update", [](shared_ptr<FESpace> self)
          { 
@@ -2198,9 +2053,9 @@ component : int
         shared_ptr<BaseMatrix> grad = self->CreateGradient(*fesh1);
         return py::make_tuple(grad, shared_ptr<FESpace>(fesh1));
       })
-    .def("CreateStressSpace", [fes_class] (shared_ptr<HCurlHighOrderFESpace> self, py::kwargs kwargs)
+    .def("CreateStressSpace", [] (shared_ptr<HCurlHighOrderFESpace> self, py::kwargs kwargs)
          {
-           return CreateWithClassFlags(fes_class, self->GetMeshAccess(), kwargs,
+           return CreateWithClassFlags(self->GetMeshAccess(), kwargs,
                                        [&] (Flags flags) { return self->CreateStressSpace(flags); });
          },
          "HDivDiv stress space for TDNNS elasticity with this space as displacement\n"
@@ -2229,9 +2084,9 @@ component : int
          },
          "L2 space of matching order, containing div of this space.\n"
          "B = BilinearForm(div(u)*q*dx) on (HDiv, L2) is geometry-independent.")
-    .def("CreateStressSpace", [fes_class] (shared_ptr<HDivHighOrderFESpace> self, py::kwargs kwargs)
+    .def("CreateStressSpace", [] (shared_ptr<HDivHighOrderFESpace> self, py::kwargs kwargs)
          {
-           return CreateWithClassFlags(fes_class, self->GetMeshAccess(), kwargs,
+           return CreateWithClassFlags(self->GetMeshAccess(), kwargs,
                                        [&] (Flags flags) { return self->CreateStressSpace(flags); });
          },
          "HCurlDiv stress space for MCS (mass conserving mixed stress) with this space as velocity\n"
@@ -2279,9 +2134,9 @@ component : int
   ExportFESpace<HDivDivFESpace> (m, "HDivDiv");
   
   ExportFESpace<HCurlDivFESpace> (m, "HCurlDiv")
-    .def("CreateSymmetryMultiplierSpace", [fes_class] (shared_ptr<HCurlDivFESpace> self, py::kwargs kwargs)
+    .def("CreateSymmetryMultiplierSpace", [] (shared_ptr<HCurlDivFESpace> self, py::kwargs kwargs)
          {
-           return CreateWithClassFlags(fes_class, self->GetMeshAccess(), kwargs,
+           return CreateWithClassFlags(self->GetMeshAccess(), kwargs,
                                        [&] (Flags flags) { return self->CreateSymmetryMultiplierSpace(flags); });
          },
          "Lagrange multiplier for weak stress symmetry, int sigma : eta:\n"
@@ -2338,17 +2193,6 @@ component : int
                     {
                       space->AddOperator(name, vb, dbasis);
                     });
-  export_global.def_static("__special_treated_flags__", [fes_class] ()
-                           {
-                             py::dict special = fes_class.attr("__special_treated_flags__")();
-                             special["basis"] = py::cpp_function
-                               ([] (py::object pybasis, Flags* flags, py::list info)
-                                {
-                                  auto cppbasis = py::cast<shared_ptr<CoefficientFunction>>(pybasis);
-                                  flags -> SetFlag("basis", std::any(cppbasis));
-                                });
-                             return special;
-                           });
 
 
   
@@ -2468,9 +2312,9 @@ BND : boolean or None
                   }), py::arg("fespace"))
     .def_property_readonly("base_space", [](DiscontinuousFESpace & self) { return self.GetBaseSpace(); },
                            "the wrapped (conforming) space")
-    .def ("CreateMultiplierSpace", [fes_class] (shared_ptr<DiscontinuousFESpace> self, py::kwargs kwargs)
+    .def ("CreateMultiplierSpace", [] (shared_ptr<DiscontinuousFESpace> self, py::kwargs kwargs)
           {
-            return CreateWithClassFlags(fes_class, self->GetMeshAccess(), kwargs,
+            return CreateWithClassFlags(self->GetMeshAccess(), kwargs,
                                         [&] (Flags flags) { return self->CreateMultiplierSpace(flags); });
           },
           "Lagrange multiplier space re-enforcing the continuity broken by Discontinuous:\n"
