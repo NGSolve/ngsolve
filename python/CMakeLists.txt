@@ -10,6 +10,15 @@ if(NETGEN_USE_PYTHON)
             COMPONENT ngsolve
             )
 
+    install (FILES convert/__init__.py convert/__main__.py
+            DESTINATION ${NGSOLVE_INSTALL_DIR_PYTHON}/ngsolve/convert/
+            COMPONENT ngsolve
+            )
+    install (FILES convert/extract/extract_gf.py
+            DESTINATION ${NGSOLVE_INSTALL_DIR_PYTHON}/ngsolve/convert/extract/
+            COMPONENT ngsolve
+            )
+
     add_subdirectory(solvers)
     install (FILES
             __expr.py internal.py __console.py webgui.py
