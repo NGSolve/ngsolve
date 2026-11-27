@@ -7,8 +7,95 @@
 
 
 #include "periodic.hpp"
+#include <multigrid.hpp>
 
 namespace ngcomp {
+
+  // Prolongation of the wrapped space applied to the master dofs, minion dofs are
+  // zero. Requires the vertex orientations of the periodic and the wrapped space to
+  // agree, which holds for meshes with consistent identification ordering, see
+  // PeriodicFESpace::GetProlongation.
+  class PeriodicProlongation : public ngmg::Prolongation
+  {
+    const PeriodicFESpace & fes;
+    shared_ptr<ngmg::Prolongation> prol;
+
+  public:
+    PeriodicProlongation (const PeriodicFESpace & afes, shared_ptr<ngmg::Prolongation> aprol)
+      : fes(afes), prol(aprol) { ; }
+
+    void Update (const FESpace & afes) override
+    {
+      Prolongation::Update (afes);
+      prol->Update (*fes.GetBaseSpace());
+    }
+
+    size_t GetNDofLevel (int level) override { return fes.GetDofMap(level).Size(); }
+
+    shared_ptr<SparseMatrix<double>> CreateProlongationMatrix (int finelevel) const override
+    {
+      auto bmat = prol->CreateProlongationMatrix (finelevel);
+      if (!bmat) return nullptr;
+      auto mapc = fes.GetDofMap(finelevel-1);
+      auto mapf = fes.GetDofMap(finelevel);
+      auto colmap = [&] (int j) { return j < mapc.Size() ? mapc[j] : j; };
+      auto minion = [&] (int i) { return i < mapf.Size() && mapf[i] != i; };
+
+      Array<int> cnt(bmat->Height());
+      Array<int> cols;
+      for (auto i : Range(cnt))
+        {
+          cols.SetSize0();
+          if (!minion(i))
+            for (auto j : bmat->GetRowIndices(i))
+              cols.Append (colmap(j));
+          QuickSort (cols);
+          cnt[i] = 0;
+          for (auto k : Range(cols))
+            if (k == 0 || cols[k] != cols[k-1]) cnt[i]++;
+        }
+      MatrixGraph graph(cnt, bmat->Width());
+      for (auto i : Range(cnt))
+        if (!minion(i))
+          for (auto j : bmat->GetRowIndices(i))
+            graph.CreatePosition (i, colmap(j));
+      auto pmat = make_shared<SparseMatrix<double>> (std::move(graph));
+      pmat->AsVector() = 0.0;
+      for (auto i : Range(cnt))
+        if (!minion(i))
+          for (auto j : bmat->GetRowIndices(i))
+            (*pmat)(i, colmap(j)) += (*bmat)(i, j);
+      return pmat;
+    }
+
+    void ProlongateInline (int finelevel, BaseVector & v) const override
+    {
+      auto mapc = fes.GetDofMap(finelevel-1);
+      auto mapf = fes.GetDofMap(finelevel);
+      FlatSysVector<> fv (v.Size(), v.EntrySize(), static_cast<double*>(v.Memory()));
+      for (auto i : Range(min(mapc.Size(), fv.Size())))
+        if (mapc[i] != i) fv(i) = fv(mapc[i]);
+      prol->ProlongateInline (finelevel, v);
+      for (auto i : Range(min(mapf.Size(), fv.Size())))
+        if (mapf[i] != i) fv(i) = 0.0;
+    }
+
+    void RestrictInline (int finelevel, BaseVector & v) const override
+    {
+      auto mapc = fes.GetDofMap(finelevel-1);
+      auto mapf = fes.GetDofMap(finelevel);
+      FlatSysVector<> fv (v.Size(), v.EntrySize(), static_cast<double*>(v.Memory()));
+      for (auto i : Range(min(mapf.Size(), fv.Size())))
+        if (mapf[i] != i) fv(i) = 0.0;
+      prol->RestrictInline (finelevel, v);
+      for (auto i : Range(min(mapc.Size(), fv.Size())))
+        if (mapc[i] != i)
+          {
+            fv(mapc[i]) += fv(i);
+            fv(i) = 0.0;
+          }
+    }
+  };
 
   PeriodicFESpace :: PeriodicFESpace (shared_ptr<FESpace> aspace, const Flags & flags, shared_ptr<Array<int>> aused_idnrs)
     : FESpace(aspace->GetMeshAccess(), flags), space(aspace), used_idnrs(aused_idnrs)
@@ -22,19 +109,36 @@ namespace ngcomp {
         }
       iscomplex = space->IsComplex();
       needs_transform_vec = space->NeedsTransformVec();
-      // not yet working...
-      if (space->LowOrderFESpacePtr() && false)
+      if (space->LowOrderFESpacePtr())
         {
           auto lo_flags = flags;
           lo_flags.SetFlag("order",1);
           low_order_space = make_shared<PeriodicFESpace>(space->LowOrderFESpacePtr(),lo_flags,used_idnrs);
         }
+      if (space->GetProlongation())
+        prol = make_shared<PeriodicProlongation> (*this, space->GetProlongation());
     }
-    
+
+  FlatArray<int> PeriodicFESpace :: GetDofMap (int level) const
+    {
+      if (level == dofmap_level) return dofmap;
+      if (level < 0 || level >= coarse_dofmaps.Size() || coarse_dofmaps[level].Size() == 0)
+        throw Exception ("Periodic space: no dof map of level " + ToString(level) +
+                         ", the space has to be updated on every level");
+      return coarse_dofmaps[level];
+    }
+
   void PeriodicFESpace :: Update()
-    {      
+    {
       space->Update();
       FESpace::Update();
+      int level = ma->GetNLevels()-1;
+      if (prol && dofmap_level >= 0 && dofmap_level < level)
+        {
+          coarse_dofmaps.SetSize (level);
+          coarse_dofmaps[dofmap_level] = std::move(dofmap);
+        }
+      dofmap_level = level;
       dofmap.SetSize (space->GetNDof());
       vertex_map.SetSize(ma->GetNP());
       for (int i = 0; i < dofmap.Size(); i++)
@@ -117,8 +221,16 @@ namespace ngcomp {
                    return a < b;
                  });
       vertex_orientation.SetSize(order.Size());
+      // identified vertices numbered consecutively, then vertex_orientation keeps the
+      // order of the vertices of every element and the wrapped prolongation applies
+      size_t nclasses = 0, nruns = 0;
       for (auto i : Range(order))
-        vertex_orientation[order[i]] = i;
+        {
+          vertex_orientation[order[i]] = i;
+          if (vertex_map[i] == i) nclasses++;
+          if (i == 0 || vertex_map[i] != vertex_map[i-1]) nruns++;
+        }
+      consistent_ordering = nruns == nclasses;
 
       ctofdof.SetSize(dofmap.Size());
       for (auto i : Range(ctofdof.Size()))
@@ -127,6 +239,12 @@ namespace ngcomp {
 	if (dofmap[i] != i){
           ctofdof[i] = UNUSED_DOF;
 	}
+
+      if (low_order_space)
+        {
+          low_order_space->Update();
+          low_order_embedding = space->LowOrderEmbedding();
+        }
     }
 
   void PeriodicFESpace :: SetOrder (NodeId ni, int order)
@@ -305,6 +423,9 @@ namespace ngcomp {
     PeriodicFESpace(fespace, flags, aused_idnrs), factors(afactors)
   {
     needs_transform_vec = true;
+    // the prolongation does not apply the phase factors
+    low_order_space = nullptr;
+    prol = nullptr;
   }
 
   template<typename TSCAL>

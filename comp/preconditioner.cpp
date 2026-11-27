@@ -1,5 +1,6 @@
 #include "bilinearform.hpp"
 #include "preconditioner.hpp"
+#include "periodic.hpp"
 #include <multigrid.hpp>
 // #include <solve.hpp>
 #include <parallelngs.hpp>
@@ -356,6 +357,9 @@ namespace ngcomp
     sm -> SetAdditionalDirichletBoundaries(additional_dirichlet_boundaries);
     
     auto prol = lo_fes->GetProlongation();
+    if (auto per = dynamic_pointer_cast<PeriodicFESpace> (lo_fes); per && !prol && !per->ConsistentOrdering())
+      throw Exception ("multigrid preconditioner: periodic spaces need a mesh with consistent identification "
+                       "ordering, call mesh.ngmesh.ConsistentIdentificationOrdering() before refining");
 
     mgp = make_shared<MultigridPreconditioner> (lo_bfa, sm, prol);
     mgp->SetSmoothingSteps (int(flags.GetNumFlag ("smoothingsteps", 1)));

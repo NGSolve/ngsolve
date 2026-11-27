@@ -2201,8 +2201,11 @@ component : int
 The periodic fespace is a wrapper around a standard fespace with an 
 additional dof mapping for the periodic degrees of freedom. All dofs 
 on minion boundaries are mapped to their master dofs. Because of this, 
-the mesh needs to be periodic. Low order fespaces are currently not
-supported, so methods using them will not work.
+the mesh needs to be periodic. Periodic spaces have a low order space
+and a multigrid prolongation if the wrapped space has them, the
+prolongation needs a mesh with consistent identification ordering
+(mesh.ngmesh.ConsistentIdentificationOrdering() before refining).
+Quasi-periodic spaces have neither.
 
 Parameters:
 

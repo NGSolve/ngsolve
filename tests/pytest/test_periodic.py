@@ -133,3 +133,89 @@ def test_quasiperiodic():
 
     u_true = exp(1J * k * (d[0] * x + d[1] * y + d[2] * z))
     assert sqrt(Integrate(Conj(u_true-u)*(u_true-u),mesh).real) < 1e-8
+
+
+def test_periodic_local_refinement():
+    # midpoints of edges created in the same bisection pass have to be identified too
+    import numpy as np
+    from netgen.occ import Box, X, Y, Z, OCCGeometry, IdentificationType
+    box = Box((0,0,0), (1,1,1))
+    box.faces.Min(Z).name = "zm"
+    box.faces.Max(Z).name = "zp"
+    box.faces.Min(X).Identify(box.faces.Max(X), "perx", IdentificationType.PERIODIC)
+    box.faces.Min(Y).Identify(box.faces.Max(Y), "pery", IdentificationType.PERIODIC)
+    mesh = Mesh(OCCGeometry(box).GenerateMesh(maxh=0.3))
+    rng = np.random.default_rng(0)
+    for level in range(3):
+        mark = rng.random(mesh.ne) < 0.3
+        for el in mesh.Elements(VOL):
+            mesh.SetRefinementFlag(el, bool(mark[el.nr]))
+        mesh.Refine(onlyonce=True)
+
+    paired = set()
+    for (v0, v1), idnr in mesh.GetPeriodicNodePairs(VERTEX):
+        paired |= {(v0, idnr), (v1, idnr)}
+    for v in mesh.vertices:
+        for d in range(2):
+            if abs(v.point[d]) < 1e-10 or abs(v.point[d]-1) < 1e-10:
+                assert (v.nr, d) in paired
+
+    s = 2*pi
+    Eex = CF((sin(s*y)*sin(s*z), sin(s*x)*sin(s*z), sin(s*x)*sin(s*y)))
+    errs = []
+    for fes in [Periodic(HCurl(mesh, dirichlet="zm|zp")), HCurl(mesh, dirichlet=".*")]:
+        u, v = fes.TnT()
+        a = BilinearForm(curl(u)*curl(v)*dx + u*v*dx).Assemble()
+        f = LinearForm((2*s**2+1)*Eex*v*dx).Assemble()
+        gfu = GridFunction(fes)
+        gfu.vec.data = a.mat.Inverse(fes.FreeDofs(), inverse="sparsecholesky") * f.vec
+        errs.append(sqrt(Integrate((gfu-Eex)**2, mesh)))
+    assert errs[0] < 1.1 * errs[1]
+
+
+def test_periodic_multigrid():
+    import numpy as np, pytest
+    from netgen.occ import Box, X, Y, Z, OCCGeometry, IdentificationType
+    from ngsolve.krylovspace import CGSolver
+    box = Box((0,0,0), (1,1,1))
+    box.faces.Min(Z).name = "zm"
+    box.faces.Max(Z).name = "zp"
+    box.faces.Min(X).Identify(box.faces.Max(X), "perx", IdentificationType.PERIODIC)
+    box.faces.Min(Y).Identify(box.faces.Max(Y), "pery", IdentificationType.PERIODIC)
+    ngmesh = OCCGeometry(box).GenerateMesh(maxh=0.3)
+
+    def problem(mesh):
+        fes = Periodic(HCurl(mesh, order=1, dirichlet="zm|zp"))
+        u, v = fes.TnT()
+        s = 2*pi
+        Eex = CF((sin(s*y)*sin(s*z), sin(s*x)*sin(s*z), sin(s*x)*sin(s*y)))
+        a = BilinearForm(curl(u)*curl(v)*dx + u*v*dx)
+        f = LinearForm((2*s**2+1)*Eex*v*dx)
+        return fes, a, f
+
+    # the prolongation needs consistently numbered identified vertices
+    with pytest.raises(Exception, match="consistent identification ordering"):
+        fes, a, f = problem(Mesh(ngmesh.Copy()))
+        Preconditioner(a, "multigrid")
+
+    ngmesh.ConsistentIdentificationOrdering()
+    mesh = Mesh(ngmesh)
+    fes, a, f = problem(mesh)
+    pre = Preconditioner(a, "multigrid", smoother="block", blocktype=["vertexpatch:periodic"])
+    rng = np.random.default_rng(0)
+    for level in range(4):
+        if level:
+            mark = rng.random(mesh.ne) < 0.3
+            for el in mesh.Elements(VOL):
+                mesh.SetRefinementFlag(el, bool(mark[el.nr]))
+            mesh.Refine(onlyonce=True)
+            fes.Update()
+        a.Assemble()
+        f.Assemble()
+        inv = CGSolver(a.mat, pre.mat, tol=1e-10, maxiter=100)
+        gfu = GridFunction(fes)
+        gfu.vec.data = inv * f.vec
+        assert inv.iterations < 15
+    ref = GridFunction(fes)
+    ref.vec.data = a.mat.Inverse(fes.FreeDofs(), inverse="sparsecholesky") * f.vec
+    assert sqrt(Integrate((gfu-ref)**2, mesh)) < 1e-6 * sqrt(Integrate(ref**2, mesh))

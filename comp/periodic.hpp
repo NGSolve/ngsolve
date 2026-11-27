@@ -19,8 +19,11 @@ namespace ngcomp
   {
   protected:
     Array<int> dofmap; // mapping of dofs
+    int dofmap_level = -1;
+    Array<Array<int>> coarse_dofmaps; // dofmaps of the coarser levels, for the prolongation
     Array<int> vertex_map; // mapping of vertices
     Array<int> vertex_orientation;
+    bool consistent_ordering = false;
     shared_ptr<FESpace> space;
     shared_ptr<Array<int>> used_idnrs;
     
@@ -97,7 +100,11 @@ namespace ngcomp
 
     auto & GetVertexMap() const { return vertex_map; }
     auto & GetVertexOrientation() const { return vertex_orientation; }
-    auto & GetDofMap() const { return dofmap; }    
+    auto & GetDofMap() const { return dofmap; }
+    FlatArray<int> GetDofMap (int level) const;
+    bool ConsistentOrdering () const { return consistent_ordering; }
+    shared_ptr<ngmg::Prolongation> GetProlongation () const override
+    { return consistent_ordering ? prol : nullptr; }
     FlatArray<VorB> GetDualShapeNodes (VorB vb) const override
     {
       return space->GetDualShapeNodes(vb);
