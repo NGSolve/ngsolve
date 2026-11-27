@@ -188,8 +188,8 @@ def ConvertGridFunction(oldfile, newfile=None, python=None, order=None, raise_or
             json.dump({"rules": {name(et): [list(p) for p in ir.points] for et, ir in irs.items()},
                        "check": {name(et): [list(p) for p in ir.points] for et, ir in check.items()}}, f)
         _extract(python, "evaluate", oldfile, prefix)
-        data = np.load(prefix + ".npz")
-        values, checkvalues, checkderiv = data["values"], data["checkvalues"], data["checkderiv"]
+        with np.load(prefix + ".npz") as data:  # NpzFile keeps the file open (Windows)
+            values, checkvalues, checkderiv = data["values"], data["checkvalues"], data["checkderiv"]
 
     if values.shape[0] != fesir.ndof:
         raise ConvertError("got %d point values for %d integration points" % (values.shape[0], fesir.ndof))
