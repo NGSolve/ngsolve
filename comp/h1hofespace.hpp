@@ -136,14 +136,13 @@ namespace ngcomp
   };
 
 
-  class VectorH1FESpace : public CompoundFESpace
+  class VectorH1FESpace : public CompoundFESpaceAllSame
   {
-    bool interleaved;
   public:
     VectorH1FESpace (shared_ptr<MeshAccess> ama, const Flags & flags, 
                      bool checkflags = false);
 
-    FiniteElement & GetFE (ElementId ei, Allocator & alloc) const override;
+    shared_ptr<BaseMatrix> GetTraceOperator (shared_ptr<FESpace> tracespace, bool avg) const override;
 
     static DocInfo GetDocu ();
 
@@ -166,10 +165,6 @@ namespace ngcomp
     virtual int GetOrder (NodeId ni) const override;
     using FESpace::GetOrder;
 
-    virtual void FinalizeUpdate() override;
-
-    void GetDofNrs (ElementId ei, Array<DofId> & dnums) const override;
-    void GetDofNrs (NodeId ni, Array<DofId> & dnums) const override;
 
     virtual string GetClassName () const override
     {

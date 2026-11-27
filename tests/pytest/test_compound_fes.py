@@ -89,5 +89,51 @@ def test_number_definedon():
         for j in range(a1.mat.width):
             assert a1.mat[i,j] == pytest.approx(a2.mat[i,j])
 
+def test_vector_interleaved():
+    for mesh in [Mesh(unit_square.GenerateMesh(maxh=0.3)), Mesh(unit_cube.GenerateMesh(maxh=0.5))]:
+        D = mesh.dim
+        cf = CF((x*y, sin(x), z)[:D])
+        makers = [lambda il: VectorH1(mesh, order=3, dirichlet="left", dirichlety="bottom", interleaved=il),
+                  lambda il: VectorValued(H1(mesh, order=3, dirichlet="left"), interleaved=il)]
+        for make in makers:
+            fb, fi = make(False), make(True)
+            nd = fi.ndof//D
+            perm = [j*nd+k for k in range(nd) for j in range(D)]
+            for i in range(fi.ndof):
+                assert fi.CouplingType(i) == fb.CouplingType(perm[i])
+                assert fi.FreeDofs()[i] == fb.FreeDofs()[perm[i]]
+
+            sols = []
+            for fes in (fb, fi):
+                u,v = fes.TnT()
+                a = BilinearForm(InnerProduct(Grad(u),Grad(v))*dx+u*v*dx, condense=True)
+                pre = Preconditioner(a, "bddc")
+                a.Assemble()
+                f = LinearForm(cf*v*dx).Assemble()
+                gf = GridFunction(fes)
+                gf.Set(cf)
+                assert Integrate((gf-cf)**2, mesh) < 1e-8
+                gf.vec[:] = 0
+                solvers.BVP(bf=a, lf=f, gf=gf, pre=pre, tol=1e-12, print=False)
+                sols.append(gf.vec)
+            for i in range(fi.ndof):
+                assert sols[1][i] == pytest.approx(sols[0][perm[i]], abs=1e-10)
+
+            with pytest.raises(Exception):
+                GridFunction(fi).components[0]
+            with pytest.raises(Exception):
+                fi.Embedding(0)
+
+        # dof transformations act on the blocked element-local order
+        fb = VectorValued(HCurl(mesh, order=2), 2)
+        fi = VectorValued(HCurl(mesh, order=2), 2, interleaved=True)
+        nd = fi.ndof//2
+        perm = [j*nd+k for k in range(nd) for j in range(2)]
+        mcf = CF((y, x*x) + ((z,) if D==3 else ()) + (x*y, 1) + ((x,) if D==3 else ()), dims=(2,D))
+        gb, gi = GridFunction(fb), GridFunction(fi)
+        gb.Set(mcf); gi.Set(mcf)
+        for i in range(fi.ndof):
+            assert gi.vec[i] == pytest.approx(gb.vec[perm[i]], abs=1e-12)
+
 if __name__ == "__main__":
     test_component_keeps_alive()

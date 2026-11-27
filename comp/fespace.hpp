@@ -1372,7 +1372,7 @@ ANY                  1 1 1 1 | 15
     
     void SetDefinedOn (VorB vb, const BitArray& defon) override;
 
-    DofRange GetRange (int spacenr) const
+    virtual DofRange GetRange (int spacenr) const
     {
       if (spacenr+1 >= cummulative_nd.Size())
         throw Exception("spacenr >= cummulative_nd.Size() in CompoundFESpace!");
@@ -1456,11 +1456,29 @@ ANY                  1 1 1 1 | 15
 
   class NGS_DLL_HEADER CompoundFESpaceAllSame : public CompoundFESpace
   {
-    bool interleaved;
+  protected:
+    // dofs ordered x0,y0,z0,x1,... : components are not contiguous
+    bool interleaved = false;
+    // components with identical dof numbering are added by the derived class
+    CompoundFESpaceAllSame (shared_ptr<MeshAccess> ama, const Flags & flags);
   public:
     CompoundFESpaceAllSame (shared_ptr<FESpace> space, int dim, const Flags & flags,
                             bool checkflags = false);
     virtual string GetClassName () const override;
+
+    using CompoundFESpace::GetRange;
+    DofRange GetRange (int spacenr) const override;
+
+    void UpdateCouplingDofArray() override;
+    void UpdateFreeDofs() override;
+
+    void GetDofNrs (ElementId ei, Array<DofId> & dnums) const override;
+    void GetDofNrs (NodeId ni, Array<DofId> & dnums) const override;
+    void GetVertexDofNrs (int vnr, Array<DofId> & dnums) const override;
+    void GetEdgeDofNrs (int ednr, Array<DofId> & dnums) const override;
+    void GetFaceDofNrs (int fanr, Array<DofId> & dnums) const override;
+    void GetInnerDofNrs (int elnr, Array<DofId> & dnums) const override;
+    void SelectDofs (const string & name, BitArray & dofs) const override;
 
     virtual FiniteElement & GetFE (ElementId ei, Allocator & alloc) const override {
       return *new (alloc) VectorFiniteElement (spaces[0]->GetFE(ei, alloc), spaces.Size());

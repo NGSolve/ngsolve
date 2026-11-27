@@ -5415,20 +5415,170 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
 
+  // component-wise prolongation needs contiguous components
+  class InterleavedProlongation : public CompoundProlongation
+  {
+  public:
+    using CompoundProlongation::CompoundProlongation;
+    [[noreturn]] static void Fail()
+    { throw Exception("interleaved vector space: multigrid prolongation not supported"); }
+    shared_ptr<SparseMatrix<double>> CreateProlongationMatrix (int) const override { Fail(); }
+    void ProlongateInline (int, BaseVector &) const override { Fail(); }
+    void RestrictInline (int, BaseVector &) const override { Fail(); }
+    shared_ptr<BitArray> GetInnerDofs (int) const override { Fail(); }
+  };
+
+  // component-0 dofs d_i -> blocked local order, global dim*d_i+j
+  static void InterleaveDofs (Array<DofId> & dnums, size_t dim)
+  {
+    size_t n = dnums.Size();
+    dnums.SetSize(dim*n);
+    for (size_t j = dim; j-- > 0; )
+      for (size_t i = 0; i < n; i++)
+        {
+          DofId d = dnums[i];
+          dnums[j*n+i] = IsRegularDof(d) ? DofId(dim*d+j) : d;
+        }
+  }
+
+  void CompoundFESpaceAllSame :: UpdateCouplingDofArray()
+  {
+    if (!interleaved)
+      {
+        CompoundFESpace::UpdateCouplingDofArray();
+        return;
+      }
+    size_t dim = spaces.Size();
+    ctofdof.SetSize(GetNDof());
+    for (size_t j = 0; j < dim; j++)
+      for (size_t k = 0; k < spaces[j]->GetNDof(); k++)
+        ctofdof[dim*k+j] = spaces[j]->GetDofCouplingType(k);
+  }
+
+  void CompoundFESpaceAllSame :: UpdateFreeDofs()
+  {
+    if (!interleaved)
+      {
+        CompoundFESpace::UpdateFreeDofs();
+        return;
+      }
+
+    free_dofs = make_shared<BitArray> (GetNDof());
+    free_dofs->Set();
+
+    size_t dim = spaces.Size();
+    for (size_t i = 0; i < dim; i++)
+      if (auto free_dofs_sub = spaces[i]->GetFreeDofs())
+        for (size_t j = 0; j < free_dofs_sub->Size(); j++)
+          if (!free_dofs_sub->Test(j))
+            free_dofs->Clear (dim*j+i);
+
+    for (size_t i = 0; i < ctofdof.Size(); i++)
+      if (ctofdof[i] == UNUSED_DOF)
+        free_dofs->Clear(i);
+
+    dirichlet_dofs = *free_dofs;
+    dirichlet_dofs.Invert();
+
+    external_free_dofs = make_shared<BitArray>(GetNDof());
+    *external_free_dofs = *free_dofs;
+    for (size_t i = 0; i < ctofdof.Size(); i++)
+      if (ctofdof[i] & CONDENSABLE_DOF)
+        external_free_dofs->Clear(i);
+  }
+
+  void CompoundFESpaceAllSame :: GetDofNrs (ElementId ei, Array<DofId> & dnums) const
+  {
+    if (!interleaved)
+      return CompoundFESpace::GetDofNrs(ei, dnums);
+    spaces[0]->GetDofNrs(ei, dnums);
+    InterleaveDofs (dnums, spaces.Size());
+  }
+  
+  void CompoundFESpaceAllSame :: GetDofNrs (NodeId ni, Array<DofId> & dnums) const
+  {
+    if (!interleaved)
+      return CompoundFESpace::GetDofNrs(ni, dnums);
+    spaces[0]->GetDofNrs(ni, dnums);
+    InterleaveDofs (dnums, spaces.Size());
+  }
+
+  void CompoundFESpaceAllSame :: GetVertexDofNrs (int vnr, Array<DofId> & dnums) const
+  {
+    if (!interleaved)
+      return CompoundFESpace::GetVertexDofNrs(vnr, dnums);
+    spaces[0]->GetVertexDofNrs(vnr, dnums);
+    InterleaveDofs (dnums, spaces.Size());
+  }
+
+  void CompoundFESpaceAllSame :: GetEdgeDofNrs (int ednr, Array<DofId> & dnums) const
+  {
+    if (!interleaved)
+      return CompoundFESpace::GetEdgeDofNrs(ednr, dnums);
+    spaces[0]->GetEdgeDofNrs(ednr, dnums);
+    InterleaveDofs (dnums, spaces.Size());
+  }
+
+  void CompoundFESpaceAllSame :: GetFaceDofNrs (int fanr, Array<DofId> & dnums) const
+  {
+    if (!interleaved)
+      return CompoundFESpace::GetFaceDofNrs(fanr, dnums);
+    spaces[0]->GetFaceDofNrs(fanr, dnums);
+    InterleaveDofs (dnums, spaces.Size());
+  }
+
+  void CompoundFESpaceAllSame :: GetInnerDofNrs (int elnr, Array<DofId> & dnums) const
+  {
+    if (!interleaved)
+      return CompoundFESpace::GetInnerDofNrs(elnr, dnums);
+    spaces[0]->GetInnerDofNrs(elnr, dnums);
+    InterleaveDofs (dnums, spaces.Size());
+  }
+
+  void CompoundFESpaceAllSame :: SelectDofs (const string & name, BitArray & dofs) const
+  {
+    if (!interleaved)
+      return CompoundFESpace::SelectDofs(name, dofs);
+    dofs.Clear();
+    size_t dim = spaces.Size();
+    for (size_t i = 0; i < dim; i++)
+      {
+        BitArray dofsi(spaces[i]->GetNDof());
+        spaces[i]->SelectDofs(name, dofsi);
+        for (size_t j = 0; j < dofsi.Size(); j++)
+          if (dofsi.Test(j))
+            dofs.SetBit(dim*j+i);
+      }
+  }
+
+  DofRange CompoundFESpaceAllSame :: GetRange (int spacenr) const
+  {
+    if (interleaved)
+      throw Exception(GetClassName()+": components of an interleaved space are not contiguous, no range available");
+    return CompoundFESpace::GetRange(spacenr);
+  }
+
+  CompoundFESpaceAllSame ::
+  CompoundFESpaceAllSame (shared_ptr<MeshAccess> ama, const Flags & flags)
+    : CompoundFESpace (ama, flags)
+  {
+    interleaved = flags.GetDefineFlag("interleaved");
+    if (interleaved)
+      {
+        prol = make_shared<InterleavedProlongation> (this);
+        low_order_space.reset();
+      }
+  }
+
   CompoundFESpaceAllSame ::
   CompoundFESpaceAllSame (shared_ptr<FESpace> space, int dim, const Flags & flags,
                           bool checkflags)
-    : CompoundFESpace (space->GetMeshAccess(), flags)
+    : CompoundFESpaceAllSame (space->GetMeshAccess(), flags)
   {
     order = space->GetOrder();
     for (int i = 0; i < dim; i++)
       AddSpace (space);
 
-    // interleaved: not yet implemented, will copy from VectorH1
-    interleaved = flags.GetDefineFlag("interleaved");
-    if (interleaved)
-      throw Exception("CompoundFESpaceAllSame: Interleaved not yet supported");
-    
     for (auto vb : { VOL, BND, BBND, BBBND })
       {
         if (auto eval = spaces[0] -> GetEvaluator(vb))
