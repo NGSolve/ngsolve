@@ -189,6 +189,8 @@ namespace ngcomp
     {
       cout << "RestrictInline not implemented for L2HoProlongation" << endl;
     }
+
+    bool SupportsBlockEntries() const override { return true; }
  
   };
 

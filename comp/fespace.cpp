@@ -5415,17 +5415,81 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
 
-  // component-wise prolongation needs contiguous components
+  // scalar prolongation applied to the interleaved vector viewed as block vector
   class InterleavedProlongation : public CompoundProlongation
   {
+    size_t Dim() const { return prols.Size(); }
+
+    template <typename FUNC>
+    void ApplyBlocked (BaseVector & v, FUNC func) const
+    {
+      if (!prols.Size() || !prols[0])
+        return;
+      if (!prols[0]->SupportsBlockEntries())
+        throw Exception("interleaved vector space: prolongation "+Demangle(typeid(*prols[0]).name())
+                        +" does not support block entries");
+      S_BaseVectorPtr<double> bv(v.Size()/Dim(), Dim()*v.EntrySize(), v.Memory());
+      func(bv);
+    }
+    
   public:
     using CompoundProlongation::CompoundProlongation;
-    [[noreturn]] static void Fail()
-    { throw Exception("interleaved vector space: multigrid prolongation not supported"); }
-    shared_ptr<SparseMatrix<double>> CreateProlongationMatrix (int) const override { Fail(); }
-    void ProlongateInline (int, BaseVector &) const override { Fail(); }
-    void RestrictInline (int, BaseVector &) const override { Fail(); }
-    shared_ptr<BitArray> GetInnerDofs (int) const override { Fail(); }
+
+    shared_ptr<SparseMatrix<double>> CreateProlongationMatrix (int finelevel) const override
+    {
+      if (!prols.Size() || !prols[0]) return nullptr;
+      auto P = prols[0]->CreateProlongationMatrix(finelevel);
+      if (!P) return nullptr;
+
+      size_t dim = Dim();
+      Array<int> cnt(dim*P->Height());
+      for (size_t i = 0; i < P->Height(); i++)
+        for (size_t j = 0; j < dim; j++)
+          cnt[dim*i+j] = P->GetRowIndices(i).Size();
+      MatrixGraph graph(cnt, dim*P->Width());
+      for (size_t i = 0; i < P->Height(); i++)
+        for (auto c : P->GetRowIndices(i))
+          for (size_t j = 0; j < dim; j++)
+            graph.CreatePosition(dim*i+j, dim*c+j);
+      auto prol = make_shared<SparseMatrix<double>>(std::move(graph));
+      for (size_t i = 0; i < P->Height(); i++)
+        {
+          auto cols = P->GetRowIndices(i);
+          auto vals = P->GetRowValues(i);
+          for (size_t k = 0; k < cols.Size(); k++)
+            for (size_t j = 0; j < dim; j++)
+              (*prol)(dim*i+j, dim*cols[k]+j) = vals[k];
+        }
+      return prol;
+    }
+
+    void ProlongateInline (int finelevel, BaseVector & v) const override
+    {
+      ApplyBlocked (v, [&](BaseVector & bv) { prols[0]->ProlongateInline(finelevel, bv); });
+    }
+
+    void RestrictInline (int finelevel, BaseVector & v) const override
+    {
+      ApplyBlocked (v, [&](BaseVector & bv) { prols[0]->RestrictInline(finelevel, bv); });
+    }
+
+    shared_ptr<BitArray> GetInnerDofs (int finelevel) const override
+    {
+      if (!prols.Size() || !prols[0]) return nullptr;
+      auto inner = prols[0]->GetInnerDofs(finelevel);
+      if (!inner) return nullptr;
+      size_t dim = Dim();
+      auto res = make_shared<BitArray>(dim*inner->Size());
+      res->Clear();
+      for (size_t k = 0; k < inner->Size(); k++)
+        if (inner->Test(k))
+          for (size_t j = 0; j < dim; j++)
+            res->SetBit(dim*k+j);
+      return res;
+    }
+    
+    bool SupportsBlockEntries() const override
+    { return prols.Size() && prols[0] && prols[0]->SupportsBlockEntries(); }
   };
 
   // component-0 dofs d_i -> blocked local order, global dim*d_i+j

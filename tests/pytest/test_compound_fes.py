@@ -135,5 +135,64 @@ def test_vector_interleaved():
         for i in range(fi.ndof):
             assert gi.vec[i] == pytest.approx(gb.vec[perm[i]], abs=1e-12)
 
+def test_vector_interleaved_multigrid():
+    from ngsolve.krylovspace import CGSolver
+    ngmesh = unit_square.GenerateMesh(maxh=0.3)
+    cf = CF((x*y, sin(x)))
+    makers = [lambda m, il: VectorH1(m, order=2, dirichlet="left", dirichlety="bottom", interleaved=il),
+              lambda m, il: VectorValued(H1(m, order=2, dirichlet="left"), interleaved=il)]
+    for make in makers:
+        res = []
+        for il in (False, True):
+            mesh = Mesh(ngmesh.Copy())
+            fes = make(mesh, il)
+            u,v = fes.TnT()
+            a = BilinearForm(InnerProduct(Grad(u),Grad(v))*dx+u*v*dx)
+            pre = Preconditioner(a, "multigrid")
+            gf = GridFunction(fes)
+            gf.Set(cf)
+            a.Assemble()
+            ndofs = [fes.ndof]
+            for l in range(2):
+                mesh.Refine()
+                fes.Update(); gf.Update(); a.Assemble()
+                ndofs.append(fes.ndof)
+            f = LinearForm(cf*v*dx).Assemble()
+            sol = GridFunction(fes)
+            inv = CGSolver(a.mat, pre.mat, tol=1e-10, maxiter=200)
+            sol.vec.data = inv*f.vec
+            res.append((fes, gf.vec, sol.vec, inv.iterations, ndofs))
+        (fb, gb, sb, ib, ndofs), (fi, gi, si, ii, _) = res
+        assert ib == ii
+        nd = fi.ndof//2
+        perm = [j*nd+k for k in range(nd) for j in range(2)]
+        for i in range(fi.ndof):
+            assert gi[i] == pytest.approx(gb[perm[i]], abs=1e-14)
+            assert si[i] == pytest.approx(sb[perm[i]], abs=1e-10)
+
+        P = fi.Prolongation().CreateMatrix(2)
+        Ps = fi.components[0].Prolongation().CreateMatrix(2)
+        assert (P.height, P.width) == (2*Ps.height, 2*Ps.width)
+        for i in range(Ps.height):
+            for c in range(Ps.width):
+                for j in range(2):
+                    assert P[2*i+j, 2*c+j] == Ps[i, c]
+
+        # blocked: component blocks start at the component ndofs
+        Pb = fb.Prolongation().CreateMatrix(2)
+        ndf, ndc = ndofs[2]//2, ndofs[1]//2
+        assert (Pb.height, Pb.width) == (2*ndf, 2*ndc)
+        assert Pb.nze == 2*Ps.nze
+        for i in range(Ps.height):
+            for c in range(Ps.width):
+                for j in range(2):
+                    assert Pb[j*ndf+i, j*ndc+c] == Ps[i, c]
+
+    mesh = Mesh(ngmesh.Copy())
+    fes = VectorValued(H1(mesh, order=2, hoprolongation=True), interleaved=True)
+    mesh.Refine(); fes.Update()
+    with pytest.raises(Exception, match="block entries"):
+        fes.Prolongation().Prolongate(1, GridFunction(fes).vec)
+
 if __name__ == "__main__":
     test_component_keeps_alive()

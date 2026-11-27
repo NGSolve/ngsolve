@@ -45,6 +45,9 @@ namespace ngmg
     virtual void RestrictInline (int finelevel, BaseVector & v) const = 0;
 
     virtual shared_ptr<BitArray> GetInnerDofs (int finelevel) const { return nullptr; }
+
+    // Prolongate/RestrictInline work on vectors with EntrySize > 1
+    virtual bool SupportsBlockEntries() const { return false; }
   };
 
 
@@ -107,6 +110,7 @@ namespace ngmg
     virtual shared_ptr<SparseMatrix< double >> CreateProlongationMatrix( int finelevel ) const override;
     virtual void ProlongateInline (int finelevel, BaseVector & v) const override;
     virtual void RestrictInline (int finelevel, BaseVector & v) const override;
+    bool SupportsBlockEntries() const override { return true; }
   };
 
 
@@ -161,6 +165,7 @@ namespace ngmg
     ///
     virtual void ProlongateInline (int finelevel, BaseVector & v) const override;
     virtual void RestrictInline (int finelevel, BaseVector & v) const override;
+    bool SupportsBlockEntries() const override { return true; }
   };
 
 
@@ -189,6 +194,7 @@ namespace ngmg
     ///
     virtual void ProlongateInline (int finelevel, BaseVector & v) const override;
     virtual void RestrictInline (int finelevel, BaseVector & v) const override;
+    bool SupportsBlockEntries() const override { return true; }
 
     ///
     void ApplyGradient (int level, const BaseVector & pot, BaseVector & grad) const 

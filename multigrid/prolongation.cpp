@@ -818,6 +818,7 @@ namespace ngmg
   void CompoundProlongation :: Update (const FESpace & fespace)
   {
     auto & cfes = dynamic_cast<const CompoundFESpace&> (fespace);
+    Prolongation::Update (fespace);
     for (int i = 0; i < prols.Size(); i++)
       if (prols[i])
 	prols[i] -> Update(*cfes[i]);
@@ -866,44 +867,45 @@ namespace ngmg
     // if any of the prolongations cannot create a matrix, return nullptr
     for(auto& prol : prols)
       {
+        if (!prol) return nullptr;
         mats.Append (prol->CreateProlongationMatrix(finelevel));
         if(!mats.Last())
           return nullptr;
       }
-    Array<int> indices_per_row(space->GetNDofLevel(finelevel));
-    size_t offset = 0;
-    for(auto& mat : mats)
+
+    // component matrices may cover only the first dofs (e.g. vertex dofs),
+    // offsets are the component ndofs
+    Array<size_t> offset_row(mats.Size()), offset_col(mats.Size());
+    size_t nrow = 0, ncol = 0;
+    for (size_t k = 0; k < mats.Size(); k++)
       {
-        for(int i = 0; i < mat->Height(); i++)
-          indices_per_row[offset + i] = mat->GetRowIndices(i).Size();
-        offset += mat->Height();
+        offset_row[k] = nrow;
+        offset_col[k] = ncol;
+        nrow += (*space)[k]->GetNDofLevel(finelevel);
+        ncol += (*space)[k]->GetNDofLevel(finelevel-1);
       }
-    MatrixGraph mg(indices_per_row, space->GetNDofLevel(finelevel-1));
-    offset = 0;
-    size_t offset_col = 0;
-    for(auto& mat : mats)
-      {
-        for(int i = 0; i < mat->Height(); i++)
-          {
-            for(auto col : mat->GetRowIndices(i))
-              mg.CreatePosition(offset + i, offset_col + col);
-          }
-        offset += mat->Height();
-        offset_col += mat->Width();
-      }
-    shared_ptr<SparseMatrix<double>> prol = make_shared<SparseMatrix<double>>(std::move(mg));
-    offset = 0;
-    offset_col = 0;
-    for(auto& mat : mats)
-      {
-        for(int i = 0; i < mat->Height(); i++)
-          {
-            for(auto col : mat->GetRowIndices(i))
-              (*prol)(offset + i, offset_col + col) = (*mat)(i, col);
-          }
-        offset += mat->Height();
-        offset_col += mat->Width();
-      }
+
+    Array<int> indices_per_row(nrow);
+    indices_per_row = 0;
+    for (size_t k = 0; k < mats.Size(); k++)
+      for (size_t i = 0; i < mats[k]->Height(); i++)
+        indices_per_row[offset_row[k] + i] = mats[k]->GetRowIndices(i).Size();
+
+    MatrixGraph mg(indices_per_row, ncol);
+    for (size_t k = 0; k < mats.Size(); k++)
+      for (size_t i = 0; i < mats[k]->Height(); i++)
+        for (auto col : mats[k]->GetRowIndices(i))
+          mg.CreatePosition(offset_row[k] + i, offset_col[k] + col);
+
+    auto prol = make_shared<SparseMatrix<double>>(std::move(mg));
+    for (size_t k = 0; k < mats.Size(); k++)
+      for (size_t i = 0; i < mats[k]->Height(); i++)
+        {
+          auto cols = mats[k]->GetRowIndices(i);
+          auto vals = mats[k]->GetRowValues(i);
+          for (size_t j = 0; j < cols.Size(); j++)
+            (*prol)(offset_row[k] + i, offset_col[k] + cols[j]) = vals[j];
+        }
     return prol;
   }
 
