@@ -71,6 +71,33 @@ namespace ngcomp
     return nullopt;
   }
 
+  // an empty Python list arrives as empty string, number and any lists
+  // (no any_cast: the typeinfo of Array<any> differs between libraries)
+  static bool EmptyListFlag (const Flags & flags, const string & name)
+  {
+    return flags.NumListFlagDefined(name) && flags.GetNumListFlag(name).Size() == 0;
+  }
+
+  // dirichlet_bbnd / dirichlet_bbbnd: regexpr, list of regexprs or Region
+  static void DirichletFlag (const Flags & flags, const string & name, const shared_ptr<MeshAccess> & ma,
+                             VorB vb, MixedRegion & dirichlet)
+  {
+    if (flags.AnyFlagDefined(name) && !EmptyListFlag(flags, name))
+      {
+        auto reg = std::any_cast<Region>(&flags.GetAnyFlag(name));
+        if (!reg)
+          throw Exception (name + " with wrong argument type");
+        dirichlet.Mask(vb) = OwnRegion(*reg, *ma, vb, name).Mask();
+      }
+    if (flags.StringFlagDefined(name))
+      dirichlet.Mask(vb) |= Region(ma, vb, flags.GetStringFlag(name)).Mask();
+    if (flags.StringListFlagDefined(name))
+      for (auto & pattern : flags.GetStringListFlag(name))
+        dirichlet.Mask(vb) |= Region(ma, vb, pattern).Mask();
+    if (flags.NumListFlagDefined(name) && flags.GetNumListFlag(name).Size())
+      throw Exception (name + ": give region names or a Region, not numbers");
+  }
+
   // deprecated definedon = {VOL: mats, BND: bnds}, arrives as nested flags keyed 'VorB.VOL', ...
   static optional<MixedRegion> DefinedOnDictFlag (const Flags & flags, const shared_ptr<MeshAccess> & ma)
   {
@@ -208,36 +235,19 @@ lot of new non-zero entries in the matrix!\n" << endl;
     if (flags.StringFlagDefined("dirichlet"))
       {
         Region dir(ma, BND, flags.GetStringFlag("dirichlet"));
-        dirichlet_region.Mask(BND) |= dir.Mask(); // that's what it was before, can we just assign ? 
+        dirichlet_region.Mask(BND) |= dir.Mask(); // that's what it was before, can we just assign ?
       }
+    if (flags.StringListFlagDefined("dirichlet"))
+      for (auto & pattern : flags.GetStringListFlag("dirichlet"))
+        dirichlet_region.Mask(BND) |= Region(ma, BND, pattern).Mask();
 
     dirichlet_region.Mask(BBND).SetSize (ma->GetNRegions(BBND));
     dirichlet_region.Mask(BBND).Clear();
-
-    if(flags.AnyFlagDefined("dirichlet_bbnd"))
-      {
-        dirichlet_region.Mask(BBND) = OwnRegion(std::any_cast<const Region&>(flags.GetAnyFlag("dirichlet_bbnd")), *ma, BBND, "dirichlet_bbnd").Mask();
-      }
-
-    if (flags.StringFlagDefined("dirichlet_bbnd"))
-      {
-        Region dir(ma, BBND, flags.GetStringFlag("dirichlet_bbnd"));
-        dirichlet_region.Mask(BBND) |= dir.Mask(); // that's what it was before, can we just assign ? 
-      }
+    DirichletFlag (flags, "dirichlet_bbnd", ma, BBND, dirichlet_region);
 
     dirichlet_region.Mask(BBBND).SetSize (ma->GetNRegions(BBBND));
     dirichlet_region.Mask(BBBND).Clear();
-
-    if(flags.AnyFlagDefined("dirichlet_bbbnd"))
-      {
-        dirichlet_region.Mask(BBBND) = OwnRegion(std::any_cast<const Region&>(flags.GetAnyFlag("dirichlet_bbbnd")), *ma, BBBND, "dirichlet_bbbnd").Mask();
-      }
-
-    if (flags.StringFlagDefined("dirichlet_bbbnd"))
-      {
-        Region dir(ma, BBBND, flags.GetStringFlag("dirichlet_bbbnd"));
-        dirichlet_region.Mask(BBBND) |= dir.Mask(); // that's what it was before, can we just assign ? 
-      }
+    DirichletFlag (flags, "dirichlet_bbbnd", ma, BBBND, dirichlet_region);
 
     // Region, MixedRegion or region descriptor: ORed with the per-VorB flags above
     if(auto dir = MixedRegionFlag(flags, "dirichlet", ma))
@@ -247,7 +257,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
         for (auto vb : { BND, BBND, BBBND })
           dirichlet_region.Mask(vb).Or (dir->Mask(vb));
       }
-    else if(flags.AnyFlagDefined("dirichlet"))
+    else if(flags.AnyFlagDefined("dirichlet") && !EmptyListFlag(flags, "dirichlet"))
       throw Exception ("dirichlet with wrong argument type");
     
     Array<bool> defon_given[4];
@@ -321,7 +331,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
         if (auto reg = DefinedOnDictFlag(flags, ma))
           set_mixed(*reg);
 
-        if(flags.AnyFlagDefined("definedon"))
+        if(flags.AnyFlagDefined("definedon") && !EmptyListFlag(flags, "definedon"))
           {
             std::any anydefon = flags.GetAnyFlag("definedon");
             if(anydefon.type() == typeid(Region))

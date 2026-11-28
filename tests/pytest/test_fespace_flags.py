@@ -31,9 +31,29 @@ def test_dirichlet_forms():
     vref = VectorH1(mesh, order=1, dirichletx="left|bot", dirichlety="bot", dirichletz="bot")
     assert dofs(v) == dofs(vref)
 
+def test_dirichlet_lists():
+    ref = dofs(H1(mesh, order=2, dirichlet="left|bot"))
+    assert dofs(H1(mesh, order=2, dirichlet=["left", "bot"])) == ref
+    assert dofs(H1(mesh, order=2, dirichlet=("left", "bot"))) == ref
+    nrs = tuple(i+1 for i, name in enumerate(mesh.GetBoundaries()) if name in ("left", "bot"))
+    assert dofs(H1(mesh, order=2, dirichlet=nrs)) == ref
+    # empty list: no dirichlet boundaries (ngsxfem idiom)
+    free = dofs(H1(mesh, order=2))
+    for empty in ([], ()):
+        assert dofs(H1(mesh, order=2, dirichlet=empty)) == free
+        assert dofs(H1(mesh, order=2, dirichlet_bbnd=empty)) == free
+        assert dofs(L2(mesh, order=1, dirichlet=empty)) == dofs(L2(mesh, order=1))
+    with pytest.raises(Exception, match="wrong argument type"):
+        H1(mesh, dirichlet=[mesh.Boundaries("left")])
+
 def test_dirichlet_bbnd_forms():
-    assert dofs(H1(mesh, order=2, dirichlet_bbnd=".*")) == \
-        dofs(H1(mesh, order=2, dirichlet_bbnd=mesh.BBoundaries(".*")))
+    ref = dofs(H1(mesh, order=2, dirichlet_bbnd=".*"))
+    assert dofs(H1(mesh, order=2, dirichlet_bbnd=mesh.BBoundaries(".*"))) == ref
+    assert dofs(H1(mesh, order=2, dirichlet_bbnd=[".*"])) == ref
+    with pytest.raises(Exception, match="not numbers"):
+        H1(mesh, dirichlet_bbnd=[1])
+    with pytest.raises(Exception, match="wrong argument type"):
+        H1(mesh, dirichlet_bbnd=mesh)
 
 def test_definedon_forms():
     ref = dofs(H1(mesh, order=2, definedon=mesh.Materials("inner")))
@@ -42,6 +62,8 @@ def test_definedon_forms():
     assert dofs(H1(mesh, order=2, definedon=["inner"])) == ref
     nr = list(mesh.GetMaterials()).index("inner") + 1
     assert dofs(H1(mesh, order=2, definedon=[nr])) == ref
+    assert dofs(H1(mesh, order=2, definedon=(nr,))) == ref
+    assert sum(H1(mesh, order=2, definedon=[]).FreeDofs()) == 0   # defined nowhere
     fes = H1(mesh, order=2, definedon="inner")
     assert dofs(pickle.loads(pickle.dumps(fes))) == ref
 
